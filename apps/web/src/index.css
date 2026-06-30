@@ -1,0 +1,426 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    
+    --card: 224 40% 10%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 7%;
+    
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217 32% 14%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 24 95% 53%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 217 91% 60%;
+    
+    --radius: 0.75rem;
+
+    --sidebar-bg: 222 47% 9%;
+    --sidebar-text: 210 40% 98%;
+    --sidebar-text-muted: 215 20% 65%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-hover-bg: 217 32% 14%;
+    --sidebar-border: 217 32% 17%;
+    
+    /* Maintenance Status Properties */
+    --status-open: 350 89% 60%;
+    --status-resolved: 160 84% 39%;
+  }
+  
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    
+    --card: 224 40% 10%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 7%;
+    
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 217 32% 14%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 24 95% 53%;
+    --accent-foreground: 210 40% 98%;
+    
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 217 91% 60%;
+
+    /* Maintenance Status Properties */
+    --status-open: 350 89% 60%;
+    --status-resolved: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    background-color: #070a13 !important;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(79, 70, 229, 0.05) 0px, transparent 60%) !important;
+    background-attachment: fixed !important;
+    @apply text-foreground font-sans antialiased;
+    font-size: 15px; 
+    line-height: 1.625;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-balance text-foreground tracking-tight;
+  }
+  h1 { @apply text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight; letter-spacing: -0.02em; }
+  h2 { @apply text-3xl md:text-4xl font-bold leading-tight; letter-spacing: -0.015em; }
+  h3 { @apply text-2xl md:text-3xl font-semibold leading-snug; }
+  h4 { @apply text-xl md:text-2xl font-semibold leading-snug; }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.4);
+  }
+}
+
+@layer components {
+  /* Global Glassmorphic Card Override */
+  .bg-card, [role="tabpanel"], .rounded-2xl.border.bg-card, .border.bg-card {
+    background-color: rgba(13, 20, 38, 0.5) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .bg-card:hover {
+    background-color: rgba(20, 28, 52, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 15px 40px -10px rgba(99, 102, 241, 0.15) !important;
+  }
+
+  /* Global Dialog & Popover Glassmorphism */
+  .rounded-2xl.border.bg-background, [role="dialog"], .bg-popover, .bg-secondary\/30 {
+    background-color: rgba(10, 15, 30, 0.75) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Form Controls Global Overhaul */
+  input, textarea, select, .input-highlight {
+    background-color: rgba(10, 15, 30, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: var(--radius) !important;
+    color: #ffffff !important;
+    transition: all 0.2s ease-in-out !important;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none !important;
+    border-color: rgba(99, 102, 241, 0.5) !important;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.25) !important;
+    background-color: rgba(13, 20, 38, 0.65) !important;
+  }
+
+  /* Buttons & Badges Visual Upgrades */
+  button.bg-primary, .btn-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #4f46e5 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  button.bg-primary:hover, .btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  /* Tables Spacing & Card Layout Override */
+  table {
+    border-collapse: separate !important;
+    border-spacing: 0 6px !important;
+    background: transparent !important;
+  }
+
+  tr {
+    background-color: rgba(15, 23, 42, 0.25) !important;
+    transition: all 0.2s ease-in-out !important;
+  }
+
+  tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    transform: translateX(2px) !important;
+  }
+
+  th {
+    background-color: rgba(10, 15, 30, 0.4) !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.06) !important;
+    color: hsl(var(--muted-foreground)) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 0.7rem !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  td {
+    border-top: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+    padding: 12px 16px !important;
+  }
+  
+  td:first-child {
+    border-left: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+  }
+  
+  td:last-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-width: 1px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .badge-open {
+    background-color: hsl(var(--status-open) / 0.15);
+    color: hsl(var(--status-open));
+    border-color: hsl(var(--status-open) / 0.3);
+  }
+  
+  .badge-resolved {
+    background-color: hsl(var(--status-resolved) / 0.15);
+    color: hsl(var(--status-resolved));
+    border-color: hsl(var(--status-resolved) / 0.3);
+  }
+
+  .problem-resolved-row {
+    opacity: 0.6;
+    background-color: hsl(var(--muted) / 0.1);
+  }
+
+  .problem-resolved-text {
+    text-decoration: line-through;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .chart-container {
+    @apply bg-card border border-border rounded-xl p-4 shadow-sm;
+  }
+
+  /* Glassmorphism Classes */
+  .glassmorphism {
+    background: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+  }
+
+  .glassmorphism-interactive {
+    background: rgba(15, 23, 42, 0.45) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .glassmorphism-interactive:hover {
+    background: rgba(30, 41, 59, 0.55) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.18) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #22d3ee 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+  }
+
+  .gradient-text-accent {
+    background: linear-gradient(135deg, #f97316 0%, #facc15 50%, #f97316 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+  }
+
+  .neon-glow-primary {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .neon-glow-accent {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3) !important;
+  }
+
+  .floating-animation {
+    animation: float 6s ease-in-out infinite !important;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media print {
+  /* Hide the action bar, button triggers, header, sidebars, modal backdrops */
+  .print-hidden,
+  .no-print,
+  button,
+  .btn,
+  header,
+  footer,
+  aside,
+  nav,
+  .sidebar,
+  .dialog-overlay,
+  .dialog-close,
+  [role="dialog"] button,
+  button[class*="DialogClose"] {
+    display: none !important;
+  }
+
+  /* Reset body and html for high contrast printing */
+  html, body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    color-scheme: light !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Outfit', 'Inter', -apple-system, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Make sure the slip container spans the full page */
+  .print-content {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+    position: static !important;
+  }
+
+  /* Reset Radix Dialog component styles for raw printing */
+  [role="dialog"],
+  div[class*="DialogContent"] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide dialog overlays/backdrops */
+  div[class*="DialogOverlay"],
+  .dialog-overlay,
+  .dialog-backdrop {
+    display: none !important;
+  }
+
+  /* Set page format */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+}
