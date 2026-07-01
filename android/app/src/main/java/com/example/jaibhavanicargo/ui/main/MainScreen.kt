@@ -139,7 +139,7 @@ fun MainScreen(
 
     // ── Fetch Dashboard Stats ──
     LaunchedEffect(loggedInDriverName, refreshTrigger, isEditingUrl) {
-        if (loggedInDriverName.isNotEmpty() && savedUrl.isNotEmpty() && portalType == "DRIVER") {
+        if (loggedInDriverName.isNotEmpty() && savedUrl.isNotEmpty() && portalType == "DRIVER" && loggedInDriverName != "Vikram Singh (Demo)") {
             isDashboardLoading = true
             try {
                 // 1. Fetch employee record to get latest badges and details
@@ -231,10 +231,22 @@ fun MainScreen(
                             )
                         )
                     }
+                } else if (loggedInDriverName == "Vikram Singh (Demo)") {
+                    // Seed mock leaderboard for demo view
+                    drivers.add(LeaderboardDriver(1, "Vikram Singh (Demo)", 18, 5.4, true))
+                    drivers.add(LeaderboardDriver(2, "Ramesh Kumar", 16, 5.1, false))
+                    drivers.add(LeaderboardDriver(3, "Amit Sharma", 15, 4.8, false))
                 }
                 leaderboardList = drivers
             } catch (e: Exception) {
                 e.printStackTrace()
+                if (loggedInDriverName == "Vikram Singh (Demo)") {
+                    leaderboardList = listOf(
+                        LeaderboardDriver(1, "Vikram Singh (Demo)", 18, 5.4, true),
+                        LeaderboardDriver(2, "Ramesh Kumar", 16, 5.1, false),
+                        LeaderboardDriver(3, "Amit Sharma", 15, 4.8, false)
+                    )
+                }
             } finally {
                 isLeaderboardLoading = false
             }
@@ -489,7 +501,7 @@ fun MainScreen(
                         color = Color.White
                     )
                     Text(
-                        text = "Enter credentials matching your employee log",
+                        text = "Enter credentials or use demo mode",
                         fontSize = 13.sp,
                         color = Color(0xFF94A3B8),
                         modifier = Modifier.padding(top = 4.dp)
@@ -587,12 +599,49 @@ fun MainScreen(
                         ) {
                             Text("Sign In to Portal", fontWeight = FontWeight.Bold)
                         }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                val demoName = "Vikram Singh (Demo)"
+                                val demoPhone = "+91 98765 43210"
+                                val demoId = "demo_driver"
+                                val demoTruck = "TR-12-DEMO"
+                                val demoBadges = "[\"FUEL_CHAMP_2026_06\"]"
+
+                                sharedPref.edit()
+                                    .putString("driver_name", demoName)
+                                    .putString("driver_phone", demoPhone)
+                                    .putString("driver_id", demoId)
+                                    .putString("assigned_truck", demoTruck)
+                                    .putString("badges_cached", demoBadges)
+                                    .apply()
+
+                                loggedInDriverName = demoName
+                                loggedInDriverPhone = demoPhone
+                                loggedInDriverId = demoId
+                                assignedTruckId = demoTruck
+                                
+                                completedTripsCount = 18
+                                basePayAmount = 35000.0
+                                extraTripsPayAmount = 3000.0
+                                driverBadgesList = listOf("FUEL_CHAMP_2026_06")
+
+                                Toast.makeText(context, "Logged in under Demo Mode", Toast.LENGTH_LONG).show()
+                            },
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3B82F6)),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().height(50.dp)
+                        ) {
+                            Text("Try Demo Dashboard", color = Color(0xFF60A5FA), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
     } else if (portalType == "STAFF") {
-        // Staff/Admin Portal: Full Web App shell inside WebView
+        // Staff/Admin Portal: Full Web App shell inside WebView (Loads Login page directly)
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 factory = { ctx ->
@@ -607,7 +656,8 @@ fun MainScreen(
                             cacheMode = WebSettings.LOAD_DEFAULT
                         }
                         webViewClient = WebViewClient()
-                        loadUrl(savedUrl)
+                        val loginUrl = if (savedUrl.endsWith("/")) "${savedUrl}login" else "$savedUrl/login"
+                        loadUrl(loginUrl)
                     }
                 },
                 modifier = Modifier.fillMaxSize()
