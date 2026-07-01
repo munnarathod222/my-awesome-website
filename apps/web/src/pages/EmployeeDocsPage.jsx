@@ -285,7 +285,9 @@ export default function EmployeeDocsPage() {
     employee_id: '', document_type: '', document_number: '',
     issue_date: '', expiry_date: '', notes: '', status: 'Active'
   });
-  const [selectedFile,   setSelectedFile]   = useState(null);
+  const [selectedFiles,  setSelectedFiles]  = useState([]);
+  const [existingFiles,  setExistingFiles]  = useState([]);
+  const [deletedFiles,   setDeletedFiles]   = useState([]);
   const [previewDoc,     setPreviewDoc]     = useState(null);
 
   /* ── Fetch ────────────────────────────────────────────────────────────────── */
@@ -368,6 +370,7 @@ export default function EmployeeDocsPage() {
         notes:           doc.notes           || '',
         status:          doc.status          || 'Active'
       });
+      setExistingFiles(doc.files || []);
     } else {
       setEditingDoc(null);
       setFormData({
@@ -379,12 +382,20 @@ export default function EmployeeDocsPage() {
         notes:           '',
         status:          'Active'
       });
+      setExistingFiles([]);
     }
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setDeletedFiles([]);
     setIsFormOpen(true);
   };
 
-  const handleCloseForm = () => { setIsFormOpen(false); setEditingDoc(null); setSelectedFile(null); };
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingDoc(null);
+    setSelectedFiles([]);
+    setExistingFiles([]);
+    setDeletedFiles([]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -399,7 +410,19 @@ export default function EmployeeDocsPage() {
           else data.append(key, formData[key]);
         }
       });
-      if (selectedFile) data.append('files', selectedFile);
+      
+      // Append new files
+      selectedFiles.forEach(file => {
+        data.append('files', file);
+      });
+
+      // Handle deleted files
+      if (editingDoc && deletedFiles.length > 0) {
+        deletedFiles.forEach(filename => {
+          data.append(`files.${filename}`, '');
+        });
+      }
+
       if (editingDoc) {
         await pb.collection('employee_documents').update(editingDoc.id, data, { $autoCancel: false });
         toast.success('Document updated');
@@ -423,9 +446,7 @@ export default function EmployeeDocsPage() {
   };
 
   const handlePreview = (doc) => {
-    const d = { ...doc };
-    if (doc.files?.length > 0) d.file = doc.files[0];
-    setPreviewDoc(d);
+    setPreviewDoc(doc);
   };
 
   /* ══════════════════════════════════════════════════════════════════════════ */
@@ -748,10 +769,41 @@ export default function EmployeeDocsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="file_up">Upload File (PDF / Image, max 20 MB)</Label>
-              <Input id="file_up" type="file" className="rounded-xl" accept=".pdf,image/jpeg,image/png,image/gif,image/webp" onChange={e => setSelectedFile(e.target.files[0])} />
-              {(editingDoc?.file || editingDoc?.files?.length > 0) && !selectedFile && (
-                <p className="text-xs text-muted-foreground">Current file attached.</p>
+              <Label htmlFor="file_up">Upload Files (PDF / Images, max 20 MB each)</Label>
+              <Input id="file_up" type="file" className="rounded-xl" accept=".pdf,image/jpeg,image/png,image/gif,image/webp" multiple onChange={e => {
+                const files = Array.from(e.target.files);
+                setSelectedFiles(prev => [...prev, ...files]);
+              }} />
+              
+              {/* Existing files list */}
+              {existingFiles.length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Existing Files:</p>
+                  {existingFiles.map((file, idx) => (
+                    <div key={`existing-${idx}`} className="flex items-center justify-between text-xs bg-muted/30 p-2 rounded-lg border border-border">
+                      <span className="truncate max-w-[280px]">{file}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => {
+                        setExistingFiles(prev => prev.filter(f => f !== file));
+                        setDeletedFiles(prev => [...prev, file]);
+                      }}>✕</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* New files list */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-semibold text-muted-foreground">New Files to Upload:</p>
+                  {selectedFiles.map((file, idx) => (
+                    <div key={`new-${idx}`} className="flex items-center justify-between text-xs bg-primary/5 p-2 rounded-lg border border-primary/20">
+                      <span className="truncate max-w-[280px]">{file.name}</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => {
+                        setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+                      }}>✕</Button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
             <div className="space-y-2">
