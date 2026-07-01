@@ -78,6 +78,11 @@ suspend fun fetchUrlContent(urlString: String): String = withContext(Dispatchers
     }
 }
 
+fun getNormalizedBaseUrl(url: String): String {
+    val trimmed = url.trim()
+    return if (trimmed.endsWith("/")) trimmed.substring(0, trimmed.length - 1) else trimmed
+}
+
 data class LeaderboardDriver(
     val rank: Int,
     val name: String,
@@ -109,6 +114,31 @@ data class CashbookTx(
     val runningBalance: Double
 )
 
+data class TruckItem(
+    val id: String,
+    val truckNumber: String,
+    val truckName: String,
+    val ownershipType: String,
+    val manufacturer: String,
+    val fastagBalance: Double
+)
+
+data class EmployeeItem(
+    val id: String,
+    val name: String,
+    val role: String,
+    val contact: String,
+    val status: String
+)
+
+data class MaintenanceItem(
+    val id: String,
+    val description: String,
+    val cost: Double,
+    val date: String,
+    val status: String
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -123,6 +153,8 @@ fun MainScreen(
     var savedUrl by remember { mutableStateOf(sharedPref.getString("website_url", "") ?: "") }
     var inputUrl by remember { mutableStateOf(savedUrl.ifEmpty { "https://jaibhavanicargo.onrender.com" }) }
     var isEditingUrl by remember { mutableStateOf(savedUrl.isEmpty()) }
+    
+    val baseUrl = remember(savedUrl) { getNormalizedBaseUrl(savedUrl) }
     
     // Active workspace mode: "UNSELECTED", "DRIVER", "STAFF"
     var portalType by remember { mutableStateOf(sharedPref.getString("portal_type", "UNSELECTED") ?: "UNSELECTED") }
@@ -141,8 +173,11 @@ fun MainScreen(
     var isStaffLoginLoading by remember { mutableStateOf(false) }
     var selectedStaffTab by remember { mutableStateOf(0) }
     
-    // Sub-view Web routing (For Analytics, Maintenance, etc. inside App Hub)
+    // Sub-view Web routing (For Analytics, etc. inside App Hub)
     var hubActiveWebUrl by remember { mutableStateOf("") }
+    
+    // Native App Hub Sub-View Routing: "GRID", "TRUCKS", "EMPLOYEES", "MAINTENANCE"
+    var hubSubView by remember { mutableStateOf("GRID") }
 
     // Forms
     var loginNameInput by remember { mutableStateOf("") }
@@ -161,6 +196,11 @@ fun MainScreen(
     var totalOutflowAmount by remember { mutableStateOf(0.0) }
     var cashbookBalance by remember { mutableStateOf(0.0) }
     
+    // Additional Native Registers Data
+    val trucksList = remember { mutableStateListOf<TruckItem>() }
+    val employeesList = remember { mutableStateListOf<EmployeeItem>() }
+    val maintenanceList = remember { mutableStateListOf<MaintenanceItem>() }
+    
     // Shared stats
     var completedTripsCount by remember { mutableStateOf(0) }
     var basePayAmount by remember { mutableStateOf(0.0) }
@@ -175,8 +215,13 @@ fun MainScreen(
         var revenue = 0.0
         var outflow = 0.0
         var running = 0.0
+        
         cashbookList.forEach { tx ->
-            if (tx.type == "Income") {
+            // Match custom Shadcn/UI CashbookTransactionList transaction helper
+            val isDebit = tx.type.equals("debit", ignoreCase = true) || 
+                          tx.type.equals("Expense", ignoreCase = true) || 
+                          tx.type.equals("Advance", ignoreCase = true)
+            if (!isDebit) {
                 revenue += tx.amount
                 running += tx.amount
             } else {
@@ -211,12 +256,43 @@ fun MainScreen(
                 )
             )
         }
+        // Mock Trucks
+        if (trucksList.isEmpty()) {
+            trucksList.addAll(
+                listOf(
+                    TruckItem("1", "MH-12-PQ-1234", "Tata Prima 10 Wheeler", "Owned", "Tata Motors", 15400.0),
+                    TruckItem("2", "MH-43-XY-9876", "Mahindra Blazo Multi-Axle", "Attached", "Mahindra", 8200.0),
+                    TruckItem("3", "MH-04-AB-5544", "Ashok Leyland Ecomet", "Owned", "Ashok Leyland", 12100.0)
+                )
+            )
+        }
+        // Mock Employees
+        if (employeesList.isEmpty()) {
+            employeesList.addAll(
+                listOf(
+                    EmployeeItem("1", "Ramesh Kumar", "Driver", "+91 90123 45678", "Active"),
+                    EmployeeItem("2", "Amit Sharma", "Driver", "+91 91234 56789", "Active"),
+                    EmployeeItem("3", "Vikram Singh", "Driver", "+91 92345 67890", "Active"),
+                    EmployeeItem("4", "Sunil Deshmukh", "Supervisor", "+91 93456 78901", "Active")
+                )
+            )
+        }
+        // Mock Maintenance
+        if (maintenanceList.isEmpty()) {
+            maintenanceList.addAll(
+                listOf(
+                    MaintenanceItem("1", "Oil Filter & Lubricant Replacement", 6500.0, "2026-06-28", "Completed"),
+                    MaintenanceItem("2", "Front Axle Suspension Alignment", 4800.0, "2026-06-29", "Completed"),
+                    MaintenanceItem("3", "Rear Tyre Patch Work", 1200.0, "2026-07-01", "Completed")
+                )
+            )
+        }
         recalculateFinanceStats()
     }
 
     // ── Fetch Operations Data (Staff & Driver Roles) ──
     LaunchedEffect(loggedInDriverName, refreshTrigger, isEditingUrl, portalType) {
-        if (savedUrl.isEmpty()) return@LaunchedEffect
+        if (baseUrl.isEmpty()) return@LaunchedEffect
         
         isDataLoading = true
         try {
@@ -224,7 +300,7 @@ fun MainScreen(
                 val escapedName = URLEncoder.encode(loggedInDriverName, "UTF-8")
                 
                 // Fetch driver details
-                val empResponse = fetchUrlContent("$savedUrl/hcgi/platform/api/collections/employees/records?filter=(name='$escapedName')")
+                val empResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/employees/records?filter=(name='$escapedName')")
                 val empItems = JSONObject(empResponse).optJSONArray("items")
                 if (empItems != null && empItems.length() > 0) {
                     val record = empItems.getJSONObject(0)
@@ -238,7 +314,7 @@ fun MainScreen(
                 }
 
                 // Fetch monthly trips finished
-                val tripsResponse = fetchUrlContent("$savedUrl/hcgi/platform/api/collections/trip_logs/records?filter=(driver_name='$escapedName')")
+                val tripsResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/trip_logs/records?filter=(driver_name='$escapedName')")
                 val tripItems = JSONObject(tripsResponse).optJSONArray("items")
                 var tripsCount = 0
                 if (tripItems != null) {
@@ -256,18 +332,22 @@ fun MainScreen(
             }
             
             if (portalType == "STAFF" && isStaffLoggedIn) {
-                // Fetch real server trip logs & cashbook entries
-                val tripsResponse = fetchUrlContent("$savedUrl/hcgi/platform/api/collections/trip_logs/records?limit=50&sort=-created")
+                // Fetch real server trip logs (expanding client_id to avoid "Direct client" placeholder)
+                val tripsResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/trip_logs/records?limit=50&sort=-created&expand=client_id")
                 val tripItems = JSONObject(tripsResponse).optJSONArray("items")
                 if (tripItems != null && tripItems.length() > 0) {
                     tripsList.clear()
                     for (i in 0 until tripItems.length()) {
                         val obj = tripItems.getJSONObject(i)
+                        val expandObj = obj.optJSONObject("expand")
+                        val clientObj = expandObj?.optJSONObject("client_id")
+                        val clientName = clientObj?.optString("client_name") ?: obj.optString("client_name", "Direct client")
+                        
                         tripsList.add(
                             TripLog(
                                 id = obj.optString("id", i.toString()),
                                 tripId = obj.optString("trip_id", "N/A"),
-                                clientName = obj.optString("client_name", "Direct client"),
+                                clientName = clientName,
                                 date = obj.optString("date", "2026-07-01").substringBefore(" "),
                                 route = obj.optString("route", "Local route"),
                                 truckNumber = obj.optString("truck_number", "N/A"),
@@ -280,7 +360,8 @@ fun MainScreen(
                     }
                 }
 
-                val cashbookResponse = fetchUrlContent("$savedUrl/hcgi/platform/api/collections/cashbook/records?limit=50&sort=-created")
+                // Fetch real Cashbook ledger
+                val cashbookResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/cashbook/records?limit=50&sort=-created")
                 val txItems = JSONObject(cashbookResponse).optJSONArray("items")
                 if (txItems != null && txItems.length() > 0) {
                     cashbookList.clear()
@@ -299,6 +380,69 @@ fun MainScreen(
                         )
                     }
                 }
+                
+                // Fetch real Trucks master
+                val trucksResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/trucks/records?limit=100")
+                val truckItems = JSONObject(trucksResponse).optJSONArray("items")
+                if (truckItems != null && truckItems.length() > 0) {
+                    trucksList.clear()
+                    for (i in 0 until truckItems.length()) {
+                        val obj = truckItems.getJSONObject(i)
+                        trucksList.add(
+                            TruckItem(
+                                id = obj.optString("id", i.toString()),
+                                truckNumber = obj.optString("truck_number", "N/A"),
+                                truckName = obj.optString("truck_name", "General Cargo"),
+                                ownershipType = obj.optString("ownership_type", "Owned"),
+                                manufacturer = obj.optString("manufacturer", "Tata"),
+                                fastagBalance = obj.optDouble("current_fastag_balance", 0.0)
+                            )
+                        )
+                    }
+                }
+
+                // Fetch real Employees register
+                val employeesResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/employees/records?limit=100")
+                val empItems = JSONObject(employeesResponse).optJSONArray("items")
+                if (empItems != null && empItems.length() > 0) {
+                    employeesList.clear()
+                    for (i in 0 until empItems.length()) {
+                        val obj = empItems.getJSONObject(i)
+                        employeesList.add(
+                            EmployeeItem(
+                                id = obj.optString("id", i.toString()),
+                                name = obj.optString("name", "N/A"),
+                                role = obj.optString("employee_type", "Driver"),
+                                contact = obj.optString("contact", "N/A"),
+                                status = obj.optString("active_status", "Active")
+                            )
+                        )
+                    }
+                }
+
+                // Fetch real maintenance problems
+                try {
+                    val maintResponse = fetchUrlContent("$baseUrl/hcgi/platform/api/collections/maintenance_problems/records?limit=100")
+                    val mItems = JSONObject(maintResponse).optJSONArray("items")
+                    if (mItems != null && mItems.length() > 0) {
+                        maintenanceList.clear()
+                        for (i in 0 until mItems.length()) {
+                            val obj = mItems.getJSONObject(i)
+                            maintenanceList.add(
+                                MaintenanceItem(
+                                    id = obj.optString("id", i.toString()),
+                                    description = obj.optString("problem_description", "Routine Check"),
+                                    cost = obj.optDouble("estimated_cost", 0.0),
+                                    date = obj.optString("date_reported", "2026-07-01").substringBefore(" "),
+                                    status = obj.optString("status", "Pending")
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Fallback to mock maintenance if collection does not exist
+                }
+
                 recalculateFinanceStats()
             }
         } catch (e: Exception) {
@@ -608,7 +752,7 @@ fun MainScreen(
                                     try {
                                         val escapedName = URLEncoder.encode(loginNameInput.trim(), "UTF-8")
                                         val escapedPhone = URLEncoder.encode(loginPhoneInput.trim(), "UTF-8")
-                                        val checkUrl = "$savedUrl/hcgi/platform/api/collections/employees/records?filter=(name='$escapedName'%26%26contact='$escapedPhone')"
+                                        val checkUrl = "$baseUrl/hcgi/platform/api/collections/employees/records?filter=(name='$escapedName'%26%26contact='$escapedPhone')"
                                         val result = fetchUrlContent(checkUrl)
                                         val itemsArray = JSONObject(result).optJSONArray("items")
                                         
@@ -791,7 +935,7 @@ fun MainScreen(
                                 coroutineScope.launch {
                                     try {
                                         // Attempt authentication post route
-                                        val checkUrl = "$savedUrl/hcgi/platform/api/collections/users/auth-with-password"
+                                        val checkUrl = "$baseUrl/hcgi/platform/api/collections/users/auth-with-password"
                                         // Simulate authenticating for demo purposes / API failure fallback
                                         sharedPref.edit().putBoolean("staff_logged_in", true).apply()
                                         isStaffLoggedIn = true
@@ -889,7 +1033,10 @@ fun MainScreen(
                         tabs.forEach { (label, icon, index) ->
                             NavigationBarItem(
                                 selected = selectedStaffTab == index,
-                                onClick = { selectedStaffTab = index },
+                                onClick = { 
+                                    selectedStaffTab = index 
+                                    if (index == 3) hubSubView = "GRID" // reset App Hub view
+                                },
                                 icon = { Icon(imageVector = icon, contentDescription = label) },
                                 label = { Text(label, fontSize = 10.sp) },
                                 colors = NavigationBarItemDefaults.colors(
@@ -969,8 +1116,13 @@ fun MainScreen(
                                 balance = cashbookBalance,
                                 onAddTx = { showAddTxDialog = true }
                             )
-                            3 -> AdminAppHubTab(
+                            3 -> AdminAppHubLayout(
+                                subView = hubSubView,
                                 savedUrl = savedUrl,
+                                trucks = trucksList,
+                                employees = employeesList,
+                                maintenance = maintenanceList,
+                                onSubViewChange = { hubSubView = it },
                                 onOpenFeature = { url -> hubActiveWebUrl = url }
                             )
                             4 -> AdminProfileTab(
@@ -1423,9 +1575,9 @@ fun AdminCashbookTab(
                                 Text("${tx.category} • ${tx.date}", color = Color(0xFF64748B), fontSize = 11.sp)
                             }
                             Text(
-                                text = if (tx.type == "Income") "+₹${tx.amount.toInt()}" else "-₹${tx.amount.toInt()}",
+                                text = if (tx.type == "Income" || tx.type.equals("credit", ignoreCase = true)) "+₹${tx.amount.toInt()}" else "-₹${tx.amount.toInt()}",
                                 fontWeight = FontWeight.Black,
-                                color = if (tx.type == "Income") Color(0xFF34D399) else Color(0xFFF87171),
+                                color = if (tx.type == "Income" || tx.type.equals("credit", ignoreCase = true)) Color(0xFF34D399) else Color(0xFFF87171),
                                 fontSize = 14.sp
                             )
                         }
@@ -1445,24 +1597,66 @@ fun AdminCashbookTab(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// NATIVE APP HUB INTERFACE (NO MORE REDIRECTING CORE REGISTERS TO WEBVIEW!)
+// ─────────────────────────────────────────────────────────────────────────────
 @Composable
-fun AdminAppHubTab(
+fun AdminAppHubLayout(
+    subView: String,
     savedUrl: String,
+    trucks: List<TruckItem>,
+    employees: List<EmployeeItem>,
+    maintenance: List<MaintenanceItem>,
+    onSubViewChange: (String) -> Unit,
     onOpenFeature: (String) -> Unit
 ) {
-    val modules = listOf(
-        Pair("Fleet Analytics", "/analytics"),
-        Pair("Client Margin analysis", "/client-analysis"),
-        Pair("Fleet Maintenance Logs", "/fleet-maintenance"),
-        Pair("EMI Calculator", "/emi-calculator"),
-        Pair("Employees Master", "/employees"),
-        Pair("Vehicles Fleet List", "/truck-manager"),
-        Pair("Reports Ledger", "/reports"),
-        Pair("To-Do Checklist", "/todo")
+    AnimatedContent(
+        targetState = subView,
+        transitionSpec = {
+            slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+        }
+    ) { currentView ->
+        when (currentView) {
+            "GRID" -> AdminAppHubGrid(
+                savedUrl = savedUrl,
+                onSubViewChange = onSubViewChange,
+                onOpenFeature = onOpenFeature
+            )
+            "TRUCKS" -> AdminTrucksList(
+                trucks = trucks,
+                onBack = { onSubViewChange("GRID") }
+            )
+            "EMPLOYEES" -> AdminEmployeesList(
+                employees = employees,
+                onBack = { onSubViewChange("GRID") }
+            )
+            "MAINTENANCE" -> AdminMaintenanceList(
+                maintenance = maintenance,
+                onBack = { onSubViewChange("GRID") }
+            )
+        }
+    }
+}
+
+@Composable
+fun AdminAppHubGrid(
+    savedUrl: String,
+    onSubViewChange: (String) -> Unit,
+    onOpenFeature: (String) -> Unit
+) {
+    val items = listOf(
+        Triple("Vehicles Fleet List", Icons.Default.LocalShipping, "TRUCKS"),
+        Triple("Employees Master", Icons.Default.SupervisorAccount, "EMPLOYEES"),
+        Triple("Fleet Maintenance Logs", Icons.Default.Build, "MAINTENANCE"),
+        Triple("Fleet Analytics", Icons.Default.TrendingUp, "WEB:/analytics"),
+        Triple("Client Margin Analysis", Icons.Default.AccountBalance, "WEB:/client-analysis"),
+        Triple("EMI Calculator", Icons.Default.Calculate, "WEB:/emi-calculator"),
+        Triple("Reports Ledger", Icons.Default.Assessment, "WEB:/reports"),
+        Triple("To-Do Checklist", Icons.Default.List, "WEB:/todo")
     )
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("App Hub & System Panels", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+        Text("App Hub & Registers", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(12.dp))
         
         LazyVerticalGrid(
@@ -1471,12 +1665,19 @@ fun AdminAppHubTab(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(modules) { module ->
+            items(items) { (label, icon, destination) ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp)
-                        .clickable { onOpenFeature("$savedUrl${module.second}") },
+                        .height(110.dp)
+                        .clickable {
+                            if (destination.startsWith("WEB:")) {
+                                val suffix = destination.substringAfter("WEB:")
+                                onOpenFeature("$savedUrl$suffix")
+                            } else {
+                                onSubViewChange(destination)
+                            }
+                        },
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF161E31)),
                     shape = RoundedCornerShape(16.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.2f))
@@ -1486,9 +1687,191 @@ fun AdminAppHubTab(
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(imageVector = Icons.Default.GridOn, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(24.dp))
+                        Icon(imageVector = icon, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(28.dp))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(module.first, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center)
+                        Text(label, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp, textAlign = TextAlign.Center)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminTrucksList(
+    trucks: List<TruckItem>,
+    onBack: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredTrucks = remember(searchQuery, trucks) {
+        trucks.filter { it.truckNumber.contains(searchQuery, ignoreCase = true) || it.truckName.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text("Vehicles Fleet Registry", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+        }
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Search by truck number...") },
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF10B981),
+                unfocusedBorderColor = Color(0xFF475569),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(filteredTrucks) { truck ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF161E31)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(truck.truckNumber, fontWeight = FontWeight.Black, color = Color.White, fontSize = 15.sp)
+                            BadgeLabel(truck.ownershipType, if (truck.ownershipType == "Owned") Color(0xFF10B981) else Color(0xFFF59E0B))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(truck.truckName, color = Color(0xFF94A3B8), fontSize = 13.sp)
+                        Text("Manufacturer: ${truck.manufacturer}", color = Color(0xFF64748B), fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Fastag balance: ₹${truck.fastagBalance.toInt()}", color = Color(0xFF34D399), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminEmployeesList(
+    employees: List<EmployeeItem>,
+    onBack: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredEmployees = remember(searchQuery, employees) {
+        employees.filter { it.name.contains(searchQuery, ignoreCase = true) || it.role.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text("Employees Register", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+        }
+
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Search by name or role...") },
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF10B981),
+                unfocusedBorderColor = Color(0xFF475569),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            ),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)
+        )
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(filteredEmployees) { emp ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF161E31)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(emp.name, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                            BadgeLabel(emp.role, Color(0xFF60A5FA))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("Contact: ${emp.contact}", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                        Text("Status: ${emp.status}", color = if (emp.status == "Active") Color(0xFF34D399) else Color(0xFFF87171), fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminMaintenanceList(
+    maintenance: List<MaintenanceItem>,
+    onBack: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Text("Maintenance Logs", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+        }
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(maintenance) { item ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF161E31)),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(item.description, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 13.sp)
+                            BadgeLabel(item.status, if (item.status == "Completed") Color(0xFF10B981) else Color(0xFFF59E0B))
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Date: ${item.date}", color = Color(0xFF94A3B8), fontSize = 11.sp)
+                            Text("Est. Cost: ₹${item.cost.toInt()}", fontWeight = FontWeight.Bold, color = Color(0xFFF87171), fontSize = 12.sp)
+                        }
                     }
                 }
             }
