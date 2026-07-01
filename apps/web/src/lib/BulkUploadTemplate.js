@@ -70,3 +70,12 @@ export const downloadRoutesTemplate = () => {
   ];
   triggerDownload('routes_template.csv', headers, rows);
 };
+
+export const downloadDriverAdvancesTemplate = () => {
+  const headers = ['Date (YYYY-MM-DD)', 'Driver Name', 'Amount', 'Reason', 'Payment Method'];
+  const rows = [
+    ['2023-10-10', 'John Doe', '1500', 'Advance for route fuel', 'Cash'],
+    ['2023-10-12', 'Jane Smith', '2500', 'Advance for toll charges', 'UPI']
+  ];
+  triggerDownload('driver_advances_template.csv', headers, rows);
+};
