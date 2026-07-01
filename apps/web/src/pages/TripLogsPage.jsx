@@ -62,6 +62,7 @@ const TripLogsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [assignDialogData, setAssignDialogData] = useState(null);
+  const [bulkPaymentConfirmData, setBulkPaymentConfirmData] = useState(null);
 
   const fetchData = async () => {
     setDataLoading(true);
@@ -183,6 +184,39 @@ const TripLogsPage = () => {
   const handleBulkUpdate = async () => {
     if ((!bulkPaymentStatus && !bulkTripStatus) || selectedIds.length === 0) return;
     
+    // Intercept bulk payment status received to aggregate totals and show confirmation modal
+    if (bulkPaymentStatus === 'received' && selectedIds.length > 1) {
+      const selectedTrips = tripLogs.filter(l => selectedIds.includes(l.id));
+      let totalRev = 0;
+      let totalAdv = 0;
+      let totalTdsAmt = 0;
+      let codes = [];
+      
+      selectedTrips.forEach(trip => {
+        totalRev += Number(trip.revenue) || 0;
+        totalAdv += Number(trip.advance_received_from_client) || 0;
+        
+        const client = trip.expand?.client_id;
+        const isTds = client?.isTdsApplicable || false;
+        const rate = isTds ? (Number(client?.tdsRate) || 2.0) : 0;
+        const tdsAmt = Number(trip.revenue || 0) * (rate / 100);
+        totalTdsAmt += Number(tdsAmt.toFixed(2));
+        
+        codes.push(trip.trip_id || 'N/A');
+      });
+      
+      setBulkPaymentConfirmData({
+        trips: selectedTrips,
+        totalRevenue: totalRev,
+        totalAdvances: totalAdv,
+        totalTds: totalTdsAmt,
+        netAmount: totalRev - totalAdv - totalTdsAmt,
+        tripCodes: codes,
+        tripIds: selectedIds
+      });
+      return;
+    }
+    
     setIsUpdatingBulk(true);
     try {
       const updates = {};
@@ -203,6 +237,55 @@ const TripLogsPage = () => {
     } catch (err) {
       console.error('Bulk update error:', err);
       toast.error('Failed to update some trip logs. Please try again.');
+    } finally {
+      setIsUpdatingBulk(false);
+    }
+  };
+
+  const handleConfirmBulkPayment = async () => {
+    if (!bulkPaymentConfirmData) return;
+    
+    setIsUpdatingBulk(true);
+    try {
+      // 1. Create the single aggregate cashbook transaction (net of TDS and advances)
+      const cashbookPayload = {
+        date: format(new Date(), 'yyyy-MM-dd'),
+        description: `Bulk Final Payment - Trips: ${bulkPaymentConfirmData.tripCodes.join(', ')} (Net after TDS)`,
+        amount: bulkPaymentConfirmData.netAmount,
+        transaction_type: 'Income',
+        category: 'Trip Revenue',
+        added_by: currentUser?.id,
+        reference_id: bulkPaymentConfirmData.tripIds.join(','),
+        reference_type: 'bulk_trip_payment',
+        status: 'Completed'
+      };
+      
+      await pb.collection('cashbook').create(cashbookPayload);
+      
+      // 2. Update each of the selected trip logs and calculate respective TDS values
+      const updatePromises = bulkPaymentConfirmData.trips.map(trip => {
+        const client = trip.expand?.client_id;
+        const isTds = client?.isTdsApplicable || false;
+        const rate = isTds ? (Number(client?.tdsRate) || 2.0) : 0;
+        const tdsAmt = Number(trip.revenue || 0) * (rate / 100);
+        
+        return pb.collection('trip_logs').update(trip.id, {
+          client_payment_status: 'received',
+          tds_deducted_receivable: Number(tdsAmt.toFixed(2))
+        }, { $autoCancel: false });
+      });
+      
+      await Promise.all(updatePromises);
+      
+      toast.success(`Bulk payment registered successfully and ${bulkPaymentConfirmData.trips.length} trips updated.`);
+      setSelectedIds([]);
+      setBulkPaymentStatus('');
+      setBulkTripStatus('');
+      setBulkPaymentConfirmData(null);
+      fetchData();
+    } catch (err) {
+      console.error('Bulk payment confirmation error:', err);
+      toast.error('Failed to confirm bulk payment.');
     } finally {
       setIsUpdatingBulk(false);
     }
@@ -412,7 +495,8 @@ const TripLogsPage = () => {
                 </div>
               )}
 
-              <div className="overflow-x-auto flex-1 h-full">
+              {/* Desktop View Table (Hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto flex-1 h-full">
                 <Table>
                   <TableHeader className="bg-muted/30 sticky top-0 z-10 shadow-sm">
                     <TableRow className="hover:bg-transparent border-b-border/50">
@@ -606,6 +690,103 @@ const TripLogsPage = () => {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Mobile View List (Shown on screens < md) */}
+              <div className="md:hidden space-y-4 px-1 pb-4">
+                {filteredLogs.length === 0 ? (
+                  <div className="text-center py-16 text-muted-foreground bg-secondary/10 rounded-2xl p-6 border border-white/5">
+                    <Truck className="w-10 h-10 opacity-30 mx-auto mb-3" />
+                    <p className="text-base font-semibold text-white">No shipments found</p>
+                    <p className="text-xs mt-1">Try adjusting your filters or search query.</p>
+                  </div>
+                ) : (
+                  filteredLogs.map(log => (
+                    <div 
+                      key={log.id} 
+                      className="p-4 rounded-2xl bg-card border border-border/50 space-y-3 relative shadow-md hover:border-primary/20 transition-colors"
+                    >
+                      {/* Row 1: Trip ID, Date & Payment Status */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-sm text-primary">
+                            {log.trip_id || 'N/A'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            • {format(new Date(log.date), 'dd MMM yyyy')}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <span className={cn(
+                            "px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shadow-sm",
+                            log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
+                            log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
+                            log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
+                            'bg-muted text-muted-foreground border-border/50'
+                          )}>
+                            {log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'Pending')}
+                          </span>
+                          <span className={cn(
+                            "px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shadow-sm",
+                            getTripStatusColor(log.trip_status)
+                          )}>
+                            {getTripStatusLabel(log.trip_status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Row 2: Client & Route */}
+                      <div className="space-y-1">
+                        <div className="text-sm font-semibold text-white">
+                          {log.expand?.client_id?.client_name || 'Unassigned Client'}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          Route: <span className="font-medium text-white">{log.route || 'No Route'}</span>
+                        </div>
+                      </div>
+
+                      {/* Row 3: Driver & Asset Info */}
+                      <div className="grid grid-cols-2 gap-2 py-2 border-t border-b border-white/5 text-[11px]">
+                        <div>
+                          <span className="text-slate-400">Truck: </span>
+                          <strong className="text-white">{log.truck_number || 'Unassigned'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Driver: </span>
+                          <strong className="text-white truncate block">{log.driver_name || 'Unassigned'}</strong>
+                        </div>
+                      </div>
+
+                      {/* Row 4: Financials & Action Buttons */}
+                      <div className="flex items-center justify-between pt-1">
+                        <div>
+                          <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Revenue</div>
+                          <div className="text-sm font-black text-emerald-400">
+                            {formatCurrency(log.revenue)}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleEditClick(log.id)}
+                            className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
+                          >
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setDeleteDialogData([log])}
+                            className="h-8 px-3 rounded-lg text-xs font-semibold text-rose-400 border-rose-500/20 hover:bg-rose-500/10"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -753,6 +934,75 @@ const TripLogsPage = () => {
         trip={paymentRequestTrip}
         onSuccess={fetchData}
       />
+
+      <Dialog 
+        open={!!bulkPaymentConfirmData} 
+        onOpenChange={(open) => !open && !isUpdatingBulk && setBulkPaymentConfirmData(null)}
+      >
+        <DialogContent className="sm:max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-primary font-heading text-xl">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <CheckSquare className="w-5 h-5 text-primary" />
+              </div>
+              Bulk Payment Settlement (Net after TDS)
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-sm text-muted-foreground">
+              Confirm receiving settlement for {bulkPaymentConfirmData?.trips.length} selected trips. A single aggregated transaction will be logged in the Cashbook.
+            </DialogDescription>
+          </DialogHeader>
+
+          {bulkPaymentConfirmData && (
+            <div className="space-y-4 my-2">
+              <div className="bg-secondary/20 border border-border/50 rounded-xl p-4 space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Trips:</span>
+                  <span className="font-semibold text-foreground max-w-[280px] text-right truncate">
+                    {bulkPaymentConfirmData.tripCodes.join(', ')}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-border/40 pt-2">
+                  <span className="text-muted-foreground">Total Gross Revenue:</span>
+                  <span className="font-medium text-foreground">{formatCurrency(bulkPaymentConfirmData.totalRevenue)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Advances Already Received:</span>
+                  <span className="font-medium text-destructive">-{formatCurrency(bulkPaymentConfirmData.totalAdvances)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">TDS Deducted (Receivable):</span>
+                  <span className="font-medium text-destructive">-{formatCurrency(bulkPaymentConfirmData.totalTds)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border/40 pt-2 text-base font-bold text-foreground">
+                  <span className="text-primary">Net Amount Received:</span>
+                  <span className="text-emerald-500 font-extrabold">{formatCurrency(bulkPaymentConfirmData.netAmount)}</span>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground italic leading-normal px-1">
+                * Note: The cashbook transaction is registered net of TDS. The TDS receivable credit is logged in the reports ledger.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="mt-4 gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setBulkPaymentConfirmData(null)} 
+              disabled={isUpdatingBulk}
+              className="rounded-xl"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmBulkPayment} 
+              disabled={isUpdatingBulk}
+              className="rounded-xl shadow-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isUpdatingBulk ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Confirm & Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
