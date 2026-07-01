@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Sidebar from './components/Sidebar.jsx';
+import BottomNavigation from './components/BottomNavigation.jsx';
 import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 import { cn } from '@/lib/utils.js';
 
@@ -134,12 +135,16 @@ const AppLayout = ({ children }) => {
             setIsExpanded={setIsSidebarExpanded} 
           />
         )}
-        <main className="flex-1 overflow-y-auto w-full flex flex-col relative z-10">
+        <main className={cn(
+          "flex-1 overflow-y-auto w-full flex flex-col relative z-10",
+          showSidebar ? "pb-20 md:pb-0" : "pb-0"
+        )}>
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
           {isPublicPage && <Footer />}
         </main>
+        {showSidebar && <BottomNavigation />}
       </div>
     </div>
   );

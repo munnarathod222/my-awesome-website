@@ -55,7 +55,10 @@ export default function Header() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/55 backdrop-blur-md supports-[backdrop-filter]:bg-background/45 shadow-lg transition-all duration-300">
+    <header className={cn(
+      "sticky top-0 z-50 w-full border-b border-white/5 bg-background/55 backdrop-blur-md supports-[backdrop-filter]:bg-background/45 shadow-lg transition-all duration-300",
+      isAuthenticated ? "hidden md:block" : "block"
+    )}>
       <div className="container max-w-7xl mx-auto flex h-16 items-center px-4 sm:px-6 lg:px-8">
         
         {/* Left: Logo */}

@@ -126,7 +126,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   return (
     <aside 
       className={cn(
-        "bg-[hsl(var(--sidebar-bg))]/80 backdrop-blur-md border-r border-white/5 transition-all duration-300 flex flex-col z-20 h-full relative shadow-2xl",
+        "hidden md:flex bg-[hsl(var(--sidebar-bg))]/80 backdrop-blur-md border-r border-white/5 transition-all duration-300 flex-col z-20 h-full relative shadow-2xl",
         isExpanded ? "w-64" : "w-[72px]"
       )}
     >
