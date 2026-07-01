@@ -5,6 +5,57 @@ import logger from '../utils/logger.js';
 const router = express.Router();
 
 /**
+ * POST /api/trips/bulk-create
+ * Create multiple trip records sequentially on the server.
+ */
+router.post('/bulk-create', async (req, res) => {
+  const { trips } = req.body;
+  if (!Array.isArray(trips) || trips.length === 0) {
+    return res.status(400).json({ success: false, error: 'Invalid or empty trips list' });
+  }
+
+  logger.info(`Starting server-side bulk trip creation for ${trips.length} records...`);
+  const createdTrips = [];
+
+  for (let i = 0; i < trips.length; i++) {
+    const trip = trips[i];
+    
+    // Safely parse metrics to numbers to satisfy database constraints
+    if (trip.kms !== undefined) trip.kms = Number(trip.kms) || 0;
+    if (trip.revenue !== undefined) trip.revenue = Number(trip.revenue) || 0;
+    if (trip.mileage !== undefined) trip.mileage = Number(trip.mileage) || 0;
+
+    try {
+      const record = await pb.collection('trip_logs').create(trip, { $autoCancel: false });
+      createdTrips.push(record);
+    } catch (err) {
+      logger.error(`Failed to create bulk trip at index ${i}:`, err);
+      // Attempt rollback of already created trips in this batch to preserve consistency
+      logger.info(`Rolling back ${createdTrips.length} created trips in this batch...`);
+      for (const created of createdTrips) {
+        try {
+          await pb.collection('trip_logs').delete(created.id, { $autoCancel: false });
+        } catch (rollbackErr) {
+          logger.error(`Rollback failed for trip ${created.id}:`, rollbackErr);
+        }
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: `Failed to create trip ${trip.trip_id} (Index ${i}): ${err.message}`,
+        details: err.data
+      });
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `Successfully created ${createdTrips.length} trips`,
+    count: createdTrips.length
+  });
+});
+
+/**
  * PUT/PATCH /api/trips/:id
  * Update a trip record and explicitly log errors.
  */
