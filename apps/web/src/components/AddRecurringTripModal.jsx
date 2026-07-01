@@ -50,7 +50,7 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
     advance_received_from_client: '',
     advance_paid_to_driver: '',
     client_payment_status: 'pending',
-    trip_status: 'Pending',
+    trip_status: 'Upcoming',
     selectedDays: [1, 2, 3, 4, 5, 6, 0] // Default all days selected
   });
 
@@ -104,7 +104,7 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
       advance_received_from_client: '',
       advance_paid_to_driver: '',
       client_payment_status: 'pending',
-      trip_status: 'Pending',
+      trip_status: 'Upcoming',
       selectedDays: [1, 2, 3, 4, 5, 6, 0]
     });
   };
