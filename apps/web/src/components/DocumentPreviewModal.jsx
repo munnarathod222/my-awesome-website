@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, FileText, FileImage, FileQuestion } from 'lucide-react';
@@ -6,10 +6,22 @@ import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
 const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'truck_documents' }) => {
-  if (!document || !document.file) return null;
+  const [activeFile, setActiveFile] = useState(null);
 
-  const fileUrl = pb.files.getUrl(document, document.file);
-  const fileExt = document.file.split('.').pop().toLowerCase();
+  const filesList = document?.files || (document?.file ? [document.file] : []);
+
+  useEffect(() => {
+    if (filesList.length > 0) {
+      setActiveFile(filesList[0]);
+    } else {
+      setActiveFile(null);
+    }
+  }, [document]);
+
+  if (!document || !activeFile) return null;
+
+  const fileUrl = pb.files.getUrl(document, activeFile);
+  const fileExt = activeFile.split('.').pop().toLowerCase();
   
   const isPdf = fileExt === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
@@ -20,7 +32,7 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[850px] h-[85vh] flex flex-col bg-card text-card-foreground">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             {isPdf ? <FileText className="w-5 h-5 text-blue-500" /> : isImage ? <FileImage className="w-5 h-5 text-green-500" /> : <FileQuestion className="w-5 h-5" />}
@@ -30,6 +42,28 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
             Uploaded on {document.upload_date ? format(new Date(document.upload_date), 'MMM dd, yyyy') : format(new Date(document.created), 'MMM dd, yyyy')}
           </div>
         </DialogHeader>
+
+        {filesList.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 flex-shrink-0">
+            {filesList.map((file, index) => {
+              const ext = file.split('.').pop().toLowerCase();
+              const isActive = file === activeFile;
+              return (
+                <Button 
+                  key={index}
+                  type="button"
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFile(file)}
+                  className="rounded-xl text-xs flex items-center gap-1.5"
+                >
+                  {ext === 'pdf' ? <FileText className="w-3.5 h-3.5" /> : <FileImage className="w-3.5 h-3.5" />}
+                  File {index + 1} ({ext.toUpperCase()})
+                </Button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex-1 min-h-0 bg-muted/30 rounded-xl overflow-hidden border border-border relative flex items-center justify-center">
           {isPdf ? (
@@ -62,7 +96,7 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Close</Button>
             <Button onClick={handleDownload} className="gap-2">
-              <Download className="w-4 h-4" /> Download
+              <Download className="w-4 h-4" /> Download Current File
             </Button>
           </div>
         </div>
