@@ -128,8 +128,6 @@ const runPocketBase = async () => {
   // Sync latest database from Supabase Storage before boot
   await downloadDatabaseFromSupabase(dbFilePath);
 
-  logger.info(`🚀 Spawning PocketBase: ${pbPath} --dir=${dataDir}`);
-
   if (!isWin) {
     try {
       fs.chmodSync(pbPath, '755');
@@ -137,6 +135,20 @@ const runPocketBase = async () => {
       logger.error('Failed to set execute permissions on PocketBase binary:', e.message);
     }
   }
+
+  // Enforce superuser existence
+  const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+  const password = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
+  try {
+    const { execSync } = await import('node:child_process');
+    logger.info(`🔑 Upserting superuser: ${email}...`);
+    execSync(`"${pbPath}" superuser upsert "${email}" "${password}" --dir="${dataDir}"`, { stdio: 'inherit' });
+    logger.info(`✅ Superuser upsert successful!`);
+  } catch (err) {
+    logger.error(`❌ Failed to upsert superuser: ${err.message}`);
+  }
+
+  logger.info(`🚀 Spawning PocketBase: ${pbPath} --dir=${dataDir}`);
 
   const pbProcess = spawn(pbPath, [
     'serve',
