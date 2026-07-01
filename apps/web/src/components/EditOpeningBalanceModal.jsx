@@ -81,14 +81,14 @@ export default function EditOpeningBalanceModal({ isOpen, onClose, onSuccess, ex
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] rounded-2xl">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-[425px] max-h-[92vh] flex flex-col p-6 overflow-hidden rounded-2xl bg-background gap-0">
+        <DialogHeader className="shrink-0 pb-3 border-b border-border/50">
           <DialogTitle className="font-heading">Set Opening Balance</DialogTitle>
           <DialogDescription>
             Establish the starting point for your running balance in the cashbook system.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
           <div className="space-y-2">
             <Label htmlFor="ob-amount" className="text-foreground font-medium">Amount (₹)</Label>
             <Input
