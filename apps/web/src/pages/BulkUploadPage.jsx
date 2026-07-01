@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Users, Route as RouteIcon, Truck, Receipt, Map as MapMap, Building2 } from 'lucide-react';
+import { Users, Route as RouteIcon, Truck, Receipt, Map as MapMap, Building2, Banknote } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header.jsx';
 
@@ -10,6 +10,7 @@ import BulkUploadExpenses from '@/components/BulkUploadExpenses.jsx';
 import BulkUploadVehicles from '@/components/BulkUploadVehicles.jsx';
 import BulkUploadRoutes from '@/components/BulkUploadRoutes.jsx';
 import BulkUploadClients from '@/components/BulkUploadClients.jsx';
+import BulkUploadDriverAdvances from '@/components/BulkUploadDriverAdvances.jsx';
 
 const BulkUploadPage = () => {
   return (
@@ -44,6 +45,9 @@ const BulkUploadPage = () => {
             <TabsTrigger value="expenses" className="gap-2 px-6 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
               <Receipt className="w-4 h-4" /> Expenses
             </TabsTrigger>
+            <TabsTrigger value="advances" className="gap-2 px-6 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+              <Banknote className="w-4 h-4" /> Driver Advances
+            </TabsTrigger>
             <TabsTrigger value="vehicles" className="gap-2 px-6 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
               <Truck className="w-4 h-4" /> Vehicles
             </TabsTrigger>
@@ -66,6 +70,10 @@ const BulkUploadPage = () => {
 
           <TabsContent value="expenses" className="m-0 focus-visible:outline-none">
             <BulkUploadExpenses />
+          </TabsContent>
+
+          <TabsContent value="advances" className="m-0 focus-visible:outline-none">
+            <BulkUploadDriverAdvances />
           </TabsContent>
 
           <TabsContent value="vehicles" className="m-0 focus-visible:outline-none">
