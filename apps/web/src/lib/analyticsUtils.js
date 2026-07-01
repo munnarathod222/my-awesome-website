@@ -26,7 +26,7 @@ export const fetchRawAnalyticsData = async (startDate, endDate) => {
       filterStr = `date >= "${startDate}" && date <= "${endDate}"`;
     }
 
-    const [tripsRes, expensesRes, trucksRes, loansRes] = await Promise.all([
+    const [tripsRes, expensesRes, trucksRes, loansRes, employeesRes, fuelTrackerRes] = await Promise.all([
       pb.collection('trip_logs').getFullList({
         filter: filterStr,
         $autoCancel: false
@@ -40,6 +40,12 @@ export const fetchRawAnalyticsData = async (startDate, endDate) => {
       }),
       pb.collection('loan_profiles').getFullList({
         $autoCancel: false
+      }),
+      pb.collection('employees').getFullList({
+        $autoCancel: false
+      }),
+      pb.collection('fuel_tracker').getFullList({
+        $autoCancel: false
       })
     ]);
 
@@ -47,7 +53,9 @@ export const fetchRawAnalyticsData = async (startDate, endDate) => {
       trips: tripsRes, 
       expenses: expensesRes, 
       trucks: trucksRes, 
-      loans: loansRes 
+      loans: loansRes,
+      employees: employeesRes,
+      fuelTracker: fuelTrackerRes
     };
   } catch (error) {
     console.error("Error fetching analytics data:", error);
