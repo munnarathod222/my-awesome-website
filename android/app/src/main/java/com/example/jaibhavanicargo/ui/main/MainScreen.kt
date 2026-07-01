@@ -15,9 +15,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -86,15 +88,6 @@ data class LeaderboardDriver(
     val isWinner: Boolean
 )
 
-data class DriverTrip(
-    val id: String,
-    val date: String,
-    val route: String,
-    val kms: Double,
-    val mileage: Double,
-    val revenue: Double
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
@@ -110,14 +103,14 @@ fun MainScreen(
     var inputUrl by remember { mutableStateOf(savedUrl.ifEmpty { "https://jaibhavanicargo.onrender.com" }) }
     var isEditingUrl by remember { mutableStateOf(savedUrl.isEmpty()) }
     
-    // Auth State
+    // Active Portal Workspace Mode: "UNSELECTED", "DRIVER", "STAFF"
+    var portalType by remember { mutableStateOf(sharedPref.getString("portal_type", "UNSELECTED") ?: "UNSELECTED") }
+    
+    // Auth State (Drivers only)
     var loggedInDriverName by remember { mutableStateOf(sharedPref.getString("driver_name", "") ?: "") }
     var loggedInDriverPhone by remember { mutableStateOf(sharedPref.getString("driver_phone", "") ?: "") }
     var loggedInDriverId by remember { mutableStateOf(sharedPref.getString("driver_id", "") ?: "") }
     var assignedTruckId by remember { mutableStateOf(sharedPref.getString("assigned_truck", "") ?: "") }
-    
-    // App Mode (WebView vs Native Dashboard)
-    var useWebMode by remember { mutableStateOf(sharedPref.getBoolean("use_web_mode", false)) }
     
     // Navigation State for Native UI
     var selectedTab by remember { mutableStateOf(0) }
@@ -142,12 +135,11 @@ fun MainScreen(
     var refreshTrigger by remember { mutableStateOf(0) }
 
     // Settings State
-    var showResetConfirm by remember { mutableStateOf(false) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
     // ── Fetch Dashboard Stats ──
     LaunchedEffect(loggedInDriverName, refreshTrigger, isEditingUrl) {
-        if (loggedInDriverName.isNotEmpty() && savedUrl.isNotEmpty()) {
+        if (loggedInDriverName.isNotEmpty() && savedUrl.isNotEmpty() && portalType == "DRIVER") {
             isDashboardLoading = true
             try {
                 // 1. Fetch employee record to get latest badges and details
@@ -213,7 +205,7 @@ fun MainScreen(
 
     // ── Fetch Leaderboard Standings ──
     LaunchedEffect(selectedTab, refreshTrigger, isEditingUrl) {
-        if (selectedTab == 1 && savedUrl.isNotEmpty()) {
+        if (selectedTab == 1 && savedUrl.isNotEmpty() && portalType == "DRIVER") {
             isLeaderboardLoading = true
             try {
                 val calendar = Calendar.getInstance()
@@ -326,8 +318,131 @@ fun MainScreen(
                 }
             }
         }
-    } else if (loggedInDriverName.isEmpty()) {
-        // Step 2: Driver Authentication Screen
+    } else if (portalType == "UNSELECTED") {
+        // Step 2: Welcome Workspace Selector Screen
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0F172A))
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Jai Bhavani Cargo",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Select your workspace portal to connect",
+                    fontSize = 13.sp,
+                    color = Color(0xFF94A3B8),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 32.dp),
+                    textAlign = TextAlign.Center
+                )
+
+                // Option A: Driver Workspace Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                        .clickable {
+                            portalType = "DRIVER"
+                            sharedPref.edit().putString("portal_type", "DRIVER").apply()
+                        },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF3B82F6).copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.LocalShipping,
+                                contentDescription = null,
+                                tint = Color(0xFF60A5FA)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Driver Portal",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Trips completed, payouts, mileage standings & badges wallet",
+                                fontSize = 11.sp,
+                                color = Color(0xFF94A3B8),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Option B: Staff / Admin Workspace Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            portalType = "STAFF"
+                            sharedPref.edit().putString("portal_type", "STAFF").apply()
+                        },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF97316).copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFFF97316).copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.SupervisorAccount,
+                                contentDescription = null,
+                                tint = Color(0xFFFDBA74)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Staff / Admin Portal",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Dispatch operations, accounts cashbook, maintenance & full dashboard",
+                                fontSize = 11.sp,
+                                color = Color(0xFF94A3B8),
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else if (portalType == "DRIVER" && loggedInDriverName.isEmpty()) {
+        // Step 3: Driver Authentication Screen
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -344,6 +459,22 @@ fun MainScreen(
                     modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Back to Selector
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        TextButton(
+                            onClick = {
+                                portalType = "UNSELECTED"
+                                sharedPref.edit().putString("portal_type", "UNSELECTED").apply()
+                            }
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(16.dp))
+                            Text(" Back", fontSize = 12.sp)
+                        }
+                    }
+                    
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = null,
@@ -358,7 +489,7 @@ fun MainScreen(
                         color = Color.White
                     )
                     Text(
-                        text = "Enter payroll credentials to log in",
+                        text = "Enter credentials matching your employee log",
                         fontSize = 13.sp,
                         color = Color(0xFF94A3B8),
                         modifier = Modifier.padding(top = 4.dp)
@@ -460,8 +591,8 @@ fun MainScreen(
                 }
             }
         }
-    } else if (useWebMode) {
-        // Option 3: Fallback full Web Mode
+    } else if (portalType == "STAFF") {
+        // Staff/Admin Portal: Full Web App shell inside WebView
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
                 factory = { ctx ->
@@ -482,20 +613,21 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
+            // Portal reset Floating button to switch views
             FloatingActionButton(
                 onClick = {
-                    useWebMode = false
-                    sharedPref.edit().putBoolean("use_web_mode", false).apply()
+                    portalType = "UNSELECTED"
+                    sharedPref.edit().putString("portal_type", "UNSELECTED").apply()
                 },
                 containerColor = Color(0xFF1E293B),
                 contentColor = Color.White,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
             ) {
-                Icon(imageVector = Icons.Default.Home, contentDescription = "Native UI")
+                Icon(imageVector = Icons.Default.Home, contentDescription = "Portal Menu")
             }
         }
     } else {
-        // Step 3: Beautiful Native Dashboard Layout
+        // Native Driver Dashboard Layout
         Scaffold(
             bottomBar = {
                 NavigationBar(
@@ -609,11 +741,13 @@ fun MainScreen(
                             .putString("driver_id", "")
                             .putString("assigned_truck", "")
                             .putString("badges_cached", "[]")
+                            .putString("portal_type", "UNSELECTED")
                             .apply()
                         loggedInDriverName = ""
                         loggedInDriverPhone = ""
                         loggedInDriverId = ""
                         assignedTruckId = ""
+                        portalType = "UNSELECTED"
                         showLogoutConfirm = false
                     }
                 ) {
