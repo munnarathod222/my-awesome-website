@@ -64,6 +64,7 @@ import EmployeeDocsPage from './pages/EmployeeDocsPage.jsx';
 import QuotesManagerPage from './pages/QuotesManagerPage.jsx';
 import AnalyticsHub from './pages/AnalyticsHub.jsx';
 import LeaderboardPage from './pages/LeaderboardPage.jsx';
+import LaunchpadPage from './pages/LaunchpadPage.jsx';
 import MaintenancePage from './pages/MaintenancePage.jsx';
 import TyreManagementPage from './pages/TyreManagementPage.jsx';
 import ContactsPage from './pages/ContactsPage.jsx';
@@ -177,6 +178,7 @@ function App() {
                   {/* Dashboard Base */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                   <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                  <Route path="/launchpad" element={<ProtectedRoute><LaunchpadPage /></ProtectedRoute>} />
                   <Route path="/driver/inspection" element={<ProtectedRoute><RoadsideInspectionPage /></ProtectedRoute>} />
                   
                   {/* Analytics */}
