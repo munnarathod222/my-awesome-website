@@ -99,7 +99,10 @@ const runPocketBase = async () => {
   
   // Find binary path (handle local development vs production layouts)
   const possiblePbDirs = [
-    path.resolve(__dirname, '../../../pocketbase'),
+    path.resolve(__dirname, '../../pocketbase'),
+    path.resolve(__dirname, '../../../apps/pocketbase'),
+    path.resolve(process.cwd(), '../pocketbase'),
+    path.resolve(process.cwd(), '../../apps/pocketbase'),
     path.resolve(process.cwd(), 'apps/pocketbase'),
     path.resolve(process.cwd(), 'pocketbase')
   ];
