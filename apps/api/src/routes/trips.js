@@ -15,10 +15,34 @@ router.post('/bulk-create', async (req, res) => {
   }
 
   logger.info(`Starting server-side bulk trip creation for ${trips.length} records...`);
+
+  // Find the true maximum trip_id suffix in the database on the server
+  let maxNum = 0;
+  try {
+    const allTrips = await pb.collection('trip_logs').getFullList({
+      fields: 'trip_id',
+      $autoCancel: false
+    });
+    for (const item of allTrips) {
+      if (item.trip_id) {
+        const match = item.trip_id.match(/TRIP-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+    }
+  } catch (err) {
+    logger.error('Failed to calculate max trip_id suffix on server:', err);
+    return res.status(500).json({ success: false, error: 'Database query failed while generating trip IDs: ' + err.message });
+  }
+  let startNum = maxNum + 1;
+
   const createdTrips = [];
 
   for (let i = 0; i < trips.length; i++) {
     const trip = trips[i];
+    trip.trip_id = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
     
     // Safely parse metrics to numbers to satisfy database constraints
     if (trip.kms !== undefined) trip.kms = Number(trip.kms) || 0;
