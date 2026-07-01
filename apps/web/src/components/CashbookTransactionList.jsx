@@ -113,7 +113,8 @@ export default function CashbookTransactionList({ transactions, loading, onViewS
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+      {/* Desktop Transaction Table (Hidden on mobile) */}
+      <div className="hidden md:block overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="hover:bg-transparent">
@@ -281,6 +282,133 @@ export default function CashbookTransactionList({ transactions, loading, onViewS
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Transaction Cards (Visible on mobile) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-card border border-border/50 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          ))
+        ) : paginatedTransactions.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground bg-card border border-border/50 rounded-2xl p-6">
+            <FileText className="w-10 h-10 opacity-30 mx-auto mb-3" />
+            <p className="text-base font-semibold text-white">No transactions found</p>
+          </div>
+        ) : (
+          paginatedTransactions.map((tx) => {
+            const isOB = tx.description === 'Opening Balance' || tx.reference_type === 'opening_balance';
+            const isDebit = isOB ? tx.running_balance < 0 : (tx.transaction_type === 'debit' || tx.transaction_type === 'Expense' || tx.transaction_type === 'Advance');
+            const employeeName = tx.employee_id && employeesMap[tx.employee_id] ? employeesMap[tx.employee_id] : null;
+
+            return (
+              <div 
+                key={tx.id}
+                className={cn(
+                  "p-4 rounded-2xl border transition-colors relative shadow-md space-y-3",
+                  isOB ? "bg-primary/5 border-primary/20" : "bg-card border-border/50 hover:border-primary/20"
+                )}
+              >
+                {/* Header: Type and Date */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    {format(parseISO(tx.date), 'dd MMM yyyy, hh:mm a')}
+                  </span>
+                  <Badge variant="outline" className={cn(
+                    "text-[10px] uppercase font-bold tracking-wider px-2 py-0 border-transparent",
+                    isDebit ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"
+                  )}>
+                    {isDebit ? 'Debit' : 'Credit'}
+                  </Badge>
+                </div>
+
+                {/* Body: Title, Notes & Category */}
+                <div className="space-y-1">
+                  <div className="text-sm font-semibold text-white">
+                    {isOB ? 'Opening Balance' : (tx.description || 'No Description')}
+                  </div>
+                  {tx.reference_number && (
+                    <div className="text-[10px] text-slate-400">
+                      Ref: {tx.reference_number}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {isOB ? (
+                      <Badge className="bg-primary/20 text-primary border-transparent text-[9px] uppercase tracking-wider font-bold">
+                        Opening Balance
+                      </Badge>
+                    ) : (
+                      getCategoryBadge(tx.category)
+                    )}
+                    {employeeName && (
+                      <Badge variant="secondary" className="bg-secondary/50 text-secondary-foreground font-medium text-[9px] px-1.5">
+                        {employeeName}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer: Amount, Bal, Actions */}
+                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                  <div>
+                    <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Running Balance</div>
+                    <div className="text-xs font-bold text-slate-300">
+                      {formatCurrency(tx.running_balance)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Amount</div>
+                      <div className={cn(
+                        "text-sm font-black tabular-nums",
+                        isDebit ? "text-white" : "text-emerald-400"
+                      )}>
+                        {isDebit ? '-' : '+'}{formatCurrency(tx.amount)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {isOB ? (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/20 rounded-full" onClick={() => onEditOpeningBalance && onEditOpeningBalance(tx)}>
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 rounded-full" onClick={() => setTxToDelete(tx)}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-primary/10 rounded-full"
+                            onClick={() => setSelectedTx(tx)}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-full"
+                            onClick={() => setTxToDelete(tx)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {totalPages > 1 && (
