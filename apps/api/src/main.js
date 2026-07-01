@@ -247,8 +247,11 @@ app.use(globalRateLimit);
 app.use(express.json({ limit: BodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: BodyLimit }));
 
-// API Router
-app.use('/', routes());
+// API Router - Mount under root and prefixes to handle different environments cleanly
+const apiRouter = routes();
+app.use('/', apiRouter);
+app.use('/hcgi/api', apiRouter);
+app.use('/api', apiRouter);
 
 // ----------------------------------------------------
 // 3. Static Client Hosting (Serve compiled Vite bundle)
