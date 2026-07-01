@@ -13,6 +13,8 @@ import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
 import { BodyLimit } from './constants/common.js';
+import { startMonthEndCron } from './cron/monthEndProcessor.js';
+
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -175,6 +177,10 @@ const runPocketBase = async () => {
 };
 
 runPocketBase();
+
+// Start end-of-month leaderboard + payroll cron job
+startMonthEndCron();
+
 
 // ----------------------------------------------------
 // 2. HTTP Proxy Middleware for PocketBase (/hcgi/platform)
