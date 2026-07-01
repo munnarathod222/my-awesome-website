@@ -202,30 +202,12 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      // Fetch the single record with the largest trip_id to find the maximum suffix.
-      // This is infinitely more performant than listing all records.
-      const recentTrips = await pb.collection('trip_logs').getList(1, 1, {
-        sort: '-trip_id',
-        fields: 'trip_id',
-        $autoCancel: false
-      });
-      let maxNum = 0;
-      if (recentTrips.items.length > 0 && recentTrips.items[0].trip_id) {
-        const match = recentTrips.items[0].trip_id.match(/TRIP-(\d+)/);
-        if (match) {
-          maxNum = parseInt(match[1], 10);
-        }
-      }
-      let startNum = maxNum + 1;
-
       const activeUserId = currentUser?.id || pb.authStore.model?.id || '';
       const total = datesToGenerate.length;
 
-      // Build all payloads first (synchronously) so trip IDs are assigned in order
-      // before any async work begins — no race conditions.
+      // Build all payloads first (synchronously).
+      // Trip IDs will be assigned sequentially on the server.
       const payloads = datesToGenerate.map((date, i) => {
-        const generatedId = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
-
         // Sequential alternating leg logic for round trips:
         // Trip index 0, 2, 4... (even) = Forward Leg (Up Leg)
         // Trip index 1, 3, 5... (odd)  = Return Leg (Down Leg)
@@ -253,7 +235,7 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         }
 
         return {
-          trip_id: generatedId,
+          trip_id: '',
           client_id: formData.client_id,
           route_id: routeIdToSave,
           date: format(date, 'yyyy-MM-dd'),
