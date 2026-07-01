@@ -15,6 +15,9 @@ import tripCalculationsRouter from './tripCalculations.js';
 import mailboxRouter from './mailbox.js';
 import trucksRouter from './trucks.js';
 import analyticsRouter from './analytics.js';
+import driverRouter from './driver.js';
+import taxRouter from './tax.js';
+import leaderboardRouter from './leaderboard.js';
 
 
 const router = Router();
@@ -37,7 +40,12 @@ export default () => {
     router.use('/trucks', trucksRouter);
     router.use('/api/trucks', trucksRouter);
     router.use('/analytics', analyticsRouter);
-
+    router.use('/driver', driverRouter);
+    router.use('/api/driver', driverRouter);
+    router.use('/tax', taxRouter);
+    router.use('/api/tax', taxRouter);
+    router.use('/leaderboard', leaderboardRouter);
+    router.use('/api/leaderboard', leaderboardRouter);
 
     return router;
 };
