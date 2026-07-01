@@ -60,15 +60,15 @@ const AddIncomeModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-md max-h-[92vh] flex flex-col p-6 overflow-hidden rounded-3xl bg-background gap-0">
+        <DialogHeader className="shrink-0 pb-3 border-b border-border/50">
           <DialogTitle>Add Income</DialogTitle>
           <DialogDescription>
             Record new income directly into the Cashbook.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="income-date">Date</Label>
