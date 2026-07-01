@@ -298,6 +298,7 @@ const TripLogsPage = () => {
     let deletedCount = 0;
     let failedCount = 0;
     const deletedIds = [];
+    let lastErrorMessage = '';
 
     try {
       for (const trip of deleteDialogData) {
@@ -307,6 +308,7 @@ const TripLogsPage = () => {
           deletedCount++;
         } catch (singleErr) {
           console.error(`Failed to delete trip ${trip.id}:`, singleErr);
+          lastErrorMessage = singleErr.message || JSON.stringify(singleErr);
           failedCount++;
         }
       }
@@ -315,7 +317,7 @@ const TripLogsPage = () => {
         toast.success(`Successfully deleted ${deletedCount} trip(s)`);
       }
       if (failedCount > 0) {
-        toast.error(`Failed to delete ${failedCount} trip(s) due to database lock. Please try again.`);
+        toast.error(`Failed to delete ${failedCount} trip(s): ${lastErrorMessage || 'Database error. Please try again.'}`);
       }
       
       setSelectedIds(prev => prev.filter(id => !deletedIds.includes(id)));
