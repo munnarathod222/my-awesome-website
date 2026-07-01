@@ -268,8 +268,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl p-0 overflow-hidden bg-background">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-secondary/10">
+      <DialogContent className="w-[95vw] max-w-4xl h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background rounded-3xl">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-secondary/10 shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl font-bold">Add New Trip</DialogTitle>
@@ -284,7 +284,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-y-auto p-6 flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col lg:flex-row gap-8 min-h-0">
           
           <form id="add-trip-form" onSubmit={handleSubmit} className="flex-1 space-y-8">
             
