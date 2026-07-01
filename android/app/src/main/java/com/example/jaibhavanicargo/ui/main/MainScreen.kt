@@ -663,7 +663,7 @@ fun MainScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Portal reset Floating button to switch views
+            // Portal reset Floating button to switch views (floats cleanly above bottom nav)
             FloatingActionButton(
                 onClick = {
                     portalType = "UNSELECTED"
@@ -671,7 +671,7 @@ fun MainScreen(
                 },
                 containerColor = Color(0xFF1E293B),
                 contentColor = Color.White,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
+                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 90.dp, end = 16.dp)
             ) {
                 Icon(imageVector = Icons.Default.Home, contentDescription = "Portal Menu")
             }
