@@ -180,3 +180,21 @@ export const validateRouteRow = (row, index) => {
 
   return { isValid: errors.length === 0, errors };
 };
+
+export const validateDriverAdvanceRow = (row, index, { employeesMap }) => {
+  const errors = [];
+  if (!row['Date (YYYY-MM-DD)']) errors.push('Date is required');
+  else if (!isValidDateFormat(row['Date (YYYY-MM-DD)'])) errors.push('Invalid Date format');
+
+  const driverName = row['Driver Name']?.trim();
+  if (!driverName) {
+    errors.push('Driver Name is required');
+  } else if (!employeesMap.has(driverName.toLowerCase())) {
+    errors.push(`Driver Name '${driverName}' not found in system`);
+  }
+
+  if (!row['Amount']) errors.push('Amount is required');
+  else if (!isPositiveNumber(row['Amount'])) errors.push('Amount must be a positive number');
+
+  return { isValid: errors.length === 0, errors };
+};
