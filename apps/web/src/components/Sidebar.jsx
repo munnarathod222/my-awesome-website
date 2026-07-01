@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { LayoutDashboard, Users, Truck, CalendarDays, FileText, Settings, ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard, Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox, MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator, TrendingUp, Mail } from 'lucide-react';
+import { LayoutDashboard, Users, Truck, CalendarDays, FileText, Settings, ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard, Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox, MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator, TrendingUp, Mail, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
 import { useLanguage } from '@/contexts/LanguageContext.jsx';
@@ -69,6 +69,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
         { icon: BarChart3, label: 'Analytics', path: '/analytics', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
+        { icon: Trophy, label: 'Leaderboard', path: '/leaderboard', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: PieChart, label: 'Client Analysis', path: '/client-analysis', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: TrendingUp, label: 'Trip Overview', path: '/dashboard/trip-overview', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: Bell, label: 'Reminders', path: '/reminders', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
