@@ -13,6 +13,7 @@ import TyreFormModal, { TYRE_SLOTS } from '@/components/TyreFormModal.jsx';
 import TyreDiagramView from '@/components/TyreDiagramView.jsx';
 import TyreDetailsModal from '@/components/TyreDetailsModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 
 export default function TyreManagementPage() {
   const { truckId } = useParams();
@@ -25,6 +26,7 @@ export default function TyreManagementPage() {
   // Modals state
   const [formModal, setFormModal] = useState({ isOpen: false, tyre: null, initialPosition: null });
   const [detailsModal, setDetailsModal] = useState({ isOpen: false, tyre: null });
+  const [previewDoc, setPreviewDoc] = useState(null);
   
   // Battery state
   const [batteryEditOpen, setBatteryEditOpen] = useState(false);
@@ -33,8 +35,9 @@ export default function TyreManagementPage() {
     battery_purchase_date: '',
     battery_warranty_details: '',
   });
-  const [batteryFile, setBatteryFile] = useState(null);
-  const [batteryPreview, setBatteryPreview] = useState(null);
+  const [selectedBatteryFiles, setSelectedBatteryFiles] = useState([]);
+  const [existingBatteryFiles, setExistingBatteryFiles] = useState([]);
+  const [deletedBatteryFiles, setDeletedBatteryFiles] = useState([]);
   // Battery bill (PDF or image)
   const [batteryBillFile, setBatteryBillFile] = useState(null);
   const [batteryBillPreview, setBatteryBillPreview] = useState(null);
@@ -90,12 +93,12 @@ export default function TyreManagementPage() {
         battery_purchase_date: truck.battery_purchase_date ? truck.battery_purchase_date.split('T')[0] : '',
         battery_warranty_details: truck.battery_warranty_details || '',
       });
-      if (truck.battery_image) {
-        setBatteryPreview(pb.files.getURL(truck, truck.battery_image));
-      } else {
-        setBatteryPreview(null);
-      }
-      setBatteryFile(null);
+      const batteryImages = truck.battery_image 
+        ? (Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image])
+        : [];
+      setExistingBatteryFiles(batteryImages);
+      setSelectedBatteryFiles([]);
+      setDeletedBatteryFiles([]);
       // Load existing bill
       if (truck.battery_bill) {
         const url = pb.files.getURL(truck, truck.battery_bill);
@@ -221,11 +224,18 @@ export default function TyreManagementPage() {
       data.append('battery_purchase_date', batteryForm.battery_purchase_date);
       data.append('battery_warranty_details', batteryForm.battery_warranty_details);
 
-      if (batteryFile) {
-        data.append('battery_image', batteryFile);
-      } else if (!batteryPreview && truck.battery_image) {
-        data.append('battery_image', '');
+      // Append new battery files
+      selectedBatteryFiles.forEach(file => {
+        data.append('battery_image', file);
+      });
+
+      // Handle deleted battery files
+      if (deletedBatteryFiles.length > 0) {
+        deletedBatteryFiles.forEach(filename => {
+          data.append(`battery_image.${filename}`, '');
+        });
       }
+
       // Bill file
       if (batteryBillFile) {
         data.append('battery_bill', batteryBillFile);
@@ -259,10 +269,9 @@ export default function TyreManagementPage() {
   };
 
   const handleBatteryImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setBatteryFile(file);
-      setBatteryPreview(URL.createObjectURL(file));
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setSelectedBatteryFiles(prev => [...prev, ...files]);
     }
   };
 
@@ -470,16 +479,27 @@ export default function TyreManagementPage() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Photo Snapshot</span>
-                  <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border bg-muted/20 relative flex items-center justify-center">
-                    {truck?.battery_image ? (
-                      <img src={pb.files.getURL(truck, truck.battery_image)} alt="Battery Snapshot" className="w-full h-full object-cover" />
-                    ) : (
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Photo Snapshots</span>
+                  {truck?.battery_image && (Array.isArray(truck.battery_image) ? truck.battery_image.length > 0 : truck.battery_image) ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {(Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image]).map((img, idx) => (
+                        <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-border bg-muted/10 relative cursor-pointer group" onClick={() => {
+                          setPreviewDoc({ files: Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image], file: img, document_type: 'Battery Snapshot', document_number: truck.battery_serial_number || 'N/A' });
+                        }}>
+                          <img src={pb.files.getURL(truck, img)} alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Eye className="w-5 h-5 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
                       <div className="text-center p-4 text-muted-foreground">
                         <span className="text-xs">No image uploaded</span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Battery Bill */}
@@ -612,36 +632,67 @@ export default function TyreManagementPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Upload Battery Snapshot</Label>
-              <div className="border border-border/50 bg-muted/10 rounded-2xl p-4 text-center relative cursor-pointer hover:bg-muted/20 transition-all flex flex-col items-center justify-center">
-                {batteryPreview ? (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden">
-                    <img src={batteryPreview} alt="Battery Preview" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      className="absolute top-2 right-2 bg-destructive text-white p-1 rounded-full shadow-md"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setBatteryFile(null);
-                        setBatteryPreview(null);
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="py-4">
-                    <Image className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <span className="text-xs text-muted-foreground">Click to upload photo</span>
-                  </div>
-                )}
+              <Label>Upload Battery Snapshots</Label>
+              <div className="border border-dashed border-border/50 bg-muted/10 rounded-2xl p-4 text-center relative cursor-pointer hover:bg-muted/20 transition-all flex flex-col items-center justify-center">
+                <div className="py-2">
+                  <Image className="w-8 h-8 text-muted-foreground mx-auto mb-1" />
+                  <span className="text-xs text-muted-foreground font-medium">Click to select snapshots</span>
+                </div>
                 <input 
                   type="file" 
                   accept="image/*" 
+                  multiple
                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   onChange={handleBatteryImageChange} 
                 />
               </div>
+
+              {/* Existing snapshots list */}
+              {existingBatteryFiles.length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Existing Snapshots:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {existingBatteryFiles.map((file, idx) => (
+                      <div key={`existing-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-border bg-card">
+                        <img src={pb.files.getURL(truck, file)} alt="Battery Snapshot" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          className="absolute top-1.5 right-1.5 bg-destructive text-white p-1 rounded-full shadow-md hover:bg-destructive/90"
+                          onClick={() => {
+                            setExistingBatteryFiles(prev => prev.filter(f => f !== file));
+                            setDeletedBatteryFiles(prev => [...prev, file]);
+                          }}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New snapshots list */}
+              {selectedBatteryFiles.length > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-xs font-semibold text-muted-foreground">New Snapshots:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedBatteryFiles.map((file, idx) => (
+                      <div key={`new-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-primary/30 bg-primary/5">
+                        <img src={URL.createObjectURL(file)} alt="Battery Snapshot Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          className="absolute top-1.5 right-1.5 bg-destructive text-white p-1 rounded-full shadow-md hover:bg-destructive/90"
+                          onClick={() => {
+                            setSelectedBatteryFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Battery Bill Upload */}
@@ -764,6 +815,13 @@ export default function TyreManagementPage() {
         onEdit={handleEditTyre}
         onDelete={handleDeleteTyre}
         onSuccess={fetchData}
+      />
+
+      <DocumentPreviewModal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        document={previewDoc}
+        collectionName="trucks"
       />
     </div>
   );
