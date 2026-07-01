@@ -151,7 +151,7 @@ async function computeLeaderboard(month, year) {
 // GET /leaderboard?month=6&year=2025
 // Returns live computed standings (top 3 for display, all for payroll preview)
 // ─────────────────────────────────────────────────────────────────────────────
-router.get('/', pocketbaseAuth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const now = new Date();
     const month = parseInt(req.query.month) || now.getMonth() + 1;
