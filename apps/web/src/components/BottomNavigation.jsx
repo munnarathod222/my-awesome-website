@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useLanguage } from '@/contexts/LanguageContext.jsx';
-import { LayoutDashboard, ClipboardList, FileText, Bell, User } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, FileText, User, Grid } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 
 export default function BottomNavigation() {
@@ -15,7 +15,7 @@ export default function BottomNavigation() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
     { icon: ClipboardList, label: 'Trip Logs', path: '/trip-logs', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
     { icon: FileText, label: 'Cashbook', path: '/cashbook', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-    { icon: Bell, label: 'Reminders', path: '/reminders', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
+    { icon: Grid, label: 'Hub', path: '/launchpad', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
     { icon: User, label: 'Profile', path: '/dashboard/profile', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] }
   ];
 
