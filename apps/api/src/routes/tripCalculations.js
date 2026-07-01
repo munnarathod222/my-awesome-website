@@ -49,4 +49,48 @@ router.post('/save', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/trip-calculations/list
+ * Retrieve all saved trip calculations.
+ */
+router.get('/list', async (req, res) => {
+  try {
+    const list = await pb.collection('trip_calculations').getFullList({
+      sort: '-created',
+      $autoCancel: false
+    });
+    return res.status(200).json({
+      success: true,
+      calculations: list
+    });
+  } catch (err) {
+    logger.error('Error fetching trip calculations:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to retrieve calculations'
+    });
+  }
+});
+
+/**
+ * DELETE /api/trip-calculations/:id
+ * Delete a saved calculation.
+ */
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pb.collection('trip_calculations').delete(id, { $autoCancel: false });
+    return res.status(200).json({
+      success: true,
+      message: 'Trip calculation deleted successfully'
+    });
+  } catch (err) {
+    logger.error('Error deleting trip calculation:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Failed to delete calculation'
+    });
+  }
+});
+
 export default router;
