@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -201,61 +201,60 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      // Generate sequential trip IDs by scanning recent records for the maximum numerical ID
-      const sortedByCreated = await pb.collection('trip_logs').getList(1, 100, { sort: '-created', $autoCancel: false });
+      // Fetch only the trip_id field from ALL records to find the true maximum.
+      // Scanning only recent records (e.g. last 100) is unreliable — trips created
+      // out of insertion order would cause id collisions and a 400 uniqueness error.
+      const allTripIds = await pb.collection('trip_logs').getFullList({
+        fields: 'trip_id',
+        $autoCancel: false
+      });
       let maxNum = 0;
-      for (const item of sortedByCreated.items) {
+      for (const item of allTripIds) {
         if (item.trip_id) {
           const match = item.trip_id.match(/TRIP-(\d+)/);
           if (match) {
             const num = parseInt(match[1], 10);
-            if (num > maxNum) {
-              maxNum = num;
-            }
+            if (num > maxNum) maxNum = num;
           }
         }
       }
-      let startNum = maxNum > 0 ? maxNum + 1 : sortedByCreated.totalItems + 1;
+      let startNum = maxNum + 1;
 
       const activeUserId = currentUser?.id || pb.authStore.model?.id || '';
+      const total = datesToGenerate.length;
 
-      let currentNum = startNum;
-      const creationPromises = datesToGenerate.map(async (date) => {
-        const generatedId = `TRIP-${currentNum.toString().padStart(3, '0')}`;
-        currentNum++;
+      // Build all payloads first (synchronously) so trip IDs are assigned in order
+      // before any async work begins — no race conditions.
+      const payloads = datesToGenerate.map((date, i) => {
+        const generatedId = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
 
-        // Dual-leg routing pattern logic:
-        // Odd Days (of month) = Forward Leg (Up Leg route_code)
-        // Even Days (of month) = Return Leg (Down Leg down_route_code, if round trip)
-        const isOddDay = date.getDate() % 2 !== 0;
-        
+        // Sequential alternating leg logic for round trips:
+        // Trip index 0, 2, 4... (even) = Forward Leg (Up Leg)
+        // Trip index 1, 3, 5... (odd)  = Return Leg (Down Leg)
+        // This is based on sequential trip count, NOT calendar date parity,
+        // so the pattern is always correct regardless of start date or month.
+        const isForwardLeg = !formData.is_round_trip || (i % 2 === 0);
+
         let routeCodeToSave = selectedRoute.route_code;
         let routeIdToSave = formData.selected_route_id;
         let kmsToSave = parseFloat(formData.kms) || 0;
         let revenueToSave = parseFloat(formData.amount) || 0;
 
-        if (formData.is_round_trip) {
-          if (isOddDay) {
-            routeCodeToSave = selectedRoute.route_code;
-            routeIdToSave = formData.selected_route_id;
-            kmsToSave = parseFloat(formData.kms) || 0;
-            revenueToSave = parseFloat(formData.amount) || 0;
+        if (!isForwardLeg) {
+          // Return leg
+          if (selectedSecondRoute) {
+            routeCodeToSave = selectedSecondRoute.route_code;
+            routeIdToSave = selectedSecondRoute.id;
           } else {
-            if (selectedSecondRoute) {
-              routeCodeToSave = selectedSecondRoute.route_code;
-              routeIdToSave = selectedSecondRoute.id;
-              kmsToSave = parseFloat(formData.second_kms || formData.kms) || 0;
-              revenueToSave = parseFloat(formData.second_amount || formData.amount) || 0;
-            } else {
-              routeCodeToSave = selectedRoute.is_round_trip ? (selectedRoute.down_route_code || selectedRoute.route_code) : selectedRoute.route_code;
-              routeIdToSave = formData.selected_route_id;
-              kmsToSave = parseFloat(formData.second_kms || formData.kms) || 0;
-              revenueToSave = parseFloat(formData.second_amount || formData.amount) || 0;
-            }
+            // Fall back to the down_route_code on the primary route template
+            routeCodeToSave = selectedRoute.down_route_code || selectedRoute.route_code;
+            routeIdToSave = formData.selected_route_id;
           }
+          kmsToSave = parseFloat(formData.second_kms || formData.kms) || 0;
+          revenueToSave = parseFloat(formData.second_amount || formData.amount) || 0;
         }
 
-        const payload = {
+        return {
           trip_id: generatedId,
           client_id: formData.client_id,
           route_id: routeIdToSave,
@@ -272,15 +271,24 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
           created_by: activeUserId,
           user_id: activeUserId
         };
-
-        return pb.collection('trip_logs').create(payload, { $autoCancel: false });
       });
 
-      await Promise.all(creationPromises);
-      toast.success(`Successfully generated ${datesToGenerate.length} recurring trips!`);
+      // Send fully sequentially to avoid SQLite "database is locked" errors on concurrent writes.
+      let created = 0;
+      for (const payload of payloads) {
+        await pb.collection('trip_logs').create(payload, { $autoCancel: false });
+        created++;
+        if (total > 5) {
+          toast.loading(`Creating trips... ${created}/${total}`, { id: 'batch-progress' });
+        }
+      }
+      toast.dismiss('batch-progress');
+
+      toast.success(`Successfully generated ${total} recurring trips!`);
       onSuccess?.();
       onClose();
     } catch (err) {
+      toast.dismiss('batch-progress');
       console.error('Batch generation failed:', err);
       let errorMsg = err.message;
       if (err.data && typeof err.data === 'object') {
@@ -311,6 +319,28 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
       downLegCode = selectedRoute.is_round_trip ? (selectedRoute.down_route_code || selectedRoute.route_code) : selectedRoute.route_code;
     }
   }
+
+  // Live trip preview — same logic as handleSubmit so what you see is what gets saved.
+  // Trip 0, 2, 4… = Forward (Up). Trip 1, 3, 5… = Return (Down). Always sequential.
+  const tripPreview = useMemo(() => {
+    if (!selectedRoute || !formData.startDate || !formData.endDate || formData.selectedDays.length === 0) return [];
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    if (start > end) return [];
+    const daysCount = differenceInDays(end, start) + 1;
+    const dates = [];
+    for (let i = 0; i < daysCount; i++) {
+      const d = addDays(start, i);
+      if (formData.selectedDays.includes(d.getDay())) dates.push(d);
+    }
+    return dates.map((date, i) => {
+      const isForward = !formData.is_round_trip || (i % 2 === 0);
+      const routeCode = isForward
+        ? selectedRoute.route_code
+        : (selectedSecondRoute ? selectedSecondRoute.route_code : (selectedRoute.down_route_code || selectedRoute.route_code));
+      return { date, isForward, routeCode, index: i };
+    });
+  }, [formData.startDate, formData.endDate, formData.selectedDays, formData.is_round_trip, selectedRoute, selectedSecondRoute]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
@@ -585,85 +615,84 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
 
             </div>
 
-            {/* Right Column: Route Parameters Summary Card */}
-            <div className="space-y-6">
-              <Card className="rounded-2xl border border-border/50 bg-secondary/5 p-5 shadow-inner">
-                <h4 className="font-heading font-bold text-sm border-b pb-2 mb-4">Route Autofill Details</h4>
-                {selectedRoute ? (
-                  <div className="space-y-4 text-sm">
-                    <div>
-                      <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Primary Template</p>
-                      <p className="font-semibold text-foreground mt-0.5">{selectedRoute.route_name}</p>
-                      {formData.is_round_trip && selectedSecondRoute && (
-                        <>
-                          <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider mt-2">Return Template</p>
-                          <p className="font-semibold text-foreground mt-0.5">{selectedSecondRoute.route_name}</p>
-                        </>
-                      )}
-                    </div>
+            {/* Right Column: Live Trip Preview */}
+            <div className="space-y-4">
+              <Card className="rounded-2xl border border-border/50 bg-secondary/5 p-4 shadow-inner">
+                <div className="flex items-center justify-between border-b pb-2 mb-3">
+                  <h4 className="font-heading font-bold text-sm">Trip Schedule Preview</h4>
+                  {tripPreview.length > 0 && (
+                    <span className="text-xs bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full">
+                      {tripPreview.length} trips
+                    </span>
+                  )}
+                </div>
 
-                    <div>
-                      <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Leg Pattern & Waypoints</p>
-                      <div className="mt-1.5 p-3 rounded-xl bg-background border border-border/40 space-y-2 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-primary">Odd Days (Up Leg):</span>
-                          <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{upLegCode}</span>
+                {tripPreview.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto pr-1 space-y-1">
+                    {tripPreview.map(({ date, isForward, routeCode, index }) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs border ${
+                          isForward
+                            ? 'bg-emerald-500/8 border-emerald-500/20'
+                            : 'bg-blue-500/8 border-blue-500/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`font-bold text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                            isForward
+                              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                          }`}>
+                            {isForward ? '↑ UP' : '↓ DOWN'}
+                          </span>
+                          <span className="font-medium text-foreground">{format(date, 'dd MMM yyyy')}</span>
+                          <span className="text-muted-foreground">{format(date, 'EEE')}</span>
                         </div>
-                        {formData.is_round_trip ? (
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-primary">Even Days (Down Leg):</span>
-                            <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{downLegCode}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-primary">Even Days (Down Leg):</span>
-                            <span className="text-muted-foreground italic">N/A (Single Leg)</span>
-                          </div>
-                        )}
+                        <span className="font-mono text-[10px] text-muted-foreground truncate ml-2 max-w-[80px]" title={routeCode}>
+                          {routeCode}
+                        </span>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Forward Leg Parameters</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Distance:</span> <strong className="text-foreground">{upLegDistance} KM</strong>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Fare:</span> <strong className="text-foreground">₹{parseFloat(upLegFare || 0).toLocaleString('en-IN')}</strong>
-                        </div>
-                      </div>
-                    </div>
-
-                    {formData.is_round_trip && (
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Return Leg Parameters</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Distance:</span> <strong className="text-foreground">{downLegDistance} KM</strong>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Fare:</span> <strong className="text-foreground">₹{parseFloat(downLegFare || 0).toLocaleString('en-IN')}</strong>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {formData.is_round_trip && (
-                      <div className="flex items-start gap-2 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>This configuration alternates legs based on Odd vs Even dates.</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 ) : (
-                  <div className="text-center py-10 text-muted-foreground italic flex flex-col items-center gap-2">
-                    <MapPin className="w-8 h-8 opacity-40 animate-pulse" />
-                    <span>Select a route template on the left to see autofilled contract values.</span>
+                  <div className="text-center py-8 text-muted-foreground italic flex flex-col items-center gap-2">
+                    <Calendar className="w-7 h-7 opacity-40 animate-pulse" />
+                    <span className="text-xs">Select a route, dates &amp; days to preview the schedule.</span>
                   </div>
                 )}
               </Card>
+
+              {/* Route param summary */}
+              {selectedRoute && (
+                <Card className="rounded-2xl border border-border/50 bg-secondary/5 p-4 shadow-inner">
+                  <h4 className="font-heading font-bold text-sm border-b pb-2 mb-3">Route Parameters</h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">↑ Forward dist:</span>
+                      <strong>{upLegDistance} KM</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">↑ Forward fare:</span>
+                      <strong className="text-emerald-500">₹{parseFloat(upLegFare || 0).toLocaleString('en-IN')}</strong>
+                    </div>
+                    {formData.is_round_trip && (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">↓ Return dist:</span>
+                          <strong>{downLegDistance} KM</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">↓ Return fare:</span>
+                          <strong className="text-blue-500">₹{parseFloat(downLegFare || 0).toLocaleString('en-IN')}</strong>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Card>
+              )}
             </div>
+
 
           </div>
 
