@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format, addDays, differenceInDays } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import apiServerClient from '@/lib/apiServerClient.js';
 
 
 const DAYS_OF_WEEK = [
@@ -201,21 +202,18 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      // Fetch only the trip_id field from ALL records to find the true maximum.
-      // Scanning only recent records (e.g. last 100) is unreliable — trips created
-      // out of insertion order would cause id collisions and a 400 uniqueness error.
-      const allTripIds = await pb.collection('trip_logs').getFullList({
+      // Fetch the single record with the largest trip_id to find the maximum suffix.
+      // This is infinitely more performant than listing all records.
+      const recentTrips = await pb.collection('trip_logs').getList(1, 1, {
+        sort: '-trip_id',
         fields: 'trip_id',
         $autoCancel: false
       });
       let maxNum = 0;
-      for (const item of allTripIds) {
-        if (item.trip_id) {
-          const match = item.trip_id.match(/TRIP-(\d+)/);
-          if (match) {
-            const num = parseInt(match[1], 10);
-            if (num > maxNum) maxNum = num;
-          }
+      if (recentTrips.items.length > 0 && recentTrips.items[0].trip_id) {
+        const match = recentTrips.items[0].trip_id.match(/TRIP-(\d+)/);
+        if (match) {
+          maxNum = parseInt(match[1], 10);
         }
       }
       let startNum = maxNum + 1;
@@ -273,31 +271,28 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         };
       });
 
-      // Send fully sequentially to avoid SQLite "database is locked" errors on concurrent writes.
-      let created = 0;
-      for (const payload of payloads) {
-        await pb.collection('trip_logs').create(payload, { $autoCancel: false });
-        created++;
-        if (total > 5) {
-          toast.loading(`Creating trips... ${created}/${total}`, { id: 'batch-progress' });
-        }
-      }
-      toast.dismiss('batch-progress');
+      toast.loading(`Creating ${total} trips on server...`, { id: 'batch-progress' });
+      const bulkRes = await apiServerClient.fetch('/trips/bulk-create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ trips: payloads })
+      });
 
+      const bulkData = await bulkRes.json();
+      if (!bulkRes.ok || !bulkData.success) {
+        throw new Error(bulkData.error || 'Server error generating recurring trips.');
+      }
+
+      toast.dismiss('batch-progress');
       toast.success(`Successfully generated ${total} recurring trips!`);
       onSuccess?.();
       onClose();
     } catch (err) {
       toast.dismiss('batch-progress');
       console.error('Batch generation failed:', err);
-      let errorMsg = err.message;
-      if (err.data && typeof err.data === 'object') {
-        const details = Object.entries(err.data)
-          .map(([field, detail]) => `${field}: ${detail.message || JSON.stringify(detail)}`)
-          .join(', ');
-        if (details) errorMsg += ` (${details})`;
-      }
-      toast.error('Failed to generate recurring trips: ' + errorMsg);
+      toast.error('Failed to generate recurring trips: ' + err.message);
     } finally {
       setLoading(false);
     }
