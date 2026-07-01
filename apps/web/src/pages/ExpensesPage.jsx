@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet';
-import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag } from 'lucide-react';
+import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,6 +38,8 @@ const ExpensesPage = () => {
   
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeLightboxImage, setActiveLightboxImage] = useState(null);
+  const [directUploadExpense, setDirectUploadExpense] = useState(null);
+  const directFileInputRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'
@@ -156,6 +158,39 @@ const ExpensesPage = () => {
     }
   };
 
+  const triggerDirectFileUpload = (expense) => {
+    setDirectUploadExpense(expense);
+    if (directFileInputRef.current) {
+      directFileInputRef.current.value = '';
+      directFileInputRef.current.click();
+    }
+  };
+
+  const handleDirectFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !directUploadExpense) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds the 10MB limit.');
+      return;
+    }
+
+    const toastId = toast.loading('Uploading bill document...');
+    try {
+      const formData = new FormData();
+      formData.append('documents', file);
+      
+      await pb.collection('expenses').update(directUploadExpense.id, formData, { $autoCancel: false });
+      
+      toast.success('Bill document attached successfully!', { id: toastId });
+      setDirectUploadExpense(null);
+      setRefreshTrigger(p => p + 1);
+    } catch (err) {
+      console.error('Direct upload failed:', err);
+      toast.error(err.message || 'Failed to upload bill.', { id: toastId });
+    }
+  };
+
   const filteredExpenses = useMemo(() => {
     let result = [...expenses];
     if (filters.search) {
@@ -192,8 +227,56 @@ const ExpensesPage = () => {
       toDate.setHours(23, 59, 59, 999);
       result = result.filter(a => new Date(a.date) <= toDate);
     }
-    return result;
   }, [advances, advFilters]);
+
+  // Current active month expense summary grid calculations (strictly parsed using Number)
+  const { fuelTotal, fastagTotal, driverAdvanceTotal, maintenanceTotal, miscTotal, fixedEmiTotal } = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const currentMonthExpenses = expenses.filter(exp => {
+      const expDate = new Date(exp.date);
+      return expDate.getFullYear() === currentYear && expDate.getMonth() === currentMonth;
+    });
+
+    const currentMonthAdvances = advances.filter(adv => {
+      const advDate = new Date(adv.date);
+      return advDate.getFullYear() === currentYear && advDate.getMonth() === currentMonth;
+    });
+
+    const fuel = currentMonthExpenses
+      .filter(e => e.category === 'Regular' && e.subcategory === 'Fuel')
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    const fastag = currentMonthExpenses
+      .filter(e => e.category === 'Regular' && e.subcategory === 'Toll')
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    const expAdvance = currentMonthExpenses
+      .filter(e => e.category === 'Employee Advance')
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    const driverAdvance = currentMonthAdvances
+      .reduce((sum, a) => Number(sum) + Number(a.amount || 0), 0) + expAdvance;
+
+    const maintenance = currentMonthExpenses
+      .filter(e => e.category === 'Regular' && e.subcategory === 'Maintenance')
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    const misc = currentMonthExpenses
+      .filter(e => e.category === 'Regular' && e.subcategory !== 'Fuel' && e.subcategory !== 'Toll' && e.subcategory !== 'Maintenance')
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    return {
+      fuelTotal: Number(fuel),
+      fastagTotal: Number(fastag),
+      driverAdvanceTotal: Number(driverAdvance),
+      maintenanceTotal: Number(maintenance),
+      miscTotal: Number(misc),
+      fixedEmiTotal: Number(33410)
+    };
+  }, [expenses, advances]);
 
   const getPaymentMethodBadge = (method) => {
     switch (method) {
@@ -239,6 +322,37 @@ const ExpensesPage = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="space-y-4 m-0">
+            {/* Real-time current month expense category summary grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+              {[
+                { title: 'Fuel Expense', amount: fuelTotal, color: 'text-orange-500' },
+                { title: 'FASTag Tolls', amount: fastagTotal, color: 'text-blue-500' },
+                { title: 'Driver Advance', amount: driverAdvanceTotal, color: 'text-emerald-500' },
+                { title: 'Maintenance', amount: maintenanceTotal, color: 'text-purple-500' },
+                { title: 'Miscellaneous', amount: miscTotal, color: 'text-pink-500' },
+                { title: 'Fixed EMI', amount: fixedEmiTotal, color: 'text-amber-500' }
+              ].map((card, idx) => (
+                <Card key={idx} className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden">
+                  <CardContent className="p-4 flex flex-col justify-between h-full">
+                    <div>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-mono">
+                        {card.title}
+                      </p>
+                      <p className="text-lg font-extrabold text-foreground mt-2 font-heading">
+                        ₹{Number(card.amount).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-[9px] text-muted-foreground font-semibold">
+                        {card.title === 'Fixed EMI' ? 'Monthly Liability' : format(new Date(), 'MMMM yyyy')}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full ${card.color.replace('text', 'bg')} animate-pulse`} />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
             <ExpenseFilters filters={filters} setFilters={setFilters} trucks={trucks} creditCards={creditCards} onClear={() => setFilters({search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'})} />
             {error ? (
               <div className="p-8 text-center border border-border rounded-xl bg-card">
@@ -314,6 +428,17 @@ const ExpensesPage = () => {
                                 })}
                                 {expense.documents?.length > 0 && (
                                   <Button variant="ghost" size="icon" onClick={() => window.open(pb.files.getUrl(expense, expense.documents[0]), '_blank')} className="h-8 w-8 text-primary" title="View attached document"><ExternalLink className="w-4 h-4" /></Button>
+                                )}
+                                {(!expense.image_urls || expense.image_urls.length === 0) && (!expense.documents || expense.documents.length === 0) && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => triggerDirectFileUpload(expense)} 
+                                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" 
+                                    title="Upload Bill/Receipt"
+                                  >
+                                    <UploadCloud className="w-4 h-4" />
+                                  </Button>
                                 )}
                                 <Button variant="ghost" size="icon" onClick={() => { setEditingExpense(expense); setIsExpenseModalOpen(true); }} className="h-8 w-8 text-muted-foreground hover:text-foreground"><Edit2 className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteExpense(expense.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></Button>
@@ -402,6 +527,14 @@ const ExpensesPage = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <input 
+        type="file" 
+        ref={directFileInputRef} 
+        className="hidden" 
+        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+        onChange={handleDirectFileChange} 
+      />
 
       {isExpenseModalOpen && (
         <ExpenseModal 
