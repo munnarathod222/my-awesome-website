@@ -63,6 +63,7 @@ import TruckDocsPage from './pages/TruckDocsPage.jsx';
 import EmployeeDocsPage from './pages/EmployeeDocsPage.jsx';
 import QuotesManagerPage from './pages/QuotesManagerPage.jsx';
 import AnalyticsHub from './pages/AnalyticsHub.jsx';
+import LeaderboardPage from './pages/LeaderboardPage.jsx';
 import MaintenancePage from './pages/MaintenancePage.jsx';
 import TyreManagementPage from './pages/TyreManagementPage.jsx';
 import ContactsPage from './pages/ContactsPage.jsx';
@@ -70,6 +71,7 @@ import EMICalculatorPage from './pages/EMICalculatorPage.jsx';
 import PODManagementPage from './pages/PODManagementPage.jsx';
 import ExitAuditPage from './pages/ExitAuditPage.jsx';
 import BusinessMailPage from './pages/BusinessMailPage.jsx';
+import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 
 // Inventory Management
 import InventoryDashboard from './pages/InventoryDashboard.jsx';
@@ -175,9 +177,11 @@ function App() {
                   {/* Dashboard Base */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                   <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                  <Route path="/driver/inspection" element={<ProtectedRoute><RoadsideInspectionPage /></ProtectedRoute>} />
                   
                   {/* Analytics */}
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><AnalyticsHub /></ProtectedRoute>} />
+                  <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><LeaderboardPage /></ProtectedRoute>} />
                   <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
                   <Route path="/dashboard/trip-overview" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TripOverviewCalculator /></ProtectedRoute>} />
                   
