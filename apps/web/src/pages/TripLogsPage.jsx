@@ -295,18 +295,30 @@ const TripLogsPage = () => {
     if (!deleteDialogData || deleteDialogData.length === 0) return;
     
     setIsDeleting(true);
+    let deletedCount = 0;
+    let failedCount = 0;
+    const deletedIds = [];
+
     try {
-      const deletePromises = deleteDialogData.map(trip => 
-        pb.collection('trip_logs').delete(trip.id, { $autoCancel: false })
-      );
+      for (const trip of deleteDialogData) {
+        try {
+          await pb.collection('trip_logs').delete(trip.id, { $autoCancel: false });
+          deletedIds.push(trip.id);
+          deletedCount++;
+        } catch (singleErr) {
+          console.error(`Failed to delete trip ${trip.id}:`, singleErr);
+          failedCount++;
+        }
+      }
       
-      await Promise.all(deletePromises);
+      if (deletedCount > 0) {
+        toast.success(`Successfully deleted ${deletedCount} trip(s)`);
+      }
+      if (failedCount > 0) {
+        toast.error(`Failed to delete ${failedCount} trip(s) due to database lock. Please try again.`);
+      }
       
-      toast.success(`${deleteDialogData.length} trip(s) deleted successfully`);
-      
-      const deletedIds = deleteDialogData.map(t => t.id);
       setSelectedIds(prev => prev.filter(id => !deletedIds.includes(id)));
-      
       setDeleteDialogData(null);
       fetchData();
     } catch (err) {
