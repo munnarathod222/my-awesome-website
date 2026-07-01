@@ -73,22 +73,24 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       setTrucks(trucksRes);
       setRoutes(routesRes);
 
-      // Generate next Trip ID by scanning recent records for the maximum numerical ID
+      // Scan ALL trip_ids to find the true maximum \u2014 scanning only recent
+      // records would miss the highest number if trips were created out of order.
       try {
-        const sortedByCreated = await pb.collection('trip_logs').getList(1, 100, { sort: '-created', $autoCancel: false });
+        const allTripIds = await pb.collection('trip_logs').getFullList({
+          fields: 'trip_id',
+          $autoCancel: false
+        });
         let maxNum = 0;
-        for (const item of sortedByCreated.items) {
+        for (const item of allTripIds) {
           if (item.trip_id) {
             const match = item.trip_id.match(/TRIP-(\d+)/);
             if (match) {
               const num = parseInt(match[1], 10);
-              if (num > maxNum) {
-                maxNum = num;
-              }
+              if (num > maxNum) maxNum = num;
             }
           }
         }
-        let nextNum = maxNum > 0 ? maxNum + 1 : sortedByCreated.totalItems + 1;
+        const nextNum = maxNum + 1;
         setGeneratedTripId(`TRIP-${nextNum.toString().padStart(3, '0')}`);
       } catch (idErr) {
         setGeneratedTripId(`TRIP-${(latestTrip.totalItems + 1).toString().padStart(3, '0')}`);
