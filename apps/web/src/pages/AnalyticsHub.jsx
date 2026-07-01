@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Settings } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient.js';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -76,13 +82,107 @@ const AnalyticsHub = () => {
     totals: { revenue: 0, expenses: 0, profit: 0, margin: 0 },
     truckAnalytics: [],
     trucks: [],
-    loans: []
+    loans: [],
+    trips: [],
+    employees: [],
+    fuelTracker: [],
+    expensesList: []
   });
 
   const [selectedTruckId, setSelectedTruckId] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedMonth, setSelectedMonth] = useState('2026-06');
+  const [drilldownActive, setDrilldownActive] = useState(false);
+  const [customInsValues, setCustomInsValues] = useState({});
+  const [customTaxValues, setCustomTaxValues] = useState({});
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [payrollLogs, setPayrollLogs] = useState([]);
+
+  const calculateTruckProfitForMonth = (truck, month) => {
+    const normalize = (val) => (val || '').replace(/\s+/g, '').toUpperCase();
+    const normNum = normalize(truck.truck_number);
+    
+    // Filter trips for this truck in this month
+    const matchedTrips = data.trips.filter(t => {
+      const isMatch = t.truck_number === truck.id || normalize(t.truck_number) === normNum;
+      const isMonth = t.date && t.date.substring(0, 7) === month;
+      return isMatch && isMonth;
+    });
+
+    // Filter expenses for this truck in this month
+    const matchedExpenses = data.expensesList.filter(e => {
+      const isMatch = e.truck_id === truck.id || normalize(e.truck_id) === normNum;
+      const isMonth = e.date && e.date.substring(0, 7) === month;
+      return isMatch && isMonth;
+    });
+
+    // Filter fuel tracker logs for this truck in this month
+    const matchedFuel = data.fuelTracker.filter(f => {
+      const isMatch = f.truck_id === truck.id || normalize(f.truck_number) === normNum;
+      const isMonth = f.date && f.date.substring(0, 7) === month;
+      return isMatch && isMonth;
+    });
+
+    const revenue = matchedTrips.reduce((sum, t) => sum + (Number(t.revenue) || 0), 0);
+
+    // EMI
+    const matchedLoan = data.loans.find(l => normalize(l.profileName) === normNum);
+    let emi = 0;
+    if (matchedLoan) {
+      const p = matchedLoan.loanAmount || 0;
+      const r = (matchedLoan.interestRate || 0) / 12 / 100;
+      const n = matchedLoan.loanTerm || 0;
+      if (p > 0 && n > 0) {
+        emi = r === 0 ? p / n : (p * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+      }
+    }
+
+    // Driver base salary
+    const driver = data.employees.find(emp => emp.assigned_truck === truck.id);
+    const driverSalary = driver ? (Number(driver.salary_amount) || Number(driver.base_salary) || 0) : 0;
+
+    // Insurance Premium Allocation
+    const annualInsurance = customInsValues[truck.id] !== undefined 
+      ? customInsValues[truck.id] 
+      : Number(localStorage.getItem(`truck_annual_ins_${truck.id}`)) || 60000;
+    const monthlyInsurance = annualInsurance / 12;
+
+    // Quarterly Tax Allocation
+    const annualTax = customTaxValues[truck.id] !== undefined
+      ? customTaxValues[truck.id]
+      : Number(localStorage.getItem(`truck_annual_tax_${truck.id}`)) || 12000;
+    const monthlyTax = annualTax / 3;
+
+    const fixedExpenses = emi + driverSalary + monthlyInsurance + monthlyTax;
+
+    // Variable
+    const fuelCost = matchedFuel.reduce((sum, f) => sum + (Number(f.total_cost) || 0), 0) ||
+      matchedExpenses.filter(e => e.category === 'Fuel' || e.subcategory === 'Fuel').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const tolls = matchedTrips.reduce((sum, t) => sum + (Number(t.tolls) || 0), 0);
+    const maintenance = matchedExpenses.filter(e => e.category === 'Maintenance' || e.subcategory === 'Maintenance').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const variableExpenses = fuelCost + tolls + maintenance;
+
+    const totalExpenses = fixedExpenses + variableExpenses;
+    const netProfit = revenue - totalExpenses;
+
+    return {
+      revenue,
+      totalExpenses,
+      netProfit,
+      fixedExpenses,
+      variableExpenses,
+      fuelCost,
+      tolls,
+      maintenance,
+      emi,
+      driverSalary,
+      monthlyInsurance,
+      monthlyTax,
+      annualInsurance,
+      annualTax
+    };
+  };
 
   useEffect(() => {
     const styleElement = document.createElement("style");
@@ -241,7 +341,10 @@ const AnalyticsHub = () => {
         truckAnalytics,
         trucks: raw.trucks || [],
         loans: raw.loans || [],
-        trips: raw.trips || []
+        trips: raw.trips || [],
+        employees: raw.employees || [],
+        fuelTracker: raw.fuelTracker || [],
+        expensesList: raw.expenses || []
       });
 
       try {
@@ -554,396 +657,403 @@ const AnalyticsHub = () => {
             </TabsContent>
 
             {/* Tab Content: Vehicles */}
-            <TabsContent value="vehicles" className="space-y-8 m-0 animate-in fade-in duration-500">
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <Truck className="w-5 h-5 text-primary animate-pulse" />
-                    Vehicle-by-Vehicle Performance
-                  </CardTitle>
-                  <CardDescription>
-                    Compare financial and operational performance across all vehicles. Monthly loan EMIs are calculated from loan profiles and adjusted for the selected date span.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+            <TabsContent value="vehicles" className="space-y-6 m-0 animate-in fade-in duration-500">
+              {!drilldownActive ? (
+                // Top-Level Grid Interface (Vehicle Analytics Overview)
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800/85 p-5 rounded-2xl shadow-sm">
+                    <div>
+                      <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-primary" />
+                        Vehicle-by-Vehicle Profitability Grid
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Select a vehicle card below to inspect its detailed month-by-month financial breakdown.
+                      </p>
+                    </div>
+                    
+                    {/* Month selector filter */}
+                    <div className="flex items-center gap-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800 shrink-0">
+                      <span className="text-xs text-muted-foreground pl-2 font-medium">Reporting Month:</span>
+                      <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[180px] bg-slate-900 border-slate-800 text-slate-100 rounded-lg h-9">
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                          {['2026-07', '2026-06', '2026-05', '2026-04', '2026-03', '2026-02'].map(m => (
+                            <SelectItem key={m} value={m}>
+                              {new Date(m.split('-')[0], m.split('-')[1] - 1, 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              {data.truckAnalytics.length === 0 ? (
-                <Card className="p-8 text-center border-dashed border-border">
-                  <p className="text-muted-foreground text-xs">No trucks found in the database. Add a truck first to see its analysis here.</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                  
-                  {/* Left Column: Truck Grid Selector (4 cols wide on large screens) */}
-                  <div className="lg:col-span-4 space-y-4">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Select Vehicle</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 max-h-[600px] overflow-y-auto pr-1">
-                      {data.truckAnalytics.map((truck) => {
-                        const isSelected = truck.id === selectedTruckId;
+                  {data.trucks.length === 0 ? (
+                    <Card className="p-12 text-center border-dashed border-slate-800 bg-slate-900">
+                      <p className="text-muted-foreground text-xs">No vehicles found in the system.</p>
+                    </Card>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {data.trucks.map(truck => {
+                        const hasImages = truck.body_images && truck.body_images.length > 0;
+                        const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0]) : null;
+                        
+                        // Calculate profit metrics for this vehicle in this specific month
+                        const metrics = calculateTruckProfitForMonth(truck, selectedMonth);
+                        const isProfitPositive = metrics.netProfit >= 0;
+
                         return (
-                          <div
-                            key={truck.id}
-                            onClick={() => setSelectedTruckId(truck.id)}
-                            className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 relative overflow-hidden bg-card ${
-                              isSelected 
-                                ? 'border-primary shadow-lg ring-1 ring-primary/30 translate-x-1' 
-                                : 'border-border/50 hover:border-border hover:bg-muted/10'
-                            }`}
+                          <div 
+                            key={truck.id} 
+                            onClick={() => { setSelectedTruckId(truck.id); setDrilldownActive(true); }}
+                            className="group bg-slate-900 border border-slate-800/80 hover:border-primary/40 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col cursor-pointer"
                           >
-                            {isSelected && (
-                              <div className="absolute top-0 right-0 w-2.5 h-full bg-primary" />
-                            )}
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-bold tracking-wide text-foreground text-xs">{truck.truck_number}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                truck.profit >= 0 
-                                  ? 'bg-success/15 text-success border border-success/20' 
-                                  : 'bg-destructive/15 text-destructive border border-destructive/20'
-                              }`}>
-                                {truck.profit >= 0 ? '+' : ''}{truck.margin.toFixed(1)}%
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground mb-3 truncate">{truck.truck_name || 'Generic Truck'}</p>
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
-                              <div>
-                                <span className="text-muted-foreground block text-[8px] uppercase">Revenue</span>
-                                <span className="font-semibold text-foreground">₹{Math.round(truck.revenue).toLocaleString()}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground block text-[8px] uppercase">Net Profit</span>
-                                <span className={`font-semibold ${truck.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                  ₹{Math.round(truck.profit).toLocaleString()}
+                            {/* Card Header Image */}
+                            <div className="h-44 w-full relative bg-slate-950 overflow-hidden">
+                              {hasImages ? (
+                                <img 
+                                  src={primaryImage} 
+                                  alt={truck.truck_name || 'Truck body'} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-slate-950 to-indigo-500/5 relative">
+                                  <Truck className="w-12 h-12 text-primary/10 mb-2" />
+                                  <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-widest opacity-60">Fleet Vehicle</span>
+                                </div>
+                              )}
+                              
+                              {/* Ownership Badge overlay */}
+                              <div className="absolute top-3 left-3 z-10">
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${
+                                  truck.ownership_type === 'Attached'
+                                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                    : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                }`}>
+                                  {truck.ownership_type || 'Owned'}
                                 </span>
+                              </div>
+                            </div>
+
+                            {/* Card Content */}
+                            <div className="p-5 flex flex-col justify-between flex-grow space-y-4">
+                              <div>
+                                {/* Header: Nickname */}
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <div className="p-1 bg-primary/10 rounded text-primary">
+                                    <Truck className="w-3.5 h-3.5" />
+                                  </div>
+                                  <h3 className="font-bold text-sm text-slate-100 group-hover:text-primary transition-colors truncate">
+                                    {truck.truck_name || 'Unnamed Vehicle'}
+                                  </h3>
+                                </div>
+                                
+                                {/* Registration number */}
+                                <p className="text-xs font-mono font-bold text-slate-400 tracking-wider">
+                                  {truck.truck_number}
+                                </p>
+                              </div>
+
+                              {/* Monthly profit large card */}
+                              <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 flex justify-between items-center shadow-inner">
+                                <div>
+                                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">Net Monthly Profit</span>
+                                  <span className={`text-xl font-extrabold tabular-nums block mt-0.5 ${
+                                    isProfitPositive ? 'text-emerald-400' : 'text-rose-400'
+                                  }`}>
+                                    {isProfitPositive ? '+' : ''}₹{Math.round(metrics.netProfit).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">Revenue</span>
+                                  <span className="text-xs font-bold text-slate-200 tabular-nums">
+                                    ₹{Math.round(metrics.revenue).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                  </div>
+                  )}
+                </div>
+              ) : (
+                // In-Depth Drilldown Workspace (On-Click Full Analysis)
+                (() => {
+                  const truck = data.trucks.find(t => t.id === selectedTruckId);
+                  if (!truck) return null;
 
-                  {/* Right Column: Selected Truck Drilldown */}
-                  <div className="lg:col-span-8 space-y-6">
-                    {(() => {
-                      const selectedTruck = data.truckAnalytics.find(t => t.id === selectedTruckId);
-                      if (!selectedTruck) {
-                        return (
-                          <div className="p-8 text-center bg-card border border-border rounded-xl">
-                            <p className="text-muted-foreground text-xs">Select a truck from the list to view its financial analysis.</p>
+                  const metrics = calculateTruckProfitForMonth(truck, selectedMonth);
+                  const isProfitPositive = metrics.netProfit >= 0;
+
+                  // Prepare Expense distribution line items alongside percentage share
+                  const expenseList = [
+                    { name: 'Fuel Costs', value: metrics.fuelCost, color: 'bg-sky-400' },
+                    { name: 'Toll Fees', value: metrics.tolls, color: 'bg-amber-400' },
+                    { name: 'Maintenance & Spares', value: metrics.maintenance, color: 'bg-rose-400' },
+                    { name: 'EMI / Financing', value: metrics.emi, color: 'bg-purple-400' },
+                    { name: 'Driver Base Salary', value: metrics.driverSalary, color: 'bg-indigo-400' },
+                    { name: 'Insurance Premium Allocation', value: metrics.monthlyInsurance, color: 'bg-emerald-400' },
+                    { name: 'Quarterly Tax Allocation', value: metrics.monthlyTax, color: 'bg-teal-400' }
+                  ].filter(item => item.value > 0);
+
+                  const totalExp = metrics.totalExpenses || 1; // avoid div by zero
+
+                  return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+                      {/* Back button header */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800/80 p-4 rounded-xl shadow-sm">
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => setDrilldownActive(false)} 
+                          className="text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl px-4 text-xs font-semibold gap-2"
+                        >
+                          ← Back to Grid
+                        </Button>
+
+                        <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-end">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground font-medium">Selected Month:</span>
+                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                              <SelectTrigger className="w-[160px] bg-slate-950 border-slate-800 text-slate-100 rounded-lg h-9">
+                                <SelectValue placeholder="Month" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                                {['2026-07', '2026-06', '2026-05', '2026-04', '2026-03', '2026-02'].map(m => (
+                                  <SelectItem key={m} value={m}>
+                                    {new Date(m.split('-')[0], m.split('-')[1] - 1, 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        );
-                      }
+                        </div>
+                      </div>
 
-                      const expenseData = [
-                        { name: 'Fuel', value: selectedTruck.fuel, color: '#38bdf8' },
-                        { name: 'Toll', value: selectedTruck.toll, color: '#fbbf24' },
-                        { name: 'Driver Expense', value: selectedTruck.driverExpenses, color: '#818cf8' },
-                        { name: 'Maintenance', value: selectedTruck.maintenance, color: '#f87171' },
-                        { name: 'Insurance', value: selectedTruck.insurance, color: '#34d399' },
-                        { name: 'EMI', value: selectedTruck.emi, color: '#c084fc' },
-                        { name: 'Misc', value: selectedTruck.misc, color: '#94a3b8' }
-                      ].filter(item => item.value > 0);
+                      {/* Truck Profile Banner */}
+                      <div className="flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-primary/5 border border-slate-800/80">
+                        <div className="p-3.5 bg-primary/10 rounded-2xl text-primary border border-primary/20 shrink-0">
+                          <Truck className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold tracking-tight text-slate-100">{truck.truck_number}</h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">{truck.truck_name || 'Generic profile'} • {truck.truck_size || 'N/A'} • {truck.truck_axle || 'N/A'}</p>
+                        </div>
+                      </div>
 
-                      const compChartData = [
-                        { name: 'Revenue', value: selectedTruck.revenue, fill: 'url(#revGrad)' },
-                        { name: 'Expenses', value: selectedTruck.totalExpenses, fill: 'url(#expGrad)' },
-                        { name: 'Net Profit', value: selectedTruck.profit, fill: selectedTruck.profit >= 0 ? 'url(#profGrad)' : 'url(#lossGrad)' }
-                      ];
-
-                      return (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {/* Interactive Allocations Configurator */}
+                      <Card className="border-slate-800 bg-slate-900 shadow-lg">
+                        <CardHeader className="pb-3 border-b border-slate-800/80">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-200">
+                            <Settings className="w-4 h-4 text-primary" /> Configure Allocations for {truck.truck_number}
+                          </CardTitle>
+                          <CardDescription className="text-xs text-slate-400">
+                            Adjust custom values below. Changes persist in your local browser storage and update the financial model.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-slate-300">Annualized Insurance Premium (₹)</Label>
+                            <Input 
+                              type="number"
+                              value={metrics.annualInsurance}
+                              onChange={(e) => {
+                                const val = Number(e.target.value) || 0;
+                                setCustomInsValues({...customInsValues, [truck.id]: val});
+                                localStorage.setItem(`truck_annual_ins_${truck.id}`, val);
+                              }}
+                              className="bg-slate-950 border-slate-800 text-slate-100 rounded-xl h-11 text-sm font-bold"
+                            />
+                            <p className="text-[10px] text-muted-foreground">Allocated monthly cost factor: <span className="text-primary font-bold">₹{Math.round(metrics.monthlyInsurance).toLocaleString('en-IN')}/month</span></p>
+                          </div>
                           
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/40">
-                            <div>
-                              <h2 className="text-2xl font-bold text-foreground">{selectedTruck.truck_number}</h2>
-                              <p className="text-xs text-muted-foreground">{selectedTruck.truck_name || 'Vehicle profile'}</p>
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-slate-300">Annual Quarterly Tax Allocation (₹)</Label>
+                            <Input 
+                              type="number"
+                              value={metrics.annualTax}
+                              onChange={(e) => {
+                                const val = Number(e.target.value) || 0;
+                                setCustomTaxValues({...customTaxValues, [truck.id]: val});
+                                localStorage.setItem(`truck_annual_tax_${truck.id}`, val);
+                              }}
+                              className="bg-slate-950 border-slate-800 text-slate-100 rounded-xl h-11 text-sm font-bold"
+                            />
+                            <p className="text-[10px] text-muted-foreground">Allocated monthly cost factor: <span className="text-primary font-bold">₹{Math.round(metrics.monthlyTax).toLocaleString('en-IN')}/month</span></p>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Main Financial Workspace Columns */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* Column A: Monthly Gross Revenue */}
+                        <Card className="border-slate-800 bg-slate-900 flex flex-col justify-between shadow-md">
+                          <CardHeader className="pb-3 border-b border-slate-800/80">
+                            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                              A. Gross Revenue
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-5 space-y-4 flex-grow">
+                            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/85">
+                              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest block">Total Logistics Earnings</span>
+                              <span className="text-2xl font-extrabold text-blue-400 mt-1 block tabular-nums">
+                                ₹{Math.round(metrics.revenue).toLocaleString('en-IN')}
+                              </span>
                             </div>
-                            <div className="text-[10px] text-muted-foreground flex items-center gap-2 bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50 self-start">
-                              <Calendar className="w-4 h-4 text-primary" />
-                              <span>Calculated over {calculateDateSpanInMonths(filters.startDate, filters.endDate, selectedTruck.tripsList, selectedTruck.expensesList).toFixed(2)} Months</span>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Aggregated earnings from all contract trip dispatches logged under this truck during {selectedMonth}.
+                            </p>
+                          </CardContent>
+                        </Card>
+
+                        {/* Column B: Monthly Fixed Expenses */}
+                        <Card className="border-slate-800 bg-slate-900 flex flex-col justify-between shadow-md">
+                          <CardHeader className="pb-3 border-b border-slate-800/80">
+                            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                              B. Fixed Expenses
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-5 space-y-3.5 flex-grow">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">EMI / Loan Repayments:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.emi).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Driver Base Salary:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.driverSalary).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Insurance Allocation:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.monthlyInsurance).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Quarterly Tax Allocation:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.monthlyTax).toLocaleString()}</span>
+                            </div>
+                            
+                            <div className="pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs font-bold text-slate-100">
+                              <span>Total Fixed Expenses:</span>
+                              <span className="text-sm text-primary tabular-nums">₹{Math.round(metrics.fixedExpenses).toLocaleString()}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {/* Column C: Monthly Running / Variable Expenses */}
+                        <Card className="border-slate-800 bg-slate-900 flex flex-col justify-between shadow-md">
+                          <CardHeader className="pb-3 border-b border-slate-800/80">
+                            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                              C. Variable / Running Expenses
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-5 space-y-3.5 flex-grow">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Fuel Costs:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.fuelCost).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Toll Fees:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.tolls).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-slate-400">Maintenance / Upkeep:</span>
+                              <span className="font-bold text-slate-200 tabular-nums">₹{Math.round(metrics.maintenance).toLocaleString()}</span>
+                            </div>
+                            
+                            <div className="pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs font-bold text-slate-100">
+                              <span>Total Variable Expenses:</span>
+                              <span className="text-sm text-primary tabular-nums">₹{Math.round(metrics.variableExpenses).toLocaleString()}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Financial Calculation Matrix Formula Box */}
+                      <Card className="border-slate-800 bg-slate-900 overflow-hidden shadow-lg border-l-4 border-l-primary">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                            Financial Calculation Equation
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-0 space-y-4">
+                          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-center items-center text-center font-mono">
+                            <span className="text-xs text-muted-foreground mb-1 block">Net Profit Formula</span>
+                            <span className="text-sm sm:text-base font-bold text-primary">
+                              Net Profit = Gross Revenue - (Variable Expenses + Fixed Expenses)
+                            </span>
+                            <div className="w-full border-t border-slate-800/80 my-3" />
+                            <div className="flex flex-col sm:flex-row items-center gap-1.5 text-xs text-slate-200">
+                              <span className="text-blue-400 font-bold">₹{Math.round(metrics.revenue).toLocaleString()}</span>
+                              <span className="text-muted-foreground font-bold">-</span>
+                              <span>(</span>
+                              <span className="text-slate-100 font-bold">₹{Math.round(metrics.variableExpenses).toLocaleString()}</span>
+                              <span className="text-muted-foreground">+</span>
+                              <span className="text-slate-100 font-bold">₹{Math.round(metrics.fixedExpenses).toLocaleString()}</span>
+                              <span>)</span>
+                              <span className="text-muted-foreground font-bold">=</span>
+                              <span className={"font-bold text-sm " + (isProfitPositive ? "text-emerald-400" : "text-rose-400")}>
+                                ₹{Math.round(metrics.netProfit).toLocaleString('en-IN')}
+                              </span>
                             </div>
                           </div>
+                        </CardContent>
+                      </Card>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <Card className="bg-card/45 hover:bg-card/60 transition-all duration-300">
-                              <CardContent className="p-5">
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Revenue</span>
-                                <span className="text-xl font-extrabold text-foreground mt-1.5 block tabular-nums">₹{Math.round(selectedTruck.revenue).toLocaleString()}</span>
-                                <span className="text-xs text-muted-foreground mt-2 block flex items-center gap-1">
-                                  <MapPin className="w-3.5 h-3.5 text-primary" /> {selectedTruck.kms.toLocaleString()} kms run
-                                </span>
-                              </CardContent>
-                            </Card>
-
-                            <Card className="bg-card/45 hover:bg-card/60 transition-all duration-300">
-                              <CardContent className="p-5">
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Expenses</span>
-                                <span className="text-xl font-extrabold text-foreground mt-1.5 block tabular-nums">₹{Math.round(selectedTruck.totalExpenses).toLocaleString()}</span>
-                                <span className="text-xs text-muted-foreground mt-2 block">Includes loan EMI & payroll</span>
-                              </CardContent>
-                            </Card>
-
-                            <Card className="bg-card/45 hover:bg-card/60 transition-all duration-300">
-                              <CardContent className="p-5">
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Net Profit</span>
-                                <span className={`text-xl font-extrabold mt-1.5 block tabular-nums ${selectedTruck.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                  ₹{Math.round(selectedTruck.profit).toLocaleString()}
-                                </span>
-                                <span className="text-xs text-muted-foreground mt-2 block">Revenue minus overall costs</span>
-                              </CardContent>
-                            </Card>
-
-                            <Card className="bg-card/45 hover:bg-card/60 transition-all duration-300">
-                              <CardContent className="p-5">
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Profit Margin</span>
-                                <span className={`text-xl font-extrabold mt-1.5 block tabular-nums ${selectedTruck.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                                  {selectedTruck.margin.toFixed(1)}%
-                                </span>
-                                <span className="text-xs text-muted-foreground mt-2 block">Efficiency of operations</span>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          {selectedTruck.hasLoan ? (
-                            <Card className="border-border bg-card/25 shadow-sm">
-                              <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2.5 bg-primary/10 rounded-xl">
-                                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-foreground text-sm">Loan Profile Associated</h4>
-                                    <p className="text-xs text-muted-foreground mt-0.5">
-                                      {selectedTruck.loanInfo.bankName || 'Bank Loan'} - ₹{selectedTruck.loanInfo.totalLoanAmount.toLocaleString()} @ {selectedTruck.loanInfo.interestRate}% for {selectedTruck.loanInfo.loanTerm} Months.
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="text-right self-stretch sm:self-center border-t sm:border-t-0 border-border/50 pt-2 sm:pt-0">
-                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block">Monthly EMI</span>
-                                  <span className="text-base font-bold text-primary tabular-nums">₹{Math.round(selectedTruck.loanInfo.monthlyEmi).toLocaleString()}</span>
-                                </div>
-                              </CardContent>
-                            </Card>
+                      {/* Cash Leakage Analysis Breakdown List */}
+                      <Card className="border-slate-800 bg-slate-900 shadow-lg">
+                        <CardHeader className="pb-3 border-b border-slate-800/80">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-200">
+                            <PieChartIcon className="w-4 h-4 text-primary" /> Cash Leakage Analysis
+                          </CardTitle>
+                          <CardDescription className="text-xs text-slate-400">
+                            Percentage share of individual expense ledgers to identify core cost leakages.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4">
+                          {expenseList.length === 0 ? (
+                            <div className="text-center py-6 text-muted-foreground text-xs">
+                              No expenses recorded in {selectedMonth}.
+                            </div>
                           ) : (
-                            <Card className="border-warning/30 bg-warning/5 shadow-sm">
-                              <CardContent className="p-4 flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
-                                <div>
-                                  <h4 className="font-semibold text-warning text-sm">No Loan Profile Associated</h4>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    No loan profile matching vehicle number <span className="font-mono text-foreground font-semibold bg-muted/40 px-1 rounded">{selectedTruck.truck_number}</span> was found in the EMI Calculator. EMIs are excluded from this analysis. Rename your loan profile to match this vehicle's number.
-                                  </p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="border-border bg-card/30">
-                              <CardHeader className="p-5">
-                                <CardTitle className="text-xs font-semibold text-foreground uppercase tracking-wider">Financial Overview</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-5 pt-0">
-                                <div className="h-[250px] w-full">
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={compChartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-                                      <defs>
-                                        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="5%" stopColor="#34d399" stopOpacity={0.8}/>
-                                          <stop offset="95%" stopColor="#34d399" stopOpacity={0.2}/>
-                                        </linearGradient>
-                                        <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="5%" stopColor="#f87171" stopOpacity={0.8}/>
-                                          <stop offset="95%" stopColor="#f87171" stopOpacity={0.2}/>
-                                        </linearGradient>
-                                        <linearGradient id="profGrad" x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                                          <stop offset="95%" stopColor="#10b981" stopOpacity={0.2}/>
-                                        </linearGradient>
-                                        <linearGradient id="lossGrad" x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2}/>
-                                        </linearGradient>
-                                      </defs>
-                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-                                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} />
-                                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`} />
-                                      <Tooltip 
-                                        cursor={{ fill: 'rgba(255,255,255,0.03)' }}
-                                        content={({ active, payload }) => {
-                                          if (active && payload && payload.length) {
-                                            return (
-                                              <div className="bg-popover border border-border p-2.5 rounded-lg shadow-lg">
-                                                <p className="text-xs font-semibold text-muted-foreground uppercase">{payload[0].payload.name}</p>
-                                                <p className="text-sm font-bold text-foreground mt-1 tabular-nums">₹{Math.round(payload[0].value).toLocaleString()}</p>
-                                              </div>
-                                            );
-                                          }
-                                          return null;
-                                        }}
-                                      />
-                                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={40} />
-                                    </BarChart>
-                                  </ResponsiveContainer>
-                                </div>
-                              </CardContent>
-                            </Card>
-
-                            <Card className="border-border bg-card/30">
-                              <CardHeader className="p-5">
-                                <CardTitle className="text-xs font-semibold text-foreground uppercase tracking-wider">Expense Distribution</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-5 pt-0 flex flex-col justify-between">
-                                {expenseData.length === 0 ? (
-                                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-xs">
-                                    No expenses recorded for this truck.
-                                  </div>
-                                ) : (
-                                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div className="h-[200px] w-[200px] relative flex-shrink-0">
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                          <Pie
-                                            data={expenseData}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={55}
-                                            outerRadius={75}
-                                            paddingAngle={3}
-                                            dataKey="value"
-                                          >
-                                            {expenseData.map((entry, index) => (
-                                              <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                          </Pie>
-                                          <Tooltip 
-                                            content={({ active, payload }) => {
-                                              if (active && payload && payload.length) {
-                                                return (
-                                                  <div className="bg-popover border border-border p-2.5 rounded-lg shadow-lg">
-                                                    <span style={{ color: payload[0].payload.color }} className="text-xs font-semibold uppercase">{payload[0].name}</span>
-                                                    <p className="text-sm font-bold text-foreground mt-0.5 tabular-nums">₹{Math.round(payload[0].value).toLocaleString()}</p>
-                                                  </div>
-                                                );
-                                              }
-                                              return null;
-                                            }}
-                                          />
-                                        </PieChart>
-                                      </ResponsiveContainer>
-                                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-[10px] text-muted-foreground uppercase font-semibold text-center leading-none">Total Cost</span>
-                                        <span className="text-xs font-bold text-foreground mt-1 tabular-nums">₹{Math.round(selectedTruck.totalExpenses).toLocaleString()}</span>
+                            <div className="space-y-4">
+                              {expenseList.map((item, index) => {
+                                const percentage = (item.value / totalExp) * 100;
+                                const isLeakageRisk = percentage > 30; // flag if single cost cohort takes more than 30% of monthly budget
+                                return (
+                                  <div key={index} className="space-y-1">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-slate-200">{item.name}</span>
+                                        {isLeakageRisk && (
+                                          <span className="text-[9px] font-bold text-rose-500 uppercase tracking-widest bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 animate-pulse">
+                                            Cost Leakage Risk
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-bold text-slate-100 tabular-nums">₹{Math.round(item.value).toLocaleString()}</span>
+                                        <span className="text-[10px] text-muted-foreground ml-1.5 tabular-nums">({percentage.toFixed(1)}%)</span>
                                       </div>
                                     </div>
-                                    <div className="space-y-1.5 w-full max-h-[220px] overflow-y-auto pr-1">
-                                      {expenseData.map((item, index) => {
-                                        const percentage = (item.value / selectedTruck.totalExpenses) * 100;
-                                        return (
-                                          <div key={index} className="flex items-center justify-between text-[10px] p-1 hover:bg-muted/10 rounded transition-colors">
-                                            <div className="flex items-center gap-2">
-                                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                                              <span className="text-muted-foreground font-medium">{item.name}</span>
-                                            </div>
-                                            <div className="text-right">
-                                              <span className="font-semibold text-foreground block tabular-nums">₹{Math.round(item.value).toLocaleString()}</span>
-                                              <span className="text-[8px] text-muted-foreground block tabular-nums">{percentage.toFixed(1)}%</span>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
+                                    <div className="w-full bg-slate-950 rounded-full h-2">
+                                      <div 
+                                        className={"h-2 rounded-full " + (isLeakageRisk ? "bg-rose-500" : "bg-primary")}
+                                        style={{ width: `${percentage}%` }}
+                                      />
                                     </div>
                                   </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          <Tabs defaultValue="trips" className="w-full">
-                            <TabsList className="grid w-full sm:w-[350px] grid-cols-2 bg-muted/40 p-1 rounded-lg mb-4">
-                              <TabsTrigger value="trips" className="text-xs rounded-md">
-                                Trip Records ({selectedTruck.tripsList.length})
-                              </TabsTrigger>
-                              <TabsTrigger value="expenses" className="text-xs rounded-md">
-                                Expense Ledger ({selectedTruck.expensesList.length})
-                              </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="trips" className="m-0 bg-card/20 rounded-xl border border-border/85 overflow-hidden">
-                              {selectedTruck.tripsList.length === 0 ? (
-                                <div className="p-8 text-center text-muted-foreground text-xs">
-                                  No trips recorded for this truck in the selected range.
-                                </div>
-                              ) : (
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-xs text-left text-muted-foreground border-collapse">
-                                    <thead className="text-[10px] uppercase tracking-wider bg-muted/20 border-b border-border/50">
-                                      <tr>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground">Date</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground">Route</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground"><User className="w-3 h-3 text-muted-foreground inline mr-1" /> Driver</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground text-right">KMS</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground text-right">Revenue</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground text-right">Driver Advance</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/20">
-                                      {selectedTruck.tripsList.map((t) => (
-                                        <tr key={t.id} className="hover:bg-muted/5 transition-colors">
-                                          <td className="px-4 py-2.5 whitespace-nowrap">{t.date ? new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                                          <td className="px-4 py-2.5 font-medium text-foreground">{t.route || '-'}</td>
-                                          <td className="px-4 py-2.5">{t.driver_name || '-'}</td>
-                                          <td className="px-4 py-2.5 text-right tabular-nums">{t.kms ? t.kms.toLocaleString() : '0'}</td>
-                                          <td className="px-4 py-2.5 text-right text-success font-semibold tabular-nums">₹{t.revenue ? Math.round(t.revenue).toLocaleString() : '0'}</td>
-                                          <td className="px-4 py-2.5 text-right text-destructive font-medium tabular-nums">₹{t.advance ? Math.round(t.advance).toLocaleString() : '0'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </TabsContent>
-
-                            <TabsContent value="expenses" className="m-0 bg-card/20 rounded-xl border border-border/85 overflow-hidden">
-                              {selectedTruck.expensesList.length === 0 ? (
-                                <div className="p-8 text-center text-muted-foreground text-xs">
-                                  No expenses recorded for this truck in the selected range.
-                                </div>
-                              ) : (
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-xs text-left text-muted-foreground border-collapse">
-                                    <thead className="text-[10px] uppercase tracking-wider bg-muted/20 border-b border-border/50">
-                                      <tr>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground">Date</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground"><FileText className="w-3 h-3 text-muted-foreground inline mr-1" /> Category</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground">Subcategory</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground">Description</th>
-                                        <th className="px-4 py-2.5 font-semibold text-foreground text-right">Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/20">
-                                      {selectedTruck.expensesList.map((e) => (
-                                        <tr key={e.id} className="hover:bg-muted/5 transition-colors">
-                                          <td className="px-4 py-2.5 whitespace-nowrap">{e.date ? new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                                          <td className="px-4 py-2.5 font-medium text-foreground">{e.category || '-'}</td>
-                                          <td className="px-4 py-2.5">{e.subcategory || '-'}</td>
-                                          <td className="px-4 py-2.5 max-w-[200px] truncate" title={e.description}>{e.description || '-'}</td>
-                                          <td className="px-4 py-2.5 text-right text-destructive font-semibold tabular-nums">₹{e.amount ? Math.round(e.amount).toLocaleString() : '0'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
-                            </TabsContent>
-                          </Tabs>
-
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })()
               )}
             </TabsContent>
 
