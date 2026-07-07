@@ -93,6 +93,154 @@ const watchAndSyncDatabase = (dbFilePath) => {
 };
 
 // ----------------------------------------------------
+// Supabase File Storage Sync Engine
+// ----------------------------------------------------
+const downloadFileFromSupabase = async (remotePath, localFilePath) => {
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/${remotePath}`, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`
+      }
+    });
+    if (res.ok) {
+      const buffer = await res.arrayBuffer();
+      fs.mkdirSync(path.dirname(localFilePath), { recursive: true });
+      fs.writeFileSync(localFilePath, Buffer.from(buffer));
+      logger.info(`✓ Restored storage file: ${path.basename(localFilePath)}`);
+      return true;
+    }
+  } catch (err) {
+    logger.error(`❌ Failed to download file ${remotePath} from Supabase: ${err.message}`);
+  }
+  return false;
+};
+
+const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/list/backups`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prefix, limit: 1000 })
+    });
+    
+    if (!res.ok) return;
+    const items = await res.json();
+    for (const item of items) {
+      const itemPath = prefix ? `${prefix}/${item.name}` : item.name;
+      if (item.id === null) {
+        // Recursively download subdirectory
+        await downloadFolderFromSupabase(itemPath, localBaseDir);
+      } else {
+        const relativePath = itemPath.substring('storage/'.length);
+        const localFilePath = path.join(localBaseDir, relativePath);
+        if (!fs.existsSync(localFilePath)) {
+          await downloadFileFromSupabase(itemPath, localFilePath);
+        }
+      }
+    }
+  } catch (err) {
+    logger.error(`❌ Error walking Supabase folder ${prefix}: ${err.message}`);
+  }
+};
+
+const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
+  if (!fs.existsSync(dir)) return files;
+  const items = fs.readdirSync(dir);
+  for (const item of items) {
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      getLocalFilesRecursive(fullPath, storageDir, files);
+    } else if (stat.isFile()) {
+      const relativePath = path.relative(storageDir, fullPath).replace(/\\/g, '/');
+      files[relativePath] = stat.mtimeMs;
+    }
+  }
+  return files;
+};
+
+const startStorageBackgroundSync = (storageDir) => {
+  let knownFiles = {};
+  
+  // Initialize initial state of files
+  if (fs.existsSync(storageDir)) {
+    knownFiles = getLocalFilesRecursive(storageDir, storageDir);
+  }
+  
+  setInterval(async () => {
+    try {
+      if (!fs.existsSync(storageDir)) return;
+      const currentFiles = getLocalFilesRecursive(storageDir, storageDir);
+      
+      // 1. Detect new/modified files
+      for (const relPath of Object.keys(currentFiles)) {
+        const currentMtime = currentFiles[relPath];
+        const knownMtime = knownFiles[relPath];
+        
+        if (knownMtime === undefined || currentMtime !== knownMtime) {
+          const localFilePath = path.join(storageDir, relPath);
+          const remotePath = `storage/${relPath}`;
+          
+          try {
+            const fileBuffer = fs.readFileSync(localFilePath);
+            const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+              method: 'POST',
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+                'x-upsert': 'true'
+              },
+              body: fileBuffer
+            });
+            if (uploadRes.ok) {
+              logger.info(`🔄 Synced file upload to Supabase: ${relPath}`);
+              knownFiles[relPath] = currentMtime;
+            } else {
+              logger.error(`❌ Failed to sync file upload to Supabase: ${relPath} (${uploadRes.statusText})`);
+            }
+          } catch (uploadErr) {
+            logger.error(`❌ Error uploading file ${relPath} to Supabase: ${uploadErr.message}`);
+          }
+        }
+      }
+      
+      // 2. Detect deleted files
+      for (const relPath of Object.keys(knownFiles)) {
+        if (currentFiles[relPath] === undefined) {
+          const remotePath = `storage/${relPath}`;
+          try {
+            const delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+              method: 'DELETE',
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+              }
+            });
+            if (delRes.ok) {
+              logger.info(`🗑️ Synced file deletion to Supabase: ${relPath}`);
+              delete knownFiles[relPath];
+            } else {
+              logger.error(`❌ Failed to sync file deletion to Supabase: ${relPath} (${delRes.statusText})`);
+            }
+          } catch (delErr) {
+            logger.error(`❌ Error deleting file ${relPath} from Supabase: ${delErr.message}`);
+          }
+        }
+      }
+      
+    } catch (err) {
+      logger.error(`❌ Error in storage background sync: ${err.message}`);
+    }
+  }, 10000); // Check every 10 seconds
+};
+
+// ----------------------------------------------------
 // 1. Spawning PocketBase in the Background Automatically
 // ----------------------------------------------------
 const runPocketBase = async () => {
@@ -126,9 +274,14 @@ const runPocketBase = async () => {
   // Store SQLite database inside /data on Railway or local pb_data folder
   const dataDir = isWin ? path.join(pbDir, 'pb_data') : (fs.existsSync('/data') ? '/data' : path.join(pbDir, 'pb_data'));
   const dbFilePath = path.join(dataDir, 'data.db');
+  const storageDir = path.join(dataDir, 'storage');
 
   // Sync latest database from Supabase Storage before boot
   await downloadDatabaseFromSupabase(dbFilePath);
+
+  // Sync latest storage files from Supabase Storage before boot!
+  logger.info(`📥 Downloading files from Supabase Storage...`);
+  await downloadFolderFromSupabase('storage', storageDir);
 
   if (!isWin) {
     try {
@@ -162,6 +315,9 @@ const runPocketBase = async () => {
 
   // Watch and sync changes
   watchAndSyncDatabase(dbFilePath);
+
+  // Start background sync for storage files
+  startStorageBackgroundSync(storageDir);
 
   pbProcess.stdout.on('data', (data) => {
     logger.info(`[PocketBase] ${data.toString().trim()}`);
