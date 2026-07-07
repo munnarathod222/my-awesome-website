@@ -18,7 +18,7 @@ const MONTHLY_TASKS = [
   { type: 'Chassis Greasing',    notes: 'Grease all chassis nipple points: leaf springs, kingpins, propeller shaft, and 5th wheel plate.' },
 ];
 
-function generateMonthlyReminders() {
+globalThis.generateMonthlyReminders = function() {
   const now = new Date();
   const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const reminderDate = `${monthStr}-01 07:00:00`; // First day of this month
@@ -94,13 +94,17 @@ function generateMonthlyReminders() {
 
 // ── Cron: 07:00 on the 1st of every month ───────────────────────────────────
 cronAdd('monthly_maintenance_reminders', '0 7 1 * *', () => {
-  generateMonthlyReminders();
+  if (typeof globalThis.generateMonthlyReminders === "function") {
+    globalThis.generateMonthlyReminders();
+  }
 });
 
 // ── Manual trigger endpoint (for testing / backfill) ─────────────────────────
 routerAdd('POST', '/api/custom/maintenance/generate-monthly-reminders', (e) => {
   try {
-    generateMonthlyReminders();
+    if (typeof globalThis.generateMonthlyReminders === "function") {
+      globalThis.generateMonthlyReminders();
+    }
     return e.json(200, {
       success: true,
       message: 'Monthly maintenance reminders generated successfully.'
