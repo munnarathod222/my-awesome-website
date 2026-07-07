@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 export const parseCSV = (file) => {
   return new Promise((resolve, reject) => {
@@ -13,6 +14,49 @@ export const parseCSV = (file) => {
       },
       error: (error) => reject(error)
     });
+  });
+};
+
+export const parseExcel = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (jsonData.length === 0) {
+          resolve({ headers: [], rows: [] });
+          return;
+        }
+        
+        const headers = jsonData[0].map(h => String(h || '').trim());
+        const rows = [];
+        
+        for (let i = 1; i < jsonData.length; i++) {
+          const rowData = jsonData[i];
+          if (!rowData || rowData.length === 0 || rowData.every(cell => cell === null || cell === undefined || String(cell).trim() === '')) {
+            continue;
+          }
+          const rowObject = {};
+          headers.forEach((header, index) => {
+            if (header) {
+              rowObject[header] = rowData[index] !== undefined && rowData[index] !== null ? String(rowData[index]).trim() : '';
+            }
+          });
+          rows.push(rowObject);
+        }
+        
+        resolve({ headers, rows });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsArrayBuffer(file);
   });
 };
 
