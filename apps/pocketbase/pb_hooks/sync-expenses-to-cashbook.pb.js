@@ -31,7 +31,12 @@ onRecordAfterCreateSuccess((e) => {
     cashbookRecord.set("description", record.get("description") || "Expense");
     cashbookRecord.set("amount", record.get("amount"));
     cashbookRecord.set("transaction_type", "Expense");
-    cashbookRecord.set("category", record.get("category"));
+    let category = record.get("category") || "Expenses";
+    const subcategory = record.get("subcategory");
+    if (category === "Regular" && subcategory) {
+      category = "Regular - " + subcategory;
+    }
+    cashbookRecord.set("category", category);
     cashbookRecord.set("reference_id", record.id);
     cashbookRecord.set("reference_type", "expense");
     cashbookRecord.set("status", "Completed");
