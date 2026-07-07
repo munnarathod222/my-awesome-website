@@ -216,6 +216,7 @@ const ExpensesPage = () => {
   const filteredAdvances = useMemo(() => {
     let result = [...advances];
     if (advFilters.search) {
+      const q = advFilters.search.toLowerCase();
       result = result.filter(a => 
         (a.employee_name || a.expand?.employee_id?.name || '').toLowerCase().includes(q) ||
         (a.reason || '').toLowerCase().includes(q)
@@ -227,6 +228,7 @@ const ExpensesPage = () => {
       toDate.setHours(23, 59, 59, 999);
       result = result.filter(a => new Date(a.date) <= toDate);
     }
+    return result;
   }, [advances, advFilters]);
 
   // Current active month expense summary grid calculations (strictly parsed using Number)
