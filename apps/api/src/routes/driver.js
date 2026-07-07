@@ -194,6 +194,8 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
         const trip = activeTrips.items[0];
         
         let mapLink = "";
+        let startMapLink = "";
+        let endMapLink = "";
         let stopsList = [];
         
         // Strategy A: Try route_id relation
@@ -201,6 +203,8 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
           try {
             const routeRec = await pb.collection('routes').getOne(trip.route_id, { $autoCancel: false });
             mapLink = routeRec.google_map_link || "";
+            startMapLink = routeRec.start_location_map_link || "";
+            endMapLink = routeRec.end_location_map_link || "";
             stopsList = Array.isArray(routeRec.stops) ? routeRec.stops : [];
           } catch (e) {
             logger.warn(`Failed to fetch route by route_id: ${e.message}`);
@@ -216,6 +220,8 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
             });
             if (routes.length > 0) {
               mapLink = routes[0].google_map_link || "";
+              startMapLink = routes[0].start_location_map_link || "";
+              endMapLink = routes[0].end_location_map_link || "";
               stopsList = Array.isArray(routes[0].stops) ? routes[0].stops : [];
             }
           } catch (e) {
@@ -232,6 +238,8 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
           kms: trip.kms,
           status: trip.trip_status,
           google_map_link: mapLink,
+          start_location_map_link: startMapLink,
+          end_location_map_link: endMapLink,
           stops: stopsList
         };
       }
@@ -297,6 +305,8 @@ router.get('/trips', resolveDriver, async (req, res) => {
         return {
           ...trip,
           google_map_link: routeRec?.google_map_link || "",
+          start_location_map_link: routeRec?.start_location_map_link || "",
+          end_location_map_link: routeRec?.end_location_map_link || "",
           stops: Array.isArray(routeRec?.stops) ? routeRec.stops : []
         };
       });
