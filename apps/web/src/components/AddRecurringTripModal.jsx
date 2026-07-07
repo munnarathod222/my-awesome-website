@@ -264,7 +264,14 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
 
       const bulkData = await bulkRes.json();
       if (!bulkRes.ok || !bulkData.success) {
-        throw new Error(bulkData.error || 'Server error generating recurring trips.');
+        let errMsg = bulkData.error || 'Server error generating recurring trips.';
+        if (bulkData.details && typeof bulkData.details === 'object') {
+          const detailStr = Object.entries(bulkData.details)
+            .map(([field, d]) => `${field}: ${d.message || JSON.stringify(d)}`)
+            .join(', ');
+          if (detailStr) errMsg += ` (${detailStr})`;
+        }
+        throw new Error(errMsg);
       }
 
       toast.dismiss('batch-progress');
