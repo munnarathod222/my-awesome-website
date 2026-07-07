@@ -24,61 +24,74 @@ const BulkUploadDriverAdvances = () => {
     fetchContext();
   }, []);
 
-  const handleImport = async (rows) => {
+  const handleImport = async (rows, setImportErrors) => {
     let successCount = 0;
-    let failedCount = 0;
+    const rowErrors = [];
+    
     try {
       toast.loading(`Importing driver advances... 0/${rows.length}`, { id: 'import-advances' });
-      for (const row of rows) {
-        const dateIso = new Date(row['Date (YYYY-MM-DD)']).toISOString();
-        const amount = Number(row['Amount']);
+      
+      for (let index = 0; index < rows.length; index++) {
+        const row = rows[index];
+        const rowNum = index + 2; // 1-indexed + header row
         const driverName = row['Driver Name']?.trim() || '';
-        const desc = row['Reason']?.trim() || 'Imported Advance';
-        const pMethod = row['Payment Method']?.trim() || 'Cash';
-        const empId = contextData.employeesMap.get(driverName.toLowerCase());
+        
+        try {
+          const dateIso = new Date(row['Date (YYYY-MM-DD)']).toISOString();
+          const amount = Number(row['Amount']);
+          const desc = row['Reason']?.trim() || 'Imported Advance';
+          const pMethod = row['Payment Method']?.trim() || 'Cash';
+          const empId = contextData.employeesMap.get(driverName.toLowerCase());
 
-        if (empId) {
-          try {
-            // Create advance record
-            const advRecord = await pb.collection('advances').create({
-              employee_id: empId,
-              amount: amount,
-              date: dateIso,
-              reason: desc,
-              status: 'Pending'
-            }, { $autoCancel: false });
-
-            // Log debit entry to cashbook ledger
-            await pb.collection('cashbook').create({
-              date: dateIso,
-              description: `Advance paid to ${driverName}: ${desc}`,
-              amount: amount,
-              transaction_type: 'Advance',
-              category: 'Advance',
-              added_by: currentUser.id,
-              reference_id: advRecord.id,
-              reference_type: 'advance',
-              status: 'Completed',
-              payment_method: pMethod
-            }, { $autoCancel: false });
-
-            successCount++;
-          } catch (rowErr) {
-            console.error(`Failed to import row for ${driverName}:`, rowErr);
-            failedCount++;
+          if (!empId) {
+            throw new Error(`Driver Name '${driverName}' not found in system.`);
           }
-        } else {
-          failedCount++;
+
+          // Create advance record
+          const advRecord = await pb.collection('advances').create({
+            employee_id: empId,
+            amount: amount,
+            date: dateIso,
+            reason: desc,
+            status: 'Pending'
+          }, { $autoCancel: false });
+
+          // Log debit entry to cashbook ledger
+          await pb.collection('cashbook').create({
+            date: dateIso,
+            description: `Advance paid to ${driverName}: ${desc}`,
+            amount: amount,
+            transaction_type: 'Advance',
+            category: 'Advance',
+            added_by: currentUser.id,
+            reference_id: advRecord.id,
+            reference_type: 'advance',
+            status: 'Completed',
+            payment_method: pMethod
+          }, { $autoCancel: false });
+
+          successCount++;
+        } catch (rowErr) {
+          const errMsg = rowErr?.data?.message || rowErr?.message || String(rowErr);
+          console.error(`Row ${rowNum} import error:`, errMsg, rowErr);
+          rowErrors.push({ rowNum, message: errMsg });
         }
         
-        toast.loading(`Importing driver advances... ${successCount + failedCount}/${rows.length}`, { id: 'import-advances' });
+        toast.loading(`Importing driver advances... ${successCount + rowErrors.length}/${rows.length}`, { id: 'import-advances' });
       }
+      
       toast.dismiss('import-advances');
-      if (successCount > 0) {
-        toast.success(`Successfully imported ${successCount} driver advances!`);
-      }
-      if (failedCount > 0) {
-        toast.error(`Failed to import ${failedCount} rows. Please verify employee names.`);
+      
+      if (rowErrors.length === 0) {
+        toast.success(`✅ ${successCount} driver advances imported successfully!`);
+      } else {
+        setImportErrors(rowErrors);
+        const preview = rowErrors.slice(0, 3).map(e => `Row ${e.rowNum}: ${e.message}`).join('\n');
+        const more = rowErrors.length > 3 ? `\n...and ${rowErrors.length - 3} more (see below).` : '';
+        toast.error(
+          `Imported ${successCount} records. ${rowErrors.length} failed.\n${preview}${more}`,
+          { duration: 10000 }
+        );
       }
     } catch (error) {
       toast.dismiss('import-advances');
