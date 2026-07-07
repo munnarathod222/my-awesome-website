@@ -21,7 +21,6 @@ const ImportHistorySection = ({ refreshTrigger }) => {
       setLoading(true);
       const records = await pb.collection('bulk_upload_history').getList(1, 10, {
         sort: '-upload_date',
-        expand: 'user_id',
         $autoCancel: false
       });
       setHistory(records.items);
@@ -145,7 +144,7 @@ const ImportHistorySection = ({ refreshTrigger }) => {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{item.expand?.user_id?.name || item.expand?.user_id?.email || 'Unknown'}</TableCell>
+                    <TableCell>{item.expand?.user_id?.name || item.expand?.user_id?.email || item.user_id || 'Admin'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => viewDetails(item)} title="View Details">
