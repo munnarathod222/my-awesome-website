@@ -1,6 +1,6 @@
 /// <reference path="../pb_data/types.d.ts" />
 
-function clusterTripsAndRecalculate() {
+globalThis.clusterTripsAndRecalculate = function() {
   try {
     console.log("[billing-cycle-engine] Starting billing cycle clustering and recalculation...");
 
@@ -131,11 +131,15 @@ function clusterTripsAndRecalculate() {
 
 // 1. Register background daily cron job
 cronAdd("billing_cycles_cohort", "0 0 * * *", () => {
-  clusterTripsAndRecalculate();
+  if (typeof globalThis.clusterTripsAndRecalculate === "function") {
+    globalThis.clusterTripsAndRecalculate();
+  }
 });
 
 // 2. Register manual/on-demand recalculation route
 routerAdd("POST", "/api/custom/billing/recalculate", (e) => {
-  clusterTripsAndRecalculate();
+  if (typeof globalThis.clusterTripsAndRecalculate === "function") {
+    globalThis.clusterTripsAndRecalculate();
+  }
   return e.json(200, { success: true, message: "Recalculation and clustering completed." });
 });
