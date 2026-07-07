@@ -21,10 +21,15 @@ const BulkUploadEmployees = () => {
     fetchEmployees();
   }, []);
 
-  const handleImport = async (rows) => {
+  const handleImport = async (rows, setImportErrors) => {
     let successCount = 0;
-    try {
-      for (const row of rows) {
+    const rowErrors = [];
+    const newlyAddedPhones = [];
+
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const rowNum = index + 2; // 1-indexed + header row
+      try {
         let hireDate = undefined;
         if (row['Joining Date']) {
           const parsedDate = new Date(row['Joining Date']);
@@ -47,17 +52,35 @@ const BulkUploadEmployees = () => {
           address: row['Address'] || '',
         }, { $autoCancel: false });
         successCount++;
+        if (row['Phone']) newlyAddedPhones.push(row['Phone']);
+      } catch (error) {
+        const pbMsg = error?.data?.message || error?.message || String(error);
+        const fieldErrors = error?.data?.data
+          ? Object.entries(error.data.data).map(([k, v]) => `${k}: ${v?.message || v}`).join('; ')
+          : '';
+        const fullMsg = fieldErrors ? `${pbMsg} — ${fieldErrors}` : pbMsg;
+        console.error(`Row ${rowNum} import error:`, fullMsg, error);
+        rowErrors.push({ rowNum, message: fullMsg });
       }
-      toast.success(`${successCount} employees imported successfully`);
-      
-      // Update local context to prevent duplicate imports without refreshing
+    }
+
+    // Update local context to prevent duplicate validation errors for successfully imported phones
+    if (newlyAddedPhones.length > 0) {
       const newPhones = new Set(contextData.existingPhones);
-      rows.forEach(r => newPhones.add(r['Phone']));
+      newlyAddedPhones.forEach(p => newPhones.add(p));
       setContextData({ existingPhones: newPhones });
-      
-    } catch (error) {
-      console.error('Import error:', error);
-      toast.error(`Import failed after ${successCount} records. Check logs.`);
+    }
+
+    if (rowErrors.length === 0) {
+      toast.success(`✅ ${successCount} employees imported successfully!`);
+    } else {
+      setImportErrors(rowErrors);
+      const preview = rowErrors.slice(0, 3).map(e => `Row ${e.rowNum}: ${e.message}`).join('\n');
+      const more = rowErrors.length > 3 ? `\n...and ${rowErrors.length - 3} more (see below).` : '';
+      toast.error(
+        `Imported ${successCount} records. ${rowErrors.length} failed.\n${preview}${more}`,
+        { duration: 10000 }
+      );
     }
   };
 
