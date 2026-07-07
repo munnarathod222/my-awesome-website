@@ -105,7 +105,10 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
         billing_cycle_start: parseInt(formData.billing_cycle_start) || 1,
         billing_cycle_end: parseInt(formData.billing_cycle_end) || 30,
         credit_limit: parseFloat(formData.credit_limit) || 0,
-        user_id: currentUser?.id || ''
+        user_id: currentUser?.id || '',
+        max_waiver_per_transaction: card ? (Number(card.max_waiver_per_transaction) || 5000) : 5000,
+        monthly_waiver_limit: card ? (Number(card.monthly_waiver_limit) || 20000) : 20000,
+        current_month_waiver_used: card ? (Number(card.current_month_waiver_used) || 0) : 0
       };
 
       let savedCard;
