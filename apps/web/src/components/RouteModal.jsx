@@ -127,7 +127,6 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  };
 
   const handleSplitRoundTripToggle = (checked) => {
     setFormData(prev => {
