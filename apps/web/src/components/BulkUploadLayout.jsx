@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { parseCSV, validateCSVStructure } from '@/lib/CSVParser.js';
+import { parseCSV, parseExcel, validateCSVStructure } from '@/lib/CSVParser.js';
 
 const BulkUploadLayout = ({ 
   title, 
@@ -24,15 +24,19 @@ const BulkUploadLayout = ({
 
   const processFile = async (file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      toast.error('Please upload a valid CSV file');
+    const nameLower = file.name.toLowerCase();
+    const isExcel = nameLower.endsWith('.xlsx') || nameLower.endsWith('.xls');
+    const isCSV = nameLower.endsWith('.csv');
+
+    if (!isExcel && !isCSV) {
+      toast.error('Please upload a valid CSV or Excel file (.csv, .xlsx, .xls)');
       return;
     }
 
     try {
-      const { headers, rows } = await parseCSV(file);
+      const { headers, rows } = isExcel ? await parseExcel(file) : await parseCSV(file);
       if (rows.length === 0) {
-        toast.error('The uploaded CSV file is empty');
+        toast.error('The uploaded file is empty');
         return;
       }
 
@@ -65,7 +69,7 @@ const BulkUploadLayout = ({
       toast.success(`Parsed ${rows.length} rows successfully`);
     } catch (error) {
       console.error('File parsing error:', error);
-      toast.error('Failed to parse the CSV file');
+      toast.error(`Failed to parse file: ${error.message || error}`);
     }
   };
 
@@ -130,9 +134,9 @@ const BulkUploadLayout = ({
               onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
             >
               <UploadCloud className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-1">Drag & Drop your CSV file here</h3>
-              <p className="text-sm text-muted-foreground mb-6">Must be a valid .csv file with required headers</p>
-              <input ref={fileInputRef} type="file" id={`csv-upload-${title}`} className="hidden" accept=".csv" onChange={handleFileChange} />
+              <h3 className="text-lg font-semibold mb-1">Drag & Drop your CSV or Excel file here</h3>
+              <p className="text-sm text-muted-foreground mb-6">Must be a valid .csv, .xlsx, or .xls file with required headers</p>
+              <input ref={fileInputRef} type="file" id={`csv-upload-${title}`} className="hidden" accept=".csv, .xlsx, .xls" onChange={handleFileChange} />
               <Button asChild>
                 <label htmlFor={`csv-upload-${title}`} className="cursor-pointer">Browse Files</label>
               </Button>
