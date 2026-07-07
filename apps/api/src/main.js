@@ -156,7 +156,8 @@ const runPocketBase = async () => {
     'serve',
     '--http=127.0.0.1:8090',
     `--dir=${dataDir}`,
-    '--hooksWatch=false'
+    '--hooksWatch=false',
+    '--dev'
   ], { stdio: 'pipe' });
 
   // Watch and sync changes
