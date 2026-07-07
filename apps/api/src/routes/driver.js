@@ -674,4 +674,260 @@ router.get('/assigned-truck-docs', resolveDriver, async (req, res) => {
   }
 });
 
+
+/**
+ * Helper: Build PocketBase file URL.
+ * @param {string} collectionId - Collection ID or name
+ * @param {string} recordId - Record ID
+ * @param {string|string[]} filename - File field value (string or JSON array)
+ */
+const buildFileUrls = (collectionId, recordId, filename) => {
+  if (!filename) return [];
+  const PB_BASE = process.env.PB_URL || 'http://127.0.0.1:8090';
+  const names = Array.isArray(filename) ? filename : (
+    typeof filename === 'string' && filename.startsWith('[')
+      ? JSON.parse(filename)
+      : [filename]
+  );
+  return names.filter(Boolean).map(name =>
+    `${PB_BASE}/api/files/${collectionId}/${recordId}/${name}`
+  );
+};
+
+/**
+ * GET /api/driver/employee-docs
+ * Returns all documents uploaded for this driver/employee profile.
+ * Includes file download URLs for each document.
+ */
+router.get('/employee-docs', resolveDriver, async (req, res) => {
+  try {
+    const docs = await pb.collection('employee_documents').getFullList({
+      filter: `employee_id = "${req.driverId}"`,
+      sort: '-upload_date,-created',
+      $autoCancel: false
+    });
+
+    const formatted = docs.map(doc => {
+      // employee_documents.files is a multi-file field (JSON array string)
+      const fileUrls = buildFileUrls(doc.collectionId || 'employee_documents', doc.id, doc.files);
+      return {
+        id: doc.id,
+        document_type: doc.document_type,
+        document_number: doc.document_number || 'N/A',
+        issue_date: doc.issue_date || null,
+        expiry_date: doc.expiry_date || null,
+        status: doc.status || 'Active',
+        notes: doc.notes || '',
+        upload_date: doc.upload_date || doc.created,
+        file_urls: fileUrls
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      employee_docs: formatted
+    });
+  } catch (err) {
+    logger.error(`Employee docs fetch error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve employee documents.' });
+  }
+});
+
+/**
+ * GET /api/driver/driver-docs
+ * Alias for /employee-docs — returns personal documents (licence, aadhaar, PAN etc.)
+ * stored directly on the employee profile as file fields.
+ */
+router.get('/driver-docs', resolveDriver, async (req, res) => {
+  try {
+    const driver = req.driverRecord;
+    const collectionId = driver.collectionId || 'employees';
+    const driverId = driver.id;
+
+    const buildUrl = (filename) => buildFileUrls(collectionId, driverId, filename);
+
+    const profileDocs = {
+      driver_photo: buildUrl(driver.driver_photo),
+      license: {
+        number: driver.license_number || null,
+        photo_urls: buildUrl(driver.license_photo)
+      },
+      aadhaar: {
+        number: driver.aadhaar_number || null,
+        photo_urls: buildUrl(driver.aadhaar_photo)
+      },
+      pan: {
+        number: driver.pan_card || null,
+        photo_urls: buildUrl(driver.pan_photo)
+      }
+    };
+
+    // Also fetch structured employee_documents records
+    const docs = await pb.collection('employee_documents').getFullList({
+      filter: `employee_id = "${driverId}"`,
+      sort: '-upload_date,-created',
+      $autoCancel: false
+    });
+
+    const structuredDocs = docs.map(doc => ({
+      id: doc.id,
+      document_type: doc.document_type,
+      document_number: doc.document_number || 'N/A',
+      issue_date: doc.issue_date || null,
+      expiry_date: doc.expiry_date || null,
+      status: doc.status || 'Active',
+      notes: doc.notes || '',
+      upload_date: doc.upload_date || doc.created,
+      file_urls: buildFileUrls(doc.collectionId || 'employee_documents', doc.id, doc.files)
+    }));
+
+    return res.status(200).json({
+      success: true,
+      profile_docs: profileDocs,
+      structured_docs: structuredDocs
+    });
+  } catch (err) {
+    logger.error(`Driver docs fetch error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve driver documents.' });
+  }
+});
+
+/**
+ * GET /api/driver/truck-docs
+ * Returns documents for the truck currently assigned to this driver.
+ * Enhanced version with full file URL resolution using the helper.
+ */
+router.get('/truck-docs', resolveDriver, async (req, res) => {
+  const driver = req.driverRecord;
+  let truckId = driver.assigned_truck;
+  let truckNumber = '';
+
+  try {
+    if (truckId) {
+      try {
+        const truck = await pb.collection('trucks').getOne(truckId, { $autoCancel: false });
+        truckNumber = truck.truck_number;
+      } catch (e) {
+        logger.warn(`Failed to resolve truck from direct assignment: ${e.message}`);
+      }
+    }
+
+    // Fallback: find truck from latest trip
+    if (!truckId) {
+      try {
+        const latestTrips = await pb.collection('trip_logs').getList(1, 1, {
+          filter: `driver_name = "${driver.name}"`,
+          sort: '-date,-created',
+          $autoCancel: false
+        });
+        if (latestTrips.items.length > 0) {
+          truckNumber = latestTrips.items[0].truck_number;
+          if (truckNumber) {
+            const trucks = await pb.collection('trucks').getFullList({
+              filter: `truck_number = "${truckNumber}"`,
+              $autoCancel: false
+            });
+            if (trucks.length > 0) truckId = trucks[0].id;
+          }
+        }
+      } catch (e) {
+        logger.warn(`Truck fallback lookup failed: ${e.message}`);
+      }
+    }
+
+    if (!truckId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No truck assignment detected for this driver.',
+        truck: null,
+        documents: []
+      });
+    }
+
+    const docs = await pb.collection('truck_documents').getFullList({
+      filter: `truck_id = "${truckId}"`,
+      sort: '-upload_date,-created',
+      $autoCancel: false
+    });
+
+    const formatted = docs.map(doc => ({
+      id: doc.id,
+      document_type: doc.document_type,
+      document_name: doc.document_name || doc.document_type,
+      document_number: doc.document_number || 'N/A',
+      issue_date: doc.issue_date || null,
+      expiry_date: doc.expiry_date || null,
+      status: doc.status || 'Active',
+      notes: doc.notes || '',
+      upload_date: doc.upload_date || doc.created,
+      file_urls: buildFileUrls(doc.collectionId || 'truck_documents', doc.id, doc.file)
+    }));
+
+    return res.status(200).json({
+      success: true,
+      truck: { id: truckId, truck_number: truckNumber },
+      documents: formatted
+    });
+  } catch (err) {
+    logger.error(`Truck docs fetch error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve vehicle documentation.' });
+  }
+});
+
+/**
+ * GET /api/driver/attendance
+ * Returns attendance records for this driver/employee.
+ * Supports ?month=YYYY-MM and ?limit=N query params.
+ */
+router.get('/attendance', resolveDriver, async (req, res) => {
+  const driver = req.driverRecord;
+  const limit = parseInt(req.query.limit) || 90;
+  const month = req.query.month; // e.g. '2026-07'
+
+  try {
+    let filter = `staff_member = "${req.driverId}"`;
+    if (month) {
+      const [year, mon] = month.split('-');
+      const start = `${year}-${mon}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(mon), 0).getDate();
+      const end = `${year}-${mon}-${lastDay}`;
+      filter += ` && date >= "${start}" && date <= "${end}"`;
+    }
+
+    const records = await pb.collection('attendance').getList(1, limit, {
+      filter,
+      sort: '-date',
+      $autoCancel: false
+    });
+
+    // Compute summary stats
+    let present = 0, absent = 0, halfDay = 0, leave = 0;
+    records.items.forEach(r => {
+      const s = (r.status || '').toLowerCase();
+      if (s === 'present') present++;
+      else if (s === 'absent') absent++;
+      else if (s === 'half day' || s === 'halfday') halfDay++;
+      else if (s === 'leave' || s === 'on leave') leave++;
+    });
+
+    return res.status(200).json({
+      success: true,
+      summary: { present, absent, half_day: halfDay, on_leave: leave, total: records.items.length },
+      attendance: records.items.map(r => ({
+        id: r.id,
+        date: r.date,
+        status: r.status,
+        check_in_time: r.check_in_time || null,
+        check_out_time: r.check_out_time || null,
+        hours_worked: r.hours_worked || null,
+        leave_type: r.leave_type || null,
+        notes: r.notes || ''
+      }))
+    });
+  } catch (err) {
+    logger.error(`Attendance fetch error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve attendance records.' });
+  }
+});
+
 export default router;
