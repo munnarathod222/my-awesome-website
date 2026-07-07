@@ -271,20 +271,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         
         record = await pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false });
         
-        const cashbookEntries = await pb.collection('cashbook').getFullList({
-          filter: `reference_id="${expense.id}"`,
-          $autoCancel: false
-        });
-        
-        for (const entry of cashbookEntries) {
-          await pb.collection('cashbook').update(entry.id, {
-            date: dateISO,
-            description: payload.description || 'Expense',
-            amount: payload.amount,
-            category: cashCategory,
-            employee_id: payload.employee_id
-          }, { $autoCancel: false });
-        }
+        // Cashbook entry updated automatically via database update hook
         
         toast.success('Expense updated successfully');
       } else {
@@ -292,18 +279,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         
         record = await pb.collection('expenses').create(formDataToSend, { $autoCancel: false });
         
-        await pb.collection('cashbook').create({
-          date: dateISO,
-          description: payload.description || 'Expense',
-          amount: payload.amount,
-          transaction_type: 'Expense',
-          category: cashCategory,
-          added_by: currentUser.id,
-          reference_id: record.id,
-          reference_type: 'expense',
-          status: 'Completed',
-          employee_id: payload.employee_id
-        }, { $autoCancel: false });
+        // Cashbook entry created automatically via database create hook
 
         if (payload.category === 'Employee Advance') {
           const empName = employees.find(e => e.id === payload.employee_id)?.name || 'Employee';
