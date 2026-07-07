@@ -40,6 +40,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
     description: '',
     is_round_trip_rate: false,
     google_map_link: '',
+    start_location_map_link: '',
+    end_location_map_link: '',
     stops: [],
     
     // Round-trip fields
@@ -63,6 +65,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           description: route.description || '',
           is_round_trip_rate: route.is_round_trip_rate || false,
           google_map_link: route.google_map_link || '',
+          start_location_map_link: route.start_location_map_link || '',
+          end_location_map_link: route.end_location_map_link || '',
           stops: Array.isArray(route.stops) ? route.stops : [],
           
           is_split_round_trip: false,
@@ -82,6 +86,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           description: '',
           is_round_trip_rate: false,
           google_map_link: '',
+          start_location_map_link: '',
+          end_location_map_link: '',
           stops: [],
           
           is_split_round_trip: false,
@@ -247,6 +253,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           end_location: formData.route_name.split(' - ')[1] || formData.route_name,
           distance: parseFloat(formData.distance_km) || 0,
           google_map_link: formData.google_map_link || '',
+          start_location_map_link: formData.start_location_map_link || '',
+          end_location_map_link: formData.end_location_map_link || '',
           stops: formData.stops || []
         };
 
@@ -466,6 +474,31 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
               </Label>
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_location_map_link">Origin Location Map Link (URL)</Label>
+              <Input
+                id="start_location_map_link"
+                name="start_location_map_link"
+                placeholder="https://maps.google.com/?q=Origin..."
+                value={formData.start_location_map_link}
+                onChange={handleChange}
+                className="bg-background"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end_location_map_link">Destination Location Map Link (URL)</Label>
+              <Input
+                id="end_location_map_link"
+                name="end_location_map_link"
+                placeholder="https://maps.google.com/?q=Destination..."
+                value={formData.end_location_map_link}
+                onChange={handleChange}
+                className="bg-background"
+              />
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="google_map_link">Google Maps Route Link (URL)</Label>
