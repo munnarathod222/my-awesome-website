@@ -168,7 +168,7 @@ export const validateTripLogRow = (row, index, { employeesMap, trucksMap }) => {
   return { isValid: errors.length === 0, errors };
 };
 
-export const validateExpenseRow = (row, index, { trucksMap }) => {
+export const validateExpenseRow = (row, index, { trucksMap, employeesMap }) => {
   const errors = [];
   if (!row['Date (YYYY-MM-DD)']) errors.push('Date is required');
   else if (!isValidDateFormat(row['Date (YYYY-MM-DD)'])) errors.push('Invalid Date format');
@@ -183,6 +183,16 @@ export const validateExpenseRow = (row, index, { trucksMap }) => {
   if (category === 'Regular') {
     if (!subcategory) errors.push('Subcategory is required for Regular expenses');
     else if (!validSubcategories.includes(subcategory)) errors.push(`Invalid Subcategory. Must be one of: ${validSubcategories.join(', ')}`);
+  }
+
+  // Validate Employee Name for Employee Advance
+  if (category === 'Employee Advance') {
+    const empName = row['Employee Name']?.trim();
+    if (!empName) {
+      errors.push('Employee Name is required for Employee Advance');
+    } else if (employeesMap && !employeesMap.has(empName.toLowerCase())) {
+      errors.push(`Employee "${empName}" not found in system. Check spelling matches exactly.`);
+    }
   }
 
   if (!row['Amount']) errors.push('Amount is required');
