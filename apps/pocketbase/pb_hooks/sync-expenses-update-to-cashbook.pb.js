@@ -11,7 +11,12 @@ onRecordAfterUpdateSuccess((e) => {
       cashbookRecord.set("date", record.get("date"));
       cashbookRecord.set("description", record.get("description") || "Expense");
       cashbookRecord.set("amount", record.get("amount"));
-      cashbookRecord.set("category", record.get("category"));
+      let category = record.get("category") || "Expenses";
+      const subcategory = record.get("subcategory");
+      if (category === "Regular" && subcategory) {
+        category = "Regular - " + subcategory;
+      }
+      cashbookRecord.set("category", category);
       
       $app.save(cashbookRecord);
     }
