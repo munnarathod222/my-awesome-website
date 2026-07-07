@@ -45,12 +45,12 @@ export const downloadTripLogsTemplate = () => {
 };
 
 export const downloadExpensesTemplate = () => {
-  const headers = ['Date (YYYY-MM-DD)', 'Category', 'Subcategory', 'Description', 'Amount', 'Payment Method', 'Truck Number'];
+  const headers = ['Date (YYYY-MM-DD)', 'Category', 'Subcategory', 'Employee Name', 'Description', 'Amount', 'Payment Method', 'Truck Number'];
   const rows = [
-    ['2023-10-05', 'Regular', 'Fuel', 'Refill at HP Pump', '3000', 'Cash', 'MH04AB1234'],
-    ['2023-10-06', 'Regular', 'Maintenance', 'Tyre replacement', '5000', 'UPI', 'GJ12CD5678'],
-    ['2023-10-07', 'Employee Advance', '', 'Advance for trip expenses', '2000', 'Cash', ''],
-    ['2023-10-08', 'EMI', '', 'Monthly vehicle EMI', '15000', 'Bank Transfer', '']
+    ['2023-10-05', 'Regular', 'Fuel', '', 'Refill at HP Pump', '3000', 'Cash', 'MH04AB1234'],
+    ['2023-10-06', 'Regular', 'Maintenance', '', 'Tyre replacement', '5000', 'UPI', 'GJ12CD5678'],
+    ['2023-10-07', 'Employee Advance', '', 'John Doe', 'Advance for trip expenses', '2000', 'Cash', ''],
+    ['2023-10-08', 'EMI', '', '', 'Monthly vehicle EMI', '15000', 'Bank Transfer', '']
   ];
   triggerDownload('expenses_template.csv', headers, rows);
 };
