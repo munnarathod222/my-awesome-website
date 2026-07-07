@@ -11,7 +11,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -31,6 +31,7 @@ const TripLogsPage = () => {
   const [employees, setEmployees] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [tripLogs, setTripLogs] = useState([]);
+  const [routeMap, setRouteMap] = useState({});
   
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,15 +69,25 @@ const TripLogsPage = () => {
     setDataLoading(true);
     setError(null);
     try {
-      const [employeesData, trucksData, logsData] = await Promise.all([
+      const [employeesData, trucksData, logsData, routesData] = await Promise.all([
         pb.collection('employees').getFullList({ filter: 'employee_type = "driver"', $autoCancel: false }),
         pb.collection('trucks').getFullList({ $autoCancel: false }),
-        pb.collection('trip_logs').getFullList({ sort: '-date', expand: 'client_id', $autoCancel: false })
+        pb.collection('trip_logs').getFullList({ sort: '-date', expand: 'client_id', $autoCancel: false }),
+        pb.collection('routes').getFullList({ $autoCancel: false }).catch(() => [])
       ]);
       
+      // Build a lookup map keyed by route_name and route_id for fast enrichment
+      const rMap = {};
+      routesData.forEach(r => {
+        if (r.id) rMap[r.id] = r;
+        if (r.route_name) rMap[r.route_name] = r;
+        if (r.route_code) rMap[r.route_code] = r;
+      });
+
       setEmployees(employeesData);
       setTrucks(trucksData);
       setTripLogs(logsData);
+      setRouteMap(rMap);
     } catch (err) {
       console.error('[TripLogsPage] Error fetching data:', err);
       setError('Failed to load trip logs data. Please check your connection and try again.');
@@ -639,7 +650,106 @@ const TripLogsPage = () => {
                                 </Select>
                               </div>
                             </TableCell>
-                            <TableCell className="max-w-[150px] truncate text-sm font-medium" title={log.route}>{log.route}</TableCell>
+                            <TableCell className="py-2">
+                              {(() => {
+                                const routeRec = routeMap[log.route_id] || routeMap[log.route];
+                                const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
+                                return (
+                                  <div className="flex flex-col gap-1.5 min-w-[180px]">
+                                    {/* Route name + full route map link */}
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-semibold text-sm text-foreground" title={log.route}>
+                                        {log.route || '—'}
+                                      </span>
+                                      {routeRec?.google_map_link && (
+                                        <a
+                                          href={routeRec.google_map_link}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={e => e.stopPropagation()}
+                                          title="Open full route in Google Maps"
+                                          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
+                                        >
+                                          <Map className="w-3.5 h-3.5" />
+                                        </a>
+                                      )}
+                                    </div>
+
+                                    {/* Origin → Destination chain with individual map links */}
+                                    {(routeRec?.start_location_map_link || routeRec?.end_location_map_link || stops.length > 0) && (
+                                      <div className="flex items-center flex-wrap gap-1 text-[10px] leading-tight">
+                                        {/* Origin */}
+                                        {routeRec?.start_location_map_link ? (
+                                          <a
+                                            href={routeRec.start_location_map_link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={e => e.stopPropagation()}
+                                            title="Navigate to Origin"
+                                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-colors font-bold"
+                                          >
+                                            <ExternalLink className="w-2.5 h-2.5" />
+                                            {routeRec?.start_location || log.route?.split('->')[0]?.trim() || 'Origin'}
+                                          </a>
+                                        ) : routeRec?.start_location ? (
+                                          <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
+                                            {routeRec.start_location}
+                                          </span>
+                                        ) : null}
+
+                                        {/* Intermediate Stops */}
+                                        {stops.sort((a, b) => (a.sequence || 0) - (b.sequence || 0)).map((stop, idx) => (
+                                          <React.Fragment key={idx}>
+                                            <span className="text-muted-foreground/40">›</span>
+                                            {stop.map_link ? (
+                                              <a
+                                                href={stop.map_link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={e => e.stopPropagation()}
+                                                title={`Stop ${stop.sequence}: ${stop.stop_name}`}
+                                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors font-bold"
+                                              >
+                                                <ExternalLink className="w-2.5 h-2.5" />
+                                                {stop.stop_name}
+                                              </a>
+                                            ) : (
+                                              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
+                                                {stop.stop_name}
+                                              </span>
+                                            )}
+                                          </React.Fragment>
+                                        ))}
+
+                                        {/* Destination */}
+                                        {(routeRec?.end_location || routeRec?.end_location_map_link) && (
+                                          <>
+                                            <span className="text-muted-foreground/40">›</span>
+                                            {routeRec?.end_location_map_link ? (
+                                              <a
+                                                href={routeRec.end_location_map_link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={e => e.stopPropagation()}
+                                                title="Navigate to Destination"
+                                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors font-bold"
+                                              >
+                                                <ExternalLink className="w-2.5 h-2.5" />
+                                                {routeRec.end_location}
+                                              </a>
+                                            ) : (
+                                              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
+                                                {routeRec.end_location}
+                                              </span>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </TableCell>
                             <TableCell className="text-right text-sm font-bold text-foreground">
                               {formatCurrency(log.revenue)}
                             </TableCell>
