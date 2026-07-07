@@ -452,4 +452,5 @@ app.listen(port, () => {
   logger.info(`🚀 Unified Full-Stack Server running on http://localhost:${port}`);
 });
 
+// Triggering full container redeploy to restore storage files from Supabase
 export default app;
