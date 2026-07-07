@@ -50,11 +50,6 @@ pocketbaseClient.beforeSend = async function (url, options) {
         await authPromise;
     }
 
-    if (pocketbaseClient.authStore.isValid && pocketbaseClient.authStore.token) {
-        options.headers = options.headers || {};
-        options.headers['Authorization'] = pocketbaseClient.authStore.token;
-    }
-
     return { url, options };
 };
 
