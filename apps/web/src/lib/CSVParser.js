@@ -174,12 +174,23 @@ export const validateExpenseRow = (row, index, { trucksMap }) => {
   else if (!isValidDateFormat(row['Date (YYYY-MM-DD)'])) errors.push('Invalid Date format');
 
   const category = row['Category']?.trim();
-  const validCategories = ['Fuel', 'Maintenance', 'Toll', 'Insurance', 'Salary', 'Rent', 'Utilities', 'Driver Advance', 'Other'];
+  const validCategories = ['Regular', 'Employee Advance', 'EMI'];
   if (!category) errors.push('Category is required');
   else if (!validCategories.includes(category)) errors.push(`Invalid Category. Must be one of: ${validCategories.join(', ')}`);
 
+  const subcategory = row['Subcategory']?.trim();
+  const validSubcategories = ['Fuel', 'Maintenance', 'Toll', 'Insurance', 'Salary', 'Rent', 'Utilities', 'Rapido', 'Miscellaneous', 'Other'];
+  if (category === 'Regular') {
+    if (!subcategory) errors.push('Subcategory is required for Regular expenses');
+    else if (!validSubcategories.includes(subcategory)) errors.push(`Invalid Subcategory. Must be one of: ${validSubcategories.join(', ')}`);
+  }
+
   if (!row['Amount']) errors.push('Amount is required');
   else if (!isPositiveNumber(row['Amount'])) errors.push('Amount must be a positive number');
+
+  const validPaymentMethods = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer', 'Cheque', 'UPI'];
+  const pm = row['Payment Method']?.trim();
+  if (pm && !validPaymentMethods.includes(pm)) errors.push(`Invalid Payment Method. Must be one of: ${validPaymentMethods.join(', ')}`);
 
   const truckNum = row['Truck Number']?.trim();
   if (truckNum && !trucksMap.has(truckNum)) errors.push(`Truck Number '${truckNum}' not found in system`);
