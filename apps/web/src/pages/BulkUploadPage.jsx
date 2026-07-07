@@ -7,12 +7,20 @@ import Header from '@/components/Header.jsx';
 import BulkUploadEmployees from '@/components/BulkUploadEmployees.jsx';
 import BulkUploadTripLogs from '@/components/BulkUploadTripLogs.jsx';
 import BulkUploadExpenses from '@/components/BulkUploadExpenses.jsx';
+import { useSearchParams } from 'react-router-dom';
 import BulkUploadVehicles from '@/components/BulkUploadVehicles.jsx';
 import BulkUploadRoutes from '@/components/BulkUploadRoutes.jsx';
 import BulkUploadClients from '@/components/BulkUploadClients.jsx';
 import BulkUploadDriverAdvances from '@/components/BulkUploadDriverAdvances.jsx';
 
 const BulkUploadPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'clients';
+
+  const handleTabChange = (val) => {
+    setSearchParams({ tab: val });
+  };
+
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col">
       <Helmet>
@@ -20,7 +28,7 @@ const BulkUploadPage = () => {
       </Helmet>
       
       <Header />
-
+ 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-500">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground" style={{letterSpacing: '-0.02em'}}>
@@ -31,7 +39,7 @@ const BulkUploadPage = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="clients" className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="bg-muted/50 p-1 mb-8 flex flex-wrap h-auto w-full justify-start rounded-xl overflow-x-auto">
             <TabsTrigger value="clients" className="gap-2 px-6 py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
               <Building2 className="w-4 h-4" /> Clients
