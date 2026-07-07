@@ -3,7 +3,7 @@ import logger from './logger.js';
 
 const POCKETBASE_HOST = `http://localhost:8090`;
 
-async function waitForHealth({ retries = 10, delayMs = 1000 } = {}) {
+async function waitForHealth({ retries = 30, delayMs = 1000 } = {}) {
     for (let i = 1; i <= retries; i++) {
         try {
             const response = await fetch(`${POCKETBASE_HOST}/api/health`, { method: 'HEAD' });
@@ -76,8 +76,6 @@ pocketbaseClient.beforeSend = async function (url, options) {
         logger.info('PocketBase client initialized successfully');
     } catch (err) {
         logger.error('Failed to initialize PocketBase client:', err);
-
-        process.exit(1);
     }
 })();
 
