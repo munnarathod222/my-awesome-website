@@ -39,6 +39,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
     distance_km: '',
     description: '',
     is_round_trip_rate: false,
+    google_map_link: '',
+    stops: [],
     
     // Round-trip fields
     is_split_round_trip: false,
@@ -60,6 +62,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           distance_km: route.distance_km || '',
           description: route.description || '',
           is_round_trip_rate: route.is_round_trip_rate || false,
+          google_map_link: route.google_map_link || '',
+          stops: Array.isArray(route.stops) ? route.stops : [],
           
           is_split_round_trip: false,
           up_code: '',
@@ -77,6 +81,8 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           distance_km: '',
           description: '',
           is_round_trip_rate: false,
+          google_map_link: '',
+          stops: [],
           
           is_split_round_trip: false,
           up_code: '',
@@ -90,9 +96,37 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
     }
   }, [isOpen, route]);
 
+  const handleAddStop = () => {
+    setFormData(prev => ({
+      ...prev,
+      stops: [...prev.stops, { stop_name: '', map_link: '', sequence: prev.stops.length + 1 }]
+    }));
+  };
+
+  const handleRemoveStop = (index) => {
+    setFormData(prev => {
+      const updatedStops = prev.stops.filter((_, idx) => idx !== index)
+        .map((stop, idx) => ({ ...stop, sequence: idx + 1 }));
+      return { ...prev, stops: updatedStops };
+    });
+  };
+
+  const handleStopChange = (index, field, value) => {
+    setFormData(prev => {
+      const updatedStops = prev.stops.map((stop, idx) => {
+        if (idx === index) {
+          return { ...stop, [field]: value };
+        }
+        return stop;
+      });
+      return { ...prev, stops: updatedStops };
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
   };
 
   const handleSplitRoundTripToggle = (checked) => {
@@ -212,7 +246,9 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           is_round_trip_rate: formData.is_round_trip_rate,
           start_location: formData.route_name.split(' - ')[0] || formData.route_name,
           end_location: formData.route_name.split(' - ')[1] || formData.route_name,
-          distance: parseFloat(formData.distance_km) || 0
+          distance: parseFloat(formData.distance_km) || 0,
+          google_map_link: formData.google_map_link || '',
+          stops: formData.stops || []
         };
 
         if (isEdit) {
@@ -431,6 +467,67 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
               </Label>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="google_map_link">Google Maps Route Link (URL)</Label>
+            <Input
+              id="google_map_link"
+              name="google_map_link"
+              placeholder="https://maps.google.com/?q=..."
+              value={formData.google_map_link}
+              onChange={handleChange}
+              className="bg-background"
+            />
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold text-primary">Intermediate Stops (Multi-Stop Option)</Label>
+              <Button type="button" size="sm" variant="outline" onClick={handleAddStop} className="h-8 text-xs">
+                + Add Stop
+              </Button>
+            </div>
+            
+            {formData.stops.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic bg-background/50 p-3 rounded-xl border border-dashed border-border text-center">
+                No intermediate stops defined.
+              </p>
+            ) : (
+              <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                {formData.stops.map((stop, idx) => (
+                  <div key={idx} className="flex gap-2 items-start bg-background/30 p-3 rounded-xl border border-border/50 relative group">
+                    <span className="text-[10px] font-bold text-muted-foreground bg-border w-5 h-5 rounded-full flex items-center justify-center mt-2.5">
+                      {stop.sequence}
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        placeholder="Stop Name (e.g. Pune Toll)"
+                        value={stop.stop_name}
+                        onChange={(e) => handleStopChange(idx, 'stop_name', e.target.value)}
+                        className="h-8 text-xs bg-background"
+                        required
+                      />
+                      <Input
+                        placeholder="Google Maps URL for this stop"
+                        value={stop.map_link}
+                        onChange={(e) => handleStopChange(idx, 'map_link', e.target.value)}
+                        className="h-8 text-xs bg-background"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleRemoveStop(idx)}
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10 mt-1"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
