@@ -20,6 +20,7 @@ const BulkUploadLayout = ({
   const [dragActive, setDragActive] = useState(false);
   const [fileData, setFileData] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
   const fileInputRef = useRef(null);
 
   const processFile = async (file) => {
@@ -93,15 +94,21 @@ const BulkUploadLayout = ({
 
   const clearFile = () => {
     setFileData(null);
+    setImportErrors([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const executeImport = async () => {
     if (!fileData || fileData.validation.invalid > 0) return;
     setIsImporting(true);
+    setImportErrors([]);
     try {
-      await onImport(fileData.rows);
-      clearFile();
+      await onImport(fileData.rows, setImportErrors);
+      // Only clear file if there were NO import errors (errors are set inside onImport)
+    } catch (err) {
+      // Catch any unhandled errors from the importer
+      const msg = err?.data?.message || err?.message || String(err);
+      setImportErrors([{ rowNum: '?', message: msg }]);
     } finally {
       setIsImporting(false);
     }
@@ -206,6 +213,26 @@ const BulkUploadLayout = ({
                   {isImporting ? 'Importing Data...' : `Start Import (${fileData.validation.valid} records)`}
                 </Button>
               </div>
+
+              {importErrors.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Import Errors</AlertTitle>
+                    <AlertDescription>
+                      {importErrors.length} record(s) failed to import. Details below:
+                    </AlertDescription>
+                  </Alert>
+                  <div className="max-h-[250px] overflow-y-auto space-y-1 rounded-lg border border-destructive/30 p-2 bg-destructive/5">
+                    {importErrors.map((err, idx) => (
+                      <div key={idx} className="p-2 rounded text-sm">
+                        <span className="font-semibold text-destructive">Row {err.rowNum}:</span>{' '}
+                        <span className="text-muted-foreground">{err.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
