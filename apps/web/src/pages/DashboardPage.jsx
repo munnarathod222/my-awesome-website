@@ -88,7 +88,7 @@ const DashboardPage = () => {
         pb.collection('trucks').getList(1, 1, { $autoCancel: false }),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }),
         pb.collection('expenses').getList(1, 500, { $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 5, { sort: '-created', expand: 'user_id', $autoCancel: false })
+        pb.collection('trip_logs').getList(1, 5, { sort: '-created', $autoCancel: false })
       ];
 
       const results = await Promise.all(promises);
