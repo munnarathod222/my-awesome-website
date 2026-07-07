@@ -589,9 +589,22 @@ export default function RoutesPage() {
                       <div className="flex items-center justify-between my-4 relative px-2">
                         <div className="text-left w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Origin</div>
-                          <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={start}>
-                            {start}
-                          </div>
+                          {route.start_location_map_link ? (
+                            <a
+                              href={route.start_location_map_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                              title={`Open ${start} in Google Maps`}
+                            >
+                              {start} <Map className="w-2.5 h-2.5 shrink-0" />
+                            </a>
+                          ) : (
+                            <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={start}>
+                              {start}
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex-1 flex flex-col items-center justify-center px-2 relative">
@@ -604,9 +617,22 @@ export default function RoutesPage() {
                         
                         <div className="text-right w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Destination</div>
-                          <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={end || 'N/A'}>
-                            {end || 'N/A'}
-                          </div>
+                          {route.end_location_map_link ? (
+                            <a
+                              href={route.end_location_map_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 justify-end"
+                              title={`Open ${end} in Google Maps`}
+                            >
+                              <Map className="w-2.5 h-2.5 shrink-0" /> {end || 'N/A'}
+                            </a>
+                          ) : (
+                            <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={end || 'N/A'}>
+                              {end || 'N/A'}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
