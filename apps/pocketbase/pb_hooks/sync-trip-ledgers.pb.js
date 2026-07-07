@@ -112,6 +112,7 @@ onRecordAfterCreateSuccess((e) => {
 
   } catch (error) {
     console.error("Error in sync-trip-ledgers.pb.js hook:", error);
+    console.error("\n!!! HOOK ERROR: " + error.toString() + "\n" + (error.stack || "") + "\n");
     throw new Error("Ledger reconciliation transaction failed: " + error.message);
   }
   
