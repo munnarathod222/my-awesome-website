@@ -192,6 +192,37 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
       });
       if (activeTrips.items.length > 0) {
         const trip = activeTrips.items[0];
+        
+        let mapLink = "";
+        let stopsList = [];
+        
+        // Strategy A: Try route_id relation
+        if (trip.route_id) {
+          try {
+            const routeRec = await pb.collection('routes').getOne(trip.route_id, { $autoCancel: false });
+            mapLink = routeRec.google_map_link || "";
+            stopsList = Array.isArray(routeRec.stops) ? routeRec.stops : [];
+          } catch (e) {
+            logger.warn(`Failed to fetch route by route_id: ${e.message}`);
+          }
+        }
+        
+        // Strategy B Fallback: Query by route name
+        if (!mapLink && trip.route) {
+          try {
+            const routes = await pb.collection('routes').getFullList({
+              filter: `route_name = "${trip.route}"`,
+              $autoCancel: false
+            });
+            if (routes.length > 0) {
+              mapLink = routes[0].google_map_link || "";
+              stopsList = Array.isArray(routes[0].stops) ? routes[0].stops : [];
+            }
+          } catch (e) {
+            logger.warn(`Failed to fetch route by route_name fallback: ${e.message}`);
+          }
+        }
+
         activeTrip = {
           id: trip.id,
           trip_id: trip.trip_id,
@@ -199,7 +230,9 @@ router.get('/dashboard', resolveDriver, async (req, res) => {
           route: trip.route,
           truck_number: trip.truck_number,
           kms: trip.kms,
-          status: trip.trip_status
+          status: trip.trip_status,
+          google_map_link: mapLink,
+          stops: stopsList
         };
       }
     } catch (e) {
@@ -249,9 +282,31 @@ router.get('/trips', resolveDriver, async (req, res) => {
       $autoCancel: false
     });
 
+    // Populate google_map_link and stops for all trips efficiently
+    let enrichedTrips = trips.items;
+    try {
+      const routesList = await pb.collection('routes').getFullList({ $autoCancel: false });
+      const routeMap = {};
+      routesList.forEach(r => {
+        routeMap[r.id] = r;
+        routeMap[r.route_name] = r;
+      });
+
+      enrichedTrips = trips.items.map(trip => {
+        const routeRec = routeMap[trip.route_id] || routeMap[trip.route];
+        return {
+          ...trip,
+          google_map_link: routeRec?.google_map_link || "",
+          stops: Array.isArray(routeRec?.stops) ? routeRec.stops : []
+        };
+      });
+    } catch (e) {
+      logger.warn(`Failed to enrich trips list with route map details: ${e.message}`);
+    }
+
     return res.status(200).json({
       success: true,
-      trips: trips.items
+      trips: enrichedTrips
     });
   } catch (err) {
     logger.error(`Failed to fetch driver trips: ${err.message}`);
