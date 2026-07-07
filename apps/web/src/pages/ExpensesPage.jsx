@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Helmet } from 'react-helmet';
+import { useNavigate } from 'react-router-dom';
 import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 
 const ExpensesPage = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [advances, setAdvances] = useState([]);
@@ -303,6 +305,9 @@ const ExpensesPage = () => {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <Button onClick={handleManualRefresh} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none bg-background" disabled={loading || isRefreshing}>
               <RefreshCw className={`w-4 h-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+            <Button onClick={() => navigate('/bulk-upload?tab=expenses')} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none bg-background">
+              <UploadCloud className="w-4 h-4" /> Bulk Import
             </Button>
             <Button onClick={() => { setEditingExpense(null); setIsExpenseModalOpen(true); }} className="shadow-sm rounded-xl flex-1 md:flex-none">
               <Plus className="w-4 h-4 mr-2" /> Add Record
