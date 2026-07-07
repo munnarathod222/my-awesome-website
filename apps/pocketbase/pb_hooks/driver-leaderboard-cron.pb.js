@@ -1,6 +1,6 @@
 /// <reference path="../pb_data/types.d.ts" />
 
-function awardLeaderboardBonuses(targetMonth, targetYear) {
+globalThis.awardLeaderboardBonuses = function(targetMonth, targetYear) {
   try {
     console.log(`[leaderboard-cron] Awarding driver leaderboard bonuses for period: ${targetMonth}/${targetYear}...`);
     
@@ -196,13 +196,17 @@ cronAdd("driver_leaderboard_payroll_bonus", "59 23 28,29,30,31 * *", () => {
   tomorrow.setDate(today.getDate() + 1);
   
   if (tomorrow.getDate() === 1) {
-    awardLeaderboardBonuses(today.getMonth() + 1, today.getFullYear());
+    if (typeof globalThis.awardLeaderboardBonuses === "function") {
+      globalThis.awardLeaderboardBonuses(today.getMonth() + 1, today.getFullYear());
+    }
   }
 });
 
 // 2. HTTP POST Trigger Route for manual run/testing
 routerAdd("POST", "/api/custom/leaderboard/evaluate", (e) => {
   const today = new Date();
-  awardLeaderboardBonuses(today.getMonth() + 1, today.getFullYear());
+  if (typeof globalThis.awardLeaderboardBonuses === "function") {
+    globalThis.awardLeaderboardBonuses(today.getMonth() + 1, today.getFullYear());
+  }
   return e.json(200, { success: true, message: "Leaderboard evaluation completed and bonuses synced to payroll." });
 });
