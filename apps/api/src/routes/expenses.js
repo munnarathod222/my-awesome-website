@@ -34,26 +34,13 @@ router.post('/', async (req, res) => {
       status: status || 'pending',
     });
 
-    // Create corresponding cashbook entry
-    const cashbookEntry = await pb.collection('cashbook').create({
-      added_by: userId,
-      reference_id: expense.id,
-      reference_type: 'regular_expense',
-      transaction_type: 'Expense',
-      amount: expense.amount,
-      description: expense.description || 'Regular Expense',
-      category: expense.subcategory || expense.category || 'Expenses',
-      date: expense.date,
-      status: 'Pending',
-    });
-
-    logger.info(`Expense ${expense.id} created and synced to cashbook`);
+    logger.info(`Expense ${expense.id} created`);
 
     res.status(201).json({
       success: true,
       message: 'Expense created successfully',
       expense,
-      cashbookEntry,
+      cashbookEntry: null,
     });
   } catch (error) {
     logger.error('Error creating expense:', error.message);
@@ -142,30 +129,7 @@ router.put('/:expenseId', async (req, res) => {
       ...(status !== undefined && { status }),
     });
 
-    // Find and update corresponding cashbook entry
-    let cashbookEntry = null;
-    try {
-      cashbookEntry = await pb.collection('cashbook').getFirstListItem(
-        `reference_id="${expenseId}" && reference_type="regular_expense"`
-      );
-    } catch (error) {
-      if (!error.message.includes('Failed to find')) {
-        throw error;
-      }
-    }
-
-    if (cashbookEntry) {
-      await pb.collection('cashbook').update(cashbookEntry.id, {
-        amount: updatedExpense.amount,
-        description: updatedExpense.description || 'Regular Expense',
-        category: updatedExpense.subcategory || updatedExpense.category || 'Expenses',
-        date: updatedExpense.date,
-        status: updatedExpense.status === 'Approved' ? 'Completed' : 'Pending',
-      });
-      logger.info(`Expense ${expenseId} updated and cashbook entry synced`);
-    } else {
-      throw new Error(`Cashbook entry not found for expense ${expenseId}`);
-    }
+    // Cashbook entry updated automatically via database update hook
 
     res.json({
       success: true,
@@ -199,24 +163,7 @@ router.delete('/:expenseId', async (req, res) => {
       throw new Error(`Expense with ID ${expenseId} not found`);
     }
 
-    // Find and delete corresponding cashbook entry
-    let cashbookEntry = null;
-    try {
-      cashbookEntry = await pb.collection('cashbook').getFirstListItem(
-        `reference_id="${expenseId}" && reference_type="regular_expense"`
-      );
-    } catch (error) {
-      if (!error.message.includes('Failed to find')) {
-        throw error;
-      }
-    }
-
-    if (cashbookEntry) {
-      await pb.collection('cashbook').delete(cashbookEntry.id);
-      logger.info(`Cashbook entry deleted for expense ${expenseId}`);
-    } else {
-      throw new Error(`Cashbook entry not found for expense ${expenseId}`);
-    }
+    // Cashbook entry deleted automatically via database delete hook
 
     // Delete expense
     await pb.collection('expenses').delete(expenseId);
