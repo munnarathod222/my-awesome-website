@@ -509,9 +509,30 @@ export default function RoutesPage() {
                       </div>
                     </div>
                     
-                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border self-start mt-2 block w-fit ${styles.badge}`}>
-                      {styles.text}
-                    </span>
+                    <div className="flex gap-1.5 flex-wrap mt-2">
+                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border w-fit ${styles.badge}`}>
+                        {styles.text}
+                      </span>
+                      {route.google_map_link && (
+                        <a 
+                          href={route.google_map_link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[10px] font-bold tracking-wider px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full border border-emerald-500/20 hover:bg-emerald-500/25 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Map className="w-2.5 h-2.5" /> Map Link
+                        </a>
+                      )}
+                      {route.stops && Array.isArray(route.stops) && route.stops.length > 0 && (
+                        <span 
+                          title={route.stops.map(s => s.stop_name).join(' ➔ ')}
+                          className="text-[10px] font-bold tracking-wider px-2 py-0.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-500/20 flex items-center gap-1"
+                        >
+                          <Compass className="w-2.5 h-2.5" /> {route.stops.length} Stop{route.stops.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
                   </CardHeader>
 
                   <CardContent className="py-2 flex-1 flex flex-col justify-center">
