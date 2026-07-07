@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud } from 'lucide-react';
+import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -42,6 +43,8 @@ const ExpensesPage = () => {
   const [activeLightboxImage, setActiveLightboxImage] = useState(null);
   const [directUploadExpense, setDirectUploadExpense] = useState(null);
   const directFileInputRef = useRef(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [filters, setFilters] = useState({
     search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'
@@ -130,11 +133,62 @@ const ExpensesPage = () => {
       }
       await pb.collection('expenses').delete(id, { $autoCancel: false });
       toast.success('Expense deleted successfully');
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
       toast.error(err.message || 'Failed to delete the expense.');
     }
   };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} selected expense(s)? This cannot be undone.`)) return;
+    setIsBulkDeleting(true);
+    let deleted = 0;
+    let failed = 0;
+    try {
+      for (const id of selectedIds) {
+        try {
+          const cashbookEntries = await pb.collection('cashbook').getFullList({
+            filter: `reference_id="${id}" && reference_type="expense"`,
+            $autoCancel: false
+          });
+          for (const entry of cashbookEntries) {
+            await pb.collection('cashbook').delete(entry.id, { $autoCancel: false });
+          }
+          await pb.collection('expenses').delete(id, { $autoCancel: false });
+          deleted++;
+        } catch {
+          failed++;
+        }
+      }
+      setSelectedIds(new Set());
+      setRefreshTrigger(prev => prev + 1);
+      if (failed === 0) {
+        toast.success(`${deleted} expense(s) deleted successfully`);
+      } else {
+        toast.warning(`${deleted} deleted, ${failed} failed`);
+      }
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const toggleSelect = useCallback((id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback((expenses) => {
+    setSelectedIds(prev => {
+      const allSelected = expenses.every(e => prev.has(e.id));
+      if (allSelected) return new Set();
+      return new Set(expenses.map(e => e.id));
+    });
+  }, []);
 
   const handleMarkAdvanceSettled = async (id) => {
     setProcessingAdvanceId(id);
@@ -373,6 +427,14 @@ const ExpensesPage = () => {
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow>
+                        <TableHead className="w-[44px]">
+                          <Checkbox
+                            id="select-all-expenses"
+                            checked={filteredExpenses.length > 0 && filteredExpenses.every(e => selectedIds.has(e.id))}
+                            onCheckedChange={() => toggleSelectAll(filteredExpenses)}
+                            aria-label="Select all expenses"
+                          />
+                        </TableHead>
                         <TableHead className="w-[120px]">Date</TableHead>
                         <TableHead className="w-[220px]">Category & Type</TableHead>
                         <TableHead>Description</TableHead>
@@ -385,6 +447,7 @@ const ExpensesPage = () => {
                       {loading ? (
                         Array.from({ length: 3 }).map((_, i) => (
                           <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                             <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-8 w-32 rounded-full" /></TableCell>
                             <TableCell><Skeleton className="h-4 w-48" /></TableCell>
@@ -394,10 +457,21 @@ const ExpensesPage = () => {
                           </TableRow>
                         ))
                       ) : filteredExpenses.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground"><Receipt className="w-10 h-10 mb-3 opacity-20 mx-auto" /><p>No expenses found.</p></TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground"><Receipt className="w-10 h-10 mb-3 opacity-20 mx-auto" /><p>No expenses found.</p></TableCell></TableRow>
                       ) : (
                         filteredExpenses.map((expense) => (
-                          <TableRow key={expense.id} className="hover:bg-muted/30 transition-colors">
+                          <TableRow
+                            key={expense.id}
+                            className={`hover:bg-muted/30 transition-colors ${selectedIds.has(expense.id) ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                id={`select-expense-${expense.id}`}
+                                checked={selectedIds.has(expense.id)}
+                                onCheckedChange={() => toggleSelect(expense.id)}
+                                aria-label={`Select expense ${expense.id}`}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium whitespace-nowrap text-sm">{format(new Date(expense.date), 'MMM dd, yyyy')}</TableCell>
                             <TableCell>
                               <div className="flex flex-col items-start gap-1">
@@ -534,6 +608,46 @@ const ExpensesPage = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Floating Bulk Action Bar */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out ${
+          selectedIds.size > 0
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 translate-y-8 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border border-border bg-card backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-[11px] font-bold text-primary-foreground">{selectedIds.size}</span>
+            </div>
+            <span className="text-sm font-medium text-foreground">
+              {selectedIds.size === 1 ? '1 expense selected' : `${selectedIds.size} expenses selected`}
+            </span>
+          </div>
+          <div className="w-px h-5 bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 text-muted-foreground hover:text-foreground gap-1.5"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="h-8 px-4 gap-1.5 font-semibold"
+            onClick={handleBulkDelete}
+            disabled={isBulkDeleting}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {isBulkDeleting ? 'Deleting...' : 'Delete Selected'}
+          </Button>
+        </div>
+      </div>
 
       <input 
         type="file" 
