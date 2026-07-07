@@ -108,39 +108,13 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
       if (editExpense) {
         await pb.collection('expenses').update(editExpense.id, payload, { $autoCancel: false });
         
-        // Find and update corresponding cashbook entry
-        const cashbookEntries = await pb.collection('cashbook').getFullList({
-          filter: `reference_id="${editExpense.id}"`,
-          $autoCancel: false
-        });
-        
-        for (const entry of cashbookEntries) {
-          await pb.collection('cashbook').update(entry.id, {
-            date: payload.date,
-            description: payload.description,
-            category: payload.category,
-            amount: payload.amount,
-            notes: payload.notes,
-            employee_id: payload.employee_id
-          }, { $autoCancel: false });
-        }
+        // Cashbook entry updated automatically via database update hook
         
         toast.success('Expense updated successfully');
       } else {
         const newExpense = await pb.collection('expenses').create(payload, { $autoCancel: false });
         
-        // Sync to cashbook collection manually here as fallback
-        await pb.collection('cashbook').create({
-          date: payload.date + ' 12:00:00.000Z', 
-          description: payload.description,
-          category: payload.category,
-          amount: payload.amount,
-          transaction_type: 'Expense',
-          reference_id: newExpense.id,
-          notes: payload.notes,
-          added_by: currentUser.id,
-          employee_id: payload.employee_id
-        }, { $autoCancel: false });
+        // Cashbook entry created automatically via database create hook
         
         toast.success('Expense created successfully');
       }
