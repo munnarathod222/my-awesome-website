@@ -22,10 +22,16 @@ const BulkUploadClients = () => {
     fetchClients();
   }, []);
 
-  const handleImport = async (rows) => {
+  const handleImport = async (rows, setImportErrors) => {
     let successCount = 0;
-    try {
-      for (const row of rows) {
+    const rowErrors = [];
+    const newlyAddedEmails = [];
+    const newlyAddedPhones = [];
+
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      const rowNum = index + 2; // 1-indexed + header row
+      try {
         await pb.collection('clients').create({
           client_name: row['Client Name'],
           email: row['Email'],
@@ -48,20 +54,37 @@ const BulkUploadClients = () => {
           status: row['Status'] || 'Active'
         }, { $autoCancel: false });
         successCount++;
+        if (row['Email']) newlyAddedEmails.push(row['Email'].toLowerCase());
+        if (row['Phone']) newlyAddedPhones.push(row['Phone']);
+      } catch (error) {
+        const pbMsg = error?.data?.message || error?.message || String(error);
+        const fieldErrors = error?.data?.data
+          ? Object.entries(error.data.data).map(([k, v]) => `${k}: ${v?.message || v}`).join('; ')
+          : '';
+        const fullMsg = fieldErrors ? `${pbMsg} — ${fieldErrors}` : pbMsg;
+        console.error(`Row ${rowNum} import error:`, fullMsg, error);
+        rowErrors.push({ rowNum, message: fullMsg });
       }
-      toast.success(`${successCount} clients imported successfully`);
-      
+    }
+
+    if (newlyAddedEmails.length > 0 || newlyAddedPhones.length > 0) {
       const newEmails = new Set(contextData.existingEmails);
       const newPhones = new Set(contextData.existingPhones);
-      rows.forEach(r => {
-        if(r['Email']) newEmails.add(r['Email'].toLowerCase());
-        if(r['Phone']) newPhones.add(r['Phone']);
-      });
+      newlyAddedEmails.forEach(e => newEmails.add(e));
+      newlyAddedPhones.forEach(p => newPhones.add(p));
       setContextData({ existingEmails: newEmails, existingPhones: newPhones });
-      
-    } catch (error) {
-      console.error('Import error:', error);
-      toast.error(`Import failed after ${successCount} records. Check logs. Ensure emails are unique.`);
+    }
+
+    if (rowErrors.length === 0) {
+      toast.success(`✅ ${successCount} clients imported successfully!`);
+    } else {
+      setImportErrors(rowErrors);
+      const preview = rowErrors.slice(0, 3).map(e => `Row ${e.rowNum}: ${e.message}`).join('\n');
+      const more = rowErrors.length > 3 ? `\n...and ${rowErrors.length - 3} more (see below).` : '';
+      toast.error(
+        `Imported ${successCount} records. ${rowErrors.length} failed.\n${preview}${more}`,
+        { duration: 10000 }
+      );
     }
   };
 
