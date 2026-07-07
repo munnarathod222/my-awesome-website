@@ -54,6 +54,9 @@ router.post('/bulk-create', async (req, res) => {
       createdTrips.push(record);
     } catch (err) {
       logger.error(`Failed to create bulk trip at index ${i}:`, err);
+      logger.error(`Trip payload:`, JSON.stringify(trip));
+      logger.error(`PocketBase error data:`, JSON.stringify(err.data));
+      logger.error(`PocketBase error status:`, err.status);
       // Attempt rollback of already created trips in this batch to preserve consistency
       logger.info(`Rolling back ${createdTrips.length} created trips in this batch...`);
       for (const created of createdTrips) {
