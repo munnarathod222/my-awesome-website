@@ -54,7 +54,7 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
         if (tyre.tyre_image) {
           const imgs = Array.isArray(tyre.tyre_image) ? tyre.tyre_image : [tyre.tyre_image];
           setImagePreviews(imgs.filter(Boolean).map(img => ({
-            url: pb.files.getURL(tyre, img),
+            url: pb.files.getUrl(tyre, img),
             isExisting: true,
             name: img
           })));
@@ -65,7 +65,7 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
         // Handle bill_invoice
         if (tyre.bill_invoice) {
           setBillPreview({
-            url: pb.files.getURL(tyre, tyre.bill_invoice),
+            url: pb.files.getUrl(tyre, tyre.bill_invoice),
             isExisting: true,
             name: tyre.bill_invoice
           });
