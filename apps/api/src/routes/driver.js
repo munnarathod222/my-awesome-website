@@ -2,6 +2,14 @@ import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 
+// ─── Security: sanitise strings used in PocketBase filter expressions ─────────
+// Strips characters that could break out of a filter string literal.
+const sanitize = (value) => {
+  if (typeof value !== 'string') return '';
+  // Remove PocketBase filter-injection characters: quotes, backslash, newlines
+  return value.replace(/[\'"\\\n\r\x00]/g, '').trim().slice(0, 256);
+};
+
 const router = Router();
 function Router() {
   return express.Router();
@@ -13,8 +21,8 @@ function Router() {
 const resolveDriver = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   let userId = null;
-  let driverPhone = req.headers['x-driver-phone'];
-  let driverId = req.headers['x-driver-id'];
+  let driverPhone = sanitize(req.headers['x-driver-phone'] || '');
+  let driverId = sanitize(req.headers['x-driver-id'] || '');
 
   try {
     // 1. Bearer Token Auth (Standard PocketBase authorization)
@@ -34,8 +42,10 @@ const resolveDriver = async (req, res, next) => {
 
           // Match logged-in user to employee registry via phone or full name
           const userRecord = await pb.collection('users').getOne(userId, { $autoCancel: false });
+          const safePhone = sanitize(userRecord.phone_number || '');
+          const safeName = sanitize(userRecord.full_name || '');
           const employees = await pb.collection('employees').getFullList({
-            filter: `contact = "${userRecord.phone_number}" || name = "${userRecord.full_name}"`,
+            filter: `contact = "${safePhone}" || name = "${safeName}"`,
             $autoCancel: false
           });
           if (employees.length > 0) {
@@ -102,8 +112,13 @@ router.post('/login', async (req, res) => {
   }
 
   try {
+    const safeName = sanitize(name);
+    const safeContact = sanitize(contact);
+    if (!safeName || !safeContact) {
+      return res.status(400).json({ success: false, error: 'Invalid characters in name or contact.' });
+    }
     const records = await pb.collection('employees').getFullList({
-      filter: `name = "${name.trim()}" && contact = "${contact.trim()}"`,
+      filter: `name = "${safeName}" && contact = "${safeContact}"`,
       $autoCancel: false
     });
 
