@@ -17,41 +17,23 @@ const TRUCK_SPECS = {
 };
 
 const SHIPMENT_TYPES = {
-  ftl: { 
-    label: 'Full Truck Load (FTL)', 
-    desc: 'Ideal for shipments up to 9 MT. Best rates for maximum capacity utilization.',
-    maxMT: 9, 
-    rateKM: 60, 
-    rateKG: 0, 
-    baseCharge: 4000,
-    min: 4000 
-  },
-  ptl: { 
-    label: 'Partial Truck Load (PTL)', 
-    desc: 'For shipments up to 5 MT. Shared truck space with cost-effective pricing.',
-    maxMT: 5, 
-    rateKM: 60, 
-    rateKG: 1.50, 
-    baseCharge: 2500,
-    min: 2500 
-  },
   express: { 
     label: 'Express Delivery', 
     desc: 'Fast delivery for time-sensitive shipments up to 8 MT. Premium pricing for speed.',
     maxMT: 8, 
-    rateKM: 60, 
+    rateKM: 48, 
     rateKG: 0, 
-    baseCharge: 7000,
-    min: 7000 
+    baseCharge: 2000,
+    min: 2000 
   },
   specialized: { 
     label: 'Specialized Transport', 
     desc: 'For fragile, hazardous, or temperature-controlled cargo up to 6 MT.',
     maxMT: 6, 
-    rateKM: 60, 
+    rateKM: 54, 
     rateKG: 0, 
-    baseCharge: 8000,
-    min: 8000 
+    baseCharge: 3000,
+    min: 3000 
   }
 };
 
@@ -70,7 +52,7 @@ const QuoteCalculator = () => {
   const [destination, setDestination] = useState('');
   const [distanceInput, setDistanceInput] = useState('');
   const [weight, setWeight] = useState('');
-  const [type, setType] = useState('ftl');
+  const [type, setType] = useState('express');
   const [dimensions, setDimensions] = useState({ l: '', w: '', h: '' });
   const [requirements, setRequirements] = useState({});
 
@@ -375,16 +357,9 @@ const QuoteCalculator = () => {
               </div>
 
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Distance Charge ({effectiveDistance} KM @ ₹60/KM)</span>
+                <span className="text-muted-foreground">Distance Charge ({effectiveDistance} KM @ ₹{costs.isValid ? SHIPMENT_TYPES[type].rateKM : 0}/KM)</span>
                 <span className="font-medium">₹{costs.isValid ? costs.distanceCharge.toLocaleString('en-IN') : '0'}</span>
               </div>
-              
-              {SHIPMENT_TYPES[type].rateKG > 0 && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Weight Charge ({weight} KG @ ₹1.50/KG)</span>
-                  <span className="font-medium">₹{costs.isValid ? costs.weightCharge.toLocaleString('en-IN') : '0'}</span>
-                </div>
-              )}
               
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Special Requirements</span>
@@ -436,7 +411,7 @@ const QuoteCalculator = () => {
             <div>
               <h4 className="font-bold text-lg tracking-tight">⚠️ ESTIMATE ONLY</h4>
               <p className="text-sm mt-1 opacity-90 leading-relaxed">
-                Pricing based on 32FT SXL truck capacity (6-9 MT) at ₹60/KM. Final market rates depend on several dynamic factors:
+                Pricing based on 32FT SXL truck capacity (6-9 MT) starting at ₹48/KM. Final market rates depend on several dynamic factors:
               </p>
             </div>
           </div>
