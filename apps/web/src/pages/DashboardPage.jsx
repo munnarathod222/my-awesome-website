@@ -150,17 +150,34 @@ const DashboardPage = () => {
     else setRefreshing(true);
     setError(null);
     try {
-      const [usersRes, tripsRes, trucksRes, podsRes, expensesRes, recentTripsRes] = await Promise.all([
+      // Revenue calculation: ONLY Delivered trips (Upcoming/Dispatched/In Transit excluded)
+      const REVENUE_FILTER = 'trip_status = "Delivered"';
+
+      const [usersRes, deliveredTripsRes, allTripsCount, trucksRes, podsRes, expensesRes, recentTripsRes] = await Promise.all([
         pb.collection('users').getList(1, 1, { $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 500, { sort: '-date', fields: 'id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable', $autoCancel: false }),
+        // Revenue query — Delivered trips only
+        pb.collection('trip_logs').getList(1, 500, {
+          filter: REVENUE_FILTER,
+          sort: '-date',
+          fields: 'id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable',
+          $autoCancel: false,
+        }),
+        // Total shipment count — all statuses (for the KPI card)
+        pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }),
         pb.collection('trucks').getList(1, 1, { $autoCancel: false }),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }),
         pb.collection('expenses').getList(1, 500, { fields: 'id,amount', $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 8, { sort: '-date', fields: 'id,route,truck_number,driver_name,revenue,date,trip_status', $autoCancel: false }),
+        // Recent trips — all statuses so dispatcher sees the full picture
+        pb.collection('trip_logs').getList(1, 8, {
+          sort: '-date',
+          fields: 'id,route,truck_number,driver_name,revenue,date,trip_status',
+          $autoCancel: false,
+        }),
       ]);
 
       let fleetRevenue = 0, brokerageProfit = 0, totalTds = 0;
-      tripsRes.items.forEach(trip => {
+      // Only Delivered trips count towards revenue
+      deliveredTripsRes.items.forEach(trip => {
         totalTds += Number(trip.tds_deducted_receivable) || 0;
         if (trip.ownership_type === 'Attached') {
           brokerageProfit += Number(trip.brokerage_margin) || 0;
@@ -173,9 +190,13 @@ const DashboardPage = () => {
       const fleetProfit = netFleetRevenue - fleetExpenses;
 
       setStats({
-        users: usersRes.totalItems, trips: tripsRes.totalItems, trucks: trucksRes.totalItems, pods: podsRes.totalItems,
+        users: usersRes.totalItems,
+        trips: allTripsCount.totalItems,         // all trips (any status)
+        deliveredTrips: deliveredTripsRes.totalItems, // completed only
+        trucks: trucksRes.totalItems,
+        pods: podsRes.totalItems,
         revenue: netFleetRevenue + brokerageProfit,
-        grossRevenue: tripsRes.items.reduce((s, t) => s + (Number(t.revenue) || 0), 0),
+        grossRevenue: deliveredTripsRes.items.reduce((s, t) => s + (Number(t.revenue) || 0), 0),
         expenses: fleetExpenses, fleetProfit, brokerageProfit,
         retainedEarnings: fleetProfit + brokerageProfit,
       });
@@ -314,7 +335,7 @@ const DashboardPage = () => {
               rawValue={Math.round(stats.revenue)}
               displayValue={`₹${Math.round(stats.revenue).toLocaleString()}`}
               icon={Activity} accentColor="#6366f1"
-              description={`Gross: ₹${Math.round(stats.grossRevenue).toLocaleString()}`}
+              description={`Delivered trips only · Gross ₹${Math.round(stats.grossRevenue).toLocaleString()}`}
               onClick={() => navigate('/analytics?tab=revenue')}
             />
             <StatCard loading={loading} title="Retained Earnings"
@@ -327,7 +348,7 @@ const DashboardPage = () => {
             />
             <StatCard loading={loading} title="Total Shipments"
               rawValue={stats.trips} icon={Package} accentColor="#8b5cf6"
-              description="All-time trip records"
+              description={`${stats.deliveredTrips ?? 0} delivered · ${(stats.trips || 0) - (stats.deliveredTrips || 0)} in progress`}
               onClick={() => navigate('/analytics?tab=shipments')}
             />
             <StatCard loading={loading} title="Fleet Size"
