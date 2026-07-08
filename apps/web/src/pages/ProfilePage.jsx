@@ -12,6 +12,7 @@ import { validateEmail } from '@/lib/validators.js';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
 import ChangePasswordModal from '@/components/ChangePasswordModal.jsx';
+import ChangeEmailModal from '@/components/ChangeEmailModal.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
 
@@ -433,11 +434,12 @@ const ProfilePage = () => {
                       id="email"
                       type="email"
                       value={formData.email} 
-                      onChange={e => handleChange('email', e.target.value)} 
-                      onBlur={() => handleBlur('email')}
-                      className={cn("bg-background", touched.email && formErrors.email && 'border-destructive focus-visible:ring-destructive')}
+                      disabled
+                      className="bg-muted/40 border-border/50 text-muted-foreground select-none"
                     />
-                    {touched.email && formErrors.email && <p className="text-xs text-destructive mt-1">{formErrors.email}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+                      To change your login email address, use the secure <strong>Change Email</strong> setting at the top right of this page.
+                    </p>
                   </div>
 
                   <div className="space-y-1.5">
@@ -844,6 +846,7 @@ const ProfilePage = () => {
           <p className="text-muted-foreground mt-1">Manage your account preferences and company branding details.</p>
         </div>
         <div className="flex items-center gap-3">
+          <ChangeEmailModal />
           <ChangePasswordModal />
           {activeTab === 'profile' && (
             <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
