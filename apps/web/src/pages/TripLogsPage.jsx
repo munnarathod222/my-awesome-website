@@ -11,7 +11,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -654,12 +654,61 @@ const TripLogsPage = () => {
                               {(() => {
                                 const routeRec = routeMap[log.route_id] || routeMap[log.route];
                                 const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
+                                
+                                // 1. Build a structured list of locations/stops with fallback mapping for parsed string segments
+                                let locations = [];
+                                if (routeRec) {
+                                  locations.push({
+                                    name: routeRec.start_location || log.route?.split('->')[0]?.trim() || 'Start',
+                                    mapLink: routeRec.start_location_map_link || (routeRec.start_location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(routeRec.start_location)}` : null),
+                                    type: 'origin'
+                                  });
+                                  
+                                  const sortedStops = [...stops].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                                  sortedStops.forEach(s => {
+                                    locations.push({
+                                      name: s.stop_name,
+                                      mapLink: s.map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.stop_name)}`,
+                                      type: 'stop'
+                                    });
+                                  });
+                                  
+                                  if (routeRec.end_location || routeRec.end_location_map_link) {
+                                    locations.push({
+                                      name: routeRec.end_location || log.route?.split('->')?.pop()?.trim() || 'End',
+                                      mapLink: routeRec.end_location_map_link || (routeRec.end_location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(routeRec.end_location)}` : null),
+                                      type: 'destination'
+                                    });
+                                  }
+                                } else if (log.route && log.route.includes('->')) {
+                                  const parts = log.route.split('->').map(p => p.trim());
+                                  parts.forEach((part, idx) => {
+                                    let type = 'stop';
+                                    if (idx === 0) type = 'origin';
+                                    else if (idx === parts.length - 1) type = 'destination';
+                                    
+                                    locations.push({
+                                      name: part,
+                                      mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(part)}`,
+                                      type
+                                    });
+                                  });
+                                } else if (log.route) {
+                                  locations.push({
+                                    name: log.route,
+                                    mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(log.route)}`,
+                                    type: 'origin'
+                                  });
+                                }
+
+                                if (locations.length === 0) return <span className="text-muted-foreground">—</span>;
+
                                 return (
-                                  <div className="flex flex-col gap-1.5 min-w-[180px]">
-                                    {/* Route name + full route map link */}
+                                  <div className="flex flex-col gap-1.5 min-w-[200px] max-w-[280px]">
+                                    {/* Route Title & Combined Link */}
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="font-semibold text-sm text-foreground" title={log.route}>
-                                        {log.route || '—'}
+                                      <span className="font-bold text-xs text-foreground font-heading tracking-wide uppercase leading-tight truncate max-w-[190px]" title={log.route}>
+                                        {log.route || 'Unknown'}
                                       </span>
                                       {routeRec?.google_map_link && (
                                         <a
@@ -667,85 +716,53 @@ const TripLogsPage = () => {
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           onClick={e => e.stopPropagation()}
-                                          title="Open full route in Google Maps"
-                                          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
+                                          title="Open full trip map"
+                                          className="text-emerald-500 hover:text-emerald-400 p-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all shrink-0"
                                         >
-                                          <Map className="w-3.5 h-3.5" />
+                                          <Map className="w-3 h-3" />
                                         </a>
                                       )}
                                     </div>
 
-                                    {/* Origin → Destination chain with individual map links */}
-                                    {(routeRec?.start_location_map_link || routeRec?.end_location_map_link || stops.length > 0) && (
-                                      <div className="flex items-center flex-wrap gap-1 text-[10px] leading-tight">
-                                        {/* Origin */}
-                                        {routeRec?.start_location_map_link ? (
-                                          <a
-                                            href={routeRec.start_location_map_link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={e => e.stopPropagation()}
-                                            title="Navigate to Origin"
-                                            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-colors font-bold"
-                                          >
-                                            <ExternalLink className="w-2.5 h-2.5" />
-                                            {routeRec?.start_location || log.route?.split('->')[0]?.trim() || 'Origin'}
-                                          </a>
-                                        ) : routeRec?.start_location ? (
-                                          <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
-                                            {routeRec.start_location}
-                                          </span>
-                                        ) : null}
+                                    {/* Sequential Stepper Flow */}
+                                    <div className="flex items-center flex-wrap gap-x-1 gap-y-1.5 text-[9px] font-bold tracking-tight">
+                                      {locations.map((loc, idx) => {
+                                        let badgeColor = "border-sky-500/20 bg-sky-500/5 text-sky-400 hover:bg-sky-500/15";
+                                        if (loc.type === 'stop') {
+                                          badgeColor = "border-amber-500/20 bg-amber-500/5 text-amber-400 hover:bg-amber-500/15";
+                                        } else if (loc.type === 'destination') {
+                                          badgeColor = "border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/15";
+                                        }
 
-                                        {/* Intermediate Stops */}
-                                        {stops.sort((a, b) => (a.sequence || 0) - (b.sequence || 0)).map((stop, idx) => (
+                                        return (
                                           <React.Fragment key={idx}>
-                                            <span className="text-muted-foreground/40">›</span>
-                                            {stop.map_link ? (
+                                            {idx > 0 && (
+                                              <span className="text-muted-foreground/30 px-0.5 select-none font-medium text-[11px]">→</span>
+                                            )}
+                                            {loc.mapLink ? (
                                               <a
-                                                href={stop.map_link}
+                                                href={loc.mapLink}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                title={`Stop ${stop.sequence}: ${stop.stop_name}`}
-                                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors font-bold"
+                                                title={`Navigate to ${loc.name}`}
+                                                className={cn(
+                                                  "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border transition-all duration-200 shadow-sm leading-tight shrink-0",
+                                                  badgeColor
+                                                )}
                                               >
-                                                <ExternalLink className="w-2.5 h-2.5" />
-                                                {stop.stop_name}
+                                                <MapPin className="w-2.5 h-2.5 opacity-80" />
+                                                <span className="truncate max-w-[68px]">{loc.name}</span>
                                               </a>
                                             ) : (
-                                              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
-                                                {stop.stop_name}
+                                              <span className={cn("inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border shadow-sm leading-tight shrink-0", badgeColor.replace('hover:bg-', ''))}>
+                                                <span className="truncate max-w-[68px]">{loc.name}</span>
                                               </span>
                                             )}
                                           </React.Fragment>
-                                        ))}
-
-                                        {/* Destination */}
-                                        {(routeRec?.end_location || routeRec?.end_location_map_link) && (
-                                          <>
-                                            <span className="text-muted-foreground/40">›</span>
-                                            {routeRec?.end_location_map_link ? (
-                                              <a
-                                                href={routeRec.end_location_map_link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={e => e.stopPropagation()}
-                                                title="Navigate to Destination"
-                                                className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors font-bold"
-                                              >
-                                                <ExternalLink className="w-2.5 h-2.5" />
-                                                {routeRec.end_location}
-                                              </a>
-                                            ) : (
-                                              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium border border-border/40">
-                                                {routeRec.end_location}
-                                              </span>
-                                            )}
-                                          </>
-                                        )}
-                                      </div>
-                                    )}
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 );
                               })()}
