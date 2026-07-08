@@ -141,45 +141,53 @@ const ClientPaymentAnalysisPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 shadow-sm">
-            <CardHeader><CardTitle>Pending vs Received (Top Clients)</CardTitle></CardHeader>
-            <CardContent className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.topByPending} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="client_name" tick={{fontSize: 12}} tickFormatter={(val) => val.length > 10 ? val.substring(0, 10) + '...' : val} />
-                  <YAxis tickFormatter={(val) => `₹${val/1000}k`} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Legend />
-                  <Bar dataKey="totalReceived" name="Received" stackId="a" fill="hsl(var(--success))" radius={[0,0,4,4]} />
-                  <Bar dataKey="totalPending" name="Pending" stackId="a" fill="hsl(var(--destructive))" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <Card className="lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/30 px-5 pt-5">
+              <CardTitle className="text-base font-heading">Pending vs Received (Top Clients)</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData.topByPending} margin={{ top: 15, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis dataKey="client_name" tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}} tickFormatter={(val) => val.length > 12 ? val.substring(0, 12) + '...' : val} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(val) => `₹${val/1000}k`} tick={{fontSize: 10, fill: 'hsl(var(--muted-foreground))'}} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: 'rgba(10,15,30,0.85)', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '8px' }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="totalReceived" name="Received" stackId="a" fill="#10b981" radius={[0,0,4,4]} />
+                    <Bar dataKey="totalPending" name="Pending" stackId="a" fill="#f43f5e" radius={[4,4,0,0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
           
-          <Card className="shadow-sm">
-            <CardHeader><CardTitle>Overall Portfolio Status</CardTitle></CardHeader>
-            <CardContent className="chart-container flex flex-col items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Received', value: chartData.totalReceived, color: 'hsl(var(--success))' },
-                      { name: 'Pending', value: chartData.totalPending, color: 'hsl(var(--destructive))' }
-                    ]}
-                    cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value"
-                  >
-                    <Cell fill="hsl(var(--success))" />
-                    <Cell fill="hsl(var(--destructive))" />
-                  </Pie>
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="text-center mt-2">
-                <p className="text-2xl font-bold tracking-tight">{formatCurrency(chartData.totalPending + chartData.totalReceived)}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">Total Network Invoiced</p>
+          <Card className="border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden flex flex-col">
+            <CardHeader className="pb-3 border-b border-border/30 px-5 pt-5">
+              <CardTitle className="text-base font-heading">Overall Portfolio Status</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex-1 flex flex-col items-center justify-center">
+              <div className="h-[210px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Received', value: chartData.totalReceived },
+                        { name: 'Pending', value: chartData.totalPending }
+                      ]}
+                      cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={4} dataKey="value"
+                    >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#f43f5e" />
+                    </Pie>
+                    <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ backgroundColor: 'rgba(10,15,30,0.85)', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '8px' }} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-center mt-3 pt-3 border-t border-border/30 w-full">
+                <p className="text-2xl font-bold tracking-tight text-foreground font-heading">{formatCurrency(chartData.totalPending + chartData.totalReceived)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-extrabold mt-1">Total Network Invoiced</p>
               </div>
             </CardContent>
           </Card>
@@ -253,28 +261,28 @@ const ClientPaymentAnalysisPage = () => {
                           </div>
 
                           {/* Stats info */}
-                          <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border/40 text-center">
-                            <div>
-                              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">Invoiced</p>
-                              <p className="text-xs font-extrabold text-foreground mt-0.5 tabular-nums truncate">{formatCurrency(row.totalInvoiced)}</p>
+                          <div className="space-y-2 mt-4 pt-3 border-t border-border/40 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Invoiced</span>
+                              <span className="font-extrabold text-foreground tabular-nums">{formatCurrency(row.totalInvoiced)}</span>
                             </div>
-                            <div>
-                              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">Received</p>
-                              <p className="text-xs font-extrabold text-success mt-0.5 tabular-nums truncate">{formatCurrency(row.totalReceived)}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Received</span>
+                              <span className="font-extrabold text-emerald-400 tabular-nums">{formatCurrency(row.totalReceived)}</span>
                             </div>
-                            <div>
-                              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">Outstanding</p>
-                              <p className="text-xs font-extrabold text-destructive mt-0.5 tabular-nums truncate">{formatCurrency(row.totalPending)}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Outstanding</span>
+                              <span className="font-extrabold text-rose-400 tabular-nums">{formatCurrency(row.totalPending)}</span>
                             </div>
                           </div>
 
                           {/* Progress bar */}
                           {row.totalInvoiced > 0 && (
-                            <div className="mt-4 space-y-1">
-                              <Progress value={100 - row.pendingPct} className="h-1 bg-destructive/10" />
-                              <div className="flex justify-between text-[9px] text-muted-foreground/60">
+                            <div className="mt-4 space-y-1.5">
+                              <Progress value={100 - row.pendingPct} className="h-1 bg-rose-500/10" style={{'--progress-background': '#10b981'}} />
+                              <div className="flex justify-between text-[9px] text-muted-foreground/50 font-bold uppercase tracking-wider">
                                 <span>{100 - row.pendingPct}% Paid</span>
-                                <span>{row.pendingPct}% Outstanding</span>
+                                <span>{row.pendingPct}% Unpaid</span>
                               </div>
                             </div>
                           )}
