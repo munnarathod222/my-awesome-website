@@ -66,8 +66,8 @@ router.get('/pl-matrix', async (req, res) => {
       }
     }
 
-    // Fetch Completed Trip Logs (Revenue)
-    const tripFilter = `trip_status = "Completed"${truckFilterText ? ' && ' + truckFilterText : ''}`;
+    // Fetch Delivered Trip Logs only (Upcoming/Dispatched/In Transit excluded from P&L)
+    const tripFilter = `trip_status = "Delivered"${truckFilterText ? ' && ' + truckFilterText : ''}`;
     const trips = await pb.collection('trip_logs').getFullList({
       filter: tripFilter,
       $autoCancel: false
