@@ -120,8 +120,6 @@ const QuotePage = () => {
                               <SelectValue placeholder="Select service" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="ftl">Full Truck Load (FTL)</SelectItem>
-                              <SelectItem value="ptl">Part Truck Load (PTL)</SelectItem>
                               <SelectItem value="express">Express Delivery</SelectItem>
                               <SelectItem value="specialized">Specialized Transport</SelectItem>
                             </SelectContent>
@@ -229,21 +227,20 @@ const QuotePage = () => {
                 </div>
                 
                 <p className="text-sm text-muted-foreground mb-4">
-                  Our standard rate is <strong>₹60 per KM</strong> across all shipment types. Below are examples for a 500 KM journey:
+                  Our standard rate starts at <strong>₹48 per KM</strong> for Express shipments. Below are examples for a 500 KM journey:
                 </p>
 
                 <div className="space-y-4 text-sm">
                   <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
-                    <div className="font-semibold mb-1">FTL (Max 9 MT)</div>
-                    <div className="text-muted-foreground text-xs mb-1">Base: ₹4,000</div>
-                    <div className="font-medium">(500 × ₹60) + ₹4,000 = ₹34,000</div>
+                    <div className="font-semibold mb-1">Express Delivery (Max 8 MT)</div>
+                    <div className="text-muted-foreground text-xs mb-1">Base: ₹2,000 | Rate: ₹48/KM</div>
+                    <div className="font-medium">(500 × ₹48) + ₹2,000 = ₹26,000</div>
                   </div>
                   
                   <div className="bg-muted/30 p-3 rounded-lg border border-border/50">
-                    <div className="font-semibold mb-1">PTL (Max 5 MT)</div>
-                    <div className="text-muted-foreground text-xs mb-1">Base: ₹2,500 | Weight: ₹1.50/KG</div>
-                    <div className="font-medium">For 3,000 KG:</div>
-                    <div className="font-medium">(500 × ₹60) + (3,000 × ₹1.50) + ₹2,500 = ₹37,000</div>
+                    <div className="font-semibold mb-1">Specialized Transport (Max 6 MT)</div>
+                    <div className="text-muted-foreground text-xs mb-1">Base: ₹3,000 | Rate: ₹54/KM</div>
+                    <div className="font-medium">(500 × ₹54) + ₹3,000 = ₹30,000</div>
                   </div>
                 </div>
               </div>
