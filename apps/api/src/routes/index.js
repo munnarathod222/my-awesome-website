@@ -18,6 +18,7 @@ import analyticsRouter from './analytics.js';
 import driverRouter from './driver.js';
 import taxRouter from './tax.js';
 import leaderboardRouter from './leaderboard.js';
+import userRouter from './user.js';
 
 
 const router = Router();
@@ -46,6 +47,8 @@ export default () => {
     router.use('/api/tax', taxRouter);
     router.use('/leaderboard', leaderboardRouter);
     router.use('/api/leaderboard', leaderboardRouter);
+    router.use('/user', userRouter);
+    router.use('/api/user', userRouter);
 
     return router;
 };
