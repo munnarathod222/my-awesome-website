@@ -5,9 +5,14 @@ import {
 } from 'recharts';
 
 const CHART_COLORS = [
-  'hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 
-  'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(200, 70%, 50%)', 
-  'hsl(250, 70%, 60%)', 'hsl(330, 70%, 50%)'
+  '#6366f1', // Indigo Blue
+  '#10b981', // Emerald Green
+  '#f59e0b', // Amber Gold
+  '#f43f5e', // Rose Red
+  '#3b82f6', // Bright Blue
+  '#a78bfa', // Purple / Violet
+  '#06b6d4', // Cyan / Teal
+  '#f97316'  // Orange
 ];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -46,23 +51,29 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
       <div className="w-full h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
             <XAxis 
               dataKey="month" 
               stroke="hsl(var(--muted-foreground))" 
-              fontSize={12} 
+              fontSize={11} 
               tickLine={false}
               axisLine={false}
+              dy={10}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))" 
-              fontSize={12}
+              fontSize={11}
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+              dx={-5}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ bottom: 0, paddingTop: '20px' }} />
+            <Legend 
+              wrapperStyle={{ bottom: -10, paddingTop: '15px' }} 
+              iconType="circle"
+              iconSize={8}
+            />
             {categories.map((cat, index) => (
               <Line 
                 key={cat}
@@ -70,9 +81,10 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
                 dataKey={cat} 
                 name={cat} 
                 stroke={CHART_COLORS[index % CHART_COLORS.length]} 
-                strokeWidth={2}
-                dot={{ r: 3, strokeWidth: 1 }}
-                activeDot={{ r: 6 }}
+                strokeWidth={3}
+                dot={{ r: 4, strokeWidth: 1.5, fill: '#0a0f1e', stroke: CHART_COLORS[index % CHART_COLORS.length] }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: CHART_COLORS[index % CHART_COLORS.length] }}
+                connectNulls={true}
               />
             ))}
           </LineChart>
