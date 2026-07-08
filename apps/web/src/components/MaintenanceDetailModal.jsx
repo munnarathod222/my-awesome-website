@@ -173,7 +173,7 @@ export default function MaintenanceDetailModal({ isOpen, onClose, scheduleId }) 
                                 {record.attachments.map((file, i) => (
                                   <a
                                     key={i}
-                                    href={pb.files.getURL(record, file)}
+                                    href={pb.files.getUrl(record, file)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1.5 text-xs bg-muted hover:bg-muted/80 text-foreground px-2.5 py-1.5 rounded-md transition-colors border border-border/50"
