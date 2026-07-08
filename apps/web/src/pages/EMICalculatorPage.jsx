@@ -533,7 +533,7 @@ export default function EMICalculatorPage() {
                           variant="ghost" 
                           size="sm" 
                           onClick={() => {
-                            const url = pb.files.getURL(activeProfile, activeProfile.loan_document);
+                            const url = pb.files.getUrl(activeProfile, activeProfile.loan_document);
                             window.open(url, '_blank');
                           }}
                           className="h-8 text-xs text-primary hover:bg-primary/10 hover:text-primary rounded-lg"
