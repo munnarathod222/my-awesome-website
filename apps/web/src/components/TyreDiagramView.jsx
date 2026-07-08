@@ -13,7 +13,7 @@ export default function TyreDiagramView({ tyres, onSlotClick, onDragStart, onDro
     const tyreImage = tyre?.tyre_image 
       ? (Array.isArray(tyre.tyre_image) ? tyre.tyre_image[0] : tyre.tyre_image) 
       : null;
-    const imageUrl = tyreImage ? pb.files.getURL(tyre, tyreImage, { thumb: '100x100' }) : null;
+    const imageUrl = tyreImage ? pb.files.getUrl(tyre, tyreImage, { thumb: '100x100' }) : null;
 
     let bgClass = "bg-card border-border hover:border-primary";
     if (tyre) {
