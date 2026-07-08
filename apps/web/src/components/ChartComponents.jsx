@@ -5,11 +5,11 @@ import {
 } from 'recharts';
 
 const COLORS = [
-  'hsl(var(--chart-1))', 
-  'hsl(var(--chart-2))', 
-  'hsl(var(--chart-3))', 
-  'hsl(var(--chart-4))', 
-  'hsl(var(--chart-5))'
+  '#6366f1', // Indigo Blue
+  '#10b981', // Emerald Green
+  '#f59e0b', // Amber Gold
+  '#f43f5e', // Rose Red
+  '#3b82f6'  // Bright Blue
 ];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -35,54 +35,59 @@ export const MonthlyTrendChart = ({ data }) => {
   return (
     <div className="analytics-chart-container">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+        <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis 
             dataKey="month" 
             stroke="hsl(var(--muted-foreground))" 
-            fontSize={12} 
+            fontSize={11} 
             tickLine={false}
             axisLine={false}
+            dy={8}
           />
           <YAxis 
             yAxisId="left"
             stroke="hsl(var(--muted-foreground))" 
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+            dx={-5}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
+          <Legend wrapperStyle={{ paddingTop: '15px' }} iconType="circle" iconSize={8} />
           <Line 
             yAxisId="left"
             type="monotone" 
             dataKey="revenue" 
             name="Revenue" 
-            stroke="hsl(var(--chart-1))" 
+            stroke="#6366f1" 
             strokeWidth={3}
-            dot={{ r: 4, strokeWidth: 2 }}
-            activeDot={{ r: 6 }}
+            dot={{ r: 4, strokeWidth: 1.5, fill: '#0a0f1e', stroke: '#6366f1' }}
+            activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }}
+            connectNulls={true}
           />
           <Line 
             yAxisId="left"
             type="monotone" 
             dataKey="expenses" 
             name="Expenses" 
-            stroke="hsl(var(--chart-3))" 
+            stroke="#f43f5e" 
             strokeWidth={3}
-            dot={{ r: 4, strokeWidth: 2 }}
-            activeDot={{ r: 6 }}
+            dot={{ r: 4, strokeWidth: 1.5, fill: '#0a0f1e', stroke: '#f43f5e' }}
+            activeDot={{ r: 6, strokeWidth: 0, fill: '#f43f5e' }}
+            connectNulls={true}
           />
           <Line 
             yAxisId="left"
             type="monotone" 
             dataKey="profit" 
             name="Profit" 
-            stroke="hsl(var(--chart-2))" 
+            stroke="#10b981" 
             strokeWidth={3}
-            dot={{ r: 4, strokeWidth: 2 }}
-            activeDot={{ r: 6 }}
+            dot={{ r: 4, strokeWidth: 1.5, fill: '#0a0f1e', stroke: '#10b981' }}
+            activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }}
+            connectNulls={true}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -120,27 +125,29 @@ export const QuarterlyComparisonChart = ({ data }) => {
   return (
     <div className="analytics-chart-container">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis 
             dataKey="quarter" 
             stroke="hsl(var(--muted-foreground))" 
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
             axisLine={false}
+            dy={8}
           />
           <YAxis 
             stroke="hsl(var(--muted-foreground))" 
-            fontSize={12}
+            fontSize={11}
             tickLine={false}
             axisLine={false}
             tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+            dx={-5}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ paddingTop: '20px' }} />
-          <Bar dataKey="revenue" name="Revenue" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="expenses" name="Expenses" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="profit" name="Profit" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+          <Legend wrapperStyle={{ paddingTop: '15px' }} iconType="circle" iconSize={8} />
+          <Bar dataKey="revenue" name="Revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
