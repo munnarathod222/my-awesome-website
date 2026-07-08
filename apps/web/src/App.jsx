@@ -12,6 +12,7 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import BottomNavigation from './components/BottomNavigation.jsx';
+import MobileQuickActions from './components/MobileQuickActions.jsx';
 import ErrorBoundary from '@/components/ErrorBoundary.jsx';
 import { cn } from '@/lib/utils.js';
 
@@ -147,6 +148,7 @@ const AppLayout = ({ children }) => {
           </ErrorBoundary>
           {isPublicPage && <Footer />}
         </main>
+        {showSidebar && <MobileQuickActions />}
         {showSidebar && <BottomNavigation />}
       </div>
     </div>
