@@ -78,7 +78,7 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
   const slotDef = TYRE_SLOTS.find(s => s.id === tyre.tyre_position);
   const positionLabel = slotDef ? slotDef.label : tyre.tyre_position?.replace(/-/g, ' ') || 'Unknown Position';
 
-  const imageUrl = activeImage ? pb.files.getURL(tyre, activeImage) : null;
+  const imageUrl = activeImage ? pb.files.getUrl(tyre, activeImage) : null;
 
   let statusColor = "text-muted-foreground bg-muted border-black/10";
   let StatusIcon = CheckCircle2;
@@ -169,7 +169,7 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
                       onClick={() => setActiveImage(img)}
                       className={`w-10 h-10 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${activeImage === img ? 'border-primary scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                     >
-                      <img src={pb.files.getURL(tyre, img, { thumb: '50x50' })} alt={`Tyre Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={pb.files.getUrl(tyre, img, { thumb: '50x50' })} alt={`Tyre Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
