@@ -101,7 +101,7 @@ export default function TyreManagementPage() {
       setDeletedBatteryFiles([]);
       // Load existing bill
       if (truck.battery_bill) {
-        const url = pb.files.getURL(truck, truck.battery_bill);
+        const url = pb.files.getUrl(truck, truck.battery_bill);
         setBatteryBillPreview(url);
         setBatteryBillIsPdf(truck.battery_bill.toLowerCase().endsWith('.pdf'));
       } else {
@@ -280,7 +280,7 @@ export default function TyreManagementPage() {
     const tyreImage = tyre?.tyre_image 
       ? (Array.isArray(tyre.tyre_image) ? tyre.tyre_image[0] : tyre.tyre_image) 
       : null;
-    const imageUrl = tyreImage ? pb.files.getURL(tyre, tyreImage, { thumb: '300x200' }) : null;
+    const imageUrl = tyreImage ? pb.files.getUrl(tyre, tyreImage, { thumb: '300x200' }) : null;
 
     // Calculate wear bar metrics
     const lifecycleKms = tyre?.current_lifecycle_kms || 0;
@@ -486,7 +486,7 @@ export default function TyreManagementPage() {
                         <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-border bg-muted/10 relative cursor-pointer group" onClick={() => {
                           setPreviewDoc({ files: Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image], file: img, document_type: 'Battery Snapshot', document_number: truck.battery_serial_number || 'N/A' });
                         }}>
-                          <img src={pb.files.getURL(truck, img)} alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <img src={pb.files.getUrl(truck, img)} alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                             <Eye className="w-5 h-5 text-white" />
                           </div>
@@ -523,7 +523,7 @@ export default function TyreManagementPage() {
                       <div className="flex gap-1.5 shrink-0">
                         {!truck.battery_bill.toLowerCase().endsWith('.pdf') && (
                           <a
-                            href={pb.files.getURL(truck, truck.battery_bill)}
+                            href={pb.files.getUrl(truck, truck.battery_bill)}
                             target="_blank"
                             rel="noreferrer"
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -533,7 +533,7 @@ export default function TyreManagementPage() {
                           </a>
                         )}
                         <a
-                          href={pb.files.getURL(truck, truck.battery_bill)}
+                          href={pb.files.getUrl(truck, truck.battery_bill)}
                           download
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                           title="Download"
@@ -654,7 +654,7 @@ export default function TyreManagementPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {existingBatteryFiles.map((file, idx) => (
                       <div key={`existing-${idx}`} className="relative aspect-video rounded-xl overflow-hidden border border-border bg-card">
-                        <img src={pb.files.getURL(truck, file)} alt="Battery Snapshot" className="w-full h-full object-cover" />
+                        <img src={pb.files.getUrl(truck, file)} alt="Battery Snapshot" className="w-full h-full object-cover" />
                         <button
                           type="button"
                           className="absolute top-1.5 right-1.5 bg-destructive text-white p-1 rounded-full shadow-md hover:bg-destructive/90"
