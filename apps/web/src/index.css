@@ -52,6 +52,13 @@
     /* Maintenance Status Properties */
     --status-open: 350 89% 60%;
     --status-resolved: 160 84% 39%;
+
+    /* Chart colors */
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 350 89% 60%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 280 80% 65%;
   }
   
   .dark {
@@ -92,6 +99,13 @@
     /* Maintenance Status Properties */
     --status-open: 350 89% 60%;
     --status-resolved: 160 84% 39%;
+
+    /* Chart colors */
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 350 89% 60%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 280 80% 65%;
   }
 }
 
