@@ -250,99 +250,183 @@ export default function TripOverviewCalculator() {
 
         <TabsContent value="calculator" className="space-y-4 m-0">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Panel - Sliders */}
+            {/* Left Panel - Sub-grouped Sliders + Text Inputs */}
             <div className="lg:col-span-5 space-y-6">
-              <Card className="border-border shadow-sm bg-card h-full">
-                <CardHeader className="border-b border-border/50 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Truck className="w-5 h-5 text-primary" />
-                    Trip Parameters
+              {/* Category 1: Route & Journey Parameters */}
+              <Card className="border-border shadow-sm bg-card">
+                <CardHeader className="border-b border-border/40 pb-3.5">
+                  <CardTitle className="flex items-center gap-2 text-base font-bold">
+                    <Truck className="w-4.5 h-4.5 text-primary" />
+                    Journey & Route Variables
                   </CardTitle>
-                  <CardDescription>Adjust dynamic variables for your journey</CardDescription>
+                  <CardDescription className="text-xs">Adjust travel distance and associated road overheads</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8 pt-6">
+                <CardContent className="space-y-6 pt-5">
                   
-                  <div className="space-y-4">
+                  {/* Distance Input */}
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Distance (KM)</Label>
-                      <span className="font-mono text-primary font-bold">{distance[0]} km</span>
+                      <Label className="text-xs font-bold text-slate-400">Distance (KM)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="0"
+                          max="5000"
+                          value={distance[0]}
+                          onChange={(e) => setDistance([Math.min(5000, Math.max(0, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">KM</span>
+                      </div>
                     </div>
                     <Slider 
                       value={distance} 
                       onValueChange={setDistance} 
                       max={2000} 
                       step={1}
-                      className="py-2"
+                      className="py-1"
                     />
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Tolls Input */}
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Fuel Price (INR/L)</Label>
-                      <span className="font-mono text-primary font-bold">₹{fuelPrice[0]}</span>
-                    </div>
-                    <Slider 
-                      value={fuelPrice} 
-                      onValueChange={setFuelPrice} 
-                      max={200} 
-                      step={0.1}
-                      className="py-2"
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Mileage (KM/L)</Label>
-                      <span className="font-mono text-primary font-bold">{mileage[0]} km/l</span>
-                    </div>
-                    <Slider 
-                      value={mileage} 
-                      onValueChange={setMileage} 
-                      max={30} 
-                      step={0.1}
-                      className="py-2"
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Tolls (INR)</Label>
-                      <span className="font-mono text-primary font-bold">₹{tolls[0]}</span>
+                      <Label className="text-xs font-bold text-slate-400">Tolls (INR)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="0"
+                          max="20000"
+                          value={tolls[0]}
+                          onChange={(e) => setTolls([Math.min(20000, Math.max(0, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">₹</span>
+                      </div>
                     </div>
                     <Slider 
                       value={tolls} 
                       onValueChange={setTolls} 
                       max={5000} 
                       step={10}
-                      className="py-2"
+                      className="py-1"
                     />
                   </div>
 
-                  <div className="space-y-4">
+                  {/* Driver Allowance Input */}
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Driver Expenses (INR)</Label>
-                      <span className="font-mono text-primary font-bold">₹{driverExpenses[0]}</span>
+                      <Label className="text-xs font-bold text-slate-400">Driver Allowance (INR)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="0"
+                          max="10000"
+                          value={driverExpenses[0]}
+                          onChange={(e) => setDriverExpenses([Math.min(10000, Math.max(0, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">₹</span>
+                      </div>
                     </div>
                     <Slider 
                       value={driverExpenses} 
                       onValueChange={setDriverExpenses} 
                       max={5000} 
                       step={10}
-                      className="py-2"
+                      className="py-1"
                     />
                   </div>
 
-                  <div className="space-y-4">
+                </CardContent>
+              </Card>
+
+              {/* Category 2: Vehicle Efficiency & Running Costs */}
+              <Card className="border-border shadow-sm bg-card">
+                <CardHeader className="border-b border-border/40 pb-3.5">
+                  <CardTitle className="flex items-center gap-2 text-base font-bold">
+                    <Activity className="w-4.5 h-4.5 text-emerald-400" />
+                    Vehicle Performance & Wear
+                  </CardTitle>
+                  <CardDescription className="text-xs">Adjust mileage levels, fuel pricing, and tyre depreciation</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-5">
+
+                  {/* Mileage Input */}
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm font-semibold text-foreground">Tyre Depreciation (₹/KM)</Label>
-                      <span className="font-mono text-primary font-bold">₹{tyreDepreciation[0]}/km</span>
+                      <Label className="text-xs font-bold text-slate-400">Mileage (KM/L)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="0.1"
+                          max="30"
+                          step="0.1"
+                          value={mileage[0]}
+                          onChange={(e) => setMileage([Math.min(30, Math.max(0.1, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">KMPL</span>
+                      </div>
+                    </div>
+                    <Slider 
+                      value={mileage} 
+                      onValueChange={setMileage} 
+                      max={30} 
+                      step={0.1}
+                      className="py-1"
+                    />
+                  </div>
+
+                  {/* Fuel Price Input */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-bold text-slate-400">Fuel Price (INR/L)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="1"
+                          max="200"
+                          step="0.1"
+                          value={fuelPrice[0]}
+                          onChange={(e) => setFuelPrice([Math.min(200, Math.max(1, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">₹/L</span>
+                      </div>
+                    </div>
+                    <Slider 
+                      value={fuelPrice} 
+                      onValueChange={setFuelPrice} 
+                      max={200} 
+                      step={0.1}
+                      className="py-1"
+                    />
+                  </div>
+
+                  {/* Tyre Wear Input */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-bold text-slate-400">Tyre Depreciation (₹/KM)</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value={tyreDepreciation[0]}
+                          onChange={(e) => setTyreDepreciation([Math.min(20, Math.max(0, Number(e.target.value)))])}
+                          className="w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"
+                        />
+                        <span className="text-[10px] text-slate-500 font-bold">₹/KM</span>
+                      </div>
                     </div>
                     <Slider 
                       value={tyreDepreciation} 
                       onValueChange={setTyreDepreciation} 
                       max={10} 
                       step={0.5}
-                      className="py-2"
+                      className="py-1"
                     />
                   </div>
 
@@ -350,134 +434,173 @@ export default function TripOverviewCalculator() {
               </Card>
             </div>
 
-            {/* Right Panel - Inputs & Results */}
+            {/* Right Panel - Overheads, Profit Alerts, & Summary */}
             <div className="lg:col-span-7 space-y-6">
+              
+              {/* Dynamic Profitability Banner */}
+              <div className={cn(
+                "p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_4px_15px_rgba(0,0,0,0.15)]",
+                netProfit > 2000 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                netProfit > 0 ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+                "bg-rose-500/10 border-rose-500/20 text-rose-400"
+              )}>
+                <div className="flex gap-3.5 items-start">
+                  <div className={cn(
+                    "p-2 rounded-xl border shrink-0 mt-0.5",
+                    netProfit > 2000 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                    netProfit > 0 ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+                    "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  )}>
+                    <TrendingUp className="w-4.5 h-4.5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-white">
+                      {netProfit > 2000 ? "Highly Profitable Route Simulation" :
+                       netProfit > 0 ? "Marginally Profitable Route Simulation" :
+                       "Unprofitable Route Simulation"}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-1 max-w-[48ch] leading-relaxed">
+                      {netProfit > 2000 ? `Excellent margin of ${profitMargin.toFixed(1)}%. Distance and fuel parameters are well balanced.` :
+                       netProfit > 0 ? `Caution: Profit margin is low (${profitMargin.toFixed(1)}%). Review driver expenses or tolls.` :
+                       `Alert: This simulation operates at a loss. Try adjusting fuel, tolls, or request a higher freight revenue.`}
+                    </p>
+                  </div>
+                </div>
+                {netProfit < 0 && (
+                  <div className="text-[9px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded shadow animate-pulse shrink-0">
+                    Loss Alert
+                  </div>
+                )}
+              </div>
+
+              {/* Freight Revenue & Fixed Overheads */}
               <Card className="border-border shadow-sm bg-card">
-                <CardHeader className="border-b border-border/50 pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Calculator className="w-5 h-5 text-accent" />
+                <CardHeader className="border-b border-border/40 pb-3.5">
+                  <CardTitle className="flex items-center gap-2 text-base font-bold">
+                    <Calculator className="w-4.5 h-4.5 text-accent" />
                     Revenue & Fixed Costs
                   </CardTitle>
-                  <CardDescription>Enter freight details and overheads</CardDescription>
+                  <CardDescription className="text-xs">Enter freight income and asset/operating overheads</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="pt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                   
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="freight" className="text-accent font-semibold flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" /> Freight Revenue (INR)
+                    <Label htmlFor="freight" className="text-accent text-xs font-bold flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5" /> Freight Revenue (INR)
                     </Label>
                     <Input 
                       id="freight"
                       type="number"
                       value={freightRevenue}
                       onChange={(e) => setFreightRevenue(e.target.value)}
-                      className="input-highlight text-lg font-bold"
+                      className="input-highlight text-base font-black text-white h-11"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="emi">Vehicle EMI (INR)</Label>
+                    <Label htmlFor="emi" className="text-xs text-slate-400">Vehicle EMI (INR)</Label>
                     <Input 
                       id="emi"
                       type="number"
                       value={vehicleEmi}
                       onChange={(e) => setVehicleEmi(e.target.value)}
-                      className="bg-background"
+                      className="bg-background/40 h-9.5 text-xs text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="insurance">Insurance (INR)</Label>
+                    <Label htmlFor="insurance" className="text-xs text-slate-400">Insurance (INR)</Label>
                     <Input 
                       id="insurance"
                       type="number"
                       value={insurance}
                       onChange={(e) => setInsurance(e.target.value)}
-                      className="bg-background"
+                      className="bg-background/40 h-9.5 text-xs text-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="tax">Quarterly Tax (INR)</Label>
+                    <Label htmlFor="tax" className="text-xs text-slate-400">Quarterly Tax (INR)</Label>
                     <Input 
                       id="tax"
                       type="number"
                       value={quarterlyTax}
                       onChange={(e) => setQuarterlyTax(e.target.value)}
-                      className="bg-background"
+                      className="bg-background/40 h-9.5 text-xs text-white"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Operational Summary */}
-              <Card className="border-border shadow-sm overflow-hidden">
-                <CardHeader className="bg-muted/10 border-b border-border pb-4">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" />
-                    Operational Summary
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-border">
-                    <div className="p-5 flex flex-col justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Revenue</span>
-                      <span className="text-xl font-bold tabular-nums text-foreground">{formatCurrency(freightRevenue)}</span>
-                    </div>
-                    <div className="p-5 flex flex-col justify-between bg-muted/5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Total Expenses</span>
-                      <span className="text-xl font-bold tabular-nums text-primary">{formatCurrency(totalExpenses)}</span>
-                    </div>
-                    <div className="p-5 flex flex-col justify-between">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Net Profit</span>
-                      <span className={cn(
-                        "text-xl font-bold tabular-nums",
-                        netProfit >= 0 ? "text-success" : "text-destructive"
-                      )}>
-                        {formatCurrency(netProfit)}
-                      </span>
-                    </div>
-                    <div className="p-5 flex flex-col justify-between bg-muted/5">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Profit Margin</span>
-                      <span className={cn(
-                        "text-xl font-bold tabular-nums",
-                        profitMargin >= 0 ? "text-success" : "text-destructive"
-                      )}>
-                        {profitMargin.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Operational Summary Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                {/* Revenue card */}
+                <div className="p-4.5 rounded-2xl bg-slate-900/40 border border-white/5 shadow-sm">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Revenue</span>
+                  <p className="text-base font-black text-white mt-1">{formatCurrency(freightRevenue)}</p>
+                </div>
+
+                {/* Expenses card */}
+                <div className="p-4.5 rounded-2xl bg-slate-900/40 border border-white/5 shadow-sm">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Expenses</span>
+                  <p className="text-base font-black text-primary mt-1">{formatCurrency(totalExpenses)}</p>
+                </div>
+
+                {/* Net Profit card */}
+                <div className={cn(
+                  "p-4.5 rounded-2xl border shadow-sm",
+                  netProfit >= 0 ? "bg-emerald-950/10 border-emerald-500/10" : "bg-rose-950/10 border-rose-500/10"
+                )}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Net Profit</span>
+                  <p className={cn(
+                    "text-base font-black mt-1",
+                    netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
+                  )}>{formatCurrency(netProfit)}</p>
+                </div>
+
+                {/* Margin card */}
+                <div className={cn(
+                  "p-4.5 rounded-2xl border shadow-sm",
+                  profitMargin >= 0 ? "bg-emerald-950/10 border-emerald-500/10" : "bg-rose-950/10 border-rose-500/10"
+                )}>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Margin</span>
+                  <p className={cn(
+                    "text-base font-black mt-1",
+                    profitMargin >= 0 ? "text-emerald-400" : "text-rose-400"
+                  )}>{profitMargin.toFixed(1)}%</p>
+                </div>
+              </div>
 
               {/* Chart */}
-              <div className="chart-container h-64 mt-6">
-                <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-foreground">
-                  <PieChart className="w-4 h-4 text-muted-foreground" />
-                  Expense vs Profit Comparison
+              <div className="chart-container p-5 rounded-2xl border border-white/5 bg-slate-900/20 h-64 mt-6">
+                <div className="flex items-center gap-2 mb-4 text-xs font-bold text-slate-400">
+                  <PieChart className="w-4 h-4" />
+                  Expense vs Profit Breakdown
                 </div>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <ResponsiveContainer width="100%" height="80%">
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
                     <XAxis 
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                      dy={10}
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }} 
+                      dy={8}
                     />
                     <YAxis hide />
                     <RechartsTooltip 
-                      cursor={{ fill: 'hsl(var(--muted)/0.4)' }}
+                      cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        borderColor: 'hsl(var(--border))',
-                        borderRadius: '8px',
-                        color: 'hsl(var(--foreground))'
+                        backgroundColor: '#101424', 
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        fontSize: '11px',
+                        fontWeight: '700'
                       }}
                       formatter={(value) => [formatCurrency(value), '']}
                     />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={45}>
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
