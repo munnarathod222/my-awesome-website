@@ -813,12 +813,12 @@ const EmployeeDatabasePage = () => {
                                 {log.image_urls && (Array.isArray(log.image_urls) ? log.image_urls : [log.image_urls]).slice(0, 3).map((img, i) => (
                                   <a 
                                     key={i} 
-                                    href={pb.files.getURL(log, img)} 
+                                    href={pb.files.getUrl(log, img)} 
                                     target="_blank" 
                                     rel="noreferrer" 
                                     className="w-8 h-8 rounded-lg overflow-hidden border border-border flex-shrink-0 bg-muted flex items-center justify-center shadow-inner hover:scale-105 transition-transform"
                                   >
-                                    <img src={pb.files.getURL(log, img, { thumb: '50x50' })} alt="damage" className="w-full h-full object-cover" />
+                                    <img src={pb.files.getUrl(log, img, { thumb: '50x50' })} alt="damage" className="w-full h-full object-cover" />
                                   </a>
                                 ))}
                                 {(!log.image_urls || log.image_urls.length === 0) && (
