@@ -32,8 +32,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     manager_id: 'none'
   });
 
-  const [newFiles, setNewFiles] = useState([]);
-  const [existingFiles, setExistingFiles] = useState([]);
+  const [bodyImagesList, setBodyImagesList] = useState([]);
   const [deletedFiles, setDeletedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);

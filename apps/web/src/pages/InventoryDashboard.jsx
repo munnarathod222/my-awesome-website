@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils.js';
 
 import InventoryItemModal from '@/components/InventoryItemModal.jsx';
 import StockDeductionModal from '@/components/StockDeductionModal.jsx';
