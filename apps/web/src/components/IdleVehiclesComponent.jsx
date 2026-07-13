@@ -72,13 +72,16 @@ export default function IdleVehiclesComponent() {
       setAllTrucks(trucksRes);
       setTodayTrips(todayTripsRes);
       
-      // Calculate Active & Idle lists
-      const activeTruckNumbers = todayTripsRes.map(t => t.truck_number);
+      // Calculate Active & Idle lists based on ongoing trip status
+      const activeTruckNumbers = allTripsRes
+        .filter(t => ['Pending', 'Dispatched', 'In Transit'].includes(t.trip_status))
+        .map(t => t.truck_number);
       
       // Enrich idle vehicles with telemetry
       const enrichedIdle = trucksRes
         .filter(t => !activeTruckNumbers.includes(t.truck_number))
         .map(truck => {
+          // Find the last completed or delivered trip log for this truck to show its last activity
           const lastTrip = allTripsRes.find(trip => trip.truck_number === truck.truck_number);
           let daysIdle = 999; // Never dispatched
           let lastDriver = 'None';
@@ -103,19 +106,21 @@ export default function IdleVehiclesComponent() {
       setIdleVehicles(enrichedIdle);
 
       const activeList = [];
-      todayTripsRes.forEach(trip => {
-        const truck = trucksRes.find(t => t.truck_number === trip.truck_number);
-        activeList.push({
-          id: trip.id,
-          truck_number: trip.truck_number,
-          driver_name: trip.driver_name,
-          route: trip.route,
-          trip_status: trip.trip_status,
-          revenue: trip.revenue,
-          date: trip.date,
-          truck_id: truck ? truck.id : null
+      allTripsRes
+        .filter(trip => ['Pending', 'Dispatched', 'In Transit'].includes(trip.trip_status))
+        .forEach(trip => {
+          const truck = trucksRes.find(t => t.truck_number === trip.truck_number);
+          activeList.push({
+            id: trip.id,
+            truck_number: trip.truck_number,
+            driver_name: trip.driver_name,
+            route: trip.route,
+            trip_status: trip.trip_status,
+            revenue: trip.revenue,
+            date: trip.date,
+            truck_id: truck ? truck.id : null
+          });
         });
-      });
       setActiveVehicles(activeList);
 
       // Low Fastag balance telemetry
@@ -265,7 +270,7 @@ export default function IdleVehiclesComponent() {
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500" />
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Today</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Fleet</p>
               <h3 className="text-3xl font-extrabold tracking-tight mt-1.5 text-emerald-400 flex items-baseline gap-2">
                 {loading ? <Skeleton className="h-9 w-16 rounded-md" /> : activeCount}
                 {!loading && activeCount > 0 && (
@@ -280,7 +285,7 @@ export default function IdleVehiclesComponent() {
               <Activity className="w-5 h-5 text-emerald-400" />
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-3">Vehicles on routes today</p>
+          <p className="text-[11px] text-muted-foreground mt-3">Vehicles currently on route</p>
         </motion.div>
 
         {/* KPI: Unassigned / Idle */}
