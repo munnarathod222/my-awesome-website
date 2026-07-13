@@ -424,58 +424,7 @@ app.get('/api/pb-logs', (req, res) => {
   res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
 });
 
-// DB diagnostic endpoint
-app.get('/api/db-diagnose', async (req, res) => {
-  try {
-    const { DatabaseSync } = await import('node:sqlite');
-    const isWin = process.platform === 'win32';
-    const pbBinary = isWin ? 'pocketbase.exe' : 'pocketbase';
-    const possiblePbDirs = [
-      path.resolve(__dirname, '../../pocketbase'),
-      path.resolve(__dirname, '../../../apps/pocketbase'),
-    ];
-    let foundDir = '';
-    for (const d of possiblePbDirs) {
-      if (fs.existsSync(path.join(d, pbBinary))) {
-        foundDir = d;
-        break;
-      }
-    }
-    const dataDir = isWin ? path.join(foundDir, 'pb_data') : (fs.existsSync('/data') ? '/data' : path.join(foundDir, 'pb_data'));
-    const dbPath = path.join(dataDir, 'data.db');
-    
-    if (!fs.existsSync(dbPath)) {
-      return res.json({ error: 'Database file not found', path: dbPath });
-    }
-    
-    const db = new DatabaseSync(dbPath);
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-    const counts = {};
-    for (const t of tables) {
-      if (t.name.startsWith('sqlite_')) continue;
-      try {
-        const row = db.prepare(`SELECT COUNT(*) as count FROM "${t.name}"`).get();
-        counts[t.name] = row.count;
-      } catch (e) {
-        counts[t.name] = `error: ${e.message}`;
-      }
-    }
-    res.json({ 
-      path: dbPath, 
-      tables: counts, 
-      sizeBytes: fs.statSync(dbPath).size,
-      env: {
-        SUPABASE_URL: supabaseUrl,
-        SUPABASE_KEY_len: supabaseKey.length,
-        SUPABASE_KEY_start: supabaseKey.substring(0, 5),
-        PORT: process.env.PORT || 'not set',
-        PB_SUPERUSER_EMAIL: process.env.PB_SUPERUSER_EMAIL || 'not set'
-      }
-    });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
+
 
 
 // ----------------------------------------------------
