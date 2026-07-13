@@ -26,7 +26,7 @@ app.set('trust proxy', true);
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
 const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || '';
+const supabaseKey = process.env.SUPABASE_KEY || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
 
 const downloadDatabaseFromSupabase = async (dbFilePath) => {
   try {
@@ -465,9 +465,9 @@ app.get('/api/db-diagnose', async (req, res) => {
       tables: counts, 
       sizeBytes: fs.statSync(dbPath).size,
       env: {
-        SUPABASE_URL: process.env.SUPABASE_URL || 'not set',
-        SUPABASE_KEY_len: (process.env.SUPABASE_KEY || '').length,
-        SUPABASE_KEY_start: (process.env.SUPABASE_KEY || '').substring(0, 5),
+        SUPABASE_URL: supabaseUrl,
+        SUPABASE_KEY_len: supabaseKey.length,
+        SUPABASE_KEY_start: supabaseKey.substring(0, 5),
         PORT: process.env.PORT || 'not set',
         PB_SUPERUSER_EMAIL: process.env.PB_SUPERUSER_EMAIL || 'not set'
       }
