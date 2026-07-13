@@ -18,13 +18,16 @@ export const calculateClientMetrics = (clientId, trips) => {
         lastPaymentDate = trip.date;
       }
     } else if (trip.client_payment_status === 'pending' || !trip.client_payment_status) {
-      // Treat 'blank' or missing status as pending for outstanding calculations
-      totalPending += amt;
-      pendingTripsCount++;
+      // Treat 'blank' or missing status as pending
+      // Only count as pending/outstanding if the trip has been Delivered
+      if (trip.trip_status === 'Delivered') {
+        totalPending += amt;
+        pendingTripsCount++;
+      }
     }
   });
 
-  const outstandingBalance = totalInvoiced - totalReceived;
+  const outstandingBalance = totalPending;
   const receivedPct = totalInvoiced > 0 ? ((totalReceived / totalInvoiced) * 100).toFixed(1) : 0;
   const pendingPct = totalInvoiced > 0 ? ((outstandingBalance / totalInvoiced) * 100).toFixed(1) : 0;
 
