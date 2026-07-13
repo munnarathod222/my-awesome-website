@@ -25,8 +25,8 @@ app.set('trust proxy', true);
 // ----------------------------------------------------
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
-const supabaseUrl = 'https://bwyashgnriarmuhosqov.supabase.co';
-const supabaseKey = 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || '';
 
 const downloadDatabaseFromSupabase = async (dbFilePath) => {
   try {
@@ -56,40 +56,81 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
   }
 };
 
+// Core upload helper — reused by all sync strategies
+const uploadDatabaseToSupabase = async (dbFilePath) => {
+  try {
+    const fileBuffer = fs.readFileSync(dbFilePath);
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/octet-stream',
+        'x-upsert': 'true'
+      },
+      body: fileBuffer
+    });
+
+    if (uploadRes.ok) {
+      logger.info('✅ Database backup successfully synced to Supabase Storage!');
+      return true;
+    } else {
+      logger.error(`❌ Failed to sync database backup to Supabase: ${uploadRes.statusText}`);
+      return false;
+    }
+  } catch (err) {
+    logger.error(`❌ Error uploading database backup to Supabase: ${err.message}`);
+    return false;
+  }
+};
+
 const watchAndSyncDatabase = (dbFilePath) => {
   let uploadTimeout = null;
+  let periodicSyncInterval = null;
+  const PERIODIC_SYNC_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-  fs.watch(dbFilePath, (eventType, filename) => {
-    if (eventType === 'change') {
-      if (uploadTimeout) clearTimeout(uploadTimeout);
-      
-      uploadTimeout = setTimeout(async () => {
-        try {
-          logger.info(`🔄 Local database file changed. Syncing backup to Supabase...`);
-          const fileBuffer = fs.readFileSync(dbFilePath);
-          
-          const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
-            method: 'POST',
-            headers: {
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/octet-stream',
-              'x-upsert': 'true'
-            },
-            body: fileBuffer
-          });
-          
-          if (uploadRes.ok) {
-            logger.info('✅ Database backup successfully synced to Supabase Storage!');
-          } else {
-            logger.error(`❌ Failed to sync database backup to Supabase: ${uploadRes.statusText}`);
-          }
-        } catch (err) {
-          logger.error(`❌ Error uploading database backup to Supabase: ${err.message}`);
-        }
-      }, 5000);
-    }
-  });
+  // ── Strategy 1: File-watcher (fires immediately on any DB write) ──
+  try {
+    fs.watch(dbFilePath, (eventType) => {
+      if (eventType === 'change') {
+        if (uploadTimeout) clearTimeout(uploadTimeout);
+        // Debounce 10s to let PocketBase finish writing (WAL checkpoint)
+        uploadTimeout = setTimeout(async () => {
+          logger.info('🔄 File-watcher: database changed, syncing to Supabase...');
+          await uploadDatabaseToSupabase(dbFilePath);
+        }, 10000);
+      }
+    });
+    logger.info('👁️  File-watcher sync: active (triggers within 10s of any DB write)');
+  } catch (watchErr) {
+    logger.warn(`⚠️  File-watcher could not be started: ${watchErr.message}. Falling back to periodic sync only.`);
+  }
+
+  // ── Strategy 2: Periodic forced sync every 2 hours (safety net) ──
+  periodicSyncInterval = setInterval(async () => {
+    logger.info('⏰ Periodic sync: forcing database backup to Supabase (every 2 hours)...');
+    await uploadDatabaseToSupabase(dbFilePath);
+  }, PERIODIC_SYNC_MS);
+
+  // Prevent the interval from blocking Node.js exit
+  if (periodicSyncInterval.unref) periodicSyncInterval.unref();
+
+  logger.info(`⏰ Periodic sync: active (every 2 hours — next sync in ~2h)`);
+
+  // ── Strategy 3: Graceful shutdown — save before process exits ──
+  const gracefulShutdownSync = async (signal) => {
+    logger.info(`🛑 ${signal} received — performing final database sync to Supabase before shutdown...`);
+    await uploadDatabaseToSupabase(dbFilePath);
+    logger.info('✅ Final sync complete. Exiting.');
+    process.exit(0);
+  };
+
+  // Remove any previously registered shutdown listeners to avoid duplicates
+  process.removeAllListeners('SIGTERM');
+  process.removeAllListeners('SIGINT');
+
+  process.on('SIGTERM', () => gracefulShutdownSync('SIGTERM'));
+  process.on('SIGINT',  () => gracefulShutdownSync('SIGINT'));
 };
 
 // ----------------------------------------------------
@@ -319,13 +360,17 @@ const runPocketBase = async () => {
 
   logger.info(`🚀 Spawning PocketBase: ${pbPath} --dir=${dataDir}`);
 
-  const pbProcess = spawn(pbPath, [
+  const pbArgs = [
     'serve',
     '--http=127.0.0.1:8090',
     `--dir=${dataDir}`,
-    '--hooksWatch=false',
-    '--dev'
-  ], { stdio: 'pipe' });
+    '--hooksWatch=false'
+  ];
+  if (process.env.NODE_ENV !== 'production') {
+    pbArgs.push('--dev');
+  }
+
+  const pbProcess = spawn(pbPath, pbArgs, { stdio: 'pipe' });
 
   // Watch and sync changes
   watchAndSyncDatabase(dbFilePath);
@@ -393,24 +438,27 @@ process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled rejection at:', promise, 'reason:', reason);
 });
 
-process.on('SIGINT', async () => {
-  logger.info('Interrupted');
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM signal received');
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  logger.info('Exiting');
-  process.exit();
-});
+// Note: SIGINT and SIGTERM are handled inside watchAndSyncDatabase()
+// to ensure a final database sync to Supabase before the process exits.
 
 // Middlewares
 app.use(helmet({
-  contentSecurityPolicy: false, // Allow local iframe embedding/scripts
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*"],
+      connectSrc: ["'self'", "http://127.0.0.1:8090", "http://localhost:3001", "https://api.render.com", "https://*.supabase.co"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
 }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: process.env.CORS_ORIGIN === '*' ? true : process.env.CORS_ORIGIN,
   credentials: true,
 }));
 app.use(morgan('combined'));
