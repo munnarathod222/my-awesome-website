@@ -330,6 +330,7 @@ const runPocketBase = async () => {
   // Store SQLite database inside /data on Railway or local pb_data folder
   const dataDir = isWin ? path.join(pbDir, 'pb_data') : (fs.existsSync('/data') ? '/data' : path.join(pbDir, 'pb_data'));
   const dbFilePath = path.join(dataDir, 'data.db');
+  global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
 
   // Sync latest database from Supabase Storage before boot
@@ -419,10 +420,73 @@ runPocketBase();
 // Start end-of-month leaderboard + payroll cron job
 startMonthEndCron();
 
-// Diagnostic endpoint — exposes PocketBase startup logs
-app.get('/api/pb-logs', (req, res) => {
-  res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
-});
+  // Diagnostic endpoint — exposes PocketBase startup logs
+  app.get('/api/pb-logs', (req, res) => {
+    res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
+  });
+
+  // GET /api/backup/status
+  app.get('/api/backup/status', async (req, res) => {
+    try {
+      const resList = await fetch(`${supabaseUrl}/storage/v1/object/list/backups`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prefix: '',
+          limit: 10
+        })
+      });
+      if (!resList.ok) throw new Error('Failed to fetch from Supabase: ' + resList.statusText);
+      const items = await resList.json();
+      const dbFile = items.find(i => i.name === 'data.db');
+      if (!dbFile) {
+        return res.json({ success: false, message: 'No backup file found in storage.' });
+      }
+      res.json({
+        success: true,
+        filename: dbFile.name,
+        sizeBytes: dbFile.metadata?.size || 0,
+        lastModified: dbFile.updated_at || dbFile.created_at,
+        id: dbFile.id
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/backup/trigger
+  app.post('/api/backup/trigger', async (req, res) => {
+    try {
+      if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
+        return res.status(400).json({ success: false, error: 'Database file path not initialized or not found.' });
+      }
+      logger.info('Manual backup triggered by user...');
+      const ok = await uploadDatabaseToSupabase(global.dbFilePath);
+      if (ok) {
+        res.json({ success: true, message: 'Manual database backup successfully synced to Supabase Storage!' });
+      } else {
+        res.status(500).json({ success: false, error: 'Failed to upload database to Supabase.' });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // GET /api/backup/download
+  app.get('/api/backup/download', async (req, res) => {
+    try {
+      if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
+        return res.status(404).send('Database file not found');
+      }
+      res.download(global.dbFilePath, 'jaibhavani_backup.db');
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  });
 
 
 

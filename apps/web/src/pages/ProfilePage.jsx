@@ -87,6 +87,59 @@ const ProfilePage = () => {
     fetchCompanySettings();
   }, []);
 
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [isLoadingBackupStatus, setIsLoadingBackupStatus] = useState(false);
+  const [isTriggeringBackup, setIsTriggeringBackup] = useState(false);
+
+  const fetchBackupStatus = async () => {
+    setIsLoadingBackupStatus(true);
+    try {
+      const res = await fetch('/hcgi/api/backup/status');
+      if (!res.ok) throw new Error('Failed to load backup status');
+      const data = await res.json();
+      if (data.success) {
+        setBackupStatus(data);
+      } else {
+        setBackupStatus(null);
+        toast.error(data.message || 'No backup found');
+      }
+    } catch (error) {
+      console.error('Error fetching backup status:', error);
+      toast.error(error.message || 'Failed to fetch backup status');
+    } finally {
+      setIsLoadingBackupStatus(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'backup') {
+      fetchBackupStatus();
+    }
+  }, [activeTab]);
+
+  const handleManualBackup = async () => {
+    setIsTriggeringBackup(true);
+    try {
+      const res = await fetch('/hcgi/api/backup/trigger', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Database backup completed successfully!');
+        fetchBackupStatus();
+      } else {
+        throw new Error(data.error || 'Failed to trigger backup');
+      }
+    } catch (error) {
+      console.error('Error triggering manual backup:', error);
+      toast.error(error.message || 'Failed to complete database backup');
+    } finally {
+      setIsTriggeringBackup(false);
+    }
+  };
+
+  const handleDownloadLocalBackup = () => {
+    window.open('/hcgi/api/backup/download', '_blank');
+  };
+
   const handleCompanySave = async (e) => {
     e.preventDefault();
     if (!companyFormData.company_name) {
@@ -838,6 +891,97 @@ const ProfilePage = () => {
     );
   };
 
+  const renderBackupSettingsView = () => {
+    const formattedSize = backupStatus?.sizeBytes 
+      ? (backupStatus.sizeBytes / (1024 * 1024)).toFixed(2) + ' MB'
+      : '—';
+    
+    const formattedDate = backupStatus?.lastModified
+      ? format(new Date(backupStatus.lastModified), 'MMM dd, yyyy - hh:mm a')
+      : '—';
+
+    return (
+      <div className="space-y-6">
+        <Card className="rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-card">
+          <CardHeader className="border-b border-border/50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div>
+                <CardTitle>System Database Backup</CardTitle>
+                <CardDescription>Manually trigger database backups to cloud storage or download the SQLite database file locally.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-muted/30 p-4 rounded-2xl border border-border/20">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Cloud Backup Status</p>
+                <p className="text-lg font-bold text-emerald-400 mt-1 flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                  Active & Synced
+                </p>
+              </div>
+              <div className="bg-muted/30 p-4 rounded-2xl border border-border/20">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Last Sync Timestamp</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {isLoadingBackupStatus ? 'Loading...' : formattedDate}
+                </p>
+              </div>
+              <div className="bg-muted/30 p-4 rounded-2xl border border-border/20">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Database Size</p>
+                <p className="text-lg font-bold text-foreground mt-1">
+                  {isLoadingBackupStatus ? 'Loading...' : formattedSize}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex gap-3 text-primary text-xs leading-relaxed">
+              <Shield className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold">Manual Backup Instructions:</strong>
+                <p className="mt-1">
+                  A manual backup saves the current live state of all trip logs, expenses, cashbook transactions, and settings directly to Supabase Cloud Storage. This will overwrite the previous backup file in the cloud. You can also download a copy of the database locally for safety.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col sm:flex-row gap-3 border-t border-border/50 pt-6">
+            <Button
+              onClick={handleManualBackup}
+              disabled={isTriggeringBackup}
+              className="w-full sm:w-auto min-w-[180px] rounded-xl"
+            >
+              {isTriggeringBackup ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                  Syncing Cloud...
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-4 h-4 mr-2" />
+                  Backup to Cloud
+                </>
+              )}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleDownloadLocalBackup}
+              className="w-full sm:w-auto min-w-[180px] rounded-xl"
+            >
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              Download Local Copy
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -863,6 +1007,9 @@ const ProfilePage = () => {
             <TabsTrigger value="company" className="flex-1 sm:px-8 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <Building className="w-4 h-4" /> Company Settings
             </TabsTrigger>
+            <TabsTrigger value="backup" className="flex-1 sm:px-8 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
+              <UploadCloud className="w-4 h-4" /> System Backup
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6 m-0 outline-none">
@@ -871,6 +1018,10 @@ const ProfilePage = () => {
 
           <TabsContent value="company" className="space-y-6 m-0 outline-none">
             {renderCompanySettingsView()}
+          </TabsContent>
+
+          <TabsContent value="backup" className="space-y-6 m-0 outline-none">
+            {renderBackupSettingsView()}
           </TabsContent>
         </Tabs>
       ) : (
@@ -886,6 +1037,14 @@ const SaveIcon = ({ className }) => (
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
     <polyline points="17 21 17 13 7 13 7 21" />
     <polyline points="7 3 7 8 15 8" />
+  </svg>
+);
+
+const DownloadIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
