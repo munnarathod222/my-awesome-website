@@ -133,7 +133,7 @@ router.get('/pl-matrix', async (req, res) => {
       
       if (category === 'Fuel' || category === 'FASTag') {
         targetExp.fuelFastag += amt;
-      } else if (category === 'Salary' || category === 'Employee Advance' || category === 'Advance') {
+      } else if (category === 'Salary' || category === 'Employee Advance' || category === 'Advance' || category === 'Employee') {
         targetExp.salaryAdvance += amt;
       } else if (category === 'Maintenance' || subcat === 'Maintenance') {
         targetExp.maintenance += amt;

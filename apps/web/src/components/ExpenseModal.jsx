@@ -215,8 +215,8 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
     setIsLoading(true);
     
     try {
-      if (formData.category === 'Employee Advance' && (!formData.employee_id || formData.employee_id === 'none')) {
-        toast.error('Please select an employee for this advance.');
+      if (formData.category === 'Employee' && (!formData.employee_id || formData.employee_id === 'none')) {
+        toast.error('Please select an employee for this expense.');
         setIsLoading(false);
         return;
       }
@@ -229,7 +229,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         employee_id: formData.employee_id === 'none' ? '' : formData.employee_id,
       };
 
-      if (payload.category !== 'Regular') {
+      if (payload.category !== 'Regular' && payload.category !== 'Employee') {
         payload.subcategory = '';
       }
 
@@ -281,7 +281,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         
         // Cashbook entry created automatically via database create hook
 
-        if (payload.category === 'Employee Advance') {
+        if (payload.category === 'Employee' && payload.subcategory === 'Employee Advance') {
           const empName = employees.find(e => e.id === payload.employee_id)?.name || 'Employee';
           await AdvanceIntegrationService.createAdvanceFromExpense({
             employee_id: payload.employee_id,
@@ -385,36 +385,58 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground ml-1">Main Category</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(v) => {
+                      const updates = { category: v };
+                      if (v === 'Employee') {
+                        updates.subcategory = 'Employee Advance';
+                      } else if (v === 'Regular') {
+                        updates.subcategory = 'Maintenance';
+                      } else {
+                        updates.subcategory = '';
+                      }
+                      setFormData({ ...formData, ...updates });
+                    }}
+                  >
                     <SelectTrigger className={selectTriggerClass}><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="Regular">Regular Expense</SelectItem>
-                      <SelectItem value="Employee Advance">Employee Advance</SelectItem>
+                      <SelectItem value="Employee">Employee Expense</SelectItem>
                       <SelectItem value="EMI">EMI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
                 
-              {formData.category === 'Regular' && (
+              {(formData.category === 'Regular' || formData.category === 'Employee') && (
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground ml-1">Subcategory</Label>
                   <Select value={formData.subcategory} onValueChange={(v) => setFormData({ ...formData, subcategory: v })} required>
                     <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="Maintenance">Maintenance / Repair</SelectItem>
-                      <SelectItem value="Fuel">Fuel</SelectItem>
-                      <SelectItem value="Toll">Toll</SelectItem>
-                      <SelectItem value="Insurance">Insurance</SelectItem>
-                      <SelectItem value="Utilities">Utilities</SelectItem>
-                      <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {formData.category === 'Regular' ? (
+                        <>
+                          <SelectItem value="Maintenance">Maintenance / Repair</SelectItem>
+                          <SelectItem value="Fuel">Fuel</SelectItem>
+                          <SelectItem value="Toll">Toll</SelectItem>
+                          <SelectItem value="Insurance">Insurance</SelectItem>
+                          <SelectItem value="Utilities">Utilities</SelectItem>
+                          <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="Employee Advance">Employee Advance</SelectItem>
+                          <SelectItem value="Salary">Salary</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
               )}
 
-              {formData.category === 'Employee Advance' && (
+              {formData.category === 'Employee' && formData.subcategory === 'Employee Advance' && (
                 <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl flex gap-3 text-warning">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <p className="text-sm">
@@ -475,10 +497,10 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" /> Employee {formData.category === 'Employee Advance' && <span className="text-destructive">*</span>}
+                    <Users className="w-4 h-4 text-muted-foreground" /> Employee {formData.category === 'Employee' && <span className="text-destructive">*</span>}
                   </Label>
                   <Select value={formData.employee_id} onValueChange={(v) => setFormData({ ...formData, employee_id: v })}>
-                    <SelectTrigger className={`${selectTriggerClass} ${formData.category === 'Employee Advance' && formData.employee_id === 'none' ? 'ring-2 ring-destructive/50 border-destructive' : ''}`}>
+                    <SelectTrigger className={`${selectTriggerClass} ${formData.category === 'Employee' && formData.employee_id === 'none' ? 'ring-2 ring-destructive/50 border-destructive' : ''}`}>
                       <SelectValue placeholder="Select Employee (Optional)" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-[250px]">

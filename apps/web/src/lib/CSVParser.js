@@ -174,22 +174,22 @@ export const validateExpenseRow = (row, index, { trucksMap, employeesMap }) => {
   else if (!isValidDateFormat(row['Date (YYYY-MM-DD)'])) errors.push('Invalid Date format');
 
   const category = row['Category']?.trim();
-  const validCategories = ['Regular', 'Employee Advance', 'EMI'];
+  const validCategories = ['Regular', 'Employee', 'EMI'];
   if (!category) errors.push('Category is required');
   else if (!validCategories.includes(category)) errors.push(`Invalid Category. Must be one of: ${validCategories.join(', ')}`);
 
   const subcategory = row['Subcategory']?.trim();
-  const validSubcategories = ['Fuel', 'Maintenance', 'Toll', 'Insurance', 'Salary', 'Rent', 'Utilities', 'Rapido', 'Miscellaneous', 'Other'];
-  if (category === 'Regular') {
-    if (!subcategory) errors.push('Subcategory is required for Regular expenses');
+  const validSubcategories = ['Fuel', 'Maintenance', 'Toll', 'Insurance', 'Salary', 'Rent', 'Utilities', 'Rapido', 'Miscellaneous', 'Other', 'Employee Advance'];
+  if (category === 'Regular' || category === 'Employee') {
+    if (!subcategory) errors.push(`Subcategory is required for ${category} expenses`);
     else if (!validSubcategories.includes(subcategory)) errors.push(`Invalid Subcategory. Must be one of: ${validSubcategories.join(', ')}`);
   }
 
-  // Validate Employee Name for Employee Advance
-  if (category === 'Employee Advance') {
+  // Validate Employee Name for Employee
+  if (category === 'Employee') {
     const empName = row['Employee Name']?.trim();
     if (!empName) {
-      errors.push('Employee Name is required for Employee Advance');
+      errors.push('Employee Name is required for Employee expenses');
     } else if (employeesMap && !employeesMap.has(empName.toLowerCase())) {
       errors.push(`Employee "${empName}" not found in system. Check spelling matches exactly.`);
     }

@@ -322,7 +322,7 @@ const ExpensesPage = () => {
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     const unlinkedExpAdvance = currentMonthExpenses
-      .filter(e => e.category === 'Employee Advance')
+      .filter(e => e.category === 'Employee Advance' || (e.category === 'Employee' && e.subcategory === 'Employee Advance'))
       .filter(e => !currentMonthAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
@@ -334,7 +334,15 @@ const ExpensesPage = () => {
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     const misc = currentMonthExpenses
-      .filter(e => e.category === 'Regular' && e.subcategory !== 'Fuel' && e.subcategory !== 'Toll' && e.subcategory !== 'Maintenance')
+      .filter(e => {
+        if (e.category === 'Regular' && e.subcategory === 'Fuel') return false;
+        if (e.category === 'Regular' && e.subcategory === 'Toll') return false;
+        if (e.category === 'Regular' && e.subcategory === 'Maintenance') return false;
+        if (e.category === 'Employee' && e.subcategory === 'Employee Advance') return false;
+        if (e.category === 'Employee Advance') return false;
+        if (e.category === 'EMI') return false;
+        return true;
+      })
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     return {
