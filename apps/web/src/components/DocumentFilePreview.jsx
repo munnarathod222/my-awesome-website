@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Trash2, Download } from 'lucide-react';
+import { FileText, Image as ImageIcon, Trash2, Download, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
 
-const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false }) => {
+const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false, readOnly = false, onMoveUp, onMoveDown }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
@@ -32,12 +32,28 @@ const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false }) => {
     <div className="flex items-center justify-between p-3 border border-border rounded-lg bg-card group hover:shadow-sm transition-all duration-200">
       <div className="flex items-center gap-4 overflow-hidden flex-1">
         <div className="flex-shrink-0 w-12 h-12 rounded bg-muted flex items-center justify-center overflow-hidden">
-          {isImage && previewUrl ? (
-            <img src={previewUrl} alt={fileName} className="w-full h-full object-cover" />
-          ) : isPdf ? (
-            <FileText className="w-6 h-6 text-destructive" />
+          {previewUrl ? (
+            <a 
+              href={previewUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
+              title="Open file in new tab"
+            >
+              {isImage ? (
+                <img src={previewUrl} alt={fileName} className="w-full h-full object-cover" />
+              ) : isPdf ? (
+                <FileText className="w-6 h-6 text-destructive" />
+              ) : (
+                <FileText className="w-6 h-6 text-muted-foreground" />
+              )}
+            </a>
           ) : (
-            <FileText className="w-6 h-6 text-muted-foreground" />
+            isPdf ? (
+              <FileText className="w-6 h-6 text-destructive" />
+            ) : (
+              <FileText className="w-6 h-6 text-muted-foreground" />
+            )
           )}
         </div>
         <div className="flex flex-col flex-1 min-w-0">
@@ -51,6 +67,18 @@ const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false }) => {
       </div>
       
       <div className="flex items-center gap-2 ml-4">
+        {onMoveUp && (
+          <Button type="button" variant="ghost" size="icon" onClick={onMoveUp} className="h-8 w-8 hover:bg-muted text-muted-foreground" title="Move Up">
+            <ChevronUp className="w-4 h-4" />
+            <span className="sr-only">Move Up</span>
+          </Button>
+        )}
+        {onMoveDown && (
+          <Button type="button" variant="ghost" size="icon" onClick={onMoveDown} className="h-8 w-8 hover:bg-muted text-muted-foreground" title="Move Down">
+            <ChevronDown className="w-4 h-4" />
+            <span className="sr-only">Move Down</span>
+          </Button>
+        )}
         {previewUrl && !isNew && (
           <Button variant="ghost" size="icon" asChild>
             <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
@@ -59,10 +87,12 @@ const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false }) => {
             </a>
           </Button>
         )}
-        <Button variant="ghost" size="icon" onClick={() => onDelete(file, isNew)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-          <Trash2 className="w-4 h-4" />
-          <span className="sr-only">Delete</span>
-        </Button>
+        {!readOnly && (
+          <Button variant="ghost" size="icon" onClick={() => onDelete(file, isNew)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+            <Trash2 className="w-4 h-4" />
+            <span className="sr-only">Delete</span>
+          </Button>
+        )}
       </div>
     </div>
   );

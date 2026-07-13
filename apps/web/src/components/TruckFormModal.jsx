@@ -19,6 +19,7 @@ const AXLE_TYRE_MAP = {
 
 export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [managers, setManagers] = useState([]);
   const [formData, setFormData] = useState({
     truck_name: '',
     truck_number: '',
@@ -27,7 +28,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     tyre_count: 6,
     status: 'active',
     base_odometer: 0,
-    ownership_type: 'Owned'
+    ownership_type: 'Owned',
+    manager_id: 'none'
   });
 
   const [newFiles, setNewFiles] = useState([]);
@@ -38,6 +40,15 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch dynamic user records whose system roles are flagged as "manager" or "dispatcher" (Operations Lead)
+      pb.collection('users').getFullList({
+        filter: 'role = "manager" || role = "dispatcher"',
+        sort: 'full_name',
+        $autoCancel: false
+      })
+      .then(setManagers)
+      .catch(err => console.error('Failed to fetch managers:', err));
+
       if (truck) {
         setFormData({
           truck_name: truck.truck_name || '',
@@ -47,10 +58,15 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           tyre_count: truck.tyre_count || 6,
           status: truck.status || 'active',
           base_odometer: truck.base_odometer || 0,
-          ownership_type: truck.ownership_type || 'Owned'
+          ownership_type: truck.ownership_type || 'Owned',
+          manager_id: truck.manager_id || 'none'
         });
-        setExistingFiles(truck.body_images || []);
-        setNewFiles([]);
+        const existing = (truck.body_images || []).map((img, idx) => ({
+          key: `existing-${idx}-${img}`,
+          file: img,
+          isNew: false
+        }));
+        setBodyImagesList(existing);
         setDeletedFiles([]);
       } else {
         setFormData({
@@ -61,10 +77,10 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           tyre_count: 6,
           status: 'active',
           base_odometer: 0,
-          ownership_type: 'Owned'
+          ownership_type: 'Owned',
+          manager_id: 'none'
         });
-        setExistingFiles([]);
-        setNewFiles([]);
+        setBodyImagesList([]);
         setDeletedFiles([]);
       }
     }
@@ -95,12 +111,17 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     }
 
     if (validFiles.length > 0) {
-      const totalFilesCount = newFiles.length + existingFiles.length - deletedFiles.length + validFiles.length;
+      const totalFilesCount = bodyImagesList.length + validFiles.length;
       if (totalFilesCount > 10) {
         toast.error("You can upload a maximum of 10 body images.");
         return;
       }
-      setNewFiles((prev) => [...prev, ...validFiles]);
+      const newItems = validFiles.map((file, idx) => ({
+        key: `new-${Date.now()}-${idx}-${Math.random()}`,
+        file: file,
+        isNew: true
+      }));
+      setBodyImagesList((prev) => [...prev, ...newItems]);
     }
   };
 
@@ -121,13 +142,21 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     }
   };
 
-  const handleRemoveFile = (fileToRemove, isNew) => {
-    if (isNew) {
-      setNewFiles((prev) => prev.filter((f) => f !== fileToRemove));
-    } else {
-      setDeletedFiles((prev) => [...prev, fileToRemove]);
-      setExistingFiles((prev) => prev.filter((f) => f !== fileToRemove));
+  const handleRemoveFile = (itemToRemove) => {
+    if (!itemToRemove.isNew) {
+      setDeletedFiles((prev) => [...prev, itemToRemove.file]);
     }
+    setBodyImagesList((prev) => prev.filter((item) => item.key !== itemToRemove.key));
+  };
+
+  const handleMoveItem = (fromIdx, toIdx) => {
+    setBodyImagesList((prev) => {
+      const copy = [...prev];
+      const temp = copy[fromIdx];
+      copy[fromIdx] = copy[toIdx];
+      copy[toIdx] = temp;
+      return copy;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -143,21 +172,50 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       formDataToSend.append('status', formData.status);
       formDataToSend.append('base_odometer', String(formData.base_odometer || 0));
       formDataToSend.append('ownership_type', formData.ownership_type);
+      formDataToSend.append('manager_id', formData.manager_id === 'none' ? '' : formData.manager_id);
 
-      newFiles.forEach((file) => {
-        formDataToSend.append('body_images', file);
+      // Separate new files
+      const newItems = bodyImagesList.filter(item => item.isNew);
+      newItems.forEach((item) => {
+        formDataToSend.append('body_images', item.file);
       });
 
       if (truck?.id) {
         deletedFiles.forEach((filename) => {
           formDataToSend.append('body_images.' + filename, '');
         });
-        await pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false });
-        toast.success('Truck updated successfully');
-      } else {
-        await pb.collection('trucks').create(formDataToSend, { $autoCancel: false });
-        toast.success('Truck created successfully');
       }
+
+      let updatedRecord;
+      if (truck?.id) {
+        updatedRecord = await pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false });
+      } else {
+        updatedRecord = await pb.collection('trucks').create(formDataToSend, { $autoCancel: false });
+      }
+
+      // Reorder filenames according to bodyImagesList order
+      const startingExistingNames = truck?.body_images || [];
+      const returnedNames = updatedRecord.body_images || [];
+      const newFilenamesInReturned = returnedNames.filter(name => !startingExistingNames.includes(name));
+
+      let newFileIdx = 0;
+      const finalOrderedFilenames = bodyImagesList.map(item => {
+        if (item.isNew) {
+          const name = newFilenamesInReturned[newFileIdx];
+          newFileIdx++;
+          return name;
+        } else {
+          return item.file;
+        }
+      }).filter(Boolean);
+
+      if (finalOrderedFilenames.length > 0) {
+        await pb.collection('trucks').update(updatedRecord.id, {
+          body_images: finalOrderedFilenames
+        }, { $autoCancel: false });
+      }
+
+      toast.success(truck ? 'Truck updated successfully' : 'Truck created successfully');
       onSuccess();
       onClose();
     } catch (err) {
@@ -237,6 +295,21 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>Assign Fleet Manager</Label>
+            <Select value={formData.manager_id} onValueChange={v => setFormData({...formData, manager_id: v})}>
+              <SelectTrigger><SelectValue placeholder="Select Fleet Manager" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Not assigned</SelectItem>
+                {managers.map(mgr => (
+                  <SelectItem key={mgr.id} value={mgr.id}>
+                    {mgr.full_name || mgr.name} ({mgr.role === 'manager' ? 'Manager' : 'Operations Lead'})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Truck Body Images upload section */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground ml-1">Truck Body Images (Optional)</Label>
@@ -266,23 +339,17 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
             </div>
 
             {/* File previews */}
-            {(newFiles.length > 0 || existingFiles.length > 0) && (
-              <div className="grid grid-cols-1 gap-2 mt-4 max-h-48 overflow-y-auto pr-1">
-                {existingFiles.map((file, idx) => (
+            {bodyImagesList.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 mt-4 max-h-60 overflow-y-auto pr-1">
+                {bodyImagesList.map((item, idx) => (
                   <DocumentFilePreview
-                    key={`existing-${idx}`}
-                    file={file}
-                    docRecord={truck}
-                    onDelete={handleRemoveFile}
-                    isNew={false}
-                  />
-                ))}
-                {newFiles.map((file, idx) => (
-                  <DocumentFilePreview
-                    key={`new-${idx}`}
-                    file={file}
-                    onDelete={handleRemoveFile}
-                    isNew={true}
+                    key={item.key}
+                    file={item.file}
+                    docRecord={item.isNew ? null : truck}
+                    onDelete={() => handleRemoveFile(item)}
+                    isNew={item.isNew}
+                    onMoveUp={idx > 0 ? () => handleMoveItem(idx, idx - 1) : null}
+                    onMoveDown={idx < bodyImagesList.length - 1 ? () => handleMoveItem(idx, idx + 1) : null}
                   />
                 ))}
               </div>
