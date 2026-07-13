@@ -460,7 +460,18 @@ app.get('/api/db-diagnose', async (req, res) => {
         counts[t.name] = `error: ${e.message}`;
       }
     }
-    res.json({ path: dbPath, tables: counts, sizeBytes: fs.statSync(dbPath).size });
+    res.json({ 
+      path: dbPath, 
+      tables: counts, 
+      sizeBytes: fs.statSync(dbPath).size,
+      env: {
+        SUPABASE_URL: process.env.SUPABASE_URL || 'not set',
+        SUPABASE_KEY_len: (process.env.SUPABASE_KEY || '').length,
+        SUPABASE_KEY_start: (process.env.SUPABASE_KEY || '').substring(0, 5),
+        PORT: process.env.PORT || 'not set',
+        PB_SUPERUSER_EMAIL: process.env.PB_SUPERUSER_EMAIL || 'not set'
+      }
+    });
   } catch (err) {
     res.json({ error: err.message });
   }
