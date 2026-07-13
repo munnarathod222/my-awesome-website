@@ -173,6 +173,12 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       formDataToSend.append('ownership_type', formData.ownership_type);
       formDataToSend.append('manager_id', formData.manager_id === 'none' ? '' : formData.manager_id);
 
+      // Keep existing files that are not deleted
+      const existingItems = bodyImagesList.filter(item => !item.isNew);
+      existingItems.forEach((item) => {
+        formDataToSend.append('body_images', item.file);
+      });
+
       // Separate new files
       const newItems = bodyImagesList.filter(item => item.isNew);
       newItems.forEach((item) => {
