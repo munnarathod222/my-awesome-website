@@ -94,7 +94,7 @@ const ProfilePage = () => {
   const fetchBackupStatus = async () => {
     setIsLoadingBackupStatus(true);
     try {
-      const res = await fetch('/hcgi/api/backup/status');
+      const res = await fetch('/api/backup/status');
       if (!res.ok) throw new Error('Failed to load backup status');
       const data = await res.json();
       if (data.success) {
@@ -120,7 +120,7 @@ const ProfilePage = () => {
   const handleManualBackup = async () => {
     setIsTriggeringBackup(true);
     try {
-      const res = await fetch('/hcgi/api/backup/trigger', { method: 'POST' });
+      const res = await fetch('/api/backup/trigger', { method: 'POST' });
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success('Database backup completed successfully!');
@@ -137,7 +137,7 @@ const ProfilePage = () => {
   };
 
   const handleDownloadLocalBackup = () => {
-    window.open('/hcgi/api/backup/download', '_blank');
+    window.open('/api/backup/download', '_blank');
   };
 
   const handleCompanySave = async (e) => {
