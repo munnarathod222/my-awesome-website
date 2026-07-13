@@ -129,6 +129,12 @@ export default function MaintenancePage() {
   const [inventorySearch, setInventorySearch] = useState('');
   const [inventoryCategory, setInventoryCategory] = useState('all');
 
+  // Local filters for Service Logs Ledger and Inspections
+  const [serviceLogSearch, setServiceLogSearch] = useState('');
+  const [serviceLogTruckFilter, setServiceLogTruckFilter] = useState('all');
+  const [inspectionSearch, setInspectionSearch] = useState('');
+  const [inspectionTruckFilter, setInspectionTruckFilter] = useState('all');
+
   // Fetch monthly reminders (current month)
   const fetchMonthlyReminders = async () => {
     setRemindersLoading(true);
@@ -390,12 +396,83 @@ export default function MaintenancePage() {
     return matchSearch && matchCategory;
   }), [inventory, inventorySearch, inventoryCategory]);
 
-  const inventoryStats = useMemo(() => {
-    const totalItems = inventory.length;
-    const lowStock = inventory.filter(i => i.current_stock <= i.reorder_level).length;
-    const totalValue = inventory.reduce((sum, item) => sum + (item.current_stock * (item.unit_cost || 0)), 0);
-    return { totalItems, lowStock, totalValue };
-  }, [inventory]);
+  const statsSummary = useMemo(() => {
+    const totalSpent = serviceLogs.reduce((sum, s) => sum + (s.cost_amount || 0), 0);
+    const activeIssues = problems.filter(p => p.status !== 'Resolved').length;
+    const overdueCount = trucks.reduce((count, truck) => {
+      const liveOdo = getLiveOdometer(truck);
+      const status = getIntervalStatus(truck, liveOdo);
+      return status.variant === 'destructive' ? count + 1 : count;
+    }, 0);
+    const healthyTrucks = trucks.length === 0 ? 0 : Math.round(
+      (trucks.filter(truck => {
+        const liveOdo = getLiveOdometer(truck);
+        const truckIntervals = intervals.filter(i => i.truck_id === truck.id);
+        const overdue = truckIntervals.filter(i => (i.last_serviced_odometer + i.target_interval_kms) - liveOdo < 0);
+        return overdue.length === 0 && truckIntervals.length > 0;
+      }).length / trucks.length) * 100
+    );
+    return { totalSpent, activeIssues, overdueCount, healthyTrucks };
+  }, [serviceLogs, problems, trucks, intervals, tripLogs]);
+
+  const filteredServiceLogs = useMemo(() => {
+    return serviceLogs.filter(s => {
+      const truckObj = trucks.find(t => t.id === s.truck_id);
+      const truckNum = truckObj ? truckObj.truck_number : '';
+      
+      const matchSearch = 
+        (s.work_description_text || '').toLowerCase().includes(serviceLogSearch.toLowerCase()) ||
+        truckNum.toLowerCase().includes(serviceLogSearch.toLowerCase()) ||
+        (s.parts_replaced_array || []).some(p => p.toLowerCase().includes(serviceLogSearch.toLowerCase()));
+
+      const matchTruck = serviceLogTruckFilter === 'all' || s.truck_id === serviceLogTruckFilter;
+
+      return matchSearch && matchTruck;
+    });
+  }, [serviceLogs, trucks, serviceLogSearch, serviceLogTruckFilter]);
+
+  const filteredInspectionLogs = useMemo(() => {
+    return inspections.filter(i => {
+      const truckObj = trucks.find(t => t.id === i.truck_id);
+      const truckNum = truckObj ? truckObj.truck_number : '';
+      
+      const matchSearch = 
+        (i.inspector_name || '').toLowerCase().includes(inspectionSearch.toLowerCase()) ||
+        truckNum.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
+        (i.inspector_notes || '').toLowerCase().includes(inspectionSearch.toLowerCase());
+
+      const matchTruck = inspectionTruckFilter === 'all' || i.truck_id === inspectionTruckFilter;
+
+      return matchSearch && matchTruck;
+    });
+  }, [inspections, trucks, inspectionSearch, inspectionTruckFilter]);
+
+  const exportServiceLogsToCSV = () => {
+    const headers = ['Date', 'Truck Number', 'Work Description', 'Odometer (KM)', 'Cost (INR)', 'Parts Replaced'];
+    const rows = filteredServiceLogs.map(s => {
+      const truckObj = trucks.find(t => t.id === s.truck_id);
+      const partsStr = (s.parts_replaced_array || []).join('; ');
+      return [
+        s.maintenance_date ? format(new Date(s.maintenance_date), 'yyyy-MM-dd') : '-',
+        truckObj ? truckObj.truck_number : 'N/A',
+        s.work_description_text || '-',
+        s.odometer_at_service || 0,
+        s.cost_amount || 0,
+        partsStr || '-'
+      ];
+    });
+
+    const csvContent = [headers, ...rows].map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `fleet_service_logs_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Service logs exported to CSV!');
+  };
 
   const formatDate = (isoString) => {
     if (!isoString) return '-';
@@ -422,14 +499,65 @@ export default function MaintenancePage() {
         </div>
       </div>
 
+      {/* Advanced Diagnostics Analytics Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Health</p>
+              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.healthyTrucks}% <span className="text-xs font-medium text-emerald-600">Healthy</span></p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-destructive/10 text-destructive rounded-xl">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Breakdown Issues</p>
+              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.activeIssues} <span className="text-xs font-medium text-destructive">Open Tickets</span></p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-success/10 text-success rounded-xl">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Maintenance Spent</p>
+              <p className="text-2xl font-black mt-1 text-foreground">₹{statsSummary.totalSpent.toLocaleString()}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-warning/10 text-warning rounded-xl">
+              <Wrench className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overdue Alerts</p>
+              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.overdueCount} <span className="text-xs font-medium text-warning">Trucks Overdue</span></p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Navigation tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-muted/50 p-1 mb-6 flex flex-wrap h-auto rounded-xl max-w-fit">
-          <TabsTrigger value="vehicles" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm">
+        <TabsList className="bg-muted/50 p-1 mb-6 flex items-center justify-start overflow-x-auto w-full md:w-auto h-auto rounded-xl max-w-fit scrollbar-none flex-nowrap md:flex-wrap space-x-1">
+          <TabsTrigger value="vehicles" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
             <Truck className="w-4 h-4" /> Vehicles Roster
             <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{trucks.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="monthly_reminders" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm relative">
+          <TabsTrigger value="monthly_reminders" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm relative shrink-0">
             <Bell className="w-4 h-4" /> Monthly Reminders
             {monthlyReminders.filter(r => r.status === 'Pending').length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-white rounded-full text-[9px] font-bold flex items-center justify-center">
@@ -437,13 +565,21 @@ export default function MaintenancePage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="inventory" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm">
-            <Package className="w-4 h-4" /> Inventory
-            <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{filteredInventory.length}</Badge>
+          <TabsTrigger value="service_logs" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
+            <History className="w-4 h-4" /> Service Logs Ledger
+            <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{serviceLogs.length}</Badge>
           </TabsTrigger>
-          <TabsTrigger value="problems" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm">
+          <TabsTrigger value="inspections" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
+            <ClipboardList className="w-4 h-4" /> Checklist Inspections
+            <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{inspections.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="problems" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
             <AlertTriangle className="w-4 h-4" /> Reported Problems
             <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{filteredProblems.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
+            <Package className="w-4 h-4" /> Inventory
+            <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{filteredInventory.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -471,18 +607,33 @@ export default function MaintenancePage() {
                 const liveOdometer = getLiveOdometer(truck);
                 const status = getIntervalStatus(truck, liveOdometer);
 
+                // Health Score calculation
+                const truckIntervals = intervals.filter(i => i.truck_id === truck.id);
+                const overdueIntervals = truckIntervals.filter(i => (i.last_serviced_odometer + i.target_interval_kms) - liveOdometer < 0);
+                const healthScore = truckIntervals.length === 0 ? 100 : Math.round(((truckIntervals.length - overdueIntervals.length) / truckIntervals.length) * 100);
+
                 return (
                   <div 
                     key={truck.id} 
                     onClick={() => { setSelectedTruck(truck); setDrawerTab('intervals'); }}
-                    className="group bg-card border border-border/60 hover:border-primary/30 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col cursor-pointer hover:-translate-y-0.5"
+                    className="group bg-card border border-border/60 hover:border-primary/40 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col cursor-pointer hover:-translate-y-1 relative"
                   >
                     <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                       <div>
                         {/* Nickname & Icon */}
-                        <div className="flex items-center gap-2 mb-2 text-muted-foreground group-hover:text-primary transition-colors">
-                          <Truck className="w-4 h-4" />
-                          <span className="text-xs font-semibold uppercase tracking-wider">{truck.truck_name || 'Unnamed Vehicle'}</span>
+                        <div className="flex items-center justify-between mb-2 text-muted-foreground">
+                          <div className="flex items-center gap-2 group-hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider">
+                            <Truck className="w-4 h-4" />
+                            <span>{truck.truck_name || 'Unnamed Vehicle'}</span>
+                          </div>
+                          <span className={cn(
+                            "text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider",
+                            healthScore === 100 ? "bg-emerald-500/10 text-emerald-400" :
+                            healthScore >= 75 ? "bg-amber-500/10 text-amber-400" :
+                            "bg-rose-500/10 text-rose-400"
+                          )}>
+                            Health: {healthScore}%
+                          </span>
                         </div>
 
                         {/* Bold Registration Plate */}
@@ -491,17 +642,32 @@ export default function MaintenancePage() {
                         </h3>
 
                         {/* Live Odometer */}
-                        <div className="mt-3 flex items-baseline gap-1.5">
-                          <span className="text-xs text-muted-foreground font-medium">Accumulated Odometer:</span>
-                          <span className="text-lg font-bold text-foreground tabular-nums">
-                            {liveOdometer.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">KMs</span>
+                        <div className="mt-3 flex items-baseline gap-1.5 justify-between">
+                          <span className="text-xs text-muted-foreground font-medium">Live Odometer:</span>
+                          <span className="text-sm font-bold text-foreground tabular-nums">
+                            {liveOdometer.toLocaleString()} <span className="text-[10px] font-semibold text-muted-foreground">KMs</span>
                           </span>
+                        </div>
+
+                        {/* Health Progress bar */}
+                        <div className="mt-3.5 space-y-1">
+                          <div className="w-full bg-secondary/50 rounded-full h-1.25 overflow-hidden">
+                            <div 
+                              className={cn(
+                                "h-1.25 rounded-full transition-all duration-500",
+                                healthScore === 100 ? "bg-emerald-500" :
+                                healthScore >= 75 ? "bg-amber-500" :
+                                "bg-rose-500"
+                              )} 
+                              style={{ width: `${healthScore}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {/* Service Status Due Badge */}
-                      <div className="border-t border-border/50 pt-4 flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-medium">Diagnostics:</span>
+                      <div className="border-t border-border/30 pt-3.5 flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Diagnostics</span>
                         <Badge 
                           variant="outline"
                           className={cn(
@@ -675,7 +841,7 @@ export default function MaintenancePage() {
                             const isOverdue   = rem.status === 'Overdue';
 
                             return (
-                              <div key={rem.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
+                              <div key={rem.id} className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className={`p-2 rounded-lg shrink-0 ${
                                     isAirFilter ? 'bg-sky-500/12 text-sky-400' : 'bg-emerald-500/12 text-emerald-400'
@@ -694,7 +860,7 @@ export default function MaintenancePage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/20">
                                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                     isDone    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' :
                                     isOverdue ? 'bg-destructive/15 text-destructive border-destructive/20' :
@@ -741,6 +907,223 @@ export default function MaintenancePage() {
               );
             })()
           )}
+        </TabsContent>
+
+        {/* TAB 1.5: Service Logs Ledger */}
+        <TabsContent value="service_logs" className="m-0 space-y-6 animate-in fade-in duration-300">
+          <Card className="shadow-sm border-border rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-border/40 flex flex-wrap gap-4 items-center justify-between bg-muted/10">
+              <div className="flex flex-wrap gap-4 items-center flex-1">
+                <div className="relative max-w-xs w-full">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search description or parts..." 
+                    value={serviceLogSearch} 
+                    onChange={e => setServiceLogSearch(e.target.value)} 
+                    className="pl-9 h-10 rounded-xl bg-background border-border" 
+                  />
+                </div>
+                <Select value={serviceLogTruckFilter} onValueChange={setServiceLogTruckFilter}>
+                  <SelectTrigger className="w-[200px] h-10 rounded-xl bg-background border-border">
+                    <SelectValue placeholder="All Trucks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Vehicles</SelectItem>
+                    {trucks.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.truck_number}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right mr-2 hidden sm:block">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Spent (Filtered)</p>
+                  <p className="text-lg font-black text-foreground">₹{filteredServiceLogs.reduce((sum, s) => sum + (s.cost_amount || 0), 0).toLocaleString()}</p>
+                </div>
+                <Button onClick={exportServiceLogsToCSV} variant="outline" className="h-10 rounded-xl shadow-sm hover:bg-muted font-bold text-xs gap-2">
+                  <UploadCloud className="w-4 h-4" /> Export CSV
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Work Description</TableHead>
+                    <TableHead>Parts Replaced</TableHead>
+                    <TableHead className="text-right">Odometer</TableHead>
+                    <TableHead className="text-right">Cost (INR)</TableHead>
+                    <TableHead className="text-center">Invoice</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredServiceLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground italic">
+                        No service logs match the filter criteria.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredServiceLogs.map(s => {
+                      const truckObj = trucks.find(t => t.id === s.truck_id);
+                      const parts = s.parts_replaced_array || [];
+                      const invoiceUrl = s.invoice_file ? pb.files.getUrl(s, s.invoice_file) : null;
+                      
+                      return (
+                        <TableRow key={s.id} className="hover:bg-muted/5">
+                          <TableCell className="font-mono text-xs">{formatDate(s.maintenance_date)}</TableCell>
+                          <TableCell className="font-bold text-foreground">
+                            {truckObj ? (
+                              <button 
+                                onClick={() => { setSelectedTruck(truckObj); setDrawerTab('logs'); }} 
+                                className="hover:underline text-primary text-left"
+                              >
+                                {truckObj.truck_number}
+                              </button>
+                            ) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-medium max-w-xs truncate" title={s.work_description_text}>{s.work_description_text}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {parts.length === 0 ? <span className="text-muted-foreground text-xs">—</span> : 
+                                parts.map((p, idx) => (
+                                  <Badge key={idx} variant="secondary" className="px-1.5 py-0 text-[9px] font-semibold bg-muted rounded-full">
+                                    {p}
+                                  </Badge>
+                                ))
+                              }
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold tabular-nums">{s.odometer_at_service?.toLocaleString()} km</TableCell>
+                          <TableCell className="text-right font-black tabular-nums text-foreground">₹{s.cost_amount?.toLocaleString()}</TableCell>
+                          <TableCell className="text-center">
+                            {invoiceUrl ? (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 text-primary hover:bg-primary/10 rounded-lg"
+                                onClick={() => {
+                                  if (s.invoice_file.endsWith('.pdf')) {
+                                    window.open(invoiceUrl, '_blank');
+                                  } else {
+                                    setActiveLightboxImage(invoiceUrl);
+                                  }
+                                }}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 1.6: Checklist Inspections */}
+        <TabsContent value="inspections" className="m-0 space-y-6 animate-in fade-in duration-300">
+          <Card className="shadow-sm border-border rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-border/40 flex flex-wrap gap-4 items-center justify-between bg-muted/10">
+              <div className="flex flex-wrap gap-4 items-center flex-1">
+                <div className="relative max-w-xs w-full">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search inspector or notes..." 
+                    value={inspectionSearch} 
+                    onChange={e => setInspectionSearch(e.target.value)} 
+                    className="pl-9 h-10 rounded-xl bg-background border-border" 
+                  />
+                </div>
+                <Select value={inspectionTruckFilter} onValueChange={setInspectionTruckFilter}>
+                  <SelectTrigger className="w-[200px] h-10 rounded-xl bg-background border-border">
+                    <SelectValue placeholder="All Trucks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Vehicles</SelectItem>
+                    {trucks.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.truck_number}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Vehicle</TableHead>
+                    <TableHead>Inspector</TableHead>
+                    <TableHead>Status Checks Summary</TableHead>
+                    <TableHead>Inspector Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredInspectionLogs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">
+                        No inspection logs found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredInspectionLogs.map(i => {
+                      const truckObj = trucks.find(t => t.id === i.truck_id);
+                      const toggles = i.pass_fail_toggles || {};
+                      
+                      return (
+                        <TableRow key={i.id} className="hover:bg-muted/5">
+                          <TableCell className="font-mono text-xs">{formatDate(i.inspection_date)}</TableCell>
+                          <TableCell className="font-bold text-foreground">
+                            {truckObj ? (
+                              <button 
+                                onClick={() => { setSelectedTruck(truckObj); setDrawerTab('inspections'); }} 
+                                className="hover:underline text-primary text-left"
+                              >
+                                {truckObj.truck_number}
+                              </button>
+                            ) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="font-semibold">{i.inspector_name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-sm">
+                              {Object.entries(toggles).slice(0, 4).map(([k, v]) => (
+                                <Badge 
+                                  key={k} 
+                                  variant="outline" 
+                                  className={cn(
+                                    "capitalize font-bold text-[9px] px-1.5 py-0.5",
+                                    getChecklistBadgeClass(v)
+                                  )}
+                                >
+                                  {getChecklistLabel(k, v)}
+                                </Badge>
+                              ))}
+                              {Object.keys(toggles).length > 4 && (
+                                <Badge variant="outline" className="text-[9px] bg-secondary text-secondary-foreground font-bold px-1.5 py-0.5">
+                                  +{Object.keys(toggles).length - 4} More
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground italic max-w-xs truncate" title={i.inspector_notes}>
+                            {i.inspector_notes || '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
         </TabsContent>
 
         {/* TAB 2: Inventory Fallback */}
@@ -800,6 +1183,8 @@ export default function MaintenancePage() {
               </Select>
             </div>
             <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
@@ -841,6 +1226,48 @@ export default function MaintenancePage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card Stack View */}
+            <div className="block md:hidden divide-y divide-border/30">
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-1/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))
+              ) : filteredInventory.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-xs">No inventory items found.</div>
+              ) : (
+                filteredInventory.map(item => {
+                  const isLow = item.current_stock <= item.reorder_level;
+                  return (
+                    <div key={item.id} className={cn("p-4 space-y-2.5", isLow ? "bg-destructive/5" : "")}>
+                      <div className="flex justify-between items-start gap-3">
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground">{item.item_name}</h4>
+                          <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-semibold mt-1 inline-block">{item.category}</span>
+                        </div>
+                        {isLow && <Badge variant="destructive" className="text-[9px] uppercase font-bold">Low Stock</Badge>}
+                      </div>
+                      <div className="flex justify-between items-center text-xs border-t border-border/20 pt-2 text-muted-foreground">
+                        <div>
+                          <span className="text-[10px]">Current Stock</span>
+                          <p className={cn("text-sm font-extrabold mt-0.5", isLow ? "text-rose-400" : "text-foreground")}>
+                            {item.current_stock} <span className="text-[10px] font-normal text-muted-foreground">{item.unit}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px]">Reorder Min</span>
+                          <p className="text-sm font-bold text-foreground mt-0.5">{item.reorder_level}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            </div>
           </Card>
         </TabsContent>
 
@@ -868,7 +1295,8 @@ export default function MaintenancePage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
@@ -916,46 +1344,117 @@ export default function MaintenancePage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card Stack View */}
+            <div className="block md:hidden divide-y divide-border/30">
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-1/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))
+              ) : filteredProblems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-xs">No reported problems matching filters.</div>
+              ) : (
+                filteredProblems.map(prob => (
+                  <div key={prob.id} className="p-4 space-y-2.5">
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className="font-mono font-bold text-[10px]">{prob.truck_id}</Badge>
+                          <span className="text-[10px] text-muted-foreground">({prob.category})</span>
+                        </div>
+                        <p className="text-xs text-foreground mt-1.5 font-medium leading-normal">{prob.description}</p>
+                      </div>
+                      <Badge className={prob.status === 'Open' ? 'bg-warning/20 text-warning border-0 text-[9px] font-bold' : 'bg-success/20 text-success border-0 text-[9px] font-bold'}>
+                        {prob.status}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/20 pt-2">
+                      <span>Reported: {formatDate(prob.date_reported)}</span>
+                      <Badge variant="secondary" className={cn(
+                        "text-[9px] font-bold uppercase tracking-wider",
+                        prob.severity === 'Critical' || prob.severity === 'High' ? 'bg-destructive/20 text-destructive border-0' : 'bg-muted text-muted-foreground border-0'
+                      )}>
+                        {prob.severity}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
 
       {/* DETAILED WORKSPACE DRAWER (SLIDE-OUT SHEET) */}
-      {selectedTruck && (
-        <Sheet open={!!selectedTruck} onOpenChange={(open) => !open && setSelectedTruck(null)}>
-          <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-card border-l border-border shadow-2xl p-6">
-            <SheetHeader className="mb-6 pb-4 border-b border-border/50">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-1">
-                    <Truck className="w-4 h-4 text-primary" />
-                    <span>{selectedTruck.truck_name || 'Unnamed Vehicle'}</span>
-                  </div>
-                  <SheetTitle className="text-3xl font-mono font-extrabold text-foreground">
-                    {selectedTruck.truck_number}
-                  </SheetTitle>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Live Odometer</span>
-                  <p className="text-2xl font-bold text-foreground tabular-nums">
-                    {getLiveOdometer(selectedTruck).toLocaleString()} <span className="text-sm font-semibold text-muted-foreground">KMs</span>
-                  </p>
-                </div>
-              </div>
-            </SheetHeader>
+      {selectedTruck && (() => {
+        const lifetimeCost = serviceLogs.filter(s => s.truck_id === selectedTruck.id).reduce((sum, s) => sum + (s.cost_amount || 0), 0);
+        const logsCount = serviceLogs.filter(s => s.truck_id === selectedTruck.id).length;
+        const activeBreakdowns = problems.filter(p => p.truck_id === selectedTruck.truck_number && p.status === 'Open').length;
 
-            <Tabs value={drawerTab} onValueChange={setDrawerTab} className="w-full space-y-6">
-              <TabsList className="grid w-full grid-cols-3 bg-muted/40 p-1 rounded-xl">
-                <TabsTrigger value="intervals" className="gap-1.5 py-2.5 rounded-lg text-sm">
-                  <Sliders className="w-4 h-4" /> Intervals
-                </TabsTrigger>
-                <TabsTrigger value="inspections" className="gap-1.5 py-2.5 rounded-lg text-sm">
-                  <ShieldCheck className="w-4 h-4" /> Inspections
-                </TabsTrigger>
-                <TabsTrigger value="logs" className="gap-1.5 py-2.5 rounded-lg text-sm">
-                  <History className="w-4 h-4" /> Service Logs
-                </TabsTrigger>
-              </TabsList>
+        return (
+          <Sheet open={!!selectedTruck} onOpenChange={(open) => !open && setSelectedTruck(null)}>
+            <SheetContent className="w-full sm:max-w-2xl overflow-y-auto bg-card border-l border-border shadow-2xl p-6">
+              <SheetHeader className="mb-4 pb-4 border-b border-border/50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-1">
+                      <Truck className="w-4 h-4 text-primary" />
+                      <span>{selectedTruck.truck_name || 'Unnamed Vehicle'}</span>
+                    </div>
+                    <SheetTitle className="text-3xl font-mono font-extrabold text-foreground">
+                      {selectedTruck.truck_number}
+                    </SheetTitle>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Live Odometer</span>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      {getLiveOdometer(selectedTruck).toLocaleString()} <span className="text-sm font-semibold text-muted-foreground">KMs</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Lifetime Financial Snapshot */}
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border/30">
+                  <div className="bg-muted/10 border border-border/20 rounded-xl p-3 text-center">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Maintenance Cost</span>
+                    <span className="text-sm font-black text-foreground mt-1 block">₹{lifetimeCost.toLocaleString()}</span>
+                  </div>
+                  <div className="bg-muted/10 border border-border/20 rounded-xl p-3 text-center">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Service Events</span>
+                    <span className="text-sm font-black text-foreground mt-1 block">{logsCount} logs</span>
+                  </div>
+                  <div className="bg-muted/10 border border-border/20 rounded-xl p-3 text-center">
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Active Breakdowns</span>
+                    <span className={cn("text-sm font-black mt-1 block", activeBreakdowns > 0 ? "text-rose-400" : "text-emerald-400")}>
+                      {activeBreakdowns} unresolved
+                    </span>
+                  </div>
+                </div>
+              </SheetHeader>
+
+              <Tabs value={drawerTab} onValueChange={setDrawerTab} className="w-full space-y-6">
+                <TabsList className="flex items-center justify-start overflow-x-auto w-full h-auto bg-muted/40 p-1 rounded-xl scrollbar-none flex-nowrap space-x-1">
+                  <TabsTrigger value="intervals" className="gap-1.5 py-2 px-3.5 rounded-lg text-xs shrink-0 data-[state=active]:shadow-sm">
+                    <Sliders className="w-3.5 h-3.5" /> Intervals
+                  </TabsTrigger>
+                  <TabsTrigger value="inspections" className="gap-1.5 py-2 px-3.5 rounded-lg text-xs shrink-0 data-[state=active]:shadow-sm">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Inspections
+                  </TabsTrigger>
+                  <TabsTrigger value="logs" className="gap-1.5 py-2 px-3.5 rounded-lg text-xs shrink-0 data-[state=active]:shadow-sm">
+                    <History className="w-3.5 h-3.5" /> Logs
+                  </TabsTrigger>
+                  <TabsTrigger value="problems" className="gap-1.5 py-2 px-3.5 rounded-lg text-xs shrink-0 relative data-[state=active]:shadow-sm">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Issues
+                    {activeBreakdowns > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
+                        {activeBreakdowns}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
               {/* DRAWER TAB 1: Service Intervals Engine */}
               <TabsContent value="intervals" className="m-0 space-y-6">
@@ -1073,7 +1572,7 @@ export default function MaintenancePage() {
                     <ShieldCheck className="w-5 h-5" /> Monthly Shop Checklist
                   </h3>
                   <form onSubmit={handleAddInspection} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-muted-foreground">Inspector Name</label>
                         <Input 
@@ -1122,10 +1621,10 @@ export default function MaintenancePage() {
                           }
 
                           return (
-                            <div key={item.key} className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-background/50">
-                              <div className="flex justify-between items-center gap-2">
+                            <div key={item.key} className="flex flex-col gap-2 p-3 rounded-xl border border-border bg-background/50 animate-in fade-in duration-200">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                                 <span className="text-xs font-bold text-foreground capitalize">{item.label}</span>
-                                <div className="flex gap-1.5">
+                                <div className="flex gap-1.5 w-full sm:w-auto">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -1133,7 +1632,7 @@ export default function MaintenancePage() {
                                       setNewInspection({ ...newInspection, checklist: nextChecklist });
                                     }}
                                     className={cn(
-                                      "px-3 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                                      "flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border text-center",
                                       currentVal === 'pass'
                                         ? "bg-success/20 border-success text-success"
                                         : "bg-background border-border text-muted-foreground hover:bg-muted/30"
@@ -1148,7 +1647,7 @@ export default function MaintenancePage() {
                                       setNewInspection({ ...newInspection, checklist: nextChecklist });
                                     }}
                                     className={cn(
-                                      "px-3 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                                      "flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border text-center",
                                       (currentVal === 'fail' || currentVal === 'topped_up' || currentVal === 'repaired' || currentVal === 'cleaned' || currentVal === 'done')
                                         ? "bg-destructive/20 border-destructive text-destructive"
                                         : "bg-background border-border text-muted-foreground hover:bg-muted/30"
@@ -1462,12 +1961,12 @@ export default function MaintenancePage() {
                             <span className="absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-background bg-primary ring-2 ring-primary/20 shrink-0" />
                             
                             <div className="p-4 rounded-xl border border-border bg-card/40 space-y-3">
-                              <div className="flex justify-between items-start">
-                                <div>
+                              <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2.5">
+                                <div className="space-y-0.5">
                                   <p className="text-xs font-semibold font-mono text-muted-foreground">{formatDate(s.maintenance_date)}</p>
-                                  <h5 className="font-bold text-foreground mt-0.5">{s.work_description_text}</h5>
+                                  <h5 className="font-bold text-foreground leading-snug">{s.work_description_text}</h5>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-left sm:text-right shrink-0">
                                   <p className="text-lg font-bold text-foreground">₹{s.cost_amount?.toLocaleString()}</p>
                                   <p className="text-[10px] text-muted-foreground font-mono">at {s.odometer_at_service?.toLocaleString()} KMs</p>
                                 </div>
@@ -1519,10 +2018,93 @@ export default function MaintenancePage() {
                   )}
                 </div>
               </TabsContent>
+
+              {/* DRAWER TAB 4: Active vehicle problems specific to selected truck */}
+              <TabsContent value="problems" className="m-0 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm uppercase font-bold text-muted-foreground tracking-wider">Reported Issues Ledger</h4>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTruck(null);
+                        setActiveTab('problems');
+                        setFilters(prev => ({ ...prev, truck_id: selectedTruck.truck_number, problemStatus: 'Open' }));
+                      }}
+                      className="rounded-lg text-xs h-8"
+                    >
+                      Manage Tickets
+                    </Button>
+                  </div>
+                  {problems.filter(p => p.truck_id === selectedTruck.truck_number).length === 0 ? (
+                    <p className="text-sm italic text-muted-foreground/60 text-center py-6 border border-dashed border-border/40 rounded-2xl bg-muted/5">
+                      No problems reported for this truck registration.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {problems.filter(p => p.truck_id === selectedTruck.truck_number).map(prob => {
+                        const isDone = prob.status === 'Resolved';
+                        const isHigh = prob.severity === 'High' || prob.severity === 'Critical';
+
+                        return (
+                          <div key={prob.id} className="p-4 rounded-xl border border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group/item relative">
+                            <div className="space-y-1.5 flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "capitalize font-bold text-[9px]",
+                                    isDone ? 'bg-success/10 text-success border-0' :
+                                    isHigh ? 'bg-destructive/10 text-destructive border-0' :
+                                    'bg-amber-500/10 text-amber-500 border-0'
+                                  )}
+                                >
+                                  {prob.severity}
+                                </Badge>
+                                <span className="text-[10px] text-muted-foreground font-semibold">({prob.category})</span>
+                              </div>
+                              <p className={`text-sm font-semibold leading-normal ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                {prob.description}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground/60">Reported: {formatDate(prob.date_reported)}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/30">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                                isDone ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/10' : 'bg-amber-500/10 text-amber-400 border-amber-500/10'
+                              }`}>
+                                {prob.status}
+                              </span>
+                              {!isDone && (
+                                <Button 
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await pb.collection('maintenance_problems').update(prob.id, { status: 'Resolved' }, { $autoCancel: false });
+                                      toast.success('Ticket marked as resolved');
+                                      fetchData();
+                                    } catch (e) {
+                                      toast.error('Failed to resolve ticket');
+                                    }
+                                  }}
+                                  className="h-7 px-2.5 text-[10px] rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
+                                >
+                                  Resolve
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
             </Tabs>
           </SheetContent>
         </Sheet>
-      )}
+      )})()}
 
       {/* Invoice Lightbox Dialog */}
       {activeLightboxImage && (
