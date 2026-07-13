@@ -238,7 +238,7 @@ const InventoryItemModal = ({ isOpen, onClose, onSuccess, item }) => {
           </div>
 
           <div className="space-y-2">
-            <Label>Attachment/Bill Preview (Procurement Receipts)</Label>
+            <Label>Item Images & Procurement Receipts</Label>
             <div
               className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
                 isDragging ? 'border-primary bg-primary/10' : 'border-muted-foreground/20 hover:border-primary/50'
@@ -257,7 +257,7 @@ const InventoryItemModal = ({ isOpen, onClose, onSuccess, item }) => {
                 className="hidden"
               />
               <UploadCloud className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm font-medium">Drag & drop receipt images here, or <span className="text-primary hover:underline">browse</span></p>
+              <p className="text-sm font-medium">Drag & drop item pictures or receipts here, or <span className="text-primary hover:underline">browse</span></p>
               <p className="text-xs text-muted-foreground mt-0.5">Supports JPG, JPEG, PNG up to 5MB (max 10 files)</p>
             </div>
 

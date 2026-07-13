@@ -148,7 +148,8 @@ const InventoryDashboard = () => {
             </Select>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -170,9 +171,23 @@ const InventoryDashboard = () => {
                     const isLow = item.current_stock <= item.reorder_level;
                     return (
                       <TableRow key={item.id} className={isLow ? 'bg-destructive/5' : ''}>
-                        <TableCell className="font-medium">
-                          {item.item_name}
-                          {isLow && <Badge variant="destructive" className="ml-2 text-[10px]">Low</Badge>}
+                        <TableCell className="font-medium flex items-center gap-3">
+                          {item.image_urls && item.image_urls.length > 0 ? (
+                            <div 
+                              onClick={() => setActiveLightboxImage(pb.files.getUrl(item, item.image_urls[0]))}
+                              className="w-10 h-10 rounded-lg border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
+                            >
+                              <img src={pb.files.getUrl(item, item.image_urls[0])} alt={item.item_name} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg border border-border/60 bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                              <Package className="w-5 h-5" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-bold">{item.item_name}</p>
+                            {isLow && <Badge variant="destructive" className="mt-1 text-[9px] px-1.5 py-0">Low Stock</Badge>}
+                          </div>
                         </TableCell>
                         <TableCell>{item.category}</TableCell>
                         <TableCell className={`text-right font-bold ${isLow ? 'text-destructive' : ''}`}>{item.current_stock}</TableCell>
@@ -210,6 +225,119 @@ const InventoryDashboard = () => {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card List View (Hidden on desktop) */}
+          <div className="block md:hidden divide-y divide-border/40">
+            {filteredItems.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 text-sm">No items found.</div>
+            ) : (
+              filteredItems.map(item => {
+                const isLow = item.current_stock <= item.reorder_level;
+                return (
+                  <div key={item.id} className={cn("p-4 space-y-3 hover:bg-muted/5 transition-colors", isLow ? 'bg-destructive/[0.02]' : '')}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                        {item.image_urls && item.image_urls.length > 0 ? (
+                          <div 
+                            onClick={() => setActiveLightboxImage(pb.files.getUrl(item, item.image_urls[0]))}
+                            className="w-10 h-10 rounded-lg border border-border/80 overflow-hidden cursor-pointer bg-muted shrink-0 shadow-sm"
+                          >
+                            <img src={pb.files.getUrl(item, item.image_urls[0])} alt={item.item_name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg border border-border/60 bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                            <Package className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                            {item.item_name}
+                            {isLow && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Low</Badge>}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.category}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-1">
+                        {item.image_urls?.map((img, idx) => {
+                          const url = pb.files.getUrl(item, img);
+                          return (
+                            <div 
+                              key={idx}
+                              onClick={() => setActiveLightboxImage(url)}
+                              className="w-7 h-7 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
+                              title="View Receipt"
+                            >
+                              <img src={url} alt="receipt" className="w-full h-full object-cover" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Stock</p>
+                        <p className={cn("font-bold mt-0.5", isLow ? 'text-destructive' : 'text-foreground')}>
+                          {item.current_stock} <span className="text-[10px] font-normal text-muted-foreground">{item.unit}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Reorder Lvl</p>
+                        <p className="font-semibold text-foreground mt-0.5">{item.reorder_level} {item.unit}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-medium">Last Restocked</p>
+                        <p className="font-medium text-foreground mt-0.5 truncate">
+                          {item.last_restocked_date ? format(new Date(item.last_restocked_date), 'MMM dd') : '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                      <div className="flex gap-1.5">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => { setSelectedItem(item); setDeductModalOpen(true); }}
+                          className="h-7 text-[11px] font-bold rounded-lg border-border hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
+                        >
+                          Use Stock
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => { setSelectedItem(item); setRestockModalOpen(true); }}
+                          className="h-7 text-[11px] font-bold rounded-lg border-border hover:bg-success hover:text-success-foreground transition-all duration-200"
+                        >
+                          Restock
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => { setSelectedItem(item); setItemModalOpen(true); }}
+                          className="h-7 text-xs font-semibold rounded-lg"
+                        >
+                          Edit
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDelete(item.id)}
+                          className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold rounded-lg"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </Card>
       </main>
