@@ -84,7 +84,10 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   }
 };
 
+let _syncStarted = false;
 const watchAndSyncDatabase = (dbFilePath) => {
+  if (_syncStarted) return; // Only register once across PocketBase restarts
+  _syncStarted = true;
   let uploadTimeout = null;
   let periodicSyncInterval = null;
   const PERIODIC_SYNC_MS = 2 * 60 * 60 * 1000; // 2 hours
@@ -346,14 +349,24 @@ const runPocketBase = async () => {
     }
   }
 
-  // Enforce superuser existence
+  // Enforce superuser existence (non-fatal — PocketBase should still start even if this fails)
   const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
   const password = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
   try {
-    const { execSync } = await import('node:child_process');
+    const { spawnSync } = await import('node:child_process');
     logger.info(`🔑 Upserting superuser: ${email}...`);
-    execSync(`"${pbPath}" superuser upsert "${email}" "${password}" --dir="${dataDir}"`, { stdio: 'inherit' });
-    logger.info(`✅ Superuser upsert successful!`);
+    const result = spawnSync(pbPath, ['superuser', 'upsert', email, password, `--dir=${dataDir}`], {
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout: 15000
+    });
+    if (result.error) {
+      logger.error(`❌ superuser upsert spawn error: ${result.error.message}`);
+    } else if (result.status !== 0) {
+      logger.warn(`⚠️ superuser upsert exited with code ${result.status}. stderr: ${(result.stderr || '').trim()}`);
+    } else {
+      logger.info(`✅ Superuser upsert successful: ${(result.stdout || '').trim()}`);
+    }
   } catch (err) {
     logger.error(`❌ Failed to upsert superuser: ${err.message}`);
   }
@@ -372,10 +385,8 @@ const runPocketBase = async () => {
 
   const pbProcess = spawn(pbPath, pbArgs, { stdio: 'pipe' });
 
-  // Watch and sync changes
+  // Watch and sync DB + storage (guarded — only registers once across restarts)
   watchAndSyncDatabase(dbFilePath);
-
-  // Start background sync for storage files
   startStorageBackgroundSync(storageDir);
 
   pbProcess.stdout.on('data', (data) => {
@@ -387,8 +398,11 @@ const runPocketBase = async () => {
   });
 
   pbProcess.on('close', (code) => {
-    logger.warn(`PocketBase process closed with code ${code}. Restarting in 5s...`);
-    setTimeout(runPocketBase, 5000);
+    logger.warn(`PocketBase process exited with code ${code}. Restarting in 5s...`);
+    // Force a sync before restarting so we don't lose data
+    uploadDatabaseToSupabase(dbFilePath).finally(() => {
+      setTimeout(runPocketBase, 5000);
+    });
   });
 };
 
