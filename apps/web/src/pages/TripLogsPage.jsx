@@ -25,6 +25,55 @@ import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor } from '@/lib/tripStatusUtils.js';
 import { motion } from 'framer-motion';
 
+const InlineKmInput = ({ log, className, onUpdate }) => {
+  const [val, setVal] = useState(log.kms || '');
+
+  useEffect(() => {
+    setVal(log.kms || '');
+  }, [log.kms]);
+
+  const handleBlur = async () => {
+    const num = parseFloat(val);
+    const original = parseFloat(log.kms) || 0;
+    
+    if ((isNaN(num) && !val && original === 0) || (num === original)) {
+      return;
+    }
+    
+    const updatedVal = isNaN(num) ? 0 : num;
+    try {
+      await pb.collection('trip_logs').update(log.id, { kms: updatedVal }, { $autoCancel: false });
+      toast.success(`KMs updated for Trip ${log.trip_id}`);
+      if (onUpdate) onUpdate(updatedVal);
+    } catch (err) {
+      console.error('Failed to update kms:', err);
+      toast.error('Failed to update KMs');
+      setVal(log.kms || '');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.target.blur();
+    }
+  };
+
+  return (
+    <Input
+      type="number"
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        "w-20 h-8 text-center bg-background border-border focus-visible:ring-primary/40 rounded-lg text-sm font-semibold mx-auto",
+        className
+      )}
+      placeholder="—"
+    />
+  );
+};
+
 const TripLogsPage = () => {
   const { currentUser } = useAuth();
   
@@ -537,6 +586,7 @@ const TripLogsPage = () => {
                       <TableHead className="font-semibold text-muted-foreground">Client Details</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Driver & Asset</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Route Info</TableHead>
+                      <TableHead className="text-center font-semibold text-muted-foreground">Trip KMs</TableHead>
                       <TableHead className="text-right font-semibold text-muted-foreground">Revenue</TableHead>
                       <TableHead className="text-right font-semibold text-muted-foreground">Advances</TableHead>
                       <TableHead className="text-center font-semibold text-muted-foreground">Trip State</TableHead>
@@ -547,7 +597,7 @@ const TripLogsPage = () => {
                   <TableBody>
                     {filteredLogs.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center py-20 text-muted-foreground">
+                        <TableCell colSpan={12} className="text-center py-20 text-muted-foreground">
                           <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
                             <Truck className="w-8 h-8 opacity-40" />
                           </div>
@@ -767,6 +817,14 @@ const TripLogsPage = () => {
                                 );
                               })()}
                             </TableCell>
+                            <TableCell className="text-center">
+                              <InlineKmInput 
+                                log={log} 
+                                onUpdate={(newVal) => {
+                                  setTripLogs(prev => prev.map(t => t.id === log.id ? { ...t, kms: newVal } : t));
+                                }} 
+                              />
+                            </TableCell>
                             <TableCell className="text-right text-sm font-bold text-foreground">
                               {formatCurrency(log.revenue)}
                             </TableCell>
@@ -885,15 +943,25 @@ const TripLogsPage = () => {
                         </div>
                       </div>
 
-                      {/* Row 3: Driver & Asset Info */}
-                      <div className="grid grid-cols-2 gap-2 py-2 border-t border-b border-white/5 text-[11px]">
+                      {/* Row 3: Driver, Asset & Trip KMs Info */}
+                      <div className="grid grid-cols-3 gap-2 py-2 border-t border-b border-white/5 text-[11px] items-center">
                         <div>
-                          <span className="text-slate-400">Truck: </span>
+                          <span className="text-slate-400 block mb-0.5">Truck: </span>
                           <strong className="text-white">{log.truck_number || 'Unassigned'}</strong>
                         </div>
                         <div>
-                          <span className="text-slate-400">Driver: </span>
+                          <span className="text-slate-400 block mb-0.5">Driver: </span>
                           <strong className="text-white truncate block">{log.driver_name || 'Unassigned'}</strong>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-slate-400 block mb-0.5">KMs: </span>
+                          <InlineKmInput 
+                            log={log} 
+                            className="w-16 h-7 text-xs bg-background border-border/80 focus-visible:ring-primary/40 rounded-lg text-center" 
+                            onUpdate={(newVal) => {
+                              setTripLogs(prev => prev.map(t => t.id === log.id ? { ...t, kms: newVal } : t));
+                            }}
+                          />
                         </div>
                       </div>
 
