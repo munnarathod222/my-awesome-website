@@ -173,35 +173,35 @@ const TripLogsPage = () => {
       return;
     }
 
-    if (newTripStatus === 'Delivered') {
-      setStatusChangeTrip(null);
-      setPaymentRequestTrip(statusChangeTrip);
-      return;
-    }
-
     setIsStatusUpdating(true);
     try {
       await pb.collection('trip_logs').update(statusChangeTrip.id, {
         trip_status: newTripStatus
       }, { $autoCancel: false });
       
+      // Update linked cashbook entries description with the new status
       try {
-        const relatedTx = await pb.collection('cashbook_transactions').getFullList({
-          filter: `source_record_id = "${statusChangeTrip.id}"`,
+        const relatedTx = await pb.collection('cashbook').getFullList({
+          filter: `reference_id = "${statusChangeTrip.id}"`,
           $autoCancel: false
         });
-        
         for (const tx of relatedTx) {
-          const cleanDesc = tx.description.replace(/ \(Trip Status: .*?\)/, '');
-          await pb.collection('cashbook_transactions').update(tx.id, {
+          const cleanDesc = (tx.description || '').replace(/ \(Trip Status: .*?\)/, '');
+          await pb.collection('cashbook').update(tx.id, {
             description: `${cleanDesc} (Trip Status: ${newTripStatus})`
           }, { $autoCancel: false });
         }
       } catch (txErr) {
-        console.warn('Failed to sync with cashbook transactions (non-critical):', txErr);
+        console.warn('Failed to sync cashbook description (non-critical):', txErr);
       }
 
       toast.success('Trip status updated');
+
+      // If marked Delivered, open the payment request modal (status already saved)
+      if (newTripStatus === 'Delivered') {
+        setPaymentRequestTrip(statusChangeTrip);
+      }
+
       fetchData();
     } catch (err) {
       console.error('Update err:', err);
