@@ -70,6 +70,15 @@ const getChecklistLabel = (key, val) => {
   return `${cleanKey}: ${valLabel}`;
 };
 
+const parseJsonField = (field, fallback = []) => {
+  if (!field) return fallback;
+  if (typeof field === 'object') return field;
+  try {
+    return JSON.parse(field);
+  } catch (e) {
+    return fallback;
+  }
+};
 
 export default function MaintenancePage() {
   const [searchParams] = useSearchParams();
@@ -420,10 +429,11 @@ export default function MaintenancePage() {
       const truckObj = trucks.find(t => t.id === s.truck_id);
       const truckNum = truckObj ? truckObj.truck_number : '';
       
+      const parts = parseJsonField(s.parts_replaced_array, []);
       const matchSearch = 
         (s.work_description_text || '').toLowerCase().includes(serviceLogSearch.toLowerCase()) ||
         truckNum.toLowerCase().includes(serviceLogSearch.toLowerCase()) ||
-        (s.parts_replaced_array || []).some(p => p.toLowerCase().includes(serviceLogSearch.toLowerCase()));
+        parts.some(p => p.toLowerCase().includes(serviceLogSearch.toLowerCase()));
 
       const matchTruck = serviceLogTruckFilter === 'all' || s.truck_id === serviceLogTruckFilter;
 
@@ -451,7 +461,8 @@ export default function MaintenancePage() {
     const headers = ['Date', 'Truck Number', 'Work Description', 'Odometer (KM)', 'Cost (INR)', 'Parts Replaced'];
     const rows = filteredServiceLogs.map(s => {
       const truckObj = trucks.find(t => t.id === s.truck_id);
-      const partsStr = (s.parts_replaced_array || []).join('; ');
+      const parts = parseJsonField(s.parts_replaced_array, []);
+      const partsStr = parts.join('; ');
       return [
         s.maintenance_date ? format(new Date(s.maintenance_date), 'yyyy-MM-dd') : '-',
         truckObj ? truckObj.truck_number : 'N/A',
@@ -969,7 +980,7 @@ export default function MaintenancePage() {
                   ) : (
                     filteredServiceLogs.map(s => {
                       const truckObj = trucks.find(t => t.id === s.truck_id);
-                      const parts = s.parts_replaced_array || [];
+                      const parts = parseJsonField(s.parts_replaced_array, []);
                       const invoiceUrl = s.invoice_file ? pb.files.getUrl(s, s.invoice_file) : null;
                       
                       return (
@@ -1076,7 +1087,7 @@ export default function MaintenancePage() {
                   ) : (
                     filteredInspectionLogs.map(i => {
                       const truckObj = trucks.find(t => t.id === i.truck_id);
-                      const toggles = i.pass_fail_toggles || {};
+                      const toggles = parseJsonField(i.pass_fail_toggles, {});
                       
                       return (
                         <TableRow key={i.id} className="hover:bg-muted/5">
@@ -1791,7 +1802,7 @@ export default function MaintenancePage() {
                   ) : (
                     <div className="space-y-3">
                       {inspections.filter(i => i.truck_id === selectedTruck.id).map(i => {
-                        const toggles = i.pass_fail_toggles || {};
+                        const toggles = parseJsonField(i.pass_fail_toggles, {});
                         return (
                           <div key={i.id} className="p-4 rounded-xl border border-border bg-card/40 space-y-3 relative group/item">
                             <div className="flex justify-between items-start">
@@ -1952,7 +1963,7 @@ export default function MaintenancePage() {
                   ) : (
                     <div className="relative border-l border-border/50 ml-3 pl-6 space-y-6">
                       {serviceLogs.filter(s => s.truck_id === selectedTruck.id).map(s => {
-                        const parts = s.parts_replaced_array || [];
+                        const parts = parseJsonField(s.parts_replaced_array, []);
                         const invoiceUrl = s.invoice_file ? pb.files.getUrl(s, s.invoice_file) : null;
 
                         return (
