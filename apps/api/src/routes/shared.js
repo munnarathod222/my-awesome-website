@@ -55,7 +55,8 @@ router.get('/folder/:id', async (req, res) => {
           issue_date: d.issue_date,
           expiry_date: d.expiry_date,
           notes: d.notes,
-          files: d.files || [],
+          file: d.file || '',
+          files: d.file ? (Array.isArray(d.file) ? d.file : [d.file]) : (d.files || []),
           collectionId: d.collectionId,
           collectionName: d.collectionName
         }))
@@ -87,7 +88,8 @@ router.get('/folder/:id', async (req, res) => {
           issue_date: d.issue_date,
           expiry_date: d.expiry_date,
           notes: d.notes,
-          files: d.files || [],
+          file: d.file || '',
+          files: d.files ? (Array.isArray(d.files) ? d.files : [d.files]) : (d.file ? [d.file] : []),
           collectionId: d.collectionId,
           collectionName: d.collectionName
         }))
