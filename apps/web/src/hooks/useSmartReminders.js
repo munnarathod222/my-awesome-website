@@ -131,8 +131,24 @@ export const useSmartReminders = (currentUser) => {
         $autoCancel: false
       });
       
+      // Clean up existing CC reminders if statement is 0
+      const activeCardReminders = activeReminders.filter(r => r.reminder_type === 'Credit Card Payment');
+      for (const r of activeCardReminders) {
+        const due = paymentDueDates.find(d => d.card_id === r.linked_card_id);
+        if (due && Number(due.full_payment_amount || 0) <= 0) {
+          try {
+            await pb.collection('reminders').delete(r.id, { $autoCancel: false });
+            const idx = activeReminders.findIndex(act => act.id === r.id);
+            if (idx > -1) activeReminders.splice(idx, 1);
+          } catch (e) {
+            console.warn(`Failed to delete 0-statement reminder ${r.id}:`, e.message);
+          }
+        }
+      }
+
       for (const due of paymentDueDates) {
         if (!due.payment_due_date) continue;
+        if (Number(due.full_payment_amount || 0) <= 0) continue;
         
         let nextDueDate = setDate(new Date(), due.payment_due_date);
         

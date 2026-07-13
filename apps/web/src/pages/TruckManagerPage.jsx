@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -19,6 +19,7 @@ import pb from '@/lib/pocketbaseClient';
 import { toast } from 'sonner';
 import TruckFormModal from '@/components/TruckFormModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
+import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 
 export default function TruckManagerPage() {
   const [trucks, setTrucks] = useState([]);
@@ -27,6 +28,7 @@ export default function TruckManagerPage() {
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
   const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
   const navigate = useNavigate();
+  const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
 
   const fetchTrucks = async () => {
     try {
@@ -34,6 +36,7 @@ export default function TruckManagerPage() {
       const [trucksRes, driversRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
+          expand: 'manager_id',
           $autoCancel: false
         }),
         pb.collection('employees').getFullList({
@@ -272,6 +275,11 @@ export default function TruckManagerPage() {
                       <Badge variant="outline" className="border-border bg-background px-2.5 py-0.5 rounded-lg text-xs font-medium">
                         {truck.tyre_count} Tyres
                       </Badge>
+                      {truck.expand?.manager_id && (
+                        <Badge variant="outline" className="border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-primary">
+                          Mgr: {truck.expand.manager_id.full_name || truck.expand.manager_id.name}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
@@ -295,6 +303,15 @@ export default function TruckManagerPage() {
                         title="Manage fleet maintenance"
                       >
                         <Wrench className="w-3 h-3 text-primary" /> Maintenance
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
+                        onClick={() => setShareConfig({ isOpen: true, truckId: truck.id, employeeId: null, entityName: `Truck ${truck.truck_number}` })}
+                        title="Share vehicle document folder link"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-primary" /> Share Link
                       </Button>
                     </div>
                     
@@ -416,6 +433,16 @@ export default function TruckManagerPage() {
             )}
           </DialogContent>
         </Dialog>
+      )}
+
+      {shareConfig.isOpen && (
+        <ShareFolderDialog
+          isOpen={shareConfig.isOpen}
+          onClose={() => setShareConfig({ isOpen: false, truckId: null, employeeId: null, entityName: '' })}
+          truckId={shareConfig.truckId}
+          employeeId={shareConfig.employeeId}
+          entityName={shareConfig.entityName}
+        />
       )}
     </div>
   );

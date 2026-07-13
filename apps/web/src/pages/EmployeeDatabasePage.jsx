@@ -11,8 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
-import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route } from 'lucide-react';
+import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import EmployeeDocumentsSection from '@/components/EmployeeDocumentsSection.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import EmployeePhotoModal from '@/components/EmployeePhotoModal.jsx';
@@ -33,6 +34,18 @@ const formatDateSafe = (dateVal, formatStr = 'MMM d, yyyy') => {
   }
 };
 
+const formatDateForInput = (dateVal) => {
+  if (!dateVal) return '';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+  } catch (e) {
+    console.error('Failed to format date for input:', dateVal, e);
+    return '';
+  }
+};
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -46,6 +59,38 @@ const EmployeeDatabasePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [selectedEmployeeForDocs, setSelectedEmployeeForDocs] = useState(null);
+  const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+
+  const addDocRow = () => {
+    setUploadedDocs(prev => [...prev, { 
+      id: Math.random().toString(36).substring(7),
+      document_type: 'ID Proof', 
+      document_number: '', 
+      expiry_date: '', 
+      files: [] 
+    }]);
+  };
+
+  const removeDocRow = (idx) => {
+    setUploadedDocs(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateDocField = (idx, field, value) => {
+    setUploadedDocs(prev => {
+      const next = [...prev];
+      next[idx][field] = value;
+      return next;
+    });
+  };
+
+  const handleDocFileChange = (idx, files) => {
+    setUploadedDocs(prev => {
+      const next = [...prev];
+      next[idx].files = Array.from(files);
+      return next;
+    });
+  };
   
   const [filterType, setFilterType] = useState('all');
   const [filterEmpType, setFilterEmpType] = useState('all');
@@ -227,16 +272,43 @@ const EmployeeDatabasePage = () => {
       if (photoFile) submitData.append('photo', photoFile);
       else if (removePhoto && editingId) submitData.append('photo', ''); 
 
+      let savedEmployee;
       if (editingId) {
-        await pb.collection('employees').update(editingId, submitData, { $autoCancel: false });
+        savedEmployee = await pb.collection('employees').update(editingId, submitData, { $autoCancel: false });
         toast.success('Employee updated successfully');
       } else {
-        await pb.collection('employees').create(submitData, { $autoCancel: false });
+        savedEmployee = await pb.collection('employees').create(submitData, { $autoCancel: false });
         toast.success('Employee added successfully');
       }
+
+      // Add attached employee documents if present
+      if (uploadedDocs.length > 0) {
+        const empId = editingId || savedEmployee.id;
+        for (const doc of uploadedDocs) {
+          if (doc.files.length === 0) continue;
+          
+          const docFormData = new FormData();
+          docFormData.append('employee_id', empId);
+          docFormData.append('document_type', doc.document_type);
+          docFormData.append('document_number', doc.document_number || '');
+          
+          const expiry = doc.expiry_date ? new Date(doc.expiry_date).toISOString() : new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+          docFormData.append('expiry_date', expiry);
+          
+          doc.files.forEach(file => {
+            docFormData.append('files', file);
+          });
+          
+          docFormData.append('status', 'Active');
+          
+          await pb.collection('employee_documents').create(docFormData, { $autoCancel: false });
+        }
+      }
+
       resetForm();
       fetchData();
     } catch (err) {
+      console.error(err);
       toast.error('Failed to save employee data.');
     } finally {
       setIsSubmitting(false);
@@ -246,7 +318,7 @@ const EmployeeDatabasePage = () => {
   const handleEdit = (employee) => {
     setEditingId(employee.id);
     setFormData({
-      employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: employee.joining_date ? employee.joining_date.split('T')[0] : todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || ''
+      employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || ''
     });
     setPhotoFile(null); setRemovePhoto(false);
     setPhotoPreview(employee.photo ? getEmployeePhotoUrl(employee) : null);
@@ -270,6 +342,7 @@ const EmployeeDatabasePage = () => {
     setEditingId(null);
     setFormData({ employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '' });
     clearPhoto();
+    setUploadedDocs([]);
   };
 
   // Compile bracket terms in agreement template
@@ -499,6 +572,103 @@ const EmployeeDatabasePage = () => {
                     </div>
                   </div>
                   
+                  {/* Documents Section */}
+                  <div className="pt-6 border-t border-border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-foreground">Attach Employee Documents</h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">Aadhaar, License, Bank Details, or contract files linked directly to this profile.</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={addDocRow} className="rounded-xl flex items-center gap-1.5 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+                        <Plus className="w-4 h-4" /> Add Document
+                      </Button>
+                    </div>
+
+                    {uploadedDocs.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {uploadedDocs.map((doc, idx) => (
+                          <div key={doc.id} className="relative p-5 rounded-2xl bg-muted/20 border border-border/50 space-y-4 animate-in fade-in-50 zoom-in-95 duration-200">
+                            <button
+                              type="button"
+                              onClick={() => removeDocRow(idx)}
+                              className="absolute top-4 right-4 bg-muted/60 hover:bg-destructive/15 text-muted-foreground hover:text-destructive rounded-full p-1 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs font-semibold text-muted-foreground">Document Type</Label>
+                                <Select 
+                                  value={doc.document_type} 
+                                  onValueChange={(v) => updateDocField(idx, 'document_type', v)}
+                                >
+                                  <SelectTrigger className="bg-background h-10 rounded-lg text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="rounded-lg">
+                                    <SelectItem value="ID Proof">ID Proof (Aadhaar / Passport)</SelectItem>
+                                    <SelectItem value="License">Driving License</SelectItem>
+                                    <SelectItem value="Bank Details">Bank Account Details</SelectItem>
+                                    <SelectItem value="Employment Contract">Employment Contract</SelectItem>
+                                    <SelectItem value="Medical Certificate">Medical Certificate</SelectItem>
+                                    <SelectItem value="Insurance">Insurance Policy</SelectItem>
+                                    <SelectItem value="Certification">Certification / Training</SelectItem>
+                                    <SelectItem value="Other">Other Document</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label className="text-xs font-semibold text-muted-foreground">Document Number</Label>
+                                <Input
+                                  value={doc.document_number}
+                                  onChange={(e) => updateDocField(idx, 'document_number', e.target.value)}
+                                  placeholder="e.g. DL-12345"
+                                  className="bg-background h-10 rounded-lg text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs font-semibold text-muted-foreground">Expiry Date <span className="text-destructive">*</span></Label>
+                                <Input
+                                  type="date"
+                                  value={doc.expiry_date}
+                                  onChange={(e) => updateDocField(idx, 'expiry_date', e.target.value)}
+                                  required
+                                  className="bg-background h-10 rounded-lg text-xs"
+                                />
+                              </div>
+
+                              <div className="space-y-1 flex flex-col justify-end">
+                                <Label className="text-xs font-semibold text-muted-foreground mb-1">Select Files</Label>
+                                <Input
+                                  type="file"
+                                  multiple
+                                  onChange={(e) => handleDocFileChange(idx, e.target.files)}
+                                  required={doc.files.length === 0}
+                                  accept=".pdf,.png,.jpg,.jpeg"
+                                  className="bg-background h-10 rounded-lg text-xs px-2 pt-2.5 file:bg-primary/10 file:text-primary file:border-0 file:rounded file:px-2 file:py-0.5 file:mr-2 file:font-semibold cursor-pointer"
+                                />
+                              </div>
+                            </div>
+
+                            {doc.files.length > 0 && (
+                              <div className="bg-background/50 rounded-xl p-2.5 border border-border/30 text-[10px] text-muted-foreground flex flex-wrap gap-1.5 items-center">
+                                <span className="font-bold uppercase tracking-wider text-[9px] text-primary mr-1">Selected:</span>
+                                {doc.files.map((file, fIdx) => (
+                                  <span key={fIdx} className="bg-muted px-2 py-0.5 rounded border border-border/40 truncate max-w-[120px]">{file.name}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
                   <div className="flex items-center gap-3 pt-4 border-t border-border">
                     <Button type="submit" disabled={isSubmitting} className="rounded-xl">{isSubmitting ? 'Saving...' : editingId ? 'Update Employee' : 'Add Employee'}</Button>
                     {editingId && <Button type="button" variant="outline" className="rounded-xl" onClick={resetForm} disabled={isSubmitting}>Cancel Edit</Button>}
@@ -527,87 +697,163 @@ const EmployeeDatabasePage = () => {
                 {isFetching ? <div className="py-24 flex justify-center"><LoadingSpinner text="Loading employee database..." /></div> : error ? (
                   <div className="py-24 text-center"><AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4 opacity-50" /><p className="text-lg font-medium text-destructive">{error}</p></div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader className="bg-muted/30">
-                        <TableRow>
-                          <TableHead className="w-[80px]">Photo</TableHead>
-                          <TableHead>Employee Profile</TableHead>
-                          <TableHead>Joining Date</TableHead>
-                          <TableHead>Contact Info</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Attendance</TableHead>
-                          <TableHead>Salary</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {employees.length === 0 ? (
-                          <TableRow><TableCell colSpan={8} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
-                        ) : employees.map(emp => (
-                          <TableRow key={emp.id} className="hover:bg-muted/30">
-                            <TableCell>
-                              <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
+                  <>
+                    {/* Desktop Table View (Hidden on mobile) */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
+                          <TableRow>
+                            <TableHead className="w-[80px]">Photo</TableHead>
+                            <TableHead>Employee Profile</TableHead>
+                            <TableHead>Joining Date</TableHead>
+                            <TableHead>Contact Info</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Attendance</TableHead>
+                            <TableHead>Salary</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {employees.length === 0 ? (
+                            <TableRow><TableCell colSpan={8} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
+                          ) : employees.map(emp => (
+                            <TableRow key={emp.id} className="hover:bg-muted/30">
+                              <TableCell>
+                                <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
+                                  {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-5 h-5 text-muted-foreground/50" />}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                <span className="truncate max-w-[150px] block font-semibold">{emp.name}</span>
+                                <div className="flex gap-1.5 flex-wrap items-center mt-1">
+                                  <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employee_type || 'Staff'}</Badge>
+                                  <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employment_type || 'Permanent'}</Badge>
+                                  {emp.education && (
+                                    <Badge variant="outline" className="font-normal text-[10px] text-amber-500 border-amber-500/30 bg-amber-500/5">
+                                      🎓 {emp.education}
+                                    </Badge>
+                                  )}
+                                  {emp.expand?.assigned_truck && (
+                                    <Badge variant="outline" className="font-normal text-[10px] text-primary border-primary/30 bg-primary/5 flex items-center gap-1">
+                                      <Truck className="w-3 h-3" /> {emp.expand.assigned_truck.truck_number}
+                                    </Badge>
+                                  )}
+                                  {emp.expand?.assigned_routes && (
+                                    <Badge variant="outline" className="font-normal text-[10px] text-success border-success/30 bg-success/5 flex items-center gap-1">
+                                      <Route className="w-3 h-3" /> {emp.expand.assigned_routes.route_code}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">{formatDateSafe(emp.joining_date) || '-'}</TableCell>
+                              <TableCell className="text-muted-foreground">{emp.contact}</TableCell>
+                              <TableCell>
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${emp.active_status === 'active' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>{emp.active_status}</span>
+                              </TableCell>
+                              <TableCell>
+                                <button 
+                                  onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
+                                  className="text-primary hover:text-primary/80 hover:underline font-medium text-sm transition-all focus:outline-none"
+                                >
+                                  View Logs
+                                </button>
+                              </TableCell>
+                              <TableCell>
+                                <button 
+                                  onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
+                                  className="text-primary hover:text-primary/80 hover:underline font-medium tabular-nums text-sm transition-all focus:outline-none"
+                                >
+                                  {emp.salary_amount ? `₹${emp.salary_amount.toLocaleString()}` : '-'}
+                                </button>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button size="sm" variant={selectedEmployeeForDocs?.id === emp.id ? 'secondary' : 'ghost'} onClick={() => setSelectedEmployeeForDocs(selectedEmployeeForDocs?.id === emp.id ? null : emp)}>
+                                    <FileText className="w-4 h-4 mr-1.5" /> Docs
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: emp.id, entityName: emp.name })} title="Share document folder">
+                                    <Share2 className="w-4 h-4 mr-1.5" /> Share
+                                  </Button>
+                                  <Button size="icon" variant="ghost" onClick={() => handleEdit(emp)}><Pencil className="w-4 h-4" /></Button>
+                                  <Button size="icon" variant="ghost" onClick={() => handleDelete(emp.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card List View (Hidden on desktop) */}
+                    <div className="block md:hidden divide-y divide-border/40">
+                      {employees.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground p-6">
+                          <Briefcase className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+                          <p>No employees found.</p>
+                        </div>
+                      ) : (
+                        employees.map(emp => (
+                          <div key={emp.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center shrink-0" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
                                 {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-5 h-5 text-muted-foreground/50" />}
                               </div>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              <span className="truncate max-w-[150px] block font-semibold">{emp.name}</span>
-                              <div className="flex gap-1.5 flex-wrap items-center mt-1">
-                                <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employee_type || 'Staff'}</Badge>
-                                <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employment_type || 'Permanent'}</Badge>
-                                {emp.education && (
-                                  <Badge variant="outline" className="font-normal text-[10px] text-amber-500 border-amber-500/30 bg-amber-500/5">
-                                    🎓 {emp.education}
-                                  </Badge>
-                                )}
-                                {emp.expand?.assigned_truck && (
-                                  <Badge variant="outline" className="font-normal text-[10px] text-primary border-primary/30 bg-primary/5 flex items-center gap-1">
-                                    <Truck className="w-3 h-3" /> {emp.expand.assigned_truck.truck_number}
-                                  </Badge>
-                                )}
-                                {emp.expand?.assigned_routes && (
-                                  <Badge variant="outline" className="font-normal text-[10px] text-success border-success/30 bg-success/5 flex items-center gap-1">
-                                    <Route className="w-3 h-3" /> {emp.expand.assigned_routes.route_code}
-                                  </Badge>
-                                )}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-sm text-foreground truncate">{emp.name}</p>
+                                <div className="flex gap-1.5 flex-wrap items-center mt-1">
+                                  <Badge variant="secondary" className="font-normal text-[9px] uppercase tracking-wider px-1 py-0">{emp.employee_type || 'Staff'}</Badge>
+                                  <Badge variant="secondary" className="font-normal text-[9px] uppercase tracking-wider px-1 py-0">{emp.employment_type || 'Permanent'}</Badge>
+                                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${emp.active_status === 'active' ? 'bg-success/10 text-success border-success/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>{emp.active_status}</span>
+                                </div>
                               </div>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{formatDateSafe(emp.joining_date) || '-'}</TableCell>
-                            <TableCell className="text-muted-foreground">{emp.contact}</TableCell>
-                            <TableCell>
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${emp.active_status === 'active' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>{emp.active_status}</span>
-                            </TableCell>
-                            <TableCell>
-                              <button 
-                                onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
-                                className="text-primary hover:text-primary/80 hover:underline font-medium text-sm transition-all focus:outline-none"
-                              >
-                                View Logs
-                              </button>
-                            </TableCell>
-                            <TableCell>
-                              <button 
-                                onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
-                                className="text-primary hover:text-primary/80 hover:underline font-medium tabular-nums text-sm transition-all focus:outline-none"
-                              >
-                                {emp.salary_amount ? `₹${emp.salary_amount.toLocaleString()}` : '-'}
-                              </button>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                <Button size="sm" variant={selectedEmployeeForDocs?.id === emp.id ? 'secondary' : 'ghost'} onClick={() => setSelectedEmployeeForDocs(selectedEmployeeForDocs?.id === emp.id ? null : emp)}>
-                                  <FileText className="w-4 h-4 mr-1.5" /> Docs
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Contact & Joined</p>
+                                <p className="font-semibold text-foreground mt-0.5">{emp.contact}</p>
+                                <p className="text-muted-foreground mt-0.5">{formatDateSafe(emp.joining_date) || '-'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Salary & Assets</p>
+                                <p className="font-bold text-foreground mt-0.5">{emp.salary_amount ? `₹${emp.salary_amount.toLocaleString()}` : '-'}</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {emp.expand?.assigned_truck && (
+                                    <span className="text-[9px] text-primary font-bold bg-primary/5 px-1 py-0.5 rounded border border-primary/10 flex items-center gap-0.5">
+                                      <Truck className="w-2.5 h-2.5" /> {emp.expand.assigned_truck.truck_number}
+                                    </span>
+                                  )}
+                                  {emp.expand?.assigned_routes && (
+                                    <span className="text-[9px] text-success font-bold bg-success/5 px-1 py-0.5 rounded border border-success/10 flex items-center gap-0.5">
+                                      <Route className="w-2.5 h-2.5" /> {emp.expand.assigned_routes.route_code}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center gap-2 pt-2 border-t border-border/20">
+                              <div className="flex gap-1.5">
+                                <Button size="sm" variant={selectedEmployeeForDocs?.id === emp.id ? 'secondary' : 'outline'} className="h-8 text-xs font-semibold rounded-lg" onClick={() => setSelectedEmployeeForDocs(selectedEmployeeForDocs?.id === emp.id ? null : emp)}>
+                                  <FileText className="w-3.5 h-3.5 mr-1" /> Docs
                                 </Button>
-                                <Button size="icon" variant="ghost" onClick={() => handleEdit(emp)}><Pencil className="w-4 h-4" /></Button>
-                                <Button size="icon" variant="ghost" onClick={() => handleDelete(emp.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
+                                <Button size="sm" variant="outline" className="h-8 text-xs font-semibold rounded-lg" onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: emp.id, entityName: emp.name })}>
+                                  <Share2 className="w-3.5 h-3.5 mr-1" /> Share
+                                </Button>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                              <div className="flex items-center gap-1.5">
+                                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}>
+                                  Attendance
+                                </Button>
+                                <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleEdit(emp)}><Pencil className="w-3.5 h-3.5" /></Button>
+                                <Button size="icon" variant="outline" className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10" onClick={() => handleDelete(emp.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -770,67 +1016,131 @@ const EmployeeDatabasePage = () => {
               <CardHeader className="bg-muted/30 pb-4"><CardTitle>Accident & Damage Logs</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader className="bg-muted/30">
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Driver Profile</TableHead>
-                        <TableHead>Vehicle Number</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Damage Cost</TableHead>
-                        <TableHead>Snapshots</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {accidents.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">No accident reports logged yet.</TableCell></TableRow>
-                      ) : accidents.map(log => {
-                        const driver = log.expand?.employee_id;
-                        const truckRec = log.expand?.truck_id;
-                        
-                        return (
-                          <TableRow key={log.id} className="hover:bg-muted/30">
-                            <TableCell className="font-semibold text-muted-foreground">
-                              {formatDateSafe(log.accident_date) || '-'}
-                            </TableCell>
-                            <TableCell className="font-medium text-foreground">
-                              {driver?.name || 'Unknown Driver'}
-                              <span className="block text-[10px] text-muted-foreground">{driver?.contact}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="font-bold font-mono">
-                                {truckRec?.truck_number || 'N/A'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate text-muted-foreground text-xs" title={log.description}>
-                              {log.description}
-                            </TableCell>
-                            <TableCell className="font-bold text-destructive tabular-nums">
-                              ₹{log.damage_cost ? log.damage_cost.toLocaleString() : '0'}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1.5 overflow-x-auto max-w-[120px]">
-                                {log.image_urls && (Array.isArray(log.image_urls) ? log.image_urls : [log.image_urls]).slice(0, 3).map((img, i) => (
-                                  <a 
-                                    key={i} 
-                                    href={pb.files.getUrl(log, img)} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="w-8 h-8 rounded-lg overflow-hidden border border-border flex-shrink-0 bg-muted flex items-center justify-center shadow-inner hover:scale-105 transition-transform"
-                                  >
-                                    <img src={pb.files.getUrl(log, img, { thumb: '50x50' })} alt="damage" className="w-full h-full object-cover" />
-                                  </a>
-                                ))}
-                                {(!log.image_urls || log.image_urls.length === 0) && (
-                                  <span className="text-[10px] text-muted-foreground">No Photos</span>
-                                )}
-                              </div>
-                            </TableCell>
+                  <>
+                    {/* Desktop Table View (Hidden on mobile) */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Driver Profile</TableHead>
+                            <TableHead>Vehicle Number</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Damage Cost</TableHead>
+                            <TableHead>Snapshots</TableHead>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {accidents.length === 0 ? (
+                            <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">No accident reports logged yet.</TableCell></TableRow>
+                          ) : accidents.map(log => {
+                            const driver = log.expand?.employee_id;
+                            const truckRec = log.expand?.truck_id;
+                            
+                            return (
+                              <TableRow key={log.id} className="hover:bg-muted/30">
+                                <TableCell className="font-semibold text-muted-foreground">
+                                  {formatDateSafe(log.accident_date) || '-'}
+                                </TableCell>
+                                <TableCell className="font-medium text-foreground">
+                                  {driver?.name || 'Unknown Driver'}
+                                  <span className="block text-[10px] text-muted-foreground">{driver?.contact}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="font-bold font-mono">
+                                    {truckRec?.truck_number || 'N/A'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="max-w-xs truncate text-muted-foreground text-xs" title={log.description}>
+                                  {log.description}
+                                </TableCell>
+                                <TableCell className="font-bold text-destructive tabular-nums">
+                                  ₹{log.damage_cost ? log.damage_cost.toLocaleString() : '0'}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1.5 overflow-x-auto max-w-[120px]">
+                                    {log.image_urls && (Array.isArray(log.image_urls) ? log.image_urls : [log.image_urls]).slice(0, 3).map((img, i) => (
+                                      <a 
+                                        key={i} 
+                                        href={pb.files.getUrl(log, img)} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="w-8 h-8 rounded-lg overflow-hidden border border-border flex-shrink-0 bg-muted flex items-center justify-center shadow-inner hover:scale-105 transition-transform"
+                                      >
+                                        <img src={pb.files.getUrl(log, img, { thumb: '50x50' })} alt="damage" className="w-full h-full object-cover" />
+                                      </a>
+                                    ))}
+                                    {(!log.image_urls || log.image_urls.length === 0) && (
+                                      <span className="text-[10px] text-muted-foreground">No Photos</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card List View (Hidden on desktop) */}
+                    <div className="block md:hidden divide-y divide-border/40">
+                      {accidents.length === 0 ? (
+                        <div className="text-center py-12 text-sm text-muted-foreground p-6">
+                          No accident reports logged yet.
+                        </div>
+                      ) : (
+                        accidents.map(log => {
+                          const driver = log.expand?.employee_id;
+                          const truckRec = log.expand?.truck_id;
+                          return (
+                            <div key={log.id} className="p-4 space-y-2 hover:bg-muted/5 transition-colors">
+                              <div className="flex justify-between items-start gap-3">
+                                <div>
+                                  <p className="font-bold text-sm text-foreground">{driver?.name || 'Unknown Driver'}</p>
+                                  <p className="text-[11px] text-muted-foreground">{driver?.contact}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-extrabold text-sm text-destructive">₹{log.damage_cost ? log.damage_cost.toLocaleString() : '0'}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{formatDateSafe(log.accident_date) || '-'}</p>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground uppercase font-medium">Vehicle / Photos</p>
+                                  <Badge variant="outline" className="font-bold font-mono mt-1">
+                                    {truckRec?.truck_number || 'N/A'}
+                                  </Badge>
+                                  <div className="flex gap-1.5 mt-2 overflow-x-auto">
+                                    {log.image_urls && (Array.isArray(log.image_urls) ? log.image_urls : [log.image_urls]).slice(0, 3).map((img, i) => (
+                                      <a 
+                                        key={i} 
+                                        href={pb.files.getUrl(log, img)} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="w-7 h-7 rounded-lg overflow-hidden border border-border flex-shrink-0 bg-muted flex items-center justify-center shadow-inner hover:scale-105 transition-transform"
+                                      >
+                                        <img src={pb.files.getUrl(log, img, { thumb: '50x50' })} alt="damage" className="w-full h-full object-cover" />
+                                      </a>
+                                    ))}
+                                    {(!log.image_urls || log.image_urls.length === 0) && (
+                                      <span className="text-[10px] text-muted-foreground">No Photos</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground uppercase font-medium">Accident Details</p>
+                                  <p className="text-xs text-muted-foreground mt-1 leading-normal line-clamp-3" title={log.description}>
+                                    {log.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
                 </div>
               </CardContent>
             </Card>
@@ -954,6 +1264,16 @@ const EmployeeDatabasePage = () => {
       </Dialog>
 
       <EmployeePhotoModal isOpen={isPhotoModalOpen} onClose={() => setIsPhotoModalOpen(false)} employee={selectedEmployeeForPhoto} />
+
+      {shareConfig.isOpen && (
+        <ShareFolderDialog
+          isOpen={shareConfig.isOpen}
+          onClose={() => setShareConfig({ isOpen: false, truckId: null, employeeId: null, entityName: '' })}
+          truckId={shareConfig.truckId}
+          employeeId={shareConfig.employeeId}
+          entityName={shareConfig.entityName}
+        />
+      )}
     </div>
   );
 };

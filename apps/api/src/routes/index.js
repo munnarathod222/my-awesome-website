@@ -19,6 +19,7 @@ import driverRouter from './driver.js';
 import taxRouter from './tax.js';
 import leaderboardRouter from './leaderboard.js';
 import userRouter from './user.js';
+import sharedRouter from './shared.js';
 
 
 const router = Router();
@@ -49,6 +50,8 @@ export default () => {
     router.use('/api/leaderboard', leaderboardRouter);
     router.use('/user', userRouter);
     router.use('/api/user', userRouter);
+    router.use('/shared', sharedRouter);
+    router.use('/api/shared', sharedRouter);
 
     return router;
 };

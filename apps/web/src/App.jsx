@@ -27,6 +27,7 @@ import SignupPage from './pages/SignupPage.jsx';
 import SignupRequestPage from './pages/SignupRequestPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import AcceptInvitationPage from './pages/AcceptInvitationPage.jsx';
+import SharedFolderPage from './pages/SharedFolderPage.jsx';
 
 // Dashboard Pages
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -60,6 +61,7 @@ import FuelTrackerPage from './pages/FuelTrackerPage.jsx';
 import CreditCardsPage from './pages/CreditCardsPage.jsx';
 import RemindersPage from './pages/RemindersPage.jsx';
 import TodoListPage from './pages/TodoListPage.jsx';
+import CalendarPage from './pages/CalendarPage.jsx';
 import TruckDocsPage from './pages/TruckDocsPage.jsx';
 import EmployeeDocsPage from './pages/EmployeeDocsPage.jsx';
 import QuotesManagerPage from './pages/QuotesManagerPage.jsx';
@@ -119,7 +121,7 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   
   const publicRoutes = ['/', '/services', '/about', '/contact', '/quote', '/login', '/signup', '/signup-request', '/forgot-password', '/accept-invitation'];
-  const isPublicPage = publicRoutes.includes(location.pathname);
+  const isPublicPage = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/shared/');
   
   const showSidebar = isAuthenticated && !isPublicPage;
 
@@ -176,6 +178,7 @@ function App() {
                   <Route path="/signup-request" element={<SignupRequestPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+                  <Route path="/shared/:id" element={<SharedFolderPage />} />
                   
                   {/* Dashboard Base */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -185,6 +188,7 @@ function App() {
                   
                   {/* Analytics */}
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><AnalyticsHub /></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><CalendarPage /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><LeaderboardPage /></ProtectedRoute>} />
                   <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
                   <Route path="/dashboard/trip-overview" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TripOverviewCalculator /></ProtectedRoute>} />

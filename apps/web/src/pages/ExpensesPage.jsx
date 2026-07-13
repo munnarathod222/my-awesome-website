@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
 import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X } from 'lucide-react';
@@ -223,27 +224,36 @@ const ExpensesPage = () => {
   };
 
   const handleDirectFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !directUploadExpense) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !directUploadExpense) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size exceeds the 10MB limit.');
-      return;
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File "${file.name}" exceeds the 10MB limit.`);
+        return;
+      }
     }
 
-    const toastId = toast.loading('Uploading bill document...');
+    const toastId = toast.loading('Uploading documents...');
     try {
       const formData = new FormData();
-      formData.append('documents', file);
+      files.forEach(file => {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+          formData.append('image_urls', file);
+        } else {
+          formData.append('documents', file);
+        }
+      });
       
       await pb.collection('expenses').update(directUploadExpense.id, formData, { $autoCancel: false });
       
-      toast.success('Bill document attached successfully!', { id: toastId });
+      toast.success('Files attached successfully!', { id: toastId });
       setDirectUploadExpense(null);
       setRefreshTrigger(p => p + 1);
     } catch (err) {
       console.error('Direct upload failed:', err);
-      toast.error(err.message || 'Failed to upload bill.', { id: toastId });
+      toast.error(err.message || 'Failed to upload files.', { id: toastId });
     }
   };
 
@@ -311,12 +321,13 @@ const ExpensesPage = () => {
       .filter(e => e.category === 'Regular' && e.subcategory === 'Toll')
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
-    const expAdvance = currentMonthExpenses
+    const unlinkedExpAdvance = currentMonthExpenses
       .filter(e => e.category === 'Employee Advance')
+      .filter(e => !currentMonthAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     const driverAdvance = currentMonthAdvances
-      .reduce((sum, a) => Number(sum) + Number(a.amount || 0), 0) + expAdvance;
+      .reduce((sum, a) => Number(sum) + Number(a.amount || 0), 0) + unlinkedExpAdvance;
 
     const maintenance = currentMonthExpenses
       .filter(e => e.category === 'Regular' && e.subcategory === 'Maintenance')
@@ -423,7 +434,8 @@ const ExpensesPage = () => {
               </div>
             ) : (
               <Card className="shadow-sm border-border overflow-hidden bg-card">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader className="bg-muted/30">
                       <TableRow>
@@ -531,6 +543,119 @@ const ExpensesPage = () => {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile Card List View (Hidden on desktop) */}
+                <div className="block md:hidden divide-y divide-border/40">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="p-4 space-y-3">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-6 w-32 rounded-full" />
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                    ))
+                  ) : filteredExpenses.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground">
+                      <Receipt className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+                      <p>No expenses found.</p>
+                    </div>
+                  ) : (
+                    filteredExpenses.map((expense) => (
+                      <div 
+                        key={expense.id} 
+                        className={cn(
+                          "p-4 space-y-3 hover:bg-muted/5 transition-colors", 
+                          selectedIds.has(expense.id) ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                        )}
+                      >
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id={`select-expense-mobile-${expense.id}`}
+                              checked={selectedIds.has(expense.id)}
+                              onCheckedChange={() => toggleSelect(expense.id)}
+                              aria-label={`Select expense ${expense.id}`}
+                            />
+                            <div>
+                              <p className="font-semibold text-foreground text-sm">{expense.description || 'No Description'}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(expense.date), 'MMM dd, yyyy')}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="font-extrabold text-sm text-foreground">₹{expense.amount?.toLocaleString()}</p>
+                            <div className="flex flex-wrap justify-end gap-1 mt-1">
+                              {expense.image_urls?.map((img, idx) => {
+                                const url = pb.files.getUrl(expense, img);
+                                return (
+                                  <div 
+                                    key={idx}
+                                    onClick={() => setActiveLightboxImage(url)}
+                                    className="w-6 h-6 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
+                                    title="View Receipt Snapshot"
+                                  >
+                                    <img src={url} alt="receipt" className="w-full h-full object-cover" />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <Badge variant="outline" className="font-semibold bg-background">{expense.category}</Badge>
+                          {expense.category === 'Regular' && expense.subcategory && (
+                            <Badge variant="secondary" className="font-medium bg-secondary/60 text-secondary-foreground text-[10px] uppercase tracking-wider flex items-center gap-1">
+                              <Tag className="w-2.5 h-2.5" /> {expense.subcategory}
+                            </Badge>
+                          )}
+                          {getPaymentMethodBadge(expense.payment_method)}
+                          {expense.cardContext && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded-md border border-border/30">
+                              <CreditCard className="w-2.5 h-2.5" /> {expense.cardContext.card_number_last4}
+                            </span>
+                          )}
+                        </div>
+
+                        {expense.notes && (
+                          <p className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg border border-border/20">
+                            {expense.notes}
+                          </p>
+                        )}
+
+                        <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                          <div>
+                            {expense.documents?.length > 0 && (
+                              <Button variant="ghost" size="sm" onClick={() => window.open(pb.files.getUrl(expense, expense.documents[0]), '_blank')} className="h-7 text-xs text-primary" title="View attached document">
+                                <ExternalLink className="w-3.5 h-3.5 mr-1" /> View Bill
+                              </Button>
+                            )}
+                            {(!expense.image_urls || expense.image_urls.length === 0) && (!expense.documents || expense.documents.length === 0) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => triggerDirectFileUpload(expense)} 
+                                className="h-7 text-xs text-muted-foreground hover:text-primary" 
+                                title="Upload Bill/Receipt"
+                              >
+                                <UploadCloud className="w-3.5 h-3.5 mr-1" /> Upload Bill
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingExpense(expense); setIsExpenseModalOpen(true); }} className="h-7 text-xs font-semibold rounded-lg">
+                              Edit
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleDeleteExpense(expense.id)} className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold rounded-lg">
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </Card>
             )}
           </TabsContent>
@@ -554,7 +679,8 @@ const ExpensesPage = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader className="bg-muted/10">
                       <TableRow>
@@ -598,6 +724,54 @@ const ExpensesPage = () => {
                       )}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Mobile Card List View (Hidden on desktop) */}
+                <div className="block md:hidden divide-y divide-border/40">
+                  {loading ? (
+                    <div className="p-4"><Skeleton className="h-12 w-full" /></div>
+                  ) : filteredAdvances.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground">No advance records found.</div>
+                  ) : (
+                    filteredAdvances.map(adv => (
+                      <div key={adv.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <p className="font-bold text-sm text-foreground">{adv.employee_name || adv.expand?.employee_id?.name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(adv.date), 'MMM dd, yyyy')}</p>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="font-extrabold text-sm text-foreground">₹{adv.amount?.toLocaleString()}</p>
+                            <Badge variant="outline" className={`font-semibold text-[10px] mt-1 ${adv.status === 'Pending' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-success/10 text-success border-success/20'}`}>
+                              {adv.status}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {adv.reason && (
+                          <p className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg border border-border/20">
+                            <strong>Reason:</strong> {adv.reason}
+                          </p>
+                        )}
+
+                        <div className="flex justify-end items-center gap-2 pt-2 border-t border-border/20">
+                          {adv.status === 'Pending' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs bg-secondary/50 hover:bg-secondary text-secondary-foreground" 
+                              onClick={() => handleMarkAdvanceSettled(adv.id)} 
+                              disabled={processingAdvanceId === adv.id}
+                            >
+                              {processingAdvanceId === adv.id ? 'Processing...' : 'Mark Settled'}
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteAdvance(adv.id)} className="h-7 w-7 text-muted-foreground hover:text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -655,6 +829,7 @@ const ExpensesPage = () => {
         className="hidden" 
         accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
         onChange={handleDirectFileChange} 
+        multiple
       />
 
       {isExpenseModalOpen && (
