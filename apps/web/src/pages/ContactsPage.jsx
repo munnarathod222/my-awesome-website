@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
-  Network, UserCog
+  Network, UserCog, Phone
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -292,76 +292,172 @@ export default function ContactsPage() {
               <Button variant="outline" onClick={fetchContacts} className="mt-6 rounded-xl shadow-sm">Retry Connection</Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent border-b-border/50">
-                    <TableHead className="font-semibold text-muted-foreground pl-6 py-4">Name / Company</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4">Contact Info</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4">Tax ID (GSTIN)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4">Role Type</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4">Date Added</TableHead>
-                    <TableHead className="text-right font-semibold text-muted-foreground pr-6 py-4">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i} className="border-b-border/30">
-                        <TableCell className="pl-6 py-4"><Skeleton className="h-5 w-40 mb-2" /><Skeleton className="h-4 w-56" /></TableCell>
-                        <TableCell className="py-4"><Skeleton className="h-5 w-32 mb-2" /><Skeleton className="h-4 w-40" /></TableCell>
-                        <TableCell className="py-4"><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="py-4"><Skeleton className="h-7 w-20 rounded-lg" /></TableCell>
-                        <TableCell className="py-4"><Skeleton className="h-5 w-24" /></TableCell>
-                        <TableCell className="text-right pr-6 py-4"><Skeleton className="h-8 w-8 ml-auto rounded-lg" /></TableCell>
-                      </TableRow>
-                    ))
-                  ) : filteredContacts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
-                        <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
-                          <Users className="w-8 h-8 opacity-40" />
-                        </div>
-                        <p className="text-lg font-medium text-foreground">No contacts found.</p>
-                        <p className="text-sm mt-1">Adjust your search or add a new entry.</p>
-                      </TableCell>
+            <>
+              {/* Desktop Table View (Hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow className="hover:bg-transparent border-b-border/50">
+                      <TableHead className="font-semibold text-muted-foreground pl-6 py-4">Name / Company</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground py-4">Contact Info</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground py-4">Tax ID (GSTIN)</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground py-4">Role Type</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground py-4">Date Added</TableHead>
+                      <TableHead className="text-right font-semibold text-muted-foreground pr-6 py-4">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredContacts.map(contact => (
-                      <TableRow key={contact.id} className="hover:bg-muted/30 transition-colors border-b-border/40">
-                        <TableCell className="pl-6 py-4">
-                          <p className="font-bold text-sm text-foreground">{contact.company_name}</p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[220px] mt-1 font-medium" title={contact.physical_address}>
-                            {contact.physical_address}
-                          </p>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i} className="border-b-border/30">
+                          <TableCell className="pl-6 py-4"><Skeleton className="h-5 w-40 mb-2" /><Skeleton className="h-4 w-56" /></TableCell>
+                          <TableCell className="py-4"><Skeleton className="h-5 w-32 mb-2" /><Skeleton className="h-4 w-40" /></TableCell>
+                          <TableCell className="py-4"><Skeleton className="h-5 w-32" /></TableCell>
+                          <TableCell className="py-4"><Skeleton className="h-7 w-20 rounded-lg" /></TableCell>
+                          <TableCell className="py-4"><Skeleton className="h-5 w-24" /></TableCell>
+                          <TableCell className="text-right pr-6 py-4"><Skeleton className="h-8 w-8 ml-auto rounded-lg" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredContacts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                          <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+                            <Users className="w-8 h-8 opacity-40" />
+                          </div>
+                          <p className="text-lg font-medium text-foreground">No contacts found.</p>
+                          <p className="text-sm mt-1">Adjust your search or add a new entry.</p>
                         </TableCell>
-                        <TableCell className="py-4">
-                          <p className="text-sm font-semibold text-foreground">{contact.phone_number}</p>
-                          {contact.email && <p className="text-xs text-muted-foreground mt-1 font-medium">{contact.email}</p>}
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <span className="font-mono text-sm font-medium bg-secondary/40 px-2 py-1 rounded-md border border-border/50">
-                            {contact.gstin || 'N/A'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-4">{getTypeBadge(contact.contact_type)}</TableCell>
-                        <TableCell className="text-sm font-medium text-muted-foreground py-4">
-                          {format(new Date(contact.created), 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell className="text-right pr-6 py-4">
+                      </TableRow>
+                    ) : (
+                      filteredContacts.map(contact => (
+                        <TableRow key={contact.id} className="hover:bg-muted/30 transition-colors border-b-border-border/40">
+                          <TableCell className="pl-6 py-4">
+                            <p className="font-bold text-sm text-foreground">{contact.company_name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[220px] mt-1 font-medium" title={contact.physical_address}>
+                              {contact.physical_address}
+                            </p>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <p className="text-sm font-semibold text-foreground">{contact.phone_number}</p>
+                            {contact.email && <p className="text-xs text-muted-foreground mt-1 font-medium">{contact.email}</p>}
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <span className="font-mono text-sm font-medium bg-secondary/40 px-2 py-1 rounded-md border border-border/50">
+                              {contact.gstin || 'N/A'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-4">{getTypeBadge(contact.contact_type)}</TableCell>
+                          <TableCell className="text-sm font-medium text-muted-foreground py-4">
+                            {format(new Date(contact.created), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right pr-6 py-4">
+                            <ContactActionsMenu
+                              contact={contact}
+                              onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
+                              onEdit={(c) => { setSelectedContact(c); setIsFormOpen(true); }}
+                              onDelete={handleDelete}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card List View (Hidden on desktop) */}
+              <div className="block md:hidden divide-y divide-border/30">
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-4 space-y-3">
+                      <Skeleton className="h-5 w-1/3" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                  ))
+                ) : filteredContacts.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-sm">
+                    <Users className="w-8 h-8 opacity-30 mx-auto mb-2" />
+                    No contacts found.
+                  </div>
+                ) : (
+                  filteredContacts.map(contact => (
+                    <div key={contact.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-base text-foreground truncate">{contact.company_name}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{contact.physical_address || 'No Address'}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {getTypeBadge(contact.contact_type)}
                           <ContactActionsMenu
                             contact={contact}
                             onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
                             onEdit={(c) => { setSelectedContact(c); setIsFormOpen(true); }}
                             onDelete={handleDelete}
                           />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-xs py-2 border-t border-b border-border/20">
+                        <div>
+                          <span className="text-muted-foreground block text-[9px] uppercase font-semibold tracking-wider">Phone</span>
+                          {contact.phone_number ? (
+                            <a 
+                              href={`tel:${contact.phone_number}`} 
+                              className="font-bold text-primary hover:underline flex items-center gap-1 mt-0.5"
+                            >
+                              <Phone className="w-3 h-3 shrink-0" />
+                              {contact.phone_number}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground block text-[9px] uppercase font-semibold tracking-wider">GSTIN</span>
+                          <span className="font-mono text-foreground mt-0.5 block">{contact.gstin || '—'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pt-1">
+                        {contact.email ? (
+                          <div className="text-xs truncate min-w-0 flex-1">
+                            <span className="text-muted-foreground text-[9px] uppercase font-semibold tracking-wider mr-1.5">Email:</span>
+                            <span className="text-foreground font-medium truncate">{contact.email}</span>
+                          </div>
+                        ) : (
+                          <div className="flex-1" />
+                        )}
+                        
+                        {contact.phone_number && (
+                          <div className="flex items-center gap-2 mt-1 sm:mt-0 shrink-0">
+                            <a 
+                              href={`tel:${contact.phone_number}`}
+                              className="h-8 px-3 rounded-lg border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-500 flex items-center gap-1 text-xs font-semibold"
+                            >
+                              <Phone className="w-3.5 h-3.5" /> Call
+                            </a>
+                            
+                            <a 
+                              href={`https://wa.me/${contact.phone_number.replace(/[^0-9]/g, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="h-8 px-3 rounded-lg border border-green-500/20 text-green-500 hover:bg-green-500/10 hover:text-green-500 flex items-center gap-1.5 text-xs font-semibold"
+                            >
+                              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.488 1.459 5.416 1.46 5.561-.002 10.093-4.53 10.097-10.093.002-2.697-1.047-5.234-2.952-7.14C17.29 1.475 14.757.429 12.058.429c-5.56 0-10.093 4.528-10.097 10.091-.001 1.83.499 3.626 1.447 5.205L2.35 21.575l6.297-1.652z" />
+                              </svg>
+                              WhatsApp
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
