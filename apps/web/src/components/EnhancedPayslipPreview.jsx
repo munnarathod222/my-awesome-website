@@ -32,7 +32,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
   
   return (
-    <div className="print-content payslip-container bg-card print:bg-white text-foreground print:text-black border border-border print:border-none rounded-2xl shadow-sm p-8" id="payslip-preview-content">
+    <div className="print-content payslip-container bg-card text-foreground border border-border rounded-2xl shadow-sm p-8" id="payslip-preview-content">
       {/* Header Area */}
       <div className="text-center mb-8 pb-6 border-b border-border text-foreground">
         <h1 className="text-2xl font-bold tracking-tight uppercase">JAI BHAVANI CARGO</h1>

@@ -219,7 +219,7 @@ export default function PayslipPreviewModal({ isOpen, onClose, payrollId }) {
               </div>
             </div>
           ) : record ? (
-            <div className="print-content bg-card print:bg-white border border-border print:border-none rounded-xl p-8 shadow-sm print:shadow-none mx-auto max-w-4xl text-sm">
+            <div className="print-content bg-card border border-border rounded-xl p-8 shadow-sm mx-auto max-w-4xl text-sm">
               
               <div className="text-center mb-8 pb-6 border-b border-border text-foreground">
                 <h1 className="text-2xl font-bold tracking-tight uppercase">Jai Bhavani Cargo</h1>
