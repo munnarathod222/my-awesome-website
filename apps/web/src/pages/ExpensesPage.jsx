@@ -418,8 +418,9 @@ const ExpensesPage = () => {
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-mono">
                         {card.title}
                       </p>
-                      <p className="text-lg font-extrabold text-foreground mt-2 font-heading">
-                        ₹{Number(card.amount).toLocaleString('en-IN')}
+                      <p className="text-2xl sm:text-3xl font-black text-foreground mt-2 font-heading tracking-tight">
+                        <span className="text-base sm:text-lg font-bold text-muted-foreground mr-0.5">₹</span>
+                        {Number(card.amount).toLocaleString('en-IN')}
                       </p>
                     </div>
                     <div className="mt-3 flex items-center justify-between">
