@@ -5,39 +5,58 @@ import InvoiceForm from '@/components/InvoiceForm.jsx';
 
 const InvoiceMakerPage = ({ quoteToConvert, onConverted }) => {
   const [activeTab, setActiveTab] = useState('list');
+  const [editingInvoice, setEditingInvoice] = useState(null);
 
   useEffect(() => {
     if (quoteToConvert) {
+      setEditingInvoice(null);
       setActiveTab('create');
     }
   }, [quoteToConvert]);
 
   const handleCreateSuccess = () => {
+    setEditingInvoice(null);
     setActiveTab('list');
     if (onConverted) onConverted();
   };
 
   const handleCancelCreate = () => {
+    setEditingInvoice(null);
     setActiveTab('list');
     if (onConverted) onConverted();
   };
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(val) => {
+          if (val === 'create' && !editingInvoice) {
+            setEditingInvoice(null);
+          }
+          setActiveTab(val);
+        }} 
+        className="w-full"
+      >
         <div className="flex justify-between items-center mb-6">
           <TabsList className="bg-muted/50 p-1">
             <TabsTrigger value="list" className="px-6">All Invoices</TabsTrigger>
-            <TabsTrigger value="create" className="px-6">Create Invoice</TabsTrigger>
+            <TabsTrigger value="create" className="px-6">
+              {editingInvoice ? 'Edit Invoice' : 'Create Invoice'}
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="list" className="mt-0 border-none p-0 outline-none">
-          <InvoicesList onCreateNew={() => setActiveTab('create')} />
+          <InvoicesList 
+            onCreateNew={() => { setEditingInvoice(null); setActiveTab('create'); }} 
+            onEditInvoice={(inv) => { setEditingInvoice(inv); setActiveTab('create'); }}
+          />
         </TabsContent>
 
         <TabsContent value="create" className="mt-0 border-none p-0 outline-none">
           <InvoiceForm 
+            invoice={editingInvoice}
             prefilledQuote={quoteToConvert}
             onSuccess={handleCreateSuccess}
             onCancel={handleCancelCreate}

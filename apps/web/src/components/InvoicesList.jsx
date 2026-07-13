@@ -21,7 +21,7 @@ const statusColors = {
   'Overdue': 'bg-destructive/20 text-destructive border-destructive/30'
 };
 
-const InvoicesList = ({ onCreateNew }) => {
+const InvoicesList = ({ onCreateNew, onEditInvoice }) => {
   const { currentUser } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,7 +181,8 @@ const InvoicesList = ({ onCreateNew }) => {
 
       <Card className="border-border shadow-sm">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
@@ -235,6 +236,9 @@ const InvoicesList = ({ onCreateNew }) => {
                             <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEditInvoice?.(inv)}>
+                              Edit Invoice
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { setSelectedInvoice(inv); setDetailsOpen(true); }}>
                               View Details
                             </DropdownMenuItem>
@@ -249,6 +253,84 @@ const InvoicesList = ({ onCreateNew }) => {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card List View (Hidden on desktop) */}
+          <div className="block md:hidden divide-y divide-border/40">
+            {loading ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">Loading invoices...</div>
+            ) : filteredInvoices.length === 0 ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                No invoices found. Create one to get started.
+              </div>
+            ) : (
+              filteredInvoices.map(inv => (
+                <div key={inv.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-sm text-primary">{inv.invoice_number}</span>
+                    <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 border-transparent", statusColors[inv.status] || statusColors['Draft'])}>
+                      {inv.status}
+                    </Badge>
+                  </div>
+                  
+                  <div>
+                    <p className="font-bold text-sm text-foreground">{inv.customer_name}</p>
+                    {inv.customer_email && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{inv.customer_email}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Invoice Date</p>
+                      <p className="font-semibold text-foreground mt-0.5">{format(new Date(inv.invoice_date), 'MMM dd, yyyy')}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Due Date</p>
+                      <p className="font-semibold text-foreground mt-0.5">
+                        {format(new Date(inv.due_date), 'MMM dd, yyyy')}
+                        {new Date(inv.due_date) < new Date() && inv.status !== 'Paid' && (
+                          <span className="ml-1 text-[10px] text-destructive font-bold block">(Overdue)</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-medium block">Total Amount</span>
+                      <span className="font-extrabold text-sm text-primary">₹{inv.total_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => { setSelectedInvoice(inv); setDetailsOpen(true); }}
+                        className="h-7 text-[11px] font-bold rounded-lg border-border hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                      >
+                        View
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg">
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuItem className="text-xs font-semibold rounded-lg" onClick={() => onEditInvoice?.(inv)}>
+                            Edit Invoice
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive text-xs font-semibold rounded-lg" onClick={() => handleDelete(inv.id)}>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

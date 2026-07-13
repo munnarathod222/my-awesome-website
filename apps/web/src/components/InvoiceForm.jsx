@@ -80,6 +80,36 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
     }
   }, [invoice, prefilledQuote]);
 
+  // Load official company settings or custom defaults for new invoices
+  useEffect(() => {
+    if (!invoice) {
+      pb.collection('company_settings').getOne('companysettings')
+        .then(settings => {
+          const savedFrom = JSON.parse(localStorage.getItem('jbcargo_invoice_from_details') || '{}');
+          setFormData(prev => ({
+            ...prev,
+            company_name: savedFrom.company_name || settings.company_name || prev.company_name,
+            company_address: savedFrom.company_address || settings.company_address || prev.company_address,
+            company_phone: savedFrom.company_phone || settings.company_phone || prev.company_phone,
+            company_email: savedFrom.company_email || settings.company_email || prev.company_email,
+            bank_details: localStorage.getItem('jbcargo_invoice_bank_details') || prev.bank_details
+          }));
+        })
+        .catch(err => {
+          console.error('Failed to load company settings:', err);
+          const savedFrom = JSON.parse(localStorage.getItem('jbcargo_invoice_from_details') || '{}');
+          setFormData(prev => ({
+            ...prev,
+            company_name: savedFrom.company_name || prev.company_name,
+            company_address: savedFrom.company_address || prev.company_address,
+            company_phone: savedFrom.company_phone || prev.company_phone,
+            company_email: savedFrom.company_email || prev.company_email,
+            bank_details: localStorage.getItem('jbcargo_invoice_bank_details') || prev.bank_details
+          }));
+        });
+    }
+  }, [invoice]);
+
   // Handle general field changes
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -150,6 +180,15 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
         toast.success(`Invoice created (${submitStatus})`);
       }
 
+      // Save custom settings to localStorage for future default values
+      localStorage.setItem('jbcargo_invoice_from_details', JSON.stringify({
+        company_name: formData.company_name,
+        company_address: formData.company_address,
+        company_phone: formData.company_phone,
+        company_email: formData.company_email
+      }));
+      localStorage.setItem('jbcargo_invoice_bank_details', formData.bank_details);
+
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
@@ -176,21 +215,21 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
       <form onSubmit={(e) => handleSubmit(e, null)} className="space-y-8">
         
         {/* Top Details Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Invoice Info */}
           <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border">
             <h3 className="font-semibold flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
               <FileText className="w-4 h-4" /> Invoice Details
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Invoice Number</Label>
                 <Input value={formData.invoice_number} readOnly className="bg-muted font-mono" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Status</Label>
                 <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Draft">Draft</SelectItem>
                     <SelectItem value="Sent">Sent</SelectItem>
@@ -198,13 +237,38 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Invoice Date</Label>
-                <Input type="date" required value={formData.invoice_date} onChange={(e) => handleChange('invoice_date', e.target.value)} />
+                <Input type="date" required value={formData.invoice_date} onChange={(e) => handleChange('invoice_date', e.target.value)} className="bg-background" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Due Date</Label>
-                <Input type="date" required value={formData.due_date} onChange={(e) => handleChange('due_date', e.target.value)} />
+                <Input type="date" required value={formData.due_date} onChange={(e) => handleChange('due_date', e.target.value)} className="bg-background" />
+              </div>
+            </div>
+          </div>
+
+          {/* Company Info (From) */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border">
+            <h3 className="font-semibold flex items-center gap-2 text-muted-foreground border-b border-border pb-2">
+              <FileText className="w-4 h-4" /> From Details (Your Company)
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label>Company Name *</Label>
+                <Input required value={formData.company_name} onChange={(e) => handleChange('company_name', e.target.value)} className="bg-background" />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Email *</Label>
+                <Input type="email" required value={formData.company_email} onChange={(e) => handleChange('company_email', e.target.value)} className="bg-background" />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Address *</Label>
+                <Textarea required value={formData.company_address} onChange={(e) => handleChange('company_address', e.target.value)} className="resize-none h-12 bg-background" />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Phone *</Label>
+                <Input required value={formData.company_phone} onChange={(e) => handleChange('company_phone', e.target.value)} className="bg-background" />
               </div>
             </div>
           </div>
@@ -215,21 +279,21 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
               <Users className="w-4 h-4" /> Bill To (Customer)
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Customer Name *</Label>
-                <Input required value={formData.customer_name} onChange={(e) => handleChange('customer_name', e.target.value)} />
+                <Input required value={formData.customer_name} onChange={(e) => handleChange('customer_name', e.target.value)} className="bg-background" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label>Email *</Label>
-                <Input type="email" required value={formData.customer_email} onChange={(e) => handleChange('customer_email', e.target.value)} />
+                <Input type="email" required value={formData.customer_email} onChange={(e) => handleChange('customer_email', e.target.value)} className="bg-background" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label>Address</Label>
-                <Textarea value={formData.customer_address} onChange={(e) => handleChange('customer_address', e.target.value)} className="resize-none h-12" />
+                <Textarea value={formData.customer_address} onChange={(e) => handleChange('customer_address', e.target.value)} className="resize-none h-12 bg-background" />
               </div>
               <div className="space-y-2 col-span-2">
                 <Label>Phone</Label>
-                <Input value={formData.customer_phone} onChange={(e) => handleChange('customer_phone', e.target.value)} />
+                <Input value={formData.customer_phone} onChange={(e) => handleChange('customer_phone', e.target.value)} className="bg-background" />
               </div>
             </div>
           </div>
