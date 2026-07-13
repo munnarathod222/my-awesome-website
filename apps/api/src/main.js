@@ -390,11 +390,19 @@ const runPocketBase = async () => {
   startStorageBackgroundSync(storageDir);
 
   pbProcess.stdout.on('data', (data) => {
-    logger.info(`[PocketBase] ${data.toString().trim()}`);
+    const msg = data.toString().trim();
+    logger.info(`[PocketBase] ${msg}`);
+    if (!global._pbLogs) global._pbLogs = [];
+    global._pbLogs.push({ t: new Date().toISOString(), level: 'info', msg });
+    if (global._pbLogs.length > 200) global._pbLogs.shift();
   });
 
   pbProcess.stderr.on('data', (data) => {
-    logger.error(`[PocketBase Error] ${data.toString().trim()}`);
+    const msg = data.toString().trim();
+    logger.error(`[PocketBase Error] ${msg}`);
+    if (!global._pbLogs) global._pbLogs = [];
+    global._pbLogs.push({ t: new Date().toISOString(), level: 'error', msg });
+    if (global._pbLogs.length > 200) global._pbLogs.shift();
   });
 
   pbProcess.on('close', (code) => {
@@ -410,6 +418,11 @@ runPocketBase();
 
 // Start end-of-month leaderboard + payroll cron job
 startMonthEndCron();
+
+// Diagnostic endpoint — exposes PocketBase startup logs
+app.get('/api/pb-logs', (req, res) => {
+  res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
+});
 
 
 // ----------------------------------------------------
