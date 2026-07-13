@@ -39,7 +39,17 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
             {document.document_type || 'Document'} - {document.document_number || 'No Number'}
           </DialogTitle>
           <div className="text-sm text-muted-foreground mt-1">
-            Uploaded on {document.upload_date ? format(new Date(document.upload_date), 'MMM dd, yyyy') : format(new Date(document.created), 'MMM dd, yyyy')}
+            {(() => {
+              const dateVal = document.upload_date || document.created;
+              if (!dateVal) return <span>No upload date available</span>;
+              try {
+                const d = new Date(dateVal);
+                if (isNaN(d.getTime())) return <span>No upload date available</span>;
+                return <>Uploaded on {format(d, 'MMM dd, yyyy')}</>;
+              } catch (e) {
+                return <span>No upload date available</span>;
+              }
+            })()}
           </div>
         </DialogHeader>
 
