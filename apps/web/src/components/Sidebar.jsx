@@ -78,6 +78,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',    path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: BarChart3,       label: 'Analytics',    path: '/analytics',               roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: CalendarDays,    label: 'Calendar',     path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Trophy,          label: 'Leaderboard',  path: '/leaderboard',             roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: PieChart,        label: 'Client Analysis', path: '/client-analysis',      roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: TrendingUp,      label: 'Trip Overview',path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager','dispatcher'] },
@@ -142,10 +143,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         <div className="flex items-center justify-between px-3 border-b border-white/5 h-14 shrink-0">
           {isExpanded && (
             <div className="flex items-center gap-2 ml-1 overflow-hidden">
-              <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                <Truck className="w-3.5 h-3.5 text-primary-foreground" />
-              </div>
-              <span className="font-heading font-bold text-sm text-foreground truncate">FleetMaster</span>
+              <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
             </div>
           )}
           <button

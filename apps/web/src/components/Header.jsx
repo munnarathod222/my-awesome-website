@@ -123,12 +123,7 @@ export default function Header() {
 
           {/* Logo */}
           <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-              <Truck className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-heading font-black text-lg tracking-tight hidden sm:inline text-foreground">
-              Jai Bhavani
-            </span>
+            <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform" alt="Jai Bhavani Logo" />
           </Link>
 
           {/* Breadcrumb — authenticated only */}
@@ -215,10 +210,7 @@ export default function Header() {
                 <SheetContent side="right" className="w-[280px]">
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2 font-heading">
-                      <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                      Jai Bhavani
+                      <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
                     </SheetTitle>
                     <SheetDescription className="sr-only">Navigation</SheetDescription>
                   </SheetHeader>
@@ -250,17 +242,10 @@ export default function Header() {
       {isAuthenticated && (
         <header className="md:hidden sticky top-0 z-50 w-full border-b border-white/5 bg-[#070a13]/90 backdrop-blur-md px-4 py-2.5 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-md">
-              <Truck className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div>
-              <span className="font-heading font-black text-sm tracking-tight text-white leading-none block">
-                Jai Bhavani
-              </span>
-              {pageLabel && (
-                <span className="text-[10px] text-muted-foreground font-medium leading-none">{pageLabel}</span>
-              )}
-            </div>
+            <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
+            {pageLabel && (
+              <span className="text-[10px] text-muted-foreground font-semibold leading-none border-l border-white/10 pl-2.5 ml-0.5">{pageLabel}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <LangSelector compact={true} />

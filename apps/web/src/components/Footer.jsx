@@ -11,10 +11,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-5">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-soft group-hover:scale-105 transition-transform duration-300">
-                <Truck className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-heading text-2xl font-bold text-foreground">FleetMaster</span>
+              <img src="/logo.png" className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform duration-300" alt="Jai Bhavani Logo" />
             </Link>
             <p className="text-muted-foreground leading-relaxed text-sm max-w-[280px]">
               Reliable Logistics Solutions. Fast, safe, and affordable cargo transportation management across the country.
@@ -69,7 +66,7 @@ const Footer = () => {
                 <div className="p-2 rounded-lg bg-secondary/50 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                   <Mail className="w-4 h-4 shrink-0" />
                 </div>
-                <span className="text-muted-foreground">support@fleetmaster.com</span>
+                <span className="text-muted-foreground">vinod@jaibhavanicargo.com</span>
               </li>
             </ul>
           </div>
@@ -77,7 +74,7 @@ const Footer = () => {
 
         <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} FleetMaster Logistics. All rights reserved.
+            &copy; {new Date().getFullYear()} Jai Bhavani Cargo. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">
             <Link to="#" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>

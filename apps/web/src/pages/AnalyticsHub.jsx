@@ -294,7 +294,7 @@ const AnalyticsHub = () => {
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-      XLSX.writeFile(workbook, `FleetMaster_Report_${sheetName.replace(/\s+/g, '_')}_${new Date().toISOString().substring(0, 10)}.xlsx`);
+      XLSX.writeFile(workbook, `JaiBhavani_Report_${sheetName.replace(/\s+/g, '_')}_${new Date().toISOString().substring(0, 10)}.xlsx`);
       toast.success(`${sheetName} report downloaded as Excel successfully`);
     } catch (e) {
       console.error(e);
@@ -479,14 +479,14 @@ const AnalyticsHub = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full sm:w-auto grid-cols-2 md:grid-cols-7 bg-muted/50 p-1 rounded-xl mb-8 gap-1 no-print">
-              <TabsTrigger value="overview" className="rounded-lg text-xs">Overview</TabsTrigger>
-              <TabsTrigger value="revenue" className="rounded-lg text-xs">Revenue</TabsTrigger>
-              <TabsTrigger value="shipments" className="rounded-lg text-xs">Shipments</TabsTrigger>
-              <TabsTrigger value="expenses" className="rounded-lg text-xs">Expenses</TabsTrigger>
-              <TabsTrigger value="vehicles" className="rounded-lg text-xs">Vehicles</TabsTrigger>
-              <TabsTrigger value="payroll" className="rounded-lg text-xs">Payroll</TabsTrigger>
-              <TabsTrigger value="tax_ca" className="rounded-lg text-xs">CA Tax Portal</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto hide-scrollbar sm:w-auto bg-muted/50 p-1 rounded-xl mb-8 gap-1 no-print flex-row inline-flex whitespace-nowrap scroll-smooth">
+              <TabsTrigger value="overview" className="rounded-lg text-xs shrink-0">Overview</TabsTrigger>
+              <TabsTrigger value="revenue" className="rounded-lg text-xs shrink-0">Revenue</TabsTrigger>
+              <TabsTrigger value="shipments" className="rounded-lg text-xs shrink-0">Shipments</TabsTrigger>
+              <TabsTrigger value="expenses" className="rounded-lg text-xs shrink-0">Expenses</TabsTrigger>
+              <TabsTrigger value="vehicles" className="rounded-lg text-xs shrink-0">Vehicles</TabsTrigger>
+              <TabsTrigger value="payroll" className="rounded-lg text-xs shrink-0">Payroll</TabsTrigger>
+              <TabsTrigger value="tax_ca" className="rounded-lg text-xs shrink-0">CA Tax Portal</TabsTrigger>
             </TabsList>
 
             {/* Tab Content: Overview */}
