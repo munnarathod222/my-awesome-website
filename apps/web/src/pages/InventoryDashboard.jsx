@@ -194,7 +194,7 @@ const InventoryDashboard = () => {
                         <TableCell>{item.unit}</TableCell>
                         <TableCell className="text-right text-muted-foreground">{item.reorder_level}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {item.last_restocked_date ? format(new Date(item.last_restocked_date), 'MMM dd, yyyy') : '-'}
+                          {item.last_restocked_date && !isNaN(Date.parse(item.last_restocked_date)) ? format(new Date(item.last_restocked_date), 'MMM dd, yyyy') : '-'}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1.5">
@@ -290,7 +290,7 @@ const InventoryDashboard = () => {
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-medium">Last Restocked</p>
                         <p className="font-medium text-foreground mt-0.5 truncate">
-                          {item.last_restocked_date ? format(new Date(item.last_restocked_date), 'MMM dd') : '-'}
+                          {item.last_restocked_date && !isNaN(Date.parse(item.last_restocked_date)) ? format(new Date(item.last_restocked_date), 'MMM dd') : '-'}
                         </p>
                       </div>
                     </div>
