@@ -22,7 +22,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     physical_address: '',
     gstin: '',
     email: '',
-    notes: ''
+    notes: '',
+    google_maps_url: ''
   });
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           physical_address: contact.physical_address || '',
           gstin: contact.gstin || '',
           email: contact.email || '',
-          notes: contact.notes || ''
+          notes: contact.notes || '',
+          google_maps_url: contact.google_maps_url || ''
         });
       } else {
         setFormData({
@@ -62,7 +64,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           physical_address: '',
           gstin: '',
           email: '',
-          notes: ''
+          notes: '',
+          google_maps_url: ''
         });
       }
     }
@@ -278,6 +281,16 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                 onChange={(e) => setFormData(prev => ({ ...prev, physical_address: e.target.value }))} 
                 placeholder="Full address"
                 className="bg-background resize-none h-20"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label>Google Maps Location (URL)</Label>
+              <Input 
+                value={formData.google_maps_url} 
+                onChange={(e) => setFormData(prev => ({ ...prev, google_maps_url: e.target.value }))} 
+                placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/...)"
+                className="bg-background"
               />
             </div>
 

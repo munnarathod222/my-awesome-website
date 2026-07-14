@@ -85,11 +85,22 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                 <div className="p-2 bg-muted rounded-lg text-muted-foreground shrink-0">
                   <MapPin className="w-4 h-4" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Physical Address</p>
                   <p className="text-sm text-foreground leading-relaxed">
                     {contact.physical_address}
                   </p>
+                  {contact.google_maps_url && (
+                    <a 
+                      href={contact.google_maps_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
+                    >
+                      <MapPin className="w-3 h-3 text-rose-500 fill-rose-500/20" />
+                      View on Google Maps
+                    </a>
+                  )}
                 </div>
               </div>
 

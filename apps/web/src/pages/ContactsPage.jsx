@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
-  Network, UserCog, Phone
+  Network, UserCog, Phone, MapPin
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -333,9 +333,22 @@ export default function ContactsPage() {
                         <TableRow key={contact.id} className="hover:bg-muted/30 transition-colors border-b-border-border/40">
                           <TableCell className="pl-6 py-4">
                             <p className="font-bold text-sm text-foreground">{contact.company_name}</p>
-                            <p className="text-xs text-muted-foreground truncate max-w-[220px] mt-1 font-medium" title={contact.physical_address}>
-                              {contact.physical_address}
-                            </p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <p className="text-xs text-muted-foreground truncate max-w-[200px] font-medium" title={contact.physical_address}>
+                                {contact.physical_address}
+                              </p>
+                              {contact.google_maps_url && (
+                                <a 
+                                  href={contact.google_maps_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-rose-500 hover:text-rose-600 transition-colors shrink-0"
+                                  title="View on Google Maps"
+                                >
+                                  <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
+                                </a>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="py-4">
                             <p className="text-sm font-semibold text-foreground">{contact.phone_number}</p>
@@ -386,7 +399,20 @@ export default function ContactsPage() {
                       <div className="flex justify-between items-start gap-3">
                         <div className="min-w-0 flex-1">
                           <h4 className="font-bold text-base text-foreground truncate">{contact.company_name}</h4>
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{contact.physical_address || 'No Address'}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-xs text-muted-foreground truncate">{contact.physical_address || 'No Address'}</p>
+                            {contact.google_maps_url && (
+                              <a 
+                                href={contact.google_maps_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-rose-500 hover:text-rose-600 transition-colors shrink-0"
+                                title="View on Google Maps"
+                              >
+                                <MapPin className="w-3 h-3 fill-rose-500/10" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {getTypeBadge(contact.contact_type)}
