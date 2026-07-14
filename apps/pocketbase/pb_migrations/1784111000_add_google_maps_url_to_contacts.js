@@ -3,9 +3,8 @@ migrate((app) => {
   const collection = app.findCollectionByNameOrId("contacts");
   
   // Add google_maps_url field
-  collection.fields.add(new SchemaField({
+  collection.fields.add(new TextField({
     name: "google_maps_url",
-    type: "text",
     required: false,
     presentable: false,
     system: false
