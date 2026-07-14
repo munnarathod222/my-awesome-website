@@ -26,10 +26,18 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   const [showExportDialog, setShowExportDialog] = useState(false);
 
   useEffect(() => {
-    if (isOpen && (payrollId || employeeId)) {
-      setActiveTab('preview');
-      fetchData();
+    if (isOpen) {
+      document.body.classList.add('printing-payslip');
+      if (payrollId || employeeId) {
+        setActiveTab('preview');
+        fetchData();
+      }
+    } else {
+      document.body.classList.remove('printing-payslip');
     }
+    return () => {
+      document.body.classList.remove('printing-payslip');
+    };
   }, [isOpen, payrollId, employeeId]);
 
   const fetchData = async () => {

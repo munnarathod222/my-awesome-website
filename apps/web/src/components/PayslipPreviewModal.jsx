@@ -20,9 +20,17 @@ export default function PayslipPreviewModal({ isOpen, onClose, payrollId }) {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    if (isOpen && payrollId) {
-      fetchPayrollData();
+    if (isOpen) {
+      document.body.classList.add('printing-payslip');
+      if (payrollId) {
+        fetchPayrollData();
+      }
+    } else {
+      document.body.classList.remove('printing-payslip');
     }
+    return () => {
+      document.body.classList.remove('printing-payslip');
+    };
   }, [isOpen, payrollId]);
 
   const fetchPayrollData = async () => {

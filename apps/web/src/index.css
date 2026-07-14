@@ -401,6 +401,7 @@
   }
 
   /* Hide the entire website background when printing from inside a dialog modal */
+  body.printing-payslip #root,
   body:has([role="dialog"]) #root,
   body:has([data-radix-portal]) #root,
   body:has(div[class*="DialogContent"]) #root {
@@ -419,6 +420,7 @@
     page-break-inside: avoid !important;
     page-break-after: avoid !important;
     page-break-before: avoid !important;
+    zoom: 0.9 !important;
   }
 
   /* Adjust table padding and spacing for high-density printing (fits 1 page) */
