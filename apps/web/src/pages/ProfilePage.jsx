@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { User, Phone, Mail, Shield, Calendar, Upload, MapPin, Briefcase, Building2, X, Globe, Building, UploadCloud } from 'lucide-react';
+import { User, Phone, Mail, Shield, Calendar, Upload, MapPin, Briefcase, Building2, X, Globe, Building, UploadCloud, RefreshCw } from 'lucide-react';
 import { validateEmail } from '@/lib/validators.js';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
@@ -111,9 +111,63 @@ const ProfilePage = () => {
     }
   };
 
+  const [localBackups, setLocalBackups] = useState([]);
+  const [isLoadingLocalBackups, setIsLoadingLocalBackups] = useState(false);
+  const [isRestoringLocalBackup, setIsRestoringLocalBackup] = useState(false);
+
+  const fetchLocalBackups = async () => {
+    setIsLoadingLocalBackups(true);
+    try {
+      const res = await fetch('/api/backup/list-local');
+      if (!res.ok) throw new Error('Failed to load local backups');
+      const data = await res.json();
+      if (data.success) {
+        setLocalBackups(data.files || []);
+      }
+    } catch (error) {
+      console.error('Error fetching local backups:', error);
+    } finally {
+      setIsLoadingLocalBackups(false);
+    }
+  };
+
+  const handleRestoreLocalFile = async (filename) => {
+    const confirmRestore = window.confirm(
+      `⚠️ WARNING: Restoring the backup file "${filename}" will completely overwrite your current live database. This cannot be undone! Are you sure you want to proceed?`
+    );
+    if (!confirmRestore) return;
+
+    setIsRestoringLocalBackup(true);
+    const toastId = toast.loading(`Rolling back database to ${filename} and restarting system...`);
+    try {
+      const res = await fetch('/api/backup/restore-local', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Database rolled back successfully!', { id: toastId });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error(data.error || 'Failed to roll back database');
+      }
+    } catch (error) {
+      console.error('Error rolling back database:', error);
+      toast.error(error.message || 'Error rolling back database', { id: toastId });
+    } finally {
+      setIsRestoringLocalBackup(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'backup') {
       fetchBackupStatus();
+      fetchLocalBackups();
     }
   }, [activeTab]);
 
@@ -1050,6 +1104,80 @@ const ProfilePage = () => {
               )}
             </Button>
           </CardFooter>
+        </Card>
+
+        <Card className="rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-card mt-6">
+          <CardHeader className="border-b border-border/50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-destructive/10 rounded-2xl text-destructive animate-pulse">
+                <RefreshCw className="w-6 h-6" />
+              </div>
+              <div>
+                <CardTitle>Rollback History & Automated Backups</CardTitle>
+                <CardDescription>Select a previous database state to overwrite the current live database. Overwriting will restart the system.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="pt-6">
+            {isLoadingLocalBackups ? (
+              <div className="space-y-3 py-4">
+                <div className="h-10 bg-muted/30 rounded-xl animate-pulse" />
+                <div className="h-10 bg-muted/30 rounded-xl animate-pulse" />
+                <div className="h-10 bg-muted/30 rounded-xl animate-pulse" />
+              </div>
+            ) : localBackups.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                No local backup files found on the server.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/55 text-muted-foreground font-semibold">
+                      <th className="pb-3 font-medium">Backup File Name</th>
+                      <th className="pb-3 font-medium">Size</th>
+                      <th className="pb-3 font-medium">Backup Time</th>
+                      <th className="pb-3 text-right font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {localBackups.map((file) => {
+                      const sizeMB = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                      const formattedTime = format(new Date(file.mtime), 'MMM dd, yyyy - hh:mm a');
+                      const isAuto = file.name.includes('auto');
+                      
+                      return (
+                        <tr key={file.name} className="border-b border-border/30 hover:bg-muted/10 transition-colors">
+                          <td className="py-4 font-mono text-xs flex items-center gap-2">
+                            {isAuto ? (
+                              <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">AUTO</span>
+                            ) : (
+                              <span className="bg-secondary/20 text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">MANUAL</span>
+                            )}
+                            {file.name}
+                          </td>
+                          <td className="py-4 text-muted-foreground">{sizeMB}</td>
+                          <td className="py-4 text-muted-foreground">{formattedTime}</td>
+                          <td className="py-4 text-right">
+                            <Button
+                              onClick={() => handleRestoreLocalFile(file.name)}
+                              disabled={isRestoringLocalBackup}
+                              variant="destructive"
+                              size="sm"
+                              className="rounded-xl px-4 h-8 text-xs bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold"
+                            >
+                              Rollback
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     );

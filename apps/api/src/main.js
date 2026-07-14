@@ -44,6 +44,21 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       const buffer = await downloadRes.arrayBuffer();
       // Ensure target directory exists
       fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
+
+      // Create an automatic backup of the existing database before overwriting it
+      if (fs.existsSync(dbFilePath)) {
+        try {
+          const backupsDir = path.join(path.dirname(dbFilePath), 'backups');
+          fs.mkdirSync(backupsDir, { recursive: true });
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const backupCopyPath = path.join(backupsDir, `data.db.auto_before_boot_${timestamp}.db`);
+          fs.copyFileSync(dbFilePath, backupCopyPath);
+          logger.info(`💾 Created automatic database backup copy before boot overwrite: ${path.basename(backupCopyPath)}`);
+        } catch (backupErr) {
+          logger.warn(`⚠️ Failed to create automatic backup copy: ${backupErr.message}`);
+        }
+      }
+
       fs.writeFileSync(dbFilePath, Buffer.from(buffer));
       logger.info(`✅ Successfully restored database from Supabase Storage!`);
       return true;
@@ -85,6 +100,28 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   }
 };
 
+const pruneOldLocalBackups = (dbFilePath) => {
+  try {
+    const backupsDir = path.join(path.dirname(dbFilePath), 'backups');
+    if (!fs.existsSync(backupsDir)) return;
+    
+    const files = fs.readdirSync(backupsDir);
+    const now = Date.now();
+    const maxAgeMs = 14 * 24 * 60 * 60 * 1000; // 14 days
+    
+    files.forEach(f => {
+      const filePath = path.join(backupsDir, f);
+      const stat = fs.statSync(filePath);
+      if (now - stat.mtimeMs > maxAgeMs) {
+        fs.unlinkSync(filePath);
+        logger.info(`🗑️ Pruned old local backup file: ${f}`);
+      }
+    });
+  } catch (err) {
+    logger.error('Failed to prune old local backups:', err.message);
+  }
+};
+
 let _syncStarted = false;
 const watchAndSyncDatabase = (dbFilePath) => {
   if (_syncStarted) return; // Only register once across PocketBase restarts
@@ -120,6 +157,29 @@ const watchAndSyncDatabase = (dbFilePath) => {
   if (periodicSyncInterval.unref) periodicSyncInterval.unref();
 
   logger.info(`⏰ Periodic sync: active (every 2 hours — next sync in ~2h)`);
+
+  // ── Strategy 2.5: Local Rolling Auto-Backups every 12 hours ──
+  const runRollingBackup = () => {
+    try {
+      const backupsDir = path.join(path.dirname(dbFilePath), 'backups');
+      fs.mkdirSync(backupsDir, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupCopyPath = path.join(backupsDir, `data.db.auto_${timestamp}.db`);
+      fs.copyFileSync(dbFilePath, backupCopyPath);
+      logger.info(`💾 Rolling backup: saved auto local backup ${path.basename(backupCopyPath)}`);
+      pruneOldLocalBackups(dbFilePath);
+    } catch (err) {
+      logger.error('Failed to create rolling local backup:', err.message);
+    }
+  };
+
+  // Run once immediately on boot
+  runRollingBackup();
+
+  // Schedule to run every 12 hours
+  const LOCAL_BACKUP_MS = 12 * 60 * 60 * 1000;
+  const localBackupInterval = setInterval(runRollingBackup, LOCAL_BACKUP_MS);
+  if (localBackupInterval.unref) localBackupInterval.unref();
 
   // ── Strategy 3: Graceful shutdown — save before process exits ──
   const gracefulShutdownSync = async (signal) => {
@@ -471,6 +531,20 @@ startMonthEndCron();
         return res.status(400).json({ success: false, error: 'Database file path not initialized or not found.' });
       }
       logger.info('Manual backup triggered by user...');
+
+      // Save local backup copy
+      try {
+        const backupsDir = path.join(path.dirname(global.dbFilePath), 'backups');
+        fs.mkdirSync(backupsDir, { recursive: true });
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupCopyPath = path.join(backupsDir, `data.db.manual_${timestamp}.db`);
+        fs.copyFileSync(global.dbFilePath, backupCopyPath);
+        logger.info(`💾 Created local manual backup copy: ${path.basename(backupCopyPath)}`);
+        pruneOldLocalBackups(global.dbFilePath);
+      } catch (backupErr) {
+        logger.warn(`⚠️ Failed to create local manual backup copy: ${backupErr.message}`);
+      }
+
       const ok = await uploadDatabaseToSupabase(global.dbFilePath);
       if (ok) {
         res.json({ success: true, message: 'Manual database backup successfully synced to Supabase Storage!' });
@@ -551,24 +625,149 @@ startMonthEndCron();
       const backupsDir = path.join(dataDir, 'backups');
       const files = [];
       
+      const isAllowedFile = (name) => {
+        const ext = path.extname(name).toLowerCase();
+        return ['.db', '.bak', '.zip', '.sqlite', '.sqlite3', '.db3'].includes(ext) && !name.includes('-wal') && !name.includes('-shm');
+      };
+
       if (fs.existsSync(backupsDir)) {
         fs.readdirSync(backupsDir).forEach(f => {
-          const stat = fs.statSync(path.join(backupsDir, f));
-          files.push({ name: f, size: stat.size, mtime: stat.mtime, type: 'pb_backup' });
+          if (isAllowedFile(f)) {
+            const stat = fs.statSync(path.join(backupsDir, f));
+            files.push({ name: f, size: stat.size, mtime: stat.mtime, type: 'pb_backup' });
+          }
         });
       }
       
       if (fs.existsSync(dataDir)) {
         fs.readdirSync(dataDir).forEach(f => {
-          if (f.includes('bak') || f.includes('backup') || f.includes('temp')) {
+          if (isAllowedFile(f) && f !== 'data.db') {
             const stat = fs.statSync(path.join(dataDir, f));
             files.push({ name: f, size: stat.size, mtime: stat.mtime, type: 'temp_file' });
           }
         });
       }
       
+      // Sort files by modification date descending (latest first)
+      files.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+      
       res.json({ success: true, files });
     } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/backup/restore-local
+  app.post('/api/backup/restore-local', async (req, res) => {
+    try {
+      const { filename } = req.body;
+      if (!filename) {
+        return res.status(400).json({ success: false, error: 'Filename is required' });
+      }
+
+      if (!global.dbFilePath) {
+        return res.status(500).json({ success: false, error: 'Database path not initialized' });
+      }
+
+      const dataDir = path.dirname(global.dbFilePath);
+      const backupsDir = path.join(dataDir, 'backups');
+      let targetPath = '';
+
+      if (fs.existsSync(path.join(backupsDir, filename))) {
+        targetPath = path.join(backupsDir, filename);
+      } else if (fs.existsSync(path.join(dataDir, filename))) {
+        targetPath = path.join(dataDir, filename);
+      } else {
+        return res.status(404).json({ success: false, error: `Backup file ${filename} not found` });
+      }
+
+      logger.info(`Database restore from local file initiated: ${filename}...`);
+      global.isRestoringBackup = true;
+
+      // Kill the PocketBase process so it releases file locks
+      if (global.pbProcess) {
+        logger.info('Terminating running PocketBase process for restore...');
+        global.pbProcess.kill();
+      }
+
+      // Check file type and restore
+      if (filename.endsWith('.zip')) {
+        const tempExtractDir = path.join(dataDir, 'temp_restore_extract');
+        if (fs.existsSync(tempExtractDir)) {
+          fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(tempExtractDir, { recursive: true });
+
+        // Extract zip
+        const isWin = process.platform === 'win32';
+        const { execSync } = await import('node:child_process');
+        if (isWin) {
+          execSync(`powershell -Command "Expand-Archive -Path '${targetPath}' -DestinationPath '${tempExtractDir}' -Force"`);
+        } else {
+          execSync(`unzip -o "${targetPath}" -d "${tempExtractDir}"`);
+        }
+
+        // Find data.db in extracted files
+        const possibleDbPaths = [
+          path.join(tempExtractDir, 'data.db'),
+          path.join(tempExtractDir, 'pb_data', 'data.db')
+        ];
+        let foundDbPath = '';
+        for (const p of possibleDbPaths) {
+          if (fs.existsSync(p)) {
+            foundDbPath = p;
+            break;
+          }
+        }
+
+        if (!foundDbPath) {
+          throw new Error('No data.db found inside backup archive');
+        }
+
+        // Copy database file
+        fs.copyFileSync(foundDbPath, global.dbFilePath);
+        logger.info('Restored database from zip archive.');
+
+        // Copy storage folder if present
+        const possibleStoragePaths = [
+          path.join(tempExtractDir, 'storage'),
+          path.join(tempExtractDir, 'pb_data', 'storage')
+        ];
+        let foundStoragePath = '';
+        for (const p of possibleStoragePaths) {
+          if (fs.existsSync(p)) {
+            foundStoragePath = p;
+            break;
+          }
+        }
+
+        if (foundStoragePath) {
+          const liveStorageDir = path.join(dataDir, 'storage');
+          fs.cpSync(foundStoragePath, liveStorageDir, { recursive: true, force: true });
+          logger.info('Restored storage files from zip archive.');
+        }
+
+        // Cleanup
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+      } else {
+        // Direct database file copy
+        fs.copyFileSync(targetPath, global.dbFilePath);
+        logger.info('Restored database file directly.');
+      }
+
+      // Sync the new database file to Supabase
+      const ok = await uploadDatabaseToSupabase(global.dbFilePath);
+      if (ok) {
+        logger.info('Supabase storage updated with rolled-back database backup.');
+      } else {
+        logger.warn('Failed to push rolled-back database backup to Supabase storage.');
+      }
+
+      global.isRestoringBackup = false;
+      res.json({ success: true, message: `System rolled back successfully to ${filename}!` });
+    } catch (err) {
+      logger.error('Error during local database rollback:', err);
+      global.isRestoringBackup = false;
       res.status(500).json({ success: false, error: err.message });
     }
   });
