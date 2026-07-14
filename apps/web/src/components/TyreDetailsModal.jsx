@@ -54,10 +54,10 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
       });
       const currentLifecycleKms = lifecycleTrips.reduce((sum, trip) => sum + (trip.kms || 0), 0);
 
-      // Save updated tyre
+      // Save updated tyre (preserving base_lifecycle_kms)
       await pb.collection('tyres').update(tyre.id, {
         assignment_start_kms: assignmentStartKms,
-        current_lifecycle_kms: currentLifecycleKms
+        current_lifecycle_kms: tyre.base_lifecycle_kms !== undefined ? tyre.base_lifecycle_kms : (tyre.current_lifecycle_kms || 0)
       }, { $autoCancel: false });
 
       toast.success('Mileage recalculated successfully!');
@@ -217,7 +217,7 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
               <div className="grid grid-cols-2 gap-x-6">
                 <DetailRow label="Serial Number" value={<span className="font-mono text-sm">{tyre.serial_number}</span>} />
                 <DetailRow 
-                  label="Purchase Date" 
+                  label="Installation Date" 
                   value={
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
@@ -225,6 +225,7 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
                     </div>
                   } 
                 />
+                <DetailRow label="Base Mileage" value={tyre.base_lifecycle_kms !== undefined ? `${tyre.base_lifecycle_kms.toLocaleString()} KM` : (tyre.current_lifecycle_kms !== undefined ? `${tyre.current_lifecycle_kms.toLocaleString()} KM` : '-')} />
                 <DetailRow label="Fitment Odometer" value={tyre.assignment_start_kms !== undefined ? `${tyre.assignment_start_kms.toLocaleString()} KM` : '-'} />
                 <DetailRow label="Lifecycle Mileage" value={`${lifecycleKms.toLocaleString()} KM`} />
                 <DetailRow label="System ID" value={<span className="text-xs text-muted-foreground">{tyre.id}</span>} />

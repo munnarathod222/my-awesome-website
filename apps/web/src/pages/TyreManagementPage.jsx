@@ -57,12 +57,38 @@ export default function TyreManagementPage() {
       const truckRecord = await pb.collection('trucks').getOne(truckId, { $autoCancel: false });
       setTruck(truckRecord);
 
+      // Fetch Completed trip logs for this truck to calculate tyre mileage since installation
+      const tripLogs = await pb.collection('trip_logs').getFullList({
+        filter: `truck_number = "${truckRecord.truck_number}" && trip_status = "Completed"`,
+        $autoCancel: false
+      });
+
       const tyreRecords = await pb.collection('tyres').getFullList({
         filter: `truck_id="${truckId}"`,
         sort: '-created',
         $autoCancel: false
       });
-      setTyres(tyreRecords);
+
+      // Recalculate each tyre's running mileage dynamically based on Completed trips from installation date
+      const enrichedTyres = tyreRecords.map(tyre => {
+        let kmsSinceInstall = 0;
+        if (tyre.purchase_date) {
+          const installDate = new Date(tyre.purchase_date.split(' ')[0] || tyre.purchase_date);
+          kmsSinceInstall = tripLogs
+            .filter(t => {
+              if (!t.date || !t.kms) return false;
+              const tripDate = new Date(t.date.split(' ')[0] || t.date);
+              return tripDate >= installDate;
+            })
+            .reduce((sum, t) => sum + (Number(t.kms) || 0), 0);
+        }
+        return {
+          ...tyre,
+          base_lifecycle_kms: tyre.current_lifecycle_kms || 0,
+          current_lifecycle_kms: (tyre.current_lifecycle_kms || 0) + kmsSinceInstall
+        };
+      });
+      setTyres(enrichedTyres);
 
       // Fetch tyre rotation history
       const rotationRecords = await pb.collection('tyre_rotations').getFullList({
@@ -484,7 +510,16 @@ export default function TyreManagementPage() {
                     <div className="grid grid-cols-2 gap-2">
                       {(Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image]).map((img, idx) => (
                         <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-border bg-muted/10 relative cursor-pointer group" onClick={() => {
-                          setPreviewDoc({ files: Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image], file: img, document_type: 'Battery Snapshot', document_number: truck.battery_serial_number || 'N/A' });
+                          setPreviewDoc({ 
+                            id: truck.id,
+                            collectionId: truck.collectionId || '',
+                            collectionName: 'trucks',
+                            created: truck.created || new Date().toISOString(),
+                            files: Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image], 
+                            file: img, 
+                            document_type: 'Battery Snapshot', 
+                            document_number: truck.battery_serial_number || 'N/A' 
+                          });
                         }}>
                           <img src={pb.files.getUrl(truck, img)} alt={`Battery Snapshot ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">

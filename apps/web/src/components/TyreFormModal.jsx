@@ -47,7 +47,7 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
           tyre_depth_mm: tyre.tyre_depth_mm || '',
           status: tyre.status || 'active',
           assignment_start_kms: tyre.assignment_start_kms !== undefined ? tyre.assignment_start_kms : '',
-          current_lifecycle_kms: tyre.current_lifecycle_kms !== undefined ? tyre.current_lifecycle_kms : ''
+          current_lifecycle_kms: tyre.base_lifecycle_kms !== undefined ? tyre.base_lifecycle_kms : (tyre.current_lifecycle_kms !== undefined ? tyre.current_lifecycle_kms : '')
         });
         
         // Handle multiple tyre images
@@ -262,6 +262,13 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
                   <Input type="number" step="0.1" min="0" required className="rounded-xl" value={formData.tyre_depth_mm} onChange={e => setFormData({...formData, tyre_depth_mm: e.target.value})} />
                 </div>
                 <div className="space-y-2">
+                  <Label>Installation Date <span className="text-destructive">*</span></Label>
+                  <Input type="date" required className="rounded-xl" value={formData.purchase_date} onChange={e => setFormData({...formData, purchase_date: e.target.value})} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
                   <Label>Status <span className="text-destructive">*</span></Label>
                   <Select required value={formData.status} onValueChange={v => setFormData({...formData, status: v})}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
@@ -273,22 +280,8 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>Fitment Odometer (KM)</Label>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    className="rounded-xl" 
-                    value={formData.assignment_start_kms} 
-                    onChange={e => setFormData({...formData, assignment_start_kms: e.target.value})} 
-                    placeholder={tyre ? "e.g. 120000" : "Auto-calculate"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Current Lifecycle (KM)</Label>
+                  <Label>Base KMs at Installation</Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -298,6 +291,18 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
                     placeholder="e.g. 0"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fitment Odometer (KM)</Label>
+                <Input 
+                  type="number" 
+                  min="0" 
+                  className="rounded-xl" 
+                  value={formData.assignment_start_kms} 
+                  onChange={e => setFormData({...formData, assignment_start_kms: e.target.value})} 
+                  placeholder={tyre ? "e.g. 120000" : "Auto-calculate"}
+                />
               </div>
             </div>
 
