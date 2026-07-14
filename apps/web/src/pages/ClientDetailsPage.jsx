@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
-import { ArrowLeft, Mail, Phone, MapPin, Building2, Save } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, MapPin, Building2, Save, FileText, TrendingUp, AlertCircle, Truck } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 import { calculateClientMetrics } from '@/lib/clientPaymentUtils.js';
@@ -73,9 +73,16 @@ const ClientDetailsPage = () => {
 
   const metrics = useMemo(() => calculateClientMetrics(clientId, trips), [clientId, trips]);
 
+  const formatTripDate = (dateVal) => {
+    if (!dateVal) return '—';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '—';
+    return format(d, 'dd MMM yyyy');
+  };
+
   const chartData = useMemo(() => {
     // Reverse trips so oldest is first for cumulative chart
-    const chronologicalTrips = [...trips].sort((a,b) => new Date(a.date) - new Date(b.date));
+    const chronologicalTrips = [...trips].sort((a,b) => new Date(a.date || 0) - new Date(b.date || 0));
     
     let cumulativeInvoiced = 0;
     let cumulativeReceived = 0;
@@ -86,8 +93,17 @@ const ClientDetailsPage = () => {
       if (t.client_payment_status === 'received') {
         cumulativeReceived += amt;
       }
+      
+      let dateLabel = '—';
+      if (t.date) {
+        const d = new Date(t.date);
+        if (!isNaN(d.getTime())) {
+          dateLabel = format(d, 'dd MMM');
+        }
+      }
+      
       return {
-        date: format(new Date(t.date), 'dd MMM'),
+        date: dateLabel,
         invoiced: cumulativeInvoiced,
         received: cumulativeReceived,
         tripAmount: amt
@@ -126,8 +142,8 @@ const ClientDetailsPage = () => {
           <Button variant="outline" onClick={() => navigate(`/clients/${client.id}/edit`)}>Edit Full Profile</Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="shadow-sm border-client-secondary bg-client-secondary/30">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="shadow-sm border-client-secondary bg-client-secondary/30 h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Contact Information</CardTitle>
             </CardHeader>
@@ -178,36 +194,106 @@ const ClientDetailsPage = () => {
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2 shadow-sm border-border bg-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Financial Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Invoiced</p>
-                  <p className="text-2xl font-bold amount-display">{formatCurrency(metrics.totalInvoiced)}</p>
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="shadow-sm border-border bg-card">
+              <CardContent className="p-5 flex flex-col justify-between h-full min-h-[120px]">
+                <div className="flex items-center justify-between w-full">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Invoiced</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(metrics.totalInvoiced)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                    <FileText className="w-5 h-5" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-success uppercase tracking-wider">Received</p>
-                  <p className="text-2xl font-bold amount-display text-success">{formatCurrency(metrics.totalReceived)}</p>
-                  <p className="text-xs font-medium text-success/80">{metrics.receivedPct}% of total</p>
+                <div className="mt-4 w-full">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-muted-foreground">Avg. Per Trip Revenue</span>
+                    <span className="font-semibold text-primary">
+                      {formatCurrency(metrics.totalTrips > 0 ? Math.round(metrics.totalInvoiced / metrics.totalTrips) : 0)}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-primary/15 rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full" style={{ width: '100%' }} />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-destructive uppercase tracking-wider">Outstanding</p>
-                  <p className="text-2xl font-bold amount-display text-destructive">{formatCurrency(metrics.outstandingBalance)}</p>
-                  <p className="text-xs font-medium text-destructive/80">{metrics.pendingPct}% of total</p>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-border bg-card">
+              <CardContent className="p-5 flex flex-col justify-between h-full min-h-[120px]">
+                <div className="flex items-center justify-between w-full">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-success uppercase tracking-wider">Received</p>
+                    <p className="text-2xl font-bold text-success">{formatCurrency(metrics.totalReceived)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-success/10 text-success border border-success/20">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Trips Logged</p>
-                  <p className="text-2xl font-bold amount-display">{metrics.totalTrips}</p>
-                  <p className="text-xs font-medium text-muted-foreground">
-                    <span className="text-destructive">{metrics.pendingTrips} pending</span>
-                  </p>
+                <div className="mt-4 w-full">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-muted-foreground">Percentage of Total</span>
+                    <span className="font-semibold text-success">{metrics.receivedPct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-success/15 rounded-full overflow-hidden">
+                    <div className="h-full bg-success rounded-full" style={{ width: `${metrics.receivedPct}%` }} />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-border bg-card">
+              <CardContent className="p-5 flex flex-col justify-between h-full min-h-[120px]">
+                <div className="flex items-center justify-between w-full">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-destructive uppercase tracking-wider">Outstanding</p>
+                    <p className="text-2xl font-bold text-destructive">{formatCurrency(metrics.outstandingBalance)}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-destructive/10 text-destructive border border-destructive/20">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 w-full">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-muted-foreground">Percentage of Total</span>
+                    <span className="font-semibold text-destructive">{metrics.pendingPct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-destructive/15 rounded-full overflow-hidden">
+                    <div className="h-full bg-destructive rounded-full" style={{ width: `${metrics.pendingPct}%` }} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-border bg-card">
+              <CardContent className="p-5 flex flex-col justify-between h-full min-h-[120px]">
+                <div className="flex items-center justify-between w-full">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trips Logged</p>
+                    <p className="text-2xl font-bold text-foreground">{metrics.totalTrips}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    <Truck className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 w-full">
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-muted-foreground">Delivered Pending Payment</span>
+                    <span className="font-semibold text-destructive">{metrics.pendingTrips} trips</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-amber-500/15 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 rounded-full" 
+                      style={{ 
+                        width: `${metrics.totalTrips > 0 ? (metrics.pendingTrips / metrics.totalTrips * 100) : 0}%` 
+                      }} 
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -273,7 +359,7 @@ const ClientDetailsPage = () => {
                   ) : (
                     trips.map(trip => (
                       <TableRow key={trip.id} className="hover:bg-muted/30">
-                        <TableCell className="pl-4 whitespace-nowrap">{format(new Date(trip.date), 'dd MMM yyyy')}</TableCell>
+                        <TableCell className="pl-4 whitespace-nowrap">{formatTripDate(trip.date)}</TableCell>
                         <TableCell>
                           <p className="font-medium text-sm">{trip.route}</p>
                           {trip.cycle && <p className="text-xs text-muted-foreground truncate max-w-[250px]">{trip.cycle}</p>}
