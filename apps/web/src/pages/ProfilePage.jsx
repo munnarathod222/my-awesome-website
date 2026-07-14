@@ -140,6 +140,53 @@ const ProfilePage = () => {
     window.open('/api/backup/download', '_blank');
   };
 
+  const [isRestoringBackup, setIsRestoringBackup] = useState(false);
+
+  const handleUploadLocalBackup = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('File size exceeds 50MB limit');
+      return;
+    }
+
+    const confirmRestore = window.confirm(
+      "⚠️ WARNING: Restoring a local backup will completely overwrite your current database. This cannot be undone! Are you sure you want to proceed?"
+    );
+    if (!confirmRestore) {
+      e.target.value = null;
+      return;
+    }
+
+    setIsRestoringBackup(true);
+    const toastId = toast.loading('Restoring database backup and restarting system...');
+    try {
+      const formData = new FormData();
+      formData.append('backupFile', file);
+
+      const res = await fetch('/api/backup/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Database restored successfully!', { id: toastId });
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        throw new Error(data.error || 'Failed to restore database backup');
+      }
+    } catch (error) {
+      console.error('Error uploading database backup:', error);
+      toast.error(error.message || 'Error restoring database backup', { id: toastId });
+    } finally {
+      setIsRestoringBackup(false);
+      e.target.value = null;
+    }
+  };
+
   const handleCompanySave = async (e) => {
     e.preventDefault();
     if (!companyFormData.company_name) {
@@ -975,6 +1022,32 @@ const ProfilePage = () => {
             >
               <DownloadIcon className="w-4 h-4 mr-2" />
               Download Local Copy
+            </Button>
+
+            <input 
+              type="file" 
+              id="backup-file-upload" 
+              accept=".db" 
+              onChange={handleUploadLocalBackup} 
+              className="hidden" 
+            />
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('backup-file-upload').click()}
+              disabled={isRestoringBackup}
+              className="w-full sm:w-auto min-w-[180px] rounded-xl border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+            >
+              {isRestoringBackup ? (
+                <>
+                  <div className="w-4.5 h-4.5 mr-2 border-2 border-destructive border-t-transparent rounded-full animate-spin"></div>
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-4 h-4 mr-2" />
+                  Restore Local Backup
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

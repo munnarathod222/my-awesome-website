@@ -7,6 +7,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
+import multer from 'multer';
 
 import routes from './routes/index.js';
 import { errorMiddleware } from './middleware/error.js';
@@ -385,6 +386,7 @@ const runPocketBase = async () => {
   }
 
   const pbProcess = spawn(pbPath, pbArgs, { stdio: 'pipe' });
+  global.pbProcess = pbProcess;
 
   // Watch and sync DB + storage (guarded — only registers once across restarts)
   watchAndSyncDatabase(dbFilePath);
@@ -409,7 +411,11 @@ const runPocketBase = async () => {
   pbProcess.on('close', (code) => {
     logger.warn(`PocketBase process exited with code ${code}. Restarting in 5s...`);
     // Force a sync before restarting so we don't lose data
-    uploadDatabaseToSupabase(dbFilePath).finally(() => {
+    const syncPromise = global.isRestoringBackup 
+      ? Promise.resolve() 
+      : uploadDatabaseToSupabase(dbFilePath);
+      
+    syncPromise.finally(() => {
       setTimeout(runPocketBase, 5000);
     });
   });
@@ -485,6 +491,53 @@ startMonthEndCron();
       res.download(global.dbFilePath, 'jaibhavani_backup.db');
     } catch (err) {
       res.status(500).send(err.message);
+    }
+  });
+
+  // POST /api/backup/upload
+  app.post('/api/backup/upload', multer({ storage: multer.memoryStorage() }).single('backupFile'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No backup file uploaded.' });
+      }
+      
+      const fileBuffer = req.file.buffer;
+      const headerString = fileBuffer.slice(0, 16).toString('utf-8');
+      if (!headerString.startsWith('SQLite format 3')) {
+        return res.status(400).json({ success: false, error: 'Invalid backup file format. Must be a valid SQLite database file.' });
+      }
+      
+      if (!global.dbFilePath) {
+        return res.status(500).json({ success: false, error: 'Database file path not initialized.' });
+      }
+
+      logger.info('Database restore initiated by user backup upload...');
+      global.isRestoringBackup = true;
+
+      // Overwrite local file
+      fs.writeFileSync(global.dbFilePath, fileBuffer);
+      logger.info('Restored database file overwritten locally.');
+
+      // Kill the PocketBase process so it restarts with the new database
+      if (global.pbProcess) {
+        logger.info('Terminating running PocketBase process for restart...');
+        global.pbProcess.kill();
+      }
+
+      // Sync the new database file to Supabase
+      const ok = await uploadDatabaseToSupabase(global.dbFilePath);
+      if (ok) {
+        logger.info('Supabase storage updated with uploaded database backup.');
+      } else {
+        logger.warn('Failed to push restored database backup to Supabase storage.');
+      }
+
+      global.isRestoringBackup = false;
+      res.json({ success: true, message: 'Database backup successfully restored and system restarted!' });
+    } catch (err) {
+      logger.error('Error during database restore:', err);
+      global.isRestoringBackup = false;
+      res.status(500).json({ success: false, error: err.message });
     }
   });
 
