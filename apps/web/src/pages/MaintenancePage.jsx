@@ -420,8 +420,8 @@ export default function MaintenancePage() {
 
   const inventoryStats = useMemo(() => {
     const totalItems = inventory.length;
-    const lowStock = inventory.filter(item => (item.quantity || 0) <= (item.min_stock_level || 5)).length;
-    const totalValue = inventory.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_cost || 0)), 0);
+    const lowStock = inventory.filter(item => (item.current_stock || 0) <= (item.reorder_level || 0)).length;
+    const totalValue = inventory.reduce((sum, item) => sum + ((item.current_stock || 0) * (item.unit_cost || 0)), 0);
     return { totalItems, lowStock, totalValue };
   }, [inventory]);
 
@@ -633,11 +633,13 @@ export default function MaintenancePage() {
   };
 
   const formatDate = (isoString) => {
-    if (!isoString) return '-';
+    if (!isoString) return '—';
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return String(isoString);
     try {
-      return format(new Date(isoString), 'MMM dd, yyyy');
+      return format(d, 'MMM dd, yyyy');
     } catch (e) {
-      return isoString;
+      return String(isoString);
     }
   };
 
@@ -1283,7 +1285,10 @@ export default function MaintenancePage() {
                                       {rem.maintenance_type}
                                     </p>
                                     <p className="text-[11px] text-muted-foreground">
-                                      {new Date(rem.reminder_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                      {rem.reminder_date && !isNaN(new Date(rem.reminder_date).getTime()) 
+                                        ? new Date(rem.reminder_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                                        : '—'
+                                      }
                                     </p>
                                   </div>
                                 </div>
