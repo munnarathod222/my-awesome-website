@@ -59,10 +59,12 @@ const getChecklistBadgeClass = (val) => {
 };
 
 const getChecklistLabel = (key, val) => {
-  const cleanKey = key.replace(/_/g, ' ');
-  let valLabel = val;
+  const cleanKey = String(key || '').replace(/_/g, ' ');
+  let valLabel = String(val !== undefined && val !== null ? val : '');
   if (val === true) valLabel = 'Pass';
   if (val === false) valLabel = 'Fail';
+  if (val === 'pass') valLabel = 'Pass';
+  if (val === 'fail') valLabel = 'Fail';
   if (val === 'topped_up') valLabel = 'Topped Up';
   if (val === 'repaired') valLabel = 'Repaired';
   if (val === 'cleaned') valLabel = 'Cleaned';
@@ -72,9 +74,10 @@ const getChecklistLabel = (key, val) => {
 
 const parseJsonField = (field, fallback = []) => {
   if (!field) return fallback;
-  if (typeof field === 'object') return field;
+  if (typeof field === 'object' && field !== null) return field;
   try {
-    return JSON.parse(field);
+    const val = JSON.parse(field);
+    return (val === null || val === undefined) ? fallback : val;
   } catch (e) {
     return fallback;
   }
@@ -238,7 +241,9 @@ export default function MaintenancePage() {
     }
 
     const calculated = truckIntervals.map(interval => {
-      const kmsRemaining = (interval.last_serviced_odometer + interval.target_interval_kms) - liveOdo;
+      const lastServiced = Number(interval.last_serviced_odometer) || 0;
+      const targetInt = Number(interval.target_interval_kms) || 0;
+      const kmsRemaining = (lastServiced + targetInt) - liveOdo;
       return { interval, kmsRemaining };
     });
 
@@ -246,23 +251,26 @@ export default function MaintenancePage() {
     calculated.sort((a, b) => a.kmsRemaining - b.kmsRemaining);
     const closest = calculated[0];
 
-    if (closest.kmsRemaining < 0) {
+    const kmsRem = closest.kmsRemaining || 0;
+    const compName = closest.interval?.component_name || 'Component';
+
+    if (kmsRem < 0) {
       return { 
-        text: `${closest.interval.component_name} overdue by ${Math.abs(closest.kmsRemaining).toLocaleString()} KMs`, 
+        text: `${compName} overdue by ${Math.abs(kmsRem).toLocaleString()} KMs`, 
         variant: 'destructive',
-        kms: closest.kmsRemaining
+        kms: kmsRem
       };
-    } else if (closest.kmsRemaining <= 2000) {
+    } else if (kmsRem <= 2000) {
       return { 
-        text: `${closest.interval.component_name} due in ${closest.kmsRemaining.toLocaleString()} KMs`, 
+        text: `${compName} due in ${kmsRem.toLocaleString()} KMs`, 
         variant: 'warning',
-        kms: closest.kmsRemaining
+        kms: kmsRem
       };
     } else {
       return { 
-        text: `${closest.interval.component_name} due in ${closest.kmsRemaining.toLocaleString()} KMs`, 
+        text: `${compName} due in ${kmsRem.toLocaleString()} KMs`, 
         variant: 'success',
-        kms: closest.kmsRemaining
+        kms: kmsRem
       };
     }
   };
@@ -417,7 +425,11 @@ export default function MaintenancePage() {
       (trucks.filter(truck => {
         const liveOdo = getLiveOdometer(truck);
         const truckIntervals = intervals.filter(i => i.truck_id === truck.id);
-        const overdue = truckIntervals.filter(i => (i.last_serviced_odometer + i.target_interval_kms) - liveOdo < 0);
+        const overdue = truckIntervals.filter(i => {
+          const lastServiced = Number(i.last_serviced_odometer) || 0;
+          const targetInt = Number(i.target_interval_kms) || 0;
+          return (lastServiced + targetInt) - liveOdo < 0;
+        });
         return overdue.length === 0 && truckIntervals.length > 0;
       }).length / trucks.length) * 100
     );
@@ -620,7 +632,11 @@ export default function MaintenancePage() {
 
                 // Health Score calculation
                 const truckIntervals = intervals.filter(i => i.truck_id === truck.id);
-                const overdueIntervals = truckIntervals.filter(i => (i.last_serviced_odometer + i.target_interval_kms) - liveOdometer < 0);
+                const overdueIntervals = truckIntervals.filter(i => {
+                  const lastServiced = Number(i.last_serviced_odometer) || 0;
+                  const targetInt = Number(i.target_interval_kms) || 0;
+                  return (lastServiced + targetInt) - liveOdometer < 0;
+                });
                 const healthScore = truckIntervals.length === 0 ? 100 : Math.round(((truckIntervals.length - overdueIntervals.length) / truckIntervals.length) * 100);
 
                 return (
@@ -1521,9 +1537,12 @@ export default function MaintenancePage() {
                     <div className="space-y-3">
                       {intervals.filter(i => i.truck_id === selectedTruck.id).map(i => {
                         const liveOdo = getLiveOdometer(selectedTruck);
-                        const kmsRemaining = (i.last_serviced_odometer + i.target_interval_kms) - liveOdo;
-                        const kmsDriven = liveOdo - i.last_serviced_odometer;
-                        const percent = Math.min(100, Math.max(0, (kmsDriven / i.target_interval_kms) * 100));
+                        const lastServiced = Number(i.last_serviced_odometer) || 0;
+                        const targetInt = Number(i.target_interval_kms) || 0;
+
+                        const kmsRemaining = (lastServiced + targetInt) - liveOdo;
+                        const kmsDriven = liveOdo - lastServiced;
+                        const percent = targetInt === 0 ? 0 : Math.min(100, Math.max(0, (kmsDriven / targetInt) * 100));
                         const isOverdue = kmsRemaining < 0;
 
                         return (
@@ -1532,7 +1551,7 @@ export default function MaintenancePage() {
                               <div>
                                 <h5 className="font-bold text-foreground">{i.component_name}</h5>
                                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                                  Config: Every {i.target_interval_kms.toLocaleString()} KMs (Last Serviced: {i.last_serviced_odometer.toLocaleString()} KMs)
+                                  Config: Every {targetInt.toLocaleString()} KMs (Last Serviced: {lastServiced.toLocaleString()} KMs)
                                 </p>
                               </div>
                               <div className="text-right">
