@@ -384,7 +384,7 @@
 @media print {
   .print-hidden, .no-print, button, .btn, header, footer, aside, nav,
   .sidebar, .dialog-overlay, .dialog-close, [role="dialog"] button,
-  button[class*="DialogClose"] {
+  button[class*="DialogClose"], [role="tablist"], [class*="DialogHeader"] {
     display: none !important;
   }
 
@@ -400,26 +400,68 @@
     print-color-adjust: exact !important;
   }
 
+  /* Hide the entire website background when printing from inside a dialog modal */
+  body:has([role="dialog"]) #root {
+    display: none !important;
+  }
+
   .print-content {
     margin: 0 !important;
-    padding: 10mm !important;
+    padding: 8mm !important;
     width: 100% !important;
     max-width: 100% !important;
     display: block !important;
     position: static !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Adjust table padding and spacing for high-density printing (fits 1 page) */
+  .print-content table td,
+  .print-content table th {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  .print-content h1 {
+    font-size: 18px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .print-content h2 {
+    font-size: 13px !important;
+    margin-top: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .print-content .mb-8 {
+    margin-bottom: 12px !important;
+  }
+
+  .print-content .mb-6 {
+    margin-bottom: 10px !important;
+  }
+
+  .print-content .pb-6 {
+    padding-bottom: 8px !important;
   }
 
   [role="dialog"], div[class*="DialogContent"] {
-    position: absolute !important;
-    left: 0 !important; top: 0 !important;
-    width: 100% !important; height: auto !important;
-    max-width: 100% !important;
-    border: none !important; border-radius: 0 !important;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
     background: #ffffff !important;
-    padding: 0 !important; margin: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     overflow: visible !important;
   }
 
@@ -429,7 +471,7 @@
 
   @page {
     size: A4 portrait;
-    margin: 15mm;
+    margin: 10mm;
   }
 }
 
