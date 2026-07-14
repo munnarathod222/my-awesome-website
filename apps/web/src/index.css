@@ -401,7 +401,9 @@
   }
 
   /* Hide the entire website background when printing from inside a dialog modal */
-  body:has([role="dialog"]) #root {
+  body:has([role="dialog"]) #root,
+  body:has([data-radix-portal]) #root,
+  body:has(div[class*="DialogContent"]) #root {
     display: none !important;
   }
 

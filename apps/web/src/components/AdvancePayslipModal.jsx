@@ -120,8 +120,8 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-border rounded-2xl no-print">
-          <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20 shrink-0">
+        <DialogContent className="sm:max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-border rounded-2xl">
+          <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20 shrink-0 no-print">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <DialogTitle className="text-xl flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
@@ -152,7 +152,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-                <div className="px-6 pt-4 shrink-0 bg-background border-b border-border">
+                <div className="px-6 pt-4 shrink-0 bg-background border-b border-border no-print">
                   <TabsList className="w-full sm:w-auto grid grid-cols-3 bg-muted/50 p-1 rounded-xl mb-4">
                     <TabsTrigger value="preview" className="rounded-lg text-xs sm:text-sm"><FileText className="w-3.5 h-3.5 mr-2" /> Preview</TabsTrigger>
                     <TabsTrigger value="compare" className="rounded-lg text-xs sm:text-sm"><SplitSquareHorizontal className="w-3.5 h-3.5 mr-2" /> Compare</TabsTrigger>

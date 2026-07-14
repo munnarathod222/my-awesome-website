@@ -191,7 +191,7 @@ export default function PayslipPreviewModal({ isOpen, onClose, payrollId }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden bg-background">
-        <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20 shrink-0">
+        <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20 shrink-0 no-print">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
