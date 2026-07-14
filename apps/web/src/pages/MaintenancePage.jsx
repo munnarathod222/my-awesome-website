@@ -413,8 +413,15 @@ export default function MaintenancePage() {
     return matchSearch && matchCategory;
   }), [inventory, inventorySearch, inventoryCategory]);
 
+  const inventoryStats = useMemo(() => {
+    const totalItems = inventory.length;
+    const lowStock = inventory.filter(item => (item.quantity || 0) <= (item.min_stock_level || 5)).length;
+    const totalValue = inventory.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_cost || 0)), 0);
+    return { totalItems, lowStock, totalValue };
+  }, [inventory]);
+
   const statsSummary = useMemo(() => {
-    const totalSpent = serviceLogs.reduce((sum, s) => sum + (s.cost_amount || 0), 0);
+    const totalSpent = serviceLogs.reduce((sum, s) => sum + (Number(s.cost_amount) || 0), 0);
     const activeIssues = problems.filter(p => p.status !== 'Resolved').length;
     const overdueCount = trucks.reduce((count, truck) => {
       const liveOdo = getLiveOdometer(truck);
