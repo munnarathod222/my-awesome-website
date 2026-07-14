@@ -35,7 +35,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       if (type === 'Driver' || type === 'Employee') {
         mainCat = 'Employee';
         subCat = type;
-      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts') {
+      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop') {
         mainCat = 'Maintenance';
         subCat = type;
       } else if (type === 'Vendor') {
@@ -223,6 +223,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                     ) : (
                       <>
                         <SelectItem value="Mechanic">Mechanic</SelectItem>
+                        <SelectItem value="Electrician">Electrician</SelectItem>
+                        <SelectItem value="Puncture Shop">Puncture / Puncher Shop</SelectItem>
                         <SelectItem value="Showroom">Showroom / Service Centre</SelectItem>
                         <SelectItem value="Spare Parts">Spare Parts Shop</SelectItem>
                       </>

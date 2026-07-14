@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
-  Network, UserCog, Phone, MapPin
+  Network, UserCog, Phone, MapPin, Zap, Disc
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -28,13 +28,15 @@ export const MAIN_GROUPS = [
   { key: 'All',         label: 'All Contacts',        icon: Users,    types: null   },
   { key: 'Client',      label: 'Clients',             icon: Building2,types: ['Client'] },
   { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee'] },
-  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts'] },
+  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop'] },
 ];
 
 // Sub-filters only visible when "Maintenance Network" is active
 export const MAINTENANCE_SUBS = [
-  { key: 'all_maint',   label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts'] },
+  { key: 'all_maint',   label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop'] },
   { key: 'Mechanic',    label: 'Mechanics',           icon: Wrench,     types: ['Mechanic'] },
+  { key: 'Electrician', label: 'Electricians',        icon: Zap,        types: ['Electrician'] },
+  { key: 'Puncture Shop', label: 'Puncture Shops',    icon: Disc,       types: ['Puncture Shop'] },
   { key: 'Showroom',    label: 'Showrooms / Centres', icon: Landmark,   types: ['Showroom'] },
   { key: 'Spare Parts', label: 'Spare Parts Shops',   icon: ShoppingBag,types: ['Spare Parts'] },
 ];
@@ -45,6 +47,8 @@ const TYPE_BADGE = {
   'Driver':      'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
   'Employee':    'bg-teal-500/10 text-teal-400 border-teal-500/25',
   'Mechanic':    'bg-amber-500/10 text-amber-500 border-amber-500/25',
+  'Electrician': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/25',
+  'Puncture Shop': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25',
   'Showroom':    'bg-violet-500/10 text-violet-400 border-violet-500/25',
   'Spare Parts': 'bg-orange-500/10 text-orange-400 border-orange-500/25',
 };
@@ -206,7 +210,7 @@ export default function ContactsPage() {
           { label: 'Total',      val: contacts.length,                                                          cls: '' },
           { label: 'Clients',    val: contacts.filter(c => c.contact_type === 'Client').length,                 cls: 'text-primary' },
           { label: 'Employees',  val: contacts.filter(c => ['Driver','Employee'].includes(c.contact_type)).length, cls: 'text-emerald-500' },
-          { label: 'Maintenance',val: contacts.filter(c => ['Mechanic','Showroom','Spare Parts'].includes(c.contact_type)).length, cls: 'text-amber-500' },
+          { label: 'Maintenance',val: contacts.filter(c => ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop'].includes(c.contact_type)).length, cls: 'text-amber-500' },
         ].map(k => (
           <Card key={k.label} className="rounded-2xl border-border/50 shadow-sm">
             <CardContent className="p-4">

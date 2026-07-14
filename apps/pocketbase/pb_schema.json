@@ -10706,7 +10706,9 @@
           "Mechanic",
           "Showroom",
           "Spare Parts",
-          "Vendor"
+          "Vendor",
+          "Electrician",
+          "Puncture Shop"
         ]
       },
       {
