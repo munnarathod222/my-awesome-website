@@ -347,42 +347,61 @@ const ClientDetailsPage = () => {
                     <TableHead className="pl-4">Date</TableHead>
                     <TableHead>Route</TableHead>
                     <TableHead>Vehicle & Driver</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center pr-4">Payment Status</TableHead>
+                    <TableHead className="text-right">Revenue</TableHead>
+                    <TableHead className="text-right">Advance Received</TableHead>
+                    <TableHead className="text-right">Received Balance</TableHead>
+                    <TableHead className="text-right">Outstanding Balance</TableHead>
+                    <TableHead className="text-center pr-4">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {trips.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No trips found for this client.</TableCell>
+                      <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">No trips found for this client.</TableCell>
                     </TableRow>
                   ) : (
-                    trips.map(trip => (
-                      <TableRow key={trip.id} className="hover:bg-muted/30">
-                        <TableCell className="pl-4 whitespace-nowrap">{formatTripDate(trip.date)}</TableCell>
-                        <TableCell>
-                          <p className="font-medium text-sm">{trip.route}</p>
-                          {trip.cycle && <p className="text-xs text-muted-foreground truncate max-w-[250px]">{trip.cycle}</p>}
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm">{trip.truck_number}</p>
-                          <p className="text-xs text-muted-foreground">{trip.driver_name}</p>
-                        </TableCell>
-                        <TableCell className="text-right amount-display font-medium">
-                          {formatCurrency(trip.revenue)}
-                        </TableCell>
-                        <TableCell className="text-center pr-4">
-                          <span className={cn(
-                            "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border uppercase tracking-wider",
-                            trip.client_payment_status === 'received' ? 'bg-success/10 text-success border-success/20' :
-                            trip.client_payment_status === 'pending' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                            'bg-muted text-muted-foreground border-border'
-                          )}>
-                            {trip.client_payment_status || 'Blank'}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    trips.map(trip => {
+                      const revenue = Number(trip.revenue) || 0;
+                      const advance = Number(trip.advance_received_from_client) || 0;
+                      const received = (trip.client_payment_status === 'received' ? revenue : advance);
+                      const outstanding = (trip.client_payment_status === 'received' ? 0 : Math.max(0, revenue - advance));
+
+                      return (
+                        <TableRow key={trip.id} className="hover:bg-muted/30">
+                          <TableCell className="pl-4 whitespace-nowrap">{formatTripDate(trip.date)}</TableCell>
+                          <TableCell>
+                            <p className="font-medium text-sm">{trip.route}</p>
+                            {trip.cycle && <p className="text-xs text-muted-foreground truncate max-w-[250px]">{trip.cycle}</p>}
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-sm">{trip.truck_number}</p>
+                            <p className="text-xs text-muted-foreground">{trip.driver_name}</p>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(revenue)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-blue-500/90">
+                            {formatCurrency(advance)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-emerald-500/90">
+                            {formatCurrency(received)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-rose-500/90">
+                            {formatCurrency(outstanding)}
+                          </TableCell>
+                          <TableCell className="text-center pr-4">
+                            <span className={cn(
+                              "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border uppercase tracking-wider",
+                              trip.client_payment_status === 'received' ? 'bg-success/10 text-success border-success/20' :
+                              trip.client_payment_status === 'pending' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                              'bg-muted text-muted-foreground border-border'
+                            )}>
+                              {trip.client_payment_status || 'Blank'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>

@@ -8,20 +8,23 @@ export const calculateClientMetrics = (clientId, trips) => {
   let pendingTripsCount = 0;
 
   clientTrips.forEach(trip => {
-    const amt = trip.revenue || 0;
-    totalInvoiced += amt;
+    const revenue = Number(trip.revenue) || 0;
+    const advance = Number(trip.advance_received_from_client) || 0;
+    totalInvoiced += revenue;
     
     if (trip.client_payment_status === 'received') {
-      totalReceived += amt;
+      totalReceived += revenue;
       receivedTripsCount++;
       if (!lastPaymentDate || new Date(trip.date) > new Date(lastPaymentDate)) {
         lastPaymentDate = trip.date;
       }
-    } else if (trip.client_payment_status === 'pending' || !trip.client_payment_status) {
-      // Treat 'blank' or missing status as pending
-      // Only count as pending/outstanding if the trip has been Delivered
+    } else {
+      // If payment is pending/blank, the client has still paid the advance amount
+      totalReceived += advance;
+      
+      // The remaining outstanding balance only applies if the trip is Delivered
       if (trip.trip_status === 'Delivered') {
-        totalPending += amt;
+        totalPending += Math.max(0, revenue - advance);
         pendingTripsCount++;
       }
     }
