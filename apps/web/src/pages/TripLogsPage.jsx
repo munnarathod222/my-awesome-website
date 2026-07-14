@@ -74,6 +74,20 @@ const InlineKmInput = ({ log, className, onUpdate }) => {
   );
 };
 
+const formatTripDate = (dateVal) => {
+  if (!dateVal) return '—';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '—';
+  return format(d, 'dd MMM yyyy');
+};
+
+const formatTripDateShort = (dateVal) => {
+  if (!dateVal) return '—';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return '—';
+  return format(d, 'dd MMM');
+};
+
 const TripLogsPage = () => {
   const { currentUser } = useAuth();
   
@@ -659,7 +673,7 @@ const TripLogsPage = () => {
                               {log.trip_id || '-'}
                             </TableCell>
                             <TableCell className="whitespace-nowrap font-medium text-sm text-foreground">
-                              {format(new Date(log.date), 'dd MMM yyyy')}
+                              {formatTripDate(log.date)}
                             </TableCell>
                             <TableCell>
                               {log.expand?.client_id ? (
@@ -934,7 +948,7 @@ const TripLogsPage = () => {
                             {log.trip_id || 'N/A'}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            • {format(new Date(log.date), 'dd MMM yyyy')}
+                            • {formatTripDate(log.date)}
                           </span>
                         </div>
                         <div className="flex gap-1.5">
@@ -1088,7 +1102,7 @@ const TripLogsPage = () => {
             <div className="bg-secondary/30 p-5 rounded-xl text-sm space-y-3 border border-border/50 mt-2 shadow-inner">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Date:</span> 
-                <span className="font-bold text-foreground bg-background px-2 py-1 rounded-md border border-border/50">{format(new Date(deleteDialogData[0].date), 'dd MMM yyyy')}</span>
+                <span className="font-bold text-foreground bg-background px-2 py-1 rounded-md border border-border/50">{formatTripDate(deleteDialogData[0].date)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Driver:</span> 
@@ -1131,7 +1145,7 @@ const TripLogsPage = () => {
           <div className="py-4 space-y-5">
             <p className="text-sm text-muted-foreground">
               Select a new status for trip <span className="font-bold text-foreground">{statusChangeTrip?.route}</span> 
-              ({format(new Date(statusChangeTrip?.date || new Date()), 'dd MMM')})
+               ({formatTripDateShort(statusChangeTrip?.date || new Date())})
             </p>
             <Select value={newTripStatus} onValueChange={setNewTripStatus}>
               <SelectTrigger className="h-12 rounded-xl">

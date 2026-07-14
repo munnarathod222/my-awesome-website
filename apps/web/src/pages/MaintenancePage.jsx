@@ -230,6 +230,7 @@ export default function MaintenancePage() {
 
   // Dynamic Odometer Aggregation logic
   const getLiveOdometer = (truck) => {
+    if (!truck) return 0;
     const baseOdo = Number(truck.base_odometer) || 0;
     const completedTrips = tripLogs.filter(
       log => log.truck_number === truck.truck_number && log.trip_status === 'Completed'
