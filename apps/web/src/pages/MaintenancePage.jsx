@@ -230,11 +230,11 @@ export default function MaintenancePage() {
 
   // Dynamic Odometer Aggregation logic
   const getLiveOdometer = (truck) => {
-    const baseOdo = truck.base_odometer || 0;
+    const baseOdo = Number(truck.base_odometer) || 0;
     const completedTrips = tripLogs.filter(
       log => log.truck_number === truck.truck_number && log.trip_status === 'Completed'
     );
-    const tripKms = completedTrips.reduce((sum, log) => sum + (log.kms || 0), 0);
+    const tripKms = completedTrips.reduce((sum, log) => sum + (Number(log.kms) || 0), 0);
     return baseOdo + tripKms;
   };
 
@@ -477,6 +477,7 @@ export default function MaintenancePage() {
     serviceLogs.forEach(s => {
       if (!s.maintenance_date) return;
       const d = new Date(s.maintenance_date);
+      if (isNaN(d.getTime())) return; // skip invalid dates
       const label = format(d, 'MMM yyyy');
       const cost = Number(s.cost_amount) || 0;
       
