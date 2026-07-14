@@ -314,7 +314,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gross Booking Volume</p>
             <h3 className="text-2xl font-extrabold mt-3 tabular-nums text-slate-200">{formatCurrency(metrics.grossRevenue)}</h3>
@@ -325,7 +326,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500 to-orange-500" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">GST Tax Position</p>
             <h3 className={`text-2xl font-extrabold mt-3 tabular-nums ${metrics.netGstPayable >= 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -338,7 +340,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Profit Net of Deductions</p>
             <h3 className={`text-2xl font-extrabold mt-3 tabular-nums ${metrics.profitBeforeTax >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -354,7 +357,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
 
       {/* 3PL Ledger & Retained Earnings Panel */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-sky-400 to-blue-500" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Accounts Receivable (AR)</p>
             <h3 className="text-2xl font-extrabold mt-3 text-blue-400 tabular-nums">{formatCurrency(metrics.accountsReceivable)}</h3>
@@ -362,7 +366,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500 to-amber-600" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Accounts Payable (AP)</p>
             <h3 className="text-2xl font-extrabold mt-3 text-amber-500 tabular-nums">{formatCurrency(metrics.accountsPayable)}</h3>
@@ -370,7 +375,8 @@ const CharteredAccountantPortal = ({ startDate, endDate }) => {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-2xl">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500" />
           <CardContent className="p-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Retained Earnings / Retained Profit</p>
             <h3 className={`text-2xl font-extrabold mt-3 tabular-nums ${metrics.retainedEarnings >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>

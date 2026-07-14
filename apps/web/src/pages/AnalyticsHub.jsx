@@ -40,17 +40,18 @@ import {
   Tooltip, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 
-const OverviewCard = ({ title, value, icon: Icon, trend, isCurrency = true, valueClass = "" }) => (
-  <Card className="shadow-sm border-border hover:shadow-md transition-all">
+const OverviewCard = ({ title, value, icon: Icon, trend, isCurrency = true, valueClass = "", colorClass = "from-blue-500 to-indigo-500" }) => (
+  <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
+    <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${colorClass}`} />
     <CardContent className="p-6">
       <div className="flex items-center justify-between space-y-0 pb-2">
-        <p className="analytics-metric-label">{title}</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
         <div className="p-2 bg-primary/10 rounded-xl">
           <Icon className="h-5 w-5 text-primary" />
         </div>
       </div>
       <div className="flex flex-col mt-2">
-        <div className={`analytics-metric-value ${valueClass}`}>
+        <div className={`text-2xl font-black tracking-tight text-foreground ${valueClass}`}>
           {isCurrency ? '₹' : ''}{value}
         </div>
         {trend && (
@@ -91,12 +92,41 @@ const AnalyticsHub = () => {
 
   const [selectedTruckId, setSelectedTruckId] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedMonth, setSelectedMonth] = useState('2026-06');
+  const [selectedMonth, setSelectedMonth] = useState('2026-07');
   const [drilldownActive, setDrilldownActive] = useState(false);
   const [customInsValues, setCustomInsValues] = useState({});
   const [customTaxValues, setCustomTaxValues] = useState({});
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [payrollLogs, setPayrollLogs] = useState([]);
+
+  // Calculate available months dynamically from trip and expense logs
+  const availableMonths = React.useMemo(() => {
+    const months = new Set();
+    const now = new Date();
+    const currMonth = now.toISOString().substring(0, 7);
+    months.add(currMonth);
+    
+    data.trips.forEach(t => {
+      if (t.date && t.date.length >= 7) {
+        months.add(t.date.substring(0, 7));
+      }
+    });
+    
+    data.expensesList.forEach(e => {
+      if (e.date && e.date.length >= 7) {
+        months.add(e.date.substring(0, 7));
+      }
+    });
+
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [data.trips, data.expensesList]);
+
+  // Keep selectedMonth updated to latest data period automatically
+  React.useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+      setSelectedMonth(availableMonths[0]);
+    }
+  }, [availableMonths, selectedMonth]);
 
   const calculateTruckProfitForMonth = (truck, month) => {
     const normalize = (val) => (val || '').replace(/\s+/g, '').toUpperCase();
@@ -458,23 +488,27 @@ const AnalyticsHub = () => {
               title="Total Revenue" 
               value={data.totals.revenue.toLocaleString()} 
               icon={Activity} 
+              colorClass="from-emerald-500 to-teal-500"
             />
             <OverviewCard 
               title="Total Expenses" 
               value={data.totals.expenses.toLocaleString()} 
               icon={Wallet} 
+              colorClass="from-rose-500 to-orange-500"
             />
             <OverviewCard 
               title="Net Profit" 
               value={data.totals.profit.toLocaleString()} 
               icon={BarChart3} 
-              valueClass={data.totals.profit >= 0 ? "text-success" : "text-destructive"}
+              valueClass={data.totals.profit >= 0 ? "text-emerald-400" : "text-rose-400"}
+              colorClass={data.totals.profit >= 0 ? "from-emerald-500 to-blue-500" : "from-rose-500 to-red-600"}
             />
             <OverviewCard 
               title="Profit Margin" 
               value={`${data.totals.margin.toFixed(1)}%`} 
               icon={PieChartIcon} 
               isCurrency={false}
+              colorClass="from-violet-500 to-purple-500"
             />
           </div>
 
@@ -680,7 +714,7 @@ const AnalyticsHub = () => {
                           <SelectValue placeholder="Month" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                          {['2026-07', '2026-06', '2026-05', '2026-04', '2026-03', '2026-02'].map(m => (
+                          {availableMonths.map(m => (
                             <SelectItem key={m} value={m}>
                               {new Date(m.split('-')[0], m.split('-')[1] - 1, 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
                             </SelectItem>
@@ -822,7 +856,7 @@ const AnalyticsHub = () => {
                                 <SelectValue placeholder="Month" />
                               </SelectTrigger>
                               <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                                {['2026-07', '2026-06', '2026-05', '2026-04', '2026-03', '2026-02'].map(m => (
+                                {availableMonths.map(m => (
                                   <SelectItem key={m} value={m}>
                                     {new Date(m.split('-')[0], m.split('-')[1] - 1, 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
                                   </SelectItem>
