@@ -40,7 +40,7 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
       if (tyre) {
         setFormData({
           tyre_position: tyre.tyre_position || initialPosition || '',
-          purchase_date: tyre.purchase_date ? tyre.purchase_date.split('T')[0] : new Date().toISOString().split('T')[0],
+          purchase_date: tyre.purchase_date ? tyre.purchase_date.substring(0, 10) : new Date().toISOString().split('T')[0],
           tyre_brand: tyre.tyre_brand || '',
           model_no: tyre.model_no || '',
           serial_number: tyre.serial_number || '',

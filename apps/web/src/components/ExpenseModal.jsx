@@ -69,8 +69,8 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
   useEffect(() => {
     if (expense) {
       setFormData({
-        date: expense.date ? expense.date.split('T')[0] : new Date().toISOString().split('T')[0],
-        amount: expense.amount || '',
+        date: expense.date ? expense.date.substring(0, 10) : new Date().toISOString().split('T')[0],
+        amount: expense.amount !== undefined && expense.amount !== null ? expense.amount : '',
         category: expense.category || 'Regular',
         subcategory: expense.subcategory || 'Maintenance',
         description: expense.description || '',
