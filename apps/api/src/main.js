@@ -737,9 +737,9 @@ startMonthEndCron();
   });
 
   // POST /api/backup/restore-local
-  app.post('/api/backup/restore-local', async (req, res) => {
+  app.post('/api/backup/restore-local', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
-      const { filename } = req.body;
+      const { filename } = req.body || req.query || {};
       if (!filename) {
         return res.status(400).json({ success: false, error: 'Filename is required' });
       }
