@@ -463,9 +463,12 @@ export default function MaintenancePage() {
     if (limitLogs.length <= 1) return 100;
     const newestDate = new Date(limitLogs[0].date);
     const oldestDate = new Date(limitLogs[limitLogs.length - 1].date);
-    const dayDiff = Math.max(1, Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24)));
     
-    return Math.round(totalKms / dayDiff) || 100;
+    if (isNaN(newestDate.getTime()) || isNaN(oldestDate.getTime())) return 100;
+    
+    const dayDiff = Math.max(1, Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24)));
+    const avg = Math.round(totalKms / dayDiff);
+    return isNaN(avg) || avg <= 0 ? 100 : avg;
   };
 
   // Recharts Data Aggregations
@@ -547,7 +550,7 @@ export default function MaintenancePage() {
         const daysRemaining = dailyKms > 0 ? kmsRemaining / dailyKms : Infinity;
         
         let estDueDate = null;
-        if (daysRemaining !== Infinity && daysRemaining < 1000) { // filter realistic range
+        if (daysRemaining !== Infinity && !isNaN(daysRemaining) && daysRemaining < 1000) { // filter realistic range
           estDueDate = new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000);
         }
         
@@ -557,7 +560,7 @@ export default function MaintenancePage() {
           truckName: truck.truck_name || 'Unnamed Vehicle',
           component: interval.component_name,
           kmsRemaining,
-          daysRemaining: daysRemaining !== Infinity ? Math.round(daysRemaining) : null,
+          daysRemaining: daysRemaining !== Infinity && !isNaN(daysRemaining) ? Math.round(daysRemaining) : null,
           estDueDate,
           dailyKms
         });
@@ -1083,7 +1086,7 @@ export default function MaintenancePage() {
                             <TableCell className="text-right font-mono text-xs">
                               {isOverdue ? (
                                 <span className="text-rose-500 font-bold">Immediate</span>
-                              ) : f.estDueDate ? (
+                              ) : (f.estDueDate && !isNaN(f.estDueDate.getTime())) ? (
                                 format(f.estDueDate, 'MMM dd, yyyy')
                               ) : (
                                 '—'
