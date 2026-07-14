@@ -158,11 +158,27 @@ export default function MaintenancePage() {
     try {
       const now = new Date();
       const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const records = await pb.collection('maintenance_reminders').getFullList({
+      let records = await pb.collection('maintenance_reminders').getFullList({
         filter: `month_label = "${monthStr}"`,
         sort: 'truck_id,maintenance_type',
         $autoCancel: false
       });
+
+      // Auto-generate in background if no reminders exist for the current month
+      if (records.length === 0) {
+        try {
+          console.log('[MaintenancePage] Auto-generating monthly reminders on load...');
+          await fetch(`${pb.baseUrl}/api/custom/maintenance/generate-monthly-reminders`, { method: 'POST' });
+          records = await pb.collection('maintenance_reminders').getFullList({
+            filter: `month_label = "${monthStr}"`,
+            sort: 'truck_id,maintenance_type',
+            $autoCancel: false
+          });
+        } catch (genErr) {
+          console.warn('[MaintenancePage] Failed to auto-generate reminders on load:', genErr);
+        }
+      }
+
       setMonthlyReminders(records);
     } catch (err) {
       // month_label field might not exist yet — fall back to reminder_date range
@@ -1204,7 +1220,7 @@ export default function MaintenancePage() {
               <button
                 onClick={async () => {
                   try {
-                    await fetch('/api/custom/maintenance/generate-monthly-reminders', { method: 'POST' });
+                    await fetch(`${pb.baseUrl}/api/custom/maintenance/generate-monthly-reminders`, { method: 'POST' });
                     toast.success('Monthly reminders generated!');
                     fetchMonthlyReminders();
                   } catch (err) {
