@@ -72,9 +72,23 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
   }
 };
 
+const checkpointDatabase = (dbFilePath) => {
+  try {
+    if (!fs.existsSync(dbFilePath)) return;
+    const { DatabaseSync } = require('node:sqlite');
+    const conn = new DatabaseSync(dbFilePath);
+    conn.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    conn.close();
+    logger.info('✅ Successfully executed WAL checkpoint (TRUNCATE) on database.');
+  } catch (err) {
+    logger.warn(`⚠️ WAL checkpoint warning: ${err.message}`);
+  }
+};
+
 // Core upload helper — reused by all sync strategies
 const uploadDatabaseToSupabase = async (dbFilePath) => {
   try {
+    checkpointDatabase(dbFilePath);
     const fileBuffer = fs.readFileSync(dbFilePath);
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
       method: 'POST',
@@ -128,7 +142,7 @@ const watchAndSyncDatabase = (dbFilePath) => {
   _syncStarted = true;
   let uploadTimeout = null;
   let periodicSyncInterval = null;
-  const PERIODIC_SYNC_MS = 2 * 60 * 60 * 1000; // 2 hours
+  const PERIODIC_SYNC_MS = 15 * 60 * 1000; // 15 minutes
 
   // ── Strategy 1: File-watcher (fires immediately on any DB write) ──
   try {
@@ -394,8 +408,13 @@ const runPocketBase = async () => {
   global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
 
-  // Sync latest database from Supabase Storage before boot
-  await downloadDatabaseFromSupabase(dbFilePath);
+  // Sync latest database from Supabase Storage before boot (only if it doesn't exist locally)
+  if (!fs.existsSync(dbFilePath)) {
+    logger.info(`💾 Local database not found at ${dbFilePath}. Restoring from Supabase...`);
+    await downloadDatabaseFromSupabase(dbFilePath);
+  } else {
+    logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download to prevent data loss.`);
+  }
 
   // Sync latest storage files from Supabase Storage asynchronously before boot!
   logger.info(`📥 Restoring storage files from Supabase in the background...`);
