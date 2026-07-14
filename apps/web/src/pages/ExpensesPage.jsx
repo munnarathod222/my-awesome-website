@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X } from 'lucide-react';
+import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X, CheckCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,8 @@ const ExpensesPage = () => {
   const directFileInputRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [selectedAdvanceIds, setSelectedAdvanceIds] = useState(new Set());
+  const [isBulkProcessingAdvances, setIsBulkProcessingAdvances] = useState(false);
 
   const [filters, setFilters] = useState({
     search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'
@@ -209,9 +211,75 @@ const ExpensesPage = () => {
     try {
       await pb.collection('advances').delete(id, { $autoCancel: false });
       toast.success('Advance deleted successfully');
+      setSelectedAdvanceIds(prev => { const next = new Set(prev); next.delete(id); return next; });
       setRefreshTrigger(p => p + 1);
     } catch (err) {
       toast.error('Failed to delete advance');
+    }
+  };
+
+  const toggleSelectAdvance = useCallback((id) => {
+    setSelectedAdvanceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllAdvances = useCallback((advs) => {
+    setSelectedAdvanceIds(prev => {
+      const allSelected = advs.every(a => prev.has(a.id));
+      if (allSelected) {
+        const next = new Set(prev);
+        advs.forEach(a => next.delete(a.id));
+        return next;
+      } else {
+        const next = new Set(prev);
+        advs.forEach(a => next.add(a.id));
+        return next;
+      }
+    });
+  }, []);
+
+  const handleBulkMarkAdvancesSettled = async () => {
+    if (selectedAdvanceIds.size === 0) return;
+    
+    const pendingSelectedIds = Array.from(selectedAdvanceIds).filter(id => {
+      const adv = advances.find(a => a.id === id);
+      return adv && adv.status === 'Pending';
+    });
+
+    if (pendingSelectedIds.length === 0) {
+      toast.info('No pending advances selected.');
+      return;
+    }
+
+    if (!window.confirm(`Mark ${pendingSelectedIds.length} selected pending advance(s) as Settled?`)) return;
+    
+    setIsBulkProcessingAdvances(true);
+    let succeeded = 0;
+    let failed = 0;
+    
+    try {
+      for (const id of pendingSelectedIds) {
+        try {
+          await AdvanceIntegrationService.updateAdvanceStatus(id, 'Settled', 'Marked settled in bulk from Expenses ledger');
+          succeeded++;
+        } catch (err) {
+          console.error(`Failed to settle advance ${id}:`, err);
+          failed++;
+        }
+      }
+      setSelectedAdvanceIds(new Set());
+      setRefreshTrigger(prev => prev + 1);
+      
+      if (failed === 0) {
+        toast.success(`Successfully marked ${succeeded} advance(s) as Settled`);
+      } else {
+        toast.warning(`Marked ${succeeded} settled, ${failed} failed`);
+      }
+    } finally {
+      setIsBulkProcessingAdvances(false);
     }
   };
 
@@ -693,6 +761,14 @@ const ExpensesPage = () => {
                   <Table>
                     <TableHeader className="bg-muted/10">
                       <TableRow>
+                        <TableHead className="w-[44px]">
+                          <Checkbox
+                            id="select-all-advances"
+                            checked={filteredAdvances.length > 0 && filteredAdvances.every(a => selectedAdvanceIds.has(a.id))}
+                            onCheckedChange={() => toggleSelectAllAdvances(filteredAdvances)}
+                            aria-label="Select all advances"
+                          />
+                        </TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Driver / Employee Name</TableHead>
                         <TableHead>Reason</TableHead>
@@ -703,12 +779,23 @@ const ExpensesPage = () => {
                     </TableHeader>
                     <TableBody>
                       {loading ? (
-                        <TableRow><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
                       ) : filteredAdvances.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="py-12 text-center text-muted-foreground">No advance records found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="py-12 text-center text-muted-foreground">No advance records found.</TableCell></TableRow>
                       ) : (
                         filteredAdvances.map(adv => (
-                          <TableRow key={adv.id} className="hover:bg-muted/30">
+                          <TableRow 
+                            key={adv.id} 
+                            className={`hover:bg-muted/30 transition-colors ${selectedAdvanceIds.has(adv.id) ? 'bg-primary/5 border-l-2 border-l-primary' : ''}`}
+                          >
+                            <TableCell>
+                              <Checkbox
+                                id={`select-advance-${adv.id}`}
+                                checked={selectedAdvanceIds.has(adv.id)}
+                                onCheckedChange={() => toggleSelectAdvance(adv.id)}
+                                aria-label={`Select advance ${adv.id}`}
+                              />
+                            </TableCell>
                             <TableCell className="text-sm whitespace-nowrap">{format(new Date(adv.date), 'MMM dd, yyyy')}</TableCell>
                             <TableCell className="font-medium text-foreground">{adv.employee_name || adv.expand?.employee_id?.name || 'Unknown'}</TableCell>
                             <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{adv.reason || '-'}</TableCell>
@@ -743,11 +830,25 @@ const ExpensesPage = () => {
                     <div className="text-center py-12 text-sm text-muted-foreground">No advance records found.</div>
                   ) : (
                     filteredAdvances.map(adv => (
-                      <div key={adv.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                      <div 
+                        key={adv.id} 
+                        className={cn(
+                          "p-4 space-y-3 hover:bg-muted/5 transition-colors",
+                          selectedAdvanceIds.has(adv.id) ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                        )}
+                      >
                         <div className="flex justify-between items-start gap-3">
-                          <div>
-                            <p className="font-bold text-sm text-foreground">{adv.employee_name || adv.expand?.employee_id?.name || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(adv.date), 'MMM dd, yyyy')}</p>
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id={`select-advance-mobile-${adv.id}`}
+                              checked={selectedAdvanceIds.has(adv.id)}
+                              onCheckedChange={() => toggleSelectAdvance(adv.id)}
+                              aria-label={`Select advance ${adv.id}`}
+                            />
+                            <div>
+                              <p className="font-bold text-sm text-foreground">{adv.employee_name || adv.expand?.employee_id?.name || 'Unknown'}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(adv.date), 'MMM dd, yyyy')}</p>
+                            </div>
                           </div>
                           
                           <div className="text-right">
@@ -828,6 +929,46 @@ const ExpensesPage = () => {
           >
             <Trash2 className="w-3.5 h-3.5" />
             {isBulkDeleting ? 'Deleting...' : 'Delete Selected'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Floating Bulk Action Bar for Advances */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-out ${
+          selectedAdvanceIds.size > 0
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 translate-y-8 pointer-events-none'
+        }`}
+      >
+        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl border border-border bg-card backdrop-blur-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <span className="text-[11px] font-bold text-primary-foreground">{selectedAdvanceIds.size}</span>
+            </div>
+            <span className="text-sm font-medium text-foreground">
+              {selectedAdvanceIds.size === 1 ? '1 advance selected' : `${selectedAdvanceIds.size} advances selected`}
+            </span>
+          </div>
+          <div className="w-px h-5 bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 text-muted-foreground hover:text-foreground gap-1.5"
+            onClick={() => setSelectedAdvanceIds(new Set())}
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            className="h-8 px-4 gap-1.5 font-semibold bg-success hover:bg-success/90 text-success-foreground"
+            onClick={handleBulkMarkAdvancesSettled}
+            disabled={isBulkProcessingAdvances}
+          >
+            <CheckCircle className="w-3.5 h-3.5" />
+            {isBulkProcessingAdvances ? 'Processing...' : 'Mark Settled'}
           </Button>
         </div>
       </div>
