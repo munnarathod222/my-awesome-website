@@ -121,9 +121,9 @@ export default function Header() {
       )}>
         <div className="container max-w-7xl mx-auto flex h-14 items-center px-4 sm:px-6 lg:px-8 gap-4">
 
-          {/* Logo */}
+          {/* Brand Name */}
           <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2.5 group shrink-0">
-            <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg group-hover:scale-105 transition-transform" alt="Jai Bhavani Logo" />
+            <span className="font-bold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors">Jai Bhavani Cargo</span>
           </Link>
 
           {/* Breadcrumb — authenticated only */}

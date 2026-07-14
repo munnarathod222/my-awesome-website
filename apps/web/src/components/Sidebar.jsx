@@ -143,7 +143,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         <div className="flex items-center justify-between px-3 border-b border-white/5 h-14 shrink-0">
           {isExpanded && (
             <div className="flex items-center gap-2 ml-1 overflow-hidden">
-              <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
+              <span className="font-bold text-sm text-foreground tracking-tight truncate">Jai Bhavani</span>
             </div>
           )}
           <button
