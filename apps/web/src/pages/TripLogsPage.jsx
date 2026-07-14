@@ -97,10 +97,16 @@ const TripLogsPage = () => {
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
 
-  // Filters
+  // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [tripStatusFilter, setTripStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, paymentFilter, tripStatusFilter]);
 
   // Bulk Selection & Action State
   const [selectedIds, setSelectedIds] = useState([]);
@@ -223,15 +229,36 @@ const TripLogsPage = () => {
     const matchesPayment = paymentFilter === 'all' || 
       (paymentFilter === 'blank' ? !log.client_payment_status : log.client_payment_status === paymentFilter);
     const matchesStatus = tripStatusFilter === 'all' || log.trip_status === tripStatusFilter;
-    
     return matchesSearch && matchesPayment && matchesStatus;
   });
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredLogs.length) {
-      setSelectedIds([]);
+  // Precomputed booked trucks lookup for O(1) conflict checks
+  const bookedTrucksPerDate = useMemo(() => {
+    const map = {};
+    tripLogs.forEach(log => {
+      if (log.trip_status === 'Cancelled' || !log.date || !log.truck_number) return;
+      const dateStr = log.date.split(' ')[0];
+      if (!map[dateStr]) {
+        map[dateStr] = new Set();
+      }
+      map[dateStr].add(log.truck_number);
+    });
+    return map;
+  }, [tripLogs]);
+
+  // Paginated sublist of filtered logs
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredLogs.slice(start, start + itemsPerPage);
+  }, [filteredLogs, currentPage, itemsPerPage]);
+
+  const toggleSelectPage = (checked) => {
+    if (checked) {
+      const pageIds = paginatedLogs.map(log => log.id);
+      setSelectedIds(prev => [...new Set([...prev, ...pageIds])]);
     } else {
-      setSelectedIds(filteredLogs.map(log => log.id));
+      const pageIds = paginatedLogs.map(log => log.id);
+      setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
     }
   };
 
@@ -576,9 +603,9 @@ const TripLogsPage = () => {
                     <TableRow className="hover:bg-transparent border-b-border/50">
                       <TableHead className="w-[50px] pl-6">
                         <Checkbox 
-                          checked={filteredLogs.length > 0 && selectedIds.length === filteredLogs.length}
-                          onCheckedChange={toggleSelectAll}
-                          aria-label="Select all rows"
+                          checked={paginatedLogs.length > 0 && paginatedLogs.every(log => selectedIds.includes(log.id))}
+                          onCheckedChange={toggleSelectPage}
+                          aria-label="Select page rows"
                         />
                       </TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Trip ID</TableHead>
@@ -611,7 +638,7 @@ const TripLogsPage = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredLogs.map(log => {
+                      paginatedLogs.map(log => {
                         const isSelected = selectedIds.includes(log.id);
                         return (
                           <TableRow 
@@ -665,12 +692,8 @@ const TripLogsPage = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {trucks.map(t => {
-                                      const isConflicted = tripLogs.some(otherLog => 
-                                        otherLog.id !== log.id &&
-                                        otherLog.truck_number === t.truck_number &&
-                                        otherLog.trip_status !== 'Cancelled' &&
-                                        otherLog.date.split(' ')[0] === log.date.split(' ')[0]
-                                      );
+                                      const dateStr = log.date ? log.date.split(' ')[0] : '';
+                                      const isConflicted = bookedTrucksPerDate[dateStr]?.has(t.truck_number) && t.truck_number !== log.truck_number;
                                       return (
                                         <SelectItem key={t.id} value={t.truck_number}>
                                           <span>{t.truck_number} {isConflicted ? '(Booked today)' : ''}</span>
@@ -899,7 +922,7 @@ const TripLogsPage = () => {
                     <p className="text-xs mt-1">Try adjusting your filters or search query.</p>
                   </div>
                 ) : (
-                  filteredLogs.map(log => (
+                  paginatedLogs.map(log => (
                     <div 
                       key={log.id} 
                       className="p-4 rounded-2xl bg-card border border-border/50 space-y-3 relative shadow-md hover:border-primary/20 transition-colors"
@@ -996,6 +1019,35 @@ const TripLogsPage = () => {
                   ))
                 )}
               </div>
+
+              {/* Pagination Footer */}
+              {filteredLogs.length > itemsPerPage && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-border/40 bg-secondary/5 shrink-0 select-none">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Showing {Math.min(filteredLogs.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(filteredLogs.length, currentPage * itemsPerPage)} of {filteredLogs.length} trips
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg h-8 text-xs font-semibold"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg h-8 text-xs font-semibold"
+                      disabled={currentPage * itemsPerPage >= filteredLogs.length}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
