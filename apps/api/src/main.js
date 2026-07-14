@@ -541,6 +541,38 @@ startMonthEndCron();
     }
   });
 
+  // GET /api/backup/list-local
+  app.get('/api/backup/list-local', (req, res) => {
+    try {
+      if (!global.dbFilePath) {
+        return res.status(400).json({ success: false, error: 'Database path not initialized' });
+      }
+      const dataDir = path.dirname(global.dbFilePath);
+      const backupsDir = path.join(dataDir, 'backups');
+      const files = [];
+      
+      if (fs.existsSync(backupsDir)) {
+        fs.readdirSync(backupsDir).forEach(f => {
+          const stat = fs.statSync(path.join(backupsDir, f));
+          files.push({ name: f, size: stat.size, mtime: stat.mtime, type: 'pb_backup' });
+        });
+      }
+      
+      if (fs.existsSync(dataDir)) {
+        fs.readdirSync(dataDir).forEach(f => {
+          if (f.includes('bak') || f.includes('backup') || f.includes('temp')) {
+            const stat = fs.statSync(path.join(dataDir, f));
+            files.push({ name: f, size: stat.size, mtime: stat.mtime, type: 'temp_file' });
+          }
+        });
+      }
+      
+      res.json({ success: true, files });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
 
 
 
