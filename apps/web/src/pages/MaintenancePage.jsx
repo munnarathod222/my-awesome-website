@@ -5,8 +5,13 @@ import {
   Wrench, Bell, AlertTriangle, ClipboardList, Trash2, Edit2, 
   CalendarRange, Filter, Search, Package, DollarSign, CheckCircle, 
   Truck, Plus, X, User, Calendar, FileText, Check, AlertCircle, 
-  Sliders, ShieldCheck, History, UploadCloud, Wind, Droplets, RefreshCw 
+  Sliders, ShieldCheck, History, UploadCloud, Wind, Droplets, RefreshCw,
+  TrendingUp, Activity
 } from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  LineChart, Line, AreaChart, Area, PieChart, Pie, Cell 
+} from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -443,6 +448,125 @@ export default function MaintenancePage() {
     return { totalSpent, activeIssues, overdueCount, healthyTrucks };
   }, [serviceLogs, problems, trucks, intervals, tripLogs]);
 
+  // Dynamic Daily KMs calculation from Trip Logs
+  const getAverageDailyKms = (truckNumber) => {
+    const logs = tripLogs.filter(l => l.truck_number === truckNumber && l.date);
+    if (logs.length === 0) return 100; // default fallback 100 kms/day
+    
+    // Sort logs by date descending
+    const sorted = [...logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Get last 10 logs
+    const limitLogs = sorted.slice(0, 10);
+    const totalKms = limitLogs.reduce((sum, l) => sum + (Number(l.kms) || 0), 0);
+    
+    if (limitLogs.length <= 1) return 100;
+    const newestDate = new Date(limitLogs[0].date);
+    const oldestDate = new Date(limitLogs[limitLogs.length - 1].date);
+    const dayDiff = Math.max(1, Math.round((newestDate - oldestDate) / (1000 * 60 * 60 * 24)));
+    
+    return Math.round(totalKms / dayDiff) || 100;
+  };
+
+  // Recharts Data Aggregations
+  const monthlyCostData = useMemo(() => {
+    const monthlyMap = {};
+    serviceLogs.forEach(s => {
+      if (!s.maintenance_date) return;
+      const d = new Date(s.maintenance_date);
+      const label = format(d, 'MMM yyyy');
+      const cost = Number(s.cost_amount) || 0;
+      
+      if (!monthlyMap[label]) {
+        monthlyMap[label] = { dateObj: d, cost: 0 };
+      }
+      monthlyMap[label].cost += cost;
+    });
+    
+    return Object.entries(monthlyMap)
+      .map(([label, info]) => ({ label, cost: info.cost, dateObj: info.dateObj }))
+      .sort((a, b) => a.dateObj - b.dateObj)
+      .map(item => ({ name: item.label, Amount: item.cost }));
+  }, [serviceLogs]);
+
+  const truckCostData = useMemo(() => {
+    const truckMap = {};
+    serviceLogs.forEach(s => {
+      const truckObj = trucks.find(t => t.id === s.truck_id);
+      const label = truckObj ? truckObj.truck_number : 'Unknown';
+      const cost = Number(s.cost_amount) || 0;
+      
+      if (!truckMap[label]) truckMap[label] = 0;
+      truckMap[label] += cost;
+    });
+    
+    return Object.entries(truckMap)
+      .map(([name, cost]) => ({ name, Amount: cost }))
+      .sort((a, b) => b.Amount - a.Amount)
+      .slice(0, 10); // top 10 trucks
+  }, [serviceLogs, trucks]);
+
+  const healthBreakdownData = useMemo(() => {
+    let healthy = 0;
+    let caution = 0;
+    let critical = 0;
+    
+    trucks.forEach(truck => {
+      const liveOdo = getLiveOdometer(truck);
+      const status = getIntervalStatus(truck, liveOdo);
+      
+      if (status.variant === 'destructive') {
+        critical++;
+      } else if (status.variant === 'warning') {
+        caution++;
+      } else {
+        healthy++;
+      }
+    });
+    
+    return [
+      { name: 'Healthy', value: healthy, color: '#10b981' },
+      { name: 'Due Soon', value: caution, color: '#f59e0b' },
+      { name: 'Overdue', value: critical, color: '#f43f5e' }
+    ].filter(item => item.value > 0);
+  }, [trucks, intervals, tripLogs]);
+
+  const predictiveForecasts = useMemo(() => {
+    const forecasts = [];
+    
+    trucks.forEach(truck => {
+      const liveOdo = getLiveOdometer(truck);
+      const truckIntervals = intervals.filter(i => i.truck_id === truck.id);
+      
+      truckIntervals.forEach(interval => {
+        const lastServiced = Number(interval.last_serviced_odometer) || 0;
+        const targetInt = Number(interval.target_interval_kms) || 0;
+        const kmsRemaining = (lastServiced + targetInt) - liveOdo;
+        
+        const dailyKms = getAverageDailyKms(truck.truck_number);
+        const daysRemaining = dailyKms > 0 ? kmsRemaining / dailyKms : Infinity;
+        
+        let estDueDate = null;
+        if (daysRemaining !== Infinity && daysRemaining < 1000) { // filter realistic range
+          estDueDate = new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000);
+        }
+        
+        forecasts.push({
+          id: interval.id,
+          truckNumber: truck.truck_number,
+          truckName: truck.truck_name || 'Unnamed Vehicle',
+          component: interval.component_name,
+          kmsRemaining,
+          daysRemaining: daysRemaining !== Infinity ? Math.round(daysRemaining) : null,
+          estDueDate,
+          dailyKms
+        });
+      });
+    });
+    
+    return forecasts.sort((a, b) => a.kmsRemaining - b.kmsRemaining);
+  }, [trucks, intervals, tripLogs]);
+
   const filteredServiceLogs = useMemo(() => {
     return serviceLogs.filter(s => {
       const truckObj = trucks.find(t => t.id === s.truck_id);
@@ -587,6 +711,9 @@ export default function MaintenancePage() {
             <Truck className="w-4 h-4" /> Vehicles Roster
             <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{trucks.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
+            <TrendingUp className="w-4 h-4" /> Diagnostics & Analytics
+          </TabsTrigger>
           <TabsTrigger value="monthly_reminders" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm relative shrink-0">
             <Bell className="w-4 h-4" /> Monthly Reminders
             {monthlyReminders.filter(r => r.status === 'Pending').length > 0 && (
@@ -721,6 +848,269 @@ export default function MaintenancePage() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        {/* TAB: Diagnostics & Analytics (Advanced) */}
+        <TabsContent value="analytics" className="m-0 space-y-6">
+          {/* Top Level Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border border-border/60 bg-card rounded-2xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Predictive Security</p>
+                  <p className="text-2xl font-black text-foreground mt-1">
+                    {predictiveForecasts.filter(f => f.kmsRemaining < 0).length} Critical
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Overdue components needing immediate service.
+                  </p>
+                </div>
+                <div className="p-3.5 bg-rose-500/10 text-rose-500 rounded-2xl">
+                  <Activity className="w-6 h-6 animate-pulse" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border border-border/60 bg-card rounded-2xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Average Fleet Usage</p>
+                  <p className="text-2xl font-black text-foreground mt-1">
+                    {Math.round(trucks.reduce((sum, t) => sum + getAverageDailyKms(t.truck_number), 0) / (trucks.length || 1))} KM/day
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Daily aggregate running distance per vehicle.
+                  </p>
+                </div>
+                <div className="p-3.5 bg-sky-500/10 text-sky-500 rounded-2xl">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border border-border/60 bg-card rounded-2xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Next 30 Days Forecast</p>
+                  <p className="text-2xl font-black text-foreground mt-1">
+                    {predictiveForecasts.filter(f => f.daysRemaining !== null && f.daysRemaining >= 0 && f.daysRemaining <= 30).length} Tasks
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Service events predicted to fall due.
+                  </p>
+                </div>
+                <div className="p-3.5 bg-amber-500/10 text-amber-500 rounded-2xl">
+                  <Calendar className="w-6 h-6" />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Recharts Visualizations */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Chart 1: Expenditure Trend */}
+            <Card className="border border-border/60 bg-card rounded-2xl p-5 space-y-4">
+              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-500" /> Maintenance Cost Trend
+              </h3>
+              <div className="h-72 w-full">
+                {monthlyCostData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm italic">
+                    No cost history recorded yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyCostData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                        labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                      />
+                      <Area type="monotone" dataKey="Amount" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCost)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </Card>
+
+            {/* Chart 2: Fleet Health Status */}
+            <Card className="border border-border/60 bg-card rounded-2xl p-5 space-y-4">
+              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-primary" /> Fleet Health Status
+              </h3>
+              <div className="h-72 flex flex-col sm:flex-row items-center justify-around gap-4">
+                {healthBreakdownData.length === 0 ? (
+                  <div className="text-muted-foreground text-sm italic">No health status available.</div>
+                ) : (
+                  <>
+                    <div className="h-56 w-56 relative shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={healthBreakdownData}
+                            innerRadius={65}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {healthBreakdownData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-black text-foreground">
+                          {statsSummary.healthyTrucks}%
+                        </span>
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mt-0.5">
+                          Health Index
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {healthBreakdownData.map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                          <div>
+                            <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              ({item.value} {item.value === 1 ? 'Truck' : 'Trucks'})
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+
+            {/* Chart 3: Cost by Vehicle */}
+            <Card className="border border-border/60 bg-card rounded-2xl p-5 space-y-4 lg:col-span-2">
+              <h3 className="font-extrabold text-lg text-foreground flex items-center gap-2">
+                <Truck className="w-5 h-5 text-primary" /> Top Maintenance Costs by Vehicle Registration
+              </h3>
+              <div className="h-72 w-full">
+                {truckCostData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm italic">
+                    No vehicle expenditures logs.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={truckCostData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      />
+                      <Bar dataKey="Amount" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={45} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Predictive Maintenance & Forecast Schedule */}
+          <Card className="border border-border bg-card rounded-2xl overflow-hidden shadow-sm">
+            <CardHeader className="p-5 border-b border-border bg-muted/10">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarRange className="w-5 h-5 text-primary" /> Predictive Maintenance Forecast Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/10">
+                    <TableRow>
+                      <TableHead>Vehicle</TableHead>
+                      <TableHead>Component / Task</TableHead>
+                      <TableHead className="text-right">Usage (Daily Run)</TableHead>
+                      <TableHead className="text-right">KMs Remaining</TableHead>
+                      <TableHead className="text-right">Estimated Days Left</TableHead>
+                      <TableHead className="text-right">Forecasted Due Date</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {predictiveForecasts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-12 text-muted-foreground italic">
+                          No service interval configurations found. Set them up inside the Vehicles Roster.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      predictiveForecasts.map(f => {
+                        const isOverdue = f.kmsRemaining < 0;
+                        const isSoon = f.daysRemaining !== null && f.daysRemaining >= 0 && f.daysRemaining <= 15;
+                        
+                        return (
+                          <TableRow key={f.id} className="hover:bg-muted/5 transition-colors">
+                            <TableCell className="font-bold text-foreground">{f.truckNumber}</TableCell>
+                            <TableCell className="font-semibold">{f.component}</TableCell>
+                            <TableCell className="text-right font-mono text-xs text-muted-foreground">{f.dailyKms} KM/day</TableCell>
+                            <TableCell className={`text-right font-bold tabular-nums ${
+                              isOverdue ? 'text-rose-500' : isSoon ? 'text-amber-500' : 'text-emerald-500'
+                            }`}>
+                              {isOverdue 
+                                ? `-${Math.abs(f.kmsRemaining).toLocaleString()}` 
+                                : f.kmsRemaining.toLocaleString()
+                              } KMs
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {isOverdue ? (
+                                <span className="text-rose-500 font-bold">Overdue</span>
+                              ) : f.daysRemaining !== null ? (
+                                `${f.daysRemaining} days`
+                              ) : (
+                                '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs">
+                              {isOverdue ? (
+                                <span className="text-rose-500 font-bold">Immediate</span>
+                              ) : f.estDueDate ? (
+                                format(f.estDueDate, 'MMM dd, yyyy')
+                              ) : (
+                                '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge 
+                                variant="outline" 
+                                className={cn(
+                                  "capitalize font-bold text-[9px] px-2 py-0.5 rounded-full border-0",
+                                  isOverdue ? 'bg-rose-500/15 text-rose-400' :
+                                  isSoon ? 'bg-amber-500/15 text-amber-400' :
+                                  'bg-emerald-500/15 text-emerald-400'
+                                )}
+                              >
+                                {isOverdue ? 'Critical' : isSoon ? 'Caution' : 'Healthy'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* TAB: Monthly Reminders (Air Filter & Greasing) */}
