@@ -20,7 +20,6 @@ const key = (label) => {
   return label.toLowerCase().replace(/[\s&]+/g, '_').trim();
 };
 
-// Icon for each group title (shown when collapsed)
 const GROUP_ICON = {
   Overview:       LayoutDashboard,
   Operations:     ClipboardList,
@@ -31,15 +30,24 @@ const GROUP_ICON = {
   Administration: Settings,
 };
 
-// Colour accent per group
 const GROUP_COLOR = {
-  Overview:       'text-blue-400',
-  Operations:     'text-emerald-400',
-  Finance:        'text-amber-400',
-  'Fleet & Staff':'text-violet-400',
-  Communication:  'text-cyan-400',
-  Directory:      'text-rose-400',
-  Administration: 'text-slate-400',
+  Overview:        'text-blue-400',
+  Operations:      'text-emerald-400',
+  Finance:         'text-amber-400',
+  'Fleet & Staff': 'text-violet-400',
+  Communication:   'text-cyan-400',
+  Directory:       'text-rose-400',
+  Administration:  'text-slate-400',
+};
+
+const GROUP_BG = {
+  Overview:        'bg-blue-500/10',
+  Operations:      'bg-emerald-500/10',
+  Finance:         'bg-amber-500/10',
+  'Fleet & Staff': 'bg-violet-500/10',
+  Communication:   'bg-cyan-500/10',
+  Directory:       'bg-rose-500/10',
+  Administration:  'bg-slate-500/10',
 };
 
 export default function Sidebar({ isExpanded, setIsExpanded }) {
@@ -51,6 +59,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
   const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
+  const userName = currentUser?.full_name || currentUser?.name || 'User';
   const roleLabel = (currentUser?.role || '').replace('_', ' ');
 
   useEffect(() => {
@@ -60,12 +69,12 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   }, []);
 
   const operationsItems = [
-    { icon: ClipboardList, label: 'Trip Logs',           path: '/trip-logs',           roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: MapPin,        label: 'Route Master',         path: '/routes-master',        roles: ['super_admin','admin','dispatcher'] },
-    { icon: FileText,      label: 'Quotes',               path: '/quotes-manager',       roles: ['super_admin','admin','manager'] },
-    { icon: Droplet,       label: 'Fuel Tracker',         path: '/fuel-tracker',         roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: Wrench,        label: 'Fleet Maintenance',    path: '/fleet-maintenance',    roles: ['super_admin','admin','dispatcher'] },
-    { icon: Package,       label: 'Inventory Management', path: '/inventory',            roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: ClipboardList, label: 'Trip Logs',           path: '/trip-logs',        roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: MapPin,        label: 'Route Master',         path: '/routes-master',    roles: ['super_admin','admin','dispatcher'] },
+    { icon: FileText,      label: 'Quotes',               path: '/quotes-manager',   roles: ['super_admin','admin','manager'] },
+    { icon: Droplet,       label: 'Fuel Tracker',         path: '/fuel-tracker',     roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: Wrench,        label: 'Fleet Maintenance',    path: '/fleet-maintenance',roles: ['super_admin','admin','dispatcher'] },
+    { icon: Package,       label: 'Inventory',            path: '/inventory',        roles: ['super_admin','admin','manager','dispatcher'] },
   ];
   if (showPodManagement) {
     operationsItems.push({ icon: FileBox, label: 'POD', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
@@ -76,36 +85,36 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Overview',
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard',    path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: BarChart3,       label: 'Analytics',    path: '/analytics',               roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: CalendarDays,    label: 'Calendar',     path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: Trophy,          label: 'Leaderboard',  path: '/leaderboard',             roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: PieChart,        label: 'Client Analysis', path: '/client-analysis',      roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: TrendingUp,      label: 'Trip Overview',path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: Bell,            label: 'Reminders',    path: '/reminders',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: CheckSquare,     label: 'To-Do List',   path: '/todo',                    roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: BarChart3,       label: 'Analytics',      path: '/analytics',               roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: CalendarDays,    label: 'Calendar',       path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Trophy,          label: 'Leaderboard',    path: '/leaderboard',             roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: PieChart,        label: 'Client Analysis',path: '/client-analysis',         roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: TrendingUp,      label: 'Trip Overview',  path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Bell,            label: 'Reminders',      path: '/reminders',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: CheckSquare,     label: 'To-Do List',     path: '/todo',                    roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     { title: 'Operations', items: operationsItems },
     {
       title: 'Finance',
       items: [
-        { icon: FileText,              label: 'Cashbook',         path: '/cashbook',          roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: FileText,              label: 'Expenses',         path: '/expenses',           roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: MessageSquareWarning,  label: 'Payment Requests', path: '/payment-requests',  roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: CreditCard,            label: 'Credit Cards',     path: '/credit-cards',       roles: ['super_admin','admin'] },
-        { icon: FileText,              label: 'Payroll',          path: '/payroll',            roles: ['super_admin','admin'] },
-        { icon: Calculator,            label: 'EMI Calculator',   path: '/emi-calculator',     roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: MessageSquareWarning, label: 'Payment Requests', path: '/payment-requests', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: CreditCard,           label: 'Credit Cards',     path: '/credit-cards',     roles: ['super_admin','admin'] },
+        { icon: FileText,             label: 'Payroll',          path: '/payroll',          roles: ['super_admin','admin'] },
+        { icon: Calculator,           label: 'EMI Calculator',   path: '/emi-calculator',   roles: ['super_admin','admin','manager','dispatcher'] },
       ]
     },
     {
       title: 'Fleet & Staff',
       items: [
-        { icon: Truck,       label: 'Truck Manager', path: '/truck-manager',       roles: ['super_admin','admin','dispatcher','supervisor'] },
-        { icon: FileBox,     label: 'Vehicle Docs',  path: '/truck-docs',          roles: ['super_admin','admin','dispatcher','supervisor'] },
-        { icon: Users,       label: 'Employees',     path: '/employees',           roles: ['super_admin','admin','manager','supervisor'] },
-        { icon: FileBox,     label: 'Employee Docs', path: '/employee-docs',       roles: ['super_admin','admin','supervisor'] },
-        { icon: CalendarDays,label: 'Attendance',    path: '/dashboard/attendance',roles: ['super_admin','admin','manager','supervisor'] },
+        { icon: Truck,        label: 'Truck Manager', path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
+        { icon: FileBox,      label: 'Vehicle Docs',  path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
+        { icon: Users,        label: 'Employees',     path: '/employees',            roles: ['super_admin','admin','manager','supervisor'] },
+        { icon: FileBox,      label: 'Employee Docs', path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
+        { icon: CalendarDays, label: 'Attendance',    path: '/dashboard/attendance', roles: ['super_admin','admin','manager','supervisor'] },
       ]
     },
     {
@@ -135,32 +144,49 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          'hidden md:flex bg-[hsl(var(--sidebar-bg))]/90 backdrop-blur-md border-r border-white/5 transition-all duration-300 flex-col z-20 h-full relative shadow-2xl',
-          isExpanded ? 'w-[230px]' : 'w-[68px]'
+          'hidden md:flex flex-col z-20 h-full relative',
+          'bg-[hsl(var(--sidebar-bg))] border-r border-white/[0.04]',
+          'transition-[width] duration-300 ease-in-out',
+          isExpanded ? 'w-[220px]' : 'w-[60px]'
         )}
+        style={{ boxShadow: '2px 0 16px rgba(0,0,0,0.35)' }}
       >
-        {/* Top toggle */}
-        <div className="flex items-center justify-between px-3 border-b border-white/5 h-14 shrink-0">
+
+        {/* ── Brand + toggle ──────────────────────────────────── */}
+        <div className="flex items-center justify-between px-3 border-b border-white/[0.04] h-[57px] shrink-0">
           {isExpanded && (
-            <div className="flex items-center gap-2 ml-1 overflow-hidden">
-              <span className="font-bold text-sm text-foreground tracking-tight truncate">Jai Bhavani</span>
+            <div className="flex items-center gap-2.5 ml-0.5 overflow-hidden">
+              {/* Coloured monogram */}
+              <div className="w-7 h-7 rounded-lg bg-primary/20 border border-primary/25 flex items-center justify-center shrink-0">
+                <span className="text-primary text-[11px] font-black">JB</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[12px] font-bold text-foreground tracking-tight leading-none truncate">Jai Bhavani</p>
+                <p className="text-[9px] text-muted-foreground/70 leading-none mt-0.5 truncate">Cargo</p>
+              </div>
             </div>
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
-              'p-1.5 rounded-lg bg-white/5 text-[hsl(var(--sidebar-text-muted))] hover:bg-primary/20 hover:text-primary transition-all duration-200 shrink-0',
+              'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
+              'text-muted-foreground/60 hover:text-foreground',
+              'bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.04]',
+              'transition-all duration-150',
               !isExpanded && 'mx-auto'
             )}
             aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            {isExpanded ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {isExpanded
+              ? <ChevronLeft className="w-3.5 h-3.5" />
+              : <ChevronRight className="w-3.5 h-3.5" />
+            }
           </button>
         </div>
 
-        {/* Nav */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
-          <nav className="space-y-5 px-2">
+        {/* ── Nav ─────────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-2 hide-scrollbar">
+          <nav className="px-2 space-y-3.5">
             {menuGroups.map((group, idx) => {
               const visibleItems = group.items.filter(item => item.roles.includes(role));
               if (visibleItems.length === 0) return null;
@@ -169,16 +195,19 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
               return (
                 <div key={idx}>
+                  {/* Group header */}
                   {isExpanded ? (
-                    <h3 className={cn('px-2 mb-1.5 text-[9px] font-extrabold tracking-[0.15em] uppercase flex items-center gap-2', groupColor, 'opacity-70')}>
-                      <GroupIcon className="w-3 h-3 shrink-0" />
-                      {t(key(group.title))}
-                    </h3>
+                    <div className="flex items-center gap-1.5 px-2 mb-1.5">
+                      <GroupIcon className={cn('w-2.5 h-2.5 shrink-0', groupColor)} />
+                      <span className={cn('text-[9.5px] font-bold tracking-[0.12em] uppercase', groupColor, 'opacity-60')}>
+                        {t(key(group.title))}
+                      </span>
+                    </div>
                   ) : (
-                    <div className="flex justify-center mb-1">
+                    <div className="flex justify-center mb-1.5">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className={cn('w-5 h-5 shrink-0 opacity-40', groupColor)}>
+                          <div className={cn('w-4 h-4 opacity-35', groupColor)}>
                             <GroupIcon className="w-full h-full" />
                           </div>
                         </TooltipTrigger>
@@ -189,10 +218,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                     </div>
                   )}
 
+                  {/* Items */}
                   <ul className="space-y-0.5">
                     {visibleItems.map((item, itemIdx) => {
-                      const isActive = location.pathname === item.path ||
+                      const isActive =
+                        location.pathname === item.path ||
                         (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+
                       return (
                         <li key={itemIdx}>
                           <Tooltip>
@@ -200,22 +232,30 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                               <Link
                                 to={item.path}
                                 className={cn(
-                                  'flex items-center gap-3 px-2.5 py-2 rounded-xl transition-all duration-200 relative group border border-transparent',
+                                  'flex items-center gap-2.5 rounded-lg transition-all duration-150 relative',
+                                  isExpanded ? 'px-2.5 py-[7px]' : 'justify-center py-[7px] px-0',
                                   isActive
-                                    ? 'bg-primary/12 text-primary font-semibold border-primary/20 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
-                                    : 'text-[hsl(var(--sidebar-text))] hover:bg-white/5 hover:text-primary',
-                                  !isExpanded && 'justify-center px-0'
+                                    ? 'bg-primary/10 text-primary border border-primary/15'
+                                    : 'text-[hsl(var(--sidebar-text-muted))] hover:bg-white/[0.04] hover:text-foreground border border-transparent'
                                 )}
                               >
+                                {/* Active indicator */}
                                 {isActive && (
-                                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-primary rounded-r-full shadow-[0_0_8px_hsl(var(--primary))]" />
+                                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-3.5 bg-primary rounded-r-full" />
                                 )}
-                                <item.icon className={cn(
-                                  'shrink-0 transition-all duration-200',
-                                  isActive ? 'w-[18px] h-[18px] text-primary' : 'w-[18px] h-[18px] text-[hsl(var(--sidebar-text-muted))] group-hover:text-primary group-hover:scale-110'
-                                )} />
+                                <item.icon
+                                  className={cn(
+                                    'shrink-0 w-[15px] h-[15px] transition-colors duration-150',
+                                    isActive ? 'text-primary' : 'text-[hsl(var(--sidebar-text-muted))] group-hover:text-foreground'
+                                  )}
+                                />
                                 {isExpanded && (
-                                  <span className="truncate text-[12.5px]">{t(key(item.label))}</span>
+                                  <span className={cn(
+                                    'truncate text-[12px] font-medium leading-none',
+                                    isActive ? 'text-primary font-semibold' : ''
+                                  )}>
+                                    {t(key(item.label))}
+                                  </span>
                                 )}
                               </Link>
                             </TooltipTrigger>
@@ -229,38 +269,46 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                       );
                     })}
                   </ul>
+
+                  {/* Separator between groups */}
+                  {idx < menuGroups.length - 1 && isExpanded && (
+                    <div className="mx-2 mt-3 border-t border-white/[0.04]" />
+                  )}
                 </div>
               );
             })}
           </nav>
         </div>
 
-        {/* User footer */}
-        <div className={cn('border-t border-white/5 p-3 shrink-0 space-y-2')}>
+        {/* ── User footer ─────────────────────────────────────── */}
+        <div className="border-t border-white/[0.04] p-2 shrink-0 space-y-1">
+          {/* User pill */}
           {isExpanded && (
-            <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl bg-white/4 border border-white/5">
-              <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-[11px] font-black shrink-0">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.04] mb-1">
+              <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-primary text-[10px] font-black shrink-0">
                 {userInitials}
               </div>
-              <div className="min-w-0">
-                <p className="text-[12px] font-semibold text-foreground truncate">
-                  {currentUser?.full_name || currentUser?.name || 'User'}
-                </p>
-                <p className="text-[10px] text-muted-foreground capitalize">{roleLabel}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11.5px] font-semibold text-foreground truncate leading-none">{userName}</p>
+                <p className="text-[9px] text-muted-foreground/70 capitalize mt-0.5 leading-none">{roleLabel}</p>
               </div>
             </div>
           )}
+
+          {/* Logout */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={logout}
                 className={cn(
-                  'flex items-center gap-3 w-full px-2.5 py-2 text-[hsl(var(--sidebar-text-muted))] hover:bg-destructive/10 hover:text-rose-400 rounded-xl border border-transparent hover:border-destructive/20 transition-all duration-200 text-[12.5px] font-medium',
-                  !isExpanded && 'justify-center px-0'
+                  'flex items-center gap-2.5 w-full rounded-lg transition-all duration-150',
+                  'text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/[0.07]',
+                  'border border-transparent hover:border-rose-500/15',
+                  isExpanded ? 'px-2.5 py-[7px]' : 'justify-center py-[7px] px-0'
                 )}
               >
-                <LogOut className="w-[18px] h-[18px] shrink-0" />
-                {isExpanded && <span>{t('logout')}</span>}
+                <LogOut className="w-[15px] h-[15px] shrink-0" />
+                {isExpanded && <span className="text-[12px] font-medium">{t('logout')}</span>}
               </button>
             </TooltipTrigger>
             {!isExpanded && (

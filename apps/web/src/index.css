@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -42,12 +42,12 @@
     
     --radius: 0.75rem;
 
-    --sidebar-bg: 222 47% 9%;
-    --sidebar-text: 210 40% 98%;
-    --sidebar-text-muted: 215 20% 65%;
+    --sidebar-bg: 222 47% 6%;
+    --sidebar-text: 210 40% 92%;
+    --sidebar-text-muted: 215 20% 55%;
     --sidebar-accent: 217 91% 60%;
-    --sidebar-hover-bg: 217 32% 14%;
-    --sidebar-border: 217 32% 17%;
+    --sidebar-hover-bg: 217 32% 12%;
+    --sidebar-border: 217 32% 14%;
     
     /* Maintenance Status Properties */
     --status-open: 350 89% 60%;
@@ -64,43 +64,29 @@
   .dark {
     --background: 222 47% 7%;
     --foreground: 210 40% 98%;
-    
     --card: 224 40% 10%;
     --card-foreground: 210 40% 98%;
-    
     --popover: 222 47% 9%;
     --popover-foreground: 210 40% 98%;
-    
     --primary: 217 91% 60%;
     --primary-foreground: 222 47% 7%;
-    
     --secondary: 217 32% 17%;
     --secondary-foreground: 210 40% 98%;
-    
     --muted: 217 32% 14%;
     --muted-foreground: 215 20% 65%;
-    
     --accent: 24 95% 53%;
     --accent-foreground: 210 40% 98%;
-    
     --destructive: 350 89% 60%;
     --destructive-foreground: 210 40% 98%;
-
     --success: 160 84% 39%;
     --success-foreground: 210 40% 98%;
-
     --warning: 38 92% 50%;
     --warning-foreground: 210 40% 98%;
-    
     --border: 217 32% 17%;
     --input: 217 32% 17%;
     --ring: 217 91% 60%;
-
-    /* Maintenance Status Properties */
     --status-open: 350 89% 60%;
     --status-resolved: 160 84% 39%;
-
-    /* Chart colors */
     --chart-1: 217 91% 60%;
     --chart-2: 160 84% 39%;
     --chart-3: 350 89% 60%;
@@ -113,17 +99,22 @@
   * {
     @apply border-border;
   }
-  body {
-    background-color: #070a13 !important;
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(244, 63, 94, 0.08) 0px, transparent 50%),
-      radial-gradient(at 50% 50%, rgba(79, 70, 229, 0.05) 0px, transparent 60%) !important;
-    background-attachment: fixed !important;
-    @apply text-foreground font-sans antialiased;
-    font-size: 15px; 
-    line-height: 1.625;
+
+  html {
+    scroll-behavior: smooth;
   }
+
+  body {
+    background-color: #070a13;
+    background-image: 
+      radial-gradient(ellipse at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(244, 63, 94, 0.06) 0px, transparent 55%);
+    background-attachment: fixed;
+    @apply text-foreground font-sans antialiased;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-balance text-foreground tracking-tight;
   }
@@ -131,191 +122,177 @@
   h2 { @apply text-3xl md:text-4xl font-bold leading-tight; letter-spacing: -0.015em; }
   h3 { @apply text-2xl md:text-3xl font-semibold leading-snug; }
   h4 { @apply text-xl md:text-2xl font-semibold leading-snug; }
-  
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  /* Custom scrollbars */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+
+  /* ── Refined scrollbars ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.07);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.35);
   }
 }
 
 @layer components {
-  /* Global Glassmorphic Card Override */
+
+  /* ── Cards ──────────────────────────────────────────────────── */
   .bg-card, [role="tabpanel"], .rounded-2xl.border.bg-card, .border.bg-card {
-    background-color: rgba(13, 20, 38, 0.5) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background-color: rgba(12, 18, 35, 0.55) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.5) !important;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
   }
 
   .bg-card:hover {
-    background-color: rgba(20, 28, 52, 0.6) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    box-shadow: 0 15px 40px -10px rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(99, 102, 241, 0.06) !important;
   }
 
-  /* Global Dialog & Popover Glassmorphism */
-  .rounded-2xl.border.bg-background, [role="dialog"], .bg-popover, .bg-secondary\/30 {
-    background-color: rgba(10, 15, 30, 0.75) !important;
-    backdrop-filter: blur(24px) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.09) !important;
-    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  /* ── Dialogs & Popovers ─────────────────────────────────────── */
+  .rounded-2xl.border.bg-background, [role="dialog"], .bg-popover {
+    background-color: rgba(8, 12, 28, 0.88) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.7) !important;
   }
 
-  /* Form Controls Global Overhaul */
-  input, textarea, select, .input-highlight {
-    background-color: rgba(10, 15, 30, 0.45) !important;
+  /* ── Form Controls ──────────────────────────────────────────── */
+  input, textarea, select {
+    background-color: rgba(10, 15, 30, 0.5) !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: var(--radius) !important;
     color: #ffffff !important;
-    transition: all 0.2s ease-in-out !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
   }
 
   input:focus, textarea:focus, select:focus {
     outline: none !important;
-    border-color: rgba(99, 102, 241, 0.5) !important;
-    box-shadow: 0 0 12px rgba(99, 102, 241, 0.25) !important;
-    background-color: rgba(13, 20, 38, 0.65) !important;
+    border-color: rgba(99, 102, 241, 0.45) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+    background-color: rgba(13, 20, 40, 0.7) !important;
   }
 
-  /* Buttons & Badges Visual Upgrades */
+  /* ── Primary Buttons ────────────────────────────────────────── */
   button.bg-primary, .btn-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, #4f46e5 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(240 84% 58%) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.25) !important;
+    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
   }
 
   button.bg-primary:hover, .btn-primary:hover {
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4) !important;
     transform: translateY(-1px) !important;
   }
 
-  /* Tables Spacing & Card Layout Override */
+  /* ── Tables ─────────────────────────────────────────────────── */
   table {
     border-collapse: separate !important;
-    border-spacing: 0 6px !important;
+    border-spacing: 0 4px !important;
     background: transparent !important;
   }
 
   tr {
-    background-color: rgba(15, 23, 42, 0.25) !important;
-    transition: all 0.2s ease-in-out !important;
+    background-color: rgba(14, 20, 40, 0.3) !important;
+    transition: background-color 0.15s ease !important;
   }
 
   tr:hover {
-    background-color: rgba(255, 255, 255, 0.04) !important;
-    transform: translateX(2px) !important;
+    background-color: rgba(99, 102, 241, 0.04) !important;
   }
 
   th {
-    background-color: rgba(10, 15, 30, 0.4) !important;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.06) !important;
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
     color: hsl(var(--muted-foreground)) !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     text-transform: uppercase !important;
-    font-size: 0.7rem !important;
-    letter-spacing: 0.05em !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0.06em !important;
+    padding: 10px 16px !important;
   }
 
   td {
-    border-top: 1px solid rgba(255, 255, 255, 0.03) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
-    padding: 12px 16px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.025) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.025) !important;
+    padding: 11px 16px !important;
   }
   
   td:first-child {
-    border-left: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.025) !important;
     border-top-left-radius: 8px !important;
     border-bottom-left-radius: 8px !important;
   }
   
   td:last-child {
-    border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.025) !important;
     border-top-right-radius: 8px !important;
     border-bottom-right-radius: 8px !important;
   }
 
+  /* ── Status Badges ──────────────────────────────────────────── */
   .status-badge {
     display: inline-flex;
     align-items: center;
     padding: 0.125rem 0.625rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     border-width: 1px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
   }
   
   .badge-open {
-    background-color: hsl(var(--status-open) / 0.15);
+    background-color: hsl(var(--status-open) / 0.12);
     color: hsl(var(--status-open));
-    border-color: hsl(var(--status-open) / 0.3);
+    border-color: hsl(var(--status-open) / 0.25);
   }
   
   .badge-resolved {
-    background-color: hsl(var(--status-resolved) / 0.15);
+    background-color: hsl(var(--status-resolved) / 0.12);
     color: hsl(var(--status-resolved));
-    border-color: hsl(var(--status-resolved) / 0.3);
+    border-color: hsl(var(--status-resolved) / 0.25);
   }
 
-  .problem-resolved-row {
-    opacity: 0.6;
-    background-color: hsl(var(--muted) / 0.1);
-  }
-
-  .problem-resolved-text {
-    text-decoration: line-through;
-    color: hsl(var(--muted-foreground));
-  }
+  .problem-resolved-row { opacity: 0.55; }
+  .problem-resolved-text { text-decoration: line-through; color: hsl(var(--muted-foreground)); }
 
   .chart-container {
     @apply bg-card border border-border rounded-xl p-4 shadow-sm;
   }
 
-  /* Glassmorphism Classes */
+  /* ── Glassmorphism ──────────────────────────────────────────── */
   .glassmorphism {
-    background: rgba(15, 23, 42, 0.45) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+    background: rgba(12, 18, 38, 0.55) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
   }
 
   .glassmorphism-interactive {
-    background: rgba(15, 23, 42, 0.45) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: rgba(12, 18, 38, 0.55) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
   }
 
   .glassmorphism-interactive:hover {
-    background: rgba(30, 41, 59, 0.55) !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.18) !important;
-    transform: translateY(-2px) !important;
+    background: rgba(22, 32, 60, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15) !important;
+    transform: translateY(-1px) !important;
   }
 
+  /* ── Gradient text ──────────────────────────────────────────── */
   .gradient-text {
     background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #22d3ee 100%) !important;
     -webkit-background-clip: text !important;
@@ -330,63 +307,49 @@
     background-clip: text !important;
   }
 
-  .neon-glow-primary {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3) !important;
-  }
+  /* ── Glows ──────────────────────────────────────────────────── */
+  .neon-glow-primary { box-shadow: 0 0 20px rgba(99, 102, 241, 0.25) !important; }
+  .neon-glow-accent  { box-shadow: 0 0 20px rgba(249, 115, 22, 0.25) !important; }
 
-  .neon-glow-accent {
-    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3) !important;
-  }
-
-  .floating-animation {
-    animation: float 6s ease-in-out infinite !important;
-  }
-
+  /* ── Float animation ────────────────────────────────────────── */
+  .floating-animation { animation: float 6s ease-in-out infinite !important; }
   @keyframes float {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
   }
 }
 
 @layer utilities {
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  /* ── Hide scrollbar ─────────────────────────────────────────── */
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* ── Page entry animation ─────────────────────────────────────── */
+  /* ── Page entry animation ───────────────────────────────────── */
   .page-enter {
-    animation: pageEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   @keyframes pageEnter {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* ── Shimmer for loading states ───────────────────────────────── */
+  /* ── Shimmer skeleton ───────────────────────────────────────── */
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(255,255,255,0.03) 25%,
-      rgba(255,255,255,0.08) 50%,
-      rgba(255,255,255,0.03) 75%
+      rgba(255,255,255,0.02) 25%,
+      rgba(255,255,255,0.06) 50%,
+      rgba(255,255,255,0.02) 75%
     );
     background-size: 400% 100%;
-    animation: shimmer 1.6s ease-in-out infinite;
+    animation: shimmer 1.8s ease-in-out infinite;
   }
   @keyframes shimmer {
     from { background-position: 200% 0; }
     to   { background-position: -200% 0; }
   }
 
-  /* ── Stat card accent strip ──────────────────────────────────── */
+  /* ── Stat card accent strip ─────────────────────────────────── */
   .stat-strip {
     position: absolute;
     inset-inline: 0;
@@ -404,40 +367,27 @@
 
   /* ── Notification pulse ──────────────────────────────────────── */
   @keyframes ping-slow {
-    0%    { transform: scale(1); opacity: 1; }
+    0%       { transform: scale(1); opacity: 1; }
     75%, 100% { transform: scale(1.6); opacity: 0; }
   }
-  .animate-ping-slow {
-    animation: ping-slow 2s cubic-bezier(0,0,0.2,1) infinite;
-  }
+  .animate-ping-slow { animation: ping-slow 2s cubic-bezier(0,0,0.2,1) infinite; }
 
-  /* ── Soft shadow elevations ──────────────────────────────────── */
-  .shadow-soft    { box-shadow: 0 4px 20px -4px rgba(0,0,0,0.35); }
-  .shadow-elevated{ box-shadow: 0 8px 30px -6px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06); }
-  .shadow-glow-primary { box-shadow: 0 0 20px -4px rgba(99,102,241,0.35); }
-  .shadow-glow-success  { box-shadow: 0 0 20px -4px rgba(16,185,129,0.35); }
-  .shadow-glow-danger   { box-shadow: 0 0 20px -4px rgba(244,63,94,0.35); }
+  /* ── Shadow elevations ───────────────────────────────────────── */
+  .shadow-soft     { box-shadow: 0 2px 16px -4px rgba(0,0,0,0.4); }
+  .shadow-elevated { box-shadow: 0 6px 28px -6px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05); }
+  .shadow-glow-primary { box-shadow: 0 0 20px -4px rgba(99,102,241,0.3); }
+  .shadow-glow-success  { box-shadow: 0 0 20px -4px rgba(16,185,129,0.3); }
+  .shadow-glow-danger   { box-shadow: 0 0 20px -4px rgba(244,63,94,0.3); }
 }
 
+/* ── Print ───────────────────────────────────────────────────── */
 @media print {
-  /* Hide the action bar, button triggers, header, sidebars, modal backdrops */
-  .print-hidden,
-  .no-print,
-  button,
-  .btn,
-  header,
-  footer,
-  aside,
-  nav,
-  .sidebar,
-  .dialog-overlay,
-  .dialog-close,
-  [role="dialog"] button,
+  .print-hidden, .no-print, button, .btn, header, footer, aside, nav,
+  .sidebar, .dialog-overlay, .dialog-close, [role="dialog"] button,
   button[class*="DialogClose"] {
     display: none !important;
   }
 
-  /* Reset body and html for high contrast printing */
   html, body {
     background-color: #ffffff !important;
     background: #ffffff !important;
@@ -450,7 +400,6 @@
     print-color-adjust: exact !important;
   }
 
-  /* Make sure the slip container spans the full page and keeps preview styling */
   .print-content {
     margin: 0 !important;
     padding: 10mm !important;
@@ -462,53 +411,30 @@
     print-color-adjust: exact !important;
   }
 
-  /* Reset Radix Dialog component styles for raw printing */
-  [role="dialog"],
-  div[class*="DialogContent"] {
+  [role="dialog"], div[class*="DialogContent"] {
     position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    height: auto !important;
+    left: 0 !important; top: 0 !important;
+    width: 100% !important; height: auto !important;
     max-width: 100% !important;
-    border: none !important;
-    border-radius: 0 !important;
+    border: none !important; border-radius: 0 !important;
     box-shadow: none !important;
     background: #ffffff !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    padding: 0 !important; margin: 0 !important;
     overflow: visible !important;
   }
 
-  /* Hide dialog overlays/backdrops */
-  div[class*="DialogOverlay"],
-  .dialog-overlay,
-  .dialog-backdrop {
+  div[class*="DialogOverlay"], .dialog-overlay, .dialog-backdrop {
     display: none !important;
   }
 
-  /* Set page format */
   @page {
     size: A4 portrait;
-    margin: 15mm 15mm 15mm 15mm;
+    margin: 15mm;
   }
 }
 
-/* ── Continuous Horizontal Logo Marquee Animations ───────────── */
-@keyframes marquee {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(-100%); }
-}
-
-@keyframes marquee2 {
-  0%   { transform: translateX(100%); }
-  100% { transform: translateX(0%); }
-}
-
-.animate-marquee {
-  animation: marquee 25s linear infinite;
-}
-
-.animate-marquee2 {
-  animation: marquee2 25s linear infinite;
-}
+/* ── Marquee ─────────────────────────────────────────────────── */
+@keyframes marquee  { 0%   { transform: translateX(0%); }    100% { transform: translateX(-100%); } }
+@keyframes marquee2 { 0%   { transform: translateX(100%); }  100% { transform: translateX(0%); } }
+.animate-marquee  { animation: marquee  25s linear infinite; }
+.animate-marquee2 { animation: marquee2 25s linear infinite; }

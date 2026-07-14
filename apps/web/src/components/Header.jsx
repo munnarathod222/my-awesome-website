@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, Truck, BarChart3, Globe, Bell, ChevronRight, Home } from 'lucide-react';
+import { LogOut, Menu, Globe, Bell, ChevronRight, Home } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { cn } from '@/lib/utils.js';
@@ -47,29 +47,32 @@ const ROUTE_LABELS = {
 };
 
 function useBreadcrumbs(pathname) {
-  const label = ROUTE_LABELS[pathname] || ROUTE_LABELS[Object.keys(ROUTE_LABELS).find(k => pathname.startsWith(k))] || '';
-  return label;
+  return ROUTE_LABELS[pathname] ||
+    ROUTE_LABELS[Object.keys(ROUTE_LABELS).find(k => pathname.startsWith(k))] || '';
 }
 
-// ── Desktop NavLink ───────────────────────────────────────────────────────────
-const NavLink = ({ to, children, location }) => {
-  const isActive = to === '/dashboard'
-    ? location.pathname === '/dashboard'
-    : location.pathname.startsWith(to);
-  return (
-    <Link
-      to={to}
-      className={cn(
-        'px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-200 rounded-xl',
-        isActive
-          ? 'bg-primary/12 text-primary border border-primary/25 shadow-[0_0_12px_rgba(99,102,241,0.12)]'
-          : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-      )}
-    >
-      {children}
-    </Link>
-  );
-};
+// ── Language selector ─────────────────────────────────────────────────────────
+const LangSelector = ({ compact, language, setLanguage }) => (
+  <div className={cn(
+    'flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03]',
+    compact ? 'px-1.5 py-0.5' : 'px-2 py-1'
+  )}>
+    <Globe className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+    <Select value={language} onValueChange={setLanguage}>
+      <SelectTrigger className={cn(
+        'bg-transparent border-none shadow-none focus:ring-0 font-medium text-foreground',
+        compact ? 'h-5 w-[40px] px-0.5 text-[10px]' : 'h-6 w-[72px] px-1 text-[11px]'
+      )}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="en">{compact ? 'EN' : 'English'}</SelectItem>
+        <SelectItem value="hi">{compact ? 'HI' : 'हिन्दी'}</SelectItem>
+        <SelectItem value="mr">{compact ? 'MR' : 'मराठी'}</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+);
 
 // ── Main Header ───────────────────────────────────────────────────────────────
 export default function Header() {
@@ -79,7 +82,6 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const pageLabel = useBreadcrumbs(location.pathname);
-
   const [pendingCount, setPendingCount] = useState(0);
 
   const handleLogout = () => { logout(); navigate('/'); };
@@ -87,7 +89,6 @@ export default function Header() {
   const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
 
-  // Fetch pending signup requests for bell badge (admins only)
   useEffect(() => {
     if (!isAdmin && !isSuperAdmin) return;
     pb.collection('signup_requests').getList(1, 1, {
@@ -96,82 +97,102 @@ export default function Header() {
     }).then(r => setPendingCount(r.totalItems)).catch(() => {});
   }, [isAdmin, isSuperAdmin]);
 
-  const LangSelector = ({ compact }) => (
-    <div className={cn('flex items-center rounded-xl border border-white/7 bg-white/4', compact ? 'px-1.5 py-0.5' : 'px-2 py-1')}>
-      <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0 mr-0.5" />
-      <Select value={language} onValueChange={setLanguage}>
-        <SelectTrigger className={cn('bg-transparent border-none shadow-none focus:ring-0 font-semibold text-foreground', compact ? 'h-6 w-[46px] px-0.5 text-[10px]' : 'h-7 w-20 px-1 text-xs')}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="en">{compact ? 'EN' : 'English'}</SelectItem>
-          <SelectItem value="hi">{compact ? 'HI' : 'हिन्दी'}</SelectItem>
-          <SelectItem value="mr">{compact ? 'MR' : 'मराठी'}</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
   return (
     <>
-      {/* ── Desktop header (hidden when authenticated – sidebar + top-bar layout) ── */}
+      {/* ── Desktop header ──────────────────────────────────────────────────── */}
       <header className={cn(
-        'sticky top-0 z-50 w-full border-b border-white/5 bg-background/55 backdrop-blur-md supports-[backdrop-filter]:bg-background/45 shadow-lg transition-all duration-300',
+        'sticky top-0 z-50 w-full',
+        'bg-[#070a13]/80 backdrop-blur-xl',
+        'border-b border-white/[0.05]',
+        'transition-all duration-200',
         isAuthenticated ? 'hidden md:block' : 'block'
       )}>
-        <div className="container max-w-7xl mx-auto flex h-14 items-center px-4 sm:px-6 lg:px-8 gap-4">
+        <div className="max-w-7xl mx-auto flex h-[57px] items-center px-5 gap-4">
 
-          {/* Brand Name */}
-          <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2.5 group shrink-0">
-            <span className="font-bold text-sm text-foreground tracking-tight group-hover:text-primary transition-colors">Jai Bhavani Cargo</span>
+          {/* Brand */}
+          <Link
+            to={isAuthenticated ? '/dashboard' : '/'}
+            className="flex items-center gap-2 group shrink-0"
+          >
+            <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">
+              <span className="text-primary text-[11px] font-black">JB</span>
+            </div>
+            <span className="font-bold text-[13px] text-foreground/90 tracking-tight group-hover:text-foreground transition-colors">
+              Jai Bhavani Cargo
+            </span>
           </Link>
 
           {/* Breadcrumb — authenticated only */}
           {isAuthenticated && pageLabel && (
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <Home className="w-3.5 h-3.5" />
-              <ChevronRight className="w-3 h-3 opacity-40" />
-              <span className="text-foreground font-semibold">{pageLabel}</span>
+            <div className="hidden md:flex items-center gap-1 text-[11px] text-muted-foreground/60 font-medium ml-1">
+              <Home className="w-3 h-3" />
+              <ChevronRight className="w-2.5 h-2.5 opacity-40" />
+              <span className="text-foreground/80 font-semibold">{pageLabel}</span>
             </div>
           )}
 
-          {/* Desktop nav — non-authenticated */}
+          {/* Desktop nav — public pages */}
           {!isAuthenticated && (
-            <nav className="hidden md:flex items-center gap-1 flex-1 px-4">
-              <NavLink to="/dashboard" location={location}>Dashboard</NavLink>
-              <NavLink to="/truck-manager" location={location}>Trucks</NavLink>
-              <NavLink to="/trip-logs" location={location}>Trips</NavLink>
-              <NavLink to="/cashbook" location={location}>Cashbook</NavLink>
-              {(isAdmin || isManager || isDispatcher) && (
-                <NavLink to="/analytics" location={location}>Analytics</NavLink>
-              )}
+            <nav className="hidden md:flex items-center gap-0.5 flex-1 px-4">
+              {[
+                { to: '/dashboard', label: 'Dashboard' },
+                { to: '/truck-manager', label: 'Trucks' },
+                { to: '/trip-logs', label: 'Trips' },
+                { to: '/cashbook', label: 'Cashbook' },
+                ...(isAdmin || isManager || isDispatcher ? [{ to: '/analytics', label: 'Analytics' }] : []),
+              ].map(({ to, label }) => {
+                const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={cn(
+                      'px-3 py-1.5 text-[12.5px] font-medium rounded-lg transition-all duration-150',
+                      isActive
+                        ? 'bg-primary/10 text-primary border border-primary/15'
+                        : 'text-muted-foreground hover:bg-white/[0.04] hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           )}
 
-          <div className="flex items-center gap-2.5 ml-auto shrink-0">
+          {/* Right side controls */}
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             {!isAuthenticated ? (
               <>
-                <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors hidden sm:block">
+                <Link
+                  to="/login"
+                  className="text-[12.5px] font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                >
                   Login
                 </Link>
-                <Button asChild size="sm" className="rounded-xl shadow-sm">
+                <Button asChild size="sm" className="rounded-lg text-[12.5px] h-8 px-3.5 shadow-sm">
                   <Link to="/signup">Get Started</Link>
                 </Button>
               </>
             ) : (
-              <div className="hidden md:flex items-center gap-2.5">
-                <LangSelector compact={false} />
+              <div className="hidden md:flex items-center gap-2">
+                <LangSelector compact={false} language={language} setLanguage={setLanguage} />
 
-                {/* Notification Bell */}
+                {/* Bell */}
                 {(isAdmin || isSuperAdmin) && (
                   <button
                     onClick={() => navigate('/dashboard/users?tab=signup-requests')}
-                    className="relative p-2 rounded-xl bg-white/4 border border-white/7 text-muted-foreground hover:text-foreground hover:bg-white/8 transition-all"
+                    className={cn(
+                      'relative w-8 h-8 rounded-lg flex items-center justify-center',
+                      'bg-white/[0.03] border border-white/[0.06]',
+                      'text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.07]',
+                      'transition-all duration-150'
+                    )}
                     aria-label="Pending requests"
                   >
-                    <Bell className="w-4 h-4" />
+                    <Bell className="w-3.5 h-3.5" />
                     {pendingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-lg animate-pulse">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
                         {pendingCount > 9 ? '9+' : pendingCount}
                       </span>
                     )}
@@ -179,55 +200,65 @@ export default function Header() {
                 )}
 
                 {/* User chip */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-secondary/40 border border-border/50 text-sm font-medium">
-                  <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-[10px] font-black shrink-0">
+                <div className={cn(
+                  'flex items-center gap-2 px-2.5 py-1.5 rounded-lg',
+                  'bg-white/[0.03] border border-white/[0.06]'
+                )}>
+                  <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-primary text-[9px] font-black shrink-0">
                     {userInitials}
                   </div>
-                  <span className="text-foreground text-[13px] max-w-[120px] truncate">
+                  <span className="text-[12px] font-medium text-foreground/85 max-w-[110px] truncate">
                     {currentUser?.full_name || currentUser?.name || 'User'}
                   </span>
                 </div>
 
-                <Button
-                  variant="ghost" size="icon"
+                <button
                   onClick={handleLogout}
-                  className="text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors"
+                  className={cn(
+                    'w-8 h-8 rounded-lg flex items-center justify-center',
+                    'bg-white/[0.03] border border-white/[0.06]',
+                    'text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/[0.07] hover:border-rose-500/15',
+                    'transition-all duration-150'
+                  )}
                   aria-label="Logout"
                 >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
               </div>
             )}
 
-            {/* Mobile Sheet (non-authenticated) */}
+            {/* Mobile menu — public pages */}
             {!isAuthenticated && (
               <Sheet>
                 <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon" className="rounded-xl">
-                    <Menu className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="rounded-lg w-8 h-8">
+                    <Menu className="h-4 w-4" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[280px]">
+                <SheetContent side="right" className="w-[260px]">
                   <SheetHeader>
-                    <SheetTitle className="flex items-center gap-2 font-heading">
-                      <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
+                    <SheetTitle className="flex items-center gap-2 font-heading text-sm">
+                      <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
+                        <span className="text-primary text-[11px] font-black">JB</span>
+                      </div>
+                      Jai Bhavani Cargo
                     </SheetTitle>
                     <SheetDescription className="sr-only">Navigation</SheetDescription>
                   </SheetHeader>
                   <nav className="flex flex-col gap-1 mt-6">
                     {[
-                      { to: '/dashboard',    label: 'Dashboard' },
-                      { to: '/truck-manager',label: 'Trucks' },
-                      { to: '/trip-logs',    label: 'Trips' },
-                      { to: '/cashbook',     label: 'Cashbook' },
+                      { to: '/dashboard',     label: 'Dashboard' },
+                      { to: '/truck-manager', label: 'Trucks' },
+                      { to: '/trip-logs',     label: 'Trips' },
+                      { to: '/cashbook',      label: 'Cashbook' },
                     ].map(({ to, label }) => (
-                      <Link key={to} to={to} className="flex items-center px-4 py-3 rounded-xl text-sm font-medium hover:bg-secondary/60 hover:text-foreground transition-colors text-muted-foreground">
+                      <Link key={to} to={to} className="flex items-center px-3 py-2.5 rounded-lg text-[13px] font-medium hover:bg-white/[0.05] text-muted-foreground hover:text-foreground transition-colors">
                         {label}
                       </Link>
                     ))}
                   </nav>
-                  <div className="mt-4 pt-4 border-t border-border/50">
-                    <Button asChild className="w-full rounded-xl">
+                  <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                    <Button asChild className="w-full rounded-lg h-9 text-[13px]">
                       <Link to="/login">Login</Link>
                     </Button>
                   </div>
@@ -238,44 +269,45 @@ export default function Header() {
         </div>
       </header>
 
-      {/* ── Authenticated Mobile Top Bar ─────────────────────────────────────────── */}
+      {/* ── Authenticated Mobile Top Bar ──────────────────────────────────────── */}
       {isAuthenticated && (
-        <header className="md:hidden sticky top-0 z-50 w-full border-b border-white/5 bg-[#070a13]/90 backdrop-blur-md px-4 py-2.5 flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.png" className="h-8 w-auto object-contain rounded-lg" alt="Jai Bhavani Logo" />
+        <header className="md:hidden sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#070a13]/85 backdrop-blur-xl px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center">
+              <span className="text-primary text-[9px] font-black">JB</span>
+            </div>
             {pageLabel && (
-              <span className="text-[10px] text-muted-foreground font-semibold leading-none border-l border-white/10 pl-2.5 ml-0.5">{pageLabel}</span>
+              <span className="text-[10.5px] text-muted-foreground/70 font-semibold leading-none border-l border-white/[0.08] pl-2 ml-0.5">
+                {pageLabel}
+              </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <LangSelector compact={true} />
+          <div className="flex items-center gap-1.5">
+            <LangSelector compact={true} language={language} setLanguage={setLanguage} />
 
-            {/* Mobile Notification Bell */}
             {(isAdmin || isSuperAdmin) && pendingCount > 0 && (
               <button
                 onClick={() => navigate('/dashboard/users?tab=signup-requests')}
-                className="relative p-1.5 rounded-lg bg-white/5 border border-white/8 text-muted-foreground"
+                className="relative w-7 h-7 rounded-lg flex items-center justify-center bg-white/[0.04] border border-white/[0.06] text-muted-foreground/60"
                 aria-label="Notifications"
               >
-                <Bell className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow">
+                <Bell className="w-3.5 h-3.5" />
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
                   {pendingCount}
                 </span>
               </button>
             )}
 
-            {/* Avatar */}
-            <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-[10px] font-black">
+            <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-primary text-[9px] font-black">
               {userInitials}
             </div>
 
-            <Button
-              variant="ghost" size="icon"
+            <button
               onClick={handleLogout}
-              className="w-8 h-8 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/50 hover:text-rose-400 hover:bg-rose-500/[0.07] transition-colors"
             >
               <LogOut className="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </div>
         </header>
       )}
