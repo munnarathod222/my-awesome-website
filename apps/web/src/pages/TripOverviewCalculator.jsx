@@ -28,6 +28,7 @@ export default function TripOverviewCalculator() {
   const [insurance, setInsurance] = useState(0);
   const [quarterlyTax, setQuarterlyTax] = useState(0);
   const [freightRevenue, setFreightRevenue] = useState(15000);
+  const [tdsRate, setTdsRate] = useState(1.0);
 
   // Save Dialog State
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
@@ -92,6 +93,7 @@ export default function TripOverviewCalculator() {
     setInsurance(report.insurance || 0);
     setQuarterlyTax(report.quarterly_tax || 0);
     setFreightRevenue(report.freight_revenue || 15000);
+    setTdsRate(report.tds_rate !== undefined ? report.tds_rate : 1.0);
     
     setActiveTab('calculator');
     toast.success(`Loaded parameters for Route: ${report.route_name}`);
@@ -115,7 +117,7 @@ export default function TripOverviewCalculator() {
   }, []);
 
   // Calculations
-  const { fuelCost, tyreExpense, totalExpenses, netProfit, profitMargin, chartData } = useMemo(() => {
+  const { fuelCost, tyreExpense, totalExpenses, tdsAmount, netProfit, profitMargin, chartData } = useMemo(() => {
     const d = distance[0] || 0;
     const fp = fuelPrice[0] || 0;
     const m = mileage[0] || 1; // avoid div by zero
@@ -127,15 +129,18 @@ export default function TripOverviewCalculator() {
     const ins = parseFloat(insurance) || 0;
     const tax = parseFloat(quarterlyTax) || 0;
     const rev = parseFloat(freightRevenue) || 0;
+    const rateTds = parseFloat(tdsRate) || 0;
 
     const fCost = (d / m) * fp;
     const tyrExp = d * td;
     const tExpenses = fCost + tyrExp + t + de + vEmi + ins + tax;
-    const nProfit = rev - tExpenses;
+    const amtTds = (rev * rateTds) / 100;
+    const nProfit = rev - amtTds - tExpenses;
     const pMargin = rev > 0 ? (nProfit / rev) * 100 : 0;
 
     const data = [
-      { name: 'Total Expenses', value: tExpenses, color: 'hsl(var(--primary))' },
+      { name: 'Expenses', value: tExpenses, color: 'hsl(var(--primary))' },
+      { name: 'TDS Deducted', value: amtTds, color: 'hsl(var(--warning))' },
       { name: 'Net Profit', value: Math.max(nProfit, 0), color: 'hsl(var(--success))' }
     ];
 
@@ -143,11 +148,12 @@ export default function TripOverviewCalculator() {
       fuelCost: fCost, 
       tyreExpense: tyrExp,
       totalExpenses: tExpenses, 
+      tdsAmount: amtTds,
       netProfit: nProfit, 
       profitMargin: pMargin, 
       chartData: data 
     };
-  }, [distance, fuelPrice, mileage, tolls, driverExpenses, tyreDepreciation, vehicleEmi, insurance, quarterlyTax, freightRevenue]);
+  }, [distance, fuelPrice, mileage, tolls, driverExpenses, tyreDepreciation, vehicleEmi, insurance, quarterlyTax, freightRevenue, tdsRate]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -183,7 +189,9 @@ export default function TripOverviewCalculator() {
         freight_revenue: parseFloat(freightRevenue) || 0,
         total_expenses: totalExpenses,
         net_profit: netProfit,
-        profit_margin: profitMargin
+        profit_margin: profitMargin,
+        tds_rate: parseFloat(tdsRate) || 0,
+        tds_amount: tdsAmount
       };
 
       const response = await fetch('/hcgi/api/trip-calculations/save', {
@@ -529,6 +537,27 @@ export default function TripOverviewCalculator() {
                       className="bg-background/40 h-9.5 text-xs text-white"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tds" className="text-xs text-slate-400">TDS Rate (%)</Label>
+                    <Input 
+                      id="tds"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="10"
+                      value={tdsRate}
+                      onChange={(e) => setTdsRate(e.target.value)}
+                      className="bg-background/40 h-9.5 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-slate-400">Calculated TDS Amount</Label>
+                    <div className="h-9.5 bg-background/20 border border-border/30 rounded-lg px-3 flex items-center text-xs font-mono font-bold text-slate-300">
+                      {formatCurrency(tdsAmount)}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -680,16 +709,22 @@ export default function TripOverviewCalculator() {
                           </div>
 
                           {/* Profit summary */}
-                          <div className="bg-muted/30 border border-border/50 rounded-xl p-3.5 flex justify-between items-center text-sm mt-1 shadow-inner">
+                          <div className="bg-muted/30 border border-border/50 rounded-xl p-3.5 grid grid-cols-3 gap-2 text-sm mt-1 shadow-inner">
                             <div>
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Net Profit</span>
-                              <span className={cn("font-bold text-base tabular-nums", isProfit ? "text-emerald-500" : "text-destructive")}>
+                              <span className={cn("font-bold text-base tabular-nums block mt-0.5", isProfit ? "text-emerald-500" : "text-destructive")}>
                                 {formatCurrency(report.net_profit)}
+                              </span>
+                            </div>
+                            <div className="text-center border-x border-border/30">
+                              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">TDS ({report.tds_rate !== undefined ? report.tds_rate : 0}%)</span>
+                              <span className="font-bold text-yellow-600 dark:text-yellow-500 tabular-nums block mt-0.5">
+                                {formatCurrency(report.tds_amount || (report.freight_revenue * (report.tds_rate || 0) / 100))}
                               </span>
                             </div>
                             <div className="text-right">
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block">Revenue</span>
-                              <span className="font-bold text-foreground tabular-nums">
+                              <span className="font-bold text-foreground tabular-nums block mt-0.5">
                                 {formatCurrency(report.freight_revenue)}
                               </span>
                             </div>
@@ -867,6 +902,12 @@ export default function TripOverviewCalculator() {
                   <div className="flex justify-between items-center p-3 bg-muted/20 border-b border-border/50">
                     <span className="font-semibold text-foreground">Gross Freight Revenue</span>
                     <span className="font-bold text-foreground text-sm">{formatCurrency(viewingReport.freight_revenue)}</span>
+                  </div>
+
+                  {/* TDS Row */}
+                  <div className="flex justify-between items-center p-3 bg-muted/10 border-b border-border/50 text-yellow-600 dark:text-yellow-500">
+                    <span className="font-semibold">TDS Deducted ({viewingReport.tds_rate !== undefined ? viewingReport.tds_rate : 0}%)</span>
+                    <span className="font-bold text-sm">-{formatCurrency(viewingReport.tds_amount || (viewingReport.freight_revenue * (viewingReport.tds_rate || 0) / 100))}</span>
                   </div>
 
                   {/* Expenses Rows */}

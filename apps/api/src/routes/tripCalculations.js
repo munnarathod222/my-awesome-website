@@ -16,7 +16,7 @@ router.post('/save', async (req, res) => {
     'distance', 'fuel_price', 'mileage', 'tolls', 'driver_expenses',
     'tyre_depreciation_rate', 'tyre_expense', 'fuel_cost', 'vehicle_emi',
     'insurance', 'quarterly_tax', 'freight_revenue', 'total_expenses',
-    'net_profit', 'profit_margin'
+    'net_profit', 'profit_margin', 'tds_rate', 'tds_amount'
   ];
 
   numericFields.forEach(field => {

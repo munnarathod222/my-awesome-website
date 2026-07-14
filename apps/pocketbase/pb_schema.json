@@ -13870,6 +13870,34 @@
         "presentable": false,
         "system": false,
         "type": "autodate"
+      },
+      {
+        "systemId": "",
+        "id": "tds_rate_field",
+        "name": "tds_rate",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
+      },
+      {
+        "systemId": "",
+        "id": "tds_amount_field",
+        "name": "tds_amount",
+        "type": "number",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "noDecimal": false
+        }
       }
     ],
     "indexes": [],
