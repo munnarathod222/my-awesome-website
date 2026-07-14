@@ -229,11 +229,11 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               </div>
             )}
             
-            <div className="space-y-2 col-span-2 sm:col-span-1">
+             <div className="space-y-2 col-span-2 sm:col-span-1">
               <Label>GSTIN {(mainCategory === 'Client' || mainCategory === 'Vendor') ? '*' : '(Optional)'}</Label>
               <Input 
                 value={formData.gstin} 
-                onChange={(e) => setFormData({...formData, gstin: e.target.value.toUpperCase()})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, gstin: e.target.value.toUpperCase() }))} 
                 placeholder="15 chars alphanumeric"
                 className="bg-background uppercase"
                 maxLength={15}
@@ -244,7 +244,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               <Label>Company / Full Name *</Label>
               <Input 
                 value={formData.company_name} 
-                onChange={(e) => setFormData({...formData, company_name: e.target.value})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))} 
                 placeholder="Enter name"
                 className="bg-background"
               />
@@ -254,7 +254,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               <Label>Phone Number *</Label>
               <Input 
                 value={formData.phone_number} 
-                onChange={(e) => setFormData({...formData, phone_number: e.target.value})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))} 
                 placeholder="e.g. 9876543210"
                 className="bg-background"
               />
@@ -265,7 +265,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               <Input 
                 type="email"
                 value={formData.email} 
-                onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} 
                 placeholder="Optional"
                 className="bg-background"
               />
@@ -275,7 +275,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               <Label>Physical Address *</Label>
               <Textarea 
                 value={formData.physical_address} 
-                onChange={(e) => setFormData({...formData, physical_address: e.target.value})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, physical_address: e.target.value }))} 
                 placeholder="Full address"
                 className="bg-background resize-none h-20"
               />
@@ -285,7 +285,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
               <Label>Notes</Label>
               <Input 
                 value={formData.notes} 
-                onChange={(e) => setFormData({...formData, notes: e.target.value})} 
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} 
                 placeholder="Optional notes"
                 className="bg-background"
               />
