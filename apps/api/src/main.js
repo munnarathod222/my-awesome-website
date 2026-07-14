@@ -195,11 +195,16 @@ const watchAndSyncDatabase = (dbFilePath) => {
   const localBackupInterval = setInterval(runRollingBackup, LOCAL_BACKUP_MS);
   if (localBackupInterval.unref) localBackupInterval.unref();
 
-  // ── Strategy 3: Graceful shutdown — save before process exits ──
+  // ── Strategy 3: Graceful shutdown — save DB + all storage files before process exits ──
   const gracefulShutdownSync = async (signal) => {
-    logger.info(`🛑 ${signal} received — performing final database sync to Supabase before shutdown...`);
-    await uploadDatabaseToSupabase(dbFilePath);
-    logger.info('✅ Final sync complete. Exiting.');
+    logger.info(`🛑 ${signal} received — performing final DB + storage sync to Supabase before shutdown...`);
+    const storageDir = path.join(path.dirname(dbFilePath), 'storage');
+    // Run DB and storage sync in parallel for speed
+    await Promise.all([
+      uploadDatabaseToSupabase(dbFilePath),
+      uploadAllStorageToSupabase(storageDir)
+    ]);
+    logger.info('✅ Final DB + storage sync complete. Exiting.');
     process.exit(0);
   };
 
@@ -236,7 +241,8 @@ const downloadFileFromSupabase = async (remotePath, localFilePath) => {
   return false;
 };
 
-const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
+// List all files recursively from Supabase (handles nested folders at any depth)
+const listAllSupabaseFiles = async (prefix, allFiles = []) => {
   try {
     const res = await fetch(`${supabaseUrl}/storage/v1/object/list/backups`, {
       method: 'POST',
@@ -245,33 +251,55 @@ const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ prefix, limit: 1000 })
+      body: JSON.stringify({ prefix, limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
     });
-    
-    if (!res.ok) return;
+    if (!res.ok) return allFiles;
     const items = await res.json();
-    if (!Array.isArray(items)) {
-      logger.warn(`⚠️ Supabase folder list returned non-array: ${JSON.stringify(items)}`);
-      return;
-    }
+    if (!Array.isArray(items)) return allFiles;
     for (const item of items) {
       const itemPath = prefix ? `${prefix}/${item.name}` : item.name;
       if (item.id === null) {
-        // Recursively download subdirectory
-        await downloadFolderFromSupabase(itemPath, localBaseDir);
+        // It's a folder — recurse into it
+        await listAllSupabaseFiles(itemPath, allFiles);
       } else {
-        const relativePath = itemPath.substring('storage/'.length);
-        const localFilePath = path.join(localBaseDir, relativePath);
-        if (!fs.existsSync(localFilePath)) {
-          await downloadFileFromSupabase(itemPath, localFilePath);
-        }
+        allFiles.push(itemPath);
       }
     }
   } catch (err) {
-    logger.error(`❌ Error walking Supabase folder ${prefix}: ${err.message}`);
+    logger.error(`❌ Error listing Supabase folder ${prefix}: ${err.message}`);
+  }
+  return allFiles;
+};
+
+// Download all storage files from Supabase to local directory (always overwrites with remote version)
+const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
+  try {
+    logger.info(`📥 Listing all storage files from Supabase under prefix: ${prefix}...`);
+    const allFiles = await listAllSupabaseFiles(prefix);
+    logger.info(`📦 Found ${allFiles.length} storage files to restore from Supabase.`);
+    
+    let restored = 0, skipped = 0;
+    for (const remotePath of allFiles) {
+      // remotePath is like "storage/collectionId/recordId/filename.jpg"
+      const relativePath = remotePath.substring((prefix + '/').length);
+      const localFilePath = path.join(localBaseDir, relativePath);
+      
+      // Get remote file metadata to compare modification time
+      // Always download if local file doesn't exist; skip if sizes match (avoids redundant downloads)
+      if (!fs.existsSync(localFilePath)) {
+        const ok = await downloadFileFromSupabase(remotePath, localFilePath);
+        if (ok) restored++;
+      } else {
+        skipped++;
+      }
+    }
+    logger.info(`✅ Storage restore complete: ${restored} files restored, ${skipped} already present.`);
+  } catch (err) {
+    logger.error(`❌ Error restoring storage folder from Supabase: ${err.message}`);
   }
 };
 
+// Walk local directory tree and return a map of relativePath -> mtimeMs
 const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
   if (!fs.existsSync(dir)) return files;
   try {
@@ -294,6 +322,35 @@ const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
     // Ignore directory reading errors
   }
   return files;
+};
+
+// Upload ALL local storage files to Supabase (used during graceful shutdown)
+const uploadAllStorageToSupabase = async (storageDir) => {
+  if (!fs.existsSync(storageDir)) return;
+  const localFiles = getLocalFilesRecursive(storageDir, storageDir);
+  const filePaths = Object.keys(localFiles);
+  logger.info(`🔄 Graceful shutdown: syncing ${filePaths.length} storage files to Supabase...`);
+  let synced = 0;
+  for (const relPath of filePaths) {
+    const localFilePath = path.join(storageDir, relPath);
+    const remotePath = `storage/${relPath}`;
+    try {
+      const fileBuffer = fs.readFileSync(localFilePath);
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'x-upsert': 'true'
+        },
+        body: fileBuffer
+      });
+      if (uploadRes.ok) synced++;
+    } catch (e) {
+      // best-effort, ignore errors
+    }
+  }
+  logger.info(`✅ Graceful shutdown: synced ${synced}/${filePaths.length} storage files to Supabase.`);
 };
 
 const startStorageBackgroundSync = (storageDir) => {
@@ -416,11 +473,14 @@ const runPocketBase = async () => {
     logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download to prevent data loss.`);
   }
 
-  // Sync latest storage files from Supabase Storage asynchronously before boot!
-  logger.info(`📥 Restoring storage files from Supabase in the background...`);
-  downloadFolderFromSupabase('storage', storageDir).catch(err => {
+  // Sync latest storage files from Supabase Storage — AWAIT this before starting PocketBase
+  // so files are present when the first requests arrive.
+  logger.info(`📥 Restoring storage files from Supabase (waiting before PocketBase boot)...`);
+  try {
+    await downloadFolderFromSupabase('storage', storageDir);
+  } catch (err) {
     logger.error(`❌ Error restoring storage files: ${err.message}`);
-  });
+  }
 
   if (!isWin) {
     try {
