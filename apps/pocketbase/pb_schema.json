@@ -1336,6 +1336,17 @@
         "required": false,
         "system": false,
         "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "json2029409178",
+        "maxSize": 0,
+        "name": "badges",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
       }
     ],
     "indexes": [
@@ -1701,21 +1712,6 @@
       {
         "help": "",
         "hidden": false,
-        "id": "file482575357",
-        "maxSelect": 1,
-        "maxSize": 5242880,
-        "mimeTypes": null,
-        "name": "battery_image",
-        "presentable": false,
-        "protected": false,
-        "required": false,
-        "system": false,
-        "thumbs": null,
-        "type": "file"
-      },
-      {
-        "help": "",
-        "hidden": false,
         "id": "file1963138412",
         "maxSelect": 10,
         "maxSize": 20971520,
@@ -1781,7 +1777,7 @@
         "collectionId": "_pb_users_auth_",
         "help": "",
         "hidden": false,
-        "id": "relation_manager_id",
+        "id": "relation2017342563",
         "maxSelect": 1,
         "minSelect": 0,
         "name": "manager_id",
@@ -1789,6 +1785,21 @@
         "required": false,
         "system": false,
         "type": "relation"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "file482575357",
+        "maxSelect": 10,
+        "maxSize": 20971520,
+        "mimeTypes": null,
+        "name": "battery_image",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": null,
+        "type": "file"
       }
     ],
     "indexes": [
@@ -2223,6 +2234,21 @@
         "required": false,
         "system": false,
         "type": "number"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text2319589710",
+        "max": 0,
+        "min": 0,
+        "name": "pod_link",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
       }
     ],
     "indexes": [
@@ -2231,11 +2257,11 @@
       "CREATE INDEX idx_trip_logs_advance_paid_to_driver ON trip_logs (advance_paid_to_driver)",
       "CREATE UNIQUE INDEX idx_trip_logs_trip_id ON trip_logs (trip_id)"
     ],
-    "listRule": "@request.auth.id != '' && (created_by = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'super_admin')",
+    "listRule": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'dispatcher' || @request.auth.role = 'manager')",
     "viewRule": "@request.auth.id != ''",
-    "createRule": "@request.auth.role = 'dispatcher' || @request.auth.role = 'admin'",
-    "updateRule": "@request.auth.role = 'dispatcher' || @request.auth.role = 'admin'",
-    "deleteRule": "@request.auth.role = 'admin'",
+    "createRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'dispatcher' || @request.auth.role = 'manager'",
+    "updateRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'dispatcher' || @request.auth.role = 'manager'",
+    "deleteRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'dispatcher' || @request.auth.role = 'manager'",
     "options": {}
   },
   {
@@ -6068,7 +6094,9 @@
           "expense",
           "advance",
           "salary",
-          "opening_balance"
+          "opening_balance",
+          "trip_payment",
+          "bulk_trip_payment"
         ]
       },
       {
@@ -8591,6 +8619,62 @@
         "max": 0,
         "min": 0,
         "name": "down_end_location",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text2711706700",
+        "max": 0,
+        "min": 0,
+        "name": "google_map_link",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "json968200100",
+        "maxSize": 0,
+        "name": "stops",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text44689700",
+        "max": 0,
+        "min": 0,
+        "name": "start_location_map_link",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text3296289544",
+        "max": 0,
+        "min": 0,
+        "name": "end_location_map_link",
         "pattern": "",
         "presentable": false,
         "primaryKey": false,
@@ -14765,6 +14849,79 @@
     "createRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin'",
     "updateRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin'",
     "deleteRule": "@request.auth.role = 'admin' || @request.auth.role = 'super_admin'",
+    "options": {}
+  },
+  {
+    "id": "pbc_4161514031",
+    "name": "shared_folders",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "help": "",
+        "hidden": false,
+        "id": "text3208210256",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "pbc_4061015685",
+        "help": "",
+        "hidden": false,
+        "id": "relation3331685582",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "truck_id",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "pbc_9297853740",
+        "help": "",
+        "hidden": false,
+        "id": "relation2349068636",
+        "maxSelect": 1,
+        "minSelect": 0,
+        "name": "employee_id",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text3725765462",
+        "max": 0,
+        "min": 0,
+        "name": "created_by",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.id != \"\"",
     "options": {}
   }
 ]

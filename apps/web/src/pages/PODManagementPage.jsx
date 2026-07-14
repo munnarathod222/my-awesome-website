@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { FileText, Upload, CheckCircle2, AlertCircle, RefreshCw, Eye, Search } from 'lucide-react';
+import { FileText, Upload, CheckCircle2, AlertCircle, RefreshCw, Eye, Search, Link2, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +80,25 @@ export default function PODManagementPage() {
     }
   };
 
+  const handleLinkUpload = async (tripId, link) => {
+    setUploadingId(tripId);
+    try {
+      const currentTrip = trips.find(t => t.id === tripId);
+      const data = {
+        pod_link: link,
+        pod_status: (link || currentTrip?.pod_file) ? 'Uploaded' : 'Pending'
+      };
+      await pb.collection('trip_logs').update(tripId, data);
+      toast.success(link ? 'POD link saved successfully.' : 'POD link cleared.');
+      fetchPODTrips();
+    } catch (err) {
+      console.error('Error saving POD link:', err);
+      toast.error('Failed to save POD link. Please try again.');
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
   const filteredTrips = trips.filter(trip => {
     const clientName = clients[trip.client_id]?.toLowerCase() || '';
     const tripNum = trip.trip_id?.toLowerCase() || trip.id?.toLowerCase() || '';
@@ -142,7 +161,9 @@ export default function PODManagementPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Desktop Table View (Hidden on mobile) */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/50">
@@ -156,7 +177,7 @@ export default function PODManagementPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredTrips.map(trip => {
-                    const hasPOD = trip.pod_status === 'Uploaded' || trip.pod_file;
+                    const hasPOD = trip.pod_status === 'Uploaded' || trip.pod_file || trip.pod_link;
                     return (
                       <TableRow key={trip.id} className="border-b border-border/40 hover:bg-muted/5 transition-colors">
                         <TableCell className="font-semibold py-4 text-foreground">
@@ -188,13 +209,35 @@ export default function PODManagementPage() {
                         </TableCell>
                         <TableCell className="py-4 text-right">
                           <div className="flex items-center justify-end gap-3">
-                            {hasPOD && trip.pod_file && (
+                            {trip.pod_file && (
                               <Button asChild size="sm" variant="ghost" className="rounded-xl">
                                 <a href={pb.files.getUrl(trip, trip.pod_file)} target="_blank" rel="noopener noreferrer">
-                                  <Eye className="w-4 h-4 mr-1.5" /> View POD
+                                  <Eye className="w-4 h-4 mr-1.5" /> View POD File
                                 </a>
                               </Button>
                             )}
+                            {trip.pod_link && (
+                              <Button asChild size="sm" variant="ghost" className="rounded-xl">
+                                <a href={trip.pod_link} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-4 h-4 mr-1.5" /> View Link
+                                </a>
+                              </Button>
+                            )}
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="rounded-xl gap-1.5"
+                              onClick={() => {
+                                const link = window.prompt("Enter POD Link (e.g. Google Drive/Dropbox URL):", trip.pod_link || "");
+                                if (link !== null) {
+                                  handleLinkUpload(trip.id, link.trim());
+                                }
+                              }}
+                              disabled={uploadingId === trip.id}
+                            >
+                              <Link2 className="w-4 h-4" />
+                              {trip.pod_link ? "Edit Link" : "Upload Link"}
+                            </Button>
                             <div className="relative">
                               <input 
                                 type="file" 
@@ -207,12 +250,12 @@ export default function PODManagementPage() {
                               <Button 
                                 asChild 
                                 size="sm" 
-                                variant={hasPOD ? 'outline' : 'default'} 
+                                variant={trip.pod_file ? 'outline' : 'default'} 
                                 className="rounded-xl cursor-pointer"
                               >
                                 <label htmlFor={`file-upload-${trip.id}`}>
                                   <Upload className="w-4 h-4 mr-1.5" /> 
-                                  {uploadingId === trip.id ? 'Uploading...' : hasPOD ? 'Re-upload' : 'Upload POD'}
+                                  {uploadingId === trip.id ? 'Uploading...' : trip.pod_file ? 'Re-upload File' : 'Upload File'}
                                 </label>
                               </Button>
                             </div>
@@ -224,6 +267,102 @@ export default function PODManagementPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card List View (Hidden on desktop) */}
+            <div className="block md:hidden divide-y divide-border/40">              {filteredTrips.map(trip => {
+                  const hasPOD = trip.pod_status === 'Uploaded' || trip.pod_file || trip.pod_link;
+                  return (
+                    <div key={trip.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-sm text-foreground">{trip.trip_id || trip.id.substring(0, 8)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{clients[trip.client_id] || 'Unknown Client'}</p>
+                        </div>
+                        <Badge variant="outline" className={`rounded-xl px-2.5 py-0.5 flex items-center w-fit gap-1 text-[10px] ${hasPOD ? 'bg-success/10 text-success border-success/20' : 'bg-warning/10 text-warning border-warning/20'}`}>
+                          {hasPOD ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Uploaded
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              Pending
+                            </>
+                          )}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Route</p>
+                          <p className="font-semibold text-foreground mt-0.5 truncate">{trip.origin} ➔ {trip.destination}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Date</p>
+                          <p className="font-semibold text-foreground mt-0.5">
+                            {trip.date ? new Date(trip.date).toLocaleDateString() : '-'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/20 flex-wrap">
+                        {trip.pod_file && (
+                          <Button asChild size="sm" variant="ghost" className="h-8 text-xs font-semibold rounded-lg">
+                            <a href={pb.files.getUrl(trip, trip.pod_file)} target="_blank" rel="noopener noreferrer">
+                              <Eye className="w-3.5 h-3.5 mr-1" /> File
+                            </a>
+                          </Button>
+                        )}
+                        {trip.pod_link && (
+                          <Button asChild size="sm" variant="ghost" className="h-8 text-xs font-semibold rounded-lg">
+                            <a href={trip.pod_link} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-3.5 h-3.5 mr-1" /> Link
+                            </a>
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-8 text-xs font-semibold rounded-lg gap-1"
+                          onClick={() => {
+                            const link = window.prompt("Enter POD Link (e.g. Google Drive/Dropbox URL):", trip.pod_link || "");
+                            if (link !== null) {
+                              handleLinkUpload(trip.id, link.trim());
+                            }
+                          }}
+                          disabled={uploadingId === trip.id}
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          {trip.pod_link ? "Edit Link" : "Link"}
+                        </Button>
+                        <div className="relative">
+                          <input 
+                            type="file" 
+                            id={`file-upload-mobile-${trip.id}`} 
+                            className="hidden" 
+                            accept=".pdf,image/*" 
+                            onChange={(e) => handleFileUpload(e, trip.id)}
+                            disabled={uploadingId === trip.id}
+                          />
+                          <Button 
+                            asChild 
+                            size="sm" 
+                            variant={trip.pod_file ? 'outline' : 'default'} 
+                            className="h-8 text-xs font-semibold rounded-lg cursor-pointer"
+                          >
+                            <label htmlFor={`file-upload-mobile-${trip.id}`}>
+                              <Upload className="w-3.5 h-3.5 mr-1" /> 
+                              {uploadingId === trip.id ? 'Uploading...' : trip.pod_file ? 'Re-upload' : 'Upload'}
+                            </label>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+            </>
           )}
         </CardContent>
       </Card>
