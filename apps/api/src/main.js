@@ -707,7 +707,7 @@ runPocketBase();
 startMonthEndCron();
 
   // Diagnostic endpoint — exposes PocketBase startup logs
-  app.get('/api/pb-logs', (req, res) => {
+  app.get('/api/pb-logs', requireBackupAuth, (req, res) => {
     res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
   });
 
@@ -1054,8 +1054,18 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
 }));
+const defaultOrigins = [
+  'https://www.jaibhavanicargo.com',
+  'https://jaibhavanicargo.com',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+const corsOrigin = process.env.CORS_ORIGIN 
+  ? (process.env.CORS_ORIGIN === '*' ? true : process.env.CORS_ORIGIN.split(',')) 
+  : defaultOrigins;
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN === '*' ? true : process.env.CORS_ORIGIN,
+  origin: corsOrigin,
   credentials: true,
 }));
 app.use(morgan('combined'));
