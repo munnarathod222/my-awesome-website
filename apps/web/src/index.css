@@ -400,71 +400,70 @@
     print-color-adjust: exact !important;
   }
 
-  /* Support high contrast dark printing when printing payslips */
-  body.printing-payslip,
-  body.printing-payslip html {
+  /* Support high contrast dark container printing for payslips */
+  .payslip-container,
+  #payslip-preview-content {
     background-color: #0b0f19 !important;
     background: #0b0f19 !important;
-    color: #f8fafc !important;
-    color-scheme: dark !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+  }
+
+  .payslip-container *,
+  #payslip-preview-content * {
+    color: #ffffff !important;
+    border-color: #334155 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  body.printing-payslip [role="dialog"],
-  body.printing-payslip div[class*="DialogContent"],
-  body.printing-payslip .print-content {
-    background-color: #0b0f19 !important;
-    background: #0b0f19 !important;
-    color: #f8fafc !important;
+  .payslip-container td,
+  .payslip-container th,
+  .payslip-container span,
+  .payslip-container p,
+  .payslip-container h1,
+  .payslip-container h2,
+  .payslip-container h3,
+  .payslip-container div {
+    color: #ffffff !important;
   }
 
-  body.printing-payslip .payslip-container,
-  body.printing-payslip #payslip-preview-content {
-    background-color: #0f172a !important;
-    background: #0f172a !important;
-    border-color: #334155 !important;
-    color: #f8fafc !important;
-  }
-
-  body.printing-payslip .payslip-container * {
-    color: #f8fafc !important;
-    border-color: #334155 !important;
-  }
-
-  body.printing-payslip .payslip-container .text-muted-foreground,
-  body.printing-payslip .payslip-container .text-gray-500,
-  body.printing-payslip .payslip-container .text-gray-600 {
+  .payslip-container .text-muted-foreground,
+  .payslip-container .text-gray-500,
+  .payslip-container .text-gray-600 {
     color: #94a3b8 !important;
   }
 
-  body.printing-payslip .payslip-container .text-success,
-  body.printing-payslip .payslip-container .text-emerald-500 {
+  .payslip-container .text-success,
+  .payslip-container .text-emerald-500 {
     color: #4ade80 !important;
   }
 
-  body.printing-payslip .payslip-container .text-destructive,
-  body.printing-payslip .payslip-container .text-rose-500 {
+  .payslip-container .text-destructive,
+  .payslip-container .text-rose-500 {
     color: #f87171 !important;
   }
 
-  body.printing-payslip .payslip-container .text-warning-foreground {
+  .payslip-container .text-warning-foreground {
     color: #facc15 !important;
   }
 
-  body.printing-payslip .payslip-container .bg-warning\/10 {
+  .payslip-container .bg-warning\/10 {
     background-color: rgba(250, 204, 21, 0.15) !important;
   }
 
-  body.printing-payslip .payslip-container .bg-muted\/30 {
+  .payslip-container .bg-muted\/30 {
     background-color: rgba(51, 65, 85, 0.5) !important;
   }
 
-  body.printing-payslip .payslip-container .bg-muted\/20 {
+  .payslip-container .bg-muted\/20 {
     background-color: rgba(51, 65, 85, 0.3) !important;
   }
 
-  body.printing-payslip .payslip-container .bg-muted\/50 {
+  .payslip-container .bg-muted\/50 {
     background-color: rgba(51, 65, 85, 0.7) !important;
   }
 
