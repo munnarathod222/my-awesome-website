@@ -53,21 +53,32 @@ function buildLocalPath(collectionId, recordId, filename) {
 
 // Collections that store files (documents, images, bills, etc.)
 const FILE_COLLECTIONS = [
-  'employee_documents',
-  'truck_documents', 
-  'expenses',
-  'expenses_fuel',
-  'expenses_maintenance',
-  'expenses_miscellaneous',
-  'expenses_fastag',
-  'expenses_driver_advance',
-  'delivery_proofs',
-  'driver_accident_reports',
-  'company_settings',
-  'employees',
-  'trucks',
-  'tyres',
-  'loan_profiles'
+  "users",
+  "employees",
+  "trucks",
+  "trip_logs",
+  "expenses_fuel",
+  "expenses_fastag",
+  "expenses_driver_advance",
+  "expenses_maintenance",
+  "expenses_miscellaneous",
+  "truck_documents",
+  "employee_documents",
+  "expenses",
+  "delivery_proofs",
+  "bills",
+  "invoices",
+  "maintenance_records",
+  "_integratedAiImages",
+  "tyres",
+  "parts_installed",
+  "maintenance_problems",
+  "inventory_items",
+  "loan_profiles",
+  "exit_audits",
+  "driver_accident_reports",
+  "company_settings",
+  "service_logs"
 ];
 
 // Register after-create and after-update hooks for file-containing collections

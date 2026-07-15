@@ -33,54 +33,16 @@ function triggerRealtimeDbBackup(collectionName, actionType) {
   }
 }
 
-// Key data collections that should trigger an immediate database backup
-const TRACKED_COLLECTIONS = [
-  'users',
-  'employees',
-  'trucks',
-  'trip_logs',
-  'expenses_fuel',
-  'expenses_fastag',
-  'expenses_driver_advance',
-  'expenses_maintenance',
-  'expenses_miscellaneous',
-  'attendance',
-  'payroll',
-  'truck_documents',
-  'todos',
-  'employee_documents',
-  'credit_cards',
-  'fuel_payments',
-  'payment_due_dates',
-  'payment_records',
-  'fastag_recharges',
-  'expenses',
-  'delivery_proofs',
-  'cashbook',
-  'bills',
-  'quotes',
-  'invoices',
-  'advances',
-  'salary_payments',
-  'vehicles',
-  'routes',
-  'clients',
-  'signup_requests',
-  'payment_requests',
-  'cashbooks',
-  'cashbook_transactions',
-  'contacts',
-  'fuel_tracker',
-  'tyres',
-  'maintenance_logs',
-  'parts_installed',
-  'maintenance_problems',
-  'loan_profiles',
-  'driver_accident_reports',
-  'trip_calculations',
-  'company_settings',
-  'shared_folders'
-];
+// Dynamically load all user collections from the database catalog
+const result = arrayOf(new DynamicModel({ name: "" }));
+$app.db()
+  .select("name")
+  .from("_collections")
+  .all(result);
+
+const TRACKED_COLLECTIONS = result
+  .map(r => r.name)
+  .filter(name => !name.startsWith('_') || name === '_superusers');
 
 TRACKED_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
@@ -99,4 +61,4 @@ TRACKED_COLLECTIONS.forEach(collectionName => {
   }, collectionName);
 });
 
-console.log('✅ [DBBackup] Real-time database sync hooks registered for all primary data collections.');
+console.log(`✅ [DBBackup] Registered real-time database sync hooks for ${TRACKED_COLLECTIONS.length} collections.`);
