@@ -735,6 +735,20 @@ startMonthEndCron();
     res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
   });
 
+  // Diagnostic endpoint — inspects any file on the server
+  app.get('/api/inspect-file', requireBackupAuth, (req, res) => {
+    const filePath = req.query.path || '/opt/render/project/src/apps/api/pb.js';
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: `File not found: ${filePath}` });
+    }
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      res.json({ path: filePath, content });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/backup/status
   app.get('/api/backup/status', async (req, res) => {
     try {
