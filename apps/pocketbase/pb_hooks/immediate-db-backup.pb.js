@@ -84,15 +84,18 @@ const TRACKED_COLLECTIONS = [
 
 TRACKED_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
-    triggerRealtimeDbBackup(collectionName, 'create');
+    const colName = e.record.collection().name;
+    triggerRealtimeDbBackup(colName, 'create');
   }, collectionName);
 
   onRecordAfterUpdateSuccess((e) => {
-    triggerRealtimeDbBackup(collectionName, 'update');
+    const colName = e.record.collection().name;
+    triggerRealtimeDbBackup(colName, 'update');
   }, collectionName);
 
   onRecordAfterDeleteSuccess((e) => {
-    triggerRealtimeDbBackup(collectionName, 'delete');
+    const colName = e.record.collection().name;
+    triggerRealtimeDbBackup(colName, 'delete');
   }, collectionName);
 });
 

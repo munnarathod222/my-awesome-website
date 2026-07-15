@@ -93,7 +93,8 @@ FILE_COLLECTIONS.forEach(collectionName => {
         });
       });
     } catch (err) {
-      console.log(`❌ [FileBackup] Error in after-create hook for ${collectionName}: ${err}`);
+      const colName = e.record.collection().name;
+      console.log(`❌ [FileBackup] Error in after-create hook for ${colName}: ${err}`);
     }
   }, collectionName);
 
@@ -117,7 +118,8 @@ FILE_COLLECTIONS.forEach(collectionName => {
         });
       });
     } catch (err) {
-      console.log(`❌ [FileBackup] Error in after-update hook for ${collectionName}: ${err}`);
+      const colName = e.record.collection().name;
+      console.log(`❌ [FileBackup] Error in after-update hook for ${colName}: ${err}`);
     }
   }, collectionName);
 });
