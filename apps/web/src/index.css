@@ -400,6 +400,74 @@
     print-color-adjust: exact !important;
   }
 
+  /* Support high contrast dark printing when printing payslips */
+  body.printing-payslip,
+  body.printing-payslip html {
+    background-color: #0b0f19 !important;
+    background: #0b0f19 !important;
+    color: #f8fafc !important;
+    color-scheme: dark !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-payslip [role="dialog"],
+  body.printing-payslip div[class*="DialogContent"],
+  body.printing-payslip .print-content {
+    background-color: #0b0f19 !important;
+    background: #0b0f19 !important;
+    color: #f8fafc !important;
+  }
+
+  body.printing-payslip .payslip-container,
+  body.printing-payslip #payslip-preview-content {
+    background-color: #0f172a !important;
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+  }
+
+  body.printing-payslip .payslip-container * {
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+  }
+
+  body.printing-payslip .payslip-container .text-muted-foreground,
+  body.printing-payslip .payslip-container .text-gray-500,
+  body.printing-payslip .payslip-container .text-gray-600 {
+    color: #94a3b8 !important;
+  }
+
+  body.printing-payslip .payslip-container .text-success,
+  body.printing-payslip .payslip-container .text-emerald-500 {
+    color: #4ade80 !important;
+  }
+
+  body.printing-payslip .payslip-container .text-destructive,
+  body.printing-payslip .payslip-container .text-rose-500 {
+    color: #f87171 !important;
+  }
+
+  body.printing-payslip .payslip-container .text-warning-foreground {
+    color: #facc15 !important;
+  }
+
+  body.printing-payslip .payslip-container .bg-warning\/10 {
+    background-color: rgba(250, 204, 21, 0.15) !important;
+  }
+
+  body.printing-payslip .payslip-container .bg-muted\/30 {
+    background-color: rgba(51, 65, 85, 0.5) !important;
+  }
+
+  body.printing-payslip .payslip-container .bg-muted\/20 {
+    background-color: rgba(51, 65, 85, 0.3) !important;
+  }
+
+  body.printing-payslip .payslip-container .bg-muted\/50 {
+    background-color: rgba(51, 65, 85, 0.7) !important;
+  }
+
   /* Hide the entire website background when printing from inside a dialog modal */
   body.printing-payslip #root,
   body:has([role="dialog"]) #root,
