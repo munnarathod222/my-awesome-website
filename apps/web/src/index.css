@@ -388,7 +388,9 @@
     display: none !important;
   }
 
-  html, body {
+  /* Default light print styling for standard pages */
+  body:not(.printing-payslip),
+  body:not(.printing-payslip) html {
     background-color: #ffffff !important;
     background: #ffffff !important;
     color: #000000 !important;
@@ -401,69 +403,66 @@
   }
 
   /* Support high contrast dark container printing for payslips */
-  .payslip-container,
-  #payslip-preview-content {
+  body.printing-payslip,
+  body.printing-payslip html,
+  body.printing-payslip [role="dialog"],
+  body.printing-payslip div[class*="DialogContent"],
+  body.printing-payslip .print-content,
+  body.printing-payslip .payslip-container,
+  body.printing-payslip #payslip-preview-content {
     background-color: #0b0f19 !important;
     background: #0b0f19 !important;
     color: #ffffff !important;
+    color-scheme: dark !important;
     border-color: #334155 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Outfit', 'Inter', -apple-system, sans-serif !important;
   }
 
-  .payslip-container *,
-  #payslip-preview-content * {
+  body.printing-payslip * {
     color: #ffffff !important;
     border-color: #334155 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .payslip-container td,
-  .payslip-container th,
-  .payslip-container span,
-  .payslip-container p,
-  .payslip-container h1,
-  .payslip-container h2,
-  .payslip-container h3,
-  .payslip-container div {
-    color: #ffffff !important;
+  body.printing-payslip .text-muted-foreground,
+  body.printing-payslip .text-gray-500,
+  body.printing-payslip .text-gray-600 {
+    color: #cbd5e1 !important;
   }
 
-  .payslip-container .text-muted-foreground,
-  .payslip-container .text-gray-500,
-  .payslip-container .text-gray-600 {
-    color: #94a3b8 !important;
-  }
-
-  .payslip-container .text-success,
-  .payslip-container .text-emerald-500 {
+  body.printing-payslip .text-success,
+  body.printing-payslip .text-emerald-500 {
     color: #4ade80 !important;
   }
 
-  .payslip-container .text-destructive,
-  .payslip-container .text-rose-500 {
+  body.printing-payslip .text-destructive,
+  body.printing-payslip .text-rose-500 {
     color: #f87171 !important;
   }
 
-  .payslip-container .text-warning-foreground {
+  body.printing-payslip .text-warning-foreground {
     color: #facc15 !important;
   }
 
-  .payslip-container .bg-warning\/10 {
+  body.printing-payslip .bg-warning\/10 {
     background-color: rgba(250, 204, 21, 0.15) !important;
   }
 
-  .payslip-container .bg-muted\/30 {
+  body.printing-payslip .bg-muted\/30 {
     background-color: rgba(51, 65, 85, 0.5) !important;
   }
 
-  .payslip-container .bg-muted\/20 {
+  body.printing-payslip .bg-muted\/20 {
     background-color: rgba(51, 65, 85, 0.3) !important;
   }
 
-  .payslip-container .bg-muted\/50 {
+  body.printing-payslip .bg-muted\/50 {
     background-color: rgba(51, 65, 85, 0.7) !important;
   }
 
