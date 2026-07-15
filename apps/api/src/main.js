@@ -735,13 +735,18 @@ startMonthEndCron();
     res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
   });
 
-  // Diagnostic endpoint — inspects any file on the server
+  // Diagnostic endpoint — inspects any file or directory on the server
   app.get('/api/inspect-file', requireBackupAuth, (req, res) => {
     const filePath = req.query.path || '/opt/render/project/src/apps/api/pb.js';
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: `File not found: ${filePath}` });
     }
     try {
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        const files = fs.readdirSync(filePath);
+        return res.json({ path: filePath, isDirectory: true, files });
+      }
       const content = fs.readFileSync(filePath, 'utf-8');
       res.json({ path: filePath, content });
     } catch (err) {
