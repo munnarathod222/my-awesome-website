@@ -398,7 +398,7 @@ const listAllSupabaseFiles = async (prefix, allFiles = []) => {
   return allFiles;
 };
 
-// Download all storage files from Supabase to local directory (always overwrites with remote version)
+// Download all storage files from Supabase to local directory (ALWAYS overwrites — disk is ephemeral on Render)
 const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
   try {
     logger.info(`📥 Listing all storage files from Supabase under prefix: ${prefix}...`);
@@ -411,20 +411,44 @@ const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
       const relativePath = remotePath.substring((prefix + '/').length);
       const localFilePath = path.join(localBaseDir, relativePath);
       
-      // Get remote file metadata to compare modification time
-      // Always download if local file doesn't exist; skip if sizes match (avoids redundant downloads)
-      if (!fs.existsSync(localFilePath)) {
-        const ok = await downloadFileFromSupabase(remotePath, localFilePath);
-        if (ok) restored++;
-      } else {
-        skipped++;
-      }
+      // Always re-download every file on boot — Render disk is ephemeral,
+      // so we can never trust local files to be present after a deploy.
+      const ok = await downloadFileFromSupabase(remotePath, localFilePath);
+      if (ok) restored++; else skipped++;
     }
-    logger.info(`✅ Storage restore complete: ${restored} files restored, ${skipped} already present.`);
+    logger.info(`✅ Storage restore complete: ${restored} files restored, ${skipped} failed.`);
   } catch (err) {
     logger.error(`❌ Error restoring storage folder from Supabase: ${err.message}`);
   }
 };
+
+// Immediately upload a single file to Supabase (used by PocketBase hooks on record save)
+const uploadSingleFileToSupabase = async (localFilePath, storageDir) => {
+  try {
+    if (!fs.existsSync(localFilePath)) return;
+    const relPath = path.relative(storageDir, localFilePath).replace(/\\/g, '/');
+    const remotePath = `storage/${relPath}`;
+    const fileBuffer = fs.readFileSync(localFilePath);
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'x-upsert': 'true',
+        'Content-Type': 'application/octet-stream'
+      },
+      body: fileBuffer
+    });
+    if (uploadRes.ok) {
+      logger.info(`⚡ Immediate sync: uploaded ${relPath} to Supabase.`);
+    } else {
+      logger.error(`❌ Immediate sync failed for ${relPath}: ${uploadRes.statusText}`);
+    }
+  } catch (err) {
+    logger.error(`❌ Error in immediate file upload: ${err.message}`);
+  }
+};
+global.uploadSingleFileToSupabase = uploadSingleFileToSupabase;
 
 // Walk local directory tree and return a map of relativePath -> mtimeMs
 const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
@@ -556,7 +580,7 @@ const startStorageBackgroundSync = (storageDir) => {
     } catch (err) {
       logger.error(`❌ Error in storage background sync: ${err.message}`);
     }
-  }, 10000); // Check every 10 seconds
+  }, 3000); // Check every 3 seconds — fast enough to catch uploads before any abrupt kill
 };
 
 // ----------------------------------------------------
