@@ -192,7 +192,7 @@ export const useSmartReminders = (currentUser) => {
       const getLiveOdometer = (truck) => {
         const baseOdo = truck.base_odometer || 0;
         const completedTrips = tripLogs.filter(
-          log => log.truck_number === truck.truck_number && log.trip_status === 'Completed'
+          log => log.truck_number === truck.truck_number && log.trip_status === 'Delivered'
         );
         const tripKms = completedTrips.reduce((sum, log) => sum + (log.kms || 0), 0);
         return baseOdo + tripKms;

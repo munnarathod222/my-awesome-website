@@ -9,7 +9,7 @@ globalThis.awardLeaderboardBonuses = function(targetMonth, targetYear) {
     // 1. Fetch completed trip logs for this month
     const trips = $app.findRecordsByFilter(
       "trip_logs",
-      "trip_status = 'Completed' && date >= {:monthStart} && date <= {:monthEnd}",
+      "trip_status = 'Delivered' && date >= {:monthStart} && date <= {:monthEnd}",
       "-date",
       5000,
       0,

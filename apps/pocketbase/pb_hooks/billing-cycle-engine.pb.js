@@ -8,7 +8,7 @@ globalThis.clusterTripsAndRecalculate = function() {
     // Completed status, client_id is not empty, billing_cycle_id is empty/null, client_payment_status != 'received'
     const trips = $app.findRecordsByFilter(
       "trip_logs",
-      "trip_status = 'Completed' && client_id != '' && (billing_cycle_id = '' || billing_cycle_id = null) && client_payment_status != 'received'",
+      "trip_status = 'Delivered' && client_id != '' && (billing_cycle_id = '' || billing_cycle_id = null) && client_payment_status != 'received'",
       "-date",
       2000,
       0

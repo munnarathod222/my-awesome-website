@@ -249,7 +249,7 @@ export default function MaintenancePage() {
     if (!truck) return 0;
     const baseOdo = Number(truck.base_odometer) || 0;
     const completedTrips = tripLogs.filter(
-      log => log.truck_number === truck.truck_number && log.trip_status === 'Completed'
+      log => log.truck_number === truck.truck_number && log.trip_status === 'Delivered'
     );
     const tripKms = completedTrips.reduce((sum, log) => sum + (Number(log.kms) || 0), 0);
     return baseOdo + tripKms;
