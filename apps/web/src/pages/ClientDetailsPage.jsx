@@ -71,7 +71,7 @@ const ClientDetailsPage = () => {
     }
   };
 
-  const metrics = useMemo(() => calculateClientMetrics(clientId, trips), [clientId, trips]);
+  const metrics = useMemo(() => calculateClientMetrics(clientId, trips, client?.billing_type || 'Spot'), [clientId, trips, client]);
 
   const formatTripDate = (dateVal) => {
     if (!dateVal) return '—';
@@ -364,7 +364,15 @@ const ClientDetailsPage = () => {
                       const revenue = Number(trip.revenue) || 0;
                       const advance = Number(trip.advance_received_from_client) || 0;
                       const received = (trip.client_payment_status === 'received' ? revenue : advance);
-                      const outstanding = (trip.client_payment_status === 'received' ? 0 : Math.max(0, revenue - advance));
+                      const isDelivered = !trip.trip_status || trip.trip_status === 'Delivered';
+                      const isContract = (client?.billing_type || 'Spot') === 'Contract';
+                      // Contract: outstanding only for delivered trips (advance deducted)
+                      // Spot: outstanding = revenue - advance for all pending trips
+                      const outstanding = trip.client_payment_status === 'received'
+                        ? 0
+                        : isContract
+                          ? (isDelivered ? Math.max(0, revenue - advance) : 0)
+                          : Math.max(0, revenue - advance);
 
                       return (
                         <TableRow key={trip.id} className="hover:bg-muted/30">
