@@ -68,6 +68,7 @@ const TRACKED_COLLECTIONS = [
   'signup_requests',
   'payment_requests',
   'cashbooks',
+  'cashbook_transactions',
   'contacts',
   'fuel_tracker',
   'tyres',
