@@ -159,24 +159,23 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
   }
 };
 
-const checkpointDatabase = (dbFilePath) => {
-  try {
-    if (!fs.existsSync(dbFilePath)) return;
-    const { DatabaseSync } = require('node:sqlite');
-    const conn = new DatabaseSync(dbFilePath);
-    conn.exec('PRAGMA wal_checkpoint(TRUNCATE);');
-    conn.close();
-    logger.info('✅ Successfully executed WAL checkpoint (TRUNCATE) on database.');
-  } catch (err) {
-    logger.warn(`⚠️ WAL checkpoint warning: ${err.message}`);
-  }
-};
-
 // Core upload helper — reused by all sync strategies
 const uploadDatabaseToSupabase = async (dbFilePath) => {
+  const tempPath = `${dbFilePath}.upload_temp`;
   try {
-    checkpointDatabase(dbFilePath);
-    const fileBuffer = fs.readFileSync(dbFilePath);
+    if (!fs.existsSync(dbFilePath)) return false;
+
+    // Copy database file to a temp path to avoid reading a locked file or one that is being actively written to
+    fs.copyFileSync(dbFilePath, tempPath);
+    const fileBuffer = fs.readFileSync(tempPath);
+
+    // Clean up temp file immediately
+    try {
+      fs.unlinkSync(tempPath);
+    } catch (e) {
+      // Ignore cleanup error
+    }
+
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
       method: 'POST',
       headers: {
