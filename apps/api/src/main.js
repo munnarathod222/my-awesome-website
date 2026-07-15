@@ -29,6 +29,93 @@ app.set('trust proxy', true);
 const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
 
+// Token verification middleware to secure all backup API endpoints
+const requireBackupAuth = (req, res, next) => {
+  const token = req.headers['x-backup-token'] || req.query.token;
+  const expectedToken = process.env.BACKUP_API_TOKEN || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+  if (!token || token !== expectedToken) {
+    logger.warn(`⚠️ Unauthorized backup API access attempt from ${req.ip}`);
+    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing backup token.' });
+  }
+  next();
+};
+
+let _lastHistoryBackupDate = '';
+
+// Helper to save a daily timestamped snapshot of the database in Supabase
+const uploadDailyHistoryBackup = async (fileBuffer) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    if (_lastHistoryBackupDate === todayStr) {
+      return; // Already backed up today
+    }
+
+    logger.info(`💾 Creating daily history backup for ${todayStr} in Supabase Storage...`);
+    const remotePath = `history/data_${todayStr}.db`;
+    
+    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/octet-stream',
+        'x-upsert': 'true'
+      },
+      body: fileBuffer
+    });
+
+    if (uploadRes.ok) {
+      logger.info(`✅ Daily history backup saved: ${remotePath}`);
+      _lastHistoryBackupDate = todayStr;
+      
+      // Prune backups older than 14 days
+      try {
+        await pruneOldSupabaseBackups();
+      } catch (pruneErr) {
+        logger.warn(`⚠️ Failed to prune old Supabase history backups: ${pruneErr.message}`);
+      }
+    } else {
+      logger.error(`❌ Failed to save daily history backup: ${uploadRes.statusText}`);
+    }
+  } catch (err) {
+    logger.error(`❌ Error uploading daily history backup: ${err.message}`);
+  }
+};
+
+// Prunes history backups older than 14 days from Supabase storage
+const pruneOldSupabaseBackups = async () => {
+  try {
+    const prefix = 'history';
+    const allFiles = await listAllSupabaseFiles(prefix);
+    const now = Date.now();
+    const maxAgeMs = 14 * 24 * 60 * 60 * 1000; // 14 days
+    
+    for (const remotePath of allFiles) {
+      const basename = path.basename(remotePath);
+      const dateMatch = basename.match(/data_(\d{4}-\d{2}-\d{2})\.db/);
+      if (dateMatch) {
+        const fileDate = new Date(dateMatch[1]);
+        if (now - fileDate.getTime() > maxAgeMs) {
+          logger.info(`🗑️ Pruning old Supabase history backup: ${basename}`);
+          const delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+            method: 'DELETE',
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`
+            }
+          });
+          if (!delRes.ok) {
+            logger.warn(`⚠️ Failed to delete old history backup ${basename}: ${delRes.statusText}`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.error(`❌ Error pruning old Supabase history backups: ${err.message}`);
+  }
+};
+
+
 const downloadDatabaseFromSupabase = async (dbFilePath) => {
   try {
     logger.info(`📥 Downloading database backup from Supabase Storage...`);
@@ -103,6 +190,14 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
 
     if (uploadRes.ok) {
       logger.info('✅ Database backup successfully synced to Supabase Storage!');
+      
+      // Attempt to save a daily timestamped backup
+      try {
+        await uploadDailyHistoryBackup(fileBuffer);
+      } catch (historyErr) {
+        logger.error(`⚠️ Failed to sync daily history backup: ${historyErr.message}`);
+      }
+      
       return true;
     } else {
       logger.error(`❌ Failed to sync database backup to Supabase: ${uploadRes.statusText}`);
@@ -604,7 +699,7 @@ startMonthEndCron();
   });
 
   // POST /api/backup/trigger
-  app.post('/api/backup/trigger', async (req, res) => {
+  app.post('/api/backup/trigger', requireBackupAuth, async (req, res) => {
     try {
       if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
         return res.status(400).json({ success: false, error: 'Database file path not initialized or not found.' });
@@ -636,7 +731,7 @@ startMonthEndCron();
   });
 
   // GET /api/backup/download
-  app.get('/api/backup/download', async (req, res) => {
+  app.get('/api/backup/download', requireBackupAuth, async (req, res) => {
     try {
       if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
         return res.status(404).send('Database file not found');
@@ -648,7 +743,7 @@ startMonthEndCron();
   });
 
   // POST /api/backup/upload
-  app.post('/api/backup/upload', multer({ storage: multer.memoryStorage() }).single('backupFile'), async (req, res) => {
+  app.post('/api/backup/upload', requireBackupAuth, multer({ storage: multer.memoryStorage() }).single('backupFile'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ success: false, error: 'No backup file uploaded.' });
@@ -695,7 +790,7 @@ startMonthEndCron();
   });
 
   // GET /api/backup/list-local
-  app.get('/api/backup/list-local', (req, res) => {
+  app.get('/api/backup/list-local', requireBackupAuth, (req, res) => {
     try {
       if (!global.dbFilePath) {
         return res.status(400).json({ success: false, error: 'Database path not initialized' });
@@ -737,7 +832,7 @@ startMonthEndCron();
   });
 
   // POST /api/backup/restore-local
-  app.post('/api/backup/restore-local', express.json(), express.urlencoded({ extended: true }), async (req, res) => {
+  app.post('/api/backup/restore-local', requireBackupAuth, express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
       const { filename } = req.body || req.query || {};
       if (!filename) {
