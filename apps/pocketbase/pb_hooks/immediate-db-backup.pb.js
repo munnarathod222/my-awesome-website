@@ -33,16 +33,19 @@ function triggerRealtimeDbBackup(collectionName, actionType) {
   }
 }
 
-// Dynamically load all user collections from the database catalog
-const result = arrayOf(new DynamicModel({ name: "" }));
-$app.db()
-  .select("name")
-  .from("_collections")
-  .all(result);
-
-const TRACKED_COLLECTIONS = result
-  .map(r => r.name)
-  .filter(name => !name.startsWith('_') || name === '_superusers');
+// Dynamically load all user collections from the database catalog using native Dao helper
+const TRACKED_COLLECTIONS = [];
+try {
+  const collections = $app.dao().findCollections();
+  collections.forEach(col => {
+    const name = col.name;
+    if (name && (!name.startsWith('_') || name === '_superusers')) {
+      TRACKED_COLLECTIONS.push(name);
+    }
+  });
+} catch (err) {
+  console.log(`❌ [DBBackup] Error listing collections: ${err}`);
+}
 
 TRACKED_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
