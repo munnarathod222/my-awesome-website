@@ -639,14 +639,9 @@ const runPocketBase = async () => {
     logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download to prevent data loss.`);
   }
 
-  // Sync latest storage files from Supabase Storage — AWAIT this before starting PocketBase
-  // so files are present when the first requests arrive.
-  logger.info(`📥 Restoring storage files from Supabase (waiting before PocketBase boot)...`);
-  try {
-    await downloadFolderFromSupabase('storage', storageDir);
-  } catch (err) {
-    logger.error(`❌ Error restoring storage files: ${err.message}`);
-  }
+  // Sync latest storage files from Supabase Storage — Skipped on boot for instant startup speed!
+  // Files are instead downloaded on-demand (lazily) as they are requested by users.
+  logger.info(`📥 Lazy-download system active. Skipping boot-time storage download for light speed startup.`);
 
   if (!isWin) {
     try {
@@ -1066,9 +1061,29 @@ startMonthEndCron();
 // ----------------------------------------------------
 // 2. HTTP Proxy Middleware for PocketBase (/hcgi/platform)
 // ----------------------------------------------------
-app.use('/hcgi/platform', (req, res) => {
+app.use('/hcgi/platform', async (req, res) => {
   const targetUrl = 'http://127.0.0.1:8090' + req.url;
   const parsedUrl = new URL(targetUrl);
+
+  // ── Lazy File Downloader Interceptor ──────────────────────────────
+  // Intercept PocketBase file requests: /api/files/:collection/:recordId/:filename
+  const parts = parsedUrl.pathname.split('/');
+  if (parts[1] === 'api' && parts[2] === 'files' && parts.length >= 6) {
+    const collectionId = parts[3];
+    const recordId = parts[4];
+    const filename = parts[5];
+    
+    // Construct local path: pb_data/storage/:collectionId/:recordId/:filename
+    const localFilePath = path.join(global.dbFilePath ? path.dirname(global.dbFilePath) : './pb_data', 'storage', collectionId, recordId, filename);
+    
+    if (!fs.existsSync(localFilePath)) {
+      logger.info(`🔍 Lazy-downloading missing file on-demand: ${collectionId}/${recordId}/${filename}`);
+      const remotePath = `storage/${collectionId}/${recordId}/${filename}`;
+      // Await downloading file from Supabase before proxying so PocketBase can serve it from disk
+      await downloadFileFromSupabase(remotePath, localFilePath);
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────
 
   const options = {
     hostname: parsedUrl.hostname,
