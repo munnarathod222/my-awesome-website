@@ -19,7 +19,6 @@ export const useCashbookData = () => {
     setError(null);
     try {
       const records = await pb.collection('cashbook').getFullList({
-        filter: `added_by = "${currentUser.id}"`,
         sort: '-date',
         $autoCancel: false
       });
