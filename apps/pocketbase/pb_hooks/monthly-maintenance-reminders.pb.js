@@ -33,7 +33,7 @@ cronAdd('monthly_maintenance_reminders', '0 7 1 * *', () => {
     let skipped = 0;
 
     trucks.forEach(truck => {
-      const truckId     = truck.getId();
+      const truckId     = truck.id;
       const truckNumber = truck.getString('truck_number') || truckId;
 
       MONTHLY_TASKS.forEach(task => {
@@ -116,7 +116,7 @@ routerAdd('POST', '/api/custom/maintenance/generate-monthly-reminders', (e) => {
     let skipped = 0;
 
     trucks.forEach(truck => {
-      const truckId     = truck.getId();
+      const truckId     = truck.id;
       const truckNumber = truck.getString('truck_number') || truckId;
 
       MONTHLY_TASKS.forEach(task => {
