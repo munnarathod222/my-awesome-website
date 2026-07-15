@@ -236,35 +236,36 @@ const watchAndSyncDatabase = (dbFilePath) => {
   _syncStarted = true;
   let uploadTimeout = null;
   let periodicSyncInterval = null;
-  const PERIODIC_SYNC_MS = 15 * 60 * 1000; // 15 minutes
+  const PERIODIC_SYNC_MS = 5 * 60 * 1000; // 5 minutes
 
-  // ── Strategy 1: File-watcher (fires immediately on any DB write) ──
+  // ── Strategy 1: Directory-watcher (more reliable for SQLite WAL mode than file-watcher) ──
   try {
-    fs.watch(dbFilePath, (eventType) => {
-      if (eventType === 'change') {
+    const dataDir = path.dirname(dbFilePath);
+    fs.watch(dataDir, (eventType, filename) => {
+      // Trigger sync if the database file or its WAL/journal files change
+      if (filename && (filename === 'data.db' || filename.startsWith('data.db-'))) {
         if (uploadTimeout) clearTimeout(uploadTimeout);
-        // Debounce 10s to let PocketBase finish writing (WAL checkpoint)
+        // Debounce 10s to let PocketBase finish batch writes
         uploadTimeout = setTimeout(async () => {
-          logger.info('🔄 File-watcher: database changed, syncing to Supabase...');
+          logger.info(`🔄 Directory-watcher: database files changed (${filename}), syncing to Supabase...`);
           await uploadDatabaseToSupabase(dbFilePath);
         }, 10000);
       }
     });
-    logger.info('👁️  File-watcher sync: active (triggers within 10s of any DB write)');
+    logger.info('👁️  Directory-watcher sync: active (watches database directory changes)');
   } catch (watchErr) {
-    logger.warn(`⚠️  File-watcher could not be started: ${watchErr.message}. Falling back to periodic sync only.`);
+    logger.warn(`⚠️  Directory-watcher could not be started: ${watchErr.message}. Falling back to periodic sync only.`);
   }
 
-  // ── Strategy 2: Periodic forced sync every 2 hours (safety net) ──
+  // ── Strategy 2: Periodic forced sync every 5 minutes (safety net) ──
   periodicSyncInterval = setInterval(async () => {
-    logger.info('⏰ Periodic sync: forcing database backup to Supabase (every 2 hours)...');
+    logger.info('⏰ Periodic sync: forcing database backup to Supabase (every 5 minutes)...');
     await uploadDatabaseToSupabase(dbFilePath);
   }, PERIODIC_SYNC_MS);
 
-  // Prevent the interval from blocking Node.js exit
   if (periodicSyncInterval.unref) periodicSyncInterval.unref();
 
-  logger.info(`⏰ Periodic sync: active (every 2 hours — next sync in ~2h)`);
+  logger.info(`⏰ Periodic sync: active (every 5 minutes)`);
 
   // ── Strategy 2.5: Local Rolling Auto-Backups every 12 hours ──
   const runRollingBackup = () => {
@@ -289,15 +290,43 @@ const watchAndSyncDatabase = (dbFilePath) => {
   const localBackupInterval = setInterval(runRollingBackup, LOCAL_BACKUP_MS);
   if (localBackupInterval.unref) localBackupInterval.unref();
 
-  // ── Strategy 3: Graceful shutdown — save DB + all storage files before process exits ──
+  // ── Strategy 3: Graceful shutdown — stop pocketbase, let WAL flush, then save DB + storage ──
   const gracefulShutdownSync = async (signal) => {
-    logger.info(`🛑 ${signal} received — performing final DB + storage sync to Supabase before shutdown...`);
+    logger.info(`🛑 ${signal} received — initiating bulletproof graceful shutdown...`);
+    global.isShuttingDown = true;
+
+    // Clear intervals and timers first
+    if (periodicSyncInterval) clearInterval(periodicSyncInterval);
+    if (uploadTimeout) clearTimeout(uploadTimeout);
+
+    // Terminate PocketBase cleanly and wait for it to flush WAL
+    if (global.pbProcess) {
+      logger.info('🛑 Closing PocketBase process to flush WAL to data.db...');
+      global.pbProcess.kill('SIGTERM');
+      
+      // Wait up to 3 seconds for PocketBase process to exit and close locks
+      await new Promise(resolve => {
+        const killTimeout = setTimeout(() => {
+          logger.warn('⚠️ PocketBase close timeout reached. Forcing shutdown...');
+          resolve();
+        }, 3000);
+        
+        global.pbProcess.on('close', () => {
+          clearTimeout(killTimeout);
+          logger.info('✅ PocketBase exited cleanly.');
+          resolve();
+        });
+      });
+    }
+
     const storageDir = path.join(path.dirname(dbFilePath), 'storage');
-    // Run DB and storage sync in parallel for speed
+    
+    // Sync final database and files to Supabase
     await Promise.all([
       uploadDatabaseToSupabase(dbFilePath),
       uploadAllStorageToSupabase(storageDir)
     ]);
+    
     logger.info('✅ Final DB + storage sync complete. Exiting.');
     process.exit(0);
   };
@@ -642,7 +671,12 @@ const runPocketBase = async () => {
   });
 
   pbProcess.on('close', (code) => {
-    logger.warn(`PocketBase process exited with code ${code}. Restarting in 5s...`);
+    logger.warn(`PocketBase process exited with code ${code}.`);
+    if (global.isShuttingDown) {
+      logger.info('PocketBase closed during shutdown. Skipping restart.');
+      return;
+    }
+    logger.warn('Restarting in 5s...');
     // Force a sync before restarting so we don't lose data
     const syncPromise = global.isRestoringBackup 
       ? Promise.resolve() 
