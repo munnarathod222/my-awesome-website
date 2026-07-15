@@ -845,6 +845,9 @@ startMonthEndCron();
   // POST /api/backup/upload
   app.post('/api/backup/upload', requireBackupAuth, multer({ storage: multer.memoryStorage() }).single('backupFile'), async (req, res) => {
     try {
+      if (process.env.ENABLE_DB_RESTORE !== 'true') {
+        return res.status(403).json({ success: false, error: 'Database restore is disabled on this server to prevent accidental data loss.' });
+      }
       if (!req.file) {
         return res.status(400).json({ success: false, error: 'No backup file uploaded.' });
       }
