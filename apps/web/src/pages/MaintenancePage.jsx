@@ -1396,7 +1396,8 @@ export default function MaintenancePage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Desktop View Table (Hidden on mobile) */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1473,6 +1474,84 @@ export default function MaintenancePage() {
                   )}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Cards View (Visible on mobile) */}
+            <div className="block md:hidden divide-y divide-border/30 bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">
+              {filteredServiceLogs.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground italic">
+                  No service logs match the filter criteria.
+                </div>
+              ) : (
+                filteredServiceLogs.map(s => {
+                  const truckObj = trucks.find(t => t.id === s.truck_id);
+                  const parts = parseJsonField(s.parts_replaced_array, []);
+                  const invoiceUrl = s.invoice_file ? pb.files.getUrl(s, s.invoice_file) : null;
+                  
+                  return (
+                    <div key={s.id} className="p-4 space-y-3 bg-card hover:bg-muted/5 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground font-mono">{formatDate(s.maintenance_date)}</span>
+                        <span className="font-bold text-sm text-foreground">
+                          {truckObj ? (
+                            <button 
+                              onClick={() => { setSelectedTruck(truckObj); setDrawerTab('logs'); }} 
+                              className="hover:underline text-primary text-left"
+                            >
+                              {truckObj.truck_number}
+                            </button>
+                          ) : 'N/A'}
+                        </span>
+                      </div>
+                      
+                      <div className="text-sm font-semibold text-white leading-relaxed">
+                        {s.work_description_text}
+                      </div>
+
+                      {parts.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {parts.map((p, idx) => (
+                            <Badge key={idx} variant="secondary" className="px-1.5 py-0 text-[9px] font-semibold bg-muted rounded-full">
+                              {p}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                        <div>
+                          <span className="text-muted-foreground block text-[9px] uppercase tracking-wider">Odometer</span>
+                          <span className="font-bold text-slate-300 tabular-nums">{s.odometer_at_service?.toLocaleString()} km</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <span className="text-muted-foreground block text-[9px] uppercase tracking-wider">Cost</span>
+                            <span className="font-black text-emerald-400 tabular-nums">₹{s.cost_amount?.toLocaleString()}</span>
+                          </div>
+                          
+                          {invoiceUrl && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-primary hover:bg-primary/10 rounded-lg"
+                              onClick={() => {
+                                if (s.invoice_file.endsWith('.pdf')) {
+                                  window.open(invoiceUrl, '_blank');
+                                } else {
+                                  setActiveLightboxImage(invoiceUrl);
+                                }
+                              }}
+                            >
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </Card>
         </TabsContent>
