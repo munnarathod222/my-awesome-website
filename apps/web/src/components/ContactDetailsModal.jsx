@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, MapPin, FileText, Copy, Share2, Building2 } from 'lucide-react';
+import { Phone, Mail, MapPin, FileText, Copy, Share2, Building2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ContactDetailsModal({ isOpen, onClose, contact }) {
@@ -103,6 +103,20 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                   )}
                 </div>
               </div>
+
+              {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-muted rounded-lg text-muted-foreground shrink-0">
+                    <Wrench className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Truck Brands Serviced</p>
+                    <p className="text-sm text-foreground font-semibold">
+                      {contact.truck_brand}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {contact.notes && (
                 <div className="pt-4 border-t border-border/50">

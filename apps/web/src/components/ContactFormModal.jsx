@@ -23,7 +23,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     gstin: '',
     email: '',
     notes: '',
-    google_maps_url: ''
+    google_maps_url: '',
+    truck_brand: ''
   });
 
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           gstin: contact.gstin || '',
           email: contact.email || '',
           notes: contact.notes || '',
-          google_maps_url: contact.google_maps_url || ''
+          google_maps_url: contact.google_maps_url || '',
+          truck_brand: contact.truck_brand || ''
         });
       } else {
         setFormData({
@@ -65,7 +67,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           gstin: '',
           email: '',
           notes: '',
-          google_maps_url: ''
+          google_maps_url: '',
+          truck_brand: ''
         });
       }
     }
@@ -229,6 +232,30 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                         <SelectItem value="Spare Parts">Spare Parts Shop</SelectItem>
                       </>
                     )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            {/* Conditionally show Truck Brand if Mechanic is selected */}
+            {formData.contact_type === 'Mechanic' && (
+              <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                <Label>Truck Brand *</Label>
+                <Select 
+                  value={formData.truck_brand || 'Common'} 
+                  onValueChange={(val) => setFormData(prev => ({ ...prev, truck_brand: val }))}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ashok Leyland">Ashok Leyland</SelectItem>
+                    <SelectItem value="Tata">Tata</SelectItem>
+                    <SelectItem value="Eicher">Eicher</SelectItem>
+                    <SelectItem value="Bharat Benz">Bharat Benz</SelectItem>
+                    <SelectItem value="Mahindra">Mahindra</SelectItem>
+                    <SelectItem value="Common">Common (All Brands)</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

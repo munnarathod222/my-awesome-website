@@ -363,7 +363,14 @@ export default function ContactsPage() {
                               {contact.gstin || 'N/A'}
                             </span>
                           </TableCell>
-                          <TableCell className="py-4">{getTypeBadge(contact.contact_type)}</TableCell>
+                           <TableCell className="py-4">
+                            {getTypeBadge(contact.contact_type)}
+                            {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+                              <p className="text-[10px] font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
+                                {contact.truck_brand}
+                              </p>
+                            )}
+                          </TableCell>
                           <TableCell className="text-sm font-medium text-muted-foreground py-4">
                             {format(new Date(contact.created), 'MMM dd, yyyy')}
                           </TableCell>
@@ -419,7 +426,14 @@ export default function ContactsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {getTypeBadge(contact.contact_type)}
+                          <div className="text-right flex flex-col items-end">
+                            {getTypeBadge(contact.contact_type)}
+                            {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+                              <span className="text-[9px] font-bold text-muted-foreground mt-1 uppercase tracking-wide">
+                                {contact.truck_brand}
+                              </span>
+                            )}
+                          </div>
                           <ContactActionsMenu
                             contact={contact}
                             onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
