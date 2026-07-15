@@ -406,16 +406,27 @@ const downloadFolderFromSupabase = async (prefix, localBaseDir) => {
     logger.info(`📦 Found ${allFiles.length} storage files to restore from Supabase.`);
     
     let restored = 0, skipped = 0;
-    for (const remotePath of allFiles) {
-      // remotePath is like "storage/collectionId/recordId/filename.jpg"
-      const relativePath = remotePath.substring((prefix + '/').length);
-      const localFilePath = path.join(localBaseDir, relativePath);
-      
-      // Always re-download every file on boot — Render disk is ephemeral,
-      // so we can never trust local files to be present after a deploy.
-      const ok = await downloadFileFromSupabase(remotePath, localFilePath);
-      if (ok) restored++; else skipped++;
+    const concurrency = 15; // Download 15 files in parallel
+    const allFilesCopy = [...allFiles];
+    
+    const downloadWorker = async () => {
+      while (allFilesCopy.length > 0) {
+        const remotePath = allFilesCopy.shift();
+        if (!remotePath) continue;
+        const relativePath = remotePath.substring((prefix + '/').length);
+        const localFilePath = path.join(localBaseDir, relativePath);
+        
+        const ok = await downloadFileFromSupabase(remotePath, localFilePath);
+        if (ok) restored++; else skipped++;
+      }
+    };
+
+    const workers = [];
+    for (let i = 0; i < Math.min(concurrency, allFiles.length); i++) {
+      workers.push(downloadWorker());
     }
+    await Promise.all(workers);
+    
     logger.info(`✅ Storage restore complete: ${restored} files restored, ${skipped} failed.`);
   } catch (err) {
     logger.error(`❌ Error restoring storage folder from Supabase: ${err.message}`);
