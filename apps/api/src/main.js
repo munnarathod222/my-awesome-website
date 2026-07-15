@@ -774,6 +774,17 @@ startMonthEndCron();
       if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
         return res.status(400).json({ success: false, error: 'Database file path not initialized or not found.' });
       }
+
+      const isAsync = req.query.async === 'true';
+      if (isAsync) {
+        res.json({ success: true, message: 'Database backup triggered in background.' });
+        setTimeout(async () => {
+          logger.info('🔄 Real-time sync: database backup triggered in background...');
+          await uploadDatabaseToSupabase(global.dbFilePath);
+        }, 100);
+        return;
+      }
+
       logger.info('Manual backup triggered by user...');
 
       // Save local backup copy

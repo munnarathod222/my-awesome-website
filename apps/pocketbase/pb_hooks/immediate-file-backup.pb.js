@@ -65,7 +65,9 @@ const FILE_COLLECTIONS = [
   'driver_accident_reports',
   'company_settings',
   'employees',
-  'trucks'
+  'trucks',
+  'tyres',
+  'loan_profiles'
 ];
 
 // Register after-create and after-update hooks for file-containing collections
