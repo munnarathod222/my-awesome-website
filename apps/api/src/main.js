@@ -159,8 +159,12 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
   }
 };
 
-// Core upload helper — reused by all sync strategies
 const uploadDatabaseToSupabase = async (dbFilePath) => {
+  const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
+  if (!isSyncEnabled) {
+    logger.info('⚠️ Non-production environment. Database upload to Supabase is disabled.');
+    return false;
+  }
   const tempPath = `${dbFilePath}.upload_temp`;
   try {
     if (!fs.existsSync(dbFilePath)) return false;
@@ -447,8 +451,12 @@ const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
   return files;
 };
 
-// Upload ALL local storage files to Supabase (used during graceful shutdown)
 const uploadAllStorageToSupabase = async (storageDir) => {
+  const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
+  if (!isSyncEnabled) {
+    logger.info('⚠️ Non-production environment. Storage upload to Supabase is disabled.');
+    return;
+  }
   if (!fs.existsSync(storageDir)) return;
   const localFiles = getLocalFilesRecursive(storageDir, storageDir);
   const filePaths = Object.keys(localFiles);
@@ -651,8 +659,13 @@ const runPocketBase = async () => {
   global.pbProcess = pbProcess;
 
   // Watch and sync DB + storage (guarded — only registers once across restarts)
-  watchAndSyncDatabase(dbFilePath);
-  startStorageBackgroundSync(storageDir);
+  const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
+  if (isSyncEnabled) {
+    watchAndSyncDatabase(dbFilePath);
+    startStorageBackgroundSync(storageDir);
+  } else {
+    logger.info('⚠️ Non-production environment. Supabase automatic background sync is disabled.');
+  }
 
   pbProcess.stdout.on('data', (data) => {
     const msg = data.toString().trim();
