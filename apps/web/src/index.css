@@ -467,10 +467,20 @@
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
+    transform: none !important;
   }
 
   div[class*="DialogOverlay"], .dialog-overlay, .dialog-backdrop {
     display: none !important;
+  }
+
+  div[data-radix-portal], div[class*="portal"] {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   @page {

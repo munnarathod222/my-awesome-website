@@ -52,13 +52,12 @@ globalThis.generateMonthlyReminders = function() {
         // ---- Idempotency check ----
         const existing = $app.findRecordsByFilter(
           'maintenance_reminders',
-          `truck_id = {:truckId} && maintenance_type = {:type} && reminder_date >= {:monthStart} && reminder_date <= {:monthEnd} && status = 'Pending'`,
+          `truck_id = {:truckId} && maintenance_type = {:type} && month_label = {:monthStr} && status = 'Pending'`,
           '', 1, 0,
           {
             truckId:    truckId,
             type:       task.type,
-            monthStart: `${monthStr}-01 00:00:00`,
-            monthEnd:   `${monthStr}-31 23:59:59`,
+            monthStr:   monthStr,
           }
         );
 

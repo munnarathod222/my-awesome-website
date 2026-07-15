@@ -22,11 +22,9 @@ export const calculateClientMetrics = (clientId, trips) => {
       // If payment is pending/blank, the client has still paid the advance amount
       totalReceived += advance;
       
-      // The remaining outstanding balance only applies if the trip is Delivered
-      if (trip.trip_status === 'Delivered') {
-        totalPending += Math.max(0, revenue - advance);
-        pendingTripsCount++;
-      }
+      // The remaining outstanding balance applies to all pending trips
+      totalPending += Math.max(0, revenue - advance);
+      pendingTripsCount++;
     }
   });
 

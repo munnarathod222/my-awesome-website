@@ -562,11 +562,17 @@ export default function TripOverviewCalculator() {
               </Card>
 
               {/* Operational Summary Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
                 {/* Revenue card */}
                 <div className="p-4.5 rounded-2xl bg-slate-900/40 border border-white/5 shadow-sm">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Revenue</span>
                   <p className="text-base font-black text-white mt-1">{formatCurrency(freightRevenue)}</p>
+                </div>
+
+                {/* TDS card */}
+                <div className="p-4.5 rounded-2xl bg-slate-900/40 border border-white/5 shadow-sm">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">TDS ({tdsRate}%)</span>
+                  <p className="text-base font-black text-yellow-500 mt-1">{formatCurrency(tdsAmount)}</p>
                 </div>
 
                 {/* Expenses card */}
@@ -582,14 +588,14 @@ export default function TripOverviewCalculator() {
                 )}>
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Net Profit</span>
                   <p className={cn(
-                    "text-base font-black mt-1",
+                    "font-black text-base mt-1",
                     netProfit >= 0 ? "text-emerald-400" : "text-rose-400"
                   )}>{formatCurrency(netProfit)}</p>
                 </div>
 
                 {/* Margin card */}
                 <div className={cn(
-                  "p-4.5 rounded-2xl border shadow-sm",
+                  "p-4.5 rounded-2xl border shadow-sm col-span-2 lg:col-span-1",
                   profitMargin >= 0 ? "bg-emerald-950/10 border-emerald-500/10" : "bg-rose-950/10 border-rose-500/10"
                 )}>
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Margin</span>

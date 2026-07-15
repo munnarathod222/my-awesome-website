@@ -67,46 +67,48 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
   }, [isOpen, propTrucks, currentUser?.id]);
 
   useEffect(() => {
-    if (expense) {
-      setFormData({
-        date: expense.date ? expense.date.substring(0, 10) : new Date().toISOString().split('T')[0],
-        amount: expense.amount !== undefined && expense.amount !== null ? expense.amount : '',
-        category: expense.category || 'Regular',
-        subcategory: expense.subcategory || 'Maintenance',
-        description: expense.description || '',
-        payment_method: expense.payment_method || 'Cash',
-        status: expense.status || 'Approved',
-        truck_id: expense.truck_id || 'none',
-        credit_card_id: expense.credit_card_id || 'none',
-        employee_id: expense.employee_id || 'none'
-      });
-      setExistingFiles(expense.documents || []);
-      setNewFiles([]);
-      setDeletedFiles([]);
-      setExistingReceiptFiles(expense.image_urls || []);
-      setNewReceiptFiles([]);
-      setDeletedReceiptFiles([]);
-    } else {
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        amount: '',
-        category: 'Regular',
-        subcategory: 'Maintenance',
-        description: '',
-        payment_method: 'Cash',
-        status: 'Approved',
-        truck_id: 'none',
-        credit_card_id: 'none',
-        employee_id: 'none'
-      });
-      setExistingFiles([]);
-      setNewFiles([]);
-      setDeletedFiles([]);
-      setExistingReceiptFiles([]);
-      setNewReceiptFiles([]);
-      setDeletedReceiptFiles([]);
+    if (isOpen) {
+      if (expense) {
+        setFormData({
+          date: expense.date ? expense.date.split(/[ T]/)[0] : new Date().toISOString().split('T')[0],
+          amount: expense.amount !== undefined && expense.amount !== null ? expense.amount : '',
+          category: expense.category || 'Regular',
+          subcategory: expense.subcategory || 'Maintenance',
+          description: expense.description || '',
+          payment_method: expense.payment_method || 'Cash',
+          status: expense.status || 'Approved',
+          truck_id: expense.truck_id || 'none',
+          credit_card_id: expense.credit_card_id || 'none',
+          employee_id: expense.employee_id || 'none'
+        });
+        setExistingFiles(expense.documents || []);
+        setNewFiles([]);
+        setDeletedFiles([]);
+        setExistingReceiptFiles(expense.image_urls || []);
+        setNewReceiptFiles([]);
+        setDeletedReceiptFiles([]);
+      } else {
+        setFormData({
+          date: new Date().toISOString().split('T')[0],
+          amount: '',
+          category: 'Regular',
+          subcategory: 'Maintenance',
+          description: '',
+          payment_method: 'Cash',
+          status: 'Approved',
+          truck_id: 'none',
+          credit_card_id: 'none',
+          employee_id: 'none'
+        });
+        setExistingFiles([]);
+        setNewFiles([]);
+        setDeletedFiles([]);
+        setExistingReceiptFiles([]);
+        setNewReceiptFiles([]);
+        setDeletedReceiptFiles([]);
+      }
     }
-  }, [expense, isOpen]);
+  }, [isOpen]);
 
   const handleFileSelect = (e) => {
     if (e.target.files) {
