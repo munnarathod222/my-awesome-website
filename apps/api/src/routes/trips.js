@@ -43,20 +43,33 @@ router.post('/bulk-create', async (req, res) => {
   for (let i = 0; i < trips.length; i++) {
     const trip = trips[i];
     trip.trip_id = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
-    
-    // Safely parse metrics to numbers to satisfy database constraints
+
+    // Safely parse numeric fields to avoid DB constraint errors
     if (trip.kms !== undefined) trip.kms = Number(trip.kms) || 0;
     if (trip.revenue !== undefined) trip.revenue = Number(trip.revenue) || 0;
     if (trip.mileage !== undefined) trip.mileage = Number(trip.mileage) || 0;
+    if (trip.advance_received_from_client !== undefined) trip.advance_received_from_client = Number(trip.advance_received_from_client) || 0;
+    if (trip.advance_paid_to_driver !== undefined) trip.advance_paid_to_driver = Number(trip.advance_paid_to_driver) || 0;
+    if (trip.tds_deducted_receivable !== undefined) trip.tds_deducted_receivable = Number(trip.tds_deducted_receivable) || 0;
+    if (trip.vendor_payout !== undefined) trip.vendor_payout = Number(trip.vendor_payout) || 0;
+    if (trip.brokerage_margin !== undefined) trip.brokerage_margin = Number(trip.brokerage_margin) || 0;
+
+    // Sanitize relation fields — empty strings cause PocketBase silent 400 errors
+    if (!trip.client_id) delete trip.client_id;
+    if (!trip.route_id) delete trip.route_id;
+    if (!trip.billing_cycle_id) delete trip.billing_cycle_id;
+
+    logger.info(`Creating trip ${trip.trip_id} payload: ${JSON.stringify(trip)}`);
 
     try {
       const record = await pb.collection('trip_logs').create(trip, { $autoCancel: false });
       createdTrips.push(record);
     } catch (err) {
-      logger.error(`Failed to create bulk trip at index ${i}:`, err);
+      logger.error(`Failed to create bulk trip at index ${i}:`, err.message);
       logger.error(`Trip payload:`, JSON.stringify(trip));
       logger.error(`PocketBase error data:`, JSON.stringify(err.data));
       logger.error(`PocketBase error status:`, err.status);
+
       // Attempt rollback of already created trips in this batch to preserve consistency
       logger.info(`Rolling back ${createdTrips.length} created trips in this batch...`);
       for (const created of createdTrips) {
@@ -70,7 +83,8 @@ router.post('/bulk-create', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: `Failed to create trip ${trip.trip_id} (Index ${i}): ${err.message}`,
-        details: err.data
+        details: err.data,
+        payload: trip
       });
     }
   }
@@ -91,15 +105,9 @@ router.put('/:id', async (req, res) => {
   const updateData = { ...req.body };
 
   // Safely parse metrics to numbers to ensure database constraints are satisfied
-  if (updateData.kms !== undefined) {
-    updateData.kms = Number(updateData.kms) || 0;
-  }
-  if (updateData.revenue !== undefined) {
-    updateData.revenue = Number(updateData.revenue) || 0;
-  }
-  if (updateData.mileage !== undefined) {
-    updateData.mileage = Number(updateData.mileage) || 0;
-  }
+  if (updateData.kms !== undefined) updateData.kms = Number(updateData.kms) || 0;
+  if (updateData.revenue !== undefined) updateData.revenue = Number(updateData.revenue) || 0;
+  if (updateData.mileage !== undefined) updateData.mileage = Number(updateData.mileage) || 0;
 
   try {
     const updatedTrip = await pb.collection('trip_logs').update(id, updateData);
@@ -110,10 +118,9 @@ router.put('/:id', async (req, res) => {
       trip: updatedTrip
     });
   } catch (err) {
-    // Explicitly log SQLite database rejection messages to help debug constraint violations
     logger.error(`Database rejection error updating trip ${id}:`, err);
-    console.error("PocketBase/SQLite database constraints violation error details:", err.message, err.data);
-    
+    console.error('PocketBase/SQLite database constraints violation error details:', err.message, err.data);
+
     return res.status(400).json({
       success: false,
       error: err.message || 'Database validation/constraint failed',
@@ -126,15 +133,9 @@ router.patch('/:id', async (req, res) => {
   const { id } = req.params;
   const updateData = { ...req.body };
 
-  if (updateData.kms !== undefined) {
-    updateData.kms = Number(updateData.kms) || 0;
-  }
-  if (updateData.revenue !== undefined) {
-    updateData.revenue = Number(updateData.revenue) || 0;
-  }
-  if (updateData.mileage !== undefined) {
-    updateData.mileage = Number(updateData.mileage) || 0;
-  }
+  if (updateData.kms !== undefined) updateData.kms = Number(updateData.kms) || 0;
+  if (updateData.revenue !== undefined) updateData.revenue = Number(updateData.revenue) || 0;
+  if (updateData.mileage !== undefined) updateData.mileage = Number(updateData.mileage) || 0;
 
   try {
     const updatedTrip = await pb.collection('trip_logs').update(id, updateData);
@@ -146,8 +147,8 @@ router.patch('/:id', async (req, res) => {
     });
   } catch (err) {
     logger.error(`Database rejection error patching trip ${id}:`, err);
-    console.error("PocketBase/SQLite database constraints violation error details:", err.message, err.data);
-    
+    console.error('PocketBase/SQLite database constraints violation error details:', err.message, err.data);
+
     return res.status(400).json({
       success: false,
       error: err.message || 'Database validation/constraint failed',
