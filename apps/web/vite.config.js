@@ -10,7 +10,22 @@ import pocketbaseAuthPlugin from './plugins/vite-plugin-pocketbase-auth.js';
 import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
-const allDeps = Object.keys(pkg.dependencies || {});
+const excludeDeps = [
+  'vite',
+  '@vitejs/plugin-react',
+  'postcss',
+  'tailwindcss',
+  'autoprefixer',
+  'eslint',
+  'globals',
+  'terser',
+];
+const allDeps = Object.keys(pkg.dependencies || {}).filter(dep => {
+  if (dep.startsWith('@types/')) return false;
+  if (dep.startsWith('@babel/')) return false;
+  if (excludeDeps.includes(dep)) return false;
+  return true;
+});
 
 const isDev = process.env.NODE_ENV !== 'production';
 

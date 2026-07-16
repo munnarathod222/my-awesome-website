@@ -130,11 +130,11 @@ const ClientPaymentAnalysisPage = () => {
             <h1 className="text-3xl font-extrabold tracking-tight">Client Payment Analysis</h1>
             <p className="text-muted-foreground mt-1 text-sm">Monitor outstanding balances and payment history across all clients.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => exportClientAnalysisToCSV(analysisData)}>
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+            <Button variant="outline" onClick={() => exportClientAnalysisToCSV(analysisData)} className="flex-1 md:flex-none">
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </Button>
-            <Button variant="outline" onClick={() => exportClientAnalysisToPDF(analysisData)}>
+            <Button variant="outline" onClick={() => exportClientAnalysisToPDF(analysisData)} className="flex-1 md:flex-none">
               <FileText className="w-4 h-4 mr-2" /> Export PDF
             </Button>
           </div>

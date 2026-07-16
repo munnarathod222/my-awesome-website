@@ -12,26 +12,26 @@ onRecordAfterCreateSuccess((e) => {
     // Find or create active cashbook for user
     let cashbook = $app.findFirstRecordByData("cashbooks", "user_id", userId);
     if (!cashbook) {
-      const newCashbook = new Record("cashbooks", {
-        user_id: userId,
-        opening_balance: 0,
-        status: "active"
-      });
+      const cashbooksCol = $app.findCollectionByNameOrId("cashbooks");
+      const newCashbook = new Record(cashbooksCol);
+      newCashbook.set("user_id", userId);
+      newCashbook.set("opening_balance", 0);
+      newCashbook.set("status", "active");
       $app.save(newCashbook);
       cashbook = newCashbook;
     }
 
     // Create cashbook transaction
-    const transaction = new Record("cashbook_transactions", {
-      cashbook_id: cashbook.id,
-      date: e.record.get("date"),
-      description: `Driver Advance - ${e.record.get("driver_name")}`,
-      category: "Driver Advances",
-      amount: e.record.get("amount"),
-      transaction_type: "debit",
-      source_module: "expenses_driver_advance",
-      source_record_id: e.record.id
-    });
+    const transactionCol = $app.findCollectionByNameOrId("cashbook_transactions");
+    const transaction = new Record(transactionCol);
+    transaction.set("cashbook_id", cashbook.id);
+    transaction.set("date", e.record.get("date"));
+    transaction.set("description", `Driver Advance - ${e.record.get("driver_name")}`);
+    transaction.set("category", "Driver Advances");
+    transaction.set("amount", e.record.get("amount"));
+    transaction.set("transaction_type", "debit");
+    transaction.set("source_module", "expenses_driver_advance");
+    transaction.set("source_record_id", e.record.id);
     $app.save(transaction);
   } catch (err) {
     console.error("Error syncing driver advance to cashbook:", err);

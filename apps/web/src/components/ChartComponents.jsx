@@ -103,9 +103,9 @@ export const CategoryPieChart = ({ data }) => {
           <Pie
             data={data}
             cx="50%"
-            cy="50%"
-            innerRadius={80}
-            outerRadius={120}
+            cy="40%"
+            innerRadius={60}
+            outerRadius={90}
             paddingAngle={2}
             dataKey="value"
           >
@@ -114,7 +114,7 @@ export const CategoryPieChart = ({ data }) => {
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
-          <Legend layout="vertical" verticalAlign="middle" align="right" />
+          <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px' }} iconType="circle" iconSize={8} />
         </PieChart>
       </ResponsiveContainer>
     </div>

@@ -328,7 +328,7 @@ export default function RoutesPage() {
           </div>
 
           {/* View Toggles */}
-          <div className="flex items-center gap-2 border border-border/60 p-1 rounded-xl bg-background/40 self-end md:self-auto shrink-0 shadow-inner">
+          <div className="hidden md:flex items-center gap-2 border border-border/60 p-1 rounded-xl bg-background/40 self-end md:self-auto shrink-0 shadow-inner">
             <Button
               variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
               size="sm"
@@ -415,9 +415,10 @@ export default function RoutesPage() {
               </div>
             </div>
           </Card>
-        ) : viewMode === 'grid' ? (
-          // GRID VIEW
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        ) : (
+          <>
+            {/* GRID VIEW (Always shown on mobile, hidden on desktop when table mode is active) */}
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300 ${viewMode === 'table' ? 'md:hidden' : ''}`}>
             {sortedRoutes.map(route => {
               const { start, end } = parseRouteStations(route.route_name);
               const styles = getRouteTierStyles(route.distance_km);
@@ -679,9 +680,10 @@ export default function RoutesPage() {
               );
             })}
           </div>
-        ) : (
-          // TABLE VIEW
-          <Card className="border border-border/50 bg-card/60 backdrop-blur-md shadow-sm rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+
+          {/* TABLE VIEW (Hidden on mobile, conditionally rendered on desktop) */}
+          {viewMode === 'table' && (
+            <Card className="hidden md:block border border-border/50 bg-card/60 backdrop-blur-md shadow-sm rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/40">
@@ -820,6 +822,8 @@ export default function RoutesPage() {
             </div>
           </Card>
         )}
+      </>
+    )}
       </div>
 
       {/* Modal overlays */}

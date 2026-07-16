@@ -12,8 +12,9 @@
     "concurrently": "^10.0.3"
   },
   "dependencies": {
-    "vite": "^7.3.1",
-    "@vitejs/plugin-react": "^5.2.0"
+    "@vitejs/plugin-react": "^5.2.0",
+    "isomorphic-git": "^1.38.7",
+    "vite": "^7.3.1"
   },
   "workspaces": [
     "apps/*"

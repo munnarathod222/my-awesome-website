@@ -360,16 +360,16 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Stats */}
-          <div className="flex gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center min-w-[80px]">
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 w-full sm:w-auto">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center flex-1 sm:flex-none min-w-[80px]">
               <p className="text-2xl font-black text-yellow-400">{PRIZE_AMOUNT}</p>
               <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">1st Prize</p>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center min-w-[80px]">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center flex-1 sm:flex-none min-w-[80px]">
               <p className="text-2xl font-black text-blue-400">{data?.total_eligible ?? '—'}</p>
               <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">Eligible</p>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center min-w-[80px]">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center flex-1 sm:flex-none min-w-[80px]">
               <p className="text-2xl font-black text-emerald-400">{data?.total_drivers ?? '—'}</p>
               <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">Total</p>
             </div>

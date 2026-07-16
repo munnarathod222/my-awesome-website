@@ -34,6 +34,7 @@ export default function LaunchpadPage() {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', desc: 'Real-time overview of fleet operations', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
         { icon: BarChart3, label: 'Analytics', path: '/analytics', desc: 'P&L reporting & financial matrices', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
+        { icon: CalendarDays, label: 'Calendar', path: '/calendar', desc: 'Monthly dispatch & compliance view', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
         { icon: PieChart, label: 'Client Analysis', path: '/client-analysis', desc: 'Revenue split and payment margins', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: TrendingUp, label: 'Trip Overview', path: '/dashboard/trip-overview', desc: 'Global route metrics & calculations', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: Bell, label: 'Reminders', path: '/reminders', desc: 'Stay updated on deadlines & actions', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },

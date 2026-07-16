@@ -100,21 +100,24 @@ router.get('/with-employee-details/list', async (req, res) => {
   const employeeId = req.query.employee_id || req.query.userId;
   const { status } = req.query;
 
-  // Build filter
+  // Build filter securely
   let filter = '';
+  const filterParams = {};
   if (employeeId) {
-    filter = `employee_id = "${employeeId}"`;
+    filter = 'employee_id = {:employeeId}';
+    filterParams.employeeId = employeeId;
   }
   if (status) {
     if (filter) {
-      filter += ` && status = "${status}"`;
+      filter += ' && status = {:status}';
     } else {
-      filter = `status = "${status}"`;
+      filter = 'status = {:status}';
     }
+    filterParams.status = status;
   }
 
   const advances = await pb.collection('advances').getFullList({
-    ...(filter && { filter }),
+    ...(filter && { filter: pb.filter(filter, filterParams) }),
     sort: '-created',
   });
 

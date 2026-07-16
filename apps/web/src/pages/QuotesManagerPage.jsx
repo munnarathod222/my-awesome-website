@@ -166,7 +166,8 @@ const QuotesManagerPage = () => {
             </CardHeader>
             
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Desktop Table View (Hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-muted/10">
                     <TableRow>
@@ -246,6 +247,82 @@ const QuotesManagerPage = () => {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile Card List View (Hidden on desktop) */}
+              <div className="block md:hidden divide-y divide-border/40">
+                {loading ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground">Loading quotes...</div>
+                ) : filteredQuotes.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-muted-foreground">
+                    No quotes found. Create a new quote to get started.
+                  </div>
+                ) : (
+                  filteredQuotes.map(quote => (
+                    <div key={quote.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-sm text-primary">{quote.quote_number}</span>
+                        <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 border-transparent", statusColors[quote.status] || statusColors['Draft'])}>
+                          {quote.status || 'Draft'}
+                        </Badge>
+                      </div>
+                      
+                      <div>
+                        <p className="font-bold text-sm text-foreground">{quote.customer_name}</p>
+                        {quote.destination && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{quote.destination}</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Container</p>
+                          <p className="font-semibold text-foreground mt-0.5 truncate">{quote.container_type || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Charge Wt.</p>
+                          <p className="font-semibold text-foreground mt-0.5 truncate">{quote.chargeable_weight?.toLocaleString()} kg</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Total Price</p>
+                          <p className="font-extrabold text-foreground mt-0.5 truncate">₹{quote.total_price?.toLocaleString('en-IN')}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(quote.created), 'MMM dd, yyyy')}</span>
+                        
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleView(quote)}
+                            className="h-7 text-[11px] font-bold rounded-lg border-border hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                          >
+                            View
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg">
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              {quote.status !== 'Accepted' && (
+                                <DropdownMenuItem onClick={() => handleEdit(quote)} className="text-xs font-semibold rounded-lg">
+                                  Edit Quote
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-xs font-semibold rounded-lg">
+                                Convert to Invoice
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>

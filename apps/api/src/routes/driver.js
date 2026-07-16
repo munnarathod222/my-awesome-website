@@ -945,4 +945,129 @@ router.get('/attendance', resolveDriver, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/driver/attendance/check-in
+ * Punches in for today. Creates or updates the attendance record in PocketBase.
+ */
+router.post('/attendance/check-in', resolveDriver, async (req, res) => {
+  const driverId = req.driverId;
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const timeStr = now.toISOString();
+
+  try {
+    const existing = await pb.collection('attendance').getFullList({
+      filter: `staff_member = "${driverId}" && date >= "${dateStr} 00:00:00" && date <= "${dateStr} 23:59:59"`,
+      $autoCancel: false
+    });
+
+    let record;
+    if (existing.length > 0) {
+      record = await pb.collection('attendance').update(existing[0].id, {
+        check_in_time: timeStr,
+        status: 'Present',
+        notes: (existing[0].notes || '') + '\nChecked in via Driver App'
+      }, { $autoCancel: false });
+    } else {
+      record = await pb.collection('attendance').create({
+        staff_member: driverId,
+        date: `${dateStr} 12:00:00.000Z`,
+        status: 'Present',
+        check_in_time: timeStr,
+        notes: 'Checked in via Driver App'
+      }, { $autoCancel: false });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Checked in successfully.',
+      attendance: record
+    });
+  } catch (err) {
+    logger.error(`Attendance check-in error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to record check-in.' });
+  }
+});
+
+/**
+ * POST /api/driver/attendance/check-out
+ * Punches out for today. Updates the check-out time and hours worked.
+ */
+router.post('/attendance/check-out', resolveDriver, async (req, res) => {
+  const driverId = req.driverId;
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const timeStr = now.toISOString();
+
+  try {
+    const existing = await pb.collection('attendance').getFullList({
+      filter: `staff_member = "${driverId}" && date >= "${dateStr} 00:00:00" && date <= "${dateStr} 23:59:59"`,
+      $autoCancel: false
+    });
+
+    if (existing.length === 0) {
+      return res.status(404).json({ success: false, error: 'No check-in record found for today.' });
+    }
+
+    const record = existing[0];
+    const checkInTime = record.check_in_time ? new Date(record.check_in_time) : null;
+    let hoursWorked = 0;
+    if (checkInTime) {
+      const diffMs = now.getTime() - checkInTime.getTime();
+      hoursWorked = Math.round((diffMs / (1000 * 60 * 60)) * 10) / 10;
+    }
+
+    const updatedRecord = await pb.collection('attendance').update(record.id, {
+      check_out_time: timeStr,
+      hours_worked: hoursWorked,
+      notes: (record.notes || '') + '\nChecked out via Driver App'
+    }, { $autoCancel: false });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Checked out successfully.',
+      attendance: updatedRecord
+    });
+  } catch (err) {
+    logger.error(`Attendance check-out error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to record check-out.' });
+  }
+});
+
+/**
+ * POST /api/driver/advances
+ * Submits a new salary advance request for this driver.
+ */
+router.post('/advances', resolveDriver, async (req, res) => {
+  const driverId = req.driverId;
+  const { amount, reason } = req.body;
+
+  if (!amount) {
+    return res.status(400).json({ success: false, error: 'Amount is required.' });
+  }
+
+  try {
+    const payload = {
+      employee_id: driverId,
+      amount: Number(amount),
+      reason: reason || 'Salary Advance Request',
+      status: 'Pending',
+      remaining_balance: Number(amount),
+      date: new Date().toISOString(),
+      notes: 'Submitted via Driver App'
+    };
+
+    const record = await pb.collection('advances').create(payload, { $autoCancel: false });
+    return res.status(201).json({
+      success: true,
+      message: 'Salary advance request submitted successfully.',
+      advance: record
+    });
+  } catch (err) {
+    logger.error(`Advances submission error: ${err.message}`);
+    if (err.data) logger.error(`PocketBase schema errors: ${JSON.stringify(err.data)}`);
+    return res.status(500).json({ success: false, error: 'Failed to request salary advance.' });
+  }
+});
+
 export default router;

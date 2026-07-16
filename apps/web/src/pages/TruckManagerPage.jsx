@@ -230,6 +230,20 @@ export default function TruckManagerPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
+                          <DropdownMenuLabel>Manage Truck</DropdownMenuLabel>
+                          <DropdownMenuItem onSelect={() => setModalConfig({ isOpen: true, truck })}>
+                            <Edit className="w-4 h-4 mr-2 text-muted-foreground" />
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive font-medium"
+                            onSelect={() => handleDelete(truck.id)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Truck
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+
                           {assignedDriver ? (
                             <>
                               <DropdownMenuLabel>Current Driver</DropdownMenuLabel>
@@ -284,8 +298,8 @@ export default function TruckManagerPage() {
                   </div>
 
                   {/* Actions row */}
-                  <div className="flex items-center justify-between border-t border-border/50 pt-4 mt-2">
-                    <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center justify-between border-t border-border/50 pt-4 mt-2 gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Button 
                         variant="outline" 
                         size="sm" 

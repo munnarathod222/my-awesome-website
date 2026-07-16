@@ -688,7 +688,8 @@ export default function EMICalculatorPage() {
             <CardDescription>Month-by-month breakdown of your repayment</CardDescription>
           </CardHeader>
           <div className="overflow-x-auto">
-            <div className="max-h-[600px] overflow-y-auto relative custom-scrollbar">
+            {/* Desktop Table View (Hidden on mobile) */}
+            <div className="hidden md:block max-h-[600px] overflow-y-auto relative custom-scrollbar">
               <Table>
                 <TableHeader className="sticky top-0 bg-card z-10 shadow-[0_1px_0_hsl(var(--border))]">
                   <TableRow>
@@ -721,6 +722,46 @@ export default function EMICalculatorPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Card List View (Hidden on desktop) */}
+            <div className="block md:hidden divide-y divide-border/40 max-h-[600px] overflow-y-auto custom-scrollbar">
+              {schedule.map((row) => (
+                <div key={row.number} className={`p-4 space-y-2.5 hover:bg-muted/5 transition-colors ${row.isPaid ? 'bg-muted/10' : ''}`}>
+                  <div className="flex justify-between items-start gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-muted-foreground">#{row.number}</span>
+                        <p className="font-bold text-sm text-foreground">{format(row.date, 'MMM dd, yyyy')}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <p className="font-extrabold text-sm text-foreground">{formatCurrency(row.emiAmount)}</p>
+                      {row.isPaid ? (
+                        <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 mt-1">Paid</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground border-border text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 mt-1">Pending</Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Principal</p>
+                      <p className="font-medium text-success/90 mt-0.5">{formatCurrency(row.principal)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Interest</p>
+                      <p className="font-medium text-destructive/90 mt-0.5">{formatCurrency(row.interest)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Balance</p>
+                      <p className="font-bold text-foreground mt-0.5">{formatCurrency(row.balance)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </Card>

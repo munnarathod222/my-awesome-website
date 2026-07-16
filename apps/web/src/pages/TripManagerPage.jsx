@@ -310,7 +310,8 @@ const TripManagerPage = () => {
 
   const renderTripTable = (tripData, emptyMessage) => (
     <Card className="border-border shadow-sm rounded-xl overflow-hidden bg-card">
-      <div className="overflow-x-auto">
+      {/* Desktop Table View (Hidden on mobile) */}
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
@@ -401,6 +402,74 @@ const TripManagerPage = () => {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card List View (Hidden on desktop) */}
+      <div className="block md:hidden divide-y divide-border/40">
+        {tripData.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground p-6">
+            <Truck className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+            <p>{emptyMessage}</p>
+          </div>
+        ) : (
+          tripData.map(trip => (
+            <div key={trip.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+              <div className="flex justify-between items-start gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="font-bold text-sm text-foreground">{trip.route}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(trip.date), 'dd MMM yyyy')}</p>
+                </div>
+                
+                <div className="text-right">
+                  <p className="font-extrabold text-sm text-foreground">{formatCurrency(trip.revenue || 0)}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{trip.kms ? `${trip.kms} km` : '-'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium">Vehicle / Driver</p>
+                  <p className="font-semibold text-foreground mt-0.5">{trip.truck_number}</p>
+                  <p className="text-muted-foreground mt-0.5 text-[11px]">{trip.driver_name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium">Statuses</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <button 
+                      onClick={() => handleBadgeClick(trip)}
+                      className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border",
+                        getTripStatusColor(trip.trip_status)
+                      )}
+                    >
+                      {getTripStatusLabel(trip.trip_status)}
+                    </button>
+                    <span className={cn(
+                      "inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider",
+                      trip.client_payment_status === 'received' ? 'bg-success/10 text-success border-success/20' : 
+                      trip.client_payment_status === 'pending' ? 'bg-warning/10 text-warning border-warning/20' : 
+                      'bg-muted text-muted-foreground border-border'
+                    )}>
+                      {trip.client_payment_status || 'Blank'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end items-center gap-2 pt-2 border-t border-border/20">
+                <Button variant="outline" size="sm" onClick={() => handleEdit(trip.id)} className="h-7 text-xs bg-background">
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleDelete(trip.id)} className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive bg-background">
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </Card>
   );
@@ -525,75 +594,115 @@ const TripManagerPage = () => {
                       <p>{routesError}</p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader className="bg-muted/10">
-                        <TableRow>
-                          <TableHead onClick={() => handleRouteSort('name')} className="cursor-pointer hover:bg-muted/50 transition-colors w-[35%]">
-                            <div className="flex items-center font-semibold">
-                              Route Name/Code <RouteSortIcon columnKey="name" />
-                            </div>
-                          </TableHead>
-                          <TableHead onClick={() => handleRouteSort('code')} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                            <div className="flex items-center font-semibold">
-                              Route Code <RouteSortIcon columnKey="code" />
-                            </div>
-                          </TableHead>
-                          <TableHead onClick={() => handleRouteSort('amount')} className="cursor-pointer hover:bg-muted/50 transition-colors text-right">
-                            <div className="flex items-center justify-end font-semibold">
-                              Amount / Trip <RouteSortIcon columnKey="amount" />
-                            </div>
-                          </TableHead>
-                          <TableHead onClick={() => handleRouteSort('kms')} className="cursor-pointer hover:bg-muted/50 transition-colors text-right pr-6">
-                            <div className="flex items-center justify-end font-semibold">
-                              KMs <RouteSortIcon columnKey="kms" />
-                            </div>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {processedActivityRoutes.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="h-40 text-center text-muted-foreground">
-                              <div className="flex flex-col items-center justify-center">
-                                <RouteIcon className="w-10 h-10 mb-3 opacity-20" />
-                                <p>No routes found matching your criteria.</p>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          processedActivityRoutes.map(route => (
-                            <TableRow key={route.id} className="hover:bg-muted/30 transition-colors group">
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-[15px]">{route.route_name}</span>
-                                  <span className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                                    <span className="bg-secondary/20 text-secondary-foreground px-1.5 py-0.5 rounded font-mono text-[10px]">
+                    <>
+                      {/* Desktop Table View (Hidden on mobile) */}
+                      <div className="hidden md:block">
+                        <Table>
+                          <TableHeader className="bg-muted/10">
+                            <TableRow>
+                              <TableHead onClick={() => handleRouteSort('name')} className="cursor-pointer hover:bg-muted/50 transition-colors w-[35%]">
+                                <div className="flex items-center font-semibold">
+                                  Route Name/Code <RouteSortIcon columnKey="name" />
+                                </div>
+                              </TableHead>
+                              <TableHead onClick={() => handleRouteSort('code')} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                                <div className="flex items-center font-semibold">
+                                  Route Code <RouteSortIcon columnKey="code" />
+                                </div>
+                              </TableHead>
+                              <TableHead onClick={() => handleRouteSort('amount')} className="cursor-pointer hover:bg-muted/50 transition-colors text-right">
+                                <div className="flex items-center justify-end font-semibold">
+                                  Amount / Trip <RouteSortIcon columnKey="amount" />
+                                </div>
+                              </TableHead>
+                              <TableHead onClick={() => handleRouteSort('kms')} className="cursor-pointer hover:bg-muted/50 transition-colors text-right pr-6">
+                                <div className="flex items-center justify-end font-semibold">
+                                  KMs <RouteSortIcon columnKey="kms" />
+                                </div>
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {processedActivityRoutes.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={4} className="h-40 text-center text-muted-foreground">
+                                  <div className="flex flex-col items-center justify-center">
+                                    <RouteIcon className="w-10 h-10 mb-3 opacity-20" />
+                                    <p>No routes found matching your criteria.</p>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              processedActivityRoutes.map(route => (
+                                <TableRow key={route.id} className="hover:bg-muted/30 transition-colors group">
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-[15px]">{route.route_name}</span>
+                                      <span className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                        <span className="bg-secondary/20 text-secondary-foreground px-1.5 py-0.5 rounded font-mono text-[10px]">
+                                          {route.route_code}
+                                        </span>
+                                        <span>• {route.tripCount} active/past trip{route.tripCount !== 1 ? 's' : ''}</span>
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="font-mono text-sm tracking-tight px-2 py-1 bg-muted rounded border border-border/50 text-foreground">
                                       {route.route_code}
                                     </span>
-                                    <span>• {route.tripCount} active/past trip{route.tripCount !== 1 ? 's' : ''}</span>
-                                  </span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="font-semibold text-sm">
+                                      {route.amount_per_trip > 0 ? formatCurrency(route.amount_per_trip) : <span className="text-muted-foreground font-normal">No data</span>}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right pr-6">
+                                    <span className="text-sm font-medium">
+                                      {route.distance_km ? `${route.distance_km.toLocaleString()} km` : <span className="text-muted-foreground font-normal">N/A</span>}
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card List View (Hidden on desktop) */}
+                      <div className="block md:hidden divide-y divide-border/40">
+                        {processedActivityRoutes.length === 0 ? (
+                          <div className="text-center py-12 text-sm text-muted-foreground p-6">
+                            <RouteIcon className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+                            <p>No routes found matching your criteria.</p>
+                          </div>
+                        ) : (
+                          processedActivityRoutes.map(route => (
+                            <div key={route.id} className="p-4 space-y-2 hover:bg-muted/5 transition-colors">
+                              <div className="flex justify-between items-start gap-3">
+                                <div>
+                                  <p className="font-bold text-sm text-foreground">{route.route_name}</p>
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <span className="bg-secondary/20 text-secondary-foreground px-1.5 py-0.5 rounded font-mono text-[9px] font-bold border border-border/30">
+                                      {route.route_code}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">• {route.tripCount} trip{route.tripCount !== 1 ? 's' : ''}</span>
+                                  </div>
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="font-mono text-sm tracking-tight px-2 py-1 bg-muted rounded border border-border/50 text-foreground">
-                                  {route.route_code}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className="font-semibold text-sm">
-                                  {route.amount_per_trip > 0 ? formatCurrency(route.amount_per_trip) : <span className="text-muted-foreground font-normal">No data</span>}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-right pr-6">
-                                <span className="text-sm font-medium">
-                                  {route.distance_km ? `${route.distance_km.toLocaleString()} km` : <span className="text-muted-foreground font-normal">N/A</span>}
-                                </span>
-                              </TableCell>
-                            </TableRow>
+
+                                <div className="text-right">
+                                  <p className="font-extrabold text-sm text-primary">
+                                    {route.amount_per_trip > 0 ? formatCurrency(route.amount_per_trip) : 'No data'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {route.distance_km ? `${route.distance_km.toLocaleString()} km` : 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           ))
                         )}
-                      </TableBody>
-                    </Table>
+                      </div>
+                    </>
                   )}
                 </div>
               </Card>
@@ -655,73 +764,121 @@ const TripManagerPage = () => {
                         <p>{routesError}</p>
                       </div>
                     ) : (
-                      <Table>
-                        <TableHeader className="bg-muted/10">
-                          <TableRow>
-                            <TableHead onClick={() => handleRouteMasterSort('route_code')} className="cursor-pointer w-[120px] hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center font-semibold">Route Code <RouteMasterSortIcon columnKey="route_code" /></div>
-                            </TableHead>
-                            <TableHead onClick={() => handleRouteMasterSort('route_name')} className="cursor-pointer hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center font-semibold">Route Name <RouteMasterSortIcon columnKey="route_name" /></div>
-                            </TableHead>
-                            <TableHead onClick={() => handleRouteMasterSort('distance_km')} className="cursor-pointer text-right hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center justify-end font-semibold">Distance (KM) <RouteMasterSortIcon columnKey="distance_km" /></div>
-                            </TableHead>
-                            <TableHead onClick={() => handleRouteMasterSort('amount_per_trip')} className="cursor-pointer text-right hover:bg-muted/50 transition-colors">
-                              <div className="flex items-center justify-end font-semibold">Amount <RouteMasterSortIcon columnKey="amount_per_trip" /></div>
-                            </TableHead>
-                            <TableHead className="hidden md:table-cell w-[25%] font-semibold">Description</TableHead>
-                            <TableHead className="text-right pr-6 font-semibold">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                      <>
+                        {/* Desktop Table View (Hidden on mobile) */}
+                        <div className="hidden md:block">
+                          <Table>
+                            <TableHeader className="bg-muted/10">
+                              <TableRow>
+                                <TableHead onClick={() => handleRouteMasterSort('route_code')} className="cursor-pointer w-[120px] hover:bg-muted/50 transition-colors">
+                                  <div className="flex items-center font-semibold">Route Code <RouteMasterSortIcon columnKey="route_code" /></div>
+                                </TableHead>
+                                <TableHead onClick={() => handleRouteMasterSort('route_name')} className="cursor-pointer hover:bg-muted/50 transition-colors">
+                                  <div className="flex items-center font-semibold">Route Name <RouteMasterSortIcon columnKey="route_name" /></div>
+                                </TableHead>
+                                <TableHead onClick={() => handleRouteMasterSort('distance_km')} className="cursor-pointer text-right hover:bg-muted/50 transition-colors">
+                                  <div className="flex items-center justify-end font-semibold">Distance (KM) <RouteMasterSortIcon columnKey="distance_km" /></div>
+                                </TableHead>
+                                <TableHead onClick={() => handleRouteMasterSort('amount_per_trip')} className="cursor-pointer text-right hover:bg-muted/50 transition-colors">
+                                  <div className="flex items-center justify-end font-semibold">Amount <RouteMasterSortIcon columnKey="amount_per_trip" /></div>
+                                </TableHead>
+                                <TableHead className="hidden md:table-cell w-[25%] font-semibold">Description</TableHead>
+                                <TableHead className="text-right pr-6 font-semibold">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {sortedMasterRoutes.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
+                                    <div className="flex flex-col items-center justify-center">
+                                      <MapPin className="w-10 h-10 mb-3 opacity-20" />
+                                      <p>No routes found.</p>
+                                      {routes.length === 0 && (
+                                        <Button variant="link" onClick={handleAddRoute} className="mt-2 text-primary">
+                                          Create your first route
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                sortedMasterRoutes.map(route => (
+                                  <TableRow key={route.id} className="hover:bg-muted/30 transition-colors">
+                                    <TableCell>
+                                      <span className="font-mono text-xs font-semibold px-2 py-1 bg-secondary/10 text-secondary-foreground rounded border border-secondary/20">
+                                        {route.route_code}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="font-medium text-sm">{route.route_name}</TableCell>
+                                    <TableCell className="text-right text-sm text-muted-foreground">
+                                      {route.distance_km ? `${route.distance_km} km` : '-'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold text-sm">
+                                      {formatCurrency(route.amount_per_trip || 0)}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground truncate max-w-[200px]" title={route.description}>
+                                      {route.description || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-right pr-6">
+                                      <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" onClick={() => handleEditRoute(route)} className="h-8 w-8 text-muted-foreground hover:text-primary">
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => confirmDeleteRoute(route)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Mobile Card List View (Hidden on desktop) */}
+                        <div className="block md:hidden divide-y divide-border/40">
                           {sortedMasterRoutes.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
-                                <div className="flex flex-col items-center justify-center">
-                                  <MapPin className="w-10 h-10 mb-3 opacity-20" />
-                                  <p>No routes found.</p>
-                                  {routes.length === 0 && (
-                                    <Button variant="link" onClick={handleAddRoute} className="mt-2 text-primary">
-                                      Create your first route
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
+                            <div className="text-center py-12 text-sm text-muted-foreground p-6">
+                              <MapPin className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+                              <p>No routes found.</p>
+                            </div>
                           ) : (
                             sortedMasterRoutes.map(route => (
-                              <TableRow key={route.id} className="hover:bg-muted/30 transition-colors">
-                                <TableCell>
-                                  <span className="font-mono text-xs font-semibold px-2 py-1 bg-secondary/10 text-secondary-foreground rounded border border-secondary/20">
-                                    {route.route_code}
-                                  </span>
-                                </TableCell>
-                                <TableCell className="font-medium text-sm">{route.route_name}</TableCell>
-                                <TableCell className="text-right text-sm text-muted-foreground">
-                                  {route.distance_km ? `${route.distance_km} km` : '-'}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold text-sm">
-                                  {formatCurrency(route.amount_per_trip || 0)}
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell text-sm text-muted-foreground truncate max-w-[200px]" title={route.description}>
-                                  {route.description || '-'}
-                                </TableCell>
-                                <TableCell className="text-right pr-6">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <Button variant="ghost" size="icon" onClick={() => handleEditRoute(route)} className="h-8 w-8 text-muted-foreground hover:text-primary">
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => confirmDeleteRoute(route)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
+                              <div key={route.id} className="p-4 space-y-2.5 hover:bg-muted/5 transition-colors">
+                                <div className="flex justify-between items-start gap-3">
+                                  <div>
+                                    <p className="font-bold text-sm text-foreground">{route.route_name}</p>
+                                    <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 bg-secondary/10 text-secondary-foreground rounded border border-secondary/20 mt-1 inline-block">
+                                      {route.route_code}
+                                    </span>
                                   </div>
-                                </TableCell>
-                              </TableRow>
+
+                                  <div className="text-right">
+                                    <p className="font-extrabold text-sm text-foreground">{formatCurrency(route.amount_per_trip || 0)}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{route.distance_km ? `${route.distance_km} km` : '-'}</p>
+                                  </div>
+                                </div>
+
+                                {route.description && (
+                                  <p className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg border border-border/20">
+                                    {route.description}
+                                  </p>
+                                )}
+
+                                <div className="flex justify-end items-center gap-2 pt-2 border-t border-border/20">
+                                  <Button variant="outline" size="sm" onClick={() => handleEditRoute(route)} className="h-7 text-xs bg-background">
+                                    Edit
+                                  </Button>
+                                  <Button variant="outline" size="sm" onClick={() => confirmDeleteRoute(route)} className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive bg-background">
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
                             ))
                           )}
-                        </TableBody>
-                      </Table>
+                        </div>
+                      </>
                     )}
                   </div>
                 </CardContent>

@@ -20,7 +20,6 @@ onRecordAfterCreateSuccess((e) => {
     const filter = 'reference_id = "' + record.id + '"';
     const existing = $app.findRecordsByFilter("cashbook", filter, "-created", 1, 0);
     if (existing && existing.length > 0) {
-      console.log("Cashbook entry already exists for expense: " + record.id);
       e.next();
       return;
     }
@@ -44,7 +43,7 @@ onRecordAfterCreateSuccess((e) => {
     
     $app.save(cashbookRecord);
   } catch (err) {
-    console.log("Error syncing expense to cashbook:", err);
+    console.log("Error syncing expense to cashbook: " + String(err));
   }
   
   e.next();

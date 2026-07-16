@@ -114,7 +114,9 @@ const PayrollPage = () => {
       const totalAdvances = empAdvances.reduce((sum, a) => sum + (Number(a.remaining_balance ?? a.amount) || 0), 0);
       
       const baseSalary = Number(emp.salary_amount || emp.base_salary) || 0;
-      const netPayout = (baseSalary * (totalWorkingDays > 0 ? presentDays / totalWorkingDays : 0)) - totalAdvances;
+      const grossSalary = baseSalary * (totalWorkingDays > 0 ? presentDays / totalWorkingDays : 0);
+      const taxes = grossSalary * 0.10;
+      const netPayout = grossSalary - taxes - totalAdvances;
 
       const empPayments = payments.filter(p => p.employee_id === emp.id && p.payroll_month === currentMonth && p.payroll_year === currentYear);
       const isSettled = empPayments.length > 0 && empPayments[0].payment_status === 'paid';
@@ -199,7 +201,8 @@ const PayrollPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader className="bg-muted/10">
                       <TableRow>
@@ -265,6 +268,62 @@ const PayrollPage = () => {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile Card List View (Hidden on desktop) */}
+                <div className="block md:hidden divide-y divide-border/40">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="p-4 space-y-3">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-5 w-20" />
+                      </div>
+                    ))
+                  ) : calculatedPayroll.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground p-6">No employees found.</div>
+                  ) : (
+                    calculatedPayroll.map(emp => (
+                      <div key={emp.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <p className="font-bold text-sm text-foreground">{emp.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 capitalize">{emp.position || emp.employee_type}</p>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="font-extrabold text-sm text-primary">₹{emp.netPayout.toLocaleString()}</p>
+                            <Badge variant="outline" className={cn(
+                              "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 mt-1 border-transparent",
+                              emp.isSettled ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                            )}>
+                              {emp.isSettled ? 'Settled' : 'Action Req'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Base Salary</p>
+                            <p className="font-medium text-foreground mt-0.5">₹{emp.baseSalary.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Attendance</p>
+                            <p className="font-medium text-foreground mt-0.5">{emp.presentDays}/{emp.totalWorkingDays}d</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase font-medium">Advances</p>
+                            <p className="font-medium text-warning mt-0.5">{emp.totalAdvances > 0 ? `₹${emp.totalAdvances.toLocaleString()}` : '₹0'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2 border-t border-border/20">
+                          <Button variant="outline" size="sm" onClick={() => setSelectedEmployeeId(emp.id)} className="h-7 text-xs bg-background">
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -301,7 +360,8 @@ const PayrollPage = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader className="bg-muted/10">
                       <TableRow>
@@ -377,6 +437,65 @@ const PayrollPage = () => {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile Card List View (Hidden on desktop) */}
+                <div className="block md:hidden divide-y divide-border/40">
+                  {recordsLoading ? (
+                    <div className="p-4"><Skeleton className="h-12 w-full" /></div>
+                  ) : filteredAdvanceRecords.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground p-6">No advance records found.</div>
+                  ) : (
+                    filteredAdvanceRecords.map(record => {
+                      const amount = record.amount || 0;
+                      const remaining = record.remaining_balance ?? amount;
+                      const recovered = amount - remaining;
+                      const progressPct = amount > 0 ? (recovered / amount) * 100 : 0;
+                      const syncStatus = syncResults[record.id];
+
+                      return (
+                        <div key={record.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                          <div className="flex justify-between items-start gap-3">
+                            <div>
+                              <p className="font-bold text-sm text-foreground">{record.employee_name}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(record.date), 'dd MMM yyyy')}</p>
+                            </div>
+                            
+                            <div className="text-right">
+                              <p className="font-extrabold text-sm text-warning">₹{remaining.toLocaleString()}</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <Badge variant="outline" className={cn(
+                                  "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 border-transparent",
+                                  record.status === 'Settled' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+                                )}>
+                                  {record.status === 'Settled' ? 'Settled' : 'Pending'}
+                                </Badge>
+                                {syncStatus ? (
+                                  syncStatus.is_synced ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-success" title="Synced" />
+                                  ) : (
+                                    <AlertCircle className="w-3.5 h-3.5 text-destructive" title="Discrepancy" />
+                                  )
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => validateSync(record.id)}>
+                                    <RefreshCw className="w-2.5 h-2.5 text-muted-foreground" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 pt-2 border-t border-border/20">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Repayment Progress</span>
+                              <span>{progressPct.toFixed(0)}% (₹{recovered.toLocaleString()} of ₹{amount.toLocaleString()})</span>
+                            </div>
+                            <Progress value={progressPct} className="h-1.5" />
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -390,44 +509,82 @@ const PayrollPage = () => {
                 <CardDescription>Advances recovered during recent payroll cycles.</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader className="bg-muted/10">
-                    <TableRow>
-                      <TableHead className="font-semibold py-4 pl-6">Employee</TableHead>
-                      <TableHead className="font-semibold">Payroll Period</TableHead>
-                      <TableHead className="font-semibold">Deducted Date</TableHead>
-                      <TableHead className="font-semibold text-right">Amount Recovered</TableHead>
-                      <TableHead className="font-semibold text-center pr-6">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
-                      <TableRow><TableCell colSpan={5}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
-                    ) : recentDeductions.length === 0 ? (
+                {/* Desktop Table View (Hidden on mobile) */}
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/10">
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">No recent deductions found.</TableCell>
+                        <TableHead className="font-semibold py-4 pl-6">Employee</TableHead>
+                        <TableHead className="font-semibold">Payroll Period</TableHead>
+                        <TableHead className="font-semibold">Deducted Date</TableHead>
+                        <TableHead className="font-semibold text-right">Amount Recovered</TableHead>
+                        <TableHead className="font-semibold text-center pr-6">Status</TableHead>
                       </TableRow>
-                    ) : (
-                      recentDeductions.map((deduction, idx) => (
-                        <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
-                          <TableCell className="font-medium py-4 pl-6">{deduction.employee_name}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(deduction.payroll_year, deduction.payroll_month - 1).toLocaleString('default', { month: 'short', year: 'numeric' })}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {deduction.deducted_date ? format(new Date(deduction.deducted_date), 'dd MMM yyyy') : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-success tabular-nums">
-                            +₹{deduction.amount?.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-center pr-6">
-                            <Badge variant="outline" className="bg-success/10 text-success border-success/20">Recovered</Badge>
-                          </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow><TableCell colSpan={5}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
+                      ) : recentDeductions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">No recent deductions found.</TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ) : (
+                        recentDeductions.map((deduction, idx) => (
+                          <TableRow key={idx} className="hover:bg-muted/30 transition-colors">
+                            <TableCell className="font-medium py-4 pl-6">{deduction.employee_name}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(deduction.payroll_year, deduction.payroll_month - 1).toLocaleString('default', { month: 'short', year: 'numeric' })}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {deduction.deducted_date ? format(new Date(deduction.deducted_date), 'dd MMM yyyy') : '-'}
+                            </TableCell>
+                            <TableCell className="text-right font-bold text-success tabular-nums">
+                              +₹{deduction.amount?.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-center pr-6">
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/20">Recovered</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile Card List View (Hidden on desktop) */}
+                <div className="block md:hidden divide-y divide-border/40">
+                  {loading ? (
+                    <div className="p-4"><Skeleton className="h-12 w-full" /></div>
+                  ) : recentDeductions.length === 0 ? (
+                    <div className="text-center py-12 text-sm text-muted-foreground p-6">No recent deductions found.</div>
+                  ) : (
+                    recentDeductions.map((deduction, idx) => (
+                      <div key={idx} className="p-4 space-y-2 hover:bg-muted/5 transition-colors">
+                        <div className="flex justify-between items-start gap-3">
+                          <div>
+                            <p className="font-bold text-sm text-foreground">{deduction.employee_name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Period: {new Date(deduction.payroll_year, deduction.payroll_month - 1).toLocaleString('default', { month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="font-extrabold text-sm text-success">+₹{deduction.amount?.toLocaleString()}</p>
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 mt-1">
+                              Recovered
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {deduction.deducted_date && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Deducted Date: {format(new Date(deduction.deducted_date), 'dd MMM yyyy')}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

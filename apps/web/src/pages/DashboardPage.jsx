@@ -6,11 +6,12 @@ import { useLanguage } from '@/contexts/LanguageContext.jsx';
 import {
   ShieldCheck, Truck, Users, Activity, FileCheck,
   AlertCircle, Clock, TrendingUp, BarChart3, Receipt, ArrowRight,
-  Zap, IndianRupee, Package, RefreshCw, Sparkles, ChevronRight
+  Zap, IndianRupee, Package, RefreshCw, Sparkles, ChevronRight,
+  ShieldAlert, Wrench, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
@@ -134,6 +135,8 @@ const DashboardPage = () => {
   });
   const [recentTrips, setRecentTrips] = useState([]);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [openProblems, setOpenProblems] = useState([]);
+  const [fastagList, setFastagList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -153,7 +156,20 @@ const DashboardPage = () => {
       // Revenue calculation: ONLY Delivered trips (Upcoming/Dispatched/In Transit excluded)
       const REVENUE_FILTER = 'trip_status = "Delivered"';
 
-      const [usersRes, deliveredTripsRes, allTripsCount, trucksRes, podsRes, expensesRes, recentTripsRes] = await Promise.all([
+      const [
+        usersRes, 
+        deliveredTripsRes, 
+        allTripsCount, 
+        trucksRes, 
+        podsRes, 
+        expensesRes, 
+        recentTripsRes, 
+        docsRes,
+        upcomingTripsCount,
+        dispatchedTripsCount,
+        inTransitTripsCount,
+        maintenanceProblemsRes
+      ] = await Promise.all([
         pb.collection('users').getList(1, 1, { $autoCancel: false }),
         // Revenue query — Delivered trips only
         pb.collection('trip_logs').getList(1, 500, {
@@ -164,7 +180,7 @@ const DashboardPage = () => {
         }),
         // Total shipment count — all statuses (for the KPI card)
         pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }),
-        pb.collection('trucks').getList(1, 1, { $autoCancel: false }),
+        pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }),
         pb.collection('expenses').getList(1, 500, { fields: 'id,amount', $autoCancel: false }),
         // Recent trips — all statuses so dispatcher sees the full picture
@@ -173,6 +189,15 @@ const DashboardPage = () => {
           fields: 'id,route,truck_number,driver_name,revenue,date,trip_status',
           $autoCancel: false,
         }),
+        pb.collection('truck_documents').getFullList({ filter: 'status = "Active"', fields: 'id,expiry_date,truck_id', $autoCancel: false }),
+        
+        // Status Counts
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Upcoming"', $autoCancel: false }),
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Dispatched"', $autoCancel: false }),
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "In Transit"', $autoCancel: false }),
+        
+        // Open Maintenance Problems
+        pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false })
       ]);
 
       let fleetRevenue = 0, brokerageProfit = 0, totalTds = 0;
@@ -189,18 +214,47 @@ const DashboardPage = () => {
       const fleetExpenses = expensesRes.items.reduce((s, e) => s + (e.amount || 0), 0);
       const fleetProfit = netFleetRevenue - fleetExpenses;
 
+      // Low Fastag count
+      const lowFastagCount = trucksRes.filter(t => t.current_fastag_balance !== undefined && t.current_fastag_balance !== null && t.current_fastag_balance < 2000).length;
+
+      // Expiring docs count
+      let expiringDocsCount = 0;
+      const todayDate = new Date();
+      docsRes.forEach(doc => {
+        if (!doc.expiry_date) return;
+        const expDate = new Date(doc.expiry_date);
+        const daysLeft = differenceInDays(expDate, todayDate);
+        if (daysLeft <= 30) {
+          expiringDocsCount++;
+        }
+      });
+
+      // Sorted FASTag balance list (lowest first)
+      const sortedFastag = [...trucksRes]
+        .filter(t => t.current_fastag_balance !== undefined && t.current_fastag_balance !== null)
+        .sort((a, b) => a.current_fastag_balance - b.current_fastag_balance)
+        .slice(0, 5);
+
       setStats({
         users: usersRes.totalItems,
         trips: allTripsCount.totalItems,         // all trips (any status)
         deliveredTrips: deliveredTripsRes.totalItems, // completed only
-        trucks: trucksRes.totalItems,
+        upcomingTrips: upcomingTripsCount.totalItems,
+        dispatchedTrips: dispatchedTripsCount.totalItems,
+        inTransitTrips: inTransitTripsCount.totalItems,
+        trucks: trucksRes.length,
         pods: podsRes.totalItems,
         revenue: netFleetRevenue + brokerageProfit,
         grossRevenue: deliveredTripsRes.items.reduce((s, t) => s + (Number(t.revenue) || 0), 0),
         expenses: fleetExpenses, fleetProfit, brokerageProfit,
         retainedEarnings: fleetProfit + brokerageProfit,
+        lowFastagCount,
+        expiringDocsCount,
+        totalAlertsCount: lowFastagCount + expiringDocsCount
       });
       setRecentTrips(recentTripsRes.items);
+      setOpenProblems(maintenanceProblemsRes.items);
+      setFastagList(sortedFastag);
       setLastRefreshed(new Date());
     } catch (err) {
       console.error('[Dashboard] fetch error:', err);
@@ -289,6 +343,42 @@ const DashboardPage = () => {
         </div>
       </motion.div>
 
+      {/* Critical Fleet Alerts Banner */}
+      {(isAdmin || isSuperAdmin) && stats.totalAlertsCount > 0 && (
+        <motion.div variants={item}>
+          <motion.div
+            whileHover={{ scale: 1.002 }}
+            onClick={() => {
+              const fleetEl = document.getElementById('fleet-status-hub');
+              if (fleetEl) {
+                fleetEl.scrollIntoView({ behavior: 'smooth' });
+                const alertsTabBtn = document.querySelector('[value="alerts"]');
+                if (alertsTabBtn) alertsTabBtn.click();
+              }
+            }}
+            className="cursor-pointer flex items-center justify-between p-4 rounded-2xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 transition-colors shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 bg-rose-500/15 rounded-xl text-rose-500">
+                <ShieldAlert className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <p className="font-bold text-rose-500 text-sm">Critical Fleet Compliance Warnings</p>
+                <p className="text-xs text-rose-500/70 mt-0.5">
+                  You have <strong>{stats.totalAlertsCount}</strong> unresolved alerts: 
+                  {stats.expiringDocsCount > 0 ? ` ${stats.expiringDocsCount} document expiries` : ''}
+                  {stats.lowFastagCount > 0 ? `${stats.expiringDocsCount > 0 ? ' and' : ''} ${stats.lowFastagCount} low FASTag balances` : ''}. 
+                  Action required to keep operations running smoothly.
+                </p>
+              </div>
+            </div>
+            <Button size="sm" variant="ghost" className="rounded-xl gap-1 hover:bg-rose-500/15 text-rose-500 hover:text-rose-400 text-xs">
+              Resolve Alerts <ChevronRight className="w-3.5 h-3.5" />
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Pending Requests Alert */}
       {(isAdmin || isSuperAdmin) && (
         <motion.div variants={item}>
@@ -357,8 +447,64 @@ const DashboardPage = () => {
             />
           </motion.div>
 
-          {/* Idle Vehicles */}
+          {/* Active Shipment Pipeline */}
           <motion.div variants={item}>
+            <Card className="border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4">
+                <div>
+                  <CardTitle className="text-sm font-heading flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary" /> Active Shipment Pipeline
+                  </CardTitle>
+                  <CardDescription className="text-xs">Real-time status of active logistical jobs</CardDescription>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
+                {/* Upcoming Node */}
+                <div className="flex items-center gap-3 p-3 bg-muted/20 border border-border/20 rounded-xl">
+                  <div className="p-2 bg-slate-500/10 rounded-lg text-slate-400">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Upcoming</span>
+                    <p className="text-lg font-extrabold text-foreground mt-0.5">{stats.upcomingTrips || 0}</p>
+                  </div>
+                </div>
+                {/* Dispatched Node */}
+                <div className="flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+                  <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-blue-400/80 uppercase font-bold tracking-wider">Dispatched</span>
+                    <p className="text-lg font-extrabold text-blue-400 mt-0.5">{stats.dispatchedTrips || 0}</p>
+                  </div>
+                </div>
+                {/* In Transit Node */}
+                <div className="flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                  <div className="p-2 bg-amber-500/10 rounded-lg text-amber-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">In Transit</span>
+                    <p className="text-lg font-extrabold text-amber-400 mt-0.5">{stats.inTransitTrips || 0}</p>
+                  </div>
+                </div>
+                {/* Delivered Node */}
+                <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                  <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-emerald-400/80 uppercase font-bold tracking-wider">Delivered</span>
+                    <p className="text-lg font-extrabold text-emerald-400 mt-0.5">{stats.deliveredTrips || 0}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Fleet Status Hub */}
+          <motion.div variants={item} id="fleet-status-hub">
             <IdleVehiclesComponent />
           </motion.div>
 
@@ -389,40 +535,242 @@ const DashboardPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md">
-              <CardHeader className="pb-3 border-b border-border/30 px-5 pt-5">
-                <CardTitle className="text-base font-heading">{t('system_health')}</CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 py-4 space-y-5">
-                {[
-                  { label: 'PODs Pending', value: stats.pods, pct: stats.trips ? Math.min(Math.round((stats.pods / stats.trips) * 100), 100) : 0, color: '#f59e0b' },
-                  { label: 'Registered Users', value: stats.users, pct: Math.min(stats.users * 10, 100), color: '#10b981' },
-                  { label: 'Fleet Utilisation', value: null, pct: 78, color: '#6366f1' },
-                ].map(({ label, value, pct, color }) => (
-                  <div key={label}>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="font-semibold text-foreground">{label}</span>
-                      <span className="text-muted-foreground font-bold">{value !== null ? value : `${pct}%`}</span>
+            <div className="space-y-4">
+              <Card className="border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md">
+                <CardHeader className="pb-3 border-b border-border/30 px-5 pt-5">
+                  <CardTitle className="text-base font-heading">{t('system_health')}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-5 py-4 space-y-5">
+                  {[
+                    { label: 'PODs Pending', value: stats.pods, pct: stats.trips ? Math.min(Math.round((stats.pods / stats.trips) * 100), 100) : 0, color: '#f59e0b' },
+                    { label: 'Registered Users', value: stats.users, pct: Math.min(stats.users * 10, 100), color: '#10b981' },
+                    { label: 'Fleet Utilisation', value: null, pct: 78, color: '#6366f1' },
+                  ].map(({ label, value, pct, color }) => (
+                    <div key={label}>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-foreground">{label}</span>
+                        <span className="text-muted-foreground font-bold">{value !== null ? value : `${pct}%`}</span>
+                      </div>
+                      <div className="w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.9, ease: 'easeOut' }}
+                          className="h-1.5 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.9, ease: 'easeOut' }}
-                        className="h-1.5 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    </div>
+                  ))}
+                  <div className="pt-3 border-t border-border/30 space-y-2">
+                    <Button className="w-full rounded-xl text-xs gap-2" variant="outline" onClick={() => navigate('/analytics')}>
+                      <BarChart3 className="w-3.5 h-3.5" /> Full Analytics
+                    </Button>
+                    <Button className="w-full rounded-xl text-xs gap-2" variant="outline" onClick={() => navigate('/reports')}>
+                      <FileCheck className="w-3.5 h-3.5" /> View Reports
+                    </Button>
                   </div>
-                ))}
-                <div className="pt-3 border-t border-border/30 space-y-2">
-                  <Button className="w-full rounded-xl text-xs gap-2" variant="outline" onClick={() => navigate('/analytics')}>
-                    <BarChart3 className="w-3.5 h-3.5" /> Full Analytics
-                  </Button>
-                  <Button className="w-full rounded-xl text-xs gap-2" variant="outline" onClick={() => navigate('/reports')}>
-                    <FileCheck className="w-3.5 h-3.5" /> View Reports
-                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Compliance & Operations Action Center */}
+              <Card className="border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
+                <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5 bg-muted/5">
+                  <div>
+                    <CardTitle className="text-base font-heading flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-amber-500" /> Compliance Action Center
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">High-priority operational checklists</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5 space-y-3.5">
+                  {/* 1. Low FASTag Alerts */}
+                  {stats.lowFastagCount > 0 && (
+                    <div 
+                      onClick={() => {
+                        const fleetEl = document.getElementById('fleet-status-hub');
+                        if (fleetEl) {
+                          fleetEl.scrollIntoView({ behavior: 'smooth' });
+                          const alertsTabBtn = document.querySelector('[value="alerts"]');
+                          if (alertsTabBtn) alertsTabBtn.click();
+                        }
+                      }}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/15 hover:bg-amber-500/15 transition-all cursor-pointer group"
+                    >
+                      <div className="p-1.5 bg-amber-500/20 rounded-lg text-amber-500 mt-0.5">
+                        <AlertCircle className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors">Recharge FASTags</p>
+                        <p className="text-[10px] text-amber-400/80 mt-0.5"><strong>{stats.lowFastagCount}</strong> trucks have balances under ₹2,000</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-amber-500/50 self-center group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  )}
+
+                  {/* 2. Expiring Document Alerts */}
+                  {stats.expiringDocsCount > 0 && (
+                    <div 
+                      onClick={() => {
+                        const fleetEl = document.getElementById('fleet-status-hub');
+                        if (fleetEl) {
+                          fleetEl.scrollIntoView({ behavior: 'smooth' });
+                          const alertsTabBtn = document.querySelector('[value="alerts"]');
+                          if (alertsTabBtn) alertsTabBtn.click();
+                        }
+                      }}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/15 hover:bg-rose-500/15 transition-all cursor-pointer group"
+                    >
+                      <div className="p-1.5 bg-rose-500/20 rounded-lg text-rose-500 mt-0.5">
+                        <ShieldAlert className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors">Renew Fleet Permits</p>
+                        <p className="text-[10px] text-rose-400/80 mt-0.5"><strong>{stats.expiringDocsCount}</strong> credentials expiring within 30 days</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-rose-500/50 self-center group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  )}
+
+                  {/* 3. Pending User Approvals */}
+                  {pendingRequestsCount > 0 && (
+                    <div 
+                      onClick={() => navigate('/dashboard/users?tab=signup-requests')}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/15 hover:bg-blue-500/15 transition-all cursor-pointer group"
+                    >
+                      <div className="p-1.5 bg-blue-500/20 rounded-lg text-blue-500 mt-0.5">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors">Approve User Access</p>
+                        <p className="text-[10px] text-blue-400/80 mt-0.5"><strong>{pendingRequestsCount}</strong> signup requests awaiting review</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-blue-500/50 self-center group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  )}
+
+                  {/* 4. Pending POD Verification */}
+                  {stats.pods > 0 && (
+                    <div 
+                      onClick={() => navigate('/pod-management')}
+                      className="flex items-start gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/15 hover:bg-violet-500/15 transition-all cursor-pointer group"
+                    >
+                      <div className="p-1.5 bg-violet-500/20 rounded-lg text-violet-500 mt-0.5">
+                        <FileCheck className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-violet-400 group-hover:text-violet-300 transition-colors">Verify Delivery Proofs</p>
+                        <p className="text-[10px] text-violet-400/80 mt-0.5"><strong>{stats.pods}</strong> PODs require validation & archival</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-violet-500/50 self-center group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  )}
+
+                  {/* If all compliance is resolved */}
+                  {stats.lowFastagCount === 0 && stats.expiringDocsCount === 0 && pendingRequestsCount === 0 && stats.pods === 0 && (
+                    <div className="py-6 text-center text-muted-foreground flex flex-col items-center justify-center">
+                      <ShieldCheck className="w-8 h-8 text-emerald-500 mb-2 opacity-75" />
+                      <p className="text-xs font-bold text-foreground">Fleet is fully compliant</p>
+                      <p className="text-[10px] mt-0.5">All certifications, fastags, and signups are resolved.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Breakdowns & FASTag Wallets */}
+          <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5">
+                <div>
+                  <CardTitle className="text-base font-heading flex items-center gap-2">
+                    <Wrench className="w-4.5 h-4.5 text-primary" /> Active Breakdowns & Maintenance
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Unresolved vehicle maintenance issues filed by drivers</CardDescription>
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsMaintenanceModalOpen(true)}
+                  className="rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Log Issue
+                </Button>
+              </CardHeader>
+              <CardContent className="p-5">
+                {openProblems.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center">
+                    <ShieldCheck className="w-8 h-8 text-emerald-500 mb-2 opacity-75" />
+                    <p className="text-xs font-bold text-foreground">No active breakdown tickets</p>
+                    <p className="text-[10px] mt-0.5">All fleet vehicle maintenance requests are resolved.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3.5">
+                    {openProblems.map(prob => {
+                      const isHigh = prob.severity === 'High';
+                      return (
+                        <div key={prob.id} className="flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-foreground font-mono">{prob.truck_id ? prob.truck_id : 'Unknown Truck'}</span>
+                              <span className="text-[10px] text-muted-foreground font-medium">({prob.category})</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-normal">{prob.description}</p>
+                            <p className="text-[9px] text-muted-foreground/60">{prob.date_reported ? new Date(prob.date_reported).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}</p>
+                          </div>
+                          <Badge 
+                            variant={isHigh ? 'destructive' : 'warning'}
+                            className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0"
+                          >
+                            {prob.severity}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5">
+                <div>
+                  <CardTitle className="text-base font-heading flex items-center gap-2">
+                    <AlertTriangle className="w-4.5 h-4.5 text-amber-500" /> FASTag Balance Monitor
+                  </CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Top 5 lowest FASTag account balances</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 space-y-4">
+                {fastagList.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground text-xs">
+                    No FASTag balance data available.
+                  </div>
+                ) : (
+                  fastagList.map(truck => {
+                    const balance = truck.current_fastag_balance || 0;
+                    const isLow = balance < 2000;
+                    const pct = Math.min(100, Math.max(0, (balance / 5000) * 100)); // cap at 5000 as visual baseline
+                    
+                    return (
+                      <div key={truck.id} className="space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-foreground font-mono">{truck.truck_number}</span>
+                          <span className={`font-bold tabular-nums ${isLow ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            ₹{balance.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className={`h-1.5 rounded-full ${isLow ? 'bg-rose-500' : 'bg-primary'}`} 
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </CardContent>
             </Card>
           </motion.div>

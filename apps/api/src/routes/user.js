@@ -26,7 +26,10 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
     // 1. Check if email is already in use by another user in pocketbase
     let existing;
     try {
-      existing = await pb.collection('users').getFirstListItem(`email = "${newEmail}"`, { $autoCancel: false });
+      existing = await pb.collection('users').getFirstListItem(
+        pb.filter('email = {:newEmail}', { newEmail }),
+        { $autoCancel: false }
+      );
     } catch (e) {
       // not found is expected/good
     }

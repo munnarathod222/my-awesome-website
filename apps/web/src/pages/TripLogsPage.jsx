@@ -324,11 +324,9 @@ const TripLogsPage = () => {
       if (bulkPaymentStatus) updates.client_payment_status = bulkPaymentStatus === 'blank' ? '' : bulkPaymentStatus;
       if (bulkTripStatus) updates.trip_status = bulkTripStatus;
 
-      const updatePromises = selectedIds.map(id => 
-        pb.collection('trip_logs').update(id, updates, { $autoCancel: false })
-      );
-      
-      await Promise.all(updatePromises);
+      for (const id of selectedIds) {
+        await pb.collection('trip_logs').update(id, updates, { $autoCancel: false });
+      }
       
       toast.success(`${selectedIds.length} trip(s) updated successfully`);
       setSelectedIds([]);
@@ -363,20 +361,18 @@ const TripLogsPage = () => {
       
       await pb.collection('cashbook').create(cashbookPayload, { $autoCancel: false });
       
-      // 2. Update each of the selected trip logs and calculate respective TDS values
-      const updatePromises = bulkPaymentConfirmData.trips.map(trip => {
+      // 2. Update each of the selected trip logs and calculate respective TDS values sequentially to avoid SQLite locking
+      for (const trip of bulkPaymentConfirmData.trips) {
         const client = trip.expand?.client_id;
         const isTds = client?.isTdsApplicable || false;
         const rate = isTds ? (Number(client?.tdsRate) || 2.0) : 0;
         const tdsAmt = Number(trip.revenue || 0) * (rate / 100);
         
-        return pb.collection('trip_logs').update(trip.id, {
+        await pb.collection('trip_logs').update(trip.id, {
           client_payment_status: 'received',
           tds_deducted_receivable: Number(tdsAmt.toFixed(2))
         }, { $autoCancel: false });
-      });
-      
-      await Promise.all(updatePromises);
+      }
       
       toast.success(`Bulk payment registered successfully and ${bulkPaymentConfirmData.trips.length} trips updated.`);
       setSelectedIds([]);

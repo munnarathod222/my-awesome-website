@@ -93,79 +93,137 @@ const BillsList = ({ refreshTrigger }) => {
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <Table>
-        <TableHeader className="bg-muted/30">
-          <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
-              </TableRow>
-            ))
-          ) : bills.length === 0 ? (
+      {/* Desktop Table View (Hidden on mobile) */}
+      <div className="hidden md:block overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-muted/30">
             <TableRow>
-              <TableCell colSpan={5} className="h-48 text-center">
-                <div className="flex flex-col items-center justify-center text-muted-foreground">
-                  <FileText className="w-10 h-10 mb-3 opacity-20" />
-                  <p>No bills or receipts uploaded yet.</p>
-                </div>
-              </TableCell>
+              <TableHead>Date</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            bills.map((bill) => (
-              <TableRow key={bill.id} className="hover:bg-muted/30 transition-colors">
-                <TableCell className="font-medium whitespace-nowrap">
-                  {format(new Date(bill.date), 'MMM dd, yyyy')}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="font-normal">
-                    {bill.category || 'Other'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-[300px] truncate text-muted-foreground">
-                  {bill.description || bill.notes || '-'}
-                </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums">
-                  ₹{bill.amount?.toLocaleString() || '0'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleViewFile(bill)}
-                      className="h-8"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                      View Bill
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDelete(bill.id)}
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                </TableRow>
+              ))
+            ) : bills.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-48 text-center">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <FileText className="w-10 h-10 mb-3 opacity-20" />
+                    <p>No bills or receipts uploaded yet.</p>
                   </div>
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              bills.map((bill) => (
+                <TableRow key={bill.id} className="hover:bg-muted/30 transition-colors">
+                  <TableCell className="font-medium whitespace-nowrap">
+                    {format(new Date(bill.date), 'MMM dd, yyyy')}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-normal">
+                      {bill.category || 'Other'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[300px] truncate text-muted-foreground">
+                    {bill.description || bill.notes || '-'}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    ₹{bill.amount?.toLocaleString() || '0'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleViewFile(bill)}
+                        className="h-8"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                        View Bill
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDelete(bill.id)}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Card List View (Hidden on desktop) */}
+      <div className="block md:hidden divide-y divide-border/40">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="p-4 space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          ))
+        ) : bills.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground p-6">
+            <FileText className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+            <p>No bills or receipts uploaded yet.</p>
+          </div>
+        ) : (
+          bills.map((bill) => (
+            <div key={bill.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+              <div className="flex justify-between items-start gap-3">
+                <div>
+                  <p className="font-bold text-sm text-foreground">{bill.description || bill.notes || 'No Description'}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(bill.date), 'MMM dd, yyyy')}</p>
+                </div>
+                
+                <div className="text-right">
+                  <p className="font-extrabold text-sm text-foreground">₹{bill.amount?.toLocaleString() || '0'}</p>
+                  <Badge variant="secondary" className="font-normal text-[10px] mt-1">
+                    {bill.category || 'Other'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleViewFile(bill)}
+                  className="h-7 text-xs font-semibold rounded-lg"
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" /> View Bill
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => handleDelete(bill.id)}
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

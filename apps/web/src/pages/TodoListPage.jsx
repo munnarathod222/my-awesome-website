@@ -129,7 +129,7 @@ const TodoListPage = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity gap-1">
                   <Button variant="ghost" size="icon" onClick={() => handleEditTask(todo)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                     <Edit2 className="w-4 h-4" />
                   </Button>

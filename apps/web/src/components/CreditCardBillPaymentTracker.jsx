@@ -379,42 +379,79 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
                   </div>
 
                   <div className="border border-border rounded-xl overflow-hidden bg-card">
-                    <Table>
-                      <TableHeader className="bg-muted/30">
-                         <TableRow>
-                           <TableHead>Date</TableHead>
-                           <TableHead>Description</TableHead>
-                           <TableHead className="text-right">Expense (Dr)</TableHead>
-                           <TableHead className="text-right">Payment (Cr)</TableHead>
-                           <TableHead className="text-right">Balance</TableHead>
-                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                         <TableRow className="bg-muted/10">
-                           <TableCell colSpan={4} className="font-medium text-muted-foreground">Opening Balance</TableCell>
-                           <TableCell className="text-right font-bold">₹0.00</TableCell>
-                         </TableRow>
-                         {allTx.length === 0 ? (
+                    {/* Desktop Table View (Hidden on mobile) */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
                            <TableRow>
-                             <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No transactions recorded.</TableCell>
+                             <TableHead>Date</TableHead>
+                             <TableHead>Description</TableHead>
+                             <TableHead className="text-right">Expense (Dr)</TableHead>
+                             <TableHead className="text-right">Payment (Cr)</TableHead>
+                             <TableHead className="text-right">Balance</TableHead>
                            </TableRow>
-                         ) : (
-                           allTx.map(tx => (
-                             <TableRow key={tx.id} className="hover:bg-muted/30">
-                               <TableCell className="whitespace-nowrap">{format(new Date(tx.date), 'dd MMM yyyy')}</TableCell>
-                               <TableCell className="font-medium">{tx.description}</TableCell>
-                               <TableCell className="text-right text-destructive font-medium tabular-nums">
-                                 {tx.type === 'Expense' ? `₹${tx.amount.toLocaleString('en-IN')}` : '-'}
-                               </TableCell>
-                               <TableCell className="text-right text-success font-medium tabular-nums">
-                                 {tx.type === 'Payment' ? `₹${tx.amount.toLocaleString('en-IN')}` : '-'}
-                               </TableCell>
-                               <TableCell className="text-right font-bold tabular-nums">₹{tx.runningBalance.toLocaleString('en-IN')}</TableCell>
+                        </TableHeader>
+                        <TableBody>
+                           <TableRow className="bg-muted/10">
+                             <TableCell colSpan={4} className="font-medium text-muted-foreground">Opening Balance</TableCell>
+                             <TableCell className="text-right font-bold">₹0.00</TableCell>
+                           </TableRow>
+                           {allTx.length === 0 ? (
+                             <TableRow>
+                               <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No transactions recorded.</TableCell>
                              </TableRow>
-                           ))
-                         )}
-                      </TableBody>
-                    </Table>
+                           ) : (
+                             allTx.map(tx => (
+                               <TableRow key={tx.id} className="hover:bg-muted/30">
+                                 <TableCell className="whitespace-nowrap">{format(new Date(tx.date), 'dd MMM yyyy')}</TableCell>
+                                 <TableCell className="font-medium">{tx.description}</TableCell>
+                                 <TableCell className="text-right text-destructive font-medium tabular-nums">
+                                   {tx.type === 'Expense' ? `₹${tx.amount.toLocaleString('en-IN')}` : '-'}
+                                 </TableCell>
+                                 <TableCell className="text-right text-success font-medium tabular-nums">
+                                   {tx.type === 'Payment' ? `₹${tx.amount.toLocaleString('en-IN')}` : '-'}
+                                 </TableCell>
+                                 <TableCell className="text-right font-bold tabular-nums">₹{tx.runningBalance.toLocaleString('en-IN')}</TableCell>
+                               </TableRow>
+                             ))
+                           )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card List View (Hidden on desktop) */}
+                    <div className="block md:hidden divide-y divide-border/40">
+                      <div className="p-3 bg-muted/10 flex justify-between text-xs text-muted-foreground font-medium">
+                        <span>Opening Balance</span>
+                        <span className="font-bold">₹0.00</span>
+                      </div>
+                      {allTx.length === 0 ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">No transactions recorded.</div>
+                      ) : (
+                        allTx.map(tx => {
+                          const isExpense = tx.type === 'Expense';
+                          return (
+                            <div key={tx.id} className="p-3 space-y-2 hover:bg-muted/5 transition-colors">
+                              <div className="flex justify-between items-start gap-2">
+                                <div>
+                                  <p className="font-semibold text-sm text-foreground">{tx.description}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.date), 'dd MMM yyyy')}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className={cn(
+                                    "font-extrabold text-sm tabular-nums",
+                                    isExpense ? "text-destructive" : "text-success"
+                                  )}>
+                                    {isExpense ? '-' : '+'}{`₹${tx.amount.toLocaleString('en-IN')}`}
+                                  </p>
+                                  <span className="text-[10px] text-muted-foreground">Balance: ₹{tx.runningBalance.toLocaleString('en-IN')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -449,50 +486,85 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
                   </div>
 
                   <div className="border border-border rounded-xl overflow-hidden bg-card">
-                    <Table>
-                      <TableHeader className="bg-muted/30">
-                         <TableRow>
-                           <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('date')}>
-                             <div className="flex items-center font-medium">Date <SortIcon column="date" /></div>
-                           </TableHead>
-                           <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('type')}>
-                             <div className="flex items-center font-medium">Type <SortIcon column="type" /></div>
-                           </TableHead>
-                           <TableHead>Description</TableHead>
-                           <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort('amount')}>
-                             <div className="flex justify-end items-center font-medium">Amount <SortIcon column="amount" /></div>
-                           </TableHead>
-                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                         {filteredTx.length === 0 ? (
+                    {/* Desktop Table View (Hidden on mobile) */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader className="bg-muted/30">
                            <TableRow>
-                             <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No matching transactions found.</TableCell>
+                             <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('date')}>
+                               <div className="flex items-center font-medium">Date <SortIcon column="date" /></div>
+                             </TableHead>
+                             <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort('type')}>
+                               <div className="flex items-center font-medium">Type <SortIcon column="type" /></div>
+                             </TableHead>
+                             <TableHead>Description</TableHead>
+                             <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort('amount')}>
+                               <div className="flex justify-end items-center font-medium">Amount <SortIcon column="amount" /></div>
+                             </TableHead>
                            </TableRow>
-                         ) : (
-                           filteredTx.map(tx => (
-                             <TableRow key={tx.id} className="hover:bg-muted/30">
-                               <TableCell className="whitespace-nowrap">{format(new Date(tx.date), 'dd MMM yyyy')}</TableCell>
-                               <TableCell>
-                                 {tx.type === 'Expense' ? (
-                                   <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 font-medium">
-                                     <ArrowDownLeft className="w-3 h-3 mr-1" /> Expense
-                                   </Badge>
-                                 ) : (
-                                   <Badge variant="outline" className="bg-success/5 text-success border-success/20 font-medium">
-                                     <ArrowUpRight className="w-3 h-3 mr-1" /> Payment
-                                   </Badge>
-                                 )}
-                               </TableCell>
-                               <TableCell className="font-medium">{tx.description}</TableCell>
-                               <TableCell className="text-right font-bold tabular-nums">
-                                 ₹{tx.amount.toLocaleString('en-IN')}
-                               </TableCell>
+                        </TableHeader>
+                        <TableBody>
+                           {filteredTx.length === 0 ? (
+                             <TableRow>
+                               <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No matching transactions found.</TableCell>
                              </TableRow>
-                           ))
-                         )}
-                      </TableBody>
-                    </Table>
+                           ) : (
+                             filteredTx.map(tx => (
+                               <TableRow key={tx.id} className="hover:bg-muted/30">
+                                 <TableCell className="whitespace-nowrap">{format(new Date(tx.date), 'dd MMM yyyy')}</TableCell>
+                                 <TableCell>
+                                   {tx.type === 'Expense' ? (
+                                     <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 font-medium">
+                                       <ArrowDownLeft className="w-3 h-3 mr-1" /> Expense
+                                     </Badge>
+                                   ) : (
+                                     <Badge variant="outline" className="bg-success/5 text-success border-success/20 font-medium">
+                                       <ArrowUpRight className="w-3 h-3 mr-1" /> Payment
+                                     </Badge>
+                                   )}
+                                 </TableCell>
+                                 <TableCell className="font-medium">{tx.description}</TableCell>
+                                 <TableCell className="text-right font-bold tabular-nums">
+                                   ₹{tx.amount.toLocaleString('en-IN')}
+                                 </TableCell>
+                               </TableRow>
+                             ))
+                           )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card List View (Hidden on desktop) */}
+                    <div className="block md:hidden divide-y divide-border/40">
+                      {filteredTx.length === 0 ? (
+                        <div className="text-center py-8 text-sm text-muted-foreground">No matching transactions found.</div>
+                      ) : (
+                        filteredTx.map(tx => {
+                          const isExpense = tx.type === 'Expense';
+                          return (
+                            <div key={tx.id} className="p-3 space-y-2 hover:bg-muted/5 transition-colors">
+                              <div className="flex justify-between items-start gap-2">
+                                <div>
+                                  <p className="font-semibold text-sm text-foreground">{tx.description}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(tx.date), 'dd MMM yyyy')}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-extrabold text-sm text-foreground tabular-nums">
+                                    ₹{tx.amount.toLocaleString('en-IN')}
+                                  </p>
+                                  <Badge variant="outline" className={cn(
+                                    "text-[9px] uppercase font-bold tracking-wider px-1.5 py-0 mt-1 border-transparent",
+                                    isExpense ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"
+                                  )}>
+                                    {isExpense ? 'Expense' : 'Payment'}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

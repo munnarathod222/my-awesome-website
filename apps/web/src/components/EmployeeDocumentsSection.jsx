@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, AlertTriangle, FileBox } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, AlertTriangle, FileBox, Eye, FileText } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import DocumentModal from './DocumentModal.jsx';
+import DocumentPreviewModal from './DocumentPreviewModal.jsx';
 
 const formatDateSafe = (dateVal, formatStr = 'dd MMM yyyy') => {
   if (!dateVal) return '-';
@@ -29,6 +30,7 @@ const EmployeeDocumentsSection = ({ employee }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [expandedRows, setExpandedRows] = useState([]);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   useEffect(() => {
     if (employee) {
@@ -191,9 +193,38 @@ const EmployeeDocumentsSection = ({ employee }) => {
                         <TableCell>{formatDateSafe(doc.issue_date)}</TableCell>
                         <TableCell>{formatDateSafe(doc.expiry_date)}</TableCell>
                         <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                        <TableCell>{doc.files?.length || 0} file(s)</TableCell>
+                        <TableCell>
+                          {doc.files && doc.files.length > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-muted border border-border">
+                                {doc.files.length} file{doc.files.length !== 1 ? 's' : ''}
+                              </span>
+                              <div className="flex gap-1">
+                                {doc.files.slice(0, 3).map((f, i) => {
+                                  const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f);
+                                  return (
+                                    <div key={i} className="w-6 h-6 rounded border border-border overflow-hidden bg-muted/50 flex items-center justify-center shrink-0">
+                                      {isImg ? (
+                                        <img src={pb.files.getUrl(doc, f, { thumb: '40x40' })} alt="" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <FileText className="w-3.5 h-3.5 text-blue-400" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/60">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right pr-4" onClick={e => e.stopPropagation()}>
                           <div className="flex justify-end gap-1">
+                            {doc.files && doc.files.length > 0 && (
+                              <Button variant="ghost" size="icon" onClick={() => setPreviewDoc(doc)} title="View Files">
+                                <Eye className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" onClick={() => openEditModal(doc)} title="Edit">
                               <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                             </Button>
@@ -214,10 +245,8 @@ const EmployeeDocumentsSection = ({ employee }) => {
                                   file={file} 
                                   docRecord={doc} 
                                   isNew={false} 
-                                  onDelete={(fileToDelete) => {
-                                    // Normally you wouldn't delete directly from preview here, better to direct them to Edit modal.
-                                    toast('To delete files, please click Edit.');
-                                  }} 
+                                  readOnly={true}
+                                  onDelete={() => {}} 
                                 />
                               ))}
                             </div>
@@ -239,6 +268,13 @@ const EmployeeDocumentsSection = ({ employee }) => {
         document={editingDoc}
         employeeId={employee.id}
         onSuccess={fetchDocuments}
+      />
+
+      <DocumentPreviewModal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        document={previewDoc}
+        collectionName="employee_documents"
       />
     </div>
   );

@@ -94,7 +94,8 @@ const DeductionHistoryPage = () => {
             </Select>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -125,6 +126,44 @@ const DeductionHistoryPage = () => {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card List View (Hidden on desktop) */}
+          <div className="block md:hidden divide-y divide-border/40">
+            {filtered.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 text-sm">No usage history found.</div>
+            ) : (
+              filtered.map(row => (
+                <div key={row.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-sm text-foreground">{row.expand?.inventory_item_id?.item_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(row.deduction_date), 'MMM dd, yyyy')}</p>
+                    </div>
+                    <span className="font-extrabold text-sm text-destructive">
+                      -{row.quantity_deducted} <span className="text-[10px] font-normal text-muted-foreground">{row.expand?.inventory_item_id?.unit || 'pcs'}</span>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Truck ID</p>
+                      <p className="font-semibold text-foreground mt-0.5">{row.truck_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Reason</p>
+                      <p className="font-semibold text-foreground mt-0.5 capitalize">{row.reason}</p>
+                    </div>
+                  </div>
+
+                  {row.notes && (
+                    <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg border border-border/30">
+                      {row.notes}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </main>

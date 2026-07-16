@@ -435,7 +435,8 @@ const PaymentRequestsPage = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View (Hidden on mobile) */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
@@ -509,6 +510,75 @@ const PaymentRequestsPage = () => {
                   )}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Card List View (Hidden on desktop) */}
+            <div className="block md:hidden divide-y divide-border/40">
+              {processedData.length === 0 ? (
+                <div className="text-center py-12 text-sm text-muted-foreground p-6">
+                  <FileText className="w-10 h-10 mb-3 opacity-20 mx-auto" />
+                  <p>No payment requests found.</p>
+                </div>
+              ) : (
+                processedData.map(r => {
+                  const isOverdue = r.calculatedStatus === 'Overdue';
+                  return (
+                    <div key={r.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                      <div className="flex justify-between items-start gap-3">
+                        <div>
+                          <p className="font-bold text-sm text-foreground">{r.expand?.client_id?.client_name || 'Unknown Client'}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 font-mono">Trip: {r.trip_id.substring(0, 8)}</p>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="font-extrabold text-sm text-foreground">{formatCurrency(r.amount)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(r.request_date), 'dd MMM yyyy')}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Due Date</p>
+                          <p className={cn("font-semibold mt-0.5", isOverdue && "text-destructive font-extrabold")}>
+                            {r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-medium">Status</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Badge variant="outline" className={cn(
+                              "border uppercase tracking-wider text-[9px] px-1.5 py-0",
+                              r.calculatedStatus === 'Paid' ? "bg-success/10 text-success border-success/20" :
+                              r.calculatedStatus === 'Overdue' ? "bg-destructive/10 text-destructive border-destructive/20" :
+                              r.calculatedStatus === 'Pending' ? "bg-warning/10 text-warning border-warning/20" :
+                              "bg-muted text-muted-foreground border-border"
+                            )}>
+                              {r.calculatedStatus}
+                            </Badge>
+                            {isOverdue && (
+                              <span className="text-[9px] text-destructive font-bold">({r.daysOverdue}d late)</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') && (
+                        <div className="flex justify-end items-center gap-2 pt-2 border-t border-border/20">
+                          <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-lg border-border" onClick={() => setPaidModalReq(r)}>
+                            <CheckCircle className="w-3.5 h-3.5 mr-1 text-success" /> Paid
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs text-primary font-semibold rounded-lg" onClick={() => setReminderModalReq(r)}>
+                            <Bell className="w-3.5 h-3.5 mr-1" /> Remind
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive font-semibold rounded-lg" onClick={() => setCancelModalReq(r)}>
+                            <XCircle className="w-3.5 h-3.5 mr-1" /> Cancel
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,6 +1,7 @@
 import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
+import { pocketbaseAuth } from '../middleware/pocketbase-auth.js';
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * POST /api/trips/bulk-create
  * Create multiple trip records sequentially on the server.
  */
-router.post('/bulk-create', async (req, res) => {
+router.post('/bulk-create', pocketbaseAuth, async (req, res) => {
   const { trips } = req.body;
   if (!Array.isArray(trips) || trips.length === 0) {
     return res.status(400).json({ success: false, error: 'Invalid or empty trips list' });
@@ -38,11 +39,23 @@ router.post('/bulk-create', async (req, res) => {
   }
   let startNum = maxNum + 1;
 
+  let fallbackUserId = '';
+  try {
+    const firstUser = await pb.collection('users').getFirstListItem('role="admin"', { $autoCancel: false });
+    fallbackUserId = firstUser.id;
+  } catch (e) {
+    logger.warn('Failed to find fallback admin user in database:', e);
+  }
+  const activeUserId = req.pocketbaseUserId || fallbackUserId || '';
+
   const createdTrips = [];
 
   for (let i = 0; i < trips.length; i++) {
     const trip = trips[i];
     trip.trip_id = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
+
+    if (!trip.user_id && activeUserId) trip.user_id = activeUserId;
+    if (!trip.created_by && activeUserId) trip.created_by = activeUserId;
 
     // Safely parse numeric fields to avoid DB constraint errors
     if (trip.kms !== undefined) trip.kms = Number(trip.kms) || 0;

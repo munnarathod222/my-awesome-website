@@ -223,7 +223,8 @@ export default function ClientsListPage() {
         </Card>
 
         <Card className="border-border shadow-sm bg-card overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
@@ -326,6 +327,93 @@ export default function ClientsListPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card List View (Hidden on desktop) */}
+          <div className="block md:hidden divide-y divide-border/30">
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-1/3" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))
+            ) : clients.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground text-sm">
+                <Users className="w-8 h-8 opacity-30 mx-auto mb-2" />
+                No clients found.
+              </div>
+            ) : (
+              clients.map(client => (
+                <div key={client.id} className="p-4 space-y-2.5">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="mt-1">
+                        <Checkbox checked={selectedIds.has(client.id)} onCheckedChange={() => toggleSelect(client.id)} aria-label={`Select ${client.client_name}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-sm text-foreground truncate">{client.client_name}</h4>
+                        {client.company_name && <p className="text-xs text-muted-foreground mt-0.5 truncate">{client.company_name}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {getStatusBadge(client.status)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground border border-border/20 rounded-md">
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link to={`/client/${client.id}`}><Eye className="h-4 w-4 mr-2" /> View Details</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link to={`/clients/${client.id}/edit`}><Edit2 className="h-4 w-4 mr-2" /> Edit Client</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive cursor-pointer focus:text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs py-2 border-t border-b border-border/20">
+                    <div>
+                      <span className="text-muted-foreground block text-[9px] uppercase font-semibold tracking-wider">Type</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {getTypeIcon(client.client_type)}
+                        <span className="font-medium text-foreground">{client.client_type || 'Unknown'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[9px] uppercase font-semibold tracking-wider">Billing</span>
+                      <span className="font-medium text-foreground block mt-0.5">{client.billing_type || 'Spot'}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs space-y-1">
+                    {client.email && (
+                      <div>
+                        <span className="text-muted-foreground text-[9px] uppercase font-semibold tracking-wider mr-1.5 font-mono">Email:</span>
+                        <span className="text-foreground font-medium">{client.email}</span>
+                      </div>
+                    )}
+                    {client.phone && (
+                      <div>
+                        <span className="text-muted-foreground text-[9px] uppercase font-semibold tracking-wider mr-1.5 font-mono">Phone:</span>
+                        <span className="text-foreground font-medium">{client.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
           
           {pagination.total > pagination.perPage && (

@@ -442,7 +442,7 @@ router.post('/calculate-salary', async (req, res) => {
     // Calculate advance deductions (sum of all pending/unsettled advances)
     const advanceDeductions = advances
       .filter(a => a.status?.toLowerCase() !== 'settled')
-      .reduce((sum, a) => sum + (a.amount || 0), 0);
+      .reduce((sum, a) => sum + (a.remaining_balance !== undefined && a.remaining_balance !== null ? Number(a.remaining_balance) : Number(a.amount || 0)), 0);
 
     // Calculate gross salary
     const grossSalary = baseSalary - attendanceDeduction;
@@ -451,8 +451,8 @@ router.post('/calculate-salary', async (req, res) => {
     const taxRate = 0.10;
     const taxes = grossSalary * taxRate;
 
-    // Calculate Net Payout: (Base Salary * (Present Days / Total Working Days)) - Advances Taken
-    const netSalary = (baseSalary * (totalDays > 0 ? presentDays / totalDays : 0)) - advanceDeductions;
+    // Calculate Net Payout: Gross Salary - Taxes - Advance Deductions
+    const netSalary = grossSalary - taxes - advanceDeductions;
 
     // Build breakdown
     const breakdown = {
