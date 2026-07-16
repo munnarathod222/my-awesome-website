@@ -7,7 +7,7 @@ import {
   ShieldCheck, Truck, Users, Activity, FileCheck,
   AlertCircle, Clock, TrendingUp, BarChart3, Receipt, ArrowRight,
   Zap, IndianRupee, Package, RefreshCw, Sparkles, ChevronRight,
-  ShieldAlert, Wrench, AlertTriangle
+  ShieldAlert, Wrench, AlertTriangle, Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import ExpenseModal from '@/components/ExpenseModal.jsx';
 import AddTripModal from '@/components/AddTripModal.jsx';
 import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';
 import MaintenanceFormModal from '@/components/MaintenanceFormModal.jsx';
+import { Badge } from '@/components/ui/badge';
 
 // ── Animated counter hook ─────────────────────────────────────────────────────
 function useCountUp(target, duration = 900) {
