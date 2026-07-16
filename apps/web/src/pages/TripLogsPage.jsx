@@ -350,18 +350,18 @@ const TripLogsPage = () => {
     try {
       // 1. Create the single aggregate cashbook transaction (net of TDS and advances)
       const cashbookPayload = {
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: format(new Date(), 'yyyy-MM-dd') + ' 12:00:00.000Z',
         description: `Bulk Final Payment - Trips: ${bulkPaymentConfirmData.tripCodes.join(', ')} (Net after TDS)`,
-        amount: bulkPaymentConfirmData.netAmount,
+        amount: parseFloat(bulkPaymentConfirmData.netAmount.toFixed(2)),
         transaction_type: 'Income',
         category: 'Trip Revenue',
-        added_by: currentUser?.id,
+        added_by: currentUser?.id || pb.authStore.model?.id || '',
         reference_id: bulkPaymentConfirmData.tripIds.join(','),
         reference_type: 'bulk_trip_payment',
         status: 'Completed'
       };
       
-      await pb.collection('cashbook').create(cashbookPayload);
+      await pb.collection('cashbook').create(cashbookPayload, { $autoCancel: false });
       
       // 2. Update each of the selected trip logs and calculate respective TDS values
       const updatePromises = bulkPaymentConfirmData.trips.map(trip => {
@@ -386,7 +386,8 @@ const TripLogsPage = () => {
       fetchData();
     } catch (err) {
       console.error('Bulk payment confirmation error:', err);
-      toast.error('Failed to confirm bulk payment.');
+      const detail = err?.data ? JSON.stringify(err.data) : '';
+      toast.error('Failed to confirm bulk payment: ' + (err.message || 'Unknown error') + (detail ? ' | ' + detail : ''));
     } finally {
       setIsUpdatingBulk(false);
     }
