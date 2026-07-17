@@ -140,8 +140,17 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...secondaryColor);
       doc.text(`Invoice No: ${inv.invoice_number}`, doc.internal.pageSize.width - 14, 29, { align: 'right' });
       
-      const invDate = inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-      const dueDate = inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+      const parseDateSafe = (dStr) => {
+        if (!dStr) return null;
+        const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
+        const dObj = new Date(normalized);
+        return isNaN(dObj.getTime()) ? null : dObj;
+      };
+      
+      const invDateObj = parseDateSafe(inv.invoice_date);
+      const dueDateObj = parseDateSafe(inv.due_date);
+      const invDate = invDateObj ? invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+      const dueDate = dueDateObj ? dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
       doc.text(`Date: ${invDate}`, doc.internal.pageSize.width - 14, 35, { align: 'right' });
       doc.text(`Due Date: ${dueDate}`, doc.internal.pageSize.width - 14, 41, { align: 'right' });
       

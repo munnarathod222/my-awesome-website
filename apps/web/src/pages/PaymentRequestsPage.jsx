@@ -28,6 +28,13 @@ const STATUS_COLORS = {
   Cancelled: 'hsl(var(--muted-foreground))'
 };
 
+const parseDateSafe = (dStr) => {
+  if (!dStr) return null;
+  const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
+  const dObj = new Date(normalized);
+  return isNaN(dObj.getTime()) ? null : dObj;
+};
+
 const PaymentRequestsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -72,11 +79,13 @@ const PaymentRequestsPage = () => {
         let daysOverdue = 0;
 
         if (r.status === 'Pending' && r.due_date) {
-          const due = new Date(r.due_date);
-          due.setHours(0,0,0,0);
-          if (today > due) {
-            currentStatus = 'Overdue';
-            daysOverdue = differenceInDays(today, due);
+          const due = parseDateSafe(r.due_date);
+          if (due) {
+            due.setHours(0,0,0,0);
+            if (today > due) {
+              currentStatus = 'Overdue';
+              daysOverdue = differenceInDays(today, due);
+            }
           }
         }
 
@@ -97,7 +106,7 @@ const PaymentRequestsPage = () => {
         const generatedRequests = [];
         for (const trip of tripsToGenerate) {
           try {
-            const tripDate = trip.date ? new Date(trip.date) : new Date();
+            const tripDate = trip.date ? (parseDateSafe(trip.date) || new Date()) : new Date();
             const dueDate = new Date(tripDate);
             dueDate.setDate(dueDate.getDate() + 7); // Default due date in 7 days after the trip date
             
@@ -162,7 +171,11 @@ const PaymentRequestsPage = () => {
       const invoiceObj = {
         invoice_number: `INV-${r.id.substring(0, 8).toUpperCase()}`,
         invoice_date: r.request_date,
-        due_date: r.due_date || new Date(new Date(r.request_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: r.due_date || (() => {
+          const parsed = parseDateSafe(r.request_date);
+          const tVal = parsed ? parsed.getTime() : Date.now();
+          return new Date(tVal + 7 * 24 * 60 * 60 * 1000).toISOString();
+        })(),
         customer_name: clientName,
         customer_address: address,
         customer_email: email,
@@ -199,7 +212,7 @@ const PaymentRequestsPage = () => {
       return true;
     } catch (err) {
       console.error('Invoice PDF generation failed:', err);
-      toast.error('Failed to generate Invoice PDF');
+      toast.error('Failed to generate Invoice PDF: ' + err.message);
       return false;
     }
   };
@@ -257,7 +270,7 @@ const PaymentRequestsPage = () => {
       return `${filename}.pdf`;
     } catch (err) {
       console.error('Bulk Invoice PDF generation failed:', err);
-      toast.error('Failed to generate Bulk Invoice PDF');
+      toast.error('Failed to generate Bulk Invoice PDF: ' + err.message);
       return null;
     }
   };
@@ -271,8 +284,19 @@ const PaymentRequestsPage = () => {
     const phone = r.expand?.client_id?.phone || '';
     const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
     const amount = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
-    const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM yyyy') : '';
-    const dueDate = r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '';
+    const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : '';
+    const dueDate = r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'dd MMM yyyy') : '';
+
+    const tripObj = r.expand?.trip_id;
+    const tripDetails = tripObj ? `
+*Trip Details:*
+• *Trip ID:* ${tripObj.trip_id || tripId}
+• *Date:* ${tripObj.date && parseDateSafe(tripObj.date) ? format(parseDateSafe(tripObj.date), 'dd MMM yyyy') : ''}
+• *Route:* ${tripObj.route || '-'}
+• *Vehicle:* ${tripObj.truck_number || '-'}
+• *Driver:* ${tripObj.driver_name || '-'}` : `
+*Trip Details:*
+• *Trip:* ${tripId}`;
 
     const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
     const message = `${greeting}
@@ -281,10 +305,10 @@ This is a payment request from Jai Bhavani Cargo.
 
 *Payment Request Details:*
 • *Client:* ${clientName}
-• *Trip:* ${tripId}
 • *Amount:* ${amount}
 • *Request Date:* ${reqDate}
 • *Due Date:* ${dueDate}
+${tripDetails}
 
 _Note: We have generated and downloaded the Invoice PDF [Invoice_${tripId}.pdf] for you. Please attach it to this message._
 
@@ -339,7 +363,7 @@ Thank you,
     let tripBreakdown = '';
     selectedReqs.forEach((r, idx) => {
       const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
-      const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM') : '';
+      const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM') : '';
       const amt = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
       tripBreakdown += `${idx + 1}. *Trip:* ${tripId} | *Date:* ${reqDate} | *Amount:* ${amt}\n`;
     });
@@ -471,7 +495,7 @@ Thank you,
     }));
 
     const timeline = Object.keys(timelineObj).sort().map(d => ({
-      date: format(new Date(d), 'dd MMM'),
+      date: format(parseDateSafe(d) || new Date(), 'dd MMM'),
       count: timelineObj[d]
     }));
 
@@ -483,8 +507,8 @@ Thank you,
       'Trip ID': r.expand?.trip_id?.trip_id || r.trip_id,
       'Client Name': r.expand?.client_id?.client_name || 'Unknown',
       'Amount': r.amount,
-      'Request Date': format(new Date(r.request_date), 'yyyy-MM-dd'),
-      'Due Date': r.due_date ? format(new Date(r.due_date), 'yyyy-MM-dd') : '',
+      'Request Date': r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'yyyy-MM-dd') : '',
+      'Due Date': r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'yyyy-MM-dd') : '',
       'Status': r.calculatedStatus,
       'Days Overdue': r.daysOverdue || 0,
       'Notes': r.notes || ''
@@ -756,7 +780,7 @@ Thank you,
                           ) : null}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                          {format(new Date(r.request_date), 'dd MMM yyyy')}
+                          {r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : ''}
                         </TableCell>
                         <TableCell>
                           <div className="font-medium text-sm">{r.expand?.client_id?.client_name || 'Unknown Client'}</div>
@@ -764,9 +788,9 @@ Thank you,
                         </TableCell>
                         <TableCell className="amount-display text-sm font-medium">{formatCurrency(r.amount)}</TableCell>
                         <TableCell>
-                          {r.due_date ? (
+                          {r.due_date && parseDateSafe(r.due_date) ? (
                             <span className={cn("text-sm", r.calculatedStatus === 'Overdue' && "text-destructive font-medium")}>
-                              {format(new Date(r.due_date), 'dd MMM yyyy')}
+                              {format(parseDateSafe(r.due_date), 'dd MMM yyyy')}
                             </span>
                           ) : '-'}
                         </TableCell>
@@ -848,7 +872,7 @@ Thank you,
                         
                         <div className="text-right">
                           <p className="font-extrabold text-sm text-foreground">{formatCurrency(r.amount)}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(r.request_date), 'dd MMM yyyy')}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : ''}</p>
                         </div>
                       </div>
 
@@ -856,7 +880,7 @@ Thank you,
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase font-medium">Due Date</p>
                           <p className={cn("font-semibold mt-0.5", isOverdue && "text-destructive font-extrabold")}>
-                            {r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '-'}
+                            {r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'dd MMM yyyy') : '-'}
                           </p>
                         </div>
                         <div>
