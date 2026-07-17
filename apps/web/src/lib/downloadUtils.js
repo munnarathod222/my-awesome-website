@@ -223,7 +223,7 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...secondaryColor);
       doc.text('Subtotal:', doc.internal.pageSize.width - 60, finalY, { align: 'right' });
       doc.setTextColor(0, 0, 0);
-      doc.text(`₹${(inv.subtotal || inv.total_amount).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
+      doc.text(`₹${Number(inv.subtotal || inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       
       if (inv.tax_amount && inv.tax_amount > 0) {
         finalY += 6;
@@ -231,7 +231,7 @@ export const generatePDF = (data, filename, options = {}) => {
         doc.setTextColor(...secondaryColor);
         doc.text(`GST / Taxes (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 60, finalY, { align: 'right' });
         doc.setTextColor(0, 0, 0);
-        doc.text(`₹${inv.tax_amount.toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
+        doc.text(`₹${Number(inv.tax_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       }
       
       finalY += 8;
@@ -241,7 +241,7 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setFontSize(10.5);
       doc.setTextColor(...primaryColor);
       doc.text('TOTAL DUE:', doc.internal.pageSize.width - 60, finalY, { align: 'right' });
-      doc.text(`₹${inv.total_amount.toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
+      doc.text(`₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       
       // Draw Bank Details on the left
       let bankY = finalY - (inv.tax_amount && inv.tax_amount > 0 ? 14 : 8);
@@ -408,7 +408,7 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setFontSize(11.5);
       doc.setTextColor(...primaryColor);
       doc.text('Estimated Total:', doc.internal.pageSize.width - 74, finalY + 1);
-      doc.text(`₹${q.total_price.toLocaleString('en-IN')}`, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
+      doc.text(`₹${Number(q.total_price || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
       
       // Terms / Notes
       let footerY = finalY + 18;
