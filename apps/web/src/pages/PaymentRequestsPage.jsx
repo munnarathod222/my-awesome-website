@@ -150,7 +150,117 @@ const PaymentRequestsPage = () => {
     }));
   };
 
-  const handleShareWhatsApp = (r) => {
+  const handleGenerateInvoicePDF = async (r) => {
+    try {
+      const clientName = r.expand?.client_id?.client_name || 'Client';
+      const address = r.expand?.client_id?.company_address || r.expand?.client_id?.address || 'Customer Address Details';
+      const email = r.expand?.client_id?.email || '';
+      const phone = r.expand?.client_id?.phone || '';
+      
+      const invoiceObj = {
+        invoice_number: `INV-${r.id.substring(0, 8).toUpperCase()}`,
+        invoice_date: r.request_date,
+        due_date: r.due_date || new Date(new Date(r.request_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        customer_name: clientName,
+        customer_address: address,
+        customer_email: email,
+        customer_phone: phone,
+        status: r.calculatedStatus,
+        subtotal: r.amount,
+        tax_rate: 0,
+        tax_amount: 0,
+        total_amount: r.amount
+      };
+
+      const columns = [
+        { header: 'Description', key: 'description' },
+        { header: 'Trip ID', key: 'trip_id' },
+        { header: 'Amount', key: 'amount' }
+      ];
+
+      const data = [
+        {
+          description: `Freight charges for trip log: ${r.trip_id}`,
+          trip_id: r.trip_id,
+          amount: `₹${r.amount.toLocaleString('en-IN')}`
+        }
+      ];
+
+      const blob = generatePDF(data, `Invoice_${r.trip_id}`, {
+        type: 'invoice',
+        invoiceObj,
+        columns
+      });
+
+      downloadFile(blob, `Invoice_${r.trip_id}.pdf`);
+      toast.success('Invoice PDF generated and downloaded');
+      return true;
+    } catch (err) {
+      console.error('Invoice PDF generation failed:', err);
+      toast.error('Failed to generate Invoice PDF');
+      return false;
+    }
+  };
+
+  const handleGenerateBulkInvoicePDF = async () => {
+    if (selectedReqs.length === 0) return null;
+    try {
+      const clientReq = selectedReqs[0];
+      const clientName = clientReq.expand?.client_id?.client_name || 'Client';
+      const address = clientReq.expand?.client_id?.company_address || clientReq.expand?.client_id?.address || 'Customer Address Details';
+      const email = clientReq.expand?.client_id?.email || '';
+      const phone = clientReq.expand?.client_id?.phone || '';
+
+      const invoiceObj = {
+        invoice_number: `INV-B${Date.now().toString().substring(7)}`,
+        invoice_date: new Date().toISOString(),
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        customer_name: clientName,
+        customer_address: address,
+        customer_email: email,
+        customer_phone: phone,
+        status: 'Pending',
+        subtotal: bulkTotal,
+        tax_rate: 0,
+        tax_amount: 0,
+        total_amount: bulkTotal
+      };
+
+      const columns = [
+        { header: 'Sl No', key: 'sl_no' },
+        { header: 'Description', key: 'description' },
+        { header: 'Trip ID', key: 'trip_id' },
+        { header: 'Amount', key: 'amount' }
+      ];
+
+      const data = selectedReqs.map((r, idx) => ({
+        sl_no: String(idx + 1),
+        description: `Freight charges for trip log: ${r.trip_id}`,
+        trip_id: r.trip_id,
+        amount: `₹${r.amount.toLocaleString('en-IN')}`
+      }));
+
+      const filename = `Invoice_Bulk_${clientName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
+      const blob = generatePDF(data, filename, {
+        type: 'invoice',
+        invoiceObj,
+        columns
+      });
+
+      downloadFile(blob, `${filename}.pdf`);
+      toast.success('Bulk Invoice PDF generated and downloaded');
+      return `${filename}.pdf`;
+    } catch (err) {
+      console.error('Bulk Invoice PDF generation failed:', err);
+      toast.error('Failed to generate Bulk Invoice PDF');
+      return null;
+    }
+  };
+
+  const handleShareWhatsApp = async (r) => {
+    // Generate and download invoice first
+    await handleGenerateInvoicePDF(r);
+
     const clientName = r.expand?.client_id?.client_name || 'Client';
     const contactPerson = r.expand?.client_id?.contact_person || '';
     const phone = r.expand?.client_id?.phone || '';
@@ -170,6 +280,8 @@ This is a payment request from Jai Bhavani Cargo.
 • *Amount:* ${amount}
 • *Request Date:* ${reqDate}
 • *Due Date:* ${dueDate}
+
+_Note: We have generated and downloaded the Invoice PDF [Invoice_${tripId}.pdf] for you. Please attach it to this message._
 
 Please process the payment at your earliest convenience. Let us know if you have any questions.
 
@@ -206,8 +318,12 @@ Thank you,
     return clientIds.size === 1;
   }, [selectedReqs]);
 
-  const handleBulkWhatsApp = () => {
+  const handleBulkWhatsApp = async () => {
     if (selectedReqs.length === 0) return;
+    
+    // Generate and download bulk invoice first
+    const pdfFilename = await handleGenerateBulkInvoicePDF();
+    
     const clientReq = selectedReqs[0];
     const clientName = clientReq.expand?.client_id?.client_name || 'Client';
     const contactPerson = clientReq.expand?.client_id?.contact_person || '';
@@ -234,6 +350,7 @@ This is a summary of pending payment requests from Jai Bhavani Cargo.
 
 *Trip Details:*
 ${tripBreakdown}
+${pdfFilename ? `_Note: We have generated and downloaded the Consolidated Invoice PDF [${pdfFilename}] for you. Please attach it to this message._\n` : ''}
 Please process the payment at your earliest convenience. Let us know if you have any questions.
 
 Thank you,
@@ -669,13 +786,13 @@ Thank you,
                               <Button variant="outline" size="sm" className="h-8" onClick={() => setPaidModalReq(r)}>
                                 <CheckCircle className="w-3.5 h-3.5 mr-1 text-success" /> Paid
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 text-primary" onClick={() => setReminderModalReq(r)}>
-                                <Bell className="w-3.5 h-3.5" />
+                              <Button variant="ghost" size="sm" className="h-8 text-primary" onClick={() => handleGenerateInvoicePDF(r)} title="Download PDF Invoice">
+                                <FileText className="w-3.5 h-3.5" />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10" onClick={() => handleShareWhatsApp(r)} title="Share via WhatsApp">
                                 <Send className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 text-destructive" onClick={() => setCancelModalReq(r)}>
+                              <Button variant="ghost" size="sm" className="h-8 text-destructive" onClick={() => setCancelModalReq(r)} title="Cancel Request">
                                 <XCircle className="w-3.5 h-3.5" />
                               </Button>
                             </>
@@ -760,11 +877,11 @@ Thank you,
                           <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-lg border-border" onClick={() => setPaidModalReq(r)}>
                             <CheckCircle className="w-3.5 h-3.5 mr-1 text-success" /> Paid
                           </Button>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs text-primary font-semibold rounded-lg" onClick={() => handleGenerateInvoicePDF(r)}>
+                            <FileText className="w-3.5 h-3.5 mr-1" /> Invoice
+                          </Button>
                           <Button variant="ghost" size="sm" className="h-8 text-xs text-emerald-600 dark:text-emerald-400 font-semibold rounded-lg" onClick={() => handleShareWhatsApp(r)}>
                             <Send className="w-3.5 h-3.5 mr-1" /> Share
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 text-xs text-primary font-semibold rounded-lg" onClick={() => setReminderModalReq(r)}>
-                            <Bell className="w-3.5 h-3.5 mr-1" /> Remind
                           </Button>
                           <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive font-semibold rounded-lg" onClick={() => setCancelModalReq(r)}>
                             <XCircle className="w-3.5 h-3.5 mr-1" /> Cancel
@@ -808,6 +925,15 @@ Thank you,
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 border-primary/20 text-primary hover:bg-primary/10 flex items-center gap-1.5"
+              onClick={handleGenerateBulkInvoicePDF}
+              title="Download consolidated PDF Invoice"
+            >
+              <FileText className="w-4 h-4" /> Invoice
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
