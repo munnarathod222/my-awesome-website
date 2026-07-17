@@ -505,8 +505,8 @@ export const generatePDF = (data, filename, options = {}) => {
 
     return doc.output('blob');
   } catch (error) {
-    console.error('PDF generation failed:', error);
-    throw new Error('Failed to generate PDF');
+    console.log('PDF generation failed:', error);
+    throw error;
   }
 };
 
