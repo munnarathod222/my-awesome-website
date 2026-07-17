@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import pb from './pocketbaseClient.js';
 
@@ -203,7 +203,7 @@ export const generatePDF = (data, filename, options = {}) => {
         return val !== undefined && val !== null ? String(val) : '';
       }));
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 82,
         head: [columns.map(c => c.header)],
         body: tableData,
@@ -390,7 +390,7 @@ export const generatePDF = (data, filename, options = {}) => {
         return val !== undefined && val !== null ? String(val) : '';
       }));
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 82,
         head: [columns.map(c => c.header)],
         body: tableData,
@@ -471,7 +471,7 @@ export const generatePDF = (data, filename, options = {}) => {
         tableData.push(columns.map(col => totals[col.key] ? String(totals[col.key]) : ''));
       }
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 40,
         head: [columns.map(c => c.header)],
         body: tableData,

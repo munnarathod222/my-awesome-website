@@ -2,7 +2,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { format, subMonths, parseISO, getQuarter, getYear, isWithinInterval } from 'date-fns';
 import Papa from 'papaparse';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // ==========================================
 // Existing Functions
@@ -424,7 +424,7 @@ export const exportToPDF = (data, filename = 'export.pdf') => {
     return String(val);
   }));
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [headers],
     body: rows,
     theme: 'grid',
@@ -511,7 +511,7 @@ export const exportClientAnalysisToPDF = (data, filename = 'client_analysis.pdf'
   doc.setTextColor(100, 100, 100);
   doc.text(`Generated on: ${format(new Date(), 'PPpp')}`, 14, 28);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 35,
     head: [headers],
     body: rows,

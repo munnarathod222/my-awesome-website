@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = []) => {
@@ -40,7 +40,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     doc.line(14, 48, 196, 48);
 
     // Employee Info Section
-    doc.autoTable({
+    autoTable(doc, {
       startY: 55,
       head: [['Employee Details', '']],
       body: [
@@ -97,7 +97,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     doc.setDrawColor(226, 232, 240);
     doc.line(14, 30, 196, 30);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
       head: [['Period Details', '']],
       body: [
@@ -113,7 +113,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       margin: { right: 110 }
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
       head: [['Attendance Summary', '']],
       body: [
@@ -153,7 +153,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     
     earningsBody.push(['Total Gross Earnings', (payroll?.gross_salary || 0).toLocaleString('en-IN', {minimumFractionDigits:2})]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
       head: [['Earnings Description', 'Amount (Rs.)']],
       body: earningsBody,
@@ -195,7 +195,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     const totalDeds = ((payroll?.gross_salary || 0) - (payroll?.net_salary || 0));
     deductionsBody.push(['Total Deductions', totalDeds.toLocaleString('en-IN', {minimumFractionDigits:2})]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: earningsY,
       head: [['Deductions Description', 'Amount (Rs.)']],
       body: deductionsBody,
@@ -256,7 +256,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       doc.setTextColor(...primaryColor);
       doc.text('Advance Recovery Schedule', 14, 100);
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 105,
         head: [['Month', 'Deducted Amount', 'Status']],
         body: [
