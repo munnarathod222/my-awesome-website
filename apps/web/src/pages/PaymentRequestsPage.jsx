@@ -157,6 +157,8 @@ const PaymentRequestsPage = () => {
       const email = r.expand?.client_id?.email || '';
       const phone = r.expand?.client_id?.phone || '';
       
+      const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
+      
       const invoiceObj = {
         invoice_number: `INV-${r.id.substring(0, 8).toUpperCase()}`,
         invoice_date: r.request_date,
@@ -180,19 +182,19 @@ const PaymentRequestsPage = () => {
 
       const data = [
         {
-          description: `Freight charges for trip log: ${r.trip_id}`,
-          trip_id: r.trip_id,
+          description: `Freight charges for trip log: ${tripId}`,
+          trip_id: tripId,
           amount: `₹${r.amount.toLocaleString('en-IN')}`
         }
       ];
 
-      const blob = generatePDF(data, `Invoice_${r.trip_id}`, {
+      const blob = generatePDF(data, `Invoice_${tripId}`, {
         type: 'invoice',
         invoiceObj,
         columns
       });
 
-      downloadFile(blob, `Invoice_${r.trip_id}.pdf`);
+      downloadFile(blob, `Invoice_${tripId}.pdf`);
       toast.success('Invoice PDF generated and downloaded');
       return true;
     } catch (err) {
@@ -233,12 +235,15 @@ const PaymentRequestsPage = () => {
         { header: 'Amount', key: 'amount' }
       ];
 
-      const data = selectedReqs.map((r, idx) => ({
-        sl_no: String(idx + 1),
-        description: `Freight charges for trip log: ${r.trip_id}`,
-        trip_id: r.trip_id,
-        amount: `₹${r.amount.toLocaleString('en-IN')}`
-      }));
+      const data = selectedReqs.map((r, idx) => {
+        const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
+        return {
+          sl_no: String(idx + 1),
+          description: `Freight charges for trip log: ${tripId}`,
+          trip_id: tripId,
+          amount: `₹${r.amount.toLocaleString('en-IN')}`
+        };
+      });
 
       const filename = `Invoice_Bulk_${clientName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
       const blob = generatePDF(data, filename, {
@@ -264,7 +269,7 @@ const PaymentRequestsPage = () => {
     const clientName = r.expand?.client_id?.client_name || 'Client';
     const contactPerson = r.expand?.client_id?.contact_person || '';
     const phone = r.expand?.client_id?.phone || '';
-    const tripId = r.trip_id || '';
+    const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
     const amount = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
     const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM yyyy') : '';
     const dueDate = r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '';
@@ -333,7 +338,7 @@ Thank you,
     
     let tripBreakdown = '';
     selectedReqs.forEach((r, idx) => {
-      const tripId = r.trip_id || '';
+      const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
       const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM') : '';
       const amt = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
       tripBreakdown += `${idx + 1}. *Trip:* ${tripId} | *Date:* ${reqDate} | *Amount:* ${amt}\n`;
@@ -411,9 +416,10 @@ Thank you,
       const matchStatus = statusFilter === 'all' || r.calculatedStatus === statusFilter;
       const matchClient = clientFilter === 'all' || r.client_id === clientFilter;
       const term = search.toLowerCase();
+      const tripIdVal = r.expand?.trip_id?.trip_id || r.trip_id || '';
       const matchSearch = !term || (
         r.expand?.client_id?.client_name?.toLowerCase().includes(term) ||
-        r.trip_id?.toLowerCase().includes(term)
+        tripIdVal.toLowerCase().includes(term)
       );
       return matchStatus && matchClient && matchSearch;
     });
@@ -474,7 +480,7 @@ Thank you,
 
   const prepareExportData = () => {
     return processedData.map(r => ({
-      'Trip ID': r.trip_id,
+      'Trip ID': r.expand?.trip_id?.trip_id || r.trip_id,
       'Client Name': r.expand?.client_id?.client_name || 'Unknown',
       'Amount': r.amount,
       'Request Date': format(new Date(r.request_date), 'yyyy-MM-dd'),
@@ -754,7 +760,7 @@ Thank you,
                         </TableCell>
                         <TableCell>
                           <div className="font-medium text-sm">{r.expand?.client_id?.client_name || 'Unknown Client'}</div>
-                          <div className="text-[11px] text-muted-foreground font-mono">Trip: {r.trip_id.substring(0,6)}...</div>
+                          <div className="text-[11px] text-muted-foreground font-mono">Trip: {r.expand?.trip_id?.trip_id || r.trip_id}</div>
                         </TableCell>
                         <TableCell className="amount-display text-sm font-medium">{formatCurrency(r.amount)}</TableCell>
                         <TableCell>
@@ -836,7 +842,7 @@ Thank you,
                           )}
                           <div>
                             <p className="font-bold text-sm text-foreground">{r.expand?.client_id?.client_name || 'Unknown Client'}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-mono">Trip: {r.trip_id.substring(0, 8)}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-mono">Trip: {r.expand?.trip_id?.trip_id || r.trip_id}</p>
                           </div>
                         </div>
                         
