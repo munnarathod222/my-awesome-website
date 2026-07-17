@@ -18,7 +18,8 @@ export default function ProfileManager({
   onDelete, 
   onDuplicate, 
   onSetDefault,
-  loading 
+  loading,
+  trucks = []
 }) {
   const [newProfileName, setNewProfileName] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -86,6 +87,7 @@ export default function ProfileManager({
 
               {profiles.map(profile => {
                 const isActive = profile.id === activeProfileId;
+                const linkedTruck = trucks.find(t => t.id === profile.truck_id);
                 return (
                   <div 
                     key={profile.id} 
@@ -100,6 +102,7 @@ export default function ProfileManager({
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           ₹{profile.loanAmount?.toLocaleString('en-IN')} • {profile.interestRate}% • {profile.loanTerm} mos
+                          {linkedTruck ? ` • ${linkedTruck.truck_number}` : ''}
                         </p>
                       </div>
                       <Button 

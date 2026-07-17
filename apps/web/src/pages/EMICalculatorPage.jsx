@@ -30,6 +30,7 @@ import ProfileSelector from '@/components/ProfileSelector.jsx';
 import ProfileManager from '@/components/ProfileManager.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 
 export default function EMICalculatorPage() {
   const { 
@@ -101,6 +102,11 @@ export default function EMICalculatorPage() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const urlProfileId = searchParams.get('profileId');
+
+  const [trucks, setTrucks] = useState([]);
+  const [selectedTruckId, setSelectedTruckId] = useState(null);
   const [bankName, setBankName] = useState('HDFC Bank');
   const [amount, setAmount] = useState('500000');
   const [rate, setRate] = useState('9.5');
@@ -122,56 +128,78 @@ export default function EMICalculatorPage() {
       tMonths !== (activeProfile.loanTerm || 0) ||
       bankName !== (activeProfile.bank_name || 'HDFC Bank') ||
       loanDate !== (activeProfile.disbursal_date ? activeProfile.disbursal_date.substring(0, 10) : '') ||
-      firstEmiDate !== (activeProfile.first_emi_date ? activeProfile.first_emi_date.substring(0, 10) : '')
+      firstEmiDate !== (activeProfile.first_emi_date ? activeProfile.first_emi_date.substring(0, 10) : '') ||
+      selectedTruckId !== (activeProfile.truck_id || null)
     );
-  }, [activeProfile, amount, rate, tenure, tenureType, bankName, loanDate, firstEmiDate]);
+  }, [activeProfile, amount, rate, tenure, tenureType, bankName, loanDate, firstEmiDate, selectedTruckId]);
 
   // Load initial data
   useEffect(() => {
     const init = async () => {
       const records = await getAllProfiles();
-      const draft = localStorage.getItem('emi_draft');
+      
+      // Load trucks
+      try {
+        const trs = await pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false });
+        setTrucks(trs);
+      } catch (err) {
+        console.error('Failed to fetch trucks:', err);
+      }
+
       let loadedFromProfile = false;
 
-      if (draft) {
-        try {
-          const parsed = JSON.parse(draft);
-          if (parsed.activeProfileId) {
-            const matchedProfile = records.find(p => p.id === parsed.activeProfileId);
-            if (matchedProfile) {
-              applyProfileToState(matchedProfile);
-              loadedFromProfile = true;
-            }
-          }
-          
-          if (!loadedFromProfile) {
-            setBankName(parsed.bankName || 'HDFC Bank');
-            setAmount(parsed.amount || '500000');
-            setRate(parsed.rate || '9.5');
-            setTenure(parsed.tenure || '5');
-            setTenureType(parsed.tenureType || 'years');
-            setLoanDate(parsed.loanDate || format(new Date(), 'yyyy-MM-dd'));
-            setFirstEmiDate(parsed.firstEmiDate || format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
-            setActiveProfileId(parsed.activeProfileId || null);
-          }
-        } catch (e) {
-          console.error('Failed to parse draft', e);
+      // If we have a profile ID in URL, load it
+      if (urlProfileId) {
+        const matchedProfile = records.find(p => p.id === urlProfileId);
+        if (matchedProfile) {
+          applyProfileToState(matchedProfile);
+          loadedFromProfile = true;
         }
-      } else {
-        const defProfile = await getDefaultProfile();
-        if (defProfile) {
-          applyProfileToState(defProfile);
+      }
+
+      if (!loadedFromProfile) {
+        const draft = localStorage.getItem('emi_draft');
+        if (draft) {
+          try {
+            const parsed = JSON.parse(draft);
+            if (parsed.activeProfileId) {
+              const matchedProfile = records.find(p => p.id === parsed.activeProfileId);
+              if (matchedProfile) {
+                applyProfileToState(matchedProfile);
+                loadedFromProfile = true;
+              }
+            }
+            
+            if (!loadedFromProfile) {
+              setBankName(parsed.bankName || 'HDFC Bank');
+              setAmount(parsed.amount || '500000');
+              setRate(parsed.rate || '9.5');
+              setTenure(parsed.tenure || '5');
+              setTenureType(parsed.tenureType || 'years');
+              setLoanDate(parsed.loanDate || format(new Date(), 'yyyy-MM-dd'));
+              setFirstEmiDate(parsed.firstEmiDate || format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
+              setSelectedTruckId(parsed.selectedTruckId || null);
+              setActiveProfileId(parsed.activeProfileId || null);
+            }
+          } catch (e) {
+            console.error('Failed to parse draft', e);
+          }
+        } else {
+          const defProfile = await getDefaultProfile();
+          if (defProfile) {
+            applyProfileToState(defProfile);
+          }
         }
       }
     };
     init();
-  }, [getAllProfiles, getDefaultProfile]);
+  }, [getAllProfiles, getDefaultProfile, urlProfileId]);
 
   // Auto-save draft
   useEffect(() => {
-    const draft = { bankName, amount, rate, tenure, tenureType, loanDate, firstEmiDate, activeProfileId };
+    const draft = { bankName, amount, rate, tenure, tenureType, loanDate, firstEmiDate, activeProfileId, selectedTruckId };
     localStorage.setItem('emi_draft', JSON.stringify(draft));
-  }, [bankName, amount, rate, tenure, tenureType, loanDate, firstEmiDate, activeProfileId]);
+  }, [bankName, amount, rate, tenure, tenureType, loanDate, firstEmiDate, activeProfileId, selectedTruckId]);
 
   const applyProfileToState = (profile) => {
     setAmount(profile.loanAmount?.toString() || '0');
@@ -181,6 +209,7 @@ export default function EMICalculatorPage() {
     setBankName(profile.bank_name || 'HDFC Bank');
     setLoanDate(profile.disbursal_date ? profile.disbursal_date.substring(0, 10) : format(new Date(), 'yyyy-MM-dd'));
     setFirstEmiDate(profile.first_emi_date ? profile.first_emi_date.substring(0, 10) : format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
+    setSelectedTruckId(profile.truck_id || null);
     setActiveProfileId(profile.id);
   };
 
@@ -205,7 +234,8 @@ export default function EMICalculatorPage() {
       isDefault: profiles.length === 0,
       bank_name: bankName,
       disbursal_date: loanDate,
-      first_emi_date: firstEmiDate
+      first_emi_date: firstEmiDate,
+      truck_id: selectedTruckId || null
     };
     const saved = await saveProfile(payload);
     if (saved) setActiveProfileId(saved.id);
@@ -220,7 +250,8 @@ export default function EMICalculatorPage() {
       loanTerm: tMonths || 0,
       bank_name: bankName,
       disbursal_date: loanDate,
-      first_emi_date: firstEmiDate
+      first_emi_date: firstEmiDate,
+      truck_id: selectedTruckId || null
     };
     try {
       await updateProfile(activeProfileId, payload);
@@ -238,7 +269,8 @@ export default function EMICalculatorPage() {
       isDefault: false,
       bank_name: profile.bank_name,
       disbursal_date: profile.disbursal_date,
-      first_emi_date: profile.first_emi_date
+      first_emi_date: profile.first_emi_date,
+      truck_id: profile.truck_id || null
     };
     await saveProfile(payload);
   };
@@ -377,6 +409,7 @@ export default function EMICalculatorPage() {
             activeProfileId={activeProfileId} 
             onProfileChange={handleProfileChange}
             loading={profilesLoading}
+            trucks={trucks}
           />
           <Button variant="outline" onClick={() => setIsManagerOpen(true)} disabled={profilesLoading && !profiles?.length} className="rounded-xl shadow-sm">
             {profilesLoading && !profiles?.length ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Settings2 className="w-4 h-4 mr-2" />}
@@ -429,6 +462,21 @@ export default function EMICalculatorPage() {
                   placeholder="e.g. HDFC Bank"
                   className="bg-background rounded-xl"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="truckSelect">Linked Truck</Label>
+                <Select value={selectedTruckId || 'none'} onValueChange={(v) => { setSelectedTruckId(v === 'none' ? null : v); }}>
+                  <SelectTrigger id="truckSelect" className="bg-background rounded-xl">
+                    <SelectValue placeholder="Select a truck" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {trucks.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.truck_number} {t.truck_name ? `(${t.truck_name})` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -779,6 +827,7 @@ export default function EMICalculatorPage() {
         onDuplicate={handleDuplicateProfile}
         onSetDefault={setDefaultProfile}
         loading={profilesLoading}
+        trucks={trucks}
       />
     </div>
   );

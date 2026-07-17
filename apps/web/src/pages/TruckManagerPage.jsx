@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2 } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -24,6 +24,7 @@ import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 export default function TruckManagerPage() {
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [loanProfiles, setLoanProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
   const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
@@ -33,7 +34,7 @@ export default function TruckManagerPage() {
   const fetchTrucks = async () => {
     try {
       setLoading(true);
-      const [trucksRes, driversRes] = await Promise.all([
+      const [trucksRes, driversRes, loanProfilesRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
           expand: 'manager_id',
@@ -42,13 +43,17 @@ export default function TruckManagerPage() {
         pb.collection('employees').getFullList({
           filter: 'employee_type="driver"',
           $autoCancel: false
+        }),
+        pb.collection('loan_profiles').getFullList({
+          $autoCancel: false
         })
       ]);
       setTrucks(trucksRes);
       setDrivers(driversRes);
+      setLoanProfiles(loanProfilesRes);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to load trucks and drivers');
+      toast.error('Failed to load fleet data');
     } finally {
       setLoading(false);
     }
@@ -295,6 +300,36 @@ export default function TruckManagerPage() {
                         </Badge>
                       )}
                     </div>
+
+                    {/* Linked Loans / EMI Section */}
+                    {(() => {
+                      const truckLoans = loanProfiles.filter(p => p.truck_id === truck.id);
+                      if (truckLoans.length === 0) return null;
+                      return (
+                        <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Linked Loan Profiles</p>
+                          <div className="space-y-1.5">
+                            {truckLoans.map(loan => (
+                              <div 
+                                key={loan.id}
+                                onClick={() => navigate(`/emi-calculator?profileId=${loan.id}`)}
+                                className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 hover:border-primary/20 transition-all cursor-pointer group/loan"
+                              >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                  <Landmark className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  <span className="text-xs font-semibold text-foreground truncate group-hover/loan:text-primary transition-colors">
+                                    {loan.profileName}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] font-bold text-primary font-mono shrink-0">
+                                  ₹{(loan.loanAmount || 0).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Actions row */}

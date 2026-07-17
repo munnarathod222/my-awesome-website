@@ -2,7 +2,7 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Bookmark, Check } from 'lucide-react';
 
-export default function ProfileSelector({ profiles, activeProfileId, onProfileChange, loading }) {
+export default function ProfileSelector({ profiles, activeProfileId, onProfileChange, loading, trucks = [] }) {
   if (loading && profiles.length === 0) {
     return (
       <div className="h-10 w-[240px] bg-muted animate-pulse rounded-xl"></div>
@@ -30,14 +30,17 @@ export default function ProfileSelector({ profiles, activeProfileId, onProfileCh
               No profiles saved
             </div>
           ) : (
-            profiles.map(profile => (
-              <SelectItem key={profile.id} value={profile.id}>
-                <div className="flex items-center justify-between w-full gap-2">
-                  <span>{profile.profileName}</span>
-                  {profile.isDefault && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Default</span>}
-                </div>
-              </SelectItem>
-            ))
+            profiles.map(profile => {
+              const linkedTruck = trucks.find(t => t.id === profile.truck_id);
+              return (
+                <SelectItem key={profile.id} value={profile.id}>
+                  <div className="flex items-center justify-between w-full gap-2">
+                    <span>{profile.profileName} {linkedTruck ? `· ${linkedTruck.truck_number}` : ''}</span>
+                    {profile.isDefault && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">Default</span>}
+                  </div>
+                </SelectItem>
+              );
+            })
           )}
         </SelectContent>
       </Select>
