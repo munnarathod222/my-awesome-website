@@ -60,6 +60,23 @@ const FASTagRechargeModal = ({ isOpen, onClose, truck, onSuccess }) => {
         last_recharge_amount: amount
       }, { $autoCancel: false });
 
+      // 3. Create expense record
+      try {
+        await pb.collection('expenses').create({
+          date: `${formData.recharge_date} 12:00:00.000Z`,
+          category: 'FASTag Recharge',
+          description: `FASTag Recharge for truck ${truck.truck_number}`,
+          amount: amount,
+          payment_method: formData.payment_method,
+          truck_id: truck.truck_number,
+          status: 'Approved',
+          notes: formData.notes || '',
+          created_by: pb.authStore.model?.id || ''
+        }, { $autoCancel: false });
+      } catch (expErr) {
+        console.error('Failed to create matching expense for FASTag recharge:', expErr);
+      }
+
       toast.success('Recharge recorded successfully');
       onSuccess();
       onClose();

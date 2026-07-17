@@ -36,6 +36,7 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
     route_name: '',
     route_code: '',
     amount_per_trip: '',
+    fastag_charge: '',
     distance_km: '',
     description: '',
     is_round_trip_rate: false,
@@ -61,6 +62,7 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           route_name: route.route_name || '',
           route_code: route.route_code || '',
           amount_per_trip: route.amount_per_trip || '',
+          fastag_charge: route.fastag_charge || '',
           distance_km: route.distance_km || '',
           description: route.description || '',
           is_round_trip_rate: route.is_round_trip_rate || false,
@@ -82,6 +84,7 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           route_name: '',
           route_code: '',
           amount_per_trip: '',
+          fastag_charge: '',
           distance_km: '',
           description: '',
           is_round_trip_rate: false,
@@ -204,11 +207,13 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
         const totalRate = parseFloat(formData.amount_per_trip) || 0;
         const legRate = totalRate / 2;
         const distance = parseFloat(formData.distance_km) || 0;
+        const toll = parseFloat(formData.fastag_charge) || 0;
 
         const upPayload = {
           route_name: `${formData.up_origin} - ${formData.up_destination}`,
           route_code: formData.up_code.toUpperCase(),
           amount_per_trip: legRate,
+          fastag_charge: toll,
           distance_km: distance,
           description: formData.description ? `${formData.description} (Up Leg)` : 'Up Leg of Round-Trip',
           is_round_trip_rate: false,
@@ -221,6 +226,7 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           route_name: `${formData.down_origin} - ${formData.down_destination}`,
           route_code: formData.down_code.toUpperCase(),
           amount_per_trip: legRate,
+          fastag_charge: toll,
           distance_km: distance,
           description: formData.description ? `${formData.description} (Down Leg)` : 'Down Leg of Round-Trip',
           is_round_trip_rate: false,
@@ -246,6 +252,7 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           route_name: formData.route_name,
           route_code: formData.route_code,
           amount_per_trip: parseFloat(formData.amount_per_trip) || 0,
+          fastag_charge: parseFloat(formData.fastag_charge) || 0,
           distance_km: parseFloat(formData.distance_km) || 0,
           description: formData.description,
           is_round_trip_rate: formData.is_round_trip_rate,
@@ -419,10 +426,10 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2 col-span-1">
               <Label htmlFor="amount_per_trip">
-                {formData.is_split_round_trip ? 'Total Round-Trip Rate (₹)' : 'Amount per Trip (₹)'} <span className="text-destructive">*</span>
+                {formData.is_split_round_trip ? 'RT Rate (₹)' : 'Rate (₹)'} <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="amount_per_trip"
@@ -437,13 +444,27 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
                 className="bg-background"
               />
               {formData.is_split_round_trip && (
-                <p className="text-[10.5px] text-primary/80 font-medium">
-                  Split 50/50: ₹{(parseFloat(formData.amount_per_trip) / 2 || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} per leg.
+                <p className="text-[9.5px] text-primary/80 font-medium leading-tight">
+                  Leg: ₹{(parseFloat(formData.amount_per_trip) / 2 || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}.
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="distance_km">Distance (KM) <span className="text-destructive">*</span></Label>
+            <div className="space-y-2 col-span-1">
+              <Label htmlFor="fastag_charge">FASTag Toll (₹)</Label>
+              <Input
+                id="fastag_charge"
+                name="fastag_charge"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={formData.fastag_charge}
+                onChange={handleChange}
+                className="bg-background"
+              />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label htmlFor="distance_km">Dist (KM) <span className="text-destructive">*</span></Label>
               <Input
                 id="distance_km"
                 name="distance_km"

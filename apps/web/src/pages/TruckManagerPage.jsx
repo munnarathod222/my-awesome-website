@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import TruckFormModal from '@/components/TruckFormModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
+import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 
 export default function TruckManagerPage() {
   const [trucks, setTrucks] = useState([]);
@@ -30,6 +31,7 @@ export default function TruckManagerPage() {
   const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
   const navigate = useNavigate();
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
+  const [fastagConfig, setFastagConfig] = useState({ isOpen: false, truck: null });
 
   const fetchTrucks = async () => {
     try {
@@ -299,6 +301,9 @@ export default function TruckManagerPage() {
                           Mgr: {truck.expand.manager_id.full_name || truck.expand.manager_id.name}
                         </Badge>
                       )}
+                      <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        FASTag: ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
+                      </Badge>
                     </div>
 
                     {/* Linked Loans / EMI Section */}
@@ -361,6 +366,15 @@ export default function TruckManagerPage() {
                         title="Share vehicle document folder link"
                       >
                         <Share2 className="w-3.5 h-3.5 text-primary" /> Share Link
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
+                        onClick={() => setFastagConfig({ isOpen: true, truck })}
+                        title="Recharge FASTag balance"
+                      >
+                        <Wallet className="w-3.5 h-3.5 text-blue-500" /> FASTag
                       </Button>
                     </div>
                     
@@ -491,6 +505,15 @@ export default function TruckManagerPage() {
           truckId={shareConfig.truckId}
           employeeId={shareConfig.employeeId}
           entityName={shareConfig.entityName}
+        />
+      )}
+
+      {fastagConfig.isOpen && (
+        <FASTagRechargeModal
+          isOpen={fastagConfig.isOpen}
+          onClose={() => setFastagConfig({ isOpen: false, truck: null })}
+          truck={fastagConfig.truck}
+          onSuccess={fetchTrucks}
         />
       )}
     </div>

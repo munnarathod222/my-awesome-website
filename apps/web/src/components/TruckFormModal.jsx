@@ -29,7 +29,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     status: 'active',
     base_odometer: 0,
     ownership_type: 'Owned',
-    manager_id: 'none'
+    manager_id: 'none',
+    fastag_id: '',
+    current_fastag_balance: ''
   });
 
   const [bodyImagesList, setBodyImagesList] = useState([]);
@@ -58,7 +60,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           status: truck.status || 'active',
           base_odometer: truck.base_odometer || 0,
           ownership_type: truck.ownership_type || 'Owned',
-          manager_id: truck.manager_id || 'none'
+          manager_id: truck.manager_id || 'none',
+          fastag_id: truck.fastag_id || '',
+          current_fastag_balance: truck.current_fastag_balance?.toString() || ''
         });
         const existing = (truck.body_images || []).map((img, idx) => ({
           key: `existing-${idx}-${img}`,
@@ -77,7 +81,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           status: 'active',
           base_odometer: 0,
           ownership_type: 'Owned',
-          manager_id: 'none'
+          manager_id: 'none',
+          fastag_id: '',
+          current_fastag_balance: ''
         });
         setBodyImagesList([]);
         setDeletedFiles([]);
@@ -172,6 +178,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       formDataToSend.append('base_odometer', String(formData.base_odometer || 0));
       formDataToSend.append('ownership_type', formData.ownership_type);
       formDataToSend.append('manager_id', formData.manager_id === 'none' ? '' : formData.manager_id);
+      formDataToSend.append('fastag_id', formData.fastag_id || '');
+      formDataToSend.append('current_fastag_balance', String(parseFloat(formData.current_fastag_balance) || 0));
 
       // Keep existing files that are not deleted
       const existingItems = bodyImagesList.filter(item => !item.isNew);
@@ -313,6 +321,17 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>FASTag ID (Optional)</Label>
+              <Input value={formData.fastag_id} onChange={e => setFormData({...formData, fastag_id: e.target.value})} placeholder="FASTag ID" />
+            </div>
+            <div className="space-y-2">
+              <Label>FASTag Balance (₹)</Label>
+              <Input type="number" step="0.01" value={formData.current_fastag_balance} onChange={e => setFormData({...formData, current_fastag_balance: e.target.value})} placeholder="0.00" />
+            </div>
           </div>
 
           {/* Truck Body Images upload section */}

@@ -533,6 +533,13 @@ export default function RoutesPage() {
                           <Compass className="w-2.5 h-2.5" /> {route.stops.length} Stop{route.stops.length > 1 ? 's' : ''}
                         </span>
                       )}
+                      {route.fastag_charge > 0 && (
+                        <span 
+                          className="text-[10px] font-bold tracking-wider px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full border border-amber-500/20 flex items-center gap-1"
+                        >
+                          Toll: ₹{route.fastag_charge.toLocaleString('en-IN')}
+                        </span>
+                      )}
                     </div>
                   </CardHeader>
 
@@ -703,6 +710,11 @@ export default function RoutesPage() {
                         Distance (KM) <SortIcon columnKey="distance_km" />
                       </div>
                     </TableHead>
+                    <TableHead onClick={() => handleSort('fastag_charge')} className="cursor-pointer text-right hover:bg-muted/60 transition-colors w-[130px]">
+                      <div className="flex items-center justify-end font-heading text-xs uppercase font-bold tracking-wider py-1 text-foreground">
+                        Toll (₹) <SortIcon columnKey="fastag_charge" />
+                      </div>
+                    </TableHead>
                     <TableHead onClick={() => handleSort('amount_per_trip')} className="cursor-pointer text-right hover:bg-muted/60 transition-colors w-[130px]">
                       <div className="flex items-center justify-end font-heading text-xs uppercase font-bold tracking-wider py-1 text-foreground">
                         Leg Rate <SortIcon columnKey="amount_per_trip" />
@@ -782,6 +794,9 @@ export default function RoutesPage() {
                         <TableCell className="font-medium text-sm text-foreground py-3">{route.route_name}</TableCell>
                         <TableCell className="text-right font-medium text-sm text-muted-foreground py-3">
                           {route.distance_km ? `${route.distance_km} km` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-sm text-muted-foreground py-3 font-mono">
+                          {route.fastag_charge ? `₹${route.fastag_charge.toLocaleString('en-IN')}` : '-'}
                         </TableCell>
                         <TableCell className="text-right font-medium text-sm text-muted-foreground py-3">
                           {formatCurrency(legRate)}

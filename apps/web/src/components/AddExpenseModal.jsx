@@ -114,7 +114,36 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
       } else {
         const newExpense = await pb.collection('expenses').create(payload, { $autoCancel: false });
         
-        // Cashbook entry created automatically via database create hook
+        // If this is a FASTag Recharge expense, update the fastag balance
+        if (payload.category === 'FASTag Recharge' && payload.truck_id) {
+          try {
+            const trs = await pb.collection('trucks').getFullList({
+              filter: `truck_number = "${payload.truck_id}"`,
+              $autoCancel: false
+            });
+            if (trs.length > 0) {
+              const trk = trs[0];
+              const curBal = trk.current_fastag_balance || 0;
+              await pb.collection('trucks').update(trk.id, {
+                current_fastag_balance: curBal + payload.amount,
+                last_recharge_date: `${payload.date} 12:00:00.000Z`,
+                last_recharge_amount: payload.amount
+              }, { $autoCancel: false });
+
+              // Also create a fastag_recharges log
+              await pb.collection('fastag_recharges').create({
+                truck_id: trk.id,
+                recharge_date: `${payload.date} 12:00:00.000Z`,
+                recharge_amount: payload.amount,
+                payment_method: payload.payment_method || 'UPI',
+                reference_number: '',
+                notes: payload.notes || 'Added from Expense Manager'
+              }, { $autoCancel: false });
+            }
+          } catch (err) {
+            console.error('Failed to sync fastag recharge from expense:', err);
+          }
+        }
         
         toast.success('Expense created successfully');
       }
@@ -185,6 +214,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
                   <SelectItem value="Salary">Salary</SelectItem>
                   <SelectItem value="Rent">Rent</SelectItem>
                   <SelectItem value="Utilities">Utilities</SelectItem>
+                  <SelectItem value="FASTag Recharge">FASTag Recharge</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
