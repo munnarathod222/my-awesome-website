@@ -184,7 +184,7 @@ const PaymentRequestsPage = () => {
         {
           description: `Freight charges for trip log: ${tripId}`,
           trip_id: tripId,
-          amount: `₹${r.amount.toLocaleString('en-IN')}`
+          amount: `₹${Number(r.amount || 0).toLocaleString('en-IN')}`
         }
       ];
 
@@ -241,7 +241,7 @@ const PaymentRequestsPage = () => {
           sl_no: String(idx + 1),
           description: `Freight charges for trip log: ${tripId}`,
           trip_id: tripId,
-          amount: `₹${r.amount.toLocaleString('en-IN')}`
+          amount: `₹${Number(r.amount || 0).toLocaleString('en-IN')}`
         };
       });
 
@@ -270,7 +270,7 @@ const PaymentRequestsPage = () => {
     const contactPerson = r.expand?.client_id?.contact_person || '';
     const phone = r.expand?.client_id?.phone || '';
     const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
-    const amount = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
+    const amount = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
     const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM yyyy') : '';
     const dueDate = r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '';
 
@@ -340,7 +340,7 @@ Thank you,
     selectedReqs.forEach((r, idx) => {
       const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
       const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM') : '';
-      const amt = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
+      const amt = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
       tripBreakdown += `${idx + 1}. *Trip:* ${tripId} | *Date:* ${reqDate} | *Amount:* ${amt}\n`;
     });
 
