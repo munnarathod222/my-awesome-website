@@ -44,6 +44,7 @@ const PaymentRequestsPage = () => {
   const [clientFilter, setClientFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'request_date', direction: 'desc' });
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // Export states
   const [isExportingPDF, setIsExportingPDF] = useState(false);
@@ -51,6 +52,7 @@ const PaymentRequestsPage = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setSelectedIds([]);
     try {
       const [reqs, cls] = await Promise.all([
         pb.collection('payment_requests').getFullList({
@@ -188,6 +190,103 @@ Thank you,
       : `https://wa.me/?text=${encodedText}`;
 
     window.open(whatsappUrl, '_blank');
+  };
+
+  const selectedReqs = useMemo(() => {
+    return requests.filter(r => selectedIds.includes(r.id));
+  }, [requests, selectedIds]);
+
+  const bulkTotal = useMemo(() => {
+    return selectedReqs.reduce((sum, r) => sum + (r.amount || 0), 0);
+  }, [selectedReqs]);
+
+  const isSameClient = useMemo(() => {
+    if (selectedReqs.length === 0) return false;
+    const clientIds = new Set(selectedReqs.map(r => r.client_id));
+    return clientIds.size === 1;
+  }, [selectedReqs]);
+
+  const handleBulkWhatsApp = () => {
+    if (selectedReqs.length === 0) return;
+    const clientReq = selectedReqs[0];
+    const clientName = clientReq.expand?.client_id?.client_name || 'Client';
+    const contactPerson = clientReq.expand?.client_id?.contact_person || '';
+    const phone = clientReq.expand?.client_id?.phone || '';
+
+    const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
+    
+    let tripBreakdown = '';
+    selectedReqs.forEach((r, idx) => {
+      const tripId = r.trip_id || '';
+      const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM') : '';
+      const amt = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
+      tripBreakdown += `${idx + 1}. *Trip:* ${tripId} | *Date:* ${reqDate} | *Amount:* ${amt}\n`;
+    });
+
+    const message = `${greeting}
+
+This is a summary of pending payment requests from Jai Bhavani Cargo.
+
+*Bulk Request Summary:*
+• *Client:* ${clientName}
+• *Total Trips:* ${selectedReqs.length}
+• *Total Amount Due:* ₹${bulkTotal.toLocaleString('en-IN')}
+
+*Trip Details:*
+${tripBreakdown}
+Please process the payment at your earliest convenience. Let us know if you have any questions.
+
+Thank you,
+*Jai Bhavani Cargo*`;
+
+    const encodedText = encodeURIComponent(message);
+    const cleanedPhone = phone.replace(/\D/g, '');
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 10) {
+      finalPhone = `91${cleanedPhone}`;
+    }
+
+    const whatsappUrl = finalPhone 
+      ? `https://wa.me/${finalPhone}?text=${encodedText}`
+      : `https://wa.me/?text=${encodedText}`;
+
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleBulkMarkAsPaid = async () => {
+    if (selectedIds.length === 0) return;
+    
+    const confirmPay = window.confirm(`Are you sure you want to mark all ${selectedIds.length} selected requests as Paid?`);
+    if (!confirmPay) return;
+
+    setLoading(true);
+    try {
+      for (const id of selectedIds) {
+        const req = requests.find(r => r.id === id);
+        if (!req) continue;
+
+        await pb.collection('payment_requests').update(id, {
+          status: 'Paid',
+          payment_date: new Date().toISOString()
+        }, { $autoCancel: false });
+
+        if (req.trip_id) {
+          await pb.collection('trip_logs').update(req.trip_id, {
+            client_payment_status: 'paid'
+          }, { $autoCancel: false });
+        }
+      }
+
+      toast.success(`Successfully marked ${selectedIds.length} requests as Paid`);
+      setSelectedIds([]);
+      await fetchData();
+    } catch (err) {
+      console.error('Bulk pay error:', err);
+      toast.error('Failed to update some requests');
+      await fetchData();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const processedData = useMemo(() => {
@@ -483,7 +582,22 @@ Thank you,
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="pl-6">Date</TableHead>
+                    <TableHead className="w-[50px] pl-6">
+                      <input 
+                        type="checkbox"
+                        className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                        checked={processedData.length > 0 && selectedIds.length === processedData.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const pendings = processedData.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').map(r => r.id);
+                            setSelectedIds(pendings);
+                          } else {
+                            setSelectedIds([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead>Date</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('client_name')}>Client</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('amount')}>Amount</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('due_date')}>Due Date</TableHead>
@@ -494,7 +608,7 @@ Thank you,
                 <TableBody>
                   {processedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                         <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
                         No payment requests found.
                       </TableCell>
@@ -502,7 +616,23 @@ Thank you,
                   ) : (
                     processedData.map(r => (
                       <TableRow key={r.id} className="hover:bg-muted/30">
-                        <TableCell className="pl-6 whitespace-nowrap text-sm text-muted-foreground">
+                        <TableCell className="pl-6">
+                          {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') ? (
+                            <input 
+                              type="checkbox"
+                              className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                              checked={selectedIds.includes(r.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds(prev => [...prev, r.id]);
+                                } else {
+                                  setSelectedIds(prev => prev.filter(id => id !== r.id));
+                                }
+                              }}
+                            />
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                           {format(new Date(r.request_date), 'dd MMM yyyy')}
                         </TableCell>
                         <TableCell>
@@ -568,12 +698,29 @@ Thank you,
               ) : (
                 processedData.map(r => {
                   const isOverdue = r.calculatedStatus === 'Overdue';
+                  const isPendingOrOverdue = r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue';
                   return (
                     <div key={r.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
                       <div className="flex justify-between items-start gap-3">
-                        <div>
-                          <p className="font-bold text-sm text-foreground">{r.expand?.client_id?.client_name || 'Unknown Client'}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 font-mono">Trip: {r.trip_id.substring(0, 8)}</p>
+                        <div className="flex items-start gap-3">
+                          {isPendingOrOverdue && (
+                            <input 
+                              type="checkbox"
+                              className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 mt-1 cursor-pointer shrink-0"
+                              checked={selectedIds.includes(r.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds(prev => [...prev, r.id]);
+                                } else {
+                                  setSelectedIds(prev => prev.filter(id => id !== r.id));
+                                }
+                              }}
+                            />
+                          )}
+                          <div>
+                            <p className="font-bold text-sm text-foreground">{r.expand?.client_id?.client_name || 'Unknown Client'}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 font-mono">Trip: {r.trip_id.substring(0, 8)}</p>
+                          </div>
                         </div>
                         
                         <div className="text-right">
@@ -651,6 +798,45 @@ Thank you,
         request={cancelModalReq} 
         onSuccess={fetchData} 
       />
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-popover border border-border/80 shadow-2xl rounded-2xl px-6 py-4 flex items-center justify-between gap-6 z-50 animate-in slide-in-from-bottom-4 duration-300 w-[90%] max-w-xl">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Bulk Actions</span>
+            <span className="text-sm font-extrabold text-foreground mt-0.5">
+              {selectedIds.length} Trip{selectedIds.length > 1 ? 's' : ''} Selected (₹{bulkTotal.toLocaleString('en-IN')})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className={cn("h-9 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 flex items-center gap-1.5", !isSameClient && "opacity-50 cursor-not-allowed")}
+              onClick={handleBulkWhatsApp}
+              disabled={!isSameClient}
+              title={isSameClient ? "Share pending total with client via WhatsApp" : "All selected trips must belong to the same client"}
+            >
+              <Send className="w-4 h-4" /> Share
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 border-success/20 text-success hover:bg-success/10 flex items-center gap-1.5"
+              onClick={handleBulkMarkAsPaid}
+            >
+              <CheckCircle className="w-4 h-4" /> Pay
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-9 text-muted-foreground hover:bg-muted"
+              onClick={() => setSelectedIds([])}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
