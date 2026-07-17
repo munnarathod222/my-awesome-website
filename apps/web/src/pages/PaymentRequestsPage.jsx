@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
-import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2 } from 'lucide-react';
+import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2, Send } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { downloadFile, generatePDF, generateExcel } from '@/lib/downloadUtils.js';
@@ -95,14 +95,15 @@ const PaymentRequestsPage = () => {
         const generatedRequests = [];
         for (const trip of tripsToGenerate) {
           try {
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 7); // Default due date in 7 days
+            const tripDate = trip.date ? new Date(trip.date) : new Date();
+            const dueDate = new Date(tripDate);
+            dueDate.setDate(dueDate.getDate() + 7); // Default due date in 7 days after the trip date
             
             const newReq = await pb.collection('payment_requests').create({
               trip_id: trip.id,
               client_id: trip.client_id,
               amount: trip.revenue || 0,
-              request_date: new Date().toISOString(),
+              request_date: tripDate.toISOString(),
               due_date: dueDate.toISOString(),
               status: 'Pending',
               notes: `Auto-generated from unpaid Trip Log: ${trip.trip_id || trip.id}`
@@ -145,6 +146,48 @@ const PaymentRequestsPage = () => {
       key,
       direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
     }));
+  };
+
+  const handleShareWhatsApp = (r) => {
+    const clientName = r.expand?.client_id?.client_name || 'Client';
+    const contactPerson = r.expand?.client_id?.contact_person || '';
+    const phone = r.expand?.client_id?.phone || '';
+    const tripId = r.trip_id || '';
+    const amount = r.amount ? `₹${r.amount.toLocaleString('en-IN')}` : '₹0';
+    const reqDate = r.request_date ? format(new Date(r.request_date), 'dd MMM yyyy') : '';
+    const dueDate = r.due_date ? format(new Date(r.due_date), 'dd MMM yyyy') : '';
+
+    const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
+    const message = `${greeting}
+
+This is a payment request from Jai Bhavani Cargo.
+
+*Payment Request Details:*
+• *Client:* ${clientName}
+• *Trip:* ${tripId}
+• *Amount:* ${amount}
+• *Request Date:* ${reqDate}
+• *Due Date:* ${dueDate}
+
+Please process the payment at your earliest convenience. Let us know if you have any questions.
+
+Thank you,
+*Jai Bhavani Cargo*`;
+
+    const encodedText = encodeURIComponent(message);
+    const cleanedPhone = phone.replace(/\D/g, ''); // strip non-digits
+    
+    // Add country code if not present (assuming Indian numbers default to 91 if length is 10)
+    let finalPhone = cleanedPhone;
+    if (cleanedPhone.length === 10) {
+      finalPhone = `91${cleanedPhone}`;
+    }
+
+    const whatsappUrl = finalPhone 
+      ? `https://wa.me/${finalPhone}?text=${encodedText}`
+      : `https://wa.me/?text=${encodedText}`;
+
+    window.open(whatsappUrl, '_blank');
   };
 
   const processedData = useMemo(() => {
@@ -499,6 +542,9 @@ const PaymentRequestsPage = () => {
                               <Button variant="ghost" size="sm" className="h-8 text-primary" onClick={() => setReminderModalReq(r)}>
                                 <Bell className="w-3.5 h-3.5" />
                               </Button>
+                              <Button variant="ghost" size="sm" className="h-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10" onClick={() => handleShareWhatsApp(r)} title="Share via WhatsApp">
+                                <Send className="w-3.5 h-3.5" />
+                              </Button>
                               <Button variant="ghost" size="sm" className="h-8 text-destructive" onClick={() => setCancelModalReq(r)}>
                                 <XCircle className="w-3.5 h-3.5" />
                               </Button>
@@ -566,6 +612,9 @@ const PaymentRequestsPage = () => {
                         <div className="flex justify-end items-center gap-2 pt-2 border-t border-border/20">
                           <Button variant="outline" size="sm" className="h-8 text-xs font-semibold rounded-lg border-border" onClick={() => setPaidModalReq(r)}>
                             <CheckCircle className="w-3.5 h-3.5 mr-1 text-success" /> Paid
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 text-xs text-emerald-600 dark:text-emerald-400 font-semibold rounded-lg" onClick={() => handleShareWhatsApp(r)}>
+                            <Send className="w-3.5 h-3.5 mr-1" /> Share
                           </Button>
                           <Button variant="ghost" size="sm" className="h-8 text-xs text-primary font-semibold rounded-lg" onClick={() => setReminderModalReq(r)}>
                             <Bell className="w-3.5 h-3.5 mr-1" /> Remind
