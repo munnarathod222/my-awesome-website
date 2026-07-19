@@ -631,12 +631,13 @@ const runPocketBase = async () => {
   global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
 
-  // Sync latest database from Supabase Storage before boot (only if it doesn't exist locally)
-  if (!fs.existsSync(dbFilePath)) {
-    logger.info(`💾 Local database not found at ${dbFilePath}. Restoring from Supabase...`);
+  // Sync latest database from Supabase Storage before boot
+  const isProd = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
+  if (isProd || !fs.existsSync(dbFilePath)) {
+    logger.info(`💾 Hydrating latest database from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath);
   } else {
-    logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download to prevent data loss.`);
+    logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download in local dev.`);
   }
 
   // Sync latest storage files from Supabase Storage — Skipped on boot for instant startup speed!
