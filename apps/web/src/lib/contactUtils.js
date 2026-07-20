@@ -83,6 +83,10 @@ export function formatContactShareText(contact) {
     mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts)}`;
   }
 
+  const cleanNotes = contact.notes 
+    ? contact.notes.replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim() 
+    : '';
+
   const lines = [
     `📍 *${contact.company_name || 'Contact Info'}* (${contact.contact_type || 'Contact'})`,
     ``,
@@ -94,7 +98,7 @@ export function formatContactShareText(contact) {
     contact.physical_address && !contact.physical_address.startsWith('http') ? `🏢 *Address:* ${contact.physical_address}` : null,
     mapsUrl ? `🗺️ *Location:* ${mapsUrl}` : null,
     ``,
-    contact.notes && !contact.notes.startsWith('http') ? `📝 *Notes:* ${contact.notes}` : null,
+    cleanNotes && !cleanNotes.startsWith('http') ? `📝 *Notes:* ${cleanNotes}` : null,
     ``,
     `Shared via Jai Bhavani Cargo`
   ].filter(line => line !== null);

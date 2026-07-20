@@ -47,6 +47,14 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       setSubCategory(subCat);
 
       if (contact) {
+        let mapUrl = contact.google_maps_url || contact.google_map_link || contact.location_url || '';
+        if (!mapUrl && contact.notes) {
+          const match = contact.notes.match(/\[Location:\s*(https?:\/\/[^\]]+)\]/i) || contact.notes.match(/(https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps)[^\s]+)/i);
+          if (match) mapUrl = match[1];
+        }
+
+        const displayNotes = (contact.notes || '').replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim();
+
         setFormData({
           contact_type: type,
           company_name: contact.company_name || '',
@@ -54,8 +62,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           physical_address: contact.physical_address || '',
           gstin: contact.gstin || '',
           email: contact.email || '',
-          notes: contact.notes || '',
-          google_maps_url: contact.google_maps_url || '',
+          notes: displayNotes,
+          google_maps_url: mapUrl,
           truck_brand: contact.truck_brand || ''
         });
       } else {
@@ -157,8 +165,15 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
 
     try {
       const mapsUrl = formData.google_maps_url ? formData.google_maps_url.trim() : '';
+
+      let cleanNotes = (formData.notes || '').replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim();
+      if (mapsUrl) {
+        cleanNotes = cleanNotes ? `${cleanNotes}\n[Location: ${mapsUrl}]` : `[Location: ${mapsUrl}]`;
+      }
+
       const payload = {
         ...formData,
+        notes: cleanNotes,
         google_maps_url: mapsUrl,
         google_map_link: mapsUrl,
         location_url: mapsUrl,
