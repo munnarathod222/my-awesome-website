@@ -23,6 +23,44 @@ export const useCashbookData = () => {
         $autoCancel: false
       });
       setTransactions(records);
+
+      // Self-healing sync: Check if any expenses are missing in cashbook
+      try {
+        const allExpenses = await pb.collection('expenses').getFullList({ $autoCancel: false });
+        const existingRefIds = new Set(records.map(r => r.reference_id).filter(Boolean));
+        
+        let syncNeeded = false;
+        for (const exp of allExpenses) {
+          if (!existingRefIds.has(exp.id)) {
+            const cashCategory = exp.category === 'Regular' && exp.subcategory 
+              ? `Regular - ${exp.subcategory}` 
+              : (exp.category || 'Expenses');
+
+            await pb.collection('cashbook').create({
+              date: exp.date || new Date().toISOString(),
+              description: exp.description || `Expense (${cashCategory})`,
+              amount: Number(exp.amount) || 0,
+              transaction_type: 'Expense',
+              category: cashCategory,
+              reference_id: exp.id,
+              reference_type: 'expense',
+              status: 'Completed',
+              added_by: currentUser.id
+            }, { $autoCancel: false });
+            syncNeeded = true;
+          }
+        }
+
+        if (syncNeeded) {
+          const refreshed = await pb.collection('cashbook').getFullList({
+            sort: '-date',
+            $autoCancel: false
+          });
+          setTransactions(refreshed);
+        }
+      } catch (syncErr) {
+        console.warn('Background cashbook expense sync warning:', syncErr);
+      }
     } catch (err) {
       console.error('Fetch cashbook error:', err);
       

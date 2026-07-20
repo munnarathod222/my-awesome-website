@@ -273,15 +273,56 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         
         record = await pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false });
         
-        // Cashbook entry updated automatically via database update hook
-        
+        // Direct cashbook entry sync
+        try {
+          const cashbookEntries = await pb.collection('cashbook').getFullList({
+            filter: `reference_id="${expense.id}"`,
+            $autoCancel: false
+          });
+          const cashPayload = {
+            date: dateISO,
+            description: payload.description || `Expense (${cashCategory})`,
+            amount: Number(payload.amount),
+            transaction_type: 'Expense',
+            category: cashCategory,
+            reference_id: record.id,
+            reference_type: 'expense',
+            status: 'Completed',
+            added_by: currentUser.id
+          };
+
+          if (cashbookEntries && cashbookEntries.length > 0) {
+            await pb.collection('cashbook').update(cashbookEntries[0].id, cashPayload, { $autoCancel: false });
+          } else {
+            await pb.collection('cashbook').create(cashPayload, { $autoCancel: false });
+          }
+        } catch (syncErr) {
+          console.error('Failed to update cashbook entry for expense:', syncErr);
+        }
+
         toast.success('Expense updated successfully');
       } else {
         formDataToSend.append('created_by', currentUser.id);
         
         record = await pb.collection('expenses').create(formDataToSend, { $autoCancel: false });
         
-        // Cashbook entry created automatically via database create hook
+        // Direct cashbook entry sync
+        try {
+          const cashPayload = {
+            date: dateISO,
+            description: payload.description || `Expense (${cashCategory})`,
+            amount: Number(payload.amount),
+            transaction_type: 'Expense',
+            category: cashCategory,
+            reference_id: record.id,
+            reference_type: 'expense',
+            status: 'Completed',
+            added_by: currentUser.id
+          };
+          await pb.collection('cashbook').create(cashPayload, { $autoCancel: false });
+        } catch (syncErr) {
+          console.error('Failed to create cashbook entry for expense:', syncErr);
+        }
 
         if (payload.category === 'Employee' && payload.subcategory === 'Employee Advance') {
           const empName = employees.find(e => e.id === payload.employee_id)?.name || 'Employee';
