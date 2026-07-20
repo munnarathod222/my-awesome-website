@@ -139,15 +139,28 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
     const totalPaid = cardPayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
     
     const calculatedBalance = Math.max(0, totalSpent - totalPaid);
-    const availableCredit = Math.max(0, (card.credit_limit || 0) - calculatedBalance);
-    const utilization = card.credit_limit > 0 ? (calculatedBalance / card.credit_limit) * 100 : 0;
+    const isAddon = Boolean(card.is_addon || card.primary_card_id);
+    const parentCard = isAddon ? cards.find(c => c.id === card.primary_card_id) : null;
+    const effectiveLimit = isAddon ? (parentCard?.credit_limit || card.credit_limit || 0) : (card.credit_limit || 0);
 
-    return { ...card, calculatedBalance, availableCredit, utilization };
+    const availableCredit = Math.max(0, effectiveLimit - calculatedBalance);
+    const utilization = effectiveLimit > 0 ? (calculatedBalance / effectiveLimit) * 100 : 0;
+
+    return { 
+      ...card, 
+      isAddon, 
+      parentCard, 
+      effectiveLimit, 
+      calculatedBalance, 
+      availableCredit, 
+      utilization 
+    };
   });
 
-  const overallTotalLimit = processedCards.reduce((sum, c) => sum + (c.credit_limit || 0), 0);
+  // Calculate overall limit strictly from primary cards to avoid double counting shared add-on limits
+  const overallTotalLimit = processedCards.filter(c => !c.isAddon).reduce((sum, c) => sum + (c.credit_limit || 0), 0);
   const overallTotalBalance = processedCards.reduce((sum, c) => sum + c.calculatedBalance, 0);
-  const overallAvailable = processedCards.reduce((sum, c) => sum + c.availableCredit, 0);
+  const overallAvailable = processedCards.filter(c => !c.isAddon).reduce((sum, c) => sum + c.availableCredit, 0);
 
   const selectedCard = processedCards.find(c => c.id === selectedCardId);
   let allTx = [];
@@ -273,17 +286,33 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
                 className={`shadow-md border flex flex-col transition-all duration-200 ${selectedCardId === card.id ? 'ring-2 ring-primary border-primary bg-card/80 scale-[1.01]' : 'border-border bg-card hover:shadow-lg'}`}
               >
                 <CardHeader className="pb-3 border-b border-border/50 bg-muted/10">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <div>
                       <CardTitle className="text-xl flex items-center gap-2">
                         <CreditCard className="w-5 h-5 text-primary" />
                         {card.card_name}
                       </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {card.bank_name} •••• {card.card_number_last4}
+                      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span>{card.bank_name} •••• {card.card_number_last4}</span>
+                        {card.isAddon && (
+                          <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                            Add-On Card (Linked to {card.parentCard?.card_name || 'Primary'})
+                          </span>
+                        )}
                       </p>
                     </div>
-                    <Badge variant={card.status === 'Active' ? 'default' : 'secondary'}>{card.status}</Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={card.status === 'Active' ? 'default' : 'secondary'}>{card.status}</Badge>
+                      {card.isAddon ? (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]">
+                          Shared Limit
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-[10px]">
+                          Primary
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 
@@ -306,7 +335,13 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
                     </div>
                     <Progress value={card.utilization} className="h-2" />
                     <div className="flex justify-between items-center mt-1">
-                      <p className="text-xs text-muted-foreground">Limit: ₹{card.credit_limit?.toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {card.isAddon ? (
+                          <span>Shared Limit: <strong className="text-foreground">₹{card.effectiveLimit?.toLocaleString('en-IN')}</strong> ({card.parentCard?.card_name || 'Primary Card'})</span>
+                        ) : (
+                          <span>Limit: <strong className="text-foreground">₹{card.credit_limit?.toLocaleString('en-IN')}</strong></span>
+                        )}
+                      </p>
                       <p className="text-xs font-medium text-primary">Waiver: ₹{(card.max_waiver_per_transaction||5000).toLocaleString()}/tx</p>
                     </div>
                   </div>

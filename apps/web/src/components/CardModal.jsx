@@ -7,13 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Loader2 } from 'lucide-react';
-import { setDate, isBefore, startOfDay, addMonths } from 'date-fns';
-
+import { Loader2, CreditCard, Link as LinkIcon, ShieldCheck } from 'lucide-react';
 
 const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [primaryCards, setPrimaryCards] = useState([]);
+  const [fetchingPrimary, setFetchingPrimary] = useState(false);
+
   const [formData, setFormData] = useState({
     card_name: '',
     card_number_last4: '',
@@ -22,7 +23,9 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
     billing_cycle_start: '1',
     billing_cycle_end: '30',
     credit_limit: '',
-    status: 'Active'
+    status: 'Active',
+    is_addon: false,
+    primary_card_id: ''
   });
 
   const [paymentDueDateData, setPaymentDueDateData] = useState({
@@ -34,6 +37,9 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch list of primary cards for linking add-on cards
+      fetchPrimaryCardsList();
+
       if (card) {
         setFormData({
           card_name: card.card_name || '',
@@ -43,7 +49,9 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           billing_cycle_start: card.billing_cycle_start?.toString() || '1',
           billing_cycle_end: card.billing_cycle_end?.toString() || '30',
           credit_limit: card.credit_limit?.toString() || '',
-          status: card.status || 'Active'
+          status: card.status || 'Active',
+          is_addon: Boolean(card.is_addon || card.primary_card_id),
+          primary_card_id: card.primary_card_id || ''
         });
 
         // Fetch existing payment due date linked to this card
@@ -59,7 +67,6 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
               });
             }
           } catch (e) {
-            console.log('No existing payment due date record found:', e);
             setPaymentDueDateData({
               id: '',
               payment_due_date: '15',
@@ -78,7 +85,9 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           billing_cycle_start: '1',
           billing_cycle_end: '30',
           credit_limit: '',
-          status: 'Active'
+          status: 'Active',
+          is_addon: false,
+          primary_card_id: ''
         });
         setPaymentDueDateData({
           id: '',
@@ -90,6 +99,24 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
     }
   }, [isOpen, card]);
 
+  const fetchPrimaryCardsList = async () => {
+    setFetchingPrimary(true);
+    try {
+      const list = await pb.collection('credit_cards').getFullList({
+        filter: `user_id = "${currentUser.id}"`,
+        sort: 'card_name',
+        $autoCancel: false
+      });
+      // Filter out self if editing, and filter primary cards
+      const available = list.filter(c => (!card || c.id !== card.id) && !c.is_addon);
+      setPrimaryCards(available);
+    } catch (e) {
+      console.error('Failed to fetch primary cards:', e);
+    } finally {
+      setFetchingPrimary(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -97,36 +124,42 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
       return toast.error('Please enter exactly 4 digits for the card number');
     }
 
+    if (formData.is_addon && !formData.primary_card_id) {
+      return toast.error('Please select a Primary Credit Card to link this Add-On Card');
+    }
+
     setLoading(true);
-    
     try {
-      const payload = {
-        ...formData,
-        billing_cycle_start: parseInt(formData.billing_cycle_start) || 1,
-        billing_cycle_end: parseInt(formData.billing_cycle_end) || 30,
-        credit_limit: parseFloat(formData.credit_limit) || 0,
-        user_id: currentUser?.id || '',
-        max_waiver_per_transaction: card ? (Number(card.max_waiver_per_transaction) || 5000) : 5000,
-        monthly_waiver_limit: card ? (Number(card.monthly_waiver_limit) || 20000) : 20000,
-        current_month_waiver_used: card ? (Number(card.current_month_waiver_used) || 0) : 0
+      const cardPayload = {
+        card_name: formData.card_name,
+        card_number_last4: formData.card_number_last4,
+        card_type: formData.card_type,
+        bank_name: formData.bank_name,
+        billing_cycle_start: Number(formData.billing_cycle_start) || 1,
+        billing_cycle_end: Number(formData.billing_cycle_end) || 30,
+        credit_limit: Number(formData.credit_limit) || 0,
+        status: formData.status,
+        user_id: currentUser.id,
+        is_addon: Boolean(formData.is_addon),
+        primary_card_id: formData.is_addon ? formData.primary_card_id : ''
       };
 
       let savedCard;
       if (card) {
-        savedCard = await pb.collection('credit_cards').update(card.id, payload, { $autoCancel: false });
-        toast.success('Card updated successfully');
+        savedCard = await pb.collection('credit_cards').update(card.id, cardPayload, { $autoCancel: false });
+        toast.success('Credit card updated');
       } else {
-        savedCard = await pb.collection('credit_cards').create(payload, { $autoCancel: false });
-        toast.success('Card added successfully');
+        savedCard = await pb.collection('credit_cards').create(cardPayload, { $autoCancel: false });
+        toast.success('New credit card added');
       }
 
-      // Save/update payment_due_dates record
-      if (formData.card_type === 'Credit' && currentUser?.id) {
+      // Handle Payment Due Date for Credit Cards
+      if (formData.card_type === 'Credit' && paymentDueDateData.payment_due_date) {
         const dueDatePayload = {
           card_id: savedCard.id,
-          payment_due_date: parseInt(paymentDueDateData.payment_due_date) || 15,
-          full_payment_amount: parseFloat(paymentDueDateData.full_payment_amount) || 0,
-          minimum_payment_amount: parseFloat(paymentDueDateData.minimum_payment_amount) || 0,
+          payment_due_date: Number(paymentDueDateData.payment_due_date) || 15,
+          full_payment_amount: Number(paymentDueDateData.full_payment_amount) || 0,
+          minimum_payment_amount: Number(paymentDueDateData.minimum_payment_amount) || 0,
           user_id: currentUser.id
         };
 
@@ -136,17 +169,11 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           await pb.collection('payment_due_dates').create(dueDatePayload, { $autoCancel: false });
         }
 
-        // Trigger / Sync high-priority Reminder automatically when statement amount is updated
-        let nextDueDate = setDate(new Date(), dueDatePayload.payment_due_date);
-        if (isBefore(nextDueDate, startOfDay(new Date()))) {
-          nextDueDate = addMonths(nextDueDate, 1);
-        }
-
+        // Automatic Reminder sync
         const reminderPayload = {
-          title: `Pay ${savedCard.card_name} Bill`,
-          description: `Statement Bill Amount: ₹${dueDatePayload.full_payment_amount.toLocaleString('en-IN')}. Minimum Due: ₹${dueDatePayload.minimum_payment_amount.toLocaleString('en-IN')}.`,
-          reminder_type: 'Credit Card Payment',
-          reminder_date: nextDueDate.toISOString(),
+          title: `Credit Card Bill Due: ${formData.card_name} (*${formData.card_number_last4})`,
+          notes: `Credit card bill payment due on day ${paymentDueDateData.payment_due_date} of the month. Total Due: ₹${paymentDueDateData.full_payment_amount || 0}`,
+          reminder_type: 'CreditCardBill',
           priority: 'High',
           status: 'Active',
           created_by: currentUser.id,
@@ -154,7 +181,6 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           linked_card_id: savedCard.id
         };
 
-        // Check if there is an existing active reminder for this card
         try {
           const existingReminder = await pb.collection('reminders').getFirstListItem(
             `linked_card_id="${savedCard.id}" && status="Active"`,
@@ -162,12 +188,10 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           );
           await pb.collection('reminders').update(existingReminder.id, reminderPayload, { $autoCancel: false });
         } catch (e) {
-          // If no active reminder exists, create a new one
           await pb.collection('reminders').create(reminderPayload, { $autoCancel: false });
         }
       }
 
-      
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
@@ -178,23 +202,87 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
     }
   };
 
+  const selectedPrimary = primaryCards.find(p => p.id === formData.primary_card_id);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="sm:max-w-[520px] bg-card border-border shadow-2xl rounded-2xl">
         <DialogHeader>
-          <DialogTitle>{card ? 'Edit Card Details' : 'Add New Credit Card'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            {card ? 'Edit Card Details' : 'Add Credit / Add-On Card'}
+          </DialogTitle>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
+          {/* Card Category Selector (Primary vs Add-On) */}
+          <div className="p-3 bg-muted/40 rounded-xl border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="font-semibold text-sm">Card Ownership Classification</Label>
+              <Badge variant="outline" className={formData.is_addon ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-primary/10 text-primary border-primary/30'}>
+                {formData.is_addon ? 'ADD-ON CARD (SHARED LIMIT)' : 'PRIMARY CARD'}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, is_addon: false, primary_card_id: '' }))}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${!formData.is_addon ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-background text-muted-foreground border-border hover:bg-muted'}`}
+              >
+                Primary Card
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, is_addon: true }))}
+                className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${formData.is_addon ? 'bg-amber-500 text-amber-950 border-amber-500 font-bold shadow-sm' : 'bg-background text-muted-foreground border-border hover:bg-muted'}`}
+              >
+                Add-On Card (Linked)
+              </button>
+            </div>
+
+            {/* Dropdown to Link Primary Card if Add-On is selected */}
+            {formData.is_addon && (
+              <div className="space-y-2 pt-2 border-t border-border/50 animate-in fade-in duration-200">
+                <Label className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                  <LinkIcon className="w-3.5 h-3.5" /> Link to Primary Card *
+                </Label>
+                {fetchingPrimary ? (
+                  <p className="text-xs text-muted-foreground">Loading primary cards...</p>
+                ) : (
+                  <Select value={formData.primary_card_id} onValueChange={(val) => setFormData(prev => ({ ...prev, primary_card_id: val }))}>
+                    <SelectTrigger className="bg-background text-foreground">
+                      <SelectValue placeholder="Select Primary Card" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {primaryCards.map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.card_name} ({p.bank_name} *{p.card_number_last4}) — Limit: ₹{(p.credit_limit || 0).toLocaleString()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {selectedPrimary && (
+                  <p className="text-[11px] text-muted-foreground bg-background/50 p-2 rounded-lg border border-border/40">
+                    ℹ️ Shares the <span className="font-bold text-foreground">₹{(selectedPrimary.credit_limit || 0).toLocaleString()}</span> credit limit of <span className="font-bold text-foreground">{selectedPrimary.card_name}</span>.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Card Name / Alias *</Label>
+              <Label>Card Name / Holder Alias *</Label>
               <Input 
                 type="text" 
                 required
                 value={formData.card_name}
                 onChange={(e) => setFormData({...formData, card_name: e.target.value})}
                 className="bg-background text-foreground"
-                placeholder="e.g. HDFC Fuel Card"
+                placeholder={formData.is_addon ? 'e.g. Driver Add-On Card 1' : 'e.g. HDFC Regalia'}
               />
             </div>
             <div className="space-y-2">
@@ -240,6 +328,33 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label>Credit Limit (₹) {formData.is_addon ? '(Shared)' : ''}</Label>
+              <Input 
+                type="number" 
+                step="1000"
+                min="0"
+                value={formData.credit_limit}
+                onChange={(e) => setFormData({...formData, credit_limit: e.target.value})}
+                className="bg-background text-foreground"
+                placeholder={formData.is_addon ? '0 (Uses Primary Limit)' : 'e.g. 500000'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(val) => setFormData({...formData, status: val})}>
+                <SelectTrigger className="bg-background text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>Billing Start Day</Label>
               <Input 
                 type="number" 
@@ -265,36 +380,9 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Credit Limit (₹)</Label>
-              <Input 
-                type="number" 
-                step="1000"
-                min="0"
-                value={formData.credit_limit}
-                onChange={(e) => setFormData({...formData, credit_limit: e.target.value})}
-                className="bg-background text-foreground"
-                placeholder="e.g. 50000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(val) => setFormData({...formData, status: val})}>
-                <SelectTrigger className="bg-background text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           {formData.card_type === 'Credit' && (
             <div className="border-t border-border pt-4 mt-2 space-y-4">
-              <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Statement & Due Dates</h4>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Statement & Due Dates</h4>
               
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
