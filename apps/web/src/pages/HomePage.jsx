@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   ShieldCheck, Clock, DollarSign, Headphones as HeadphonesIcon, ArrowRight,
   Sparkles, ChevronLeft, ChevronRight, MessageSquare, Quote, Star, Truck,
