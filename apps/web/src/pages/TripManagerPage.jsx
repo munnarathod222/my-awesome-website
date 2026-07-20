@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { cn } from '@/lib/utils.js';
 import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor } from '@/lib/tripStatusUtils.js';
+import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import AddTripModal from '@/components/AddTripModal.jsx';
 import AddRecurringTripModal from '@/components/AddRecurringTripModal.jsx';
 import RouteModal from '@/components/RouteModal.jsx';
@@ -123,6 +124,10 @@ const TripManagerPage = () => {
       await pb.collection('trip_logs').update(statusChangeTrip.id, {
         trip_status: newTripStatus
       }, { $autoCancel: false });
+
+      if ((newTripStatus === 'Delivered' || newTripStatus === 'Completed') && statusChangeTrip.trip_status !== newTripStatus) {
+        deductFastagForTrip(statusChangeTrip);
+      }
       
       try {
         const relatedTx = await pb.collection('cashbook_transactions').getFullList({
@@ -140,7 +145,7 @@ const TripManagerPage = () => {
         console.warn('Failed to sync with cashbook transactions (non-critical):', txErr);
       }
 
-      toast.success(`Trip status updated to ${newTripStatus}`);
+      toast.success(`Trip status updated to ${newTripStatus} & FASTag adjusted`);
       retryTrips();
     } catch (err) {
       console.error('Update err:', err);
