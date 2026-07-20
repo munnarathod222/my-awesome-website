@@ -626,3 +626,82 @@
     display: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   PRINT OVERRIDES - Force Bright Pure White Paper & Black Text
+   ───────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 12mm;
+  }
+
+  *, *::before, *::after {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+  }
+
+  html, body, #root, main, div, section, article, table, tr, td, th, h1, h2, h3, h4, p, span, strong {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide navigation, dialog backdrops, dark overlays, buttons and UI controls */
+  .no-print, nav, header, sidebar, aside, button, [role="dialog"] > button, .border-b.bg-muted\/20,
+  [data-radix-focus-guard], [data-state="open"] > button {
+    display: none !important;
+  }
+
+  /* Force printable container to full page width */
+  .payslip-container, #payslip-preview-content, .print-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Table styling for crisp print readability */
+  #payslip-preview-content table,
+  .payslip-container table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #000000 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  #payslip-preview-content th,
+  #payslip-preview-content td,
+  .payslip-container th,
+  .payslip-container td {
+    border: 1px solid #94a3b8 !important;
+    padding: 6px 10px !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+  }
+
+  #payslip-preview-content h1,
+  .payslip-container h1,
+  #payslip-preview-content h2,
+  .payslip-container h2,
+  #payslip-preview-content p,
+  .payslip-container p,
+  #payslip-preview-content span,
+  .payslip-container span,
+  #payslip-preview-content td,
+  .payslip-container td {
+    color: #000000 !important;
+  }
+}
