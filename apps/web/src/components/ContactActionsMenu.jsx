@@ -43,7 +43,7 @@ export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }
         <DropdownMenuItem onClick={() => window.open(`tel:${contact.phone_number}`)} className="cursor-pointer">
           <Phone className="mr-2 h-4 w-4 text-emerald-500" /> Call {contact.phone_number ? `(${contact.phone_number})` : ''}
         </DropdownMenuItem>
-        {(contact.google_maps_url || contact.physical_address) && (
+        {Boolean(getPastedMapUrl(contact)) && (
           <DropdownMenuItem onClick={handleOpenMaps} className="cursor-pointer">
             <MapPin className="mr-2 h-4 w-4 text-rose-500" /> Open Maps Navigation
           </DropdownMenuItem>
