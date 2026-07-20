@@ -101,12 +101,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     if (!formData.phone_number.trim()) return 'Phone number is required';
     if (!formData.physical_address.trim()) return 'Physical address is required';
     
-    // GSTIN is only required for Clients and Vendors
-    const isGstinRequired = formData.contact_type === 'Client' || formData.contact_type === 'Vendor';
-    if (isGstinRequired && !formData.gstin.trim()) {
-      return 'GSTIN is required for clients and vendors';
-    }
-    
+    // GSTIN is optional for all contacts (Clients, Vendors, Employees, Maintenance)
     if (formData.gstin.trim()) {
       const gstinRegex = /^[0-9A-Z]{15}$/;
       if (!gstinRegex.test(formData.gstin.toUpperCase())) {
@@ -262,7 +257,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
             )}
             
              <div className="space-y-2 col-span-2 sm:col-span-1">
-              <Label>GSTIN {(mainCategory === 'Client' || mainCategory === 'Vendor') ? '*' : '(Optional)'}</Label>
+              <Label>GSTIN (Optional)</Label>
               <Input 
                 value={formData.gstin} 
                 onChange={(e) => setFormData(prev => ({ ...prev, gstin: e.target.value.toUpperCase() }))} 
