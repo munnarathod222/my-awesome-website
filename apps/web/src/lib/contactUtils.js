@@ -1,13 +1,27 @@
 import { toast } from 'sonner';
 
 /**
- * Get the exact pasted map URL from a contact record.
- * Never constructs artificial search queries that fail on Google Maps.
+ * Normalizes any pasted map URL or link string into a valid https:// URL.
+ */
+function normalizeUrl(str) {
+  if (!str || typeof str !== 'string') return '';
+  const trimmed = str.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('maps.app.goo.gl') || trimmed.startsWith('goo.gl') || trimmed.startsWith('google.com') || trimmed.startsWith('www.google.com')) {
+    return `https://${trimmed}`;
+  }
+  return '';
+}
+
+/**
+ * Extract pasted map URL from contact record.
  */
 export function getPastedMapUrl(contact) {
   if (!contact) return '';
 
-  // 1. Explicit map URL fields
   const explicitFields = [
     contact.google_maps_url,
     contact.google_map_link,
@@ -16,32 +30,39 @@ export function getPastedMapUrl(contact) {
     contact.map_url,
     contact.google_map,
     contact.maps_link,
+    contact.location,
     contact.link,
     contact.url
   ];
 
-  for (const field of explicitFields) {
-    if (field && typeof field === 'string' && (field.trim().startsWith('http://') || field.trim().startsWith('https://'))) {
-      return field.trim();
+  for (const val of explicitFields) {
+    if (val && typeof val === 'string' && val.trim()) {
+      const normalized = normalizeUrl(val);
+      if (normalized) return normalized;
     }
   }
 
-  // 2. Scan all string properties on contact for any http/https URL
+  // Scan all fields for any url containing maps or goo.gl
   for (const key of Object.keys(contact)) {
     const val = contact[key];
-    if (typeof val === 'string' && (val.trim().startsWith('http://') || val.trim().startsWith('https://'))) {
-      return val.trim();
+    if (typeof val === 'string' && val.trim()) {
+      if (val.includes('maps') || val.includes('goo.gl')) {
+        const urlMatch = val.match(/(https?:\/\/[^\s]+|maps\.app\.goo\.gl[^\s]+|goo\.gl\/maps[^\s]+|google\.com\/maps[^\s]+)/i);
+        if (urlMatch) {
+          return normalizeUrl(urlMatch[1]);
+        }
+      }
     }
   }
 
-  // 3. Scan physical_address or notes for an embedded URL link
-  const urlRegex = /(https?:\/\/[^\s]+)/i;
+  // Fallback scan on physical_address or notes
+  const generalUrlRegex = /(https?:\/\/[^\s]+)/i;
   if (contact.physical_address) {
-    const match = contact.physical_address.match(urlRegex);
+    const match = contact.physical_address.match(generalUrlRegex);
     if (match) return match[1].trim();
   }
   if (contact.notes) {
-    const match = contact.notes.match(urlRegex);
+    const match = contact.notes.match(generalUrlRegex);
     if (match) return match[1].trim();
   }
 
@@ -49,7 +70,7 @@ export function getPastedMapUrl(contact) {
 }
 
 /**
- * Format complete contact details including exact pasted Google Maps URL.
+ * Format contact details for sharing.
  */
 export function formatContactShareText(contact) {
   if (!contact) return '';
@@ -65,7 +86,7 @@ export function formatContactShareText(contact) {
     contact.truck_brand ? `🔧 *Brands Serviced:* ${contact.truck_brand}` : null,
     ``,
     contact.physical_address && !contact.physical_address.startsWith('http') ? `🏢 *Address:* ${contact.physical_address}` : null,
-    mapsUrl ? `🗺️ *Google Maps Location:* ${mapsUrl}` : null,
+    mapsUrl ? `🗺️ *Location:* ${mapsUrl}` : null,
     ``,
     contact.notes && !contact.notes.startsWith('http') ? `📝 *Notes:* ${contact.notes}` : null,
     ``,
@@ -99,15 +120,20 @@ export async function shareContact(contact) {
   // Fallback to WhatsApp share
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   window.open(whatsappUrl, '_blank');
-  toast.success('Contact details & Google Maps URL shared via WhatsApp');
 }
 
 /**
- * Copy formatted contact details & map URL to clipboard.
+ * Copy contact details formatted text to clipboard.
  */
-export function copyContactDetails(contact) {
+export async function copyContactDetails(contact) {
   if (!contact) return;
-  const text = formatContactShareText(contact);
-  navigator.clipboard.writeText(text);
-  toast.success('Contact details & Google Maps URL copied to clipboard');
+  const shareText = formatContactShareText(contact);
+
+  try {
+    await navigator.clipboard.writeText(shareText);
+    toast.success('Contact details copied to clipboard');
+  } catch (err) {
+    console.error('Clipboard copy failed:', err);
+    toast.error('Failed to copy to clipboard');
+  }
 }
