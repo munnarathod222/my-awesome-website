@@ -29,13 +29,29 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   const totalDeductions = payroll ? ((payroll.gross_salary || 0) - (payroll.net_salary || 0)) : (advanceDeducted + (payroll?.attendance_deduction || 0) + (payroll?.taxes || 0));
   const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
   
+  const getCleanEmployeeId = (emp, pay) => {
+    if (emp?.employee_code) return String(emp.employee_code);
+    if (emp?.emp_id) return String(emp.emp_id);
+    if (emp?.employee_number) return String(emp.employee_number);
+    if (pay?.employee_code) return String(pay.employee_code);
+    
+    const rawId = emp?.id || pay?.employee_id || '';
+    if (!rawId) return '1';
+
+    let hash = 0;
+    for (let i = 0; i < rawId.length; i++) {
+      hash = (hash * 31 + rawId.charCodeAt(i)) % 997;
+    }
+    return String((hash % 100) + 1);
+  };
+
   return (
     <div className="print-content payslip-container bg-white text-slate-950 border border-slate-300 rounded-2xl shadow-md p-8" id="payslip-preview-content" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
       {/* Header Area */}
       <div className="text-center mb-8 pb-6 border-b border-slate-300 text-slate-950" style={{ borderColor: '#e2e8f0' }}>
         <h1 className="text-2xl font-bold tracking-tight uppercase text-slate-950" style={{ color: '#000000' }}>JAI BHAVANI CARGO</h1>
-        <p className="text-xs text-slate-600 mt-1" style={{ color: '#475569' }}>123 Transport Nagar, Logistics Hub | Mumbai, Maharashtra 400001</p>
-        <p className="text-xs text-slate-600" style={{ color: '#475569' }}>GSTIN: 27AADCB2230M1Z2</p>
+        <p className="text-xs text-slate-600 mt-1" style={{ color: '#475569' }}>Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301</p>
+        <p className="text-xs text-slate-600" style={{ color: '#475569' }}>Ph: 7794072244, 98497 35080 | GSTIN: 36AAACJ2230M1Z2</p>
         <h2 className="text-lg font-bold mt-4 uppercase tracking-wider text-slate-900" style={{ color: '#0f172a' }}>{hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP'} FOR {monthName}</h2>
       </div>
 
@@ -46,7 +62,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
             <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Employee Name:</td>
             <td className="w-1/4 p-2.5 border border-slate-300 font-bold text-slate-950" style={{ color: '#000000' }}>{employee?.name || payroll?.employee_name || '-'}</td>
             <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Employee ID:</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 font-mono text-slate-700" style={{ color: '#334155' }}>{(employee?.id || payroll?.employee_id || '').substring(0,8)}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 font-mono text-slate-700 font-bold" style={{ color: '#000000' }}>{getCleanEmployeeId(employee, payroll)}</td>
           </tr>
           <tr>
             <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Designation:</td>

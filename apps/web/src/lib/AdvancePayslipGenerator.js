@@ -20,12 +20,28 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     doc.setFont(undefined, 'bold');
     doc.text('JAI BHAVANI CARGO', 14, 25);
     
+    const getCleanEmpId = (emp, pay) => {
+      if (emp?.employee_code) return String(emp.employee_code);
+      if (emp?.emp_id) return String(emp.emp_id);
+      if (emp?.employee_number) return String(emp.employee_number);
+      if (pay?.employee_code) return String(pay.employee_code);
+      
+      const rawId = emp?.id || pay?.employee_id || '';
+      if (!rawId) return '1';
+
+      let hash = 0;
+      for (let i = 0; i < rawId.length; i++) {
+        hash = (hash * 31 + rawId.charCodeAt(i)) % 997;
+      }
+      return String((hash % 100) + 1);
+    };
+
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(...accentColor);
-    doc.text('123 Transport Nagar, Logistics Hub', 14, 32);
-    doc.text('Mumbai, Maharashtra 400001', 14, 37);
-    doc.text('GSTIN: 27AADCB2230M1Z2', 14, 42);
+    doc.text('Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist.', 14, 32);
+    doc.text('Telangana - 501301 | Ph: 7794072244, 98497 35080', 14, 37);
+    doc.text('GSTIN: 36AAACJ2230M1Z2', 14, 42);
 
     doc.setFontSize(16);
     doc.setTextColor(...primaryColor);
@@ -45,7 +61,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       head: [['Employee Details', '']],
       body: [
         ['Name', employee?.name || payroll?.employee_name || 'N/A'],
-        ['Employee ID', (employee?.id || payroll?.employee_id || '').substring(0, 8)],
+        ['Employee ID', getCleanEmpId(employee, payroll)],
         ['Designation', employee?.position || employee?.employee_type || payroll?.designation || 'N/A'],
         ['Department', 'Operations / Logistics'],
         ['Manager', 'System Administrator']
