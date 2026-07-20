@@ -55,16 +55,12 @@ export default function ClientPortalPage() {
       setClientData(activeClient);
 
       // 2. Fetch Trip Logs for this client
-      let logsFilter = '';
-      if (activeClient) {
-        logsFilter = `client_name = "${activeClient.client_name}" || client = "${activeClient.client_name}" || client_id = "${activeClient.id}"`;
+      const queryOptions = { sort: '-start_date', $autoCancel: false };
+      if (activeClient?.client_name) {
+        queryOptions.filter = `client_name = "${activeClient.client_name}" || client = "${activeClient.client_name}"`;
       }
 
-      const logs = await pb.collection('trip_logs').getFullList({
-        filter: logsFilter,
-        sort: '-start_date',
-        $autoCancel: false
-      }).catch(() => []);
+      const logs = await pb.collection('trip_logs').getFullList(queryOptions).catch(() => []);
 
       setTripLogs(logs);
 

@@ -23,15 +23,16 @@ const HomePage = () => {
   useEffect(() => {
     async function fetchRealStats() {
       try {
+        const queryOpts = { $autoCancel: false };
         const [trucksRes, tripsRes, clientsRes] = await Promise.all([
-          pb.collection('trucks').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0 })),
-          pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Delivered" || trip_status = "Completed"', $autoCancel: false }).catch(() => ({ totalItems: 0 })),
-          pb.collection('clients').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0 }))
+          pb.collection('trucks').getList(1, 1, queryOpts).catch(() => ({ totalItems: 0 })),
+          pb.collection('trip_logs').getList(1, 1, queryOpts).catch(() => ({ totalItems: 0 })),
+          pb.collection('clients').getList(1, 1, queryOpts).catch(() => ({ totalItems: 0 }))
         ]);
 
-        const fleetCount = trucksRes.totalItems || 0;
-        const deliveredCount = tripsRes.totalItems || 0;
-        const clientCount = clientsRes.totalItems || 0;
+        const fleetCount = trucksRes?.totalItems || 0;
+        const deliveredCount = tripsRes?.totalItems || 0;
+        const clientCount = clientsRes?.totalItems || 0;
 
         setRealStats({
           fleetSize: fleetCount > 0 ? fleetCount : 1,
