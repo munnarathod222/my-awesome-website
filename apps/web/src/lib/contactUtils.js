@@ -75,7 +75,13 @@ export function getPastedMapUrl(contact) {
 export function formatContactShareText(contact) {
   if (!contact) return '';
 
-  const mapsUrl = getPastedMapUrl(contact);
+  let mapsUrl = getPastedMapUrl(contact);
+
+  // If no explicit map URL was pasted in record, generate a direct Google Maps search link from company & address
+  if (!mapsUrl && (contact.physical_address || contact.company_name)) {
+    const queryParts = [contact.company_name, contact.physical_address].filter(Boolean).join(', ');
+    mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts)}`;
+  }
 
   const lines = [
     `📍 *${contact.company_name || 'Contact Info'}* (${contact.contact_type || 'Contact'})`,
