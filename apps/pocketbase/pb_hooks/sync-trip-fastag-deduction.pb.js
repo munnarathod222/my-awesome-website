@@ -9,8 +9,8 @@ function deductFastagForTrip(record, eventType) {
       return;
     }
 
-    // 1. Resolve Route and Toll Charge
-    let toll = Number(record.get("fastag_charge")) || Number(record.get("toll_charge")) || Number(record.get("fastag_amount")) || 0;
+    // 1. Resolve Route and Toll Charge (fastag_charge only, NEVER amount_per_trip/revenue)
+    let toll = Number(record.get("fastag_charge")) || Number(record.get("toll_charge")) || 0;
 
     const routeId = record.getString("route_id");
     const routeStr = record.getString("route");
@@ -21,12 +21,12 @@ function deductFastagForTrip(record, eventType) {
     }
     if (!toll && !route && routeStr) {
       try {
-        route = $app.findFirstRecordByFilter("routes", "id = {:r} || route_name = {:r}", { r: routeStr });
+        route = $app.findFirstRecordByFilter("routes", "id = {:r} || route_name = {:r} || route_code = {:r}", { r: routeStr });
       } catch (e) {}
     }
 
     if (!toll && route) {
-      toll = Number(route.get("fastag_charge")) || Number(route.get("amount_per_trip")) || 0;
+      toll = Number(route.get("fastag_charge")) || 0;
     }
 
     // Standard fallback FASTag charge if unspecified
@@ -36,8 +36,17 @@ function deductFastagForTrip(record, eventType) {
 
     // 2. Resolve Truck and Deduct FASTag Balance
     let truck = null;
+    const cleanTargetNo = (truckNo || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     try {
-      truck = $app.findFirstRecordByFilter("trucks", "truck_number = {:t} || id = {:t}", { t: truckNo });
+      const allTrucks = $app.findAllRecords("trucks");
+      for (const t of allTrucks) {
+        const tNo1 = (t.getString("truck_number") || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        const tNo2 = (t.getString("registration_number") || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        if (tNo1 === cleanTargetNo || tNo2 === cleanTargetNo || t.id === truckNo) {
+          truck = t;
+          break;
+        }
+      }
     } catch (e) {}
 
     if (!truck) {
@@ -57,12 +66,12 @@ function deductFastagForTrip(record, eventType) {
       const txCol = $app.findCollectionByNameOrId("fastag_transactions");
       if (txCol) {
         const txRecord = new Record(txCol, {
-          truck_number: truckNo,
+          truck_number: truck.getString("truck_number") || truckNo,
           transaction_type: "Debit",
           amount: toll,
           trip_code: tripId,
           date: new Date().toISOString(),
-          notes: `Automated FASTag toll deduction for Delivered trip ${tripId} (Route: ${routeStr || (route ? route.get("route_name") : "")})`
+          notes: `Automated FASTag toll deduction (₹${toll}) for Delivered trip ${tripId} (Route: ${routeStr || (route ? route.get("route_name") : "")})`
         });
         $app.save(txRecord);
       }

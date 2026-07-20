@@ -7,7 +7,8 @@ export function normalizeTruckNumber(str) {
 
 /**
  * Deducts FASTag toll balance for a delivered or completed trip.
- * Uses normalized string comparison so 'MH 04 JK 1234', 'MH-04-JK-1234', and 'MH04JK1234' match 100%.
+ * Resolves the exact FASTag toll amount (fastag_charge) configured for the route in Route Manager.
+ * Never uses trip revenue or freight rate.
  */
 export async function deductFastagForTrip(tripLog) {
   if (!tripLog) return null;
@@ -36,22 +37,32 @@ export async function deductFastagForTrip(tripLog) {
       return null;
     }
 
-    // 3. Determine toll charge
-    let toll = Number(tripLog.fastag_charge) || Number(tripLog.toll_charge) || Number(tripLog.fastag_amount) || 0;
-    
-    if (!toll && (tripLog.route || tripLog.route_id)) {
-      try {
-        const routes = await pb.collection('routes').getFullList({ $autoCancel: false }).catch(() => []);
-        const matchedRoute = routes.find(r => r.id === tripLog.route_id || r.route_name === tripLog.route);
-        if (matchedRoute) {
-          toll = Number(matchedRoute.fastag_charge) || Number(matchedRoute.amount_per_trip) || 0;
-        }
-      } catch (rErr) {
-        console.warn('[FASTagUtils] Route charge lookup error:', rErr);
+    // 3. Resolve Route and Toll Charge from Route Manager
+    let toll = 0;
+
+    // Check if trip explicitly specifies fastag_charge (must NOT be revenue/amount_per_trip)
+    if (tripLog.fastag_charge !== undefined && tripLog.fastag_charge !== null && Number(tripLog.fastag_charge) > 0) {
+      toll = Number(tripLog.fastag_charge);
+    }
+
+    // Lookup assigned route in 'routes' collection to get route's fastag_charge
+    if (!toll) {
+      const routes = await pb.collection('routes').getFullList({ $autoCancel: false }).catch(() => []);
+      const matchedRoute = routes.find(r => {
+        if (tripLog.route_id && r.id === tripLog.route_id) return true;
+        if (tripLog.route && (
+          r.route_name?.trim().toLowerCase() === tripLog.route.trim().toLowerCase() ||
+          r.route_code?.trim().toLowerCase() === tripLog.route.trim().toLowerCase()
+        )) return true;
+        return false;
+      });
+
+      if (matchedRoute && matchedRoute.fastag_charge) {
+        toll = Number(matchedRoute.fastag_charge) || 0;
       }
     }
 
-    // Standard default fallback toll charge if omitted or 0
+    // Fallback standard FASTag toll if route has no fastag_charge specified (default ₹450 toll)
     if (toll <= 0) {
       toll = 450;
     }
@@ -64,7 +75,7 @@ export async function deductFastagForTrip(tripLog) {
       current_fastag_balance: newBal
     }, { $autoCancel: false });
 
-    console.log(`[FASTagUtils] Successfully deducted ₹${toll} from truck ${matchingTruck.truck_number}. Old: ₹${currentBal}, New: ₹${newBal}`);
+    console.log(`[FASTagUtils] Successfully deducted ₹${toll} FASTag toll for truck ${matchingTruck.truck_number}. Old: ₹${currentBal}, New: ₹${newBal}`);
 
     // 5. Record Debit transaction log
     try {
@@ -74,7 +85,7 @@ export async function deductFastagForTrip(tripLog) {
         amount: toll,
         trip_code: tripLog.trip_id || tripLog.id,
         date: new Date().toISOString(),
-        notes: `FASTag toll deduction for Delivered trip ${tripLog.trip_id || tripLog.id} (${tripLog.route || ''})`
+        notes: `FASTag toll deduction (₹${toll}) for Delivered trip ${tripLog.trip_id || tripLog.id} (Route: ${tripLog.route || ''})`
       }, { $autoCancel: false });
     } catch (txErr) {
       console.warn('[FASTagUtils] Transaction log creation warning:', txErr);
