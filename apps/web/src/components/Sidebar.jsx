@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard,
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
-  TrendingUp, Mail, Trophy, Package
+  TrendingUp, Mail, Trophy, Package, ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
