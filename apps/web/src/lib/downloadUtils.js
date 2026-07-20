@@ -97,11 +97,11 @@ export const generatePDF = (data, filename, options = {}) => {
       
       // Header: Company Name & Type (Dynamic Settings)
       const cName = companySettingsCache?.company_name || inv.company_name || 'JAI BHAVANI CARGO';
-      const cAddress = companySettingsCache?.company_address || inv.company_address || 'Plot No. 12, Transport Nagar, Secunderabad';
-      const cPhone = companySettingsCache?.company_phone || inv.company_phone || '+91 98765 43210';
-      const cEmail = companySettingsCache?.company_email || inv.company_email || 'billing@jbcargo.com';
-      const cContact = `Phone: ${cPhone} | Email: ${cEmail}`;
-      const cGstin = companySettingsCache?.company_gstin;
+      const cAddress = companySettingsCache?.company_address || inv.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
+      const cPhone = companySettingsCache?.company_phone || inv.company_phone || '7794072244';
+      const cEmail = companySettingsCache?.company_email || inv.company_email || 'vinod@jaibhavanicargo.com';
+      const cContact = [cPhone ? `Phone: ${cPhone}` : null, cEmail ? `Email: ${cEmail}` : null].filter(Boolean).join(' | ');
+      const cGstin = companySettingsCache?.company_gstin || '36AAACJ2230M1Z2';
 
       if (cachedLogoBase64) {
         doc.addImage(cachedLogoBase64, 'PNG', 14, 10, 24, 12);

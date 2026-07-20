@@ -1,24 +1,45 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import pb from './pocketbaseClient.js';
+
+const formatAmountToWords = (amount) => {
+  const value = Math.floor(amount);
+  if (value === 0) return 'Zero Rupees Only';
+  const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 
+                 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
+  function convert(n) {
+    if (n < 20) return units[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + units[n % 10] : '');
+    if (n < 1000) return units[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convert(n % 100) : '');
+    if (n < 100000) return convert(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + convert(n % 1000) : '');
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + convert(n % 100000) : '');
+    return convert(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + convert(n % 10000000) : '');
+  }
+  return convert(value) + ' Rupees Only';
+};
 
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = []) => {
   try {
+    let companySettings = null;
+    try {
+      companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
+    } catch(e) {}
+
+    const compName = companySettings?.company_name || 'JAI BHAVANI CARGO';
+    const compAddress = companySettings?.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
+    const compPhone = companySettings?.company_phone || '7794072244';
+    const compEmail = companySettings?.company_email || 'vinod@jaibhavanicargo.com';
+    const compGstin = companySettings?.company_gstin || '36AAACJ2230M1Z2';
+
     const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
     const monthName = payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current';
     const hasAdvance = advances.length > 0;
-    const primaryColor = [55, 65, 81]; // Slate 700
-    const accentColor = [100, 116, 139]; // Slate 500
-    const successColor = [16, 185, 129]; // Emerald 500
-    const dangerColor = [239, 68, 68]; // Red 500
     
-    // --- PAGE 1: Header & Employee Info ---
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text('JAI BHAVANI CARGO', 14, 25);
+    const primaryColor = [15, 23, 42]; // Slate 900
+    const accentColor = [71, 85, 105]; // Slate 600
     
     const getCleanEmpId = (emp, pay) => {
       if (emp?.employee_code) return String(emp.employee_code);
@@ -36,280 +57,219 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       return String((hash % 100) + 1);
     };
 
-    doc.setFontSize(10);
+    // 1. Company Header
+    doc.setFontSize(18);
+    doc.setTextColor(...primaryColor);
+    doc.setFont(undefined, 'bold');
+    doc.text(compName.toUpperCase(), 105, 18, { align: 'center' });
+    
+    doc.setFontSize(8.5);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(...accentColor);
-    doc.text('Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist.', 14, 32);
-    doc.text('Telangana - 501301 | Ph: 7794072244, 98497 35080', 14, 37);
-    doc.text('GSTIN: 36AAACJ2230M1Z2', 14, 42);
+    doc.text(compAddress, 105, 23, { align: 'center' });
 
-    doc.setFontSize(16);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text(hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP', 196, 25, { align: 'right' });
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text(`Issue Date: ${format(new Date(), 'dd MMM yyyy')}`, 196, 32, { align: 'right' });
-    doc.text(`Doc Ref: JB-PAY-${payroll?.id?.substring(0,6) || 'DRFT'}`, 196, 37, { align: 'right' });
+    const contactLine = [
+      compPhone ? `Ph: ${compPhone}` : null,
+      compEmail ? `Email: ${compEmail}` : null,
+      compGstin ? `GSTIN: ${compGstin}` : null
+    ].filter(Boolean).join(' | ');
 
-    doc.setDrawColor(226, 232, 240); // Slate 200
-    doc.line(14, 48, 196, 48);
-
-    // Employee Info Section
-    autoTable(doc, {
-      startY: 55,
-      head: [['Employee Details', '']],
-      body: [
-        ['Name', employee?.name || payroll?.employee_name || 'N/A'],
-        ['Employee ID', getCleanEmpId(employee, payroll)],
-        ['Designation', employee?.position || employee?.employee_type || payroll?.designation || 'N/A'],
-        ['Department', 'Operations / Logistics'],
-        ['Manager', 'System Administrator']
-      ],
-      theme: 'plain',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold' },
-      styles: { cellPadding: 3, fontSize: 10 },
-      columnStyles: { 0: { fontStyle: 'bold', textColor: accentColor, cellWidth: 50 }, 1: { textColor: primaryColor } }
-    });
-
-    let currentY = doc.lastAutoTable.finalY + 10;
-
-    // Advance Details Box (if applicable)
-    if (hasAdvance) {
-      doc.setDrawColor(245, 158, 11); // Amber
-      doc.setFillColor(254, 252, 232); // Amber 50
-      doc.roundedRect(14, currentY, 182, 45, 3, 3, 'FD');
-      
-      doc.setFontSize(12);
-      doc.setTextColor(180, 83, 9); // Amber 600
-      doc.setFont(undefined, 'bold');
-      doc.text('Advance Payment Record', 20, currentY + 10);
-      
-      const totalAdvance = advances.reduce((sum, a) => sum + (a.amount || 0), 0);
-      doc.setFontSize(20);
-      doc.setTextColor(30, 41, 59);
-      doc.text(`Rs. ${totalAdvance.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 20, currentY + 22);
-      
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(...accentColor);
-      doc.text(`Count: ${advances.length} advance(s) recorded in this period.`, 20, currentY + 30);
-      
-      // Advance specifics
-      const latestAdv = advances[0];
-      doc.text(`Latest Reason: ${latestAdv.reason || 'N/A'}`, 100, currentY + 10);
-      doc.text(`Latest Date: ${latestAdv.date ? format(new Date(latestAdv.date), 'dd MMM yyyy') : 'N/A'}`, 100, currentY + 18);
-      doc.text(`Status: ${latestAdv.status}`, 100, currentY + 26);
-      
-      currentY += 55;
+    if (contactLine) {
+      doc.text(contactLine, 105, 27.5, { align: 'center' });
     }
 
-    // --- PAGE 2: Payroll Period & Attendance ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text('Payroll Period & Attendance', 14, 25);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(14, 30, 196, 30);
-
-    autoTable(doc, {
-      startY: 35,
-      head: [['Period Details', '']],
-      body: [
-        ['Month / Year', monthName],
-        ['Payment Status', (payroll?.payment_status || 'Pending').toUpperCase()],
-        ['Payment Mode', payroll?.payment_mode || 'Bank Transfer'],
-        ['Payment Date', payroll?.payment_date ? format(new Date(payroll?.payment_date), 'dd MMM yyyy') : 'Pending']
-      ],
-      theme: 'plain',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold' },
-      styles: { cellPadding: 3, fontSize: 10 },
-      columnStyles: { 0: { fontStyle: 'bold', textColor: accentColor, cellWidth: 50 }, 1: { textColor: primaryColor } },
-      margin: { right: 110 }
-    });
-
-    autoTable(doc, {
-      startY: 35,
-      head: [['Attendance Summary', '']],
-      body: [
-        ['Total Working Days', '30'],
-        ['Days Present', `${payroll?.attendance_days || 0}`],
-        ['Days Absent', `${30 - (payroll?.attendance_days || 0)}`],
-        ['Attendance %', `${((payroll?.attendance_days || 0) / 30 * 100).toFixed(1)}%`]
-      ],
-      theme: 'plain',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold' },
-      styles: { cellPadding: 3, fontSize: 10 },
-      columnStyles: { 0: { fontStyle: 'bold', textColor: accentColor, cellWidth: 50 }, 1: { textColor: primaryColor } },
-      margin: { left: 110 }
-    });
-
-    currentY = Math.max(doc.lastAutoTable.finalY, 80) + 15;
-
-    // --- PAGE 3: Salary Breakdown ---
-    doc.addPage();
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text('Salary Breakdown', 14, 25);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(14, 30, 196, 30);
-
-    // Earnings
-    const earningsBody = [
-      ['Basic Salary', (payroll?.total_salary || payroll?.base_salary || 0).toLocaleString('en-IN', {minimumFractionDigits:2})]
-    ];
-    if (payroll?.allowances_breakdown) {
-      Object.entries(payroll.allowances_breakdown).forEach(([k, v]) => {
-        if (Number(v) > 0) earningsBody.push([k.replace(/_/g, ' ').toUpperCase(), Number(v).toLocaleString('en-IN', {minimumFractionDigits:2})]);
-      });
-    }
-    if (payroll?.trip_bonus > 0) earningsBody.push(['Trip Bonus', payroll.trip_bonus.toLocaleString('en-IN', {minimumFractionDigits:2})]);
-    
-    earningsBody.push(['Total Gross Earnings', (payroll?.gross_salary || 0).toLocaleString('en-IN', {minimumFractionDigits:2})]);
-
-    autoTable(doc, {
-      startY: 35,
-      head: [['Earnings Description', 'Amount (Rs.)']],
-      body: earningsBody,
-      theme: 'grid',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor },
-      footStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold' },
-      styles: { fontSize: 9 },
-      columnStyles: { 1: { halign: 'right' } },
-      didParseCell: (data) => {
-        if (data.row.index === earningsBody.length - 1) {
-          data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.fillColor = [248, 250, 252];
-        }
-      }
-    });
-
-    const earningsY = doc.lastAutoTable.finalY + 10;
-
-    // Deductions
-    const deductionsBody = [];
-    if (payroll?.attendance_deduction > 0) deductionsBody.push(['Absent Deduction', payroll.attendance_deduction.toLocaleString('en-IN', {minimumFractionDigits:2})]);
-    if (payroll?.taxes > 0) deductionsBody.push(['Taxes / TDS', payroll.taxes.toLocaleString('en-IN', {minimumFractionDigits:2})]);
-    
-    if (payroll?.deductions_breakdown) {
-      Object.entries(payroll.deductions_breakdown).forEach(([k, v]) => {
-        if (Number(v) > 0 && k !== 'advance_deduction') {
-          deductionsBody.push([k.replace(/_/g, ' ').toUpperCase(), Number(v).toLocaleString('en-IN', {minimumFractionDigits:2})]);
-        }
-      });
-    }
-    
-    const advanceDeducted = advances.filter(a => a.status === 'Deducted').reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
-    if (advanceDeducted > 0) {
-      deductionsBody.push(['Advance Recovery', advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})]);
-    }
-    
-    if (deductionsBody.length === 0) deductionsBody.push(['No Deductions', '0.00']);
-    
-    const totalDeds = ((payroll?.gross_salary || 0) - (payroll?.net_salary || 0));
-    deductionsBody.push(['Total Deductions', totalDeds.toLocaleString('en-IN', {minimumFractionDigits:2})]);
-
-    autoTable(doc, {
-      startY: earningsY,
-      head: [['Deductions Description', 'Amount (Rs.)']],
-      body: deductionsBody,
-      theme: 'grid',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor },
-      styles: { fontSize: 9 },
-      columnStyles: { 1: { halign: 'right' } },
-      didParseCell: (data) => {
-        if (data.cell.text[0] === 'Advance Recovery') {
-          data.cell.styles.textColor = dangerColor;
-          data.cell.styles.fontStyle = 'bold';
-        }
-        if (data.row.index === deductionsBody.length - 1) {
-          data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.fillColor = [254, 242, 242]; // Red 50
-          data.cell.styles.textColor = dangerColor;
-        }
-      }
-    });
-
-    // --- PAGE 4: Summary & Signatures ---
-    doc.addPage();
-    
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text('Salary Summary', 14, 25);
-    doc.setDrawColor(226, 232, 240);
-    doc.line(14, 30, 196, 30);
-
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(14, 40, 182, 40, 3, 3, 'F');
-    
     doc.setFontSize(11);
-    doc.setTextColor(...accentColor);
-    doc.text('Gross Earnings:', 20, 52);
-    doc.text('Total Deductions:', 20, 62);
-    
-    doc.setFont(undefined, 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text(`Rs. ${(payroll?.gross_salary || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}`, 80, 52);
-    doc.setTextColor(...dangerColor);
-    doc.text(`- Rs. ${totalDeds.toLocaleString('en-IN', {minimumFractionDigits:2})}`, 80, 62);
-    
+    doc.setFont(undefined, 'bold');
+    doc.text(`${hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP'} FOR ${monthName.toUpperCase()}`, 105, 34, { align: 'center' });
+
+    doc.setDrawColor(203, 213, 225); // Slate 300
+    doc.line(14, 37, 196, 37);
+
+    // 2. Employee Details Grid
+    const empName = employee?.name || payroll?.employee_name || '-';
+    const empId = getCleanEmpId(employee, payroll);
+    const designation = employee?.position || employee?.employee_type || payroll?.designation || '-';
+    const daysPresent = `${payroll ? `${payroll.attendance_days || 0} days` : '30 days'} / ${monthName}`;
+    const paymentStatus = (payroll?.payment_status || payroll?.status || 'Pending').toUpperCase();
+    const paymentModeDate = `${payroll?.payment_mode || 'Bank Transfer'} / ${payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}`;
+
+    autoTable(doc, {
+      startY: 40,
+      head: [],
+      body: [
+        [
+          { content: 'Employee Name:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: empName, styles: { fontStyle: 'bold' } },
+          { content: 'Employee ID:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: empId, styles: { fontStyle: 'bold' } }
+        ],
+        [
+          { content: 'Designation:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: designation },
+          { content: 'Days Present / Period:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: daysPresent }
+        ],
+        [
+          { content: 'Payment Status:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: paymentStatus, styles: { fontStyle: 'bold' } },
+          { content: 'Payment Mode / Date:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: paymentModeDate }
+        ]
+      ],
+      theme: 'grid',
+      styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [15, 23, 42], borderColor: [203, 213, 225] },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 53 },
+        2: { cellWidth: 42 },
+        3: { cellWidth: 47 }
+      }
+    });
+
+    let currentY = doc.lastAutoTable.finalY + 5;
+
+    // 3. Advance Details Box (if advances exist)
+    if (hasAdvance) {
+      doc.setFillColor(254, 243, 199); // Amber 100
+      doc.rect(14, currentY, 182, 6, 'F');
+      doc.setFontSize(8.5);
+      doc.setTextColor(69, 26, 3); // Amber 950
+      doc.setFont(undefined, 'bold');
+      doc.text('Advance Payment Record', 17, currentY + 4.2);
+
+      const advRows = advances.map(a => [
+        a.date ? format(new Date(a.date), 'dd MMM yyyy') : '-',
+        a.reason || 'Advance',
+        `Rs. ${(a.amount || 0).toLocaleString('en-IN')}`
+      ]);
+
+      const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
+      advRows.push([
+        { content: 'Total Advance Balance', colSpan: 2, styles: { fontStyle: 'bold' } },
+        { content: `Rs. ${totalAdv.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', halign: 'right' } }
+      ]);
+
+      autoTable(doc, {
+        startY: currentY + 6,
+        head: [['Date', 'Reason', 'Amount']],
+        body: advRows,
+        theme: 'grid',
+        headStyles: { fillColor: [255, 251, 235], textColor: [69, 26, 3], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 8, cellPadding: 2, borderColor: [252, 211, 77] },
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 107 },
+          2: { cellWidth: 40, halign: 'right' }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 5;
+    }
+
+    // 4. Financial Table (Earnings vs Deductions)
+    const basicSalary = payroll?.total_salary || payroll?.base_salary || employee?.salary_amount || employee?.base_salary || 0;
+    const tripBonus = payroll?.trip_bonus || 0;
+    const grossSalary = payroll?.gross_salary || (basicSalary + tripBonus);
+
+    const advanceDeducted = (!payroll ? advances : advances.filter(a => a.status === 'Deducted')).reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
+    const absentDeduction = payroll?.attendance_deduction || 0;
+    const taxes = payroll?.taxes || 0;
+    const totalDeductions = payroll ? ((payroll.gross_salary || 0) - (payroll.net_salary || 0)) : (advanceDeducted + absentDeduction + taxes);
+    const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
+
+    let otherAllowancesStr = 'Other Allowances';
+    let otherAllowancesAmt = 0;
+    if (payroll?.allowances_breakdown) {
+      const entries = Object.entries(payroll.allowances_breakdown).filter(([_, v]) => Number(v) > 0);
+      if (entries.length > 0) {
+        otherAllowancesStr = entries.map(([k]) => k.replace(/_/g, ' ')).join(', ');
+        otherAllowancesAmt = entries.reduce((s, [_, v]) => s + Number(v), 0);
+      }
+    }
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Earnings Description', 'Amount (Rs.)', 'Deductions Description', 'Amount (Rs.)']],
+      body: [
+        ['Basic Salary', basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Absent Deduction', absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})],
+        ['Trip Bonus / Allowances', tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Advance Recovery', advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})],
+        [otherAllowancesStr, otherAllowancesAmt.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Taxes (TDS / Other)', taxes.toLocaleString('en-IN', {minimumFractionDigits:2})],
+        [
+          { content: 'Total Gross Earnings', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: 'Total Deductions', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
+        ]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold', fontSize: 8.5 },
+      styles: { fontSize: 8.5, cellPadding: 2.5, borderColor: [203, 213, 225], textColor: [15, 23, 42] },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 41, halign: 'right' },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 41, halign: 'right' }
+      }
+    });
+
+    currentY = doc.lastAutoTable.finalY + 5;
+
+    // 5. Net Salary Payable Box
+    doc.setFillColor(248, 250, 252);
     doc.setDrawColor(203, 213, 225);
-    doc.line(110, 45, 110, 75);
+    doc.roundedRect(14, currentY, 182, 16, 2, 2, 'FD');
+
+    doc.setFontSize(8);
+    doc.setTextColor(...accentColor);
+    doc.setFont(undefined, 'bold');
+    doc.text('NET SALARY PAYABLE (NET PAY)', 18, currentY + 6);
+    doc.setFont(undefined, 'normal');
+    doc.text('Gross Earnings - Total Deductions', 18, 10.5 + currentY);
 
     doc.setFontSize(14);
-    doc.setTextColor(...accentColor);
-    doc.text('NET PAYABLE', 120, 55);
-    doc.setFontSize(22);
-    doc.setTextColor(...successColor);
-    doc.text(`Rs. ${(payroll?.net_salary || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}`, 120, 68);
+    doc.setTextColor(...primaryColor);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Rs. ${netSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}`, 190, currentY + 8, { align: 'right' });
 
-    // Recovery Schedule mock for context
-    if (advanceDeducted > 0) {
-      doc.setFontSize(12);
-      doc.setTextColor(...primaryColor);
-      doc.text('Advance Recovery Schedule', 14, 100);
-      
-      autoTable(doc, {
-        startY: 105,
-        head: [['Month', 'Deducted Amount', 'Status']],
-        body: [
-          [monthName, `Rs. ${advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})}`, 'Deducted Current']
-        ],
-        theme: 'plain',
-        headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold' },
-        styles: { fontSize: 9 }
-      });
-    }
+    doc.setFontSize(7.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Net Pay in Words: ${formatAmountToWords(netSalary)}`, 18, currentY + 14.5);
 
-    // Signatures
-    const sigY = 220;
+    currentY += 24;
+
+    // 6. Signatures Block
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineDashPattern([2, 2], 0);
+    doc.line(14, currentY, 196, currentY);
+    doc.setLineDashPattern([], 0);
+
+    const sigY = currentY + 14;
     doc.setDrawColor(148, 163, 184);
-    doc.line(20, sigY, 70, sigY);
-    doc.setFontSize(10);
+    doc.line(25, sigY, 75, sigY);
+    doc.setFontSize(8.5);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...primaryColor);
+    doc.text('Authorized Signatory', 50, sigY + 5, { align: 'center' });
+    doc.setFontSize(7.5);
+    doc.setFont(undefined, 'normal');
     doc.setTextColor(...accentColor);
-    doc.text('Authorized Signatory', 45, sigY + 6, { align: 'center' });
-    
-    doc.line(130, sigY, 180, sigY);
-    doc.text('Employee Signature', 155, sigY + 6, { align: 'center' });
+    doc.text(compName, 50, sigY + 9, { align: 'center' });
 
-    // Footer on all pages
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text(
-        `Generated by Jai Bhavani Cargo System • Page ${i} of ${pageCount} • This is a computer generated document.`,
-        105, 285, { align: 'center' }
-      );
-    }
+    doc.line(135, sigY, 185, sigY);
+    doc.setFontSize(8.5);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...primaryColor);
+    doc.text('Employee Signature', 160, sigY + 5, { align: 'center' });
+    doc.setFontSize(7.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...accentColor);
+    doc.text(empName, 160, sigY + 9, { align: 'center' });
 
     return doc.output('blob');
   } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate Advance Payslip PDF');
+    console.error('Error generating advance payslip PDF:', error);
+    throw error;
   }
 };

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import pb from '@/lib/pocketbaseClient.js';
 
 const formatAmountToWords = (amount) => {
   const value = Math.floor(amount);
@@ -20,6 +21,14 @@ const formatAmountToWords = (amount) => {
 };
 
 export default function EnhancedPayslipPreview({ payroll, employee, advances = [] }) {
+  const [companySettings, setCompanySettings] = useState(null);
+
+  useEffect(() => {
+    pb.collection('company_settings').getOne('companysettings', { $autoCancel: false })
+      .then(setCompanySettings)
+      .catch(() => {});
+  }, []);
+
   const hasAdvance = advances.length > 0;
   const advanceDeducted = (!payroll ? advances : advances.filter(a => a.status === 'Deducted')).reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
   const monthName = payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current';
@@ -45,13 +54,25 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
     return String((hash % 100) + 1);
   };
 
+  const compName = companySettings?.company_name || 'JAI BHAVANI CARGO';
+  const compAddress = companySettings?.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
+  const compPhone = companySettings?.company_phone || '7794072244';
+  const compEmail = companySettings?.company_email || 'vinod@jaibhavanicargo.com';
+  const compGstin = companySettings?.company_gstin || '36AAACJ2230M1Z2';
+
+  const contactLine = [
+    compPhone ? `Ph: ${compPhone}` : null,
+    compEmail ? `Email: ${compEmail}` : null,
+    compGstin ? `GSTIN: ${compGstin}` : null
+  ].filter(Boolean).join(' | ');
+
   return (
     <div className="print-content payslip-container bg-white text-slate-950 border border-slate-300 rounded-2xl shadow-md p-8" id="payslip-preview-content" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
       {/* Header Area */}
       <div className="text-center mb-8 pb-6 border-b border-slate-300 text-slate-950" style={{ borderColor: '#e2e8f0' }}>
-        <h1 className="text-2xl font-bold tracking-tight uppercase text-slate-950" style={{ color: '#000000' }}>JAI BHAVANI CARGO</h1>
-        <p className="text-xs text-slate-600 mt-1" style={{ color: '#475569' }}>Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301</p>
-        <p className="text-xs text-slate-600" style={{ color: '#475569' }}>Ph: 7794072244, 98497 35080 | GSTIN: 36AAACJ2230M1Z2</p>
+        <h1 className="text-2xl font-bold tracking-tight uppercase text-slate-950" style={{ color: '#000000' }}>{compName}</h1>
+        <p className="text-xs text-slate-600 mt-1" style={{ color: '#475569' }}>{compAddress}</p>
+        {contactLine && <p className="text-xs text-slate-600" style={{ color: '#475569' }}>{contactLine}</p>}
         <h2 className="text-lg font-bold mt-4 uppercase tracking-wider text-slate-900" style={{ color: '#0f172a' }}>{hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP'} FOR {monthName}</h2>
       </div>
 
@@ -176,18 +197,16 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       {/* Signatures */}
       <div className="grid grid-cols-2 gap-8 pt-12 mt-8 text-center text-xs border-t border-dashed border-slate-300" style={{ borderColor: '#cbd5e1' }}>
         <div>
-          <div className="h-12 border-b border-slate-400 mb-2 w-3/4 mx-auto" style={{ borderColor: '#94a3b8' }}></div>
-          <p className="font-semibold text-slate-700" style={{ color: '#334155' }}>EMPLOYEE SIGNATURE</p>
+          <div className="border-b border-slate-400 mb-2 h-10 border-dashed"></div>
+          <p className="font-semibold text-slate-800">Authorized Signatory</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{compName}</p>
         </div>
         <div>
-          <div className="h-12 border-b border-slate-400 mb-2 w-3/4 mx-auto" style={{ borderColor: '#94a3b8' }}></div>
-          <p className="font-semibold text-slate-700" style={{ color: '#334155' }}>AUTHORIZED SIGNATORY</p>
+          <div className="border-b border-slate-400 mb-2 h-10 border-dashed"></div>
+          <p className="font-semibold text-slate-800">Employee Signature</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">{employee?.name || payroll?.employee_name || 'Employee'}</p>
         </div>
       </div>
-      
-      <p className="text-[10px] text-center text-slate-500 mt-6" style={{ color: '#64748b' }}>
-        This is a computer-generated document and does not require a physical signature if distributed electronically.
-      </p>
     </div>
   );
 }
