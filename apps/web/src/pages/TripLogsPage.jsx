@@ -332,6 +332,10 @@ const TripLogsPage = () => {
 
       for (const id of selectedIds) {
         await pb.collection('trip_logs').update(id, updates, { $autoCancel: false });
+        if (bulkTripStatus === 'Delivered' || bulkTripStatus === 'Completed') {
+          const log = tripLogs.find(l => l.id === id);
+          if (log) await deductFastagForTrip(log);
+        }
       }
       
       toast.success(`${selectedIds.length} trip(s) updated successfully`);
@@ -885,7 +889,10 @@ const TripLogsPage = () => {
                                   if (!newStatus || newStatus === log.trip_status) return;
                                   try {
                                     await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
-                                    toast.success(`Trip status updated to ${newStatus}`);
+                                    if (newStatus === 'Delivered' || newStatus === 'Completed') {
+                                      await deductFastagForTrip(log);
+                                    }
+                                    toast.success(`Trip status updated to ${newStatus} & FASTag balance adjusted`);
                                     if (newStatus === 'Delivered') {
                                       setPaymentRequestTrip(log);
                                     }
@@ -1013,7 +1020,10 @@ const TripLogsPage = () => {
                               if (!newStatus || newStatus === log.trip_status) return;
                               try {
                                 await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
-                                toast.success(`Trip status updated to ${newStatus}`);
+                                if (newStatus === 'Delivered' || newStatus === 'Completed') {
+                                  await deductFastagForTrip(log);
+                                }
+                                toast.success(`Trip status updated to ${newStatus} & FASTag balance adjusted`);
                                 if (newStatus === 'Delivered') {
                                   setPaymentRequestTrip(log);
                                 }
