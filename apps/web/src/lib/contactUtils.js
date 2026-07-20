@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 export function formatContactShareText(contact) {
   if (!contact) return '';
 
-  const mapsUrl = contact.google_maps_url 
-    ? contact.google_maps_url 
-    : (contact.physical_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.physical_address)}` : '');
+  // Extract explicit Google Maps URL or fallback to search link from physical address
+  const explicitMapsUrl = contact.google_maps_url || contact.google_map_link || contact.maps_url || contact.location_url || '';
+  const searchMapsUrl = contact.physical_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.physical_address)}` : '';
+  const finalMapsUrl = explicitMapsUrl || searchMapsUrl;
 
   const lines = [
     `📍 *${contact.company_name || 'Contact Info'}* (${contact.contact_type || 'Contact'})`,
@@ -19,7 +20,7 @@ export function formatContactShareText(contact) {
     contact.truck_brand ? `🔧 *Brands Serviced:* ${contact.truck_brand}` : null,
     ``,
     contact.physical_address ? `🏢 *Address:* ${contact.physical_address}` : null,
-    mapsUrl ? `🗺️ *Google Maps Navigation:* ${mapsUrl}` : null,
+    finalMapsUrl ? `🗺️ *Google Maps Navigation:* ${finalMapsUrl}` : null,
     ``,
     contact.notes ? `📝 *Notes:* ${contact.notes}` : null,
     ``,
@@ -53,7 +54,7 @@ export async function shareContact(contact) {
   // Fallback to WhatsApp share
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   window.open(whatsappUrl, '_blank');
-  toast.success('Contact info shared via WhatsApp');
+  toast.success('Contact info & Google Maps URL shared via WhatsApp');
 }
 
 /**
@@ -63,5 +64,5 @@ export function copyContactDetails(contact) {
   if (!contact) return;
   const text = formatContactShareText(contact);
   navigator.clipboard.writeText(text);
-  toast.success('Complete contact details & navigation link copied to clipboard');
+  toast.success('Complete contact details & Google Maps URL copied to clipboard');
 }
