@@ -127,6 +127,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Directory',
       items: [
+        { icon: ShieldCheck, label: 'Client Portal', path: '/client-portal', roles: ['super_admin','admin','manager','dispatcher','client'] },
         { icon: Contact2, label: 'Contacts', path: '/contacts', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Users,    label: 'Clients',  path: '/clients',  roles: ['super_admin','admin','manager','dispatcher'] },
       ]

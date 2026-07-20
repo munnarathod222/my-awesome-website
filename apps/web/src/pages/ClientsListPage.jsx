@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store } from 'lucide-react';
+import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store, ShieldCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
+import CreateClientUserModal from '@/components/CreateClientUserModal.jsx';
 
 export default function ClientsListPage() {
   const [clients, setClients] = useState([]);
@@ -23,6 +24,7 @@ export default function ClientsListPage() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   
   const [pagination, setPagination] = useState({ page: 1, perPage: 25, total: 0 });
+  const [portalModalClient, setPortalModalClient] = useState(null);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -309,9 +311,12 @@ export default function ClientsListPage() {
                           <DropdownMenuContent align="end" className="w-[160px]">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild className="cursor-pointer">
+                             <DropdownMenuItem onClick={() => setPortalModalClient(client)} className="cursor-pointer text-primary font-semibold">
+                              <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Setup Portal Login
+                             </DropdownMenuItem>
+                             <DropdownMenuItem asChild className="cursor-pointer">
                               <Link to={`/client/${client.id}`}><Eye className="h-4 w-4 mr-2" /> View Details</Link>
-                            </DropdownMenuItem>
+                             </DropdownMenuItem>
                             <DropdownMenuItem asChild className="cursor-pointer">
                               <Link to={`/clients/${client.id}/edit`}><Edit2 className="h-4 w-4 mr-2" /> Edit Client</Link>
                             </DropdownMenuItem>
@@ -443,6 +448,15 @@ export default function ClientsListPage() {
           )}
         </Card>
       </main>
+
+      {portalModalClient && (
+        <CreateClientUserModal
+          isOpen={!!portalModalClient}
+          onClose={() => setPortalModalClient(null)}
+          client={portalModalClient}
+          onSuccess={fetchClients}
+        />
+      )}
     </div>
   );
 }

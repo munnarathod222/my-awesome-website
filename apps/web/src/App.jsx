@@ -53,6 +53,7 @@ import ClientDashboardPage from './pages/ClientDashboardPage.jsx';
 import ClientPaymentAnalysisPage from './pages/ClientPaymentAnalysisPage.jsx';
 
 // Features
+import ClientPortalPage from './pages/ClientPortalPage.jsx';
 import FASTagManagerPage from './pages/FASTagManagerPage.jsx';
 import BulkUploadPage from './pages/BulkUploadPage.jsx';
 import PayrollPage from './pages/PayrollPage.jsx';
@@ -217,6 +218,7 @@ function App() {
                   <Route path="/inventory/reports" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><InventoryReportsPage /></ProtectedRoute>} />
                   
                   {/* Client Management System */}
+                  <Route path="/client-portal" element={<ProtectedRoute><ClientPortalPage /></ProtectedRoute>} />
                   <Route path="/clients" element={<ProtectedRoute><ClientsListPage /></ProtectedRoute>} />
                   <Route path="/clients/new" element={<ProtectedRoute><ClientFormPage /></ProtectedRoute>} />
                   <Route path="/clients/dashboard" element={<ProtectedRoute><ClientDashboardPage /></ProtectedRoute>} />
