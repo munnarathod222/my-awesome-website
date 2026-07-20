@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ShieldCheck, Clock, DollarSign, Headphones as HeadphonesIcon, ArrowRight,
   Sparkles, ChevronLeft, ChevronRight, MessageSquare, Quote, Star, Truck,
-  Building2, Activity, MapPin, CheckCircle2, Shield
+  Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard
 } from 'lucide-react';
 import QuoteCalculator from '@/components/QuoteCalculator.jsx';
 import FAQAccordion from '@/components/FAQAccordion.jsx';
