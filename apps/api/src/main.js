@@ -119,7 +119,7 @@ const pruneOldSupabaseBackups = async () => {
 const downloadDatabaseFromSupabase = async (dbFilePath) => {
   try {
     logger.info(`📥 Downloading database backup from Supabase Storage...`);
-    const downloadRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/data.db`, {
+    let downloadRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/data.db`, {
       method: 'GET',
       headers: {
         'apikey': supabaseKey,
@@ -127,8 +127,29 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       }
     });
 
+    let buffer;
     if (downloadRes.ok) {
-      const buffer = await downloadRes.arrayBuffer();
+      buffer = await downloadRes.arrayBuffer();
+    }
+
+    // Check if the downloaded database is smaller than 1.5MB (indicating a blank/wiped database)
+    // If so, fall back to the full 18th July snapshot (history/data_2026-07-18.db)!
+    if (!buffer || buffer.byteLength < 1500000) {
+      logger.warn(`⚠️ Root data.db in Supabase is small/blank (${buffer ? buffer.byteLength : 0} bytes). Hydrating from 18th July snapshot (history/data_2026-07-18.db)...`);
+      const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_2026-07-18.db`, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      });
+      if (fallbackRes.ok) {
+        buffer = await fallbackRes.arrayBuffer();
+        logger.info(`✅ Successfully loaded 18th July database snapshot (${buffer.byteLength} bytes)!`);
+      }
+    }
+
+    if (buffer && buffer.byteLength > 0) {
       // Ensure target directory exists
       fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
 
@@ -147,10 +168,10 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       }
 
       fs.writeFileSync(dbFilePath, Buffer.from(buffer));
-      logger.info(`✅ Successfully restored database from Supabase Storage!`);
+      logger.info(`✅ Successfully restored database from Supabase Storage (${buffer.byteLength} bytes)!`);
       return true;
     } else {
-      logger.warn(`⚠️ No pre-existing database backup found in Supabase Storage (${downloadRes.status}). Starting fresh.`);
+      logger.warn(`⚠️ No pre-existing database backup found in Supabase Storage. Starting fresh.`);
       return false;
     }
   } catch (err) {
