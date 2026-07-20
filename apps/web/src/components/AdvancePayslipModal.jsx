@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Download, Printer, Mail, Loader2, History, SplitSquareHorizontal, FileSpreadsheet } from 'lucide-react';
+import { FileText, Download, Printer, Mail, Loader2, History, SplitSquareHorizontal, FileSpreadsheet, Share2, MessageSquare } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { generateAdvancePayslipPDF } from '@/lib/AdvancePayslipGenerator.js';
@@ -96,6 +96,85 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleWhatsAppShare = async () => {
+    if (!employee && !payroll) {
+      toast.error('Payslip data not ready');
+      return;
+    }
+
+    const empName = employee?.name || payroll?.expand?.employee_id_relation?.name || 'Employee';
+    const empPhone = employee?.phone_number || employee?.phone || payroll?.expand?.employee_id_relation?.phone_number || '';
+    const empId = employee?.id || payroll?.employee_id || 'N/A';
+    const month = payroll?.payroll_month ? `${payroll.payroll_month}/${payroll.payroll_year}` : 'Current Month';
+    const gross = payroll?.gross_salary || payroll?.base_salary || 0;
+    const net = payroll?.net_salary || 0;
+    const totalAdv = advances ? advances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0) : 0;
+    const status = payroll?.status || 'Pending';
+
+    let shareText = `📄 *JAI BHAVANI CARGO - ADVANCE & PAYSLIP STATEMENT*\n\n`;
+    shareText += `👤 *Employee:* ${empName}\n`;
+    shareText += `🆔 *Employee ID:* ${empId}\n`;
+    shareText += `📅 *Period:* ${month}\n`;
+    shareText += `💳 *Payment Status:* ${status}\n\n`;
+
+    shareText += `--- *Financial Summary* ---\n`;
+    if (gross > 0) shareText += `• *Gross Earnings:* ₹${gross.toLocaleString('en-IN')}\n`;
+    if (totalAdv > 0) shareText += `• *Advance Deductions:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
+    if (net > 0) shareText += `• *Net Salary Payable:* ₹${net.toLocaleString('en-IN')}\n\n`;
+
+    if (advances && advances.length > 0) {
+      shareText += `--- *Advance Payment Records (${advances.length})* ---\n`;
+      advances.forEach((a, i) => {
+        const dateStr = a.date ? a.date.split('T')[0] : '';
+        shareText += `${i + 1}. ${dateStr} - ${a.reason || 'Advance'}: ₹${Number(a.amount).toLocaleString('en-IN')}\n`;
+      });
+      shareText += `\n`;
+    }
+
+    shareText += `Thank you for your service!\n`;
+    shareText += `Shared via Jai Bhavani Cargo Portal`;
+
+    // Try Web Share API with PDF file first if supported on mobile device
+    try {
+      if (navigator.share) {
+        setExporting(true);
+        const blob = await generateAdvancePayslipPDF(payroll, employee, advances);
+        const fileName = `Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}.pdf`;
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Payslip Statement - ${empName}`,
+            text: shareText
+          });
+          setExporting(false);
+          return;
+        }
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.log('File Web Share fallback to text WhatsApp:', e);
+      } else {
+        setExporting(false);
+        return;
+      }
+    } finally {
+      setExporting(false);
+    }
+
+    // Direct WhatsApp share fallback
+    const cleanPhone = empPhone ? empPhone.replace(/\D/g, '') : '';
+    let waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+    if (cleanPhone && (cleanPhone.length === 10 || cleanPhone.length === 12)) {
+      const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+      waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareText)}`;
+    }
+
+    window.open(waUrl, '_blank');
+    toast.success(`Opening WhatsApp share for ${empName}...`);
   };
 
   const handlePrint = () => {
@@ -243,6 +322,9 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 {hasAdvance ? 'Advance & Payslip Center' : 'Payslip Center'}
               </DialogTitle>
               <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleWhatsAppShare} disabled={loading || exporting} className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold shadow-sm">
+                  <MessageSquare className="w-4 h-4 mr-2 text-emerald-500 fill-emerald-500/20" /> WhatsApp
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => setShowEmailDialog(true)} disabled={loading}>
                   <Mail className="w-4 h-4 mr-2" /> Email
                 </Button>
@@ -252,7 +334,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:flex" disabled={loading}>
                   <Printer className="w-4 h-4 mr-2" /> Print
                 </Button>
-                <Button size="sm" onClick={handleDownloadPDF} disabled={loading || exporting} className="bg-primary text-primary-foreground">
+                <Button size="sm" onClick={handleDownloadPDF} disabled={loading || exporting} className="bg-primary text-primary-foreground font-semibold">
                   {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                   Download PDF
                 </Button>
