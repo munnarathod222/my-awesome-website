@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, Globe, Bell, ChevronRight, Home } from 'lucide-react';
+import { LogOut, Menu, Globe, Bell, ChevronRight, Home, Building2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { cn } from '@/lib/utils.js';
@@ -164,11 +164,16 @@ export default function Header() {
           <div className="flex items-center gap-2 ml-auto shrink-0">
             {!isAuthenticated ? (
               <>
+                <Button asChild size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1.5">
+                  <Link to="/client-login">
+                    <Building2 className="w-3.5 h-3.5" /> Client Login
+                  </Link>
+                </Button>
                 <Link
                   to="/login"
-                  className="text-[12.5px] font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                  className="text-[12.5px] font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block ml-1"
                 >
-                  Login
+                  Admin Login
                 </Link>
                 <Button asChild size="sm" className="rounded-lg text-[12.5px] h-8 px-3.5 shadow-sm">
                   <Link to="/signup">Get Started</Link>

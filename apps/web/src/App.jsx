@@ -23,6 +23,7 @@ import AboutPage from './pages/AboutPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import QuotePage from './pages/QuotePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import ClientLoginPage from './pages/ClientLoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import SignupRequestPage from './pages/SignupRequestPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
@@ -176,6 +177,7 @@ function App() {
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/quote" element={<QuotePage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/client-login" element={<ClientLoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/signup-request" element={<SignupRequestPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
