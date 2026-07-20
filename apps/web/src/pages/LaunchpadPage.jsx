@@ -63,6 +63,7 @@ export default function LaunchpadPage() {
       items: [
         { icon: FileText, label: 'Cashbook', path: '/cashbook', desc: 'Petty cash balances & double entry', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: FileText, label: 'Expenses', path: '/expenses', desc: 'Track fleet and operational overheads', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
+        { icon: CreditCard, label: 'FASTag Management', path: '/fastag', desc: 'Truck balances, tolls & recharge history', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: MessageSquareWarning, label: 'Payment Requests', path: '/payment-requests', desc: 'Submit and approve vendor requests', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
         { icon: CreditCard, label: 'Credit Cards', path: '/credit-cards', desc: 'Manage company cards & payments', roles: ['super_admin', 'admin'] },
         { icon: FileText, label: 'Payroll', path: '/payroll', desc: 'Staff salaries, advances & payouts', roles: ['super_admin', 'admin'] },

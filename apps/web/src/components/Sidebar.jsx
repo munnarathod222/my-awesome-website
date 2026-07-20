@@ -101,6 +101,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       items: [
         { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: CreditCard,           label: 'FASTag Management', path: '/fastag',           roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: MessageSquareWarning, label: 'Payment Requests', path: '/payment-requests', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: CreditCard,           label: 'Credit Cards',     path: '/credit-cards',     roles: ['super_admin','admin'] },
         { icon: FileText,             label: 'Payroll',          path: '/payroll',          roles: ['super_admin','admin'] },

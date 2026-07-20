@@ -52,7 +52,8 @@ import ClientDetailsPage from './pages/ClientDetailsPage.jsx';
 import ClientDashboardPage from './pages/ClientDashboardPage.jsx';
 import ClientPaymentAnalysisPage from './pages/ClientPaymentAnalysisPage.jsx';
 
-// New Feature Pages
+// Features
+import FASTagManagerPage from './pages/FASTagManagerPage.jsx';
 import BulkUploadPage from './pages/BulkUploadPage.jsx';
 import PayrollPage from './pages/PayrollPage.jsx';
 import ExpensesPage from './pages/ExpensesPage.jsx';
@@ -248,6 +249,7 @@ function App() {
                   <Route path="/payroll" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><PayrollPage /></ProtectedRoute>} />
                   <Route path="/payroll-dashboard" element={<Navigate to="/payroll" replace />} />
                   
+                  <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FASTagManagerPage /></ProtectedRoute>} />
                   <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/reports" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><ReportsPage /></ProtectedRoute>} />
                   <Route path="/fuel-tracker" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FuelTrackerPage /></ProtectedRoute>} />
