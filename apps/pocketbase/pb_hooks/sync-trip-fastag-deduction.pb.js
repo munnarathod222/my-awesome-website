@@ -10,27 +10,28 @@ function deductFastagForTrip(record, eventType) {
     }
 
     // 1. Resolve Route and Toll Charge
-    let toll = 0;
+    let toll = Number(record.get("fastag_charge")) || Number(record.get("toll_charge")) || Number(record.get("fastag_amount")) || 0;
+
     const routeId = record.getString("route_id");
     const routeStr = record.getString("route");
 
     let route = null;
-    if (routeId) {
+    if (!toll && routeId) {
       try { route = $app.findRecordById("routes", routeId); } catch (e) {}
     }
-    if (!route && routeStr) {
+    if (!toll && !route && routeStr) {
       try {
         route = $app.findFirstRecordByFilter("routes", "id = {:r} || route_name = {:r}", { r: routeStr });
       } catch (e) {}
     }
 
-    if (route) {
+    if (!toll && route) {
       toll = Number(route.get("fastag_charge")) || Number(route.get("amount_per_trip")) || 0;
     }
 
+    // Standard fallback FASTag charge if unspecified
     if (toll <= 0) {
-      console.log(`[FastagDeduction] FASTag toll charge is 0 for route of trip ${tripId}. Skipping deduction.`);
-      return;
+      toll = 450;
     }
 
     // 2. Resolve Truck and Deduct FASTag Balance
@@ -74,15 +75,18 @@ function deductFastagForTrip(record, eventType) {
   }
 }
 
-// Trigger on record update when trip_status transitions to "Delivered"
+// Trigger on record update when trip_status transitions to "Delivered" or "Completed"
 onRecordUpdate((e) => {
   try {
     const oldRecord = e.record.originalCopy();
     const oldStatus = oldRecord ? oldRecord.getString("trip_status") : "";
     const newStatus = e.record.getString("trip_status");
 
-    if (oldStatus !== "Delivered" && newStatus === "Delivered") {
-      deductFastagForTrip(e.record, "status transition to Delivered");
+    const isDeliveredOrCompleted = newStatus === "Delivered" || newStatus === "Completed";
+    const wasDeliveredOrCompleted = oldStatus === "Delivered" || oldStatus === "Completed";
+
+    if (!wasDeliveredOrCompleted && isDeliveredOrCompleted) {
+      deductFastagForTrip(e.record, `status transition from '${oldStatus}' to '${newStatus}'`);
     }
   } catch (err) {
     console.error("Error in sync-trip-fastag-deduction update hook:", err);
@@ -90,12 +94,12 @@ onRecordUpdate((e) => {
   e.next();
 }, "trip_logs");
 
-// Trigger on record create if trip_status is set to "Delivered" directly on creation
+// Trigger on record create if trip_status is set to "Delivered" or "Completed" directly on creation
 onRecordAfterCreateSuccess((e) => {
   try {
     const status = e.record.getString("trip_status");
-    if (status === "Delivered") {
-      deductFastagForTrip(e.record, "created as Delivered");
+    if (status === "Delivered" || status === "Completed") {
+      deductFastagForTrip(e.record, `created as '${status}'`);
     }
   } catch (err) {
     console.error("Error in sync-trip-fastag-deduction create hook:", err);

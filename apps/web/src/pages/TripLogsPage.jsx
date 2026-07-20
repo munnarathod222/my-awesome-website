@@ -198,6 +198,33 @@ const TripLogsPage = () => {
       await pb.collection('trip_logs').update(statusChangeTrip.id, {
         trip_status: newTripStatus
       }, { $autoCancel: false });
+
+      // Immediate FASTag Deduction sync for Delivered or Completed trips
+      if ((newTripStatus === 'Delivered' || newTripStatus === 'Completed') && statusChangeTrip.trip_status !== newTripStatus) {
+        try {
+          const truckNo = statusChangeTrip.truck_number;
+          if (truckNo) {
+            const truck = await pb.collection('trucks').getFirstListItem(`truck_number = "${truckNo}"`, { $autoCancel: false }).catch(() => null);
+            if (truck) {
+              const tollCharge = Number(statusChangeTrip.fastag_charge) || Number(statusChangeTrip.toll_charge) || 450;
+              const currentBal = Number(truck.current_fastag_balance) || 0;
+              const newBal = currentBal - tollCharge;
+              await pb.collection('trucks').update(truck.id, { current_fastag_balance: newBal }, { $autoCancel: false });
+
+              await pb.collection('fastag_transactions').create({
+                truck_number: truckNo,
+                transaction_type: 'Debit',
+                amount: tollCharge,
+                trip_code: statusChangeTrip.trip_id || statusChangeTrip.id,
+                date: new Date().toISOString(),
+                notes: `FASTag toll deduction for Delivered trip ${statusChangeTrip.trip_id || statusChangeTrip.id} (${statusChangeTrip.route || ''})`
+              }, { $autoCancel: false }).catch(() => null);
+            }
+          }
+        } catch (fastagErr) {
+          console.warn('FASTag direct deduction sync:', fastagErr);
+        }
+      }
       
       // Update linked cashbook entries description with the new status
       try {
@@ -215,7 +242,7 @@ const TripLogsPage = () => {
         console.warn('Failed to sync cashbook description (non-critical):', txErr);
       }
 
-      toast.success('Trip status updated');
+      toast.success('Trip status updated & FASTag balance adjusted');
 
       // If marked Delivered, open the payment request modal (status already saved)
       if (newTripStatus === 'Delivered') {
