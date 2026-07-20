@@ -171,39 +171,44 @@ const DashboardPage = () => {
         inTransitTripsCount,
         maintenanceProblemsRes
       ] = await Promise.all([
-        pb.collection('users').getList(1, 1, { $autoCancel: false }),
+        pb.collection('users').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Revenue query — Delivered trips only
         pb.collection('trip_logs').getList(1, 500, {
           filter: REVENUE_FILTER,
           sort: '-date',
           fields: 'id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable',
           $autoCancel: false,
-        }),
+        }).catch(() => ({ totalItems: 0, items: [] })),
         // Total shipment count — all statuses (for the KPI card)
-        pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }),
-        pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }),
-        pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }),
-        pb.collection('expenses').getList(1, 500, { fields: 'id,amount', $autoCancel: false }),
+        pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }).catch(() => []),
+        pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('expenses').getList(1, 500, { fields: 'id,amount', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Recent trips — all statuses so dispatcher sees the full picture
         pb.collection('trip_logs').getList(1, 8, {
           sort: '-date',
           fields: 'id,route,truck_number,driver_name,revenue,date,trip_status',
           $autoCancel: false,
-        }),
-        pb.collection('truck_documents').getFullList({ filter: 'status = "Active"', fields: 'id,expiry_date,truck_id', $autoCancel: false }),
+        }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('truck_documents').getFullList({ filter: 'status = "Active"', fields: 'id,expiry_date,truck_id', $autoCancel: false }).catch(() => []),
         
         // Status Counts
-        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Upcoming"', $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Dispatched"', $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "In Transit"', $autoCancel: false }),
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Upcoming"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "Dispatched"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "In Transit"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         
         // Open Maintenance Problems
-        pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false })
+        pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] }))
       ]);
 
       let fleetRevenue = 0, brokerageProfit = 0, totalTds = 0;
+      const deliveredItems = deliveredTripsRes?.items || [];
+      const expenseItems = expensesRes?.items || [];
+      const safeTrucks = Array.isArray(trucksRes) ? trucksRes : (trucksRes?.items || []);
+      const safeDocs = Array.isArray(docsRes) ? docsRes : (docsRes?.items || []);
+
       // Only Delivered trips count towards revenue
-      deliveredTripsRes.items.forEach(trip => {
+      deliveredItems.forEach(trip => {
         totalTds += Number(trip.tds_deducted_receivable) || 0;
         if (trip.ownership_type === 'Attached') {
           brokerageProfit += Number(trip.brokerage_margin) || 0;
@@ -212,17 +217,17 @@ const DashboardPage = () => {
         }
       });
       const netFleetRevenue = fleetRevenue - totalTds;
-      const fleetExpenses = expensesRes.items.reduce((s, e) => s + (e.amount || 0), 0);
+      const fleetExpenses = expenseItems.reduce((s, e) => s + (e.amount || 0), 0);
       const fleetProfit = netFleetRevenue - fleetExpenses;
 
       // Low Fastag count
-      const lowFastagCount = trucksRes.filter(t => t.current_fastag_balance !== undefined && t.current_fastag_balance !== null && t.current_fastag_balance < 2000).length;
+      const lowFastagCount = safeTrucks.filter(t => t && t.current_fastag_balance !== undefined && t.current_fastag_balance !== null && t.current_fastag_balance < 2000).length;
 
       // Expiring docs count
       let expiringDocsCount = 0;
       const todayDate = new Date();
-      docsRes.forEach(doc => {
-        if (!doc.expiry_date) return;
+      safeDocs.forEach(doc => {
+        if (!doc || !doc.expiry_date) return;
         const expDate = new Date(doc.expiry_date);
         const daysLeft = differenceInDays(expDate, todayDate);
         if (daysLeft <= 30) {
@@ -231,30 +236,30 @@ const DashboardPage = () => {
       });
 
       // Sorted FASTag balance list (lowest first)
-      const sortedFastag = [...trucksRes]
-        .filter(t => t.current_fastag_balance !== undefined && t.current_fastag_balance !== null)
-        .sort((a, b) => a.current_fastag_balance - b.current_fastag_balance)
+      const sortedFastag = [...safeTrucks]
+        .filter(t => t && t.current_fastag_balance !== undefined && t.current_fastag_balance !== null)
+        .sort((a, b) => (a.current_fastag_balance || 0) - (b.current_fastag_balance || 0))
         .slice(0, 5);
 
       setStats({
-        users: usersRes.totalItems,
-        trips: allTripsCount.totalItems,         // all trips (any status)
-        deliveredTrips: deliveredTripsRes.totalItems, // completed only
-        upcomingTrips: upcomingTripsCount.totalItems,
-        dispatchedTrips: dispatchedTripsCount.totalItems,
-        inTransitTrips: inTransitTripsCount.totalItems,
-        trucks: trucksRes.length,
-        pods: podsRes.totalItems,
+        users: usersRes?.totalItems || 0,
+        trips: allTripsCount?.totalItems || 0,         // all trips (any status)
+        deliveredTrips: deliveredTripsRes?.totalItems || 0, // completed only
+        upcomingTrips: upcomingTripsCount?.totalItems || 0,
+        dispatchedTrips: dispatchedTripsCount?.totalItems || 0,
+        inTransitTrips: inTransitTripsCount?.totalItems || 0,
+        trucks: safeTrucks.length,
+        pods: podsRes?.totalItems || 0,
         revenue: netFleetRevenue + brokerageProfit,
-        grossRevenue: deliveredTripsRes.items.reduce((s, t) => s + (Number(t.revenue) || 0), 0),
+        grossRevenue: deliveredItems.reduce((s, t) => s + (Number(t.revenue) || 0), 0),
         expenses: fleetExpenses, fleetProfit, brokerageProfit,
         retainedEarnings: fleetProfit + brokerageProfit,
         lowFastagCount,
         expiringDocsCount,
         totalAlertsCount: lowFastagCount + expiringDocsCount
       });
-      setRecentTrips(recentTripsRes.items);
-      setOpenProblems(maintenanceProblemsRes.items);
+      setRecentTrips(recentTripsRes?.items || []);
+      setOpenProblems(maintenanceProblemsRes?.items || []);
       setFastagList(sortedFastag);
       setLastRefreshed(new Date());
     } catch (err) {
