@@ -3,26 +3,17 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, MapPin, FileText, Copy, Share2, Building2, Wrench } from 'lucide-react';
-import { toast } from 'sonner';
+import { shareContact, copyContactDetails } from '@/lib/contactUtils.js';
 
 export default function ContactDetailsModal({ isOpen, onClose, contact }) {
   if (!contact) return null;
 
   const handleCopy = () => {
-    const text = `${contact.company_name}\nPhone: ${contact.phone_number}\nGSTIN: ${contact.gstin}\nAddress: ${contact.physical_address}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Contact details copied to clipboard');
+    copyContactDetails(contact);
   };
 
   const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${contact.company_name} Contact Info`,
-        text: `Contact: ${contact.company_name}\nPhone: ${contact.phone_number}\nGSTIN: ${contact.gstin}`,
-      }).catch(console.error);
-    } else {
-      handleCopy();
-    }
+    shareContact(contact);
   };
 
   const getTypeColor = (type) => {
@@ -33,6 +24,10 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
+  const mapsUrl = contact.google_maps_url 
+    ? contact.google_maps_url 
+    : (contact.physical_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.physical_address)}` : null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -47,9 +42,11 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                 {contact.contact_type}
               </Badge>
               <h2 className="text-2xl font-bold text-foreground tracking-tight">{contact.company_name}</h2>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> GSTIN: <span className="font-mono">{contact.gstin}</span>
-              </p>
+              {contact.gstin && (
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" /> GSTIN: <span className="font-mono">{contact.gstin}</span>
+                </p>
+              )}
             </div>
           </div>
           
@@ -62,7 +59,7 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                 <div>
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Phone Number</p>
                   <a href={`tel:${contact.phone_number}`} className="text-sm font-medium text-foreground hover:text-primary transition-colors">
-                    {contact.phone_number}
+                    {contact.phone_number || 'N/A'}
                   </a>
                 </div>
               </div>
@@ -88,23 +85,23 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Physical Address</p>
                   <p className="text-sm text-foreground leading-relaxed">
-                    {contact.physical_address}
+                    {contact.physical_address || 'No address specified'}
                   </p>
-                  {contact.google_maps_url && (
+                  {mapsUrl && (
                     <a 
-                      href={contact.google_maps_url} 
+                      href={mapsUrl} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
                     >
-                      <MapPin className="w-3 h-3 text-rose-500 fill-rose-500/20" />
-                      View on Google Maps
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                      Open Google Maps GPS Navigation
                     </a>
                   )}
                 </div>
               </div>
 
-              {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+              {contact.truck_brand && (
                 <div className="flex items-start gap-3">
                   <div className="p-2 bg-muted rounded-lg text-muted-foreground shrink-0">
                     <Wrench className="w-4 h-4" />
@@ -129,10 +126,10 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
 
           <div className="bg-muted/10 p-4 border-t border-border/50 flex gap-2">
             <Button variant="outline" className="flex-1 bg-background" onClick={handleCopy}>
-              <Copy className="w-4 h-4 mr-2" /> Copy
+              <Copy className="w-4 h-4 mr-2" /> Copy Details
             </Button>
-            <Button variant="outline" className="flex-1 bg-background" onClick={handleShare}>
-              <Share2 className="w-4 h-4 mr-2" /> Share
+            <Button className="flex-1 shadow-sm" onClick={handleShare}>
+              <Share2 className="w-4 h-4 mr-2" /> Share Contact & Location
             </Button>
           </div>
         </div>

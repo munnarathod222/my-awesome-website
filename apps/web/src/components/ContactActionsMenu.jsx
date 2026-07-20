@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, Phone, Mail, Copy, Share2, Edit2, Trash2, Eye } from 'lucide-react';
+import { MoreHorizontal, Phone, Mail, Copy, Share2, Edit2, Trash2, Eye, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,23 +8,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+import { shareContact, copyContactDetails } from '@/lib/contactUtils.js';
 
 export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }) {
   const handleCopy = () => {
-    const text = `${contact.company_name}\nPhone: ${contact.phone_number}\nGSTIN: ${contact.gstin}\nAddress: ${contact.physical_address}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Contact details copied to clipboard');
+    copyContactDetails(contact);
   };
 
   const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${contact.company_name} Contact Info`,
-        text: `Contact: ${contact.company_name}\nPhone: ${contact.phone_number}\nGSTIN: ${contact.gstin}`,
-      }).catch(console.error);
-    } else {
-      handleCopy();
+    shareContact(contact);
+  };
+
+  const handleOpenMaps = () => {
+    const mapsUrl = contact.google_maps_url 
+      ? contact.google_maps_url 
+      : (contact.physical_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.physical_address)}` : null);
+    if (mapsUrl) {
+      window.open(mapsUrl, '_blank');
     }
   };
 
@@ -36,30 +36,35 @@ export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={() => onView(contact)}>
-          <Eye className="mr-2 h-4 w-4" /> View Card
+      <DropdownMenuContent align="end" className="w-52 bg-card border-border shadow-xl z-50">
+        <DropdownMenuItem onClick={() => onView(contact)} className="cursor-pointer">
+          <Eye className="mr-2 h-4 w-4 text-primary" /> View Card
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open(`tel:${contact.phone_number}`)}>
-          <Phone className="mr-2 h-4 w-4" /> Call
+        <DropdownMenuItem onClick={() => window.open(`tel:${contact.phone_number}`)} className="cursor-pointer">
+          <Phone className="mr-2 h-4 w-4 text-emerald-500" /> Call {contact.phone_number ? `(${contact.phone_number})` : ''}
         </DropdownMenuItem>
+        {(contact.google_maps_url || contact.physical_address) && (
+          <DropdownMenuItem onClick={handleOpenMaps} className="cursor-pointer">
+            <MapPin className="mr-2 h-4 w-4 text-rose-500" /> Open Maps Navigation
+          </DropdownMenuItem>
+        )}
         {contact.email && (
-          <DropdownMenuItem onClick={() => window.open(`mailto:${contact.email}`)}>
-            <Mail className="mr-2 h-4 w-4" /> Email
+          <DropdownMenuItem onClick={() => window.open(`mailto:${contact.email}`)} className="cursor-pointer">
+            <Mail className="mr-2 h-4 w-4 text-blue-400" /> Email
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleCopy}>
+        <DropdownMenuItem onClick={handleShare} className="cursor-pointer font-bold text-primary">
+          <Share2 className="mr-2 h-4 w-4 text-primary" /> Share Contact & Map
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleCopy} className="cursor-pointer">
           <Copy className="mr-2 h-4 w-4" /> Copy Details
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleShare}>
-          <Share2 className="mr-2 h-4 w-4" /> Share
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onEdit(contact)}>
+        <DropdownMenuItem onClick={() => onEdit(contact)} className="cursor-pointer">
           <Edit2 className="mr-2 h-4 w-4" /> Edit
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onDelete(contact)} className="text-destructive focus:text-destructive">
+        <DropdownMenuItem onClick={() => onDelete(contact)} className="text-destructive focus:text-destructive cursor-pointer">
           <Trash2 className="mr-2 h-4 w-4" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
