@@ -873,15 +873,37 @@ const TripLogsPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="text-center">
-                              <button 
-                                onClick={() => handleBadgeClick(log)}
-                                className={cn(
-                                  "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 shadow-sm border",
-                                  getTripStatusColor(log.trip_status)
-                                )}
+                              <Select
+                                value={log.trip_status || 'Upcoming'}
+                                onValueChange={async (newStatus) => {
+                                  if (!newStatus || newStatus === log.trip_status) return;
+                                  try {
+                                    await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
+                                    toast.success(`Trip status updated to ${newStatus}`);
+                                    if (newStatus === 'Delivered') {
+                                      setPaymentRequestTrip(log);
+                                    }
+                                    fetchData();
+                                  } catch (err) {
+                                    console.error('Status update failed:', err);
+                                    toast.error('Failed to update status');
+                                  }
+                                }}
                               >
-                                {getTripStatusLabel(log.trip_status)}
-                              </button>
+                                <SelectTrigger className={cn(
+                                  "h-8 border px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1.5 [&>svg]:h-3.5 [&>svg]:w-3.5 mx-auto w-auto justify-center",
+                                  getTripStatusColor(log.trip_status)
+                                )}>
+                                  <SelectValue>{getTripStatusLabel(log.trip_status)}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent align="center" className="bg-card border-border shadow-xl z-50">
+                                  {TRIP_STATUS_OPTIONS.map(status => (
+                                    <SelectItem key={status} value={status} className="font-semibold text-xs py-2 cursor-pointer">
+                                      {status}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell className="text-center">
                               <span className={cn(
@@ -948,22 +970,68 @@ const TripLogsPage = () => {
                             • {formatTripDate(log.date)}
                           </span>
                         </div>
-                        <div className="flex gap-1.5">
-                          <span className={cn(
-                            "px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shadow-sm",
-                            log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
-                            log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
-                            log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
-                            'bg-muted text-muted-foreground border-border/50'
-                          )}>
-                            {log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'Pending')}
-                          </span>
-                          <span className={cn(
-                            "px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border shadow-sm",
-                            getTripStatusColor(log.trip_status)
-                          )}>
-                            {getTripStatusLabel(log.trip_status)}
-                          </span>
+                        <div className="flex gap-1.5 items-center">
+                          <Select
+                            value={log.client_payment_status || 'pending'}
+                            onValueChange={async (newPaymentStatus) => {
+                              const statusVal = newPaymentStatus === 'blank' ? '' : newPaymentStatus;
+                              if (statusVal === log.client_payment_status) return;
+                              try {
+                                await pb.collection('trip_logs').update(log.id, { client_payment_status: statusVal }, { $autoCancel: false });
+                                toast.success(`Payment status updated to ${statusVal || 'Unset'}`);
+                                fetchData();
+                              } catch (err) {
+                                toast.error('Failed to update payment status');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-7 border px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0",
+                              log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
+                              log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
+                              log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
+                              'bg-muted text-muted-foreground border-border/50'
+                            )}>
+                              <SelectValue>{log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'Pending')}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent align="end" className="bg-card border-border shadow-xl z-50">
+                              <SelectItem value="pending" className="font-semibold text-xs py-2">Pending</SelectItem>
+                              <SelectItem value="received" className="font-semibold text-xs py-2">Paid</SelectItem>
+                              <SelectItem value="delayed" className="font-semibold text-xs py-2">Delayed</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select
+                            value={log.trip_status || 'Upcoming'}
+                            onValueChange={async (newStatus) => {
+                              if (!newStatus || newStatus === log.trip_status) return;
+                              try {
+                                await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
+                                toast.success(`Trip status updated to ${newStatus}`);
+                                if (newStatus === 'Delivered') {
+                                  setPaymentRequestTrip(log);
+                                }
+                                fetchData();
+                              } catch (err) {
+                                console.error('Status update failed:', err);
+                                toast.error('Failed to update status');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-7 border px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0",
+                              getTripStatusColor(log.trip_status)
+                            )}>
+                              <SelectValue>{getTripStatusLabel(log.trip_status)}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent align="end" className="bg-card border-border shadow-xl z-50">
+                              {TRIP_STATUS_OPTIONS.map(status => (
+                                <SelectItem key={status} value={status} className="font-semibold text-xs py-2 cursor-pointer">
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
