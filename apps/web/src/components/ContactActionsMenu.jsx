@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { shareContact, copyContactDetails, extractGoogleMapsUrl } from '@/lib/contactUtils.js';
+import { shareContact, copyContactDetails, getPastedMapUrl } from '@/lib/contactUtils.js';
 
 export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }) {
   const handleCopy = () => {
@@ -20,11 +20,11 @@ export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }
   };
 
   const handleOpenMaps = () => {
-    const mapsUrl = extractGoogleMapsUrl(contact);
+    const mapsUrl = getPastedMapUrl(contact);
     if (mapsUrl) {
       window.open(mapsUrl, '_blank');
     } else {
-      toast.error('No maps link or address available');
+      toast.error('No Google Maps link was pasted for this contact');
     }
   };
 

@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, MapPin, FileText, Copy, Share2, Building2, Wrench } from 'lucide-react';
-import { shareContact, copyContactDetails, extractGoogleMapsUrl } from '@/lib/contactUtils.js';
+import { shareContact, copyContactDetails, getPastedMapUrl } from '@/lib/contactUtils.js';
 
 export default function ContactDetailsModal({ isOpen, onClose, contact }) {
   if (!contact) return null;
@@ -25,7 +25,7 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
     }
   };
 
-  const mapsUrl = extractGoogleMapsUrl(contact);
+  const mapsUrl = getPastedMapUrl(contact);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

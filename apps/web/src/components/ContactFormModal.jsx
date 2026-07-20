@@ -156,8 +156,12 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     }
 
     try {
+      const mapsUrl = formData.google_maps_url ? formData.google_maps_url.trim() : '';
       const payload = {
         ...formData,
+        google_maps_url: mapsUrl,
+        google_map_link: mapsUrl,
+        location_url: mapsUrl,
         gstin: formData.gstin.toUpperCase(),
         created_by: currentUser.id
       };
