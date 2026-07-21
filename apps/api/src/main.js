@@ -696,6 +696,46 @@ const runPocketBase = async () => {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }
     }
+
+    // 3. Migrate users schema fields to support client credentials creation
+    const usersRecord = db.prepare("SELECT * FROM _collections WHERE name='users'").get();
+    if (usersRecord) {
+      const uFields = JSON.parse(usersRecord.fields);
+      let updatedUsers = false;
+
+      const roleF = uFields.find(f => f.name === 'role');
+      if (roleF) {
+        if (!roleF.values.includes('client')) {
+          logger.info("Migrating: Adding 'client' role option to users...");
+          roleF.values.push('client');
+          updatedUsers = true;
+        }
+        if (!roleF.values.includes('Client')) {
+          logger.info("Migrating: Adding 'Client' role option to users...");
+          roleF.values.push('Client');
+          updatedUsers = true;
+        }
+      }
+
+      const phoneF = uFields.find(f => f.name === 'phone_number');
+      if (phoneF && phoneF.required) {
+        logger.info("Migrating: Making phone_number optional on users...");
+        phoneF.required = false;
+        updatedUsers = true;
+      }
+
+      const nameF = uFields.find(f => f.name === 'full_name');
+      if (nameF && nameF.required) {
+        logger.info("Migrating: Making full_name optional on users...");
+        nameF.required = false;
+        updatedUsers = true;
+      }
+
+      if (updatedUsers) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(uFields), usersRecord.id);
+        logger.info("Migrating: Users collection schema updated successfully!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   }

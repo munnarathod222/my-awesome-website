@@ -134,7 +134,8 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
           name: clientName,
           full_name: clientName,
           role: 'Client',
-          status: 'active'
+          status: 'active',
+          phone_number: activeClient.phone || '0000000000'
         };
 
         try {
@@ -146,14 +147,20 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
               password: password,
               passwordConfirm: password,
               role: 'Client',
-              status: 'active'
+              status: 'active',
+              phone_number: existing.phone_number || activeClient.phone || '0000000000',
+              full_name: existing.full_name || clientName
             }, { $autoCancel: false });
           } else {
             userRecord = await pb.collection('users').create({
               email: cleanEmail,
               password: password,
               passwordConfirm: password,
-              name: clientName
+              name: clientName,
+              full_name: clientName,
+              role: 'Client',
+              status: 'active',
+              phone_number: activeClient.phone || '0000000000'
             }, { $autoCancel: false });
           }
         }

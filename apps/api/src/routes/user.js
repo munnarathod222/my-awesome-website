@@ -88,7 +88,9 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
         password: password,
         passwordConfirm: password,
         role: 'Client',
-        status: 'active'
+        status: 'active',
+        phone_number: userRecord.phone_number || '0000000000',
+        full_name: userRecord.full_name || clientName || 'Client'
       }, { $autoCancel: false });
       
       logger.info(`[API/User] Updated existing user credentials for ${cleanEmail} (ID: ${userRecord.id})`);
@@ -102,19 +104,24 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
         name: clientName || 'Client',
         full_name: clientName || 'Client',
         role: 'Client',
-        status: 'active'
+        status: 'active',
+        phone_number: '0000000000'
       };
 
       try {
         userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
       } catch (createErr) {
-        logger.warn(`[API/User] Full payload failed, retrying minimal payload: ${createErr.message}`);
-        // Fallback with minimal required fields
+        logger.warn(`[API/User] Full payload failed, retrying minimal required payload: ${createErr.message}`);
+        // Fallback with all required schema fields
         userRecord = await pb.collection('users').create({
           email: cleanEmail,
           password: password,
           passwordConfirm: password,
-          name: clientName || 'Client'
+          name: clientName || 'Client',
+          full_name: clientName || 'Client',
+          role: 'admin', // ultimate fallback role option
+          status: 'active',
+          phone_number: '0000000000'
         }, { $autoCancel: false });
       }
       logger.info(`[API/User] Created new user record for ${cleanEmail} (ID: ${userRecord.id})`);
