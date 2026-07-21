@@ -27,14 +27,11 @@ export default function ClientLoginPage() {
 
     setLoading(true);
     try {
-      // 1. Authenticate with PocketBase
-      const authData = await pb.collection('users').authWithPassword(email.trim(), password);
+      // Authenticate with global AuthContext login
+      const user = await login(email.trim(), password);
 
-      if (authData?.record) {
-        // Update global AuthContext
-        if (login) login(authData.token, authData.record);
-
-        toast.success(`Welcome to Client Portal, ${authData.record.name || 'Client'}!`);
+      if (user) {
+        toast.success(`Welcome to Client Portal, ${user.name || 'Client'}!`);
         navigate('/client-portal', { replace: true });
       }
     } catch (err) {
