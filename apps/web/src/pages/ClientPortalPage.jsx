@@ -137,22 +137,19 @@ export default function ClientPortalPage() {
     // Total Advance Paid by Client
     const totalAdvance = tripLogs.reduce((sum, t) => sum + (Number(t.advance_received_from_client) || 0), 0);
 
-    // Net Payable Dues to Admin
-    const pendingTrips = tripLogs.filter(t => {
+    // Net Payable Dues to Admin (Delivered & Completed Trips Only)
+    const pendingDeliveredTrips = tripLogs.filter(t => {
+      const isDelivered = t.trip_status === 'Delivered' || t.trip_status === 'Completed';
       const st = (t.client_payment_status || '').toLowerCase();
-      return st !== 'received' && st !== 'paid';
+      return isDelivered && st !== 'received' && st !== 'paid';
     });
 
-    const calculatedDues = pendingTrips.reduce((sum, t) => {
+    const payableAmount = pendingDeliveredTrips.reduce((sum, t) => {
       const rev = Number(t.revenue) || Number(t.freight_amount) || 0;
       const adv = Number(t.advance_received_from_client) || 0;
       const toll = Number(t.toll_deduction) || 0;
       return sum + Math.max(0, rev - adv - toll);
     }, 0);
-
-    const payableAmount = (clientData?.client_balance_due && clientData.client_balance_due > 0) 
-      ? clientData.client_balance_due 
-      : calculatedDues;
 
     const podsCount = completedTrips.filter(t => t.pod_url || t.pod_file || t.pod_link || t.pod_status === 'Uploaded' || t.pod_uploaded).length;
 
@@ -312,7 +309,7 @@ export default function ClientPortalPage() {
               {formatCurrency(metrics.payableAmount)}
             </div>
             <div className="text-xs text-muted-foreground mt-1 font-medium">
-              Net outstanding dues to Jai Bhavani Cargo
+              Net dues for delivered shipments to Jai Bhavani Cargo
             </div>
           </CardContent>
         </Card>
