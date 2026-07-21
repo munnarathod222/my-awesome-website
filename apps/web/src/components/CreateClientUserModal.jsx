@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ShieldCheck, Copy, Share2, KeyRound, Mail, User, Building2, CheckCircle2, RefreshCw } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
+import apiServerClient from '@/lib/apiServerClient.js';
 
 export default function CreateClientUserModal({ isOpen, onClose, client: initialClient, onSuccess }) {
   const [allClients, setAllClients] = useState([]);
@@ -99,26 +100,47 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
       const cleanEmail = email.trim();
       const clientName = activeClient.client_name || activeClient.company_name || 'Client';
       
-      const userData = {
-        email: cleanEmail,
-        emailVisibility: true,
-        password: password,
-        passwordConfirm: password,
-        name: clientName,
-        full_name: clientName,
-        role: 'Client',
-        status: 'active'
-      };
+      let userRecord = null;
 
-      let userRecord;
+      // 1. Primary approach: call superuser-authenticated backend API endpoint
       try {
-        userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
-      } catch (createErr) {
-        console.warn('Initial user creation failed, attempting fallback resolution:', createErr);
-        
-        // If email already exists, update existing user password and role
-        if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
-          try {
+        const response = await apiServerClient.fetch('/user/create-client-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password: password,
+            clientId: activeClient.id,
+            clientName: clientName
+          })
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          userRecord = resData.user;
+        } else {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Server responded with status ${response.status}`);
+        }
+      } catch (apiErr) {
+        console.warn('[CreateClientUserModal] Server API call failed, trying direct SDK creation fallback:', apiErr);
+
+        // 2. Direct SDK fallback logic
+        const userData = {
+          email: cleanEmail,
+          emailVisibility: true,
+          password: password,
+          passwordConfirm: password,
+          name: clientName,
+          full_name: clientName,
+          role: 'Client',
+          status: 'active'
+        };
+
+        try {
+          userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
+        } catch (createErr) {
+          if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
             const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
             userRecord = await pb.collection('users').update(existing.id, {
               password: password,
@@ -126,26 +148,22 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
               role: 'Client',
               status: 'active'
             }, { $autoCancel: false });
-          } catch (updateErr) {
-            throw createErr;
+          } else {
+            userRecord = await pb.collection('users').create({
+              email: cleanEmail,
+              password: password,
+              passwordConfirm: password,
+              name: clientName
+            }, { $autoCancel: false });
           }
-        } else {
-          // Minimal payload containing only mandatory fields required by PocketBase users collection
-          const minimalUserData = {
-            email: cleanEmail,
-            password: password,
-            passwordConfirm: password,
-            name: clientName
-          };
-          userRecord = await pb.collection('users').create(minimalUserData, { $autoCancel: false });
         }
-      }
 
-      // Link user_id in client record
-      await pb.collection('clients').update(activeClient.id, {
-        portal_user_id: userRecord.id,
-        portal_enabled: true
-      }, { $autoCancel: false }).catch(() => {});
+        // Link client record in fallback mode
+        await pb.collection('clients').update(activeClient.id, {
+          portal_user_id: userRecord.id,
+          portal_enabled: true
+        }, { $autoCancel: false }).catch(() => {});
+      }
 
       const creds = {
         clientName: activeClient.client_name,

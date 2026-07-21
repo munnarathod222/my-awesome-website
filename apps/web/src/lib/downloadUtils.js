@@ -257,16 +257,22 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(...primaryColor);
-      doc.text('PAYMENT DETAILS:', 14, bankY);
+      doc.text('PAYMENT & BANK DETAILS:', 14, bankY);
       
+      const bName = companySettingsCache?.bank_name || 'HDFC Bank';
+      const bAccName = (companySettingsCache?.account_name || companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase();
+      const bAccNo = companySettingsCache?.account_number || '50200087654321';
+      const bIfsc = companySettingsCache?.ifsc_code || 'HDFC0000123';
+      const bBranch = companySettingsCache?.branch_name || 'Ghatkesar Branch';
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...secondaryColor);
-      doc.text('Bank Name: HDFC Bank', 14, bankY + 5);
-      doc.text(`Account Name: ${(companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase()}`, 14, bankY + 9);
-      doc.text('Account No: 50200087654321', 14, bankY + 13);
-      doc.text('IFSC Code: HDFC0000123', 14, bankY + 17);
-      doc.text('Branch: Transport Nagar, Secunderabad', 14, bankY + 21);
+      doc.text(`Bank Name: ${bName}`, 14, bankY + 5);
+      doc.text(`Account Name: ${bAccName}`, 14, bankY + 9);
+      doc.text(`Account No: ${bAccNo}`, 14, bankY + 13);
+      doc.text(`IFSC Code: ${bIfsc}`, 14, bankY + 17);
+      doc.text(`Branch / UPI: ${bBranch}`, 14, bankY + 21);
       
       // Terms / Signature line
       let footerY = bankY + 30;
@@ -418,6 +424,24 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...primaryColor);
       doc.text('Estimated Total:', doc.internal.pageSize.width - 74, finalY + 1);
       doc.text(`₹${Number(q.total_price || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
+      
+      // Draw Bank Details on the left side of quote
+      let quoteBankY = finalY - 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...primaryColor);
+      doc.text('REMITTANCE BANK DETAILS:', 14, quoteBankY);
+
+      const qBankName = companySettingsCache?.bank_name || 'HDFC Bank';
+      const qAccNo = companySettingsCache?.account_number || '50200087654321';
+      const qIfsc = companySettingsCache?.ifsc_code || 'HDFC0000123';
+      const qBranch = companySettingsCache?.branch_name || 'Ghatkesar Branch';
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...secondaryColor);
+      doc.text(`Bank: ${qBankName} | Acc No: ${qAccNo}`, 14, quoteBankY + 4);
+      doc.text(`IFSC: ${qIfsc} | Branch/UPI: ${qBranch}`, 14, quoteBankY + 8);
       
       // Terms / Notes
       let footerY = finalY + 18;

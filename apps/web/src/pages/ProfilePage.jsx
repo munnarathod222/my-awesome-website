@@ -58,7 +58,12 @@ const ProfilePage = () => {
     company_phone: '',
     company_email: '',
     company_website: '',
-    company_gstin: ''
+    company_gstin: '',
+    bank_name: '',
+    account_name: '',
+    account_number: '',
+    ifsc_code: '',
+    branch_name: ''
   });
 
   const fetchCompanySettings = async () => {
@@ -71,7 +76,12 @@ const ProfilePage = () => {
         company_phone: record.company_phone || '',
         company_email: record.company_email || '',
         company_website: record.company_website || '',
-        company_gstin: record.company_gstin || ''
+        company_gstin: record.company_gstin || '',
+        bank_name: record.bank_name || '',
+        account_name: record.account_name || '',
+        account_number: record.account_number || '',
+        ifsc_code: record.ifsc_code || '',
+        branch_name: record.branch_name || ''
       });
       if (record.company_logo) {
         setCompanyLogoPreview(pb.files.getUrl(record, record.company_logo));
@@ -255,6 +265,11 @@ const ProfilePage = () => {
       payload.append('company_email', companyFormData.company_email);
       payload.append('company_website', companyFormData.company_website);
       payload.append('company_gstin', companyFormData.company_gstin);
+      payload.append('bank_name', companyFormData.bank_name);
+      payload.append('account_name', companyFormData.account_name);
+      payload.append('account_number', companyFormData.account_number);
+      payload.append('ifsc_code', companyFormData.ifsc_code);
+      payload.append('branch_name', companyFormData.branch_name);
       
       if (companyLogoFile instanceof File) {
         payload.append('company_logo', companyLogoFile);
@@ -963,6 +978,76 @@ const ProfilePage = () => {
                     className="bg-background"
                     placeholder="Full street address..."
                   />
+                </div>
+              </div>
+
+              {/* Bank Details Section for Invoices & Quotes */}
+              <div className="pt-6 border-t border-border/50 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">Company Bank Account Details</h3>
+                    <p className="text-xs text-muted-foreground">These details will be automatically printed on all PDF Invoices and Quotes for client payments.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bank_name_input">Bank Name</Label>
+                    <Input 
+                      id="bank_name_input"
+                      value={companyFormData.bank_name} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, bank_name: e.target.value }))}
+                      className="bg-background"
+                      placeholder="e.g. HDFC Bank / ICICI Bank"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="account_name_input">Account Holder Name</Label>
+                    <Input 
+                      id="account_name_input"
+                      value={companyFormData.account_name} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, account_name: e.target.value }))}
+                      className="bg-background"
+                      placeholder="e.g. JAI BHAVANI CARGO"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="account_number_input">Account Number</Label>
+                    <Input 
+                      id="account_number_input"
+                      value={companyFormData.account_number} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, account_number: e.target.value }))}
+                      className="bg-background font-mono"
+                      placeholder="e.g. 50200087654321"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ifsc_code_input">IFSC Code</Label>
+                    <Input 
+                      id="ifsc_code_input"
+                      value={companyFormData.ifsc_code} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
+                      className="bg-background font-mono uppercase"
+                      placeholder="e.g. HDFC0000123"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor="branch_name_input">Branch / UPI ID / Payment Notes</Label>
+                    <Input 
+                      id="branch_name_input"
+                      value={companyFormData.branch_name} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, branch_name: e.target.value }))}
+                      className="bg-background"
+                      placeholder="e.g. Ghatkesar Branch / UPI: jaibhavanicargo@hdfc"
+                    />
+                  </div>
                 </div>
               </div>
             </form>

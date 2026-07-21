@@ -62,4 +62,86 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
   }
 });
 
+// Superuser-privileged endpoint to create/link Client Portal credentials
+router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
+  const { email, password, clientId, clientName } = req.body;
+
+  if (!email || !password || !clientId) {
+    return res.status(400).json({ error: 'Email, password, and clientId are required' });
+  }
+
+  const cleanEmail = email.trim();
+  logger.info(`[API/User] Creating client user for client '${clientName}' (${clientId}) with email '${cleanEmail}'`);
+
+  try {
+    let userRecord;
+
+    // 1. Check if user already exists
+    try {
+      userRecord = await pb.collection('users').getFirstListItem(
+        pb.filter('email = {:cleanEmail}', { cleanEmail }),
+        { $autoCancel: false }
+      );
+      
+      // Update existing user password and role
+      userRecord = await pb.collection('users').update(userRecord.id, {
+        password: password,
+        passwordConfirm: password,
+        role: 'Client',
+        status: 'active'
+      }, { $autoCancel: false });
+      
+      logger.info(`[API/User] Updated existing user credentials for ${cleanEmail} (ID: ${userRecord.id})`);
+    } catch (notFound) {
+      // 2. User does not exist - create using superuser client
+      const userData = {
+        email: cleanEmail,
+        emailVisibility: true,
+        password: password,
+        passwordConfirm: password,
+        name: clientName || 'Client',
+        full_name: clientName || 'Client',
+        role: 'Client',
+        status: 'active'
+      };
+
+      try {
+        userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
+      } catch (createErr) {
+        logger.warn(`[API/User] Full payload failed, retrying minimal payload: ${createErr.message}`);
+        // Fallback with minimal required fields
+        userRecord = await pb.collection('users').create({
+          email: cleanEmail,
+          password: password,
+          passwordConfirm: password,
+          name: clientName || 'Client'
+        }, { $autoCancel: false });
+      }
+      logger.info(`[API/User] Created new user record for ${cleanEmail} (ID: ${userRecord.id})`);
+    }
+
+    // 3. Link user_id in client record
+    if (clientId && userRecord?.id) {
+      await pb.collection('clients').update(clientId, {
+        portal_user_id: userRecord.id,
+        portal_enabled: true
+      }, { $autoCancel: false }).catch((err) => {
+        logger.warn(`[API/User] Could not update portal_user_id on client: ${err.message}`);
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Client credentials created successfully',
+      user: {
+        id: userRecord.id,
+        email: userRecord.email
+      }
+    });
+  } catch (err) {
+    logger.error(`[API/User] Failed to create client user: ${err.message}`, err);
+    return res.status(500).json({ error: err.message || 'Failed to create client user' });
+  }
+});
+
 export default router;
