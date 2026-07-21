@@ -13,6 +13,17 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const formatBankFromSettings = (settings) => {
+    if (!settings) return '';
+    const parts = [];
+    if (settings.bank_name) parts.push(`Bank: ${settings.bank_name}`);
+    if (settings.account_name) parts.push(`A/C Name: ${settings.account_name}`);
+    if (settings.account_number) parts.push(`A/C No: ${settings.account_number}`);
+    if (settings.ifsc_code) parts.push(`IFSC: ${settings.ifsc_code}`);
+    if (settings.branch_name) parts.push(`Branch: ${settings.branch_name}`);
+    return parts.join('\n');
+  };
+
   const [formData, setFormData] = useState({
     invoice_number: `INV-${Date.now().toString().slice(-6)}`,
     invoice_date: new Date().toISOString().split('T')[0],
@@ -21,12 +32,12 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
     customer_email: '',
     customer_address: '',
     customer_phone: '',
-    company_name: 'FastFreight Logistics',
-    company_address: '123 Transport Hub, Industrial Area\nNew Delhi, India',
-    company_phone: '+91 9876543210',
-    company_email: 'billing@fastfreight.com',
+    company_name: 'JAI BHAVANI CARGO',
+    company_address: 'Plot no 3, Patel nagar, Ghatkesar, pin: 501301',
+    company_phone: '+91 7794072244',
+    company_email: 'vinod@jaibhavanicargo.com',
     payment_terms: 'Net 14 Days',
-    bank_details: 'Bank: State Bank of India\nA/C No: 33445566778\nIFSC: SBIN0001234',
+    bank_details: '',
     notes: '',
     status: 'Draft',
     tax_percentage: 18,
@@ -83,16 +94,17 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
   // Load official company settings or custom defaults for new invoices
   useEffect(() => {
     if (!invoice) {
-      pb.collection('company_settings').getOne('companysettings')
+      pb.collection('company_settings').getOne('companysettings', { $autoCancel: false })
         .then(settings => {
           const savedFrom = JSON.parse(localStorage.getItem('jbcargo_invoice_from_details') || '{}');
+          const officialBankStr = formatBankFromSettings(settings);
           setFormData(prev => ({
             ...prev,
             company_name: savedFrom.company_name || settings.company_name || prev.company_name,
             company_address: savedFrom.company_address || settings.company_address || prev.company_address,
             company_phone: savedFrom.company_phone || settings.company_phone || prev.company_phone,
             company_email: savedFrom.company_email || settings.company_email || prev.company_email,
-            bank_details: localStorage.getItem('jbcargo_invoice_bank_details') || prev.bank_details
+            bank_details: officialBankStr || localStorage.getItem('jbcargo_invoice_bank_details') || prev.bank_details
           }));
         })
         .catch(err => {

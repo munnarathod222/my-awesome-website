@@ -881,6 +881,32 @@ const runPocketBase = async () => {
         }
       }
     }
+
+    // 6. Company settings schema migration for bank details
+    const csCols = db.prepare("PRAGMA table_info(company_settings)").all().map(c => c.name);
+    const bankCols = ['bank_name', 'account_name', 'account_number', 'ifsc_code', 'branch_name'];
+    for (const col of bankCols) {
+      if (!csCols.includes(col)) {
+        logger.info(`Migrating: Adding column '${col}' to 'company_settings' table...`);
+        db.prepare(`ALTER TABLE company_settings ADD COLUMN ${col} TEXT DEFAULT ''`).run();
+      }
+    }
+
+    const csRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='company_settings'").get();
+    if (csRecordBoot) {
+      const csFieldsBoot = JSON.parse(csRecordBoot.fields);
+      let updatedCS = false;
+      for (const col of bankCols) {
+        if (!csFieldsBoot.some(f => f.name === col)) {
+          csFieldsBoot.push({ name: col, type: 'text', required: false, system: false, hidden: false, id: `cs_${col}_field` });
+          updatedCS = true;
+        }
+      }
+      if (updatedCS) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(csFieldsBoot), csRecordBoot.id);
+        logger.info("Migrating: Company settings bank detail fields updated successfully!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   }
