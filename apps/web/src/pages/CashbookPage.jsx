@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { format, parseISO } from 'date-fns';
-import { Wallet, Search, Filter, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight, PlusCircle, Settings, Users, TrendingDown } from 'lucide-react';
+import { Wallet, Search, Filter, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight, PlusCircle, Settings, Users, TrendingDown, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useCashbookData } from '@/hooks/useCashbookData.js';
 import { useCashbookInit } from '@/hooks/useCashbookInit.js';
 import pb from '@/lib/pocketbaseClient.js';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import EditOpeningBalanceModal from '@/components/EditOpeningBalanceModal.jsx';
 import CashbookTransactionList from '@/components/CashbookTransactionList.jsx';
 
 export default function CashbookPage() {
+  const { currentUser } = useAuth();
   const { isInitialized } = useCashbookInit();
   const { transactions, isLoading: isTxLoading, error, refetch } = useCashbookData();
 
@@ -28,6 +30,7 @@ export default function CashbookPage() {
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isOpeningBalanceModalOpen, setIsOpeningBalanceModalOpen] = useState(false);
   const [openingBalanceRecord, setOpeningBalanceRecord] = useState(null);
+  const [isResetting, setIsResetting] = useState(false);
   
   const [employees, setEmployees] = useState([]);
   
@@ -64,7 +67,50 @@ export default function CashbookPage() {
   useEffect(() => {
     fetchOpeningBalance();
     fetchEmployees();
-  }, [transactions]); // Refetch opening balance when transactions update
+  }, [transactions]);
+
+  // Automated one-time migration to wipe extra cashbook entries and set balance to -153,500 if requested
+  const handleWipeAndResetCashbook = async () => {
+    if (!window.confirm("Are you sure you want to delete all cashbook entries and set the current balance to -₹153,500? (Your expense logs will NOT be affected)")) {
+      return;
+    }
+
+    setIsResetting(true);
+    const toastId = toast.loading("Deleting cashbook entries and resetting balance to -₹153,500...");
+
+    try {
+      // 1. Fetch all cashbook records
+      const allRecords = await pb.collection('cashbook').getFullList({ $autoCancel: false });
+      
+      // 2. Delete all records
+      for (const rec of allRecords) {
+        await pb.collection('cashbook').delete(rec.id, { $autoCancel: false });
+      }
+
+      // 3. Create fresh Opening Balance entry of 153500 (Expense => -153,500)
+      const openingPayload = {
+        amount: 153500,
+        date: new Date().toISOString(),
+        description: 'Opening Balance',
+        category: 'Manual',
+        transaction_type: 'Expense',
+        status: 'Completed',
+        reference_type: 'opening_balance',
+        added_by: currentUser?.id || ''
+      };
+
+      await pb.collection('cashbook').create(openingPayload, { $autoCancel: false });
+      toast.success("Cashbook entries wiped successfully! Current balance is set to -₹153,500.", { id: toastId });
+      
+      await refetch();
+      await fetchOpeningBalance();
+    } catch (err) {
+      console.error("Cashbook reset error:", err);
+      toast.error(err.message || "Failed to reset cashbook", { id: toastId });
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const employeesMap = useMemo(() => {
     return employees.reduce((acc, emp) => {
@@ -98,14 +144,20 @@ export default function CashbookPage() {
       } else {
         currentBal -= amt;
       }
-      return { ...tx, running_balance: currentBal };
+      return {
+        ...tx,
+        running_balance: currentBal,
+        isIncome: isCredit
+      };
     });
     
     const reversed = calculated.reverse();
-
+    
+    // Prepend Opening Balance item if it exists
     if (openingBalanceRecord) {
       reversed.push({
-        ...openingBalanceRecord,
+        id: openingBalanceRecord.id || 'ob-item',
+        date: openingBalanceRecord.date || new Date().toISOString(),
         isOpeningBalance: true,
         running_balance: openingAmt,
         description: 'Opening Balance',
@@ -217,6 +269,14 @@ export default function CashbookPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <Button 
+                onClick={handleWipeAndResetCashbook} 
+                disabled={isResetting}
+                variant="outline" 
+                className="rounded-xl shadow-sm gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="w-4 h-4" /> Reset Balance to -₹1.53L
+              </Button>
               <Button onClick={() => setIsOpeningBalanceModalOpen(true)} variant="secondary" className="rounded-xl shadow-sm gap-2 bg-secondary text-secondary-foreground">
                 <Settings className="w-4 h-4" /> Set Opening Balance
               </Button>
@@ -258,98 +318,68 @@ export default function CashbookPage() {
                     {openingBalanceRecord && (
                       <div className="mt-4 pt-4 border-t border-border/50">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Opening Balance</p>
-                        <div className="flex items-center justify-between">
-                          <span className={`font-bold ${openingBalanceRecord.amount < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                            {formatCurrency(openingBalanceRecord.amount)}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{format(parseISO(openingBalanceRecord.date), 'MMM dd, yyyy')}</span>
-                        </div>
+                        <p className="text-sm font-semibold tabular-nums text-foreground">
+                          {formatCurrency(openingBalanceRecord.transaction_type === 'Expense' || openingBalanceRecord.transaction_type === 'credit' ? -openingBalanceRecord.amount : openingBalanceRecord.amount)}
+                        </p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-                
-                <Card className="border-border shadow-sm bg-card">
-                  <CardContent className="p-6 h-full flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div>
+
+                <Card className="border-border shadow-sm bg-card overflow-hidden">
+                  <CardContent className="p-6 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Total Income</p>
-                        <h3 className="text-2xl font-bold text-success mt-2 tabular-nums">
-                          {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && (t.transaction_type === 'Income' || t.transaction_type === 'credit')).reduce((a,b) => a + (Number(b.amount) || 0), 0))}
-                        </h3>
+                        <div className="p-2 bg-success/10 rounded-lg">
+                          <ArrowUpRight className="w-4 h-4 text-success" />
+                        </div>
                       </div>
-                      <div className="p-2 bg-success/10 rounded-xl">
-                        <ArrowDownRight className="w-5 h-5 text-success" />
-                      </div>
+                      <h3 className="text-3xl font-bold mt-4 text-success tabular-nums">
+                        {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && t.isIncome).reduce((a, b) => a + (Number(b.amount) || 0), 0))}
+                      </h3>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      {processedTransactions.filter(t => !t.isOpeningBalance && t.isIncome).length} credit transaction(s)
+                    </p>
                   </CardContent>
                 </Card>
 
-                <Card className="border-border shadow-sm bg-card">
-                  <CardContent className="p-6 h-full flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div>
+                <Card className="border-border shadow-sm bg-card overflow-hidden">
+                  <CardContent className="p-6 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Total Outflow</p>
-                        <h3 className="text-2xl font-bold text-destructive mt-2 tabular-nums">
-                          {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && t.transaction_type !== 'Income' && t.transaction_type !== 'credit').reduce((a,b) => a + (Number(b.amount) || 0), 0))}
-                        </h3>
+                        <div className="p-2 bg-destructive/10 rounded-lg">
+                          <ArrowDownRight className="w-4 h-4 text-destructive" />
+                        </div>
                       </div>
-                      <div className="p-2 bg-destructive/10 rounded-xl">
-                        <ArrowUpRight className="w-5 h-5 text-destructive" />
-                      </div>
+                      <h3 className="text-3xl font-bold mt-4 text-destructive tabular-nums">
+                        {formatCurrency(processedTransactions.filter(t => !t.isOpeningBalance && !t.isIncome).reduce((a, b) => a + (Number(b.amount) || 0), 0))}
+                      </h3>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      {processedTransactions.filter(t => !t.isOpeningBalance && !t.isIncome).length} debit transaction(s)
+                    </p>
                   </CardContent>
                 </Card>
               </motion.div>
 
-              <motion.div variants={itemVariants} className="bg-card rounded-2xl border border-border/50 shadow-sm p-5 sm:p-6 space-y-6">
-                
-                <div className="flex flex-col xl:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <motion.div variants={itemVariants} className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-muted/20 p-4 rounded-2xl border border-border">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input 
-                      placeholder="Search descriptions..." 
-                      className="pl-9 bg-background" 
+                      placeholder="Search transactions..." 
                       value={filters.search}
-                      onChange={(e) => setFilters(p => ({...p, search: e.target.value}))}
+                      onChange={e => setFilters({...filters, search: e.target.value})}
+                      className="pl-9 bg-background rounded-xl"
                     />
                   </div>
                   
-                  <div className="flex gap-3 overflow-x-auto pb-2 xl:pb-0 hide-scrollbar">
-                    <div className="flex items-center gap-2 min-w-[280px]">
-                      <Input type="date" className="bg-background" value={filters.dateFrom} onChange={(e) => setFilters(p => ({...p, dateFrom: e.target.value}))} />
-                      <span className="text-muted-foreground">-</span>
-                      <Input type="date" className="bg-background" value={filters.dateTo} onChange={(e) => setFilters(p => ({...p, dateTo: e.target.value}))} />
-                    </div>
-
-                    <Select value={filters.employee} onValueChange={(v) => setFilters(p => ({...p, employee: v}))}>
-                      <SelectTrigger className="w-[160px] bg-background">
-                        <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                        <SelectValue placeholder="Employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Employees</SelectItem>
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={filters.category} onValueChange={(v) => setFilters(p => ({...p, category: v}))}>
-                      <SelectTrigger className="w-[150px] bg-background">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="Expense">Expense</SelectItem>
-                        <SelectItem value="Advance">Advance</SelectItem>
-                        <SelectItem value="Payroll">Payroll</SelectItem>
-                        <SelectItem value="Fuel">Fuel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={filters.type} onValueChange={(v) => setFilters(p => ({...p, type: v}))}>
-                      <SelectTrigger className="w-[130px] bg-background">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <Select value={filters.type} onValueChange={v => setFilters({...filters, type: v})}>
+                      <SelectTrigger className="w-[120px] bg-background rounded-xl">
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -363,35 +393,26 @@ export default function CashbookPage() {
 
                 <CashbookTransactionList 
                   transactions={filteredTransactions} 
-                  loading={false}
-                  employeesMap={employeesMap}
-                  onEditOpeningBalance={() => setIsOpeningBalanceModalOpen(true)}
-                  onDeleteSuccess={() => {
-                    fetchOpeningBalance();
-                    refetch();
-                  }}
+                  employeesMap={employeesMap} 
+                  refetch={refetch} 
                 />
-
               </motion.div>
             </>
           )}
-
         </motion.div>
       </main>
 
-      <AddIncomeModal 
-        isOpen={isIncomeModalOpen} 
-        onClose={() => setIsIncomeModalOpen(false)} 
-        onSuccess={refetch}
-      />
-
       <ExpenseModal 
-        isOpen={isExpenseModalOpen} 
-        onClose={() => setIsExpenseModalOpen(false)} 
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
         onSuccess={refetch}
       />
-
-      <EditOpeningBalanceModal
+      <AddIncomeModal 
+        isOpen={isIncomeModalOpen}
+        onClose={() => setIsIncomeModalOpen(false)}
+        onSuccess={refetch}
+      />
+      <EditOpeningBalanceModal 
         isOpen={isOpeningBalanceModalOpen}
         onClose={() => setIsOpeningBalanceModalOpen(false)}
         existingRecord={openingBalanceRecord}
