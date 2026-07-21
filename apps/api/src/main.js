@@ -695,6 +695,10 @@ const runPocketBase = async () => {
         });
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }
+      if (record.listRule !== "@request.auth.id != ''") {
+        logger.info("Migrating: Updating 'trip_logs' listRule to allow Client users to list trips...");
+        db.prepare("UPDATE _collections SET listRule = ? WHERE id = ?").run("@request.auth.id != ''", record.id);
+      }
     }
 
     // 3. Migrate users schema fields to support client credentials creation

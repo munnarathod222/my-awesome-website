@@ -3,7 +3,8 @@ import { Helmet } from 'react-helmet';
 import { 
   Building2, Truck, FileText, Download, Eye, Phone, MapPin, 
   CheckCircle2, Clock, AlertCircle, Search, RefreshCw, Filter, 
-  Calendar, DollarSign, ArrowUpRight, ShieldCheck, Sparkles, FileBox
+  Calendar, IndianRupee, ArrowUpRight, ShieldCheck, Sparkles, FileBox,
+  Receipt, ArrowRight, UserCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,16 +13,22 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 
 export default function ClientPortalPage() {
   const { currentUser } = useAuth();
+  const { isAdmin, isSuperAdmin } = useRoleBasedAccess();
+  
+  const [allClients, setAllClients] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
   const [clientData, setClientData] = useState(null);
   const [tripLogs, setTripLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,38 +38,69 @@ export default function ClientPortalPage() {
   const [selectedPodTrip, setSelectedPodTrip] = useState(null);
   const [isPodModalOpen, setIsPodModalOpen] = useState(false);
 
-  const fetchClientPortalData = async () => {
+  const fetchClientPortalData = async (targetClientId = null) => {
     setLoading(true);
     try {
+      // 1. Fetch all clients list for fallback or admin switcher
+      const clientsList = await pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }).catch(() => []);
+      setAllClients(clientsList);
+
       let activeClient = null;
 
-      // 1. Identify Client Record
-      if (currentUser?.client_id) {
-        activeClient = await pb.collection('clients').getOne(currentUser.client_id, { $autoCancel: false }).catch(() => null);
-      }
-      
-      if (!activeClient && currentUser?.name) {
-        // Fallback search by client name
-        activeClient = await pb.collection('clients').getFirstListItem(`client_name ~ "${currentUser.name}"`, { $autoCancel: false }).catch(() => null);
+      const activeId = targetClientId || selectedClientId;
+      if (activeId) {
+        activeClient = clientsList.find(c => c.id === activeId);
       }
 
-      // If still no specific client linked, load first active client as fallback for admin preview
-      if (!activeClient) {
-        const firstClient = await pb.collection('clients').getFirstListItem('status="Active"', { $autoCancel: false }).catch(() => null);
-        activeClient = firstClient;
+      if (!activeClient && currentUser?.client_id) {
+        activeClient = clientsList.find(c => c.id === currentUser.client_id);
+      }
+      
+      if (!activeClient && currentUser?.id) {
+        activeClient = clientsList.find(c => c.portal_user_id === currentUser.id);
+      }
+
+      if (!activeClient && currentUser?.email) {
+        const cleanEmail = (currentUser.email || '').toLowerCase().trim();
+        activeClient = clientsList.find(c => (c.email || '').toLowerCase().trim() === cleanEmail);
+      }
+
+      if (!activeClient && currentUser?.name) {
+        const cleanName = (currentUser.name || '').toLowerCase().trim();
+        activeClient = clientsList.find(c => 
+          (c.client_name || '').toLowerCase().includes(cleanName) || 
+          (c.company_name || '').toLowerCase().includes(cleanName)
+        );
+      }
+
+      // Default to first client if still null (e.g. Admin preview)
+      if (!activeClient && clientsList.length > 0) {
+        activeClient = clientsList[0];
       }
 
       setClientData(activeClient);
-
-      // 2. Fetch Trip Logs for this client
-      const queryOptions = { sort: '-start_date', $autoCancel: false };
-      if (activeClient?.client_name) {
-        queryOptions.filter = `client_name = "${activeClient.client_name}" || client = "${activeClient.client_name}"`;
+      if (activeClient) {
+        setSelectedClientId(activeClient.id);
       }
 
-      const logs = await pb.collection('trip_logs').getFullList(queryOptions).catch(() => []);
+      // 2. Fetch Trip Logs for this client
+      if (activeClient) {
+        // Fetch all trips for maximum reliability
+        const allLogs = await pb.collection('trip_logs').getFullList({ sort: '-date', $autoCancel: false }).catch(() => []);
 
-      setTripLogs(logs);
+        // Filter trips belonging to this client (by client_id or client_name or company_name)
+        const matched = allLogs.filter(t => {
+          if (t.client_id && t.client_id === activeClient.id) return true;
+          if (t.client_name && (t.client_name === activeClient.client_name || t.client_name === activeClient.company_name)) return true;
+          if (t.client && (t.client === activeClient.client_name || t.client === activeClient.company_name)) return true;
+          return false;
+        });
+
+        // If matched is empty but user is admin previewing, display allLogs as fallback so portal shows data
+        setTripLogs(matched.length > 0 ? matched : (isAdmin || isSuperAdmin ? allLogs : []));
+      } else {
+        setTripLogs([]);
+      }
 
     } catch (err) {
       console.error('[ClientPortalPage] Error loading portal data:', err);
@@ -76,22 +114,61 @@ export default function ClientPortalPage() {
     fetchClientPortalData();
   }, [currentUser]);
 
-  // Metrics
+  const handleClientSelectChange = (id) => {
+    setSelectedClientId(id);
+    fetchClientPortalData(id);
+  };
+
+  // Metrics Calculation
   const metrics = useMemo(() => {
-    const activeShipments = tripLogs.filter(t => t.trip_status !== 'Delivered' && t.trip_status !== 'Completed' && t.trip_status !== 'Cancelled');
-    const deliveredShipments = tripLogs.filter(t => t.trip_status === 'Delivered' || t.trip_status === 'Completed');
-    const totalFreight = tripLogs.reduce((sum, t) => sum + (Number(t.freight_amount) || 0), 0);
-    const podsCount = deliveredShipments.filter(t => t.pod_url || t.pod_file || t.pod_uploaded).length;
+    const upcomingTrips = tripLogs.filter(t => 
+      t.trip_status === 'Upcoming' || t.trip_status === 'Scheduled' || t.trip_status === 'Pending'
+    );
+    const activeShipments = tripLogs.filter(t => 
+      t.trip_status === 'Dispatched' || t.trip_status === 'In Transit' || t.trip_status === 'Active'
+    );
+    const completedTrips = tripLogs.filter(t => 
+      t.trip_status === 'Delivered' || t.trip_status === 'Completed'
+    );
+
+    // Total Freight Billing
+    const totalFreight = tripLogs.reduce((sum, t) => sum + (Number(t.revenue) || Number(t.freight_amount) || 0), 0);
+    
+    // Total Advance Paid by Client
+    const totalAdvance = tripLogs.reduce((sum, t) => sum + (Number(t.advance_received_from_client) || 0), 0);
+
+    // Net Payable Dues to Admin
+    const pendingTrips = tripLogs.filter(t => {
+      const st = (t.client_payment_status || '').toLowerCase();
+      return st !== 'received' && st !== 'paid';
+    });
+
+    const calculatedDues = pendingTrips.reduce((sum, t) => {
+      const rev = Number(t.revenue) || Number(t.freight_amount) || 0;
+      const adv = Number(t.advance_received_from_client) || 0;
+      const toll = Number(t.toll_deduction) || 0;
+      return sum + Math.max(0, rev - adv - toll);
+    }, 0);
+
+    const payableAmount = (clientData?.client_balance_due && clientData.client_balance_due > 0) 
+      ? clientData.client_balance_due 
+      : calculatedDues;
+
+    const podsCount = completedTrips.filter(t => t.pod_url || t.pod_file || t.pod_link || t.pod_status === 'Uploaded' || t.pod_uploaded).length;
 
     return {
-      activeCount: activeShipments.length,
-      deliveredCount: deliveredShipments.length,
-      totalFreight,
-      podsCount,
+      upcomingTrips,
       activeShipments,
-      deliveredShipments
+      completedTrips,
+      upcomingCount: upcomingTrips.length,
+      activeCount: activeShipments.length,
+      completedCount: completedTrips.length,
+      totalFreight,
+      totalAdvance,
+      payableAmount,
+      podsCount
     };
-  }, [tripLogs]);
+  }, [tripLogs, clientData]);
 
   // Filtered Logs for Search
   const filteredLogs = useMemo(() => {
@@ -108,7 +185,8 @@ export default function ClientPortalPage() {
   }, [tripLogs, searchQuery]);
 
   const handleOpenPod = (trip) => {
-    setSelectedPodTrip(trip);
+    const podUrl = trip.pod_url || trip.pod_link || (trip.pod_file ? pb.files.getUrl(trip, trip.pod_file) : null);
+    setSelectedPodTrip({ ...trip, podUrl });
     setIsPodModalOpen(true);
   };
 
@@ -118,23 +196,24 @@ export default function ClientPortalPage() {
       return;
     }
 
-    const headers = ['Trip ID', 'Date', 'Vehicle No', 'Route', 'Driver', 'Status', 'Freight (INR)', 'Payment Status'];
+    const headers = ['Trip ID', 'Date', 'Vehicle No', 'Route', 'Driver', 'Trip Status', 'Total Freight (INR)', 'Advance Paid (INR)', 'Payment Status'];
     const rows = tripLogs.map(t => [
       t.trip_id || t.id,
-      t.start_date ? format(new Date(t.start_date), 'yyyy-MM-dd') : '',
+      t.date ? format(new Date(t.date), 'yyyy-MM-dd') : (t.start_date ? format(new Date(t.start_date), 'yyyy-MM-dd') : ''),
       t.truck_number || '',
       `"${t.route || ''}"`,
       `"${t.driver_name || ''}"`,
       t.trip_status || '',
-      t.freight_amount || 0,
-      t.payment_status || ''
+      t.revenue || t.freight_amount || 0,
+      t.advance_received_from_client || 0,
+      t.client_payment_status || 'Pending'
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Freight_Logs_${clientData?.client_name || 'Client'}_${format(new Date(), 'yyyyMMdd')}.csv`);
+    link.setAttribute('download', `Freight_Statement_${clientData?.client_name || 'Client'}_${format(new Date(), 'yyyyMMdd')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -144,7 +223,7 @@ export default function ClientPortalPage() {
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center p-12">
-        <LoadingSpinner text="Loading client portal dashboard..." />
+        <LoadingSpinner text="Loading client portal statement & shipments..." />
       </div>
     );
   }
@@ -161,44 +240,106 @@ export default function ClientPortalPage() {
       </Helmet>
 
       {/* ── Client Portal Header ───────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 p-6 rounded-3xl bg-card border border-border/50 shadow-soft">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 p-6 rounded-3xl bg-card border border-border/50 shadow-soft">
         <div className="flex items-center gap-4">
           <div className="p-3.5 bg-primary/10 rounded-2xl border border-primary/20 text-primary shrink-0">
             <Building2 className="w-8 h-8" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl sm:text-3xl font-heading font-black text-foreground tracking-tight">
                 {clientData?.client_name || 'Corporate Client Portal'}
               </h1>
+              {clientData?.company_name && (
+                <Badge variant="outline" className="text-xs font-semibold">
+                  {clientData.company_name}
+                </Badge>
+              )}
               <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-bold text-xs">
                 Verified Portal Access
               </Badge>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-3">
-              {clientData?.gstin && <span>GSTIN: <strong className="font-mono text-foreground">{clientData.gstin}</strong></span>}
-              <span>Contact: <strong className="text-foreground">{clientData?.contact_person || 'Logistics Desk'}</strong></span>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-4 flex-wrap">
+              {clientData?.gst_number && <span>GSTIN: <strong className="font-mono text-foreground">{clientData.gst_number}</strong></span>}
+              {clientData?.phone && <span>Phone: <strong className="text-foreground">{clientData.phone}</strong></span>}
+              <span>Contact: <strong className="text-foreground">{clientData?.contact_person || 'Logistics Manager'}</strong></span>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button onClick={fetchClientPortalData} variant="outline" size="sm" className="rounded-xl bg-background">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
+          {(isAdmin || isSuperAdmin) && allClients.length > 0 && (
+            <div className="w-56">
+              <Select value={selectedClientId} onValueChange={handleClientSelectChange}>
+                <SelectTrigger className="bg-background text-xs font-semibold rounded-xl">
+                  <SelectValue placeholder="Select Client Preview" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allClients.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.client_name} {c.company_name ? `(${c.company_name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <Button onClick={() => fetchClientPortalData()} variant="outline" size="sm" className="rounded-xl bg-background">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
           <Button onClick={handleExportCSV} size="sm" className="rounded-xl bg-primary shadow-sm">
-            <Download className="w-4 h-4 mr-2" /> Download Freight Log CSV
+            <Download className="w-4 h-4 mr-2" /> Export Statement CSV
           </Button>
         </div>
       </div>
 
-      {/* ── Client Metrics Cards ─────────────────────────────────────────── */}
+      {/* ── Client KPI Cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Active Shipments */}
+        {/* Payable Amount to Admin (Outstanding Dues) */}
+        <Card className="bg-card border-rose-500/30 bg-rose-500/5 shadow-soft rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <IndianRupee className="w-20 h-20 text-rose-500" />
+          </div>
+          <CardContent className="p-5 relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-400">Payable Amount to Admin</span>
+              <div className="p-2 bg-rose-500/15 rounded-xl text-rose-400">
+                <Receipt className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-rose-400 font-heading">
+              {formatCurrency(metrics.payableAmount)}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1 font-medium">
+              Net outstanding dues to Jai Bhavani Cargo
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Trips */}
         <Card className="bg-card border-border/50 shadow-soft rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active Shipments</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Upcoming Trips</span>
+              <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
+                <Clock className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-amber-400 font-heading">
+              {metrics.upcomingCount}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Scheduled dispatches loading soon
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active In-Transit */}
+        <Card className="bg-card border-border/50 shadow-soft rounded-2xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active In-Transit</span>
               <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400">
                 <Truck className="w-4 h-4" />
               </div>
@@ -207,103 +348,126 @@ export default function ClientPortalPage() {
               {metrics.activeCount}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              Currently in-transit on highway routes
+              Currently moving on route
             </div>
           </CardContent>
         </Card>
 
-        {/* Delivered Shipments */}
+        {/* Completed Trips */}
         <Card className="bg-card border-border/50 shadow-soft rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Delivered Shipments</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Completed Trips</span>
               <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
             <div className="text-3xl font-black text-emerald-400 font-heading">
-              {metrics.deliveredCount}
+              {metrics.completedCount}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              Completed dispatches
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* POD Documents Available */}
-        <Card className="bg-card border-border/50 shadow-soft rounded-2xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">POD Documents</span>
-              <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400">
-                <FileBox className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-3xl font-black text-violet-400 font-heading">
-              {metrics.podsCount}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Ready for instant download
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Total Freight Ledger */}
-        <Card className="bg-card border-border/50 shadow-soft rounded-2xl">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Freight Billing</span>
-              <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
-                <DollarSign className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-amber-400 font-heading">
-              {formatCurrency(metrics.totalFreight)}
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Across all dispatches
+              Successfully delivered shipments
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Client Portal Main Tabs ──────────────────────────────────────── */}
+      {/* ── Main Freight Statement Tabs ──────────────────────────────────────── */}
       <Card className="border-border/50 shadow-soft bg-card rounded-2xl overflow-hidden">
-        <Tabs defaultValue="active" className="w-full">
+        <Tabs defaultValue="completed" className="w-full">
           <CardHeader className="pb-0 border-b border-border/40 bg-secondary/10">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
               <div>
-                <CardTitle className="font-heading text-xl">Shipment & Freight Portal</CardTitle>
+                <CardTitle className="font-heading text-xl">Shipments & Freight Ledger</CardTitle>
                 <CardDescription>Real-time active tracking, proof of delivery downloads, and freight statements.</CardDescription>
               </div>
 
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
                 <div className="relative w-48">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Search trip..."
+                    placeholder="Search trip, route, vehicle..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className="pl-8 h-9 text-xs rounded-xl bg-background"
                   />
                 </div>
 
-                <TabsList className="bg-background border border-border/50 p-1 rounded-xl">
-                  <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5">
-                    Active ({metrics.activeCount})
+                <TabsList className="bg-background border border-border/50 p-1 rounded-xl flex-wrap">
+                  <TabsTrigger value="upcoming" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                    Upcoming ({metrics.upcomingCount})
                   </TabsTrigger>
-                  <TabsTrigger value="pods" className="rounded-lg text-xs font-bold px-3 py-1.5">
-                    POD Downloads ({metrics.podsCount})
+                  <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                    In-Transit ({metrics.activeCount})
+                  </TabsTrigger>
+                  <TabsTrigger value="completed" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                    Completed & PODs ({metrics.completedCount})
                   </TabsTrigger>
                   <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5">
-                    All Freight Logs ({tripLogs.length})
+                    All Freight ({tripLogs.length})
                   </TabsTrigger>
                 </TabsList>
               </div>
             </div>
           </CardHeader>
 
-          {/* Tab 1: Active Shipments Tracking */}
+          {/* Tab 1: Upcoming Trips */}
+          <TabsContent value="upcoming" className="p-0 m-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="pl-6 font-semibold">Trip ID</TableHead>
+                    <TableHead className="font-semibold">Scheduled Date</TableHead>
+                    <TableHead className="font-semibold">Vehicle No.</TableHead>
+                    <TableHead className="font-semibold">Route</TableHead>
+                    <TableHead className="font-semibold">Driver</TableHead>
+                    <TableHead className="font-semibold text-center">Status</TableHead>
+                    <TableHead className="pr-6 text-right font-semibold">Estimated Freight (₹)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {metrics.upcomingTrips.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        No upcoming scheduled trips at the moment.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    metrics.upcomingTrips.map(item => (
+                      <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="pl-6 font-mono font-bold text-sm text-amber-400">
+                          {item.trip_id || item.id}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          {item.date ? format(new Date(item.date), 'dd MMM yyyy') : '—'}
+                        </TableCell>
+                        <TableCell className="font-mono font-bold text-sm">
+                          {item.truck_number || '—'}
+                        </TableCell>
+                        <TableCell className="font-medium text-sm">
+                          {item.route || '—'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {item.driver_name || '—'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs">
+                            {item.trip_status || 'Upcoming'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="pr-6 text-right font-bold text-sm font-mono">
+                          {formatCurrency(item.revenue || item.freight_amount || 0)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+
+          {/* Tab 2: Active In-Transit */}
           <TabsContent value="active" className="p-0 m-0">
             <div className="overflow-x-auto">
               <Table>
@@ -315,14 +479,14 @@ export default function ClientPortalPage() {
                     <TableHead className="font-semibold">Route</TableHead>
                     <TableHead className="font-semibold">Driver Contact</TableHead>
                     <TableHead className="font-semibold text-center">Status</TableHead>
-                    <TableHead className="pr-6 text-right font-semibold">Freight (₹)</TableHead>
+                    <TableHead className="pr-6 text-right font-semibold">Freight Amount (₹)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {metrics.activeShipments.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                        No active in-transit shipments at the moment.
+                        No active in-transit shipments currently on route.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -332,7 +496,7 @@ export default function ClientPortalPage() {
                           {item.trip_id || item.id}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {item.start_date ? format(new Date(item.start_date), 'dd MMM yyyy') : '—'}
+                          {item.date ? format(new Date(item.date), 'dd MMM yyyy') : '—'}
                         </TableCell>
                         <TableCell className="font-mono font-bold text-sm">
                           {item.truck_number || '—'}
@@ -360,7 +524,7 @@ export default function ClientPortalPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="pr-6 text-right font-bold text-sm font-mono">
-                          {formatCurrency(item.freight_amount || 0)}
+                          {formatCurrency(item.revenue || item.freight_amount || 0)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -370,8 +534,8 @@ export default function ClientPortalPage() {
             </div>
           </TabsContent>
 
-          {/* Tab 2: POD Downloads */}
-          <TabsContent value="pods" className="p-0 m-0">
+          {/* Tab 3: Completed Trips & PODs */}
+          <TabsContent value="completed" className="p-0 m-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
@@ -381,26 +545,28 @@ export default function ClientPortalPage() {
                     <TableHead className="font-semibold">Vehicle No.</TableHead>
                     <TableHead className="font-semibold">Route</TableHead>
                     <TableHead className="font-semibold text-center">POD Status</TableHead>
+                    <TableHead className="font-semibold text-center">Payment Status</TableHead>
                     <TableHead className="pr-6 text-right font-semibold">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.deliveredShipments.length === 0 ? (
+                  {metrics.completedTrips.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                        No delivered shipments yet.
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        No completed delivered trips yet.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    metrics.deliveredShipments.map(item => {
-                      const podUrl = item.pod_url || (item.pod_file ? pb.files.getUrl(item, item.pod_file) : null);
+                    metrics.completedTrips.map(item => {
+                      const podUrl = item.pod_url || item.pod_link || (item.pod_file ? pb.files.getUrl(item, item.pod_file) : null);
+                      const isPaid = (item.client_payment_status || '').toLowerCase() === 'received' || (item.client_payment_status || '').toLowerCase() === 'paid';
                       return (
                         <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
                           <TableCell className="pl-6 font-mono font-bold text-sm text-primary">
                             {item.trip_id || item.id}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                            {item.delivery_date ? format(new Date(item.delivery_date), 'dd MMM yyyy') : (item.updated ? format(new Date(item.updated), 'dd MMM yyyy') : '—')}
+                            {item.date ? format(new Date(item.date), 'dd MMM yyyy') : '—'}
                           </TableCell>
                           <TableCell className="font-mono font-bold text-sm">
                             {item.truck_number || '—'}
@@ -415,21 +581,28 @@ export default function ClientPortalPage() {
                               </Badge>
                             ) : (
                               <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs">
-                                Pending POD Upload
+                                Pending POD
                               </Badge>
                             )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={`font-bold text-xs ${
+                              isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                            }`}>
+                              {isPaid ? 'Paid' : 'Unpaid / Pending'}
+                            </Badge>
                           </TableCell>
                           <TableCell className="pr-6 text-right">
                             {podUrl ? (
                               <Button
                                 size="sm"
-                                onClick={() => handleOpenPod({ ...item, podUrl })}
-                                className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold"
+                                onClick={() => handleOpenPod(item)}
+                                className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold shadow-sm"
                               >
-                                <Eye className="w-3.5 h-3.5 mr-1.5" /> View / Download POD
+                                <Eye className="w-3.5 h-3.5 mr-1.5" /> View POD
                               </Button>
                             ) : (
-                              <span className="text-xs text-muted-foreground italic">Unavailable</span>
+                              <span className="text-xs text-muted-foreground italic">Pending POD</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -441,62 +614,71 @@ export default function ClientPortalPage() {
             </div>
           </TabsContent>
 
-          {/* Tab 3: All Freight Logs */}
+          {/* Tab 4: All Freight Logs Statement */}
           <TabsContent value="all" className="p-0 m-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead className="pl-6 font-semibold">Trip ID</TableHead>
-                    <TableHead className="font-semibold">Dispatch Date</TableHead>
+                    <TableHead className="font-semibold">Date</TableHead>
                     <TableHead className="font-semibold">Vehicle No.</TableHead>
                     <TableHead className="font-semibold">Route</TableHead>
                     <TableHead className="font-semibold text-center">Status</TableHead>
-                    <TableHead className="font-semibold text-center">Payment</TableHead>
-                    <TableHead className="pr-6 text-right font-semibold">Freight (₹)</TableHead>
+                    <TableHead className="font-semibold text-center">Payment Status</TableHead>
+                    <TableHead className="font-semibold text-right">Advance Paid (₹)</TableHead>
+                    <TableHead className="pr-6 text-right font-semibold">Total Freight (₹)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                        No freight logs found.
+                      <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                        No freight statement logs found.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredLogs.map(item => (
-                      <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="pl-6 font-mono font-bold text-sm text-primary">
-                          {item.trip_id || item.id}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                          {item.start_date ? format(new Date(item.start_date), 'dd MMM yyyy') : '—'}
-                        </TableCell>
-                        <TableCell className="font-mono font-bold text-sm">
-                          {item.truck_number || '—'}
-                        </TableCell>
-                        <TableCell className="font-medium text-sm">
-                          {item.route || '—'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={`font-bold text-xs ${
-                            item.trip_status === 'Delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                          }`}>
-                            {item.trip_status || 'Pending'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={`font-bold text-xs ${
-                            item.payment_status === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          }`}>
-                            {item.payment_status || 'Pending'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="pr-6 text-right font-bold text-sm font-mono">
-                          {formatCurrency(item.freight_amount || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredLogs.map(item => {
+                      const isPaid = (item.client_payment_status || '').toLowerCase() === 'received' || (item.client_payment_status || '').toLowerCase() === 'paid';
+                      return (
+                        <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="pl-6 font-mono font-bold text-sm text-primary">
+                            {item.trip_id || item.id}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                            {item.date ? format(new Date(item.date), 'dd MMM yyyy') : '—'}
+                          </TableCell>
+                          <TableCell className="font-mono font-bold text-sm">
+                            {item.truck_number || '—'}
+                          </TableCell>
+                          <TableCell className="font-medium text-sm">
+                            {item.route || '—'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={`font-bold text-xs ${
+                              item.trip_status === 'Delivered' || item.trip_status === 'Completed'
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            }`}>
+                              {item.trip_status || 'Scheduled'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={`font-bold text-xs ${
+                              isPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            }`}>
+                              {item.client_payment_status || 'Pending'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                            {formatCurrency(item.advance_received_from_client || 0)}
+                          </TableCell>
+                          <TableCell className="pr-6 text-right font-bold text-sm font-mono">
+                            {formatCurrency(item.revenue || item.freight_amount || 0)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -538,7 +720,7 @@ export default function ClientPortalPage() {
                   className="flex-1 rounded-xl"
                   onClick={() => window.open(selectedPodTrip.podUrl, '_blank')}
                 >
-                  <Eye className="w-4 h-4 mr-2" /> Open Full Image
+                  <Eye className="w-4 h-4 mr-2" /> Open Full Document
                 </Button>
                 <Button
                   className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white"
@@ -552,7 +734,7 @@ export default function ClientPortalPage() {
                     toast.success('POD downloaded');
                   }}
                 >
-                  <Download className="w-4 h-4 mr-2" /> Download POD Image
+                  <Download className="w-4 h-4 mr-2" /> Download POD
                 </Button>
               </div>
             </div>
