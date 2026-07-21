@@ -36,7 +36,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       if (type === 'Driver' || type === 'Employee' || type === 'Supervisor' || type === 'Manager') {
         mainCat = 'Employee';
         subCat = type;
-      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop' || type === 'Bodywork / Welding' || type === 'Crane / Tow Truck' || type === 'Hydraulics' || type === 'Plastics') {
+      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop' || type === 'Bodywork / Welding' || type === 'Crane / Tow Truck' || type === 'Hydraulics' || type === 'Plastics' || type === 'Washing Centre' || type === 'RTO Agent') {
         mainCat = 'Maintenance';
         subCat = type;
       } else if (type === 'Vendor') {
@@ -257,6 +257,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                         <SelectItem value="Bodywork / Welding">Bodywork / Welding</SelectItem>
                         <SelectItem value="Crane / Tow Truck">Crane / Tow Truck / Recovery</SelectItem>
                         <SelectItem value="Hydraulics">Hydraulics & Plastics</SelectItem>
+                        <SelectItem value="Washing Centre">Washing Centre / Water Wash</SelectItem>
+                        <SelectItem value="RTO Agent">RTO Agent / Compliance</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </>
                     ) : (

@@ -837,7 +837,8 @@ const runPocketBase = async () => {
         const newVals = [
           'Client', 'Driver', 'Employee', 'Mechanic', 'Showroom', 
           'Spare Parts', 'Vendor', 'Electrician', 'Puncture Shop',
-          'Other', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Supervisor', 'Manager'
+          'Other', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Supervisor', 'Manager',
+          'RTO Agent', 'Washing Centre'
         ];
         let updatedContacts = false;
         for (const val of newVals) {

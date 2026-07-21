@@ -28,13 +28,13 @@ export const MAIN_GROUPS = [
   { key: 'All',         label: 'All Contacts',        icon: Users,    types: null   },
   { key: 'Client',      label: 'Clients',             icon: Building2,types: ['Client'] },
   { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee','Supervisor','Manager'] },
-  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics'] },
+  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent'] },
   { key: 'Other',       label: 'Other Contacts',      icon: UserCog,  types: ['Other','Vendor'] },
 ];
 
 // Sub-filters only visible when "Maintenance Network" is active
 export const MAINTENANCE_SUBS = [
-  { key: 'all_maint',          label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Other'] },
+  { key: 'all_maint',          label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent','Other'] },
   { key: 'Mechanic',           label: 'Mechanics',           icon: Wrench,     types: ['Mechanic'] },
   { key: 'Electrician',        label: 'Electricians',        icon: Zap,        types: ['Electrician'] },
   { key: 'Puncture Shop',      label: 'Puncture Shops',    icon: Disc,       types: ['Puncture Shop'] },
@@ -43,6 +43,8 @@ export const MAINTENANCE_SUBS = [
   { key: 'Bodywork / Welding', label: 'Bodywork & Welding',  icon: Wrench,     types: ['Bodywork / Welding'] },
   { key: 'Crane / Tow Truck',  label: 'Crane & Towing',      icon: Truck,      types: ['Crane / Tow Truck'] },
   { key: 'Hydraulics',         label: 'Hydraulics & Plastics', icon: Zap,      types: ['Hydraulics','Plastics'] },
+  { key: 'Washing Centre',     label: 'Washing Centres',     icon: Network,    types: ['Washing Centre'] },
+  { key: 'RTO Agent',          label: 'RTO Agents',          icon: Landmark,   types: ['RTO Agent'] },
   { key: 'Other',              label: 'Other Services',      icon: UserCog,    types: ['Other'] },
 ];
 
@@ -60,6 +62,8 @@ const TYPE_BADGE = {
   'Crane / Tow Truck':  'bg-blue-500/10 text-blue-400 border-blue-500/25',
   'Hydraulics':         'bg-purple-500/10 text-purple-400 border-purple-500/25',
   'Plastics':           'bg-pink-500/10 text-pink-400 border-pink-500/25',
+  'Washing Centre':     'bg-sky-500/10 text-sky-400 border-sky-500/25',
+  'RTO Agent':          'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
   'Vendor':             'bg-indigo-500/10 text-indigo-400 border-indigo-500/25',
   'Other':              'bg-slate-500/10 text-slate-300 border-slate-500/25',
 };
