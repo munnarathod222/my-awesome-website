@@ -27,7 +27,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     mileage: '',
     assigned_managers: '',
     vendor_payout: '',
-    payment_model: 'Model2'
+    payment_model: 'Model2',
+    toll_deduction: ''
   });
 
   useEffect(() => {
@@ -51,7 +52,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           mileage: trip.mileage || '',
           assigned_managers: trip.assigned_managers || '',
           vendor_payout: trip.vendor_payout || '',
-          payment_model: trip.payment_model || 'Model2'
+          payment_model: trip.payment_model || 'Model2',
+          toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -83,6 +85,7 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         trip_status: formData.trip_status,
         mileage: parseFloat(formData.mileage) || 0,
         assigned_managers: formData.assigned_managers,
+        toll_deduction: parseFloat(formData.toll_deduction) || 0,
         
         ownership_type: isAttached ? 'Attached' : 'Owned',
         payment_model: isAttached ? formData.payment_model : 'Model1',
@@ -282,6 +285,19 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                   value={formData.mileage}
                   onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
                   placeholder="0.0"
+                  className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-toll_deduction">Toll Deduction (₹)</Label>
+                <Input
+                  id="edit-toll_deduction"
+                  type="number"
+                  step="0.01"
+                  value={formData.toll_deduction}
+                  onChange={(e) => setFormData({ ...formData, toll_deduction: e.target.value })}
+                  placeholder="0.00"
                   className="bg-background"
                 />
               </div>

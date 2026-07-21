@@ -66,6 +66,7 @@ router.post('/bulk-create', pocketbaseAuth, async (req, res) => {
     if (trip.tds_deducted_receivable !== undefined) trip.tds_deducted_receivable = Number(trip.tds_deducted_receivable) || 0;
     if (trip.vendor_payout !== undefined) trip.vendor_payout = Number(trip.vendor_payout) || 0;
     if (trip.brokerage_margin !== undefined) trip.brokerage_margin = Number(trip.brokerage_margin) || 0;
+    if (trip.toll_deduction !== undefined) trip.toll_deduction = Number(trip.toll_deduction) || 0;
 
     // Sanitize relation fields — empty strings cause PocketBase silent 400 errors
     if (!trip.client_id) delete trip.client_id;

@@ -48,7 +48,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     driver_name: '',
     truck_number: '',
     vendor_payout: '',
-    payment_model: 'Model2'
+    payment_model: 'Model2',
+    toll_deduction: ''
   });
 
   useEffect(() => {
@@ -119,7 +120,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       driver_name: '',
       truck_number: '',
       vendor_payout: '',
-      payment_model: 'Model2'
+      payment_model: 'Model2',
+      toll_deduction: ''
     });
     setClientMetrics(null);
     setSelectedClientInfo(null);
@@ -245,6 +247,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         truck_number: formData.truck_number,
         created_by: currentUser?.id,
         user_id: currentUser?.id,
+        toll_deduction: parseFloat(formData.toll_deduction) || 0,
         
         ownership_type: isAttached ? 'Attached' : 'Owned',
         payment_model: isAttached ? formData.payment_model : 'Model1',
@@ -469,7 +472,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="space-y-4">
               <h4 className="font-semibold text-lg border-b pb-2">Financials & Logistics</h4>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Total Revenue (₹) <span className="text-destructive">*</span></Label>
                   <Input 
@@ -492,6 +495,18 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     placeholder="0.0" 
                     value={formData.kms} 
                     onChange={e => setFormData({...formData, kms: e.target.value})} 
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Toll Deduction (₹)</Label>
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                    value={formData.toll_deduction} 
+                    onChange={e => setFormData({...formData, toll_deduction: e.target.value})} 
                     className="bg-background"
                   />
                 </div>

@@ -661,6 +661,45 @@ const runPocketBase = async () => {
     logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download in local dev.`);
   }
 
+  // Run SQLite schema migration on boot
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(dbFilePath);
+    
+    // 1. Add toll_deduction column to trip_logs table if not exists
+    const cols = db.prepare("PRAGMA table_info(trip_logs)").all().map(c => c.name);
+    if (!cols.includes('toll_deduction')) {
+      logger.info("Migrating: Adding column 'toll_deduction' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN toll_deduction REAL DEFAULT 0").run();
+    }
+
+    // 2. Add toll_deduction field to trip_logs schema in _collections table if not exists
+    const record = db.prepare("SELECT * FROM _collections WHERE name='trip_logs'").get();
+    if (record) {
+      const fields = JSON.parse(record.fields);
+      const hasField = fields.some(f => f.name === 'toll_deduction');
+      if (!hasField) {
+        logger.info("Migrating: Appending 'toll_deduction' field to PocketBase 'trip_logs' schema...");
+        fields.push({
+          help: "Custom toll deduction for this specific trip",
+          hidden: false,
+          id: "num_toll_deduct",
+          max: null,
+          min: null,
+          name: "toll_deduction",
+          onlyInt: false,
+          presentable: false,
+          required: false,
+          system: false,
+          type: "number"
+        });
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
+      }
+    }
+  } catch (migrationErr) {
+    logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
+  }
+
   // Sync latest storage files from Supabase Storage — Skipped on boot for instant startup speed!
   // Files are instead downloaded on-demand (lazily) as they are requested by users.
   logger.info(`📥 Lazy-download system active. Skipping boot-time storage download for light speed startup.`);
