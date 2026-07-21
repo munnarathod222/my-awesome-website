@@ -33,7 +33,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export const MonthlyTrendChart = ({ data }) => {
   return (
-    <div className="analytics-chart-container">
+    <div className="w-full h-[320px] sm:h-[360px] analytics-chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -97,7 +97,7 @@ export const MonthlyTrendChart = ({ data }) => {
 
 export const CategoryPieChart = ({ data }) => {
   return (
-    <div className="analytics-chart-container">
+    <div className="w-full h-[320px] sm:h-[360px] analytics-chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -123,7 +123,7 @@ export const CategoryPieChart = ({ data }) => {
 
 export const QuarterlyComparisonChart = ({ data }) => {
   return (
-    <div className="analytics-chart-container">
+    <div className="w-full h-[320px] sm:h-[360px] analytics-chart-container">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />

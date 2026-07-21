@@ -332,10 +332,11 @@ const AnalyticsHub = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (overrideFilters) => {
+    const activeFilters = overrideFilters || filters;
     setLoading(true);
     try {
-      const raw = await fetchRawAnalyticsData(filters.startDate, filters.endDate);
+      const raw = await fetchRawAnalyticsData(activeFilters.startDate, activeFilters.endDate);
       
       const monthly = aggregateMonthlyData(raw.trips, raw.expenses);
       const category = aggregateCategoryData(raw.expenses);
@@ -351,8 +352,8 @@ const AnalyticsHub = () => {
         raw.expenses, 
         raw.trucks || [], 
         raw.loans || [], 
-        filters.startDate, 
-        filters.endDate
+        activeFilters.startDate, 
+        activeFilters.endDate
       );
 
       const totalRev = monthly.reduce((sum, m) => sum + m.revenue, 0);
@@ -407,13 +408,15 @@ const AnalyticsHub = () => {
     loadData();
   }, []);
 
-  const handleApplyFilters = () => {
-    loadData();
+  const handleApplyFilters = (customFilters) => {
+    const targetFilters = customFilters && customFilters.startDate !== undefined ? customFilters : filters;
+    loadData(targetFilters);
   };
 
   const handleResetFilters = () => {
-    setFilters({ startDate: '', endDate: '', period: 'monthly' });
-    setTimeout(loadData, 0);
+    const defaultFilters = { startDate: '', endDate: '', period: 'monthly' };
+    setFilters(defaultFilters);
+    loadData(defaultFilters);
   };
 
   return (
