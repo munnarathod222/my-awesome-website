@@ -828,7 +828,21 @@ const runPocketBase = async () => {
       }
     }
 
-    // 5. Contacts collection schema migration for sub-categories
+    // 5. Contacts collection schema migration for sub-categories and warehouse fields
+    const contactCols = db.prepare("PRAGMA table_info(contacts)").all().map(c => c.name);
+    if (!contactCols.includes('warehouse_name')) {
+      logger.info("Migrating: Adding column 'warehouse_name' to 'contacts' table...");
+      db.prepare("ALTER TABLE contacts ADD COLUMN warehouse_name TEXT DEFAULT ''").run();
+    }
+    if (!contactCols.includes('designation')) {
+      logger.info("Migrating: Adding column 'designation' to 'contacts' table...");
+      db.prepare("ALTER TABLE contacts ADD COLUMN designation TEXT DEFAULT ''").run();
+    }
+    if (!contactCols.includes('client_name')) {
+      logger.info("Migrating: Adding column 'client_name' to 'contacts' table...");
+      db.prepare("ALTER TABLE contacts ADD COLUMN client_name TEXT DEFAULT ''").run();
+    }
+
     const contactsRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='contacts'").get();
     if (contactsRecordBoot) {
       const cFieldsBoot = JSON.parse(contactsRecordBoot.fields);
@@ -838,7 +852,7 @@ const runPocketBase = async () => {
           'Client', 'Driver', 'Employee', 'Mechanic', 'Showroom', 
           'Spare Parts', 'Vendor', 'Electrician', 'Puncture Shop',
           'Other', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Supervisor', 'Manager',
-          'RTO Agent', 'Washing Centre'
+          'RTO Agent', 'Washing Centre', 'Warehouse', 'Corporate'
         ];
         let updatedContacts = false;
         for (const val of newVals) {
@@ -847,9 +861,23 @@ const runPocketBase = async () => {
             updatedContacts = true;
           }
         }
+
+        if (!cFieldsBoot.some(f => f.name === 'warehouse_name')) {
+          cFieldsBoot.push({ name: 'warehouse_name', type: 'text', required: false, system: false, hidden: false, id: 'wh_name_field' });
+          updatedContacts = true;
+        }
+        if (!cFieldsBoot.some(f => f.name === 'designation')) {
+          cFieldsBoot.push({ name: 'designation', type: 'text', required: false, system: false, hidden: false, id: 'desig_field' });
+          updatedContacts = true;
+        }
+        if (!cFieldsBoot.some(f => f.name === 'client_name')) {
+          cFieldsBoot.push({ name: 'client_name', type: 'text', required: false, system: false, hidden: false, id: 'client_name_field' });
+          updatedContacts = true;
+        }
+
         if (updatedContacts) {
           db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(cFieldsBoot), contactsRecordBoot.id);
-          logger.info("Migrating: Contacts collection contact_type options updated successfully!");
+          logger.info("Migrating: Contacts collection contact_type and warehouse fields updated successfully!");
         }
       }
     }

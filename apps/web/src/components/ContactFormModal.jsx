@@ -27,13 +27,37 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     truck_brand: ''
   });
 
+  const [warehouseList, setWarehouseList] = useState([]);
+  const [clientList, setClientList] = useState([]);
+
   useEffect(() => {
     if (isOpen) {
+      const loadOptions = async () => {
+        try {
+          const [cRes, contactsRes] = await Promise.all([
+            pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }).catch(() => []),
+            pb.collection('contacts').getFullList({ filter: 'warehouse_name != ""', $autoCancel: false }).catch(() => [])
+          ]);
+          setClientList(cRes || []);
+          const whNames = Array.from(new Set((contactsRes || []).map(c => c.warehouse_name).filter(Boolean)));
+          setWarehouseList(whNames);
+        } catch (e) {
+          console.error("Error loading dropdown options:", e);
+        }
+      };
+      loadOptions();
+
       const type = contact?.contact_type || 'Client';
       let mainCat = 'Client';
       let subCat = '';
 
-      if (type === 'Driver' || type === 'Employee' || type === 'Supervisor' || type === 'Manager') {
+      if (type === 'Warehouse') {
+        mainCat = 'Warehouse';
+        subCat = 'Warehouse';
+      } else if (type === 'Corporate') {
+        mainCat = 'Client';
+        subCat = 'Corporate';
+      } else if (type === 'Driver' || type === 'Employee' || type === 'Supervisor' || type === 'Manager') {
         mainCat = 'Employee';
         subCat = type;
       } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop' || type === 'Bodywork / Welding' || type === 'Crane / Tow Truck' || type === 'Hydraulics' || type === 'Plastics' || type === 'Washing Centre' || type === 'RTO Agent') {
@@ -67,7 +91,10 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           email: contact.email || '',
           notes: displayNotes,
           google_maps_url: mapUrl,
-          truck_brand: contact.truck_brand || ''
+          truck_brand: contact.truck_brand || '',
+          warehouse_name: contact.warehouse_name || '',
+          designation: contact.designation || '',
+          client_name: contact.client_name || ''
         });
       } else {
         setFormData({
@@ -79,7 +106,10 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           email: '',
           notes: '',
           google_maps_url: '',
-          truck_brand: ''
+          truck_brand: '',
+          warehouse_name: '',
+          designation: '',
+          client_name: ''
         });
       }
     }
@@ -88,8 +118,11 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
   const handleMainCategoryChange = (val) => {
     setMainCategory(val);
     if (val === 'Client') {
-      setSubCategory('');
-      setFormData(prev => ({ ...prev, contact_type: 'Client' }));
+      setSubCategory('Corporate');
+      setFormData(prev => ({ ...prev, contact_type: 'Corporate' }));
+    } else if (val === 'Warehouse') {
+      setSubCategory('Warehouse');
+      setFormData(prev => ({ ...prev, contact_type: 'Warehouse' }));
     } else if (val === 'Vendor') {
       setSubCategory('');
       setFormData(prev => ({ ...prev, contact_type: 'Vendor' }));
@@ -221,7 +254,8 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Client">Client</SelectItem>
+                  <SelectItem value="Client">Client Corporate Contact</SelectItem>
+                  <SelectItem value="Warehouse">Warehouse Contact</SelectItem>
                   <SelectItem value="Employee">Drivers & Employees</SelectItem>
                   <SelectItem value="Maintenance">Maintenance Network</SelectItem>
                   <SelectItem value="Vendor">Vendor</SelectItem>
@@ -229,6 +263,43 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                 </SelectContent>
               </Select>
             </div>
+
+            {/* If Category == Warehouse */}
+            {mainCategory === 'Warehouse' && (
+              <>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Warehouse Name *</Label>
+                  <Input 
+                    value={formData.warehouse_name} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, warehouse_name: e.target.value }))} 
+                    placeholder="e.g. Bhiwandi Hub - WH1"
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Designation / Role</Label>
+                  <Input 
+                    value={formData.designation} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} 
+                    placeholder="e.g. Warehouse Manager / Dispatch Supervisor"
+                    className="bg-background"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* If Category == Client */}
+            {mainCategory === 'Client' && (
+              <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                <Label>Corporate Designation</Label>
+                <Input 
+                  value={formData.designation} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))} 
+                  placeholder="e.g. Logistics Director / Key Account Manager"
+                  className="bg-background"
+                />
+              </div>
+            )}
 
             {/* Conditionally show Sub-category */}
             {(mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Other') && (

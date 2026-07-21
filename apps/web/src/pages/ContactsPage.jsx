@@ -26,7 +26,8 @@ import BusinessCardUploadModal from '@/components/BusinessCardUploadModal.jsx';
 // Primary groups  →  which contact_type values they include
 export const MAIN_GROUPS = [
   { key: 'All',         label: 'All Contacts',        icon: Users,    types: null   },
-  { key: 'Client',      label: 'Clients',             icon: Building2,types: ['Client'] },
+  { key: 'Client',      label: 'Corporate Clients',   icon: Building2,types: ['Client','Corporate'] },
+  { key: 'Warehouse',   label: 'Warehouse Contacts',  icon: Landmark, types: ['Warehouse'] },
   { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee','Supervisor','Manager'] },
   { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent'] },
   { key: 'Other',       label: 'Other Contacts',      icon: UserCog,  types: ['Other','Vendor'] },
@@ -51,6 +52,8 @@ export const MAINTENANCE_SUBS = [
 /* ─── Badge colour map ───────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
   'Client':             'bg-primary/10 text-primary border-primary/25',
+  'Corporate':          'bg-primary/10 text-primary border-primary/25',
+  'Warehouse':          'bg-amber-500/10 text-amber-400 border-amber-500/25',
   'Driver':             'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
   'Employee':           'bg-teal-500/10 text-teal-400 border-teal-500/25',
   'Mechanic':           'bg-amber-500/10 text-amber-500 border-amber-500/25',
@@ -104,6 +107,7 @@ export default function ContactsPage() {
   const [searchTerm,        setSearchTerm]       = useState('');
   const [activeGroup,       setActiveGroup]      = useState('All');      // main tab key
   const [maintSub,          setMaintSub]         = useState('all_maint');// sub-pill key
+  const [warehouseSub,      setWarehouseSub]     = useState('all_wh');   // warehouse sub-pill key
 
   const [isFormOpen,        setIsFormOpen]       = useState(false);
   const [isDetailsOpen,     setIsDetailsOpen]    = useState(false);
@@ -143,6 +147,15 @@ export default function ContactsPage() {
     }
   };
 
+  /* ── Unique Warehouse List ─────────────────────────────────────────────── */
+  const warehouseList = useMemo(() => {
+    const list = contacts
+      .filter(c => c.contact_type === 'Warehouse' || Boolean(c.warehouse_name))
+      .map(c => c.warehouse_name)
+      .filter(Boolean);
+    return Array.from(new Set(list));
+  }, [contacts]);
+
   /* ── Filtering logic ───────────────────────────────────────────────────── */
   const activeTypesAllowed = useMemo(() => {
     if (activeGroup === 'All') return null; // null = no type filter
@@ -155,27 +168,40 @@ export default function ContactsPage() {
 
   const filteredContacts = useMemo(() => {
     return contacts.filter(c => {
-      if (activeTypesAllowed && !activeTypesAllowed.includes(c.contact_type)) return false;
+      if (activeGroup === 'Warehouse') {
+        const isWh = c.contact_type === 'Warehouse' || Boolean(c.warehouse_name);
+        if (!isWh) return false;
+        if (warehouseSub !== 'all_wh' && c.warehouse_name !== warehouseSub) return false;
+      } else if (activeTypesAllowed && !activeTypesAllowed.includes(c.contact_type)) {
+        return false;
+      }
+
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
         return (
           c.company_name?.toLowerCase().includes(q) ||
           c.phone_number?.toLowerCase().includes(q) ||
           c.gstin?.toLowerCase().includes(q) ||
-          c.physical_address?.toLowerCase().includes(q)
+          c.physical_address?.toLowerCase().includes(q) ||
+          c.warehouse_name?.toLowerCase().includes(q) ||
+          c.designation?.toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [contacts, activeTypesAllowed, searchTerm]);
+  }, [contacts, activeGroup, activeTypesAllowed, warehouseSub, searchTerm]);
 
   // Counts per group for badges
   const groupCounts = useMemo(() => {
     const counts = {};
     MAIN_GROUPS.forEach(g => {
-      counts[g.key] = g.types === null
-        ? contacts.length
-        : contacts.filter(c => g.types.includes(c.contact_type)).length;
+      if (g.key === 'All') {
+        counts[g.key] = contacts.length;
+      } else if (g.key === 'Warehouse') {
+        counts[g.key] = contacts.filter(c => c.contact_type === 'Warehouse' || Boolean(c.warehouse_name)).length;
+      } else {
+        counts[g.key] = contacts.filter(c => g.types.includes(c.contact_type)).length;
+      }
     });
     MAINTENANCE_SUBS.forEach(s => {
       counts[s.key] = contacts.filter(c => s.types.includes(c.contact_type)).length;
@@ -270,7 +296,7 @@ export default function ContactsPage() {
             </div>
           </div>
 
-          {/* Secondary sub-pill row — only shows when Maintenance is active */}
+          {/* Secondary sub-pill row — shows when Maintenance or Warehouse is active */}
           <AnimatePresence>
             {activeGroup === 'Maintenance' && (
               <motion.div
@@ -294,6 +320,44 @@ export default function ContactsPage() {
                       accent="text-amber-400"
                     />
                   ))}
+                </div>
+              </motion.div>
+            )}
+
+            {activeGroup === 'Warehouse' && (
+              <motion.div
+                key="wh-subs"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-2 pt-1 pl-1 border-t border-border/30">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest self-center mr-1">Select Warehouse:</span>
+                  <Pill
+                    key="all_wh"
+                    active={warehouseSub === 'all_wh'}
+                    onClick={() => setWarehouseSub('all_wh')}
+                    icon={Landmark}
+                    label="All Warehouses"
+                    count={groupCounts['Warehouse']}
+                    accent="text-amber-400"
+                  />
+                  {warehouseList.map(whName => {
+                    const count = contacts.filter(c => (c.contact_type === 'Warehouse' || c.warehouse_name) && c.warehouse_name === whName).length;
+                    return (
+                      <Pill
+                        key={whName}
+                        active={warehouseSub === whName}
+                        onClick={() => setWarehouseSub(whName)}
+                        icon={Building2}
+                        label={whName}
+                        count={count}
+                        accent="text-amber-400"
+                      />
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -379,12 +443,25 @@ export default function ContactsPage() {
                             </span>
                           </TableCell>
                            <TableCell className="py-4">
-                            {getTypeBadge(contact.contact_type)}
-                            {contact.contact_type === 'Mechanic' && contact.truck_brand && (
-                              <p className="text-[10px] font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">
-                                {contact.truck_brand}
-                              </p>
-                            )}
+                            <div className="flex flex-col gap-1 items-start">
+                              {getTypeBadge(contact.contact_type)}
+                              {contact.warehouse_name && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                  <Building2 className="w-3 h-3" />
+                                  {contact.warehouse_name}
+                                </span>
+                              )}
+                              {contact.designation && (
+                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  {contact.designation}
+                                </span>
+                              )}
+                              {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+                                <p className="text-[10px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">
+                                  {contact.truck_brand}
+                                </p>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-sm font-medium text-muted-foreground py-4">
                             {format(new Date(contact.created), 'MMM dd, yyyy')}
