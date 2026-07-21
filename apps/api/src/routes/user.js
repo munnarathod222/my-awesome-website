@@ -118,7 +118,8 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
         role: 'Client',
         status: 'active',
         phone_number: userRecord.phone_number || '0000000000',
-        full_name: userRecord.full_name || clientName || 'Client'
+        full_name: userRecord.full_name || clientName || 'Client',
+        client_id: clientId
       };
 
       if (password) {
@@ -143,7 +144,8 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
         full_name: clientName || 'Client',
         role: 'Client',
         status: 'active',
-        phone_number: '0000000000'
+        phone_number: '0000000000',
+        client_id: clientId
       };
 
       try {
@@ -159,7 +161,8 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
           full_name: clientName || 'Client',
           role: 'admin', // ultimate fallback role option
           status: 'active',
-          phone_number: '0000000000'
+          phone_number: '0000000000',
+          client_id: clientId
         }, { $autoCancel: false });
       }
       logger.info(`[API/User] Created new user record for ${cleanEmail} (ID: ${userRecord.id})`);

@@ -736,6 +736,93 @@ const runPocketBase = async () => {
         logger.info("Migrating: Users collection schema updated successfully!");
       }
     }
+
+    // 4. Clients table and schema changes for portal linkage
+    const clientCols = db.prepare("PRAGMA table_info(clients)").all().map(c => c.name);
+    if (!clientCols.includes('portal_user_id')) {
+      logger.info("Migrating: Adding column 'portal_user_id' to 'clients' table...");
+      db.prepare("ALTER TABLE clients ADD COLUMN portal_user_id TEXT DEFAULT ''").run();
+    }
+    if (!clientCols.includes('portal_enabled')) {
+      logger.info("Migrating: Adding column 'portal_enabled' to 'clients' table...");
+      db.prepare("ALTER TABLE clients ADD COLUMN portal_enabled INTEGER DEFAULT 0").run();
+    }
+
+    const uCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+    if (!uCols.includes('client_id')) {
+      logger.info("Migrating: Adding column 'client_id' to 'users' table...");
+      db.prepare("ALTER TABLE users ADD COLUMN client_id TEXT DEFAULT ''").run();
+    }
+
+    const clientsRecord = db.prepare("SELECT * FROM _collections WHERE name='clients'").get();
+    if (clientsRecord) {
+      const cFields = JSON.parse(clientsRecord.fields);
+      let updatedClients = false;
+
+      if (!cFields.some(f => f.name === 'portal_user_id')) {
+        logger.info("Migrating: Adding 'portal_user_id' field to clients schema...");
+        cFields.push({
+          cascadeDelete: false,
+          collectionId: "_pb_users_auth_",
+          help: "Linked portal user account ID",
+          hidden: false,
+          id: "rel_portal_user",
+          maxSelect: 1,
+          minSelect: 0,
+          name: "portal_user_id",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "relation"
+        });
+        updatedClients = true;
+      }
+
+      if (!cFields.some(f => f.name === 'portal_enabled')) {
+        logger.info("Migrating: Adding 'portal_enabled' field to clients schema...");
+        cFields.push({
+          help: "Whether client portal access is enabled",
+          hidden: false,
+          id: "bool_portal_enabled",
+          name: "portal_enabled",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "bool"
+        });
+        updatedClients = true;
+      }
+
+      if (updatedClients) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(cFields), clientsRecord.id);
+        logger.info("Migrating: Clients collection schema updated successfully!");
+      }
+    }
+
+    // Refresh usersRecord reference to check if client_id is present
+    const usersRecordFresh = db.prepare("SELECT * FROM _collections WHERE name='users'").get();
+    if (usersRecordFresh) {
+      const uFieldsFresh = JSON.parse(usersRecordFresh.fields);
+      if (!uFieldsFresh.some(f => f.name === 'client_id')) {
+        logger.info("Migrating: Adding 'client_id' field to users schema...");
+        uFieldsFresh.push({
+          cascadeDelete: false,
+          collectionId: "pbc_1114538649",
+          help: "Linked client record ID",
+          hidden: false,
+          id: "rel_client_id",
+          maxSelect: 1,
+          minSelect: 0,
+          name: "client_id",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "relation"
+        });
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(uFieldsFresh), usersRecordFresh.id);
+        logger.info("Migrating: Users collection linkage schema updated successfully!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   }
