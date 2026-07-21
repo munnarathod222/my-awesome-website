@@ -129,6 +129,12 @@ const DashboardPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (currentUser?.role === 'Client' || currentUser?.role === 'client') {
+      navigate('/client-portal', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const [stats, setStats] = useState({
     users: 0, trips: 0, trucks: 0, pods: 0,
     revenue: 0, grossRevenue: 0, expenses: 0,

@@ -111,7 +111,7 @@ export default function Header() {
 
           {/* Brand */}
           <Link
-            to={isAuthenticated ? '/dashboard' : '/'}
+            to={isAuthenticated ? ((currentUser?.role === 'Client' || currentUser?.role === 'client') ? '/client-portal' : '/dashboard') : '/'}
             className="flex items-center gap-2 group shrink-0"
           >
             <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/25 transition-colors">

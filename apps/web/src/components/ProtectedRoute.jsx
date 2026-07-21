@@ -22,7 +22,8 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
     // If user is authenticated but doesn't have the right role, redirect to their dashboard
-    return <Navigate to="/dashboard" replace />;
+    const redirectPath = (role === 'Client' || role === 'client') ? "/client-portal" : "/dashboard";
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

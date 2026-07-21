@@ -10,7 +10,7 @@ import { Truck } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LoginPage = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
@@ -22,9 +22,10 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      const path = (currentUser?.role === 'Client' || currentUser?.role === 'client') ? '/client-portal' : '/dashboard';
+      navigate(path, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, currentUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,9 +38,10 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      await login(email, password);
+      const user = await login(email, password);
       toast.success('Logged in successfully');
-      navigate(from, { replace: true });
+      const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error(err);
       
