@@ -64,38 +64,76 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
 
 // Superuser-privileged endpoint to create/link Client Portal credentials
 router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
-  const { email, password, clientId, clientName } = req.body;
+  const { email, password, clientId, clientName, portalUserId } = req.body;
 
-  if (!email || !password || !clientId) {
-    return res.status(400).json({ error: 'Email, password, and clientId are required' });
+  if (!email || !clientId) {
+    return res.status(400).json({ error: 'Email and clientId are required' });
   }
 
   const cleanEmail = email.trim();
-  logger.info(`[API/User] Creating client user for client '${clientName}' (${clientId}) with email '${cleanEmail}'`);
+  logger.info(`[API/User] Processing client credentials for client '${clientName}' (${clientId}), Email: '${cleanEmail}', portalUserId: '${portalUserId || 'none'}'`);
 
   try {
-    let userRecord;
+    let userRecord = null;
 
-    // 1. Check if user already exists
-    try {
-      userRecord = await pb.collection('users').getFirstListItem(
-        pb.filter('email = {:cleanEmail}', { cleanEmail }),
-        { $autoCancel: false }
-      );
-      
-      // Update existing user password and role
-      userRecord = await pb.collection('users').update(userRecord.id, {
-        password: password,
-        passwordConfirm: password,
+    // 1. If portalUserId is provided, try retrieving the linked user first
+    if (portalUserId) {
+      try {
+        userRecord = await pb.collection('users').getOne(portalUserId, { $autoCancel: false });
+      } catch (err) {
+        logger.warn(`[API/User] Linked portalUserId '${portalUserId}' not found, falling back to email search.`);
+      }
+    }
+
+    // 2. Fallback to searching by email if not found by ID
+    if (!userRecord) {
+      try {
+        userRecord = await pb.collection('users').getFirstListItem(
+          pb.filter('email = {:cleanEmail}', { cleanEmail }),
+          { $autoCancel: false }
+        );
+      } catch (notFound) {
+        // Not found by email is expected for new accounts
+      }
+    }
+
+    if (userRecord) {
+      // Check if the email is already taken by another user
+      try {
+        const otherUser = await pb.collection('users').getFirstListItem(
+          pb.filter('email = {:cleanEmail} && id != {:userId}', { cleanEmail, userId: userRecord.id }),
+          { $autoCancel: false }
+        );
+        if (otherUser) {
+          return res.status(400).json({ error: 'Email address is already in use by another user' });
+        }
+      } catch (e) {
+        // Not found by other user - safe to proceed
+      }
+
+      // Update existing user password and/or email
+      const updateData = {
+        email: cleanEmail,
+        emailVisibility: true,
         role: 'Client',
         status: 'active',
         phone_number: userRecord.phone_number || '0000000000',
         full_name: userRecord.full_name || clientName || 'Client'
-      }, { $autoCancel: false });
-      
+      };
+
+      if (password) {
+        updateData.password = password;
+        updateData.passwordConfirm = password;
+      }
+
+      userRecord = await pb.collection('users').update(userRecord.id, updateData, { $autoCancel: false });
       logger.info(`[API/User] Updated existing user credentials for ${cleanEmail} (ID: ${userRecord.id})`);
-    } catch (notFound) {
-      // 2. User does not exist - create using superuser client
+    } else {
+      // 3. User does not exist - create using superuser client
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required to create a new login account' });
+      }
+
       const userData = {
         email: cleanEmail,
         emailVisibility: true,
@@ -127,7 +165,7 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
       logger.info(`[API/User] Created new user record for ${cleanEmail} (ID: ${userRecord.id})`);
     }
 
-    // 3. Link user_id in client record
+    // 4. Link user_id in client record
     if (clientId && userRecord?.id) {
       await pb.collection('clients').update(clientId, {
         portal_user_id: userRecord.id,
@@ -139,15 +177,37 @@ router.post('/create-client-user', pocketbaseAuth, async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Client credentials created successfully',
+      message: 'Client credentials processed successfully',
       user: {
         id: userRecord.id,
         email: userRecord.email
       }
     });
   } catch (err) {
-    logger.error(`[API/User] Failed to create client user: ${err.message}`, err);
-    return res.status(500).json({ error: err.message || 'Failed to create client user' });
+    logger.error(`[API/User] Failed to process client credentials: ${err.message}`, err);
+    return res.status(500).json({ error: err.message || 'Failed to process client credentials' });
+  }
+});
+
+// Get linked portal user details (email, etc.) - secured with pocketbaseAuth middleware
+router.get('/get-portal-user/:portalUserId', pocketbaseAuth, async (req, res) => {
+  const { portalUserId } = req.params;
+  try {
+    const userRecord = await pb.collection('users').getOne(portalUserId, { $autoCancel: false });
+    return res.json({
+      success: true,
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        full_name: userRecord.full_name,
+        name: userRecord.name,
+        phone_number: userRecord.phone_number,
+        status: userRecord.status
+      }
+    });
+  } catch (err) {
+    logger.error(`[API/User] Failed to fetch portal user details: ${err.message}`);
+    return res.status(404).json({ error: 'Portal user not found' });
   }
 });
 

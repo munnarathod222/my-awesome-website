@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ShieldCheck, Copy, Share2, KeyRound, Mail, User, Building2, CheckCircle2, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Copy, Share2, KeyRound, Mail, User, Building2, CheckCircle2, RefreshCw, Loader2 } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 
@@ -15,11 +15,13 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
   const [selectedClientId, setSelectedClientId] = useState(initialClient?.id || '');
   const [selectedClient, setSelectedClient] = useState(initialClient || null);
   
-  const [email, setEmail] = useState(initialClient?.email || '');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchingClients, setFetchingClients] = useState(false);
+  const [fetchingPortalUser, setFetchingPortalUser] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState(null);
 
   useEffect(() => {
@@ -27,16 +29,39 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
       setCreatedCredentials(null);
       setPassword('');
       setConfirmPassword('');
+      setIsEditing(false);
+      setEmail('');
 
       if (initialClient) {
         setSelectedClient(initialClient);
         setSelectedClientId(initialClient.id);
         setEmail(initialClient.email || '');
+        if (initialClient.portal_user_id) {
+          setIsEditing(true);
+          fetchPortalUserDetails(initialClient.portal_user_id);
+        }
       } else {
         fetchClientsList();
       }
     }
   }, [isOpen, initialClient]);
+
+  const fetchPortalUserDetails = async (portalUserId) => {
+    setFetchingPortalUser(true);
+    try {
+      const response = await apiServerClient.fetch(`/user/get-portal-user/${portalUserId}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.user) {
+          setEmail(result.user.email || '');
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch portal user details:', err);
+    } finally {
+      setFetchingPortalUser(false);
+    }
+  };
 
   const fetchClientsList = async () => {
     setFetchingClients(true);
@@ -44,9 +69,14 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
       const list = await pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false });
       setAllClients(list);
       if (list.length > 0 && !selectedClientId) {
-        setSelectedClientId(list[0].id);
-        setSelectedClient(list[0]);
-        setEmail(list[0].email || '');
+        const firstClient = list[0];
+        setSelectedClientId(firstClient.id);
+        setSelectedClient(firstClient);
+        setEmail(firstClient.email || '');
+        if (firstClient.portal_user_id) {
+          setIsEditing(true);
+          fetchPortalUserDetails(firstClient.portal_user_id);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch clients:', err);
@@ -62,6 +92,14 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
     if (found) {
       setSelectedClient(found);
       setEmail(found.email || '');
+      setPassword('');
+      setConfirmPassword('');
+      if (found.portal_user_id) {
+        setIsEditing(true);
+        fetchPortalUserDetails(found.portal_user_id);
+      } else {
+        setIsEditing(false);
+      }
     }
   };
 
@@ -82,17 +120,23 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
       toast.error('Please select a client to link');
       return;
     }
-    if (!email || !password) {
-      toast.error('Please fill in email and password');
+    if (!email) {
+      toast.error('Please enter email ID');
       return;
     }
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+    if (!isEditing && !password) {
+      toast.error('Please enter a password');
       return;
     }
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
+    if (password) {
+      if (password.length < 8) {
+        toast.error('Password must be at least 8 characters long');
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match');
+        return;
+      }
     }
 
     setLoading(true);
@@ -109,9 +153,10 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: cleanEmail,
-            password: password,
+            password: password || undefined,
             clientId: activeClient.id,
-            clientName: clientName
+            clientName: clientName,
+            portalUserId: activeClient.portal_user_id || undefined
           })
         });
 
@@ -129,8 +174,8 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
         const userData = {
           email: cleanEmail,
           emailVisibility: true,
-          password: password,
-          passwordConfirm: password,
+          password: password || undefined,
+          passwordConfirm: password || undefined,
           name: clientName,
           full_name: clientName,
           role: 'Client',
@@ -138,30 +183,48 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
           phone_number: activeClient.phone || '0000000000'
         };
 
-        try {
-          userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
-        } catch (createErr) {
-          if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
-            const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
-            userRecord = await pb.collection('users').update(existing.id, {
-              password: password,
-              passwordConfirm: password,
-              role: 'Client',
-              status: 'active',
-              phone_number: existing.phone_number || activeClient.phone || '0000000000',
-              full_name: existing.full_name || clientName
-            }, { $autoCancel: false });
-          } else {
-            userRecord = await pb.collection('users').create({
-              email: cleanEmail,
-              password: password,
-              passwordConfirm: password,
-              name: clientName,
-              full_name: clientName,
-              role: 'Client',
-              status: 'active',
-              phone_number: activeClient.phone || '0000000000'
-            }, { $autoCancel: false });
+        if (activeClient.portal_user_id) {
+          const updateData = {
+            email: cleanEmail,
+            role: 'Client',
+            status: 'active',
+            phone_number: activeClient.phone || '0000000000',
+            full_name: clientName
+          };
+          if (password) {
+            updateData.password = password;
+            updateData.passwordConfirm = password;
+          }
+          userRecord = await pb.collection('users').update(activeClient.portal_user_id, updateData, { $autoCancel: false });
+        } else {
+          try {
+            userRecord = await pb.collection('users').create(userData, { $autoCancel: false });
+          } catch (createErr) {
+            if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
+              const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
+              const updateData = {
+                role: 'Client',
+                status: 'active',
+                phone_number: existing.phone_number || activeClient.phone || '0000000000',
+                full_name: existing.full_name || clientName
+              };
+              if (password) {
+                updateData.password = password;
+                updateData.passwordConfirm = password;
+              }
+              userRecord = await pb.collection('users').update(existing.id, updateData, { $autoCancel: false });
+            } else {
+              userRecord = await pb.collection('users').create({
+                email: cleanEmail,
+                password: password,
+                passwordConfirm: password,
+                name: clientName,
+                full_name: clientName,
+                role: 'Client',
+                status: 'active',
+                phone_number: activeClient.phone || '0000000000'
+              }, { $autoCancel: false });
+            }
           }
         }
 
@@ -176,16 +239,16 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
         clientName: activeClient.client_name,
         companyName: activeClient.company_name,
         email: cleanEmail,
-        password: password,
+        password: password || '(Keep Current Password)',
         portalUrl: `${window.location.origin}/client-login`
       };
 
       setCreatedCredentials(creds);
-      toast.success(`Client portal credentials linked to ${activeClient.client_name}`);
+      toast.success(isEditing ? `Client portal credentials updated` : `Client portal credentials linked to ${activeClient.client_name}`);
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.error('[CreateClientUserModal] Failed to create client account:', err);
-      toast.error(err.message || 'Failed to create client account');
+      console.error('[CreateClientUserModal] Failed to process client account:', err);
+      toast.error(err.message || 'Failed to process client account');
     } finally {
       setLoading(false);
     }
@@ -193,7 +256,7 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
 
   const getShareText = () => {
     if (!createdCredentials) return '';
-    return `🔐 *Jai Bhavani Cargo - Client Portal Login*\n\nDear *${createdCredentials.clientName}*,\nYour client portal account has been created.\n\n🌐 *Portal Login:* ${createdCredentials.portalUrl}\n📧 *Email:* ${createdCredentials.email}\n🔑 *Password:* ${createdCredentials.password}\n\nLog in anytime to view your shipments, freight logs, and download Proof of Delivery (POD) documents.`;
+    return `🔐 *Jai Bhavani Cargo - Client Portal Login*\n\nDear *${createdCredentials.clientName}*,\nYour client portal account credentials have been updated.\n\n🌐 *Portal Login:* ${createdCredentials.portalUrl}\n📧 *Email:* ${createdCredentials.email}\n🔑 *Password:* ${createdCredentials.password}\n\nLog in anytime to view your shipments, freight logs, and download Proof of Delivery (POD) documents.`;
   };
 
   const handleCopy = () => {
@@ -212,10 +275,10 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-foreground">
             <ShieldCheck className="w-5 h-5 text-primary" />
-            Create & Link Client Login
+            {isEditing ? 'Edit Client Portal Login' : 'Create & Link Client Login'}
           </DialogTitle>
           <DialogDescription>
-            Link a client to a dedicated Client Portal login account.
+            {isEditing ? 'Update login email or reset password for this client.' : 'Link a client to a dedicated Client Portal login account.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -224,7 +287,7 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
             <div className="p-4 bg-success/10 border border-success/30 rounded-xl flex items-center gap-3">
               <CheckCircle2 className="w-6 h-6 text-success shrink-0" />
               <div>
-                <h4 className="font-bold text-success text-sm">Credentials Created & Linked!</h4>
+                <h4 className="font-bold text-success text-sm">Credentials Updated & Linked!</h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Client <span className="font-semibold text-foreground">{createdCredentials.clientName}</span> can now log in.
                 </p>
@@ -288,7 +351,14 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
                     <p className="text-muted-foreground">{selectedClient.company_name || 'Individual Client'}</p>
                   </div>
                 </div>
-                <Badge variant="outline">{selectedClient.client_type || 'Company'}</Badge>
+                <div className="flex items-center gap-2">
+                  {selectedClient.portal_user_id ? (
+                    <Badge className="bg-primary/20 text-primary border-primary/30">Has Login</Badge>
+                  ) : (
+                    <Badge variant="outline">No Login</Badge>
+                  )}
+                  <Badge variant="outline">{selectedClient.client_type || 'Company'}</Badge>
+                </div>
               </div>
             )}
 
@@ -303,13 +373,17 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
                   onChange={e => setEmail(e.target.value)}
                   className="bg-background pl-9"
                   placeholder="client@example.com"
+                  disabled={fetchingPortalUser}
                 />
+                {fetchingPortalUser && (
+                  <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-1/2 -translate-y-1/2 text-primary" />
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label>Set Login Password *</Label>
+                <Label>Set Login Password {isEditing && '(Leave blank to keep current)'}</Label>
                 <button 
                   type="button" 
                   onClick={generateRandomPassword} 
@@ -322,35 +396,37 @@ export default function CreateClientUserModal({ isOpen, onClose, client: initial
                 <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input 
                   type="text" 
-                  required
+                  required={!isEditing}
                   minLength={8}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="bg-background pl-9 font-mono"
-                  placeholder="Min 8 characters"
+                  placeholder={isEditing ? "Leave blank or enter min 8 chars" : "Min 8 characters"}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Confirm Password *</Label>
-              <Input 
-                type="text" 
-                required
-                minLength={8}
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="bg-background font-mono"
-                placeholder="Re-enter password"
-              />
-            </div>
+            {(!isEditing || password.length > 0) && (
+              <div className="space-y-2">
+                <Label>Confirm Password *</Label>
+                <Input 
+                  type="text" 
+                  required
+                  minLength={8}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="bg-background font-mono"
+                  placeholder="Re-enter password"
+                />
+              </div>
+            )}
 
             <DialogFooter className="pt-3">
               <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Creating Account...' : 'Link & Create Credentials'}
+              <Button type="submit" disabled={loading || fetchingPortalUser}>
+                {loading ? 'Processing...' : isEditing ? 'Update Credentials' : 'Link & Create Credentials'}
               </Button>
             </DialogFooter>
           </form>
