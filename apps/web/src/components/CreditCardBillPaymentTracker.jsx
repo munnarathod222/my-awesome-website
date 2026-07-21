@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { cn } from '@/lib/utils.js';
 import CardModal from './CardModal.jsx';
 import PaymentRecordModal from './PaymentRecordModal.jsx';
 import WaiverLimitConfiguration from './WaiverLimitConfiguration.jsx';
