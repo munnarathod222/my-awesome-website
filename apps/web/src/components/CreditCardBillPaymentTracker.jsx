@@ -132,6 +132,21 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
   };
 
   const processedCards = cards.map(card => {
+    let primaryId = card.primary_card_id || '';
+    let isAddon = Boolean(card.is_addon || primaryId);
+    let displayName = card.card_name || '';
+
+    if (!isAddon && displayName.includes('[Add-On:')) {
+      const match = displayName.match(/\[Add-On:(.*?)\]/);
+      if (match) {
+        isAddon = true;
+        primaryId = match[1];
+        displayName = displayName.replace(/\[Add-On:.*?\]/, '').trim();
+      }
+    } else if (displayName.includes('[Add-On:')) {
+      displayName = displayName.replace(/\[Add-On:.*?\]/, '').trim();
+    }
+
     const cardExpenses = expenses.filter(e => e.credit_card_id === card.id);
     const cardPayments = payments.filter(p => p.card_id === card.id);
     
@@ -139,16 +154,17 @@ const CreditCardBillPaymentTracker = ({ refreshTrigger, onRefresh }) => {
     const totalPaid = cardPayments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
     
     const calculatedBalance = Math.max(0, totalSpent - totalPaid);
-    const isAddon = Boolean(card.is_addon || card.primary_card_id);
-    const parentCard = isAddon ? cards.find(c => c.id === card.primary_card_id) : null;
+    const parentCard = isAddon ? cards.find(c => c.id === primaryId) : null;
     const effectiveLimit = isAddon ? (parentCard?.credit_limit || card.credit_limit || 0) : (card.credit_limit || 0);
 
     const availableCredit = Math.max(0, effectiveLimit - calculatedBalance);
     const utilization = effectiveLimit > 0 ? (calculatedBalance / effectiveLimit) * 100 : 0;
 
     return { 
-      ...card, 
+      ...card,
+      card_name: displayName,
       isAddon, 
+      primary_card_id: primaryId,
       parentCard, 
       effectiveLimit, 
       calculatedBalance, 
