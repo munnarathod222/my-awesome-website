@@ -33,14 +33,17 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       let mainCat = 'Client';
       let subCat = '';
 
-      if (type === 'Driver' || type === 'Employee') {
+      if (type === 'Driver' || type === 'Employee' || type === 'Supervisor' || type === 'Manager') {
         mainCat = 'Employee';
         subCat = type;
-      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop') {
+      } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop' || type === 'Bodywork / Welding' || type === 'Crane / Tow Truck' || type === 'Hydraulics' || type === 'Plastics') {
         mainCat = 'Maintenance';
         subCat = type;
       } else if (type === 'Vendor') {
         mainCat = 'Vendor';
+      } else if (type === 'Other') {
+        mainCat = 'Other';
+        subCat = 'Other';
       }
 
       setMainCategory(mainCat);
@@ -96,6 +99,9 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     } else if (val === 'Maintenance') {
       setSubCategory('Mechanic');
       setFormData(prev => ({ ...prev, contact_type: 'Mechanic' }));
+    } else if (val === 'Other') {
+      setSubCategory('Other');
+      setFormData(prev => ({ ...prev, contact_type: 'Other' }));
     }
   };
 
@@ -219,12 +225,13 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   <SelectItem value="Employee">Drivers & Employees</SelectItem>
                   <SelectItem value="Maintenance">Maintenance Network</SelectItem>
                   <SelectItem value="Vendor">Vendor</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Conditionally show Sub-category */}
-            {(mainCategory === 'Employee' || mainCategory === 'Maintenance') && (
+            {(mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Other') && (
               <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
                 <Label>Sub-Category *</Label>
                 <Select value={subCategory} onValueChange={handleSubCategoryChange}>
@@ -235,16 +242,25 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                     {mainCategory === 'Employee' ? (
                       <>
                         <SelectItem value="Driver">Driver</SelectItem>
-                        <SelectItem value="Employee">Employee</SelectItem>
+                        <SelectItem value="Supervisor">Supervisor</SelectItem>
+                        <SelectItem value="Manager">Manager</SelectItem>
+                        <SelectItem value="Employee">Employee / Staff</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </>
-                    ) : (
+                    ) : mainCategory === 'Maintenance' ? (
                       <>
                         <SelectItem value="Mechanic">Mechanic</SelectItem>
                         <SelectItem value="Electrician">Electrician</SelectItem>
                         <SelectItem value="Puncture Shop">Puncture / Puncher Shop</SelectItem>
                         <SelectItem value="Showroom">Showroom / Service Centre</SelectItem>
                         <SelectItem value="Spare Parts">Spare Parts Shop</SelectItem>
+                        <SelectItem value="Bodywork / Welding">Bodywork / Welding</SelectItem>
+                        <SelectItem value="Crane / Tow Truck">Crane / Tow Truck / Recovery</SelectItem>
+                        <SelectItem value="Hydraulics">Hydraulics & Plastics</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </>
+                    ) : (
+                      <SelectItem value="Other">Other</SelectItem>
                     )}
                   </SelectContent>
                 </Select>

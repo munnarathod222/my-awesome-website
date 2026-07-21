@@ -827,6 +827,31 @@ const runPocketBase = async () => {
         logger.info("Migrating: Users collection linkage schema updated successfully!");
       }
     }
+
+    // 5. Contacts collection schema migration for sub-categories
+    const contactsRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='contacts'").get();
+    if (contactsRecordBoot) {
+      const cFieldsBoot = JSON.parse(contactsRecordBoot.fields);
+      const ctField = cFieldsBoot.find(f => f.name === 'contact_type');
+      if (ctField && ctField.type === 'select') {
+        const newVals = [
+          'Client', 'Driver', 'Employee', 'Mechanic', 'Showroom', 
+          'Spare Parts', 'Vendor', 'Electrician', 'Puncture Shop',
+          'Other', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Supervisor', 'Manager'
+        ];
+        let updatedContacts = false;
+        for (const val of newVals) {
+          if (!ctField.values.includes(val)) {
+            ctField.values.push(val);
+            updatedContacts = true;
+          }
+        }
+        if (updatedContacts) {
+          db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(cFieldsBoot), contactsRecordBoot.id);
+          logger.info("Migrating: Contacts collection contact_type options updated successfully!");
+        }
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   }

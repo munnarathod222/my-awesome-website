@@ -27,30 +27,41 @@ import BusinessCardUploadModal from '@/components/BusinessCardUploadModal.jsx';
 export const MAIN_GROUPS = [
   { key: 'All',         label: 'All Contacts',        icon: Users,    types: null   },
   { key: 'Client',      label: 'Clients',             icon: Building2,types: ['Client'] },
-  { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee'] },
-  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop'] },
+  { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee','Supervisor','Manager'] },
+  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics'] },
+  { key: 'Other',       label: 'Other Contacts',      icon: UserCog,  types: ['Other','Vendor'] },
 ];
 
 // Sub-filters only visible when "Maintenance Network" is active
 export const MAINTENANCE_SUBS = [
-  { key: 'all_maint',   label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop'] },
-  { key: 'Mechanic',    label: 'Mechanics',           icon: Wrench,     types: ['Mechanic'] },
-  { key: 'Electrician', label: 'Electricians',        icon: Zap,        types: ['Electrician'] },
-  { key: 'Puncture Shop', label: 'Puncture Shops',    icon: Disc,       types: ['Puncture Shop'] },
-  { key: 'Showroom',    label: 'Showrooms / Centres', icon: Landmark,   types: ['Showroom'] },
-  { key: 'Spare Parts', label: 'Spare Parts Shops',   icon: ShoppingBag,types: ['Spare Parts'] },
+  { key: 'all_maint',          label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Other'] },
+  { key: 'Mechanic',           label: 'Mechanics',           icon: Wrench,     types: ['Mechanic'] },
+  { key: 'Electrician',        label: 'Electricians',        icon: Zap,        types: ['Electrician'] },
+  { key: 'Puncture Shop',      label: 'Puncture Shops',    icon: Disc,       types: ['Puncture Shop'] },
+  { key: 'Showroom',           label: 'Showrooms / Centres', icon: Landmark,   types: ['Showroom'] },
+  { key: 'Spare Parts',        label: 'Spare Parts Shops',   icon: ShoppingBag,types: ['Spare Parts'] },
+  { key: 'Bodywork / Welding', label: 'Bodywork & Welding',  icon: Wrench,     types: ['Bodywork / Welding'] },
+  { key: 'Crane / Tow Truck',  label: 'Crane & Towing',      icon: Truck,      types: ['Crane / Tow Truck'] },
+  { key: 'Hydraulics',         label: 'Hydraulics & Plastics', icon: Zap,      types: ['Hydraulics','Plastics'] },
+  { key: 'Other',              label: 'Other Services',      icon: UserCog,    types: ['Other'] },
 ];
 
 /* ─── Badge colour map ───────────────────────────────────────────────────────── */
 const TYPE_BADGE = {
-  'Client':      'bg-primary/10 text-primary border-primary/25',
-  'Driver':      'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
-  'Employee':    'bg-teal-500/10 text-teal-400 border-teal-500/25',
-  'Mechanic':    'bg-amber-500/10 text-amber-500 border-amber-500/25',
-  'Electrician': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/25',
-  'Puncture Shop': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25',
-  'Showroom':    'bg-violet-500/10 text-violet-400 border-violet-500/25',
-  'Spare Parts': 'bg-orange-500/10 text-orange-400 border-orange-500/25',
+  'Client':             'bg-primary/10 text-primary border-primary/25',
+  'Driver':             'bg-emerald-500/10 text-emerald-500 border-emerald-500/25',
+  'Employee':           'bg-teal-500/10 text-teal-400 border-teal-500/25',
+  'Mechanic':           'bg-amber-500/10 text-amber-500 border-amber-500/25',
+  'Electrician':        'bg-yellow-500/10 text-yellow-500 border-yellow-500/25',
+  'Puncture Shop':      'bg-cyan-500/10 text-cyan-400 border-cyan-500/25',
+  'Showroom':           'bg-violet-500/10 text-violet-400 border-violet-500/25',
+  'Spare Parts':        'bg-orange-500/10 text-orange-400 border-orange-500/25',
+  'Bodywork / Welding': 'bg-rose-500/10 text-rose-400 border-rose-500/25',
+  'Crane / Tow Truck':  'bg-blue-500/10 text-blue-400 border-blue-500/25',
+  'Hydraulics':         'bg-purple-500/10 text-purple-400 border-purple-500/25',
+  'Plastics':           'bg-pink-500/10 text-pink-400 border-pink-500/25',
+  'Vendor':             'bg-indigo-500/10 text-indigo-400 border-indigo-500/25',
+  'Other':              'bg-slate-500/10 text-slate-300 border-slate-500/25',
 };
 const getTypeBadge = (type) => (
   <Badge variant="outline" className={`rounded-lg font-bold shadow-sm ${TYPE_BADGE[type] || 'border-border/50'}`}>
