@@ -40,25 +40,58 @@ import {
   Tooltip, XAxis, YAxis, CartesianGrid 
 } from 'recharts';
 
-const OverviewCard = ({ title, value, icon: Icon, trend, isCurrency = true, valueClass = "", colorClass = "from-blue-500 to-indigo-500" }) => (
-  <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300">
-    <div className={`absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r ${colorClass}`} />
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between space-y-0 pb-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
-        <div className="p-2 bg-primary/10 rounded-xl">
-          <Icon className="h-5 w-5 text-primary" />
+// Inline SVG Sparkline (no external dep needed)
+const SparkLine = ({ data, color = '#6366f1' }) => {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const w = 80, h = 36;
+  const pts = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts.split(' ').pop().split(',')[0]} cy={pts.split(' ').pop().split(',')[1]} r="3" fill={color} />
+    </svg>
+  );
+};
+
+const OverviewCard = ({ title, value, icon: Icon, trend, trendUp, isCurrency = true, valueClass = "", colorClass = "from-blue-500 to-indigo-500", subLabel, subValue, sparkData }) => (
+  <Card className="relative overflow-hidden shadow-md border-border/40 bg-card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group">
+    <div className={`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${colorClass}`} />
+    <div className={`absolute inset-0 bg-gradient-to-br ${colorClass} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`} />
+    <CardContent className="p-5">
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest leading-tight">{title}</p>
+        <div className={`p-2 rounded-xl bg-gradient-to-br ${colorClass} bg-opacity-10 shrink-0`}>
+          <Icon className="h-4 w-4 text-white" />
         </div>
       </div>
-      <div className="flex flex-col mt-2">
-        <div className={`text-2xl font-black tracking-tight text-foreground ${valueClass}`}>
-          {isCurrency ? '₹' : ''}{value}
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <div className={`text-2xl sm:text-3xl font-black tracking-tight text-foreground tabular-nums ${valueClass}`}>
+            {isCurrency ? '₹' : ''}{value}
+          </div>
+          {subLabel && (
+            <p className="text-[11px] text-muted-foreground mt-1 font-medium">
+              {subLabel}: <span className="text-foreground font-bold">{subValue}</span>
+            </p>
+          )}
+          {trend && (
+            <div className={`flex items-center gap-1 mt-1.5 text-[11px] font-bold ${trendUp !== false ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {trendUp !== false ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              <span>{trend}</span>
+            </div>
+          )}
         </div>
-        {trend && (
-          <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-            <TrendingUp className="w-4 h-4 text-success" />
-            <span className="text-success font-medium">{trend}</span> vs last period
-          </p>
+        {sparkData && sparkData.length > 1 && (
+          <div className="w-20 h-10 shrink-0 opacity-50 group-hover:opacity-90 transition-opacity">
+            <SparkLine data={sparkData} color="#6366f1" />
+          </div>
         )}
       </div>
     </CardContent>
@@ -479,39 +512,81 @@ const AnalyticsHub = () => {
 
       {loading ? (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1,2,3,4,5,6,7,8].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
           </div>
           <Skeleton className="h-[400px] rounded-2xl" />
         </div>
-      ) : (
+      ) : (() => {
+        // Derived extra KPIs from raw data
+        const trips = data.trips || [];
+        const employees = data.employees || [];
+        const monthly = data.monthly || [];
+        const totalTrips = trips.length;
+        const totalKms = trips.reduce((s,t) => s + (Number(t.kms)||0), 0);
+        const avgRevPerTrip = totalTrips > 0 ? Math.round(data.totals.revenue / totalTrips) : 0;
+        const avgKmsPerTrip = totalTrips > 0 ? Math.round(totalKms / totalTrips) : 0;
+        const activeDrivers = new Set(trips.map(t => t.driver_name).filter(Boolean)).size;
+        const activeRoutes = new Set(trips.map(t => t.route).filter(Boolean)).size;
+        const totalTolls = trips.reduce((s,t) => s+(Number(t.tolls)||0), 0);
+        const fuelCat = (data.category||[]).find(c => c.name?.toLowerCase().includes('fuel'));
+        const totalFuel = fuelCat ? fuelCat.value : 0;
+        // Monthly spark data arrays
+        const revSpark = monthly.map(m => m.revenue);
+        const expSpark = monthly.map(m => m.expenses);
+        const profSpark = monthly.map(m => m.profit);
+        const kmsSpark = monthly.map((m,i) => {
+          const mo = m.month;
+          return trips.filter(t=>t.date&&t.date.substring(0,7)===mo).reduce((s,t)=>s+(Number(t.kms)||0),0);
+        });
+        return (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <OverviewCard 
-              title="Total Revenue" 
-              value={data.totals.revenue.toLocaleString()} 
-              icon={Activity} 
+          {/* 8-Card KPI Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <OverviewCard title="Total Revenue" value={data.totals.revenue.toLocaleString()} icon={Activity}
               colorClass="from-emerald-500 to-teal-500"
+              subLabel="Avg/Trip" subValue={`₹${avgRevPerTrip.toLocaleString()}`}
+              trend={monthly.length >= 2 ? `₹${Math.round(monthly[monthly.length-1]?.revenue||0).toLocaleString()} last mo` : null}
+              trendUp={monthly.length>=2 ? (monthly[monthly.length-1]?.revenue||0)>=(monthly[monthly.length-2]?.revenue||0) : true}
+              sparkData={revSpark}
             />
-            <OverviewCard 
-              title="Total Expenses" 
-              value={data.totals.expenses.toLocaleString()} 
-              icon={Wallet} 
+            <OverviewCard title="Total Expenses" value={data.totals.expenses.toLocaleString()} icon={Wallet}
               colorClass="from-rose-500 to-orange-500"
+              subLabel="Fuel" subValue={`₹${Math.round(totalFuel).toLocaleString()}`}
+              trend={monthly.length >= 2 ? `₹${Math.round(monthly[monthly.length-1]?.expenses||0).toLocaleString()} last mo` : null}
+              trendUp={false}
+              sparkData={expSpark}
             />
-            <OverviewCard 
-              title="Net Profit" 
-              value={data.totals.profit.toLocaleString()} 
-              icon={BarChart3} 
+            <OverviewCard title="Net Profit" value={data.totals.profit.toLocaleString()} icon={BarChart3}
               valueClass={data.totals.profit >= 0 ? "text-emerald-400" : "text-rose-400"}
               colorClass={data.totals.profit >= 0 ? "from-emerald-500 to-blue-500" : "from-rose-500 to-red-600"}
+              subLabel="Margin" subValue={`${data.totals.margin.toFixed(1)}%`}
+              trendUp={data.totals.profit >= 0}
+              sparkData={profSpark}
             />
-            <OverviewCard 
-              title="Profit Margin" 
-              value={`${data.totals.margin.toFixed(1)}%`} 
-              icon={PieChartIcon} 
+            <OverviewCard title="Profit Margin" value={`${data.totals.margin.toFixed(1)}%`} icon={PieChartIcon}
               isCurrency={false}
               colorClass="from-violet-500 to-purple-500"
+              subLabel="Profitable months" subValue={`${monthly.filter(m=>m.profit>=0).length}/${monthly.length}`}
+              trendUp={data.totals.margin >= 15}
+            />
+            <OverviewCard title="Total Trips" value={totalTrips.toLocaleString()} icon={Truck}
+              isCurrency={false} colorClass="from-sky-500 to-blue-500"
+              subLabel="Active Drivers" subValue={activeDrivers}
+              sparkData={monthly.map((m)=>trips.filter(t=>t.date&&t.date.substring(0,7)===m.month).length)}
+            />
+            <OverviewCard title="Total KMs Driven" value={totalKms.toLocaleString()} icon={MapPin}
+              isCurrency={false} colorClass="from-amber-500 to-orange-500"
+              subLabel="Avg/Trip" subValue={`${avgKmsPerTrip.toLocaleString()} km`}
+              sparkData={kmsSpark}
+            />
+            <OverviewCard title="Active Routes" value={activeRoutes} icon={Activity}
+              isCurrency={false} colorClass="from-indigo-500 to-violet-500"
+              subLabel="Toll Spend" subValue={`₹${Math.round(totalTolls).toLocaleString()}`}
+            />
+            <OverviewCard title="Active Drivers" value={activeDrivers} icon={User}
+              isCurrency={false} colorClass="from-pink-500 to-rose-500"
+              subLabel="Employees" subValue={employees.length}
             />
           </div>
 
@@ -528,33 +603,208 @@ const AnalyticsHub = () => {
 
             {/* Tab Content: Overview */}
             <TabsContent value="overview" className="space-y-8 m-0 animate-in fade-in duration-300">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="shadow-sm border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Revenue vs Expenses Trend</CardTitle>
-                    <CardDescription>Historical financial performance trends</CardDescription>
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-md border-border/40 bg-card">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2"><TrendingUp className="w-4 h-4 text-emerald-400" />Revenue vs Expenses Trend</CardTitle>
+                    <CardDescription className="text-[11px]">Month-over-month financial performance</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <MonthlyTrendChart data={data.monthly} />
-                  </CardContent>
+                  <CardContent><MonthlyTrendChart data={data.monthly} /></CardContent>
                 </Card>
-
-                <Card className="shadow-sm border-border bg-card">
-                  <CardHeader>
-                    <CardTitle className="text-base font-semibold">Expense Breakdown</CardTitle>
-                    <CardDescription>Overall cost distribution by category</CardDescription>
+                <Card className="shadow-md border-border/40 bg-card">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-violet-400" />Expense Breakdown</CardTitle>
+                    <CardDescription className="text-[11px]">Cost distribution by category</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {data.category.length > 0 ? (
-                      <CategoryPieChart data={data.category} />
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-muted-foreground text-xs">
-                        No category data available
-                      </div>
+                    {data.category.length > 0 ? <CategoryPieChart data={data.category} /> : (
+                      <div className="h-[300px] flex items-center justify-center text-muted-foreground text-xs">No category data available</div>
                     )}
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Leaderboards Row */}
+              {(() => {
+                const trips = data.trips || [];
+                // Driver leaderboard
+                const driverMap = {};
+                trips.forEach(t => {
+                  const d = t.driver_name || 'Unknown';
+                  if (!driverMap[d]) driverMap[d] = { name: d, trips: 0, revenue: 0, kms: 0, tolls: 0 };
+                  driverMap[d].trips++;
+                  driverMap[d].revenue += Number(t.revenue) || 0;
+                  driverMap[d].kms += Number(t.kms) || 0;
+                  driverMap[d].tolls += Number(t.tolls) || 0;
+                });
+                const drivers = Object.values(driverMap).sort((a,b) => b.revenue - a.revenue).slice(0, 8);
+                const maxDriverRev = drivers[0]?.revenue || 1;
+
+                // Route leaderboard
+                const routeMap = {};
+                trips.forEach(t => {
+                  const r = t.route || 'Unknown Route';
+                  if (!routeMap[r]) routeMap[r] = { route: r, trips: 0, revenue: 0, kms: 0 };
+                  routeMap[r].trips++;
+                  routeMap[r].revenue += Number(t.revenue) || 0;
+                  routeMap[r].kms += Number(t.kms) || 0;
+                });
+                const routes = Object.values(routeMap).sort((a,b) => b.revenue - a.revenue).slice(0, 8);
+                const maxRouteRev = routes[0]?.revenue || 1;
+
+                // Top expense categories
+                const topCats = [...(data.category || [])].sort((a,b) => b.value - a.value).slice(0, 6);
+                const maxCatVal = topCats[0]?.value || 1;
+                const CAT_COLORS = ['bg-violet-400','bg-rose-400','bg-amber-400','bg-sky-400','bg-emerald-400','bg-pink-400'];
+
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Driver Leaderboard */}
+                    <Card className="shadow-md border-border/40 bg-card">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <User className="w-4 h-4 text-sky-400" />Driver Leaderboard
+                        </CardTitle>
+                        <CardDescription className="text-[11px]">Ranked by revenue generated</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2 pt-0">
+                        {drivers.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-8">No trip data available</p>
+                        ) : drivers.map((d, i) => (
+                          <div key={d.name} className="group hover:bg-muted/30 rounded-lg p-2 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shrink-0 ${
+                                  i === 0 ? 'bg-amber-400 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-amber-700 text-white' : 'bg-muted text-muted-foreground'
+                                }`}>{i+1}</span>
+                                <span className="text-xs font-semibold text-foreground truncate max-w-[100px]">{d.name}</span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-xs font-bold text-emerald-400">₹{Math.round(d.revenue).toLocaleString()}</span>
+                                <span className="text-[10px] text-muted-foreground ml-1">· {d.trips}T</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-muted/40 rounded-full h-1">
+                              <div className="bg-gradient-to-r from-sky-500 to-blue-500 h-1 rounded-full transition-all" style={{width:`${(d.revenue/maxDriverRev)*100}%`}} />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* Route Intelligence */}
+                    <Card className="shadow-md border-border/40 bg-card">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-amber-400" />Route Intelligence
+                        </CardTitle>
+                        <CardDescription className="text-[11px]">Top routes by revenue</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2 pt-0">
+                        {routes.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-8">No route data available</p>
+                        ) : routes.map((r, i) => (
+                          <div key={r.route} className="group hover:bg-muted/30 rounded-lg p-2 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[11px] font-semibold text-foreground truncate max-w-[130px]" title={r.route}>{r.route}</span>
+                              <div className="text-right shrink-0">
+                                <span className="text-xs font-bold text-amber-400">₹{Math.round(r.revenue).toLocaleString()}</span>
+                                <span className="text-[10px] text-muted-foreground ml-1">· {r.trips}T</span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-muted/40 rounded-full h-1">
+                              <div className="bg-gradient-to-r from-amber-500 to-orange-500 h-1 rounded-full transition-all" style={{width:`${(r.revenue/maxRouteRev)*100}%`}} />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* Expense Categories */}
+                    <Card className="shadow-md border-border/40 bg-card">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <Wallet className="w-4 h-4 text-rose-400" />Top Expense Categories
+                        </CardTitle>
+                        <CardDescription className="text-[11px]">Where money is going</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2 pt-0">
+                        {topCats.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-8">No expense data available</p>
+                        ) : topCats.map((cat, i) => (
+                          <div key={cat.name} className="group hover:bg-muted/30 rounded-lg p-2 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${CAT_COLORS[i]}`} />
+                                <span className="text-[11px] font-semibold text-foreground truncate max-w-[120px]">{cat.name}</span>
+                              </div>
+                              <span className="text-xs font-bold text-rose-400 shrink-0">₹{Math.round(cat.value).toLocaleString()}</span>
+                            </div>
+                            <div className="w-full bg-muted/40 rounded-full h-1">
+                              <div className={`${CAT_COLORS[i]} h-1 rounded-full transition-all`} style={{width:`${(cat.value/maxCatVal)*100}%`}} />
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })()}
+
+              {/* Business Insights Row */}
+              {(() => {
+                const trips = data.trips || [];
+                const monthly = data.monthly || [];
+                const totalTrips = trips.length;
+                const totalKms = trips.reduce((s,t)=>s+(Number(t.kms)||0),0);
+                const avgKmsPerTrip = totalTrips > 0 ? Math.round(totalKms/totalTrips) : 0;
+                const avgRevPerTrip = totalTrips > 0 ? Math.round(data.totals.revenue/totalTrips) : 0;
+                const bestMonth = monthly.reduce((best,m)=>m.revenue>=(best?.revenue||0)?m:best, null);
+                const worstMonth = monthly.filter(m=>m.revenue>0).reduce((worst,m)=>m.revenue<=(worst?.revenue||Infinity)?m:worst, null);
+                const avgMonthlyProfit = monthly.length>0 ? Math.round(monthly.reduce((s,m)=>s+m.profit,0)/monthly.length) : 0;
+                const profitableMonths = monthly.filter(m=>m.profit>=0).length;
+                const revenuePerKm = totalKms > 0 ? (data.totals.revenue/totalKms).toFixed(2) : 0;
+
+                const insights = [
+                  { label: 'Best Month', value: bestMonth ? `${bestMonth.month}` : 'N/A', sub: bestMonth ? `₹${Math.round(bestMonth.revenue).toLocaleString()} rev` : '', color: 'text-emerald-400', icon: '🏆' },
+                  { label: 'Avg Monthly Profit', value: `₹${Math.abs(avgMonthlyProfit).toLocaleString()}`, sub: avgMonthlyProfit >= 0 ? 'Profitable avg' : 'Loss avg', color: avgMonthlyProfit >= 0 ? 'text-emerald-400' : 'text-rose-400', icon: avgMonthlyProfit >= 0 ? '📈' : '📉' },
+                  { label: 'Rev per KM', value: `₹${revenuePerKm}`, sub: `${totalKms.toLocaleString()} total kms`, color: 'text-sky-400', icon: '⛽' },
+                  { label: 'Avg Trip Revenue', value: `₹${avgRevPerTrip.toLocaleString()}`, sub: `${avgKmsPerTrip} km avg/trip`, color: 'text-amber-400', icon: '🚚' },
+                  { label: 'Profitable Months', value: `${profitableMonths}/${monthly.length}`, sub: monthly.length>0?`${Math.round((profitableMonths/monthly.length)*100)}% success rate`:'', color: 'text-violet-400', icon: '✅' },
+                  { label: 'Total Trips', value: totalTrips.toLocaleString(), sub: `${new Set(trips.map(t=>t.driver_name).filter(Boolean)).size} drivers active`, color: 'text-pink-400', icon: '🗺️' },
+                ];
+                return (
+                  <Card className="shadow-md border-border/40 bg-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-primary" />Business Intelligence Insights
+                      </CardTitle>
+                      <CardDescription className="text-[11px]">Key derived metrics from your operational data</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {insights.map((ins) => (
+                          <div key={ins.label} className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/20 border border-border/30 hover:bg-muted/40 transition-colors">
+                            <span className="text-2xl mb-1">{ins.icon}</span>
+                            <span className={`text-sm font-black ${ins.color} tabular-nums`}>{ins.value}</span>
+                            <span className="text-[10px] font-bold text-foreground mt-0.5">{ins.label}</span>
+                            {ins.sub && <span className="text-[9px] text-muted-foreground mt-0.5 leading-tight">{ins.sub}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Quarterly Bar Chart */}
+              <Card className="shadow-md border-border/40 bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2"><BarChartIcon className="w-4 h-4 text-indigo-400" />Quarterly Performance Comparison</CardTitle>
+                </CardHeader>
+                <CardContent><QuarterlyComparisonChart data={data.quarterly} /></CardContent>
+              </Card>
             </TabsContent>
 
             {/* Tab Content: Revenue */}
@@ -577,66 +827,129 @@ const AnalyticsHub = () => {
             </TabsContent>
 
             {/* Tab Content: Shipments */}
-            <TabsContent value="shipments" className="space-y-8 m-0 animate-in fade-in duration-300">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <OverviewCard 
-                  title="Total Trips Dispatched" 
-                  value={(data.trips || []).length} 
-                  icon={Truck} 
-                  isCurrency={false}
-                />
-                <OverviewCard 
-                  title="Total KMS Driven" 
-                  value={(data.trips || []).reduce((sum, t) => sum + (Number(t.kms) || 0), 0).toLocaleString()} 
-                  icon={MapPin} 
-                  isCurrency={false}
-                />
-                <OverviewCard 
-                  title="Average Trip Revenue" 
-                  value={Math.round((data.trips || []).length > 0 ? data.totals.revenue / data.trips.length : 0).toLocaleString()} 
-                  icon={Activity} 
-                />
-              </div>
+            <TabsContent value="shipments" className="space-y-6 m-0 animate-in fade-in duration-300">
+              {(() => {
+                const trips = data.trips || [];
+                const totalTrips = trips.length;
+                const totalKms = trips.reduce((s,t)=>s+(Number(t.kms)||0),0);
+                const totalTolls = trips.reduce((s,t)=>s+(Number(t.tolls)||0),0);
+                const avgRevPerTrip = totalTrips > 0 ? Math.round(data.totals.revenue/totalTrips) : 0;
+                const avgKmsPerTrip = totalTrips > 0 ? Math.round(totalKms/totalTrips) : 0;
 
-              <Card className="shadow-sm border-border bg-card">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">Recent Dispatch Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left text-muted-foreground border-collapse">
-                      <thead className="text-[10px] uppercase tracking-wider bg-muted/20 border-b border-border/50">
-                        <tr>
-                          <th className="px-4 py-2.5 font-semibold text-foreground">Date</th>
-                          <th className="px-4 py-2.5 font-semibold text-foreground">Route</th>
-                          <th className="px-4 py-2.5 font-semibold text-foreground">Truck Number</th>
-                          <th className="px-4 py-2.5 font-semibold text-foreground">Driver</th>
-                          <th className="px-4 py-2.5 font-semibold text-foreground text-right">KMS</th>
-                          <th className="px-4 py-2.5 font-semibold text-foreground text-right">Revenue</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/20">
-                        {(data.trips || []).length === 0 ? (
-                          <tr>
-                            <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No shipments logged.</td>
-                          </tr>
-                        ) : (
-                          (data.trips || []).slice(0, 15).map((t) => (
-                            <tr key={t.id} className="hover:bg-muted/5 transition-colors">
-                              <td className="px-4 py-2.5 whitespace-nowrap">{t.date ? new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                              <td className="px-4 py-2.5 font-medium text-foreground">{t.route || '-'}</td>
-                              <td className="px-4 py-2.5 font-mono">{t.truck_number || '-'}</td>
-                              <td className="px-4 py-2.5">{t.driver_name || '-'}</td>
-                              <td className="px-4 py-2.5 text-right tabular-nums">{t.kms ? Number(t.kms).toLocaleString() : '0'}</td>
-                              <td className="px-4 py-2.5 text-right text-success font-semibold tabular-nums">₹{t.revenue ? Math.round(Number(t.revenue)).toLocaleString() : '0'}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
+                // Route ranking
+                const routeMap = {};
+                trips.forEach(t => {
+                  const r = t.route || 'Unknown';
+                  if (!routeMap[r]) routeMap[r] = { route: r, trips: 0, revenue: 0, kms: 0, tolls: 0 };
+                  routeMap[r].trips++;
+                  routeMap[r].revenue += Number(t.revenue)||0;
+                  routeMap[r].kms += Number(t.kms)||0;
+                  routeMap[r].tolls += Number(t.tolls)||0;
+                });
+                const routeRanking = Object.values(routeMap).sort((a,b)=>b.revenue-a.revenue);
+
+                return (
+                  <>
+                    {/* KPI mini row */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { label:'Total Trips', value: totalTrips, icon:'🚚', color:'text-sky-400' },
+                        { label:'Total KMs', value: `${totalKms.toLocaleString()} km`, icon:'📍', color:'text-amber-400' },
+                        { label:'Avg Rev/Trip', value: `₹${avgRevPerTrip.toLocaleString()}`, icon:'💰', color:'text-emerald-400' },
+                        { label:'Total Tolls', value: `₹${Math.round(totalTolls).toLocaleString()}`, icon:'🛣️', color:'text-rose-400' },
+                      ].map(k => (
+                        <div key={k.label} className="bg-muted/20 border border-border/30 rounded-xl p-4 text-center hover:bg-muted/40 transition-colors">
+                          <span className="text-xl">{k.icon}</span>
+                          <div className={`text-lg font-black ${k.color} tabular-nums mt-1`}>{k.value}</div>
+                          <div className="text-[10px] text-muted-foreground font-semibold mt-0.5">{k.label}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Route Performance Table */}
+                    <Card className="shadow-md border-border/40 bg-card">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2"><MapPin className="w-4 h-4 text-amber-400" />Route Performance Ranking</CardTitle>
+                        <CardDescription className="text-[11px]">All routes ranked by total revenue</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-border/40">
+                                <th className="px-3 py-2.5 text-left text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">#</th>
+                                <th className="px-3 py-2.5 text-left text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Route</th>
+                                <th className="px-3 py-2.5 text-center text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Trips</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Total KMs</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Tolls</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Revenue</th>
+                                <th className="px-3 py-2.5 text-right text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Rev/Trip</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/20">
+                              {routeRanking.length === 0 ? (
+                                <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">No shipment data available</td></tr>
+                              ) : routeRanking.map((r, i) => (
+                                <tr key={r.route} className="hover:bg-muted/20 transition-colors group">
+                                  <td className="px-3 py-2.5">
+                                    <span className={`text-[10px] font-black w-5 h-5 inline-flex items-center justify-center rounded-full ${
+                                      i===0?'bg-amber-400 text-black':i===1?'bg-slate-400 text-black':i===2?'bg-amber-700 text-white':'bg-muted text-muted-foreground'
+                                    }`}>{i+1}</span>
+                                  </td>
+                                  <td className="px-3 py-2.5 font-semibold text-foreground max-w-[160px] truncate" title={r.route}>{r.route}</td>
+                                  <td className="px-3 py-2.5 text-center">
+                                    <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full">{r.trips}</span>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{r.kms.toLocaleString()}</td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums text-rose-400">₹{Math.round(r.tolls).toLocaleString()}</td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums font-bold text-emerald-400">₹{Math.round(r.revenue).toLocaleString()}</td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums text-amber-400">₹{r.trips>0?Math.round(r.revenue/r.trips).toLocaleString():0}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Recent Dispatch Logs */}
+                    <Card className="shadow-md border-border/40 bg-card">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2"><Truck className="w-4 h-4 text-sky-400" />Recent Dispatch Logs</CardTitle>
+                        <CardDescription className="text-[11px]">Last 20 trips sorted by date</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-border/40">
+                                {['Date','Route','Truck','Driver','KMs','Tolls','Revenue'].map(h => (
+                                  <th key={h} className={`px-3 py-2.5 text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider ${['KMs','Tolls','Revenue'].includes(h)?'text-right':h==='Date'?'text-left whitespace-nowrap':'text-left'}`}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/20">
+                              {trips.length === 0 ? (
+                                <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">No shipments logged.</td></tr>
+                              ) : [...trips].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20).map((t) => (
+                                <tr key={t.id} className="hover:bg-muted/10 transition-colors">
+                                  <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">{t.date?new Date(t.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'-'}</td>
+                                  <td className="px-3 py-2.5 font-medium text-foreground max-w-[140px] truncate" title={t.route}>{t.route||'-'}</td>
+                                  <td className="px-3 py-2.5 font-mono text-[10px] text-sky-400">{t.truck_number||'-'}</td>
+                                  <td className="px-3 py-2.5 text-muted-foreground">{t.driver_name||'-'}</td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums">{t.kms?Number(t.kms).toLocaleString():'0'}</td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums text-rose-400">₹{t.tolls?Math.round(Number(t.tolls)).toLocaleString():'0'}</td>
+                                  <td className="px-3 py-2.5 text-right font-bold text-emerald-400 tabular-nums">₹{t.revenue?Math.round(Number(t.revenue)).toLocaleString():'0'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
             </TabsContent>
 
             {/* Tab Content: Expenses */}
@@ -1177,7 +1490,8 @@ const AnalyticsHub = () => {
             </TabsContent>
           </Tabs>
         </>
-      )}
+        );
+      })()}
     </div>
   );
 };
