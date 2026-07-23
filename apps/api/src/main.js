@@ -26,13 +26,16 @@ app.set('trust proxy', true);
 // ----------------------------------------------------
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
+// ----------------------------------------------------
+// Supabase Sync Persistence Configurations
+// ----------------------------------------------------
 const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'process.env.SUPABASE_SECRET';
+const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
 
 // Token verification middleware to secure all backup API endpoints
 const requireBackupAuth = (req, res, next) => {
   const token = req.headers['x-backup-token'] || req.query.token;
-  const expectedToken = process.env.BACKUP_API_TOKEN || 'process.env.SUPABASE_SECRET';
+  const expectedToken = process.env.BACKUP_API_TOKEN || supabaseKey;
   if (!token || token !== expectedToken) {
     logger.warn(`⚠️ Unauthorized backup API access attempt from ${req.ip}`);
     return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing backup token.' });
@@ -132,11 +135,12 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       buffer = await downloadRes.arrayBuffer();
     }
 
-    // Check if the downloaded database is smaller than 1.5MB (indicating a blank/wiped database)
-    // If so, fall back to the full 18th July snapshot (history/data_2026-07-18.db)!
-    if (!buffer || buffer.byteLength < 1500000) {
-      logger.warn(`⚠️ Root data.db in Supabase is small/blank (${buffer ? buffer.byteLength : 0} bytes). Hydrating from 18th July snapshot (history/data_2026-07-18.db)...`);
-      const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_2026-07-18.db`, {
+    // Check if the downloaded database is smaller than 100KB (indicating a blank/wiped database)
+    // If so, attempt to load the latest history snapshot!
+    if (!buffer || buffer.byteLength < 100000) {
+      logger.warn(`⚠️ Root data.db in Supabase is small/blank (${buffer ? buffer.byteLength : 0} bytes). Searching for latest history snapshot...`);
+      const todayStr = new Date().toISOString().split('T')[0];
+      const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${todayStr}.db`, {
         method: 'GET',
         headers: {
           'apikey': supabaseKey,
@@ -145,11 +149,11 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       });
       if (fallbackRes.ok) {
         buffer = await fallbackRes.arrayBuffer();
-        logger.info(`✅ Successfully loaded 18th July database snapshot (${buffer.byteLength} bytes)!`);
+        logger.info(`✅ Successfully loaded today's database snapshot (${buffer.byteLength} bytes)!`);
       }
     }
 
-    if (buffer && buffer.byteLength > 0) {
+    if (buffer && buffer.byteLength > 100000) {
       // Ensure target directory exists
       fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
 
@@ -171,7 +175,7 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       logger.info(`✅ Successfully restored database from Supabase Storage (${buffer.byteLength} bytes)!`);
       return true;
     } else {
-      logger.warn(`⚠️ No pre-existing database backup found in Supabase Storage. Starting fresh.`);
+      logger.warn(`⚠️ No valid pre-existing database backup found in Supabase Storage. Keeping local database.`);
       return false;
     }
   } catch (err) {
@@ -201,6 +205,12 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
       // Ignore cleanup error
     }
 
+    // 🛡️ ANTI-WIPEOUT SAFETY GUARD: Never upload blank or small DB files (< 100 KB)
+    if (fileBuffer.byteLength < 100000) {
+      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local database file is too small (${fileBuffer.byteLength} bytes). Aborting upload to Supabase.`);
+      return false;
+    }
+
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
       method: 'POST',
       headers: {
@@ -213,7 +223,7 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     });
 
     if (uploadRes.ok) {
-      logger.info('✅ Database backup successfully synced to Supabase Storage!');
+      logger.info(`✅ Database backup (${fileBuffer.byteLength} bytes) successfully synced to Supabase Storage!`);
       
       // Attempt to save a daily timestamped backup
       try {
