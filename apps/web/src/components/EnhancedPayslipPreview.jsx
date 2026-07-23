@@ -43,19 +43,14 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
   
   const getCleanEmployeeId = (emp, pay) => {
+    if (emp?.employee_number) return String(emp.employee_number);
+    if (emp?.emp_number) return String(emp.emp_number);
     if (emp?.employee_code) return String(emp.employee_code);
     if (emp?.emp_id) return String(emp.emp_id);
-    if (emp?.employee_number) return String(emp.employee_number);
     if (pay?.employee_code) return String(pay.employee_code);
     
-    const rawId = emp?.id || pay?.employee_id || '';
-    if (!rawId) return '1';
-
-    let hash = 0;
-    for (let i = 0; i < rawId.length; i++) {
-      hash = (hash * 31 + rawId.charCodeAt(i)) % 997;
-    }
-    return String((hash % 100) + 1);
+    // Default to clean formatted sequential number starting from 1
+    return 'EMP-001';
   };
 
   const compName = companySettings?.company_name || 'JAI BHAVANI CARGO';

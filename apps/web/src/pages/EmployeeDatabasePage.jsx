@@ -109,7 +109,7 @@ const EmployeeDatabasePage = () => {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: ''
+    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: ''
   });
 
   // Agreement template state
@@ -315,10 +315,11 @@ const EmployeeDatabasePage = () => {
     }
   };
 
-  const handleEdit = (employee) => {
+  const handleEdit = (employee, index = 0) => {
     setEditingId(employee.id);
+    const empNum = employee.employee_number || employee.emp_number || employee.employee_code || `EMP-${String(index + 1).padStart(3, '0')}`;
     setFormData({
-      employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || ''
+      employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || ''
     });
     setPhotoFile(null); setRemovePhoto(false);
     setPhotoPreview(employee.photo ? getEmployeePhotoUrl(employee) : null);
@@ -340,7 +341,8 @@ const EmployeeDatabasePage = () => {
 
   const resetForm = () => {
     setEditingId(null);
-    setFormData({ employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '' });
+    const nextNum = employees.length + 1;
+    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '' });
     clearPhoto();
     setUploadedDocs([]);
   };
@@ -704,6 +706,7 @@ const EmployeeDatabasePage = () => {
                         <TableHeader className="bg-muted/30">
                           <TableRow>
                             <TableHead className="w-[80px]">Photo</TableHead>
+                            <TableHead className="w-[100px]">EMP ID</TableHead>
                             <TableHead>Employee Profile</TableHead>
                             <TableHead>Joining Date</TableHead>
                             <TableHead>Contact Info</TableHead>
@@ -715,15 +718,22 @@ const EmployeeDatabasePage = () => {
                         </TableHeader>
                         <TableBody>
                           {employees.length === 0 ? (
-                            <TableRow><TableCell colSpan={8} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
-                          ) : employees.map(emp => (
-                            <TableRow key={emp.id} className="hover:bg-muted/30">
-                              <TableCell>
-                                <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
-                                  {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-5 h-5 text-muted-foreground/50" />}
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-medium">
+                            <TableRow><TableCell colSpan={9} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
+                          ) : employees.map((emp, idx) => {
+                            const empCode = emp.employee_number || emp.emp_number || emp.employee_code || `EMP-${String(idx + 1).padStart(3, '0')}`;
+                            return (
+                              <TableRow key={emp.id} className="hover:bg-muted/30">
+                                <TableCell>
+                                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
+                                    {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-5 h-5 text-muted-foreground/50" />}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 font-mono font-extrabold text-xs px-2 py-0.5 rounded-lg">
+                                    {empCode}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-medium">
                                 <span className="truncate max-w-[150px] block font-semibold">{emp.name}</span>
                                 <div className="flex gap-1.5 flex-wrap items-center mt-1">
                                   <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employee_type || 'Staff'}</Badge>
@@ -774,12 +784,13 @@ const EmployeeDatabasePage = () => {
                                   <Button size="sm" variant="ghost" onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: emp.id, entityName: emp.name })} title="Share document folder">
                                     <Share2 className="w-4 h-4 mr-1.5" /> Share
                                   </Button>
-                                  <Button size="icon" variant="ghost" onClick={() => handleEdit(emp)}><Pencil className="w-4 h-4" /></Button>
+                                  <Button size="icon" variant="ghost" onClick={() => handleEdit(emp, idx)}><Pencil className="w-4 h-4" /></Button>
                                   <Button size="icon" variant="ghost" onClick={() => handleDelete(emp.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
                                 </div>
                               </TableCell>
                             </TableRow>
-                          ))}
+                          );
+                        })}
                         </TableBody>
                       </Table>
                     </div>
