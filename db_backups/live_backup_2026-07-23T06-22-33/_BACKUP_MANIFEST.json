@@ -1,0 +1,99 @@
+{
+  "backup_date": "2026-07-23T06:22:40.594Z",
+  "backup_folder": "db_backups/live_backup_2026-07-23T06-22-33",
+  "base_url": "https://www.jaibhavanicargo.com/hcgi/platform",
+  "authenticated_as": "munnarathod222@gmail.com",
+  "total_collections_attempted": 22,
+  "total_collections_backed_up": 8,
+  "total_records": 301,
+  "collections": [
+    {
+      "collection": "users",
+      "records": 0
+    },
+    {
+      "collection": "contacts",
+      "records": 15
+    },
+    {
+      "collection": "clients",
+      "records": 2
+    },
+    {
+      "collection": "trucks",
+      "records": 1
+    },
+    {
+      "collection": "trips",
+      "records": 0
+    },
+    {
+      "collection": "expenses",
+      "records": 271
+    },
+    {
+      "collection": "employees",
+      "records": 1
+    },
+    {
+      "collection": "payroll",
+      "records": 0
+    },
+    {
+      "collection": "fuel_tracker",
+      "records": 3
+    },
+    {
+      "collection": "loans",
+      "records": 0
+    },
+    {
+      "collection": "invoices",
+      "records": 0
+    },
+    {
+      "collection": "invoice_items",
+      "records": 0
+    },
+    {
+      "collection": "warehouses",
+      "records": 0
+    },
+    {
+      "collection": "reminders",
+      "records": 7
+    },
+    {
+      "collection": "signup_requests",
+      "records": 0
+    },
+    {
+      "collection": "company_settings",
+      "records": 1
+    },
+    {
+      "collection": "notifications",
+      "records": 0
+    },
+    {
+      "collection": "documents",
+      "records": 0
+    },
+    {
+      "collection": "maintenance_logs",
+      "records": 0
+    },
+    {
+      "collection": "insurance",
+      "records": 0
+    },
+    {
+      "collection": "tax_records",
+      "records": 0
+    },
+    {
+      "collection": "audit_logs",
+      "records": 0
+    }
+  ]
+}

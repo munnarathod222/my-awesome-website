@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
-  Network, UserCog, Phone, MapPin, Zap, Disc
+  Network, UserCog, Phone, MapPin, Zap, Disc, Banknote, HandCoins, CreditCard
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -30,7 +30,15 @@ export const MAIN_GROUPS = [
   { key: 'Warehouse',   label: 'Warehouse Contacts',  icon: Landmark, types: ['Warehouse'] },
   { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee','Supervisor','Manager'] },
   { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent'] },
+  { key: 'Finance',     label: 'Finance & Banking',   icon: Banknote, types: ['Banking','Loan Agent'] },
   { key: 'Other',       label: 'Other Contacts',      icon: UserCog,  types: ['Other','Vendor'] },
+];
+
+// Sub-filters for Finance & Banking group
+export const FINANCE_SUBS = [
+  { key: 'all_fin',    label: 'All Finance',  icon: Banknote,  types: ['Banking','Loan Agent'] },
+  { key: 'Banking',    label: 'Banking',      icon: CreditCard,types: ['Banking'] },
+  { key: 'Loan Agent', label: 'Loan Agents',  icon: HandCoins, types: ['Loan Agent'] },
 ];
 
 // Sub-filters only visible when "Maintenance Network" is active
@@ -68,6 +76,8 @@ const TYPE_BADGE = {
   'Washing Centre':     'bg-sky-500/10 text-sky-400 border-sky-500/25',
   'RTO Agent':          'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
   'Vendor':             'bg-indigo-500/10 text-indigo-400 border-indigo-500/25',
+  'Banking':            'bg-green-500/10 text-green-400 border-green-500/25',
+  'Loan Agent':         'bg-lime-500/10 text-lime-400 border-lime-500/25',
   'Other':              'bg-slate-500/10 text-slate-300 border-slate-500/25',
 };
 const getTypeBadge = (type) => (
@@ -108,6 +118,7 @@ export default function ContactsPage() {
   const [activeGroup,       setActiveGroup]      = useState('All');      // main tab key
   const [maintSub,          setMaintSub]         = useState('all_maint');// sub-pill key
   const [warehouseSub,      setWarehouseSub]     = useState('all_wh');   // warehouse sub-pill key
+  const [financeSub,        setFinanceSub]       = useState('all_fin');  // finance sub-pill key
 
   const [isFormOpen,        setIsFormOpen]       = useState(false);
   const [isDetailsOpen,     setIsDetailsOpen]    = useState(false);
@@ -163,8 +174,12 @@ export default function ContactsPage() {
       const sub = MAINTENANCE_SUBS.find(s => s.key === maintSub);
       return sub?.types ?? MAINTENANCE_SUBS[0].types;
     }
+    if (activeGroup === 'Finance') {
+      const sub = FINANCE_SUBS.find(s => s.key === financeSub);
+      return sub?.types ?? FINANCE_SUBS[0].types;
+    }
     return MAIN_GROUPS.find(g => g.key === activeGroup)?.types ?? null;
-  }, [activeGroup, maintSub]);
+  }, [activeGroup, maintSub, financeSub]);
 
   const filteredContacts = useMemo(() => {
     return contacts.filter(c => {
@@ -184,12 +199,15 @@ export default function ContactsPage() {
           c.gstin?.toLowerCase().includes(q) ||
           c.physical_address?.toLowerCase().includes(q) ||
           c.warehouse_name?.toLowerCase().includes(q) ||
-          c.designation?.toLowerCase().includes(q)
+          c.designation?.toLowerCase().includes(q) ||
+          c.bank_name?.toLowerCase().includes(q) ||
+          c.ifsc_code?.toLowerCase().includes(q) ||
+          c.loan_type?.toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [contacts, activeGroup, activeTypesAllowed, warehouseSub, searchTerm]);
+  }, [contacts, activeGroup, activeTypesAllowed, warehouseSub, financeSub, searchTerm]);
 
   // Counts per group for badges
   const groupCounts = useMemo(() => {
@@ -204,6 +222,9 @@ export default function ContactsPage() {
       }
     });
     MAINTENANCE_SUBS.forEach(s => {
+      counts[s.key] = contacts.filter(c => s.types.includes(c.contact_type)).length;
+    });
+    FINANCE_SUBS.forEach(s => {
       counts[s.key] = contacts.filter(c => s.types.includes(c.contact_type)).length;
     });
     return counts;
@@ -275,11 +296,11 @@ export default function ContactsPage() {
                 <Pill
                   key={g.key}
                   active={activeGroup === g.key}
-                  onClick={() => { setActiveGroup(g.key); if (g.key !== 'Maintenance') setMaintSub('all_maint'); }}
+                  onClick={() => { setActiveGroup(g.key); if (g.key !== 'Maintenance') setMaintSub('all_maint'); if (g.key !== 'Finance') setFinanceSub('all_fin'); }}
                   icon={g.icon}
                   label={g.label}
                   count={groupCounts[g.key]}
-                  accent={g.key === 'Maintenance' ? 'text-amber-400' : g.key === 'Employee' ? 'text-emerald-400' : g.key === 'Client' ? 'text-primary' : undefined}
+                  accent={g.key === 'Maintenance' ? 'text-amber-400' : g.key === 'Finance' ? 'text-green-400' : g.key === 'Employee' ? 'text-emerald-400' : g.key === 'Client' ? 'text-primary' : undefined}
                 />
               ))}
             </div>
@@ -358,6 +379,32 @@ export default function ContactsPage() {
                       />
                     );
                   })}
+                </div>
+              </motion.div>
+            )}
+
+            {activeGroup === 'Finance' && (
+              <motion.div
+                key="fin-subs"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-2 pt-1 pl-1 border-t border-border/30">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest self-center mr-1">Filter:</span>
+                  {FINANCE_SUBS.map(s => (
+                    <Pill
+                      key={s.key}
+                      active={financeSub === s.key}
+                      onClick={() => setFinanceSub(s.key)}
+                      icon={s.icon}
+                      label={s.label}
+                      count={groupCounts[s.key]}
+                      accent="text-green-400"
+                    />
+                  ))}
                 </div>
               </motion.div>
             )}

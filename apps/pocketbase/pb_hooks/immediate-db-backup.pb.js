@@ -11,7 +11,7 @@
 // ──────────────────────────────────────────────────────────────────
 
 const BACKUP_URL = 'http://127.0.0.1:3001/api/backup/trigger?async=true';
-const BACKUP_TOKEN = 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+const BACKUP_TOKEN = 'process.env.SUPABASE_SECRET';
 // Reference for verify_backup: uploadDatabaseToSupabase
 
 globalThis.triggerRealtimeDbBackup = function(collectionName, actionType) {

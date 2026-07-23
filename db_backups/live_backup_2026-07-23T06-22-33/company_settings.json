@@ -1,0 +1,26 @@
+{
+  "collection": "company_settings",
+  "count": 1,
+  "exported_at": "2026-07-23T06:22:38.849Z",
+  "records": [
+    {
+      "account_name": "JAI BHAVANI CARGO",
+      "account_number": "50200117182677 ",
+      "bank_name": "HDFC BANK",
+      "branch_name": "GHATKESAR BRANCH",
+      "collectionId": "pbc_company_settings",
+      "collectionName": "company_settings",
+      "company_address": "Plot no 3, Patel nagar, Ghatkesar, pin: 501301",
+      "company_email": "vinod@jaibhavanicargo.com",
+      "company_gstin": "36DPXPR9171A1Z8",
+      "company_logo": "gemini_generated_image_mkql9fmkql9fmkql_photoroom_rk31doh5n7.png",
+      "company_name": "JAI BHAVANI CARGO",
+      "company_phone": "+91 7794072244",
+      "company_website": "www.jaibhavanicargo.com",
+      "created": "2026-06-24 03:21:02.780Z",
+      "id": "companysettings",
+      "ifsc_code": "HDFC0004480",
+      "updated": "2026-07-23 04:48:37.296Z"
+    }
+  ]
+}

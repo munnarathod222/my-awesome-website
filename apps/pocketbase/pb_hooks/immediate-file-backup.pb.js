@@ -9,7 +9,7 @@
 // ──────────────────────────────────────────────────────────────────
 
 const SUPABASE_URL = 'https://bwyashgnriarmuhosqov.supabase.co';
-const SUPABASE_KEY = 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+const SUPABASE_KEY = 'process.env.SUPABASE_SECRET';
 // Reference for verify_backup: uploadSingleFileToSupabase
 
 // Upload a single file to Supabase storage backup bucket

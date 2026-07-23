@@ -1,0 +1,49 @@
+{
+  "collection": "trucks",
+  "count": 1,
+  "exported_at": "2026-07-23T06:22:34.905Z",
+  "records": [
+    {
+      "base_odometer": 0,
+      "battery_bill": "whats_app_image_2026_07_01_at_14_20_lez7g0kuw8.27.jpeg",
+      "battery_image": [
+        "whats_app_image_2026_07_10_at_01_28_455kuhd83q.48.jpeg",
+        "whats_app_image_2026_07_15_at_08_44_h3md1orrbv.55.jpeg"
+      ],
+      "battery_purchase_date": "2026-06-15 00:00:00.000Z",
+      "battery_serial_number": "0",
+      "battery_warranty_details": "12 MONTHS",
+      "body_images": [
+        "1y5aam6m2be_39ncj4h7nt.jpeg",
+        "whats_app_image_2026_06_24_at_04_16_ymgohzsqet.503.jpeg",
+        "whats_app_image_2026_06_24_at_04_16_f604gahhua.501.jpeg",
+        "whats_app_image_2026_06_24_at_04_16_7gmcii2ay9.50.jpeg"
+      ],
+      "chassis_number": "",
+      "collectionId": "pbc_4061015685",
+      "collectionName": "trucks",
+      "created": "2026-06-19 20:30:10.403Z",
+      "current_fastag_balance": 2813,
+      "engine_number": "",
+      "fastag_id": "ICICI BANK",
+      "fastag_notes": "",
+      "fastag_provider": "",
+      "fastag_status": "",
+      "id": "gw8rd1l65z797i4",
+      "insurance_certificate": "",
+      "last_recharge_amount": 0,
+      "last_recharge_date": "",
+      "manager_id": "",
+      "manufacturer": "",
+      "ownership_type": "Owned",
+      "registration_certificate": "",
+      "truck_axle": "SXL",
+      "truck_name": "Ashoke Leyland",
+      "truck_number": "TG12U2637",
+      "truck_size": "32 FT",
+      "tyre_count": 6,
+      "updated": "2026-07-23 05:07:14.837Z",
+      "vehicle_class": ""
+    }
+  ]
+}

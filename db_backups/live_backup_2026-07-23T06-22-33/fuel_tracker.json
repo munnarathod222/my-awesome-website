@@ -1,0 +1,55 @@
+{
+  "collection": "fuel_tracker",
+  "count": 3,
+  "exported_at": "2026-07-23T06:22:36.741Z",
+  "records": [
+    {
+      "collectionId": "pbc_4819449712",
+      "collectionName": "fuel_tracker",
+      "created": "2026-07-22 12:22:39.186Z",
+      "credit_card_id": "1y2yx6j5y892yqz",
+      "date": "2026-07-22 12:00:00.000Z",
+      "distance_driven": 1190,
+      "id": "frs8shirlb649js",
+      "liters": 230,
+      "notes": "Payment Method: Credit Card\nCard: ****0575, Name: HDFC TATA NEU, Bank: HDFC BANK\n",
+      "payment_method": "Credit Card",
+      "total_cost": 23789,
+      "truck_id": "gw8rd1l65z797i4",
+      "truck_number": "TG12U2637",
+      "updated": "2026-07-22 12:22:39.186Z"
+    },
+    {
+      "collectionId": "pbc_4819449712",
+      "collectionName": "fuel_tracker",
+      "created": "2026-07-16 14:13:18.211Z",
+      "credit_card_id": "1y2yx6j5y892yqz",
+      "date": "2026-07-10 12:00:00.000Z",
+      "distance_driven": 1262,
+      "id": "v4h77vs7hgbl6m0",
+      "liters": 227.35,
+      "notes": "Payment Method: Credit Card\nCard: ****0575, Name: HDFC TATA NEU, Bank: HDFC BANK\n",
+      "payment_method": "Credit Card",
+      "total_cost": 23526,
+      "truck_id": "gw8rd1l65z797i4",
+      "truck_number": "TG12U2637",
+      "updated": "2026-07-16 14:13:18.211Z"
+    },
+    {
+      "collectionId": "pbc_4819449712",
+      "collectionName": "fuel_tracker",
+      "created": "2026-07-16 14:12:34.621Z",
+      "credit_card_id": "1y2yx6j5y892yqz",
+      "date": "2026-07-16 12:00:00.000Z",
+      "distance_driven": 1289,
+      "id": "akr9m9oly8rkoiw",
+      "liters": 200,
+      "notes": "Payment Method: Credit Card\nCard: ****0575, Name: HDFC TATA NEU, Bank: HDFC BANK\n",
+      "payment_method": "Credit Card",
+      "total_cost": 20770,
+      "truck_id": "gw8rd1l65z797i4",
+      "truck_number": "TG12U2637",
+      "updated": "2026-07-16 14:12:34.621Z"
+    }
+  ]
+}

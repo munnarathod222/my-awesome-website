@@ -27,12 +27,12 @@ app.set('trust proxy', true);
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
 const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+const supabaseKey = process.env.SUPABASE_KEY || 'process.env.SUPABASE_SECRET';
 
 // Token verification middleware to secure all backup API endpoints
 const requireBackupAuth = (req, res, next) => {
   const token = req.headers['x-backup-token'] || req.query.token;
-  const expectedToken = process.env.BACKUP_API_TOKEN || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+  const expectedToken = process.env.BACKUP_API_TOKEN || 'process.env.SUPABASE_SECRET';
   if (!token || token !== expectedToken) {
     logger.warn(`⚠️ Unauthorized backup API access attempt from ${req.ip}`);
     return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing backup token.' });

@@ -63,6 +63,9 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       } else if (type === 'Mechanic' || type === 'Showroom' || type === 'Spare Parts' || type === 'Electrician' || type === 'Puncture Shop' || type === 'Bodywork / Welding' || type === 'Crane / Tow Truck' || type === 'Hydraulics' || type === 'Plastics' || type === 'Washing Centre' || type === 'RTO Agent') {
         mainCat = 'Maintenance';
         subCat = type;
+      } else if (type === 'Banking' || type === 'Loan Agent') {
+        mainCat = 'Finance';
+        subCat = type;
       } else if (type === 'Vendor') {
         mainCat = 'Vendor';
       } else if (type === 'Other') {
@@ -94,7 +97,13 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           truck_brand: contact.truck_brand || '',
           warehouse_name: contact.warehouse_name || '',
           designation: contact.designation || '',
-          client_name: contact.client_name || ''
+          client_name: contact.client_name || '',
+          bank_name: contact.bank_name || '',
+          branch_name: contact.branch_name || '',
+          ifsc_code: contact.ifsc_code || '',
+          account_type: contact.account_type || '',
+          loan_type: contact.loan_type || '',
+          agent_company: contact.agent_company || '',
         });
       } else {
         setFormData({
@@ -109,7 +118,13 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           truck_brand: '',
           warehouse_name: '',
           designation: '',
-          client_name: ''
+          client_name: '',
+          bank_name: '',
+          branch_name: '',
+          ifsc_code: '',
+          account_type: '',
+          loan_type: '',
+          agent_company: '',
         });
       }
     }
@@ -132,6 +147,9 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     } else if (val === 'Maintenance') {
       setSubCategory('Mechanic');
       setFormData(prev => ({ ...prev, contact_type: 'Mechanic' }));
+    } else if (val === 'Finance') {
+      setSubCategory('Banking');
+      setFormData(prev => ({ ...prev, contact_type: 'Banking' }));
     } else if (val === 'Other') {
       setSubCategory('Other');
       setFormData(prev => ({ ...prev, contact_type: 'Other' }));
@@ -258,6 +276,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   <SelectItem value="Warehouse">Warehouse Contact</SelectItem>
                   <SelectItem value="Employee">Drivers & Employees</SelectItem>
                   <SelectItem value="Maintenance">Maintenance Network</SelectItem>
+                  <SelectItem value="Finance">Finance &amp; Banking</SelectItem>
                   <SelectItem value="Vendor">Vendor</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
@@ -302,7 +321,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
             )}
 
             {/* Conditionally show Sub-category */}
-            {(mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Other') && (
+            {(mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Finance' || mainCategory === 'Other') && (
               <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
                 <Label>Sub-Category *</Label>
                 <Select value={subCategory} onValueChange={handleSubCategoryChange}>
@@ -327,10 +346,15 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                         <SelectItem value="Spare Parts">Spare Parts Shop</SelectItem>
                         <SelectItem value="Bodywork / Welding">Bodywork / Welding</SelectItem>
                         <SelectItem value="Crane / Tow Truck">Crane / Tow Truck / Recovery</SelectItem>
-                        <SelectItem value="Hydraulics">Hydraulics & Plastics</SelectItem>
+                        <SelectItem value="Hydraulics">Hydraulics &amp; Plastics</SelectItem>
                         <SelectItem value="Washing Centre">Washing Centre / Water Wash</SelectItem>
                         <SelectItem value="RTO Agent">RTO Agent / Compliance</SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
+                      </>
+                    ) : mainCategory === 'Finance' ? (
+                      <>
+                        <SelectItem value="Banking">Bank / Banking Contact</SelectItem>
+                        <SelectItem value="Loan Agent">Loan Agent / DSA</SelectItem>
                       </>
                     ) : (
                       <SelectItem value="Other">Other</SelectItem>
@@ -338,6 +362,88 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   </SelectContent>
                 </Select>
               </div>
+            )}
+            
+            {/* Banking-specific fields */}
+            {formData.contact_type === 'Banking' && (
+              <>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Bank Name *</Label>
+                  <Input
+                    value={formData.bank_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bank_name: e.target.value }))}
+                    placeholder="e.g. State Bank of India"
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Branch Name</Label>
+                  <Input
+                    value={formData.branch_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, branch_name: e.target.value }))}
+                    placeholder="e.g. Bhiwandi Main Branch"
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>IFSC Code</Label>
+                  <Input
+                    value={formData.ifsc_code}
+                    onChange={(e) => setFormData(prev => ({ ...prev, ifsc_code: e.target.value.toUpperCase() }))}
+                    placeholder="e.g. SBIN0001234"
+                    className="bg-background uppercase"
+                    maxLength={11}
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Account / Service Type</Label>
+                  <Select value={formData.account_type || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, account_type: v }))}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Current Account">Current Account</SelectItem>
+                      <SelectItem value="Savings Account">Savings Account</SelectItem>
+                      <SelectItem value="CC / OD Account">CC / OD Account</SelectItem>
+                      <SelectItem value="Trade Finance">Trade Finance</SelectItem>
+                      <SelectItem value="Vehicle Finance">Vehicle Finance</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {/* Loan Agent-specific fields */}
+            {formData.contact_type === 'Loan Agent' && (
+              <>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Agent / DSA Company</Label>
+                  <Input
+                    value={formData.agent_company}
+                    onChange={(e) => setFormData(prev => ({ ...prev, agent_company: e.target.value }))}
+                    placeholder="e.g. Bajaj Finserv DSA"
+                    className="bg-background"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
+                  <Label>Loan Type</Label>
+                  <Select value={formData.loan_type || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, loan_type: v }))}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Select loan type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Vehicle / Truck Loan">Vehicle / Truck Loan</SelectItem>
+                      <SelectItem value="Business Loan">Business Loan</SelectItem>
+                      <SelectItem value="Working Capital">Working Capital</SelectItem>
+                      <SelectItem value="Equipment Finance">Equipment Finance</SelectItem>
+                      <SelectItem value="Personal Loan">Personal Loan</SelectItem>
+                      <SelectItem value="Overdraft / CC">Overdraft / CC</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
             
             {/* Conditionally show Truck Brand if Mechanic is selected */}

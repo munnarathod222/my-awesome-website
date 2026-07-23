@@ -7,3 +7,6 @@ build/
 *.db-wal
 scratch/
 package-lock.json
+db_backups/
+full_live_backup.cjs
+*.cjs

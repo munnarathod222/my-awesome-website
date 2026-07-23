@@ -1,0 +1,39 @@
+{
+  "collection": "employees",
+  "count": 1,
+  "exported_at": "2026-07-23T06:22:36.191Z",
+  "records": [
+    {
+      "aadhaar_number": "9710 6339 8707",
+      "aadhaar_photo": "",
+      "active_status": "active",
+      "address": "balnagar",
+      "assigned_routes": "iw25oskdbiqbpln",
+      "assigned_truck": "gw8rd1l65z797i4",
+      "badges": null,
+      "base_salary": 0,
+      "collectionId": "pbc_9297853740",
+      "collectionName": "employees",
+      "contact": "8341571334",
+      "created": "2026-06-07 17:10:56.939Z",
+      "driver_photo": "",
+      "education": "",
+      "emergency_contact": "9666973085",
+      "employee_type": "driver",
+      "employment_type": "Permanent",
+      "hire_date": "",
+      "id": "k7jaz5lqellbxtb",
+      "joining_date": "2025-12-16 00:00:00.000Z",
+      "license_number": "MH03 20090057914",
+      "license_photo": "",
+      "name": "Dayanand surwase",
+      "pan_card": "",
+      "pan_photo": "",
+      "photo": "dayanand_photo_fmhv1tn5w2.jpeg",
+      "position": "",
+      "salary_amount": 35000,
+      "salary_billing_cycle": "",
+      "updated": "2026-07-08 20:19:36.655Z"
+    }
+  ]
+}
