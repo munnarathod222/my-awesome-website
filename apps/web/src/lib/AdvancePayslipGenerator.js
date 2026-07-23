@@ -78,44 +78,49 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       compGstin ? `GSTIN: ${compGstin}` : null
     ].filter(Boolean).join(' | ');
 
-    // Create temporary off-screen container for rendering HTML
+    // Compact padding when advance list is long to ensure crisp full-width layout
+    const isLongAdvanceList = advances.length > 5;
+    const cellPadding = isLongAdvanceList ? '3px 8px' : '6px 10px';
+    const fontSize = isLongAdvanceList ? '11px' : '12px';
+
+    // Create temporary off-screen container with FULL A4 proportioned width (800px)
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '-9999px';
-    container.style.width = '750px';
+    container.style.width = '800px';
     container.style.background = '#ffffff';
     container.style.color = '#000000';
     container.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
-    container.style.padding = '30px';
+    container.style.padding = isLongAdvanceList ? '15px 20px' : '25px 30px';
     container.style.boxSizing = 'border-box';
 
     let advanceRowsHtml = '';
     if (hasAdvance) {
       advanceRowsHtml = `
-        <div style="margin-bottom: 20px;">
-          <div style="background-color: #fef3c7; color: #451a03; border: 1px solid #fcd34d; border-bottom: 0; padding: 8px 12px; font-weight: bold; font-size: 13px; border-top-left-radius: 6px; border-top-right-radius: 6px;">
+        <div style="margin-bottom: 12px;">
+          <div style="background-color: #fef3c7; color: #451a03; border: 1px solid #fcd34d; border-bottom: 0; padding: 6px 10px; font-weight: bold; font-size: ${fontSize}; border-top-left-radius: 6px; border-top-right-radius: 6px;">
             ${t('advanceRecordsHeader')}
           </div>
-          <table style="width: 100%; border-collapse: collapse; border: 1px solid #fcd34d; font-size: 12px;">
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #fcd34d; font-size: ${fontSize};">
             <thead>
-              <tr style="background-color: #fffbeb; color: #451a03; text-align: left;">
-                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('date')}</th>
-                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('reason')}</th>
-                <th style="padding: 6px 10px; text-align: right; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('amount')}</th>
+              <tr style="background-color: #fef3c7; color: #451a03; text-align: left;">
+                <th style="padding: ${cellPadding}; border-right: 1px solid #fcd34d; font-weight: bold;">${t('date')}</th>
+                <th style="padding: ${cellPadding}; border-right: 1px solid #fcd34d; font-weight: bold;">${t('reason')}</th>
+                <th style="padding: ${cellPadding}; text-align: right; font-weight: bold;">${t('amount')}</th>
               </tr>
             </thead>
             <tbody>
-              ${advances.map(adv => `
-                <tr style="border-bottom: 1px solid #fde68a;">
-                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a; color: #334155;">${adv.date ? format(new Date(adv.date), 'dd MMM yyyy') : '-'}</td>
-                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a; color: #0f172a; font-weight: 500;">${tr(adv.reason || 'Advance')}</td>
-                  <td style="padding: 6px 10px; text-align: right; font-weight: 600; color: #000000;">₹${(adv.amount || 0).toLocaleString('en-IN')}</td>
+              ${advances.map(a => `
+                <tr style="border-top: 1px solid #fef08a;">
+                  <td style="padding: ${cellPadding}; border-right: 1px solid #fef08a;">${a.date ? a.date.split('T')[0] : ''}</td>
+                  <td style="padding: ${cellPadding}; border-right: 1px solid #fef08a; font-weight: 500;">${tr(a.reason || 'Advance')}</td>
+                  <td style="padding: ${cellPadding}; text-align: right; font-weight: 600;">₹${(Number(a.amount) || 0).toLocaleString('en-IN')}</td>
                 </tr>
               `).join('')}
-              <tr style="background-color: #fef3c7; font-weight: bold;">
-                <td colspan="2" style="padding: 6px 10px; border-right: 1px solid #fcd34d;">${t('totalAdvances')}</td>
-                <td style="padding: 6px 10px; text-align: right;">₹${advances.reduce((s, a) => s + (a.amount || 0), 0).toLocaleString('en-IN')}</td>
+              <tr style="background-color: #fef3c7; font-weight: bold; border-top: 1px solid #fcd34d;">
+                <td colSpan="2" style="padding: ${cellPadding}; border-right: 1px solid #fcd34d;">${t('totalAdvances')}</td>
+                <td style="padding: ${cellPadding}; text-align: right;">₹${advanceDeducted.toLocaleString('en-IN')}</td>
               </tr>
             </tbody>
           </table>
@@ -124,100 +129,100 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     }
 
     container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #cbd5e1;">
-        <h1 style="font-size: 22px; font-weight: 800; margin: 0; text-transform: uppercase; color: #000000;">${compName}</h1>
-        <p style="font-size: 11px; color: #475569; margin: 4px 0 0 0;">${compAddress}</p>
-        ${contactLine ? `<p style="font-size: 11px; color: #475569; margin: 2px 0 0 0;">${contactLine}</p>` : ''}
-        <h2 style="font-size: 15px; font-weight: 700; margin: 12px 0 0 0; text-transform: uppercase; color: #0f172a;">
+      <div style="text-align: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #cbd5e1;">
+        <div style="font-size: 20px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; color: #000000;">${compName}</div>
+        <div style="font-size: 11px; color: #334155; margin-top: 2px;">${compAddress}</div>
+        ${contactLine ? `<div style="font-size: 10px; color: #475569; margin-top: 1px;">${contactLine}</div>` : ''}
+        <div style="font-size: 14px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-top: 6px; letter-spacing: 0.5px;">
           ${hasAdvance ? t('titleAdvancePayslip') : t('titlePayslip')} (${monthName})
-        </h2>
+        </div>
       </div>
 
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 20px; font-size: 12px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: ${fontSize}; border: 1px solid #cbd5e1;">
         <tbody>
           <tr>
-            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('empName')}</td>
-            <td style="width: 25%; font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${empName}</td>
-            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('empId')}</td>
-            <td style="width: 25%; font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${empId}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('empName')}</td>
+            <td style="width: 25%; font-weight: 700; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${empName}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('empId')}</td>
+            <td style="width: 25%; font-weight: 700; font-family: monospace; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${empId}</td>
           </tr>
           <tr>
-            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('designation')}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${designation}</td>
-            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('daysPresent')}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${daysPresent}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('designation')}</td>
+            <td style="width: 25%; padding: ${cellPadding}; border: 1px solid #cbd5e1; text-transform: capitalize;">${designation}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('daysPresent')}</td>
+            <td style="width: 25%; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${daysPresent}</td>
           </tr>
           <tr>
-            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('paymentStatus')}</td>
-            <td style="font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000; text-transform: uppercase;">${paymentStatus}</td>
-            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('paymentModeDate')}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${paymentModeDate}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('paymentStatus')}</td>
+            <td style="width: 25%; font-weight: 700; padding: ${cellPadding}; border: 1px solid #cbd5e1; text-transform: uppercase;">${paymentStatus}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('paymentModeDate')}</td>
+            <td style="width: 25%; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${paymentModeDate}</td>
           </tr>
         </tbody>
       </table>
 
       ${advanceRowsHtml}
 
-      <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 20px; font-size: 12px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: ${fontSize}; border: 1px solid #cbd5e1;">
         <thead>
-          <tr style="background-color: #f1f5f9; font-weight: 700; color: #0f172a;">
-            <th style="width: 25%; padding: 8px 10px; text-align: left; border: 1px solid #cbd5e1;">${t('earningsDesc')}</th>
-            <th style="width: 25%; padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1;">${t('amount')}</th>
-            <th style="width: 25%; padding: 8px 10px; text-align: left; border: 1px solid #cbd5e1;">${t('deductionsDesc')}</th>
-            <th style="width: 25%; padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1;">${t('amount')}</th>
+          <tr style="background-color: #f1f5f9; font-weight: 700; text-align: left;">
+            <th style="width: 30%; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('earningsDesc')}</th>
+            <th style="width: 20%; padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right;">${t('amount')}</th>
+            <th style="width: 30%; padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('deductionsDesc')}</th>
+            <th style="width: 20%; padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right;">${t('amount')}</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('basicSalary')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹${basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('absentDeduction')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹${absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('basicSalary')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace;">₹${basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('absentDeduction')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace;">₹${absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('tripBonus')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #047857; font-family: monospace;">₹${tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('advanceRecovery')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #be123c; font-family: monospace;">₹${advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('tripBonus')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace; color: #047857;">₹${tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('advanceRecovery')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace; color: #be123c;">₹${advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('otherAllowances')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹0.00</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('taxesLabel')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #be123c; font-family: monospace;">₹${taxes.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('otherAllowances')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace;">₹0.00</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('taxesLabel')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace; color: #be123c;">₹${taxes.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
           </tr>
-          <tr style="background-color: #f1f5f9; font-weight: bold; color: #000000;">
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${t('grossSalary')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; font-family: monospace;">₹${grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${t('totalDeductions')}</td>
-            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; font-family: monospace;">₹${totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          <tr style="background-color: #f1f5f9; font-weight: 700;">
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('grossSalary')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace;">₹${grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1;">${t('totalDeductions')}</td>
+            <td style="padding: ${cellPadding}; border: 1px solid #cbd5e1; text-align: right; font-family: monospace;">₹${totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
           </tr>
         </tbody>
       </table>
 
-      <div style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
-        <div style="background-color: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+      <div style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 12px;">
+        <div style="background-color: #f8fafc; padding: 8px 12px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #334155;">${t('netPayable')}</div>
-            <div style="font-size: 11px; color: #64748b;">${t('netPaySubtext')}</div>
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #334155;">${t('netPayable')}</div>
+            <div style="font-size: 10px; color: #64748b;">${t('netPaySubtext')}</div>
           </div>
-          <div style="font-size: 22px; font-weight: 900; font-family: monospace; color: #000000;">
+          <div style="font-size: 18px; font-weight: 900; font-family: monospace; color: #000000;">
             ₹${netSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}
           </div>
         </div>
-        <div style="padding: 10px 16px; background-color: #ffffff; font-size: 11px; font-weight: 600; color: #1e293b;">
+        <div style="padding: 8px 12px; background-color: #ffffff; font-size: 11px; font-weight: 600; color: #1e293b;">
           ${t('amountInWords')} <span style="font-weight: 700; color: #000000;">${formatAmountToWords(netSalary)}</span>
         </div>
       </div>
 
-      <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px dashed #cbd5e1; font-size: 11px;">
+      <div style="display: flex; justify-content: space-between; margin-top: 25px; padding-top: 15px; border-top: 1px dashed #cbd5e1; font-size: 11px;">
         <div style="text-align: center; width: 40%;">
-          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 25px;"></div>
+          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 20px;"></div>
           <div style="font-weight: 600; color: #1e293b;">${t('authorizedSignatory')}</div>
           <div style="font-size: 10px; color: #64748b;">${compName}</div>
         </div>
         <div style="text-align: center; width: 40%;">
-          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 25px;"></div>
+          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 20px;"></div>
           <div style="font-weight: 600; color: #1e293b;">${t('employeeSignature')}</div>
           <div style="font-size: 10px; color: #64748b;">${empName}</div>
         </div>
@@ -237,19 +242,31 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
 
     const imgData = canvas.toDataURL('image/png');
     const doc = new jsPDF({ format: 'a4', orientation: 'portrait', unit: 'mm' });
+    
+    // STRICT A4 FULL-WIDTH RATIO: Fill width edge-to-edge till 6mm borders ALWAYS
     const pdfWidth = 210;
     const pdfHeight = 297;
-    const margin = 8;
-    const printWidth = pdfWidth - (margin * 2);
+    const margin = 6;
+    const printWidth = pdfWidth - (margin * 2); // 198mm full width!
     const printHeight = (canvas.height * printWidth) / canvas.width;
     
-    if (printHeight <= pdfHeight - (margin * 2)) {
+    if (printHeight <= (pdfHeight - (margin * 2))) {
+      // 1-Page perfect fit
       doc.addImage(imgData, 'PNG', margin, margin, printWidth, printHeight);
     } else {
-      const maxPrintHeight = pdfHeight - (margin * 2);
-      const scaledWidth = (canvas.width * maxPrintHeight) / canvas.height;
-      const xOffset = margin + ((printWidth - scaledWidth) / 2);
-      doc.addImage(imgData, 'PNG', xOffset, margin, scaledWidth, maxPrintHeight);
+      // Content extends past 1 page: Render clean multi-page without squeezing width!
+      let heightLeft = printHeight;
+      let position = margin;
+
+      doc.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+      heightLeft -= (pdfHeight - (margin * 2));
+
+      while (heightLeft > 0) {
+        position = heightLeft - printHeight + margin;
+        doc.addPage();
+        doc.addImage(imgData, 'PNG', margin, position, printWidth, printHeight);
+        heightLeft -= pdfHeight;
+      }
     }
 
     return doc.output('blob');

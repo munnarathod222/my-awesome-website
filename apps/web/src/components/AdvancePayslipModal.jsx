@@ -214,48 +214,59 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
           <style>
             @page {
               size: A4 portrait;
-              margin: 8mm 12mm;
+              margin: 5mm 6mm;
             }
             * {
-              box-sizing: border-box;
+              box-sizing: border-box !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-              margin: 0;
-              padding: 15px;
+            html, body {
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
               background: #ffffff !important;
               color: #000000 !important;
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             }
             .payslip-container {
               width: 100% !important;
               max-width: 100% !important;
               background: #ffffff !important;
               color: #000000 !important;
-              padding: 0 !important;
+              padding: 10px 12px !important;
               margin: 0 !important;
               border: none !important;
               box-shadow: none !important;
+              box-sizing: border-box !important;
             }
             table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 16px !important;
+              margin-bottom: 10px !important;
             }
             td, th {
               border: 1px solid #cbd5e1 !important;
-              padding: 8px 10px !important;
+              padding: 4px 8px !important;
               color: #000000 !important;
-              font-size: 12px !important;
+              font-size: 11px !important;
             }
             th {
               background-color: #f1f5f9 !important;
               font-weight: 700 !important;
             }
+            h1 { font-size: 20px !important; margin-bottom: 2px !important; }
+            h2 { font-size: 14px !important; margin-top: 6px !important; margin-bottom: 4px !important; }
+            .mb-8 { margin-bottom: 12px !important; }
+            .mb-6 { margin-bottom: 10px !important; }
+            .pb-6 { padding-bottom: 8px !important; }
+            .p-8 { padding: 10px !important; }
+            .pt-12 { padding-top: 16px !important; }
+            .mt-8 { margin-top: 12px !important; }
           </style>
         </head>
-        <body class="bg-white text-black p-4">
+        <body class="bg-white text-black p-0 m-0">
           ${elem.outerHTML}
         </body>
       </html>
