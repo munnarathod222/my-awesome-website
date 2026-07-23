@@ -4,7 +4,7 @@ import {
   Truck, DollarSign, TrendingUp, TrendingDown, AlertTriangle, 
   CheckCircle2, RefreshCw, Download, Filter, Search, Info, 
   HelpCircle, Calculator, PieChart as PieIcon, LineChart as LineIcon,
-  Layers, ShieldAlert, ArrowRight, Printer, Sparkles, Building2, Wrench, Fuel
+  Layers, ShieldAlert, ArrowRight, Printer, Sparkles, Building2, Wrench, Fuel, Pencil
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { calculateVehicleTCO, calculateFleetTCOSummary } from '@/lib/tcoUtils.js';
+import EditTruckTCOModal from '@/components/EditTruckTCOModal.jsx';
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
   ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Area
@@ -36,6 +37,10 @@ export default function VehicleTCOPage() {
   const [selectedTruckId, setSelectedTruckId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSignal, setFilterSignal] = useState('ALL'); // 'ALL' | 'REPLACE_NOW' | 'PLAN' | 'MAINTAIN'
+
+  // Edit TCO Modal State
+  const [editingTCO, setEditingTCO] = useState(null);
+  const [isEditTCOModalOpen, setIsEditTCOModalOpen] = useState(false);
 
   // Interactive Simulator State
   const [simPurchasePrice, setSimPurchasePrice] = useState(3200000);
@@ -302,7 +307,8 @@ export default function VehicleTCOPage() {
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Resale Value (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Net TCO (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">CPKM (₹/km)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right pr-6">Economic Tipping Signal</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Economic Tipping Signal</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right pr-6">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -316,12 +322,13 @@ export default function VehicleTCOPage() {
                         <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                        <TableCell className="py-4 text-right pr-6"><Skeleton className="h-7 w-32 ml-auto rounded-md" /></TableCell>
+                        <TableCell className="py-4 text-right"><Skeleton className="h-7 w-32 ml-auto rounded-md" /></TableCell>
+                        <TableCell className="py-4 text-right pr-6"><Skeleton className="h-8 w-8 ml-auto rounded-md" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredTCOList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                      <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
                         <Truck className="w-10 h-10 opacity-30 mx-auto mb-2" />
                         No vehicles found matching criteria.
                       </TableCell>
@@ -360,10 +367,25 @@ export default function VehicleTCOPage() {
                           ₹{v.costPerKm}
                         </TableCell>
 
-                        <TableCell className="py-4 text-right pr-6">
+                        <TableCell className="py-4 text-right">
                           <Badge variant="outline" className={`font-bold px-3 py-1 text-xs rounded-lg border ${v.signalBadgeColor}`}>
                             {v.signalTitle}
                           </Badge>
+                        </TableCell>
+
+                        <TableCell className="py-4 text-right pr-6">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setEditingTCO(v);
+                              setIsEditTCOModalOpen(true);
+                            }}
+                            className="h-8 px-2 text-xs rounded-lg border-primary/30 text-primary hover:bg-primary/10"
+                            title="Edit TCO Financial Values"
+                          >
+                            <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -397,13 +419,24 @@ export default function VehicleTCOPage() {
             </div>
 
             {selectedVehicleTCO && (
-              <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${selectedVehicleTCO.signalBadgeColor}`}>
-                <div>
-                  <div className="font-extrabold text-sm flex items-center gap-1.5">
-                    {selectedVehicleTCO.signalTitle}
-                  </div>
-                  <div className="text-xs opacity-90 max-w-md mt-0.5">
-                    {selectedVehicleTCO.signalReason}
+              <div className="flex flex-wrap items-center gap-3">
+                <Button 
+                  onClick={() => {
+                    setEditingTCO(selectedVehicleTCO);
+                    setIsEditTCOModalOpen(true);
+                  }}
+                  className="rounded-xl shadow-sm"
+                >
+                  <Pencil className="w-4 h-4 mr-2" /> Edit TCO Values
+                </Button>
+                <div className={`p-3.5 rounded-xl border flex items-center gap-3 ${selectedVehicleTCO.signalBadgeColor}`}>
+                  <div>
+                    <div className="font-extrabold text-sm flex items-center gap-1.5">
+                      {selectedVehicleTCO.signalTitle}
+                    </div>
+                    <div className="text-xs opacity-90 max-w-md mt-0.5">
+                      {selectedVehicleTCO.signalReason}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -625,6 +658,16 @@ export default function VehicleTCOPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Truck TCO Modal */}
+      <EditTruckTCOModal 
+        isOpen={isEditTCOModalOpen}
+        onClose={() => setIsEditTCOModalOpen(false)}
+        truckTCO={editingTCO}
+        onSuccess={() => {
+          fetchData();
+        }}
+      />
     </div>
   );
 }

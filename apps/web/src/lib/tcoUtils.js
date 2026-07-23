@@ -1,5 +1,35 @@
 import pb from './pocketbaseClient.js';
 
+const TCO_OVERRIDES_STORAGE_KEY = 'jbc_truck_tco_overrides';
+
+export function getTruckTCOOverride(truckIdOrNumber) {
+  try {
+    const raw = localStorage.getItem(TCO_OVERRIDES_STORAGE_KEY);
+    if (raw) {
+      const map = JSON.parse(raw);
+      return map[truckIdOrNumber] || null;
+    }
+  } catch (e) {
+    console.error('Failed to parse TCO overrides', e);
+  }
+  return null;
+}
+
+export function saveTruckTCOOverride(truckIdOrNumber, overrideData) {
+  try {
+    const raw = localStorage.getItem(TCO_OVERRIDES_STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[truckIdOrNumber] = {
+      ...(map[truckIdOrNumber] || {}),
+      ...overrideData,
+      updated_at: new Date().toISOString()
+    };
+    localStorage.setItem(TCO_OVERRIDES_STORAGE_KEY, JSON.stringify(map));
+  } catch (e) {
+    console.error('Failed to save TCO override', e);
+  }
+}
+
 /**
  * Calculates Total Cost of Ownership (TCO) metrics & replacement tipping point signal for a vehicle.
  */
@@ -7,14 +37,17 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
   const truckId = truck.id;
   const truckNumber = truck.truck_number;
 
+  // Check for custom TCO overrides edited by user
+  const override = getTruckTCOOverride(truckId) || getTruckTCOOverride(truckNumber) || {};
+
   // 1. Initial CapEx (Purchase price, body building, registration)
-  const purchasePrice = Number(truck.purchase_price || truck.initial_cost || 3200000);
-  const bodyBuildingCost = Number(truck.body_building_cost || 350000);
+  const purchasePrice = Number(override.purchase_price ?? truck.purchase_price ?? truck.initial_cost ?? 3200000);
+  const bodyBuildingCost = Number(override.body_building_cost ?? truck.body_building_cost ?? 350000);
   const totalCapEx = purchasePrice + bodyBuildingCost;
 
   // 2. Odometer & Age
-  const currentOdometer = Number(truck.odometer_km || truck.current_km || 145000);
-  const purchaseYear = Number(truck.year_of_manufacture || (truck.purchase_date ? new Date(truck.purchase_date).getFullYear() : 2020));
+  const currentOdometer = Number(override.odometer_km ?? truck.odometer_km ?? truck.current_km ?? 145000);
+  const purchaseYear = Number(override.year_of_manufacture ?? truck.year_of_manufacture ?? (truck.purchase_date ? new Date(truck.purchase_date).getFullYear() : 2020));
   const currentYear = new Date().getFullYear();
   const vehicleAgeYears = Math.max(0.5, currentYear - purchaseYear + (new Date().getMonth() / 12));
 
@@ -36,23 +69,22 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
   
   const totalMaintCostLogs = vehicleMaintLogs.reduce((sum, m) => sum + Number(m.cost || m.total_cost || 0), 0);
   const totalMaintCostExpenses = vehicleMaintExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const totalMaintenanceCost = Math.max(totalMaintCostLogs, totalMaintCostExpenses, Number(truck.total_maintenance_cost || 0));
+  const overrideMaintCost = override.manual_maintenance_cost ? Number(override.manual_maintenance_cost) : 0;
+  const totalMaintenanceCost = Math.max(totalMaintCostLogs, totalMaintCostExpenses, Number(truck.total_maintenance_cost || 0), overrideMaintCost);
 
   // 5. Cumulative Insurance, Tax & Permits
-  const insurancePerYear = Number(truck.annual_insurance || 45000);
+  const insurancePerYear = Number(override.annual_insurance ?? truck.annual_insurance ?? 45000);
   const totalInsuranceCost = Math.round(insurancePerYear * vehicleAgeYears);
 
   // 6. Downtime Opportunity Cost
-  // Default breakdown days based on age if not recorded
   const recordedBreakdownDays = vehicleMaintLogs.reduce((sum, m) => sum + Number(m.downtime_days || 0), 0);
-  const estimatedBreakdownDays = recordedBreakdownDays || Math.round(vehicleAgeYears * 4); // ~4 days per year of age
-  const dailyOpportunityCost = Number(truck.daily_opportunity_cost || 5000); // ₹5,000/day lost trip revenue
+  const estimatedBreakdownDays = override.breakdown_days !== undefined ? Number(override.breakdown_days) : (recordedBreakdownDays || Math.round(vehicleAgeYears * 4));
+  const dailyOpportunityCost = Number(override.daily_opportunity_cost ?? truck.daily_opportunity_cost ?? 5000);
   const totalDowntimeCost = estimatedBreakdownDays * dailyOpportunityCost;
 
   // 7. Estimated Resale / Salvage Market Value
-  // Standard commercial vehicle straight-line + declining balance depreciation (~15% per year)
   const defaultDepreciationRate = 0.15;
-  let estimatedSalvageValue = Number(truck.salvage_value || truck.resale_value || 0);
+  let estimatedSalvageValue = Number(override.salvage_value ?? truck.salvage_value ?? truck.resale_value ?? 0);
   if (!estimatedSalvageValue) {
     estimatedSalvageValue = Math.max(300000, Math.round(totalCapEx * Math.pow(1 - defaultDepreciationRate, vehicleAgeYears)));
   }
@@ -64,11 +96,10 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
   const operatingCostPerKm = Number((totalOperatingCost / totalDistanceKm).toFixed(2));
 
   // 9. Economic Replacement Tipping Point Signal
-  // Ratio of (Annual Maintenance + Annual Downtime) vs Current Salvage Value
   const annualMaintDowntime = (totalMaintenanceCost + totalDowntimeCost) / vehicleAgeYears;
   const maintenanceRatio = annualMaintDowntime / estimatedSalvageValue;
 
-  let replacementSignal = 'MAINTAIN'; // 'MAINTAIN' | 'PLAN' | 'REPLACE_NOW'
+  let replacementSignal = 'MAINTAIN'; 
   let signalBadgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
   let signalTitle = '🟢 Keep & Maintain';
   let signalReason = 'Operating expenses are well within economic limits. Maintenance is optimal.';
@@ -91,11 +122,10 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
   let cumOpEx = 0;
   let currentVal = totalCapEx;
   const annualKm = Math.round(totalDistanceKm / vehicleAgeYears) || 60000;
-  const baseFuelPerYear = totalFuelCost / vehicleAgeYears || (annualKm * 18); // ~18 Rs/km fuel
+  const baseFuelPerYear = totalFuelCost / vehicleAgeYears || (annualKm * 18);
   const baseMaintPerYear = (totalMaintenanceCost / vehicleAgeYears) || 60000;
 
   for (let yr = 1; yr <= maxYears; yr++) {
-    // Maintenance escalates with age by 18% per year
     const yrMaint = Math.round(baseMaintPerYear * Math.pow(1.18, yr - 1));
     const yrFuel = Math.round(baseFuelPerYear);
     const yrIns = insurancePerYear;
@@ -130,12 +160,16 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
     manufacturer: truck.manufacturer || 'Tata / Ashok Leyland',
     model: truck.model || 'Commercial Goods Carrier',
     vehicleAgeYears: Number(vehicleAgeYears.toFixed(1)),
+    purchaseYear,
     totalDistanceKm,
+    purchasePrice,
+    bodyBuildingCost,
     totalCapEx,
     totalFuelCost,
     totalFuelLiters,
     totalMaintenanceCost,
     totalInsuranceCost,
+    insurancePerYear,
     totalDowntimeCost,
     estimatedBreakdownDays,
     dailyOpportunityCost,
@@ -149,7 +183,8 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
     signalTitle,
     signalReason,
     maintenanceRatio: Number((maintenanceRatio * 100).toFixed(1)),
-    yearlyTrend
+    yearlyTrend,
+    override
   };
 }
 
