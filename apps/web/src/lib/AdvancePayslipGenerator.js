@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import pb from './pocketbaseClient.js';
@@ -26,33 +25,6 @@ const formatAmountToWords = (amount) => {
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = [], language = 'en') => {
   try {
     const t = (key) => getTranslation(language, key);
-
-    // 🌟 MULTILINGUAL PIXEL-PERFECT PDF GENERATION:
-    // Standard jsPDF default fonts lack Indian non-Latin glyphs (Devanagari, Telugu, Tamil, etc.).
-    // We capture the exact rendered HTML preview DOM (#payslip-preview-content) via html2canvas
-    // to produce 100% crisp, uncorrupted PDF documents in any Indian language!
-    const elem = typeof document !== 'undefined' ? document.getElementById('payslip-preview-content') : null;
-    if (elem) {
-      try {
-        const canvas = await html2canvas(elem, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
-        const imgWidth = 210; // A4 width mm
-        const pageHeight = 297; // A4 height mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
-        return doc.output('blob');
-      } catch (domErr) {
-        console.warn('html2canvas rendering fallback to jsPDF autoTable:', domErr);
-      }
-    }
-
     let companySettings = null;
     try {
       companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
@@ -64,12 +36,8 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     const compEmail = companySettings?.company_email || 'vinod@jaibhavanicargo.com';
     const compGstin = companySettings?.company_gstin || '36AAACJ2230M1Z2';
 
-    const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
     const monthName = payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current';
     const hasAdvance = advances.length > 0;
-    
-    const primaryColor = [15, 23, 42]; // Slate 900
-    const accentColor = [71, 85, 105]; // Slate 600
     
     const getCleanEmpId = (emp, pay) => {
       if (emp?.employee_code) return String(emp.employee_code);
@@ -79,44 +47,11 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       
       const rawId = emp?.id || pay?.employee_id || '';
       if (!rawId) return '1';
-
       let hash = 0;
-      for (let i = 0; i < rawId.length; i++) {
-        hash = (hash * 31 + rawId.charCodeAt(i)) % 997;
-      }
+      for (let i = 0; i < rawId.length; i++) hash = (hash * 31 + rawId.charCodeAt(i)) % 997;
       return String((hash % 100) + 1);
     };
 
-    // 1. Company Header
-    doc.setFontSize(18);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text(compName.toUpperCase(), 105, 18, { align: 'center' });
-    
-    doc.setFontSize(8.5);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(...accentColor);
-    doc.text(compAddress, 105, 23, { align: 'center' });
-
-    const contactLine = [
-      compPhone ? `Ph: ${compPhone}` : null,
-      compEmail ? `Email: ${compEmail}` : null,
-      compGstin ? `GSTIN: ${compGstin}` : null
-    ].filter(Boolean).join(' | ');
-
-    if (contactLine) {
-      doc.text(contactLine, 105, 27.5, { align: 'center' });
-    }
-
-    doc.setFontSize(11);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text(`${hasAdvance ? t('titleAdvancePayslip') : t('titlePayslip')} (${monthName.toUpperCase()})`, 105, 34, { align: 'center' });
-
-    doc.setDrawColor(203, 213, 225); // Slate 300
-    doc.line(14, 37, 196, 37);
-
-    // 2. Employee Details Grid
     const empName = employee?.name || payroll?.employee_name || '-';
     const empId = getCleanEmpId(employee, payroll);
     const rawPos = employee?.position || employee?.employee_type || payroll?.designation || '-';
@@ -126,80 +61,6 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     const paymentStatus = rawStat.includes('PAID') ? t('paid') : t('pending');
     const paymentModeDate = `${t('bankTransfer')} / ${payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}`;
 
-    autoTable(doc, {
-      startY: 40,
-      head: [],
-      body: [
-        [
-          { content: t('empName'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: empName, styles: { fontStyle: 'bold' } },
-          { content: t('empId'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: empId, styles: { fontStyle: 'bold' } }
-        ],
-        [
-          { content: t('designation'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: designation },
-          { content: t('daysPresent'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: daysPresent }
-        ],
-        [
-          { content: t('paymentStatus'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: paymentStatus, styles: { fontStyle: 'bold' } },
-          { content: t('paymentModeDate'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: paymentModeDate }
-        ]
-      ],
-      theme: 'grid',
-      styles: { fontSize: 8.5, cellPadding: 2.5, textColor: [15, 23, 42], borderColor: [203, 213, 225] },
-      columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 53 },
-        2: { cellWidth: 42 },
-        3: { cellWidth: 47 }
-      }
-    });
-
-    let currentY = doc.lastAutoTable.finalY + 5;
-
-    // 3. Advance Details Box (if advances exist)
-    if (hasAdvance) {
-      doc.setFillColor(254, 243, 199); // Amber 100
-      doc.rect(14, currentY, 182, 6, 'F');
-      doc.setFontSize(8.5);
-      doc.setTextColor(69, 26, 3); // Amber 950
-      doc.setFont(undefined, 'bold');
-      doc.text(t('advanceRecordsHeader'), 17, currentY + 4.2);
-
-      const advRows = advances.map(a => [
-        a.date ? format(new Date(a.date), 'dd MMM yyyy') : '-',
-        a.reason || 'Advance',
-        `Rs. ${(a.amount || 0).toLocaleString('en-IN')}`
-      ]);
-
-      const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
-      advRows.push([
-        { content: t('totalAdvances'), colSpan: 2, styles: { fontStyle: 'bold' } },
-        { content: `Rs. ${totalAdv.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', halign: 'right' } }
-      ]);
-
-      autoTable(doc, {
-        startY: currentY + 6,
-        head: [[t('date'), t('reason'), t('amount')]],
-        body: advRows,
-        theme: 'grid',
-        headStyles: { fillColor: [255, 251, 235], textColor: [69, 26, 3], fontStyle: 'bold', fontSize: 8 },
-        styles: { fontSize: 8, cellPadding: 2, borderColor: [252, 211, 77] },
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 107 },
-          2: { cellWidth: 40, halign: 'right' }
-        }
-      });
-
-      currentY = doc.lastAutoTable.finalY + 5;
-    }
-
-    // 4. Financial Table (Earnings vs Deductions)
     const basicSalary = payroll?.total_salary || payroll?.base_salary || employee?.salary_amount || employee?.base_salary || 0;
     const tripBonus = payroll?.trip_bonus || 0;
     const grossSalary = payroll?.gross_salary || (basicSalary + tripBonus);
@@ -210,98 +71,179 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     const totalDeductions = payroll ? ((payroll.gross_salary || 0) - (payroll.net_salary || 0)) : (advanceDeducted + absentDeduction + taxes);
     const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
 
-    let otherAllowancesStr = 'Other Allowances';
-    let otherAllowancesAmt = 0;
-    if (payroll?.allowances_breakdown) {
-      const entries = Object.entries(payroll.allowances_breakdown).filter(([_, v]) => Number(v) > 0);
-      if (entries.length > 0) {
-        otherAllowancesStr = entries.map(([k]) => k.replace(/_/g, ' ')).join(', ');
-        otherAllowancesAmt = entries.reduce((s, [_, v]) => s + Number(v), 0);
-      }
+    const contactLine = [
+      compPhone ? `Ph: ${compPhone}` : null,
+      compEmail ? `Email: ${compEmail}` : null,
+      compGstin ? `GSTIN: ${compGstin}` : null
+    ].filter(Boolean).join(' | ');
+
+    // Create temporary off-screen container for rendering HTML
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '-9999px';
+    container.style.width = '750px';
+    container.style.background = '#ffffff';
+    container.style.color = '#000000';
+    container.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
+    container.style.padding = '30px';
+    container.style.boxSizing = 'border-box';
+
+    let advanceRowsHtml = '';
+    if (hasAdvance) {
+      advanceRowsHtml = `
+        <div style="margin-bottom: 20px;">
+          <div style="background-color: #fef3c7; color: #451a03; border: 1px solid #fcd34d; border-bottom: 0; padding: 8px 12px; font-weight: bold; font-size: 13px; border-top-left-radius: 6px; border-top-right-radius: 6px;">
+            ${t('advanceRecordsHeader')}
+          </div>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #fcd34d; font-size: 12px;">
+            <thead>
+              <tr style="background-color: #fffbeb; color: #451a03; text-align: left;">
+                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d;">${t('date')}</th>
+                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d;">${t('reason')}</th>
+                <th style="padding: 6px 10px; text-align: right; border-bottom: 1px solid #fcd34d;">${t('amount')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${advances.map(adv => `
+                <tr style="border-bottom: 1px solid #fde68a;">
+                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a;">${adv.date ? format(new Date(adv.date), 'dd MMM yyyy') : '-'}</td>
+                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a;">${adv.reason || 'Advance'}</td>
+                  <td style="padding: 6px 10px; text-align: right; font-weight: 600;">₹${(adv.amount || 0).toLocaleString('en-IN')}</td>
+                </tr>
+              `).join('')}
+              <tr style="background-color: #fef3c7; font-weight: bold;">
+                <td colspan="2" style="padding: 6px 10px; border-right: 1px solid #fcd34d;">${t('totalAdvances')}</td>
+                <td style="padding: 6px 10px; text-align: right;">₹${advances.reduce((s, a) => s + (a.amount || 0), 0).toLocaleString('en-IN')}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
-    autoTable(doc, {
-      startY: currentY,
-      head: [[t('earningsHeader'), t('amount'), t('deductionsHeader'), t('amount')]],
-      body: [
-        [t('basicSalary'), basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Absent Deduction', absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})],
-        ['Trip Bonus / Allowances', tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2}), t('totalAdvances'), advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})],
-        [otherAllowancesStr, otherAllowancesAmt.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Taxes (TDS / Other)', taxes.toLocaleString('en-IN', {minimumFractionDigits:2})],
-        [
-          { content: t('grossSalary'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: t('totalAdvances'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
-        ]
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [241, 245, 249], textColor: primaryColor, fontStyle: 'bold', fontSize: 8.5 },
-      styles: { fontSize: 8.5, cellPadding: 2.5, borderColor: [203, 213, 225], textColor: [15, 23, 42] },
-      columnStyles: {
-        0: { cellWidth: 50 },
-        1: { cellWidth: 41, halign: 'right' },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 41, halign: 'right' }
-      }
+    container.innerHTML = `
+      <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #cbd5e1;">
+        <h1 style="font-size: 22px; font-weight: 800; margin: 0; text-transform: uppercase; color: #000000;">${compName}</h1>
+        <p style="font-size: 11px; color: #475569; margin: 4px 0 0 0;">${compAddress}</p>
+        ${contactLine ? `<p style="font-size: 11px; color: #475569; margin: 2px 0 0 0;">${contactLine}</p>` : ''}
+        <h2 style="font-size: 15px; font-weight: 700; margin: 12px 0 0 0; text-transform: uppercase; color: #0f172a;">
+          ${hasAdvance ? t('titleAdvancePayslip') : t('titlePayslip')} (${monthName})
+        </h2>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 20px; font-size: 12px;">
+        <tbody>
+          <tr>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('empName')}</td>
+            <td style="width: 25%; font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${empName}</td>
+            <td style="width: 25%; font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('empId')}</td>
+            <td style="width: 25%; font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${empId}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('designation')}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${designation}</td>
+            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('daysPresent')}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${daysPresent}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('paymentStatus')}</td>
+            <td style="font-weight: 700; padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000; text-transform: uppercase;">${paymentStatus}</td>
+            <td style="font-weight: 600; background-color: #f1f5f9; padding: 8px 10px; border: 1px solid #cbd5e1; color: #0f172a;">${t('paymentModeDate')}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #000000;">${paymentModeDate}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      ${advanceRowsHtml}
+
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 20px; font-size: 12px;">
+        <thead>
+          <tr style="background-color: #f1f5f9; font-weight: 700; color: #0f172a;">
+            <th style="width: 25%; padding: 8px 10px; text-align: left; border: 1px solid #cbd5e1;">${t('earningsDesc')}</th>
+            <th style="width: 25%; padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1;">${t('amount')}</th>
+            <th style="width: 25%; padding: 8px 10px; text-align: left; border: 1px solid #cbd5e1;">${t('deductionsDesc')}</th>
+            <th style="width: 25%; padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1;">${t('amount')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('basicSalary')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹${basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('absentDeduction')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹${absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('tripBonus')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #047857; font-family: monospace;">₹${tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('advanceRecovery')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #be123c; font-family: monospace;">₹${advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('otherAllowances')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #000000; font-family: monospace;">₹0.00</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; color: #334155;">${t('taxesLabel')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; color: #be123c; font-family: monospace;">₹${taxes.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          </tr>
+          <tr style="background-color: #f1f5f9; font-weight: bold; color: #000000;">
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${t('grossSalary')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; font-family: monospace;">₹${grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1;">${t('totalDeductions')}</td>
+            <td style="padding: 8px 10px; text-align: right; border: 1px solid #cbd5e1; font-family: monospace;">₹${totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+        <div style="background-color: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #334155;">${t('netPayable')}</div>
+            <div style="font-size: 11px; color: #64748b;">${t('netPaySubtext')}</div>
+          </div>
+          <div style="font-size: 22px; font-weight: 900; font-family: monospace; color: #000000;">
+            ₹${netSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}
+          </div>
+        </div>
+        <div style="padding: 10px 16px; background-color: #ffffff; font-size: 11px; font-weight: 600; color: #1e293b;">
+          ${t('amountInWords')} <span style="font-weight: 700; color: #000000;">${formatAmountToWords(netSalary)}</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px dashed #cbd5e1; font-size: 11px;">
+        <div style="text-align: center; width: 40%;">
+          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 25px;"></div>
+          <div style="font-weight: 600; color: #1e293b;">${t('authorizedSignatory')}</div>
+          <div style="font-size: 10px; color: #64748b;">${compName}</div>
+        </div>
+        <div style="text-align: center; width: 40%;">
+          <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 6px; height: 25px;"></div>
+          <div style="font-weight: 600; color: #1e293b;">${t('employeeSignature')}</div>
+          <div style="font-size: 10px; color: #64748b;">${empName}</div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
     });
 
-    currentY = doc.lastAutoTable.finalY + 5;
+    document.body.removeChild(container);
 
-    // 5. Net Salary Payable Box
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(14, currentY, 182, 16, 2, 2, 'FD');
-
-    doc.setFontSize(8);
-    doc.setTextColor(...accentColor);
-    doc.setFont(undefined, 'bold');
-    doc.text('NET SALARY PAYABLE (NET PAY)', 18, currentY + 6);
-    doc.setFont(undefined, 'normal');
-    doc.text('Gross Earnings - Total Deductions', 18, 10.5 + currentY);
-
-    doc.setFontSize(14);
-    doc.setTextColor(...primaryColor);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Rs. ${netSalary.toLocaleString('en-IN', {minimumFractionDigits:2})}`, 190, currentY + 8, { align: 'right' });
-
-    doc.setFontSize(7.5);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(30, 41, 59);
-    doc.text(`Net Pay in Words: ${formatAmountToWords(netSalary)}`, 18, currentY + 14.5);
-
-    currentY += 24;
-
-    // 6. Signatures Block
-    doc.setDrawColor(203, 213, 225);
-    doc.setLineDashPattern([2, 2], 0);
-    doc.line(14, currentY, 196, currentY);
-    doc.setLineDashPattern([], 0);
-
-    const sigY = currentY + 14;
-    doc.setDrawColor(148, 163, 184);
-    doc.line(25, sigY, 75, sigY);
-    doc.setFontSize(8.5);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(...primaryColor);
-    doc.text('Authorized Signatory', 50, sigY + 5, { align: 'center' });
-    doc.setFontSize(7.5);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(...accentColor);
-    doc.text(compName, 50, sigY + 9, { align: 'center' });
-
-    doc.line(135, sigY, 185, sigY);
-    doc.setFontSize(8.5);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(...primaryColor);
-    doc.text('Employee Signature', 160, sigY + 5, { align: 'center' });
-    doc.setFontSize(7.5);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(...accentColor);
-    doc.text(empName, 160, sigY + 9, { align: 'center' });
-
+    const imgData = canvas.toDataURL('image/png');
+    const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
+    const imgWidth = 210; // A4 width mm
+    const pageHeight = 297; // A4 height mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
     return doc.output('blob');
-  } catch (error) {
-    console.error('Error generating advance payslip PDF:', error);
-    throw error;
+  } catch (err) {
+    console.error('PDF generation error:', err);
+    throw err;
   }
 };
