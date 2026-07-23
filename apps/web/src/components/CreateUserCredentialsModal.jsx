@@ -107,51 +107,48 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
           updatePayload.passwordConfirm = password;
         }
 
-        userRecord = await pb.collection('users').update(editUser.id, updatePayload, { $autoCancel: false });
-        toast.success(`Updated login credentials for ${cleanName}`);
-      } else {
-        // Create new user account using Server API or direct PocketBase SDK
         try {
-          const apiResp = await apiServerClient.fetch('/user/create-client-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: cleanEmail,
-              password: password,
-              role: role,
-              clientName: cleanName
-            })
-          });
-          if (apiResp.ok) {
-            const resData = await apiResp.json();
-            userRecord = resData.user;
-          }
-        } catch (apiErr) {
-          console.warn('[CreateUserCredentialsModal] Server API fallback:', apiErr);
-        }
-
-        if (!userRecord) {
-          const createPayload = {
-            email: cleanEmail,
-            emailVisibility: true,
-            password: password,
-            passwordConfirm: password,
+          userRecord = await pb.collection('users').update(editUser.id, updatePayload, { $autoCancel: false });
+        } catch (updateErr) {
+          // Fallback update without custom fields if schema differs
+          userRecord = await pb.collection('users').update(editUser.id, {
             name: cleanName,
-            full_name: cleanName,
             role: role,
             status: 'active',
-            phone_number: cleanPhone || '0000000000'
-          };
+            ...(password ? { password, passwordConfirm: password } : {})
+          }, { $autoCancel: false });
+        }
+        toast.success(`Updated login credentials for ${cleanName}`);
+      } else {
+        // Create new user account directly in PocketBase users collection
+        const createPayload = {
+          email: cleanEmail,
+          emailVisibility: true,
+          password: password,
+          passwordConfirm: password,
+          name: cleanName,
+          full_name: cleanName,
+          role: role,
+          status: 'active',
+          phone_number: cleanPhone || ''
+        };
 
+        try {
+          userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
+        } catch (createErr) {
+          console.warn('[CreateUserCredentialsModal] Initial create failed, checking fallback:', createErr);
+          
+          // Check if user with this email already exists
           try {
-            userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
-          } catch (createErr) {
-            // If email already exists, update existing account's role & password
-            if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
-              const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
+            const existingList = await pb.collection('users').getFullList({
+              filter: `email = "${cleanEmail}"`,
+              $autoCancel: false
+            });
+            
+            if (existingList.length > 0) {
+              const existing = existingList[0];
               const updatePayload = {
                 name: cleanName,
-                full_name: cleanName,
                 role: role,
                 status: 'active'
               };
@@ -161,7 +158,7 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
               }
               userRecord = await pb.collection('users').update(existing.id, updatePayload, { $autoCancel: false });
             } else {
-              // Try minimal payload without extra custom fields if PocketBase schema is basic
+              // Try minimal payload without custom fields
               userRecord = await pb.collection('users').create({
                 email: cleanEmail,
                 password: password,
@@ -170,6 +167,24 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
                 role: role,
                 status: 'active'
               }, { $autoCancel: false });
+            }
+          } catch (fallbackErr) {
+            // Server API fallback if PocketBase SDK requires Admin token
+            const apiResp = await apiServerClient.fetch('/user/create-client-user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: cleanEmail,
+                password: password,
+                role: role,
+                clientName: cleanName
+              })
+            });
+            if (apiResp.ok) {
+              const resData = await apiResp.json();
+              userRecord = resData.user;
+            } else {
+              throw fallbackErr;
             }
           }
         }
