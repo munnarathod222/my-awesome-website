@@ -108,78 +108,79 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
       return;
     }
 
-    const t = (key) => getTranslation(language, key);
-    const empName = employee?.name || payroll?.expand?.employee_id_relation?.name || 'Employee';
-    const empPhone = employee?.phone_number || employee?.phone || payroll?.expand?.employee_id_relation?.phone_number || '';
-    const empId = employee?.id || payroll?.employee_id || 'N/A';
-    const month = payroll?.payroll_month ? `${payroll.payroll_month}/${payroll.payroll_year}` : 'Current Month';
-    const gross = payroll?.gross_salary || payroll?.base_salary || 0;
-    const net = payroll?.net_salary || 0;
-    const totalAdv = advances ? advances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0) : 0;
-    const status = payroll?.status || 'Pending';
-
-    let shareText = `📄 *JAI BHAVANI CARGO - ${t('titleAdvancePayslip')}*\n\n`;
-    shareText += `👤 *${t('empName')}* ${empName}\n`;
-    shareText += `🆔 *${t('empId')}* ${empId}\n`;
-    shareText += `📅 *${t('forPeriod')}* ${month}\n`;
-    shareText += `💳 *${t('paymentStatus')}* ${status}\n\n`;
-
-    shareText += `--- *${t('earningsHeader')}* ---\n`;
-    if (gross > 0) shareText += `• *${t('grossSalary')}:* ₹${gross.toLocaleString('en-IN')}\n`;
-    if (totalAdv > 0) shareText += `• *${t('totalAdvances')}:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
-    if (net > 0) shareText += `• *${t('netPayable')}:* ₹${net.toLocaleString('en-IN')}\n\n`;
-
-    if (advances && advances.length > 0) {
-      shareText += `--- *${t('advanceRecordsHeader')} (${advances.length})* ---\n`;
-      advances.forEach((a, i) => {
-        const dateStr = a.date ? a.date.split('T')[0] : '';
-        shareText += `${i + 1}. ${dateStr} - ${a.reason || 'Advance'}: ₹${Number(a.amount).toLocaleString('en-IN')}\n`;
-      });
-      shareText += `\n`;
-    }
-
-    shareText += `Thank you for your service!\n`;
-    shareText += `Shared via Jai Bhavani Cargo Portal`;
-
-    // Try Web Share API with PDF file first if supported on mobile device
+    setExporting(true);
     try {
-      if (navigator.share) {
-        setExporting(true);
-        const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
-        const fileName = `Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
-        const file = new File([blob], fileName, { type: 'application/pdf' });
+      const t = (key) => getTranslation(language, key);
+      const empName = employee?.name || payroll?.expand?.employee_id_relation?.name || 'Employee';
+      const empPhone = employee?.phone_number || employee?.phone || payroll?.expand?.employee_id_relation?.phone_number || '';
+      const empId = employee?.id || payroll?.employee_id || 'N/A';
+      const month = payroll?.payroll_month ? `${payroll.payroll_month}/${payroll.payroll_year}` : 'Current Month';
+      const gross = payroll?.gross_salary || payroll?.base_salary || 0;
+      const net = payroll?.net_salary || 0;
+      const totalAdv = advances ? advances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0) : 0;
+      const status = payroll?.status || 'Pending';
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      let shareText = `📄 *JAI BHAVANI CARGO - ${t('titleAdvancePayslip')}*\n\n`;
+      shareText += `👤 *${t('empName')}* ${empName}\n`;
+      shareText += `🆔 *${t('empId')}* ${empId}\n`;
+      shareText += `📅 *${t('forPeriod')}* ${month}\n`;
+      shareText += `💳 *${t('paymentStatus')}* ${status}\n\n`;
+
+      shareText += `--- *${t('earningsHeader')}* ---\n`;
+      if (gross > 0) shareText += `• *${t('grossSalary')}:* ₹${gross.toLocaleString('en-IN')}\n`;
+      if (totalAdv > 0) shareText += `• *${t('totalAdvances')}:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
+      if (net > 0) shareText += `• *${t('netPayable')}:* ₹${net.toLocaleString('en-IN')}\n\n`;
+
+      if (advances && advances.length > 0) {
+        shareText += `--- *${t('advanceRecordsHeader')} (${advances.length})* ---\n`;
+        advances.forEach((a, i) => {
+          const dateStr = a.date ? a.date.split('T')[0] : '';
+          shareText += `${i + 1}. ${dateStr} - ${a.reason || 'Advance'}: ₹${Number(a.amount).toLocaleString('en-IN')}\n`;
+        });
+        shareText += `\n`;
+      }
+
+      shareText += `Thank you for your service!\n`;
+      shareText += `Shared via Jai Bhavani Cargo Portal`;
+
+      // 1. Generate PDF Blob
+      const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
+      const fileName = `Advance_Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+
+      // 2. Try Mobile Native Web Share API (Attaches PDF file directly)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
           await navigator.share({
             files: [file],
             title: `Payslip Statement - ${empName}`,
             text: shareText
           });
-          setExporting(false);
+          toast.success('Payslip PDF shared to WhatsApp');
           return;
+        } catch (shareErr) {
+          if (shareErr.name === 'AbortError') return; // User cancelled share sheet
         }
       }
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        console.log('File Web Share fallback to text WhatsApp:', e);
-      } else {
-        setExporting(false);
-        return;
+
+      // 3. Desktop / Web Fallback: Auto-download PDF & open WhatsApp with pre-filled text
+      downloadFile(blob, fileName);
+
+      const cleanPhone = empPhone ? empPhone.replace(/\D/g, '') : '';
+      let waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      if (cleanPhone && (cleanPhone.length === 10 || cleanPhone.length === 12)) {
+        const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+        waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareText)}`;
       }
+
+      window.open(waUrl, '_blank');
+      toast.success(`PDF downloaded! Opening WhatsApp for ${empName} (attach downloaded file)...`);
+    } catch (err) {
+      console.error('WhatsApp share error:', err);
+      toast.error('Failed to prepare WhatsApp PDF share');
     } finally {
       setExporting(false);
     }
-
-    // Direct WhatsApp share fallback
-    const cleanPhone = empPhone ? empPhone.replace(/\D/g, '') : '';
-    let waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-    if (cleanPhone && (cleanPhone.length === 10 || cleanPhone.length === 12)) {
-      const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-      waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareText)}`;
-    }
-
-    window.open(waUrl, '_blank');
-    toast.success(`Opening WhatsApp share for ${empName}...`);
   };
 
   const handlePrint = () => {
