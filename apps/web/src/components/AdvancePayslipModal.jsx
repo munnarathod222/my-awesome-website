@@ -182,91 +182,95 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     toast.success(`Opening WhatsApp share for ${empName}...`);
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     const elem = document.getElementById('payslip-preview-content');
     if (!elem) {
       window.print();
       return;
     }
 
-    try {
-      setExporting(true);
-      const canvas = await html2canvas(elem, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      const imgData = canvas.toDataURL('image/png');
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
 
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      document.body.appendChild(iframe);
+    // Extract all page styles (Tailwind, Google Fonts, inline stylesheets)
+    const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(node => node.outerHTML)
+      .join('\n');
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Jai Bhavani Cargo - Payslip Print</title>
-            <style>
-              @page {
-                size: A4 portrait;
-                margin: 8mm;
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-                background: #ffffff !important;
-              }
-              img {
-                width: 100%;
-                max-width: 190mm;
-                height: auto;
-                object-fit: contain;
-              }
-            </style>
-          </head>
-          <body>
-            <img id="print-img-node" src="${imgData}" />
-          </body>
-        </html>
-      `);
-      doc.close();
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Jai Bhavani Cargo - Payslip Print</title>
+          ${styleTags}
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 8mm 12mm;
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+              margin: 0;
+              padding: 15px;
+              background: #ffffff !important;
+              color: #000000 !important;
+            }
+            .payslip-container {
+              width: 100% !important;
+              max-width: 100% !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin-bottom: 16px !important;
+            }
+            td, th {
+              border: 1px solid #cbd5e1 !important;
+              padding: 8px 10px !important;
+              color: #000000 !important;
+              font-size: 12px !important;
+            }
+            th {
+              background-color: #f1f5f9 !important;
+              font-weight: 700 !important;
+            }
+          </style>
+        </head>
+        <body class="bg-white text-black p-4">
+          ${elem.outerHTML}
+        </body>
+      </html>
+    `);
+    doc.close();
 
-      const imgNode = doc.getElementById('print-img-node');
-      const startPrint = () => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 1200);
-      };
-
-      if (imgNode && imgNode.complete) {
-        setTimeout(startPrint, 150);
-      } else if (imgNode) {
-        imgNode.onload = () => setTimeout(startPrint, 150);
-      } else {
-        setTimeout(startPrint, 300);
-      }
-    } catch (e) {
-      console.error('Print error:', e);
-      window.print();
-    } finally {
-      setExporting(false);
-    }
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 1000);
+    }, 200);
   };
 
   // Listen to keyboard shortcuts
