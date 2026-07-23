@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark, Wallet } from 'lucide-react';
+import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -124,9 +124,14 @@ export default function TruckManagerPage() {
           </h1>
           <p className="text-muted-foreground mt-1">Manage your fleet vehicles and their configurations.</p>
         </div>
-        <Button onClick={() => setModalConfig({ isOpen: true, truck: null })} className="rounded-xl shadow-sm">
-          <Plus className="w-4 h-4 mr-2" /> Add New Truck
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/vehicle-tco')} className="rounded-xl border-primary/20 text-primary hover:bg-primary/5">
+            <Calculator className="w-4 h-4 mr-2" /> TCO & Replacement Signal
+          </Button>
+          <Button onClick={() => setModalConfig({ isOpen: true, truck: null })} className="rounded-xl shadow-sm">
+            <Plus className="w-4 h-4 mr-2" /> Add New Truck
+          </Button>
+        </div>
       </div>
 
       {loading ? (

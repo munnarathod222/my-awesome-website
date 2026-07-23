@@ -79,6 +79,7 @@ import PODManagementPage from './pages/PODManagementPage.jsx';
 import ExitAuditPage from './pages/ExitAuditPage.jsx';
 import BusinessMailPage from './pages/BusinessMailPage.jsx';
 import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
+import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
 
 // Inventory Management
 import InventoryDashboard from './pages/InventoryDashboard.jsx';
@@ -192,6 +193,8 @@ function App() {
                   
                   {/* Analytics */}
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><AnalyticsHub /></ProtectedRoute>} />
+                  <Route path="/vehicle-tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><VehicleTCOPage /></ProtectedRoute>} />
+                  <Route path="/tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><CalendarPage /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><LeaderboardPage /></ProtectedRoute>} />
                   <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />

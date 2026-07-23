@@ -87,6 +87,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: BarChart3,       label: 'Analytics',      path: '/analytics',               roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Calculator,      label: 'Vehicle TCO',    path: '/vehicle-tco',             roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: CalendarDays,    label: 'Calendar',       path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Trophy,          label: 'Leaderboard',    path: '/leaderboard',             roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: PieChart,        label: 'Client Analysis',path: '/client-analysis',         roles: ['super_admin','admin','manager','dispatcher'] },
