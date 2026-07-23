@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Download, Printer, Mail, Loader2, History, SplitSquareHorizontal, FileSpreadsheet, Share2, MessageSquare } from 'lucide-react';
+import { FileText, Download, Printer, Mail, Loader2, History, SplitSquareHorizontal, FileSpreadsheet, Share2, MessageSquare, Globe } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { generateAdvancePayslipPDF } from '@/lib/AdvancePayslipGenerator.js';
 import { downloadFile } from '@/lib/downloadUtils.js';
+import { LANGUAGES, getTranslation } from '@/lib/payslipTranslations.js';
 
 import EnhancedPayslipPreview from './EnhancedPayslipPreview.jsx';
 import PayslipHistory from './PayslipHistory.jsx';
@@ -22,6 +24,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   const [advances, setAdvances] = useState([]);
   
   const [activeTab, setActiveTab] = useState('preview');
+  const [language, setLanguage] = useState('en');
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
 
@@ -85,11 +88,11 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   const handleDownloadPDF = async () => {
     setExporting(true);
     try {
-      const blob = await generateAdvancePayslipPDF(payroll, employee, advances);
+      const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
       const empId = employee?.id || payroll?.employee_id || 'Unknown';
       const mStr = payroll?.payroll_month ? payroll.payroll_month.toString().padStart(2, '0') : 'Cur';
       const yStr = payroll?.payroll_year || new Date().getFullYear();
-      downloadFile(blob, `Advance_Payslip_${empId}_${mStr}${yStr}.pdf`);
+      downloadFile(blob, `Advance_Payslip_${empId}_${mStr}${yStr}_${language}.pdf`);
       toast.success('Payslip PDF downloaded');
     } catch (e) {
       toast.error('Failed to download PDF');
@@ -104,6 +107,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
       return;
     }
 
+    const t = (key) => getTranslation(language, key);
     const empName = employee?.name || payroll?.expand?.employee_id_relation?.name || 'Employee';
     const empPhone = employee?.phone_number || employee?.phone || payroll?.expand?.employee_id_relation?.phone_number || '';
     const empId = employee?.id || payroll?.employee_id || 'N/A';
@@ -113,19 +117,19 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     const totalAdv = advances ? advances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0) : 0;
     const status = payroll?.status || 'Pending';
 
-    let shareText = `📄 *JAI BHAVANI CARGO - ADVANCE & PAYSLIP STATEMENT*\n\n`;
-    shareText += `👤 *Employee:* ${empName}\n`;
-    shareText += `🆔 *Employee ID:* ${empId}\n`;
-    shareText += `📅 *Period:* ${month}\n`;
-    shareText += `💳 *Payment Status:* ${status}\n\n`;
+    let shareText = `📄 *JAI BHAVANI CARGO - ${t('titleAdvancePayslip')}*\n\n`;
+    shareText += `👤 *${t('empName')}* ${empName}\n`;
+    shareText += `🆔 *${t('empId')}* ${empId}\n`;
+    shareText += `📅 *${t('forPeriod')}* ${month}\n`;
+    shareText += `💳 *${t('paymentStatus')}* ${status}\n\n`;
 
-    shareText += `--- *Financial Summary* ---\n`;
-    if (gross > 0) shareText += `• *Gross Earnings:* ₹${gross.toLocaleString('en-IN')}\n`;
-    if (totalAdv > 0) shareText += `• *Advance Deductions:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
-    if (net > 0) shareText += `• *Net Salary Payable:* ₹${net.toLocaleString('en-IN')}\n\n`;
+    shareText += `--- *${t('earningsHeader')}* ---\n`;
+    if (gross > 0) shareText += `• *${t('grossSalary')}:* ₹${gross.toLocaleString('en-IN')}\n`;
+    if (totalAdv > 0) shareText += `• *${t('totalAdvances')}:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
+    if (net > 0) shareText += `• *${t('netPayable')}:* ₹${net.toLocaleString('en-IN')}\n\n`;
 
     if (advances && advances.length > 0) {
-      shareText += `--- *Advance Payment Records (${advances.length})* ---\n`;
+      shareText += `--- *${t('advanceRecordsHeader')} (${advances.length})* ---\n`;
       advances.forEach((a, i) => {
         const dateStr = a.date ? a.date.split('T')[0] : '';
         shareText += `${i + 1}. ${dateStr} - ${a.reason || 'Advance'}: ₹${Number(a.amount).toLocaleString('en-IN')}\n`;
@@ -140,8 +144,8 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     try {
       if (navigator.share) {
         setExporting(true);
-        const blob = await generateAdvancePayslipPDF(payroll, employee, advances);
-        const fileName = `Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}.pdf`;
+        const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
+        const fileName = `Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
         const file = new File([blob], fileName, { type: 'application/pdf' });
 
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -307,7 +311,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, payroll, employee, advances]);
+  }, [isOpen, payroll, employee, advances, language]);
 
   const hasAdvance = advances.length > 0;
 
@@ -322,6 +326,19 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 {hasAdvance ? 'Advance & Payslip Center' : 'Payslip Center'}
               </DialogTitle>
               <div className="flex flex-wrap items-center gap-2">
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger className="h-9 w-[140px] text-xs font-bold border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg shrink-0">
+                    <Globe className="w-3.5 h-3.5 mr-1 text-emerald-400 shrink-0" />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {LANGUAGES.map((l) => (
+                      <SelectItem key={l.code} value={l.code} className="text-xs font-medium cursor-pointer">
+                        <span className="mr-1.5">{l.flag}</span>{l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" size="sm" onClick={handleWhatsAppShare} disabled={loading || exporting} className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold shadow-sm">
                   <MessageSquare className="w-4 h-4 mr-2 text-emerald-500 fill-emerald-500/20" /> WhatsApp
                 </Button>
@@ -359,7 +376,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 
                 <div className="flex-1 overflow-y-auto p-6">
                   <TabsContent value="preview" className="m-0 border-none outline-none">
-                    <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} />
+                    <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} language={language} />
                   </TabsContent>
                   
                   <TabsContent value="compare" className="m-0 border-none outline-none">

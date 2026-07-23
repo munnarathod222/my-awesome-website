@@ -20,8 +20,11 @@ const formatAmountToWords = (amount) => {
   return convert(value) + ' Rupees Only';
 };
 
-export default function EnhancedPayslipPreview({ payroll, employee, advances = [] }) {
+import { getTranslation } from '@/lib/payslipTranslations.js';
+
+export default function EnhancedPayslipPreview({ payroll, employee, advances = [], language = 'en' }) {
   const [companySettings, setCompanySettings] = useState(null);
+  const t = (key) => getTranslation(language, key);
 
   useEffect(() => {
     pb.collection('company_settings').getOne('companysettings', { $autoCancel: false })
@@ -66,6 +69,11 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
     compGstin ? `GSTIN: ${compGstin}` : null
   ].filter(Boolean).join(' | ');
 
+  const rawPosition = employee?.position || employee?.employee_type || payroll?.designation || '';
+  const displayPosition = rawPosition.toLowerCase().includes('driver') ? t('driverRole') : (rawPosition || '-');
+  const rawStatus = payroll?.payment_status || payroll?.status || 'Pending';
+  const displayStatus = rawStatus.toLowerCase().includes('paid') ? t('paid') : t('pending');
+
   return (
     <div className="print-content payslip-container bg-white text-slate-950 border border-slate-300 rounded-2xl shadow-md p-8" id="payslip-preview-content" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
       {/* Header Area */}
@@ -73,29 +81,29 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
         <h1 className="text-2xl font-bold tracking-tight uppercase text-slate-950" style={{ color: '#000000' }}>{compName}</h1>
         <p className="text-xs text-slate-600 mt-1" style={{ color: '#475569' }}>{compAddress}</p>
         {contactLine && <p className="text-xs text-slate-600" style={{ color: '#475569' }}>{contactLine}</p>}
-        <h2 className="text-lg font-bold mt-4 uppercase tracking-wider text-slate-900" style={{ color: '#0f172a' }}>{hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP'} FOR {monthName}</h2>
+        <h2 className="text-lg font-bold mt-4 uppercase tracking-wider text-slate-900" style={{ color: '#0f172a' }}>{hasAdvance ? t('titleAdvancePayslip') : t('titlePayslip')} ({monthName})</h2>
       </div>
 
       {/* Employee Details Grid */}
       <table className="w-full mb-6 border border-slate-300 text-sm" style={{ borderCollapse: 'collapse', borderColor: '#cbd5e1' }}>
         <tbody>
           <tr>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Employee Name:</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('empName')}</td>
             <td className="w-1/4 p-2.5 border border-slate-300 font-bold text-slate-950" style={{ color: '#000000' }}>{employee?.name || payroll?.employee_name || '-'}</td>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Employee ID:</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('empId')}</td>
             <td className="w-1/4 p-2.5 border border-slate-300 font-mono text-slate-700 font-bold" style={{ color: '#000000' }}>{getCleanEmployeeId(employee, payroll)}</td>
           </tr>
           <tr>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Designation:</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 capitalize text-slate-950" style={{ color: '#000000' }}>{employee?.position || employee?.employee_type || payroll?.designation || '-'}</td>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Days Present / Period:</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 text-slate-950" style={{ color: '#000000' }}>{payroll ? `${payroll.attendance_days || 0} days` : '30 days'} / {monthName}</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('designation')}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 capitalize text-slate-950" style={{ color: '#000000' }}>{displayPosition}</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('daysPresent')}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 text-slate-950" style={{ color: '#000000' }}>{payroll ? `${payroll.attendance_days || 0} ${t('days')}` : `30 ${t('days')}`} / {monthName}</td>
           </tr>
           <tr>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Payment Status:</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 text-slate-950 font-bold uppercase" style={{ color: '#000000' }}>{payroll?.payment_status || payroll?.status || 'Pending'}</td>
-            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>Payment Mode / Date:</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 capitalize text-slate-950" style={{ color: '#000000' }}>{payroll?.payment_mode || 'Bank Transfer'} / {payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('paymentStatus')}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 text-slate-950 font-bold uppercase" style={{ color: '#000000' }}>{displayStatus}</td>
+            <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('paymentModeDate')}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 capitalize text-slate-950" style={{ color: '#000000' }}>{t('bankTransfer')} / {payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}</td>
           </tr>
         </tbody>
       </table>
@@ -104,14 +112,14 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       {hasAdvance && (
         <div className="mb-6">
           <div className="bg-amber-100 px-4 py-2 font-semibold text-amber-950 rounded-t-lg border border-amber-300 border-b-0 flex items-center gap-2" style={{ backgroundColor: '#fef3c7', color: '#451a03', borderColor: '#fcd34d' }}>
-            Advance Payment Record
+            {t('advanceRecordsHeader')}
           </div>
           <table className="w-full border border-amber-300 text-xs" style={{ borderCollapse: 'collapse', borderColor: '#fcd34d' }}>
             <thead>
               <tr className="bg-amber-50 font-medium text-amber-950 border-b border-amber-300 text-left" style={{ backgroundColor: '#fffbeb', color: '#451a03' }}>
-                <th className="p-2 border-r border-amber-300">Date</th>
-                <th className="p-2 border-r border-amber-300">Reason</th>
-                <th className="p-2 text-right">Amount</th>
+                <th className="p-2 border-r border-amber-300">{t('date')}</th>
+                <th className="p-2 border-r border-amber-300">{t('reason')}</th>
+                <th className="p-2 text-right">{t('amount')}</th>
               </tr>
             </thead>
             <tbody>

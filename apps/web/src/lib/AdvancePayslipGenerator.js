@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import pb from './pocketbaseClient.js';
+import { getTranslation } from './payslipTranslations.js';
 
 const formatAmountToWords = (amount) => {
   const value = Math.floor(amount);
@@ -21,8 +22,9 @@ const formatAmountToWords = (amount) => {
   return convert(value) + ' Rupees Only';
 };
 
-export const generateAdvancePayslipPDF = async (payroll, employee, advances = []) => {
+export const generateAdvancePayslipPDF = async (payroll, employee, advances = [], language = 'en') => {
   try {
+    const t = (key) => getTranslation(language, key);
     let companySettings = null;
     try {
       companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
@@ -81,7 +83,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     doc.setFontSize(11);
     doc.setTextColor(...primaryColor);
     doc.setFont(undefined, 'bold');
-    doc.text(`${hasAdvance ? 'ADVANCE & PAYSLIP' : 'PAYSLIP'} FOR ${monthName.toUpperCase()}`, 105, 34, { align: 'center' });
+    doc.text(`${hasAdvance ? t('titleAdvancePayslip') : t('titlePayslip')} (${monthName.toUpperCase()})`, 105, 34, { align: 'center' });
 
     doc.setDrawColor(203, 213, 225); // Slate 300
     doc.line(14, 37, 196, 37);
@@ -89,31 +91,33 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     // 2. Employee Details Grid
     const empName = employee?.name || payroll?.employee_name || '-';
     const empId = getCleanEmpId(employee, payroll);
-    const designation = employee?.position || employee?.employee_type || payroll?.designation || '-';
-    const daysPresent = `${payroll ? `${payroll.attendance_days || 0} days` : '30 days'} / ${monthName}`;
-    const paymentStatus = (payroll?.payment_status || payroll?.status || 'Pending').toUpperCase();
-    const paymentModeDate = `${payroll?.payment_mode || 'Bank Transfer'} / ${payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}`;
+    const rawPos = employee?.position || employee?.employee_type || payroll?.designation || '-';
+    const designation = rawPos.toLowerCase().includes('driver') ? t('driverRole') : rawPos;
+    const daysPresent = `${payroll ? `${payroll.attendance_days || 0} ${t('days')}` : `30 ${t('days')}`} / ${monthName}`;
+    const rawStat = (payroll?.payment_status || payroll?.status || 'Pending').toUpperCase();
+    const paymentStatus = rawStat.includes('PAID') ? t('paid') : t('pending');
+    const paymentModeDate = `${t('bankTransfer')} / ${payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}`;
 
     autoTable(doc, {
       startY: 40,
       head: [],
       body: [
         [
-          { content: 'Employee Name:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('empName'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: empName, styles: { fontStyle: 'bold' } },
-          { content: 'Employee ID:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('empId'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: empId, styles: { fontStyle: 'bold' } }
         ],
         [
-          { content: 'Designation:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('designation'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: designation },
-          { content: 'Days Present / Period:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('daysPresent'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: daysPresent }
         ],
         [
-          { content: 'Payment Status:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('paymentStatus'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: paymentStatus, styles: { fontStyle: 'bold' } },
-          { content: 'Payment Mode / Date:', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('paymentModeDate'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: paymentModeDate }
         ]
       ],
@@ -136,7 +140,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       doc.setFontSize(8.5);
       doc.setTextColor(69, 26, 3); // Amber 950
       doc.setFont(undefined, 'bold');
-      doc.text('Advance Payment Record', 17, currentY + 4.2);
+      doc.text(t('advanceRecordsHeader'), 17, currentY + 4.2);
 
       const advRows = advances.map(a => [
         a.date ? format(new Date(a.date), 'dd MMM yyyy') : '-',
@@ -146,13 +150,13 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
 
       const totalAdv = advances.reduce((s, a) => s + (a.amount || 0), 0);
       advRows.push([
-        { content: 'Total Advance Balance', colSpan: 2, styles: { fontStyle: 'bold' } },
+        { content: t('totalAdvances'), colSpan: 2, styles: { fontStyle: 'bold' } },
         { content: `Rs. ${totalAdv.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', halign: 'right' } }
       ]);
 
       autoTable(doc, {
         startY: currentY + 6,
-        head: [['Date', 'Reason', 'Amount']],
+        head: [[t('date'), t('reason'), t('amount')]],
         body: advRows,
         theme: 'grid',
         headStyles: { fillColor: [255, 251, 235], textColor: [69, 26, 3], fontStyle: 'bold', fontSize: 8 },
@@ -190,15 +194,15 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
 
     autoTable(doc, {
       startY: currentY,
-      head: [['Earnings Description', 'Amount (Rs.)', 'Deductions Description', 'Amount (Rs.)']],
+      head: [[t('earningsHeader'), t('amount'), t('deductionsHeader'), t('amount')]],
       body: [
-        ['Basic Salary', basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Absent Deduction', absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})],
-        ['Trip Bonus / Allowances', tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Advance Recovery', advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})],
+        [t('basicSalary'), basicSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Absent Deduction', absentDeduction.toLocaleString('en-IN', {minimumFractionDigits:2})],
+        ['Trip Bonus / Allowances', tripBonus.toLocaleString('en-IN', {minimumFractionDigits:2}), t('totalAdvances'), advanceDeducted.toLocaleString('en-IN', {minimumFractionDigits:2})],
         [otherAllowancesStr, otherAllowancesAmt.toLocaleString('en-IN', {minimumFractionDigits:2}), 'Taxes (TDS / Other)', taxes.toLocaleString('en-IN', {minimumFractionDigits:2})],
         [
-          { content: 'Total Gross Earnings', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('grossSalary'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: grossSalary.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
-          { content: 'Total Deductions', styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
+          { content: t('totalAdvances'), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } },
           { content: totalDeductions.toLocaleString('en-IN', {minimumFractionDigits:2}), styles: { fontStyle: 'bold', fillColor: [241, 245, 249] } }
         ]
       ],
