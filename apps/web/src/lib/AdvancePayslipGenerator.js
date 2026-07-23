@@ -236,12 +236,22 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
     document.body.removeChild(container);
 
     const imgData = canvas.toDataURL('image/png');
-    const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
-    const imgWidth = 210; // A4 width mm
-    const pageHeight = 297; // A4 height mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const doc = new jsPDF({ format: 'a4', orientation: 'portrait', unit: 'mm' });
+    const pdfWidth = 210;
+    const pdfHeight = 297;
+    const margin = 8;
+    const printWidth = pdfWidth - (margin * 2);
+    const printHeight = (canvas.height * printWidth) / canvas.width;
     
-    doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+    if (printHeight <= pdfHeight - (margin * 2)) {
+      doc.addImage(imgData, 'PNG', margin, margin, printWidth, printHeight);
+    } else {
+      const maxPrintHeight = pdfHeight - (margin * 2);
+      const scaledWidth = (canvas.width * maxPrintHeight) / canvas.height;
+      const xOffset = margin + ((printWidth - scaledWidth) / 2);
+      doc.addImage(imgData, 'PNG', xOffset, margin, scaledWidth, maxPrintHeight);
+    }
+
     return doc.output('blob');
   } catch (err) {
     console.error('PDF generation error:', err);
