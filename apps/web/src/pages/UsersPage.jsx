@@ -20,6 +20,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import ApprovalModal from '@/components/ApprovalModal.jsx';
 import RejectionModal from '@/components/RejectionModal.jsx';
+import CreateUserCredentialsModal from '@/components/CreateUserCredentialsModal.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const UsersPage = () => {
@@ -31,6 +32,7 @@ const UsersPage = () => {
   const [search, setSearch] = useState('');
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteData, setInviteData] = useState({ email: '', role: 'dispatcher' });
+  const [credentialsModal, setCredentialsModal] = useState({ open: false, user: null });
 
   // State for Financial Permissions
   const [permissionsDialog, setPermissionsDialog] = useState({ open: false, user: null });
@@ -301,9 +303,12 @@ const UsersPage = () => {
                         <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => setCredentialsModal({ open: true, user })} className="cursor-pointer font-bold text-blue-500">
+                        <Key className="w-4 h-4 mr-2" /> Edit Credentials & Role
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleResetPassword(user.email)} className="cursor-pointer">
-                        <Key className="w-4 h-4 mr-2" /> Send Reset Link
+                        <Key className="w-4 h-4 mr-2 text-muted-foreground" /> Send Reset Link
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleStatusToggle(user)} className="cursor-pointer">
                         {user.status === 'inactive' ? (
@@ -373,48 +378,57 @@ const UsersPage = () => {
           </div>
           
           {activeMainTab === 'users' && (
-            <Sheet open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-              <SheetTrigger asChild>
-                <Button className="bg-primary text-primary-foreground shadow-sm gap-2 rounded-xl">
-                  <UserPlus className="w-4 h-4" /> Invite New User
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="border-l border-border bg-background">
-                <SheetHeader className="mb-8">
-                  <SheetTitle className="text-2xl font-bold">Send Invitation</SheetTitle>
-                  <CardDescription>Invite a new staff member to join the platform.</CardDescription>
-                </SheetHeader>
-                <form onSubmit={handleInvite} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Email Address</label>
-                    <Input 
-                      type="email" 
-                      placeholder="staff@company.com"
-                      required 
-                      value={inviteData.email} 
-                      onChange={e => setInviteData({...inviteData, email: e.target.value})}
-                      className="bg-input" 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Assign Role</label>
-                    <Select value={inviteData.role} onValueChange={v => setInviteData({...inviteData, role: v})}>
-                      <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrator</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="dispatcher">Dispatcher</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 text-sm text-primary/90 flex gap-3 items-start">
-                    <Shield className="w-5 h-5 shrink-0 mt-0.5" />
-                    <p>They will receive an email with a secure link to set their password. The link expires in 7 days.</p>
-                  </div>
-                  <Button type="submit" className="w-full h-12 text-base rounded-xl mt-4">Send Invitation Email</Button>
-                </form>
-              </SheetContent>
-            </Sheet>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => setCredentialsModal({ open: true, user: null })} 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md gap-2 rounded-xl"
+              >
+                <UserPlus className="w-4 h-4" /> Create User Credentials
+              </Button>
+
+              <Sheet open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="bg-card shadow-sm gap-2 rounded-xl hover:border-primary/50">
+                    <Mail className="w-4 h-4" /> Send Email Invite
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="border-l border-border bg-background">
+                  <SheetHeader className="mb-8">
+                    <SheetTitle className="text-2xl font-bold">Send Invitation</SheetTitle>
+                    <CardDescription>Invite a new staff member to join the platform.</CardDescription>
+                  </SheetHeader>
+                  <form onSubmit={handleInvite} className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Email Address</label>
+                      <Input 
+                        type="email" 
+                        placeholder="staff@company.com"
+                        required 
+                        value={inviteData.email} 
+                        onChange={e => setInviteData({...inviteData, email: e.target.value})}
+                        className="bg-input" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Assign Role</label>
+                      <Select value={inviteData.role} onValueChange={v => setInviteData({...inviteData, role: v})}>
+                        <SelectTrigger className="bg-input"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="dispatcher">Dispatcher</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 text-sm text-primary/90 flex gap-3 items-start">
+                      <Shield className="w-5 h-5 shrink-0 mt-0.5" />
+                      <p>They will receive an email with a secure link to set their password. The link expires in 7 days.</p>
+                    </div>
+                    <Button type="submit" className="w-full h-12 text-base rounded-xl mt-4">Send Invitation Email</Button>
+                  </form>
+                </SheetContent>
+              </Sheet>
+            </div>
           )}
         </div>
 
@@ -774,6 +788,13 @@ const UsersPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CreateUserCredentialsModal
+        isOpen={credentialsModal.open}
+        onClose={() => setCredentialsModal({ open: false, user: null })}
+        editUser={credentialsModal.user}
+        onSuccess={retry}
+      />
     </>
   );
 };
