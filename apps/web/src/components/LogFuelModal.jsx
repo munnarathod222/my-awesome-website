@@ -10,8 +10,10 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Loader2, AlertCircle, Truck, CreditCard } from 'lucide-react';
+import { Loader2, AlertCircle, Truck, CreditCard, Fuel, Wallet } from 'lucide-react';
 import TruckSelectionModal from '@/components/TruckSelectionModal.jsx';
+import FuelStationModal from '@/components/FuelStationModal.jsx';
+import { fetchFuelStations, addFuelStationCredit } from '@/lib/fuelStationUtils.js';
 
 // Validators
 const isValidLuhn = (num) => {
@@ -47,6 +49,10 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
   const [trucksError, setTrucksError] = useState(null);
   const [trucks, setTrucks] = useState([]);
   
+  const [fuelStations, setFuelStations] = useState([]);
+  const [selectedStationId, setSelectedStationId] = useState('none');
+  const [isFuelStationModalOpen, setIsFuelStationModalOpen] = useState(false);
+
   const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -57,6 +63,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
     fuel_cost: '',
     notes: '',
     payment_method: 'Cash',
+    fuel_station_id: 'none',
   });
 
   const [selectedCardId, setSelectedCardId] = useState('new');
@@ -80,6 +87,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
   useEffect(() => {
     if (isOpen) {
       fetchTrucks();
+      loadFuelStations();
       setFormData({
         date: format(new Date(), 'yyyy-MM-dd'),
         vehicle_id: '',
@@ -88,6 +96,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
         fuel_cost: '',
         notes: '',
         payment_method: 'Cash',
+        fuel_station_id: 'none'
       });
       setSelectedCardId(savedCards.length > 0 ? savedCards[0].id : 'new');
       setPaymentDetails({
@@ -106,6 +115,15 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
       setValidationErrors({});
     }
   }, [isOpen, savedCards]);
+
+  const loadFuelStations = async () => {
+    try {
+      const stations = await fetchFuelStations();
+      setFuelStations(stations || []);
+    } catch (e) {
+      console.error('Failed to fetch fuel stations:', e);
+    }
+  };
 
   const fetchTrucks = async () => {
     setTrucksLoading(true);
@@ -225,13 +243,26 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
       }
 
       const vehicleName = selectedTruck.truck_number;
-      // PocketBase requires complete ISO or standardized datetime formatting for accuracy
       const refillDate = `${formData.date} 12:00:00.000Z`; 
       const distanceDriven = parseFloat(formData.kms);
       const liters = parseFloat(formData.liters);
       const fuelCost = parseFloat(formData.fuel_cost);
 
+      const matchedStation = fuelStations.find(s => s.id === formData.fuel_station_id);
+
+      // Handle Fuel Station Credit (Udhar) balance addition
+      if (formData.payment_method === 'Credit' || formData.payment_method === 'Credit / Udhar (Fuel Station Credit)') {
+        if (matchedStation) {
+          await addFuelStationCredit(matchedStation.id, fuelCost);
+          toast.info(`₹${fuelCost.toLocaleString('en-IN')} added to ${matchedStation.station_name} credit (Udhar) balance.`);
+        }
+      }
+
       let paymentInfoStr = `Payment Method: ${formData.payment_method}\n`;
+      if (matchedStation) {
+        paymentInfoStr += `Fuel Station: ${matchedStation.brand || ''} ${matchedStation.station_name} (${matchedStation.location || ''})\n`;
+      }
+
       if (formData.payment_method === 'Credit Card') {
         if (selectedCardId === 'new') {
           const maskedCard = paymentDetails.cardNumber.slice(-4).padStart(paymentDetails.cardNumber.length, '*');
@@ -722,6 +753,64 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
               </div>
             </div>
 
+            {/* Fuel Station Selection */}
+            <div className="space-y-2 bg-muted/20 p-3 rounded-xl border border-border/60">
+              <div className="flex items-center justify-between">
+                <Label className="font-semibold flex items-center gap-1.5 text-foreground">
+                  <Fuel className="w-4 h-4 text-primary" />
+                  Fuel Station / Petrol Bunk
+                </Label>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  size="sm" 
+                  className="h-auto p-0 text-primary text-xs font-semibold"
+                  onClick={() => setIsFuelStationModalOpen(true)}
+                >
+                  + Add New Bunk
+                </Button>
+              </div>
+              <Select 
+                value={formData.fuel_station_id} 
+                onValueChange={(v) => {
+                  if (v === 'add_new') {
+                    setIsFuelStationModalOpen(true);
+                  } else {
+                    setFormData({...formData, fuel_station_id: v});
+                  }
+                }}
+              >
+                <SelectTrigger className="bg-background text-foreground h-11">
+                  <SelectValue placeholder="Select Petrol Bunk / Fuel Station..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-muted-foreground">
+                    -- No Station Selected / Generic Bunk --
+                  </SelectItem>
+                  {fuelStations.map(s => (
+                    <SelectItem key={s.id} value={s.id}>
+                      <div className="flex items-center justify-between w-full gap-3 py-0.5">
+                        <span className="font-semibold text-foreground">{s.station_name}</span>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                            {s.brand || 'Station'}
+                          </span>
+                          {(s.credit_balance || 0) > 0 && (
+                            <span className="text-[10px] font-mono font-bold text-amber-400">
+                              Udhar: ₹{(s.credit_balance || 0).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="add_new" className="font-bold text-primary border-t border-border/50">
+                    + Register New Fuel Station
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label>Payment Method *</Label>
               <Select 
@@ -741,12 +830,28 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Credit / Udhar (Fuel Station Credit)" className="font-bold text-amber-400">
+                    💳 Credit / Udhar (Fuel Station Credit)
+                  </SelectItem>
                   <SelectItem value="Credit Card">Credit Card</SelectItem>
                   <SelectItem value="Debit Card">Debit Card</SelectItem>
                   <SelectItem value="UPI">UPI</SelectItem>
                   <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                 </SelectContent>
               </Select>
+
+              {formData.payment_method === 'Credit / Udhar (Fuel Station Credit)' && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 space-y-1">
+                  <p className="font-semibold flex items-center gap-1">
+                    <Wallet className="w-4 h-4 text-amber-400" />
+                    Credit (Udhar) Purchase to Fuel Station
+                  </p>
+                  <p className="text-muted-foreground">
+                    This fuel cost (₹{formData.fuel_cost || 0}) will be added to the outstanding credit balance of the selected station. You can clear this credit anytime from the <strong>Fuel Stations</strong> tab.
+                  </p>
+                </div>
+              )}
+
               {renderPaymentFields()}
             </div>
 
@@ -782,6 +887,14 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
         isOpen={isTruckModalOpen}
         onClose={() => setIsTruckModalOpen(false)}
         onSelect={handleTruckSelect}
+      />
+
+      <FuelStationModal 
+        isOpen={isFuelStationModalOpen}
+        onClose={() => setIsFuelStationModalOpen(false)}
+        onSuccess={() => {
+          loadFuelStations();
+        }}
       />
     </>
   );

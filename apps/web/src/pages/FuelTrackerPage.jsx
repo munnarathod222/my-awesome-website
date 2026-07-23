@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import LogFuelModal from '@/components/LogFuelModal.jsx';
 import FuelPaymentModal from '@/components/FuelPaymentModal.jsx';
+import FuelStationsTab from '@/components/FuelStationsTab.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -526,8 +527,9 @@ const FuelTrackerPage = () => {
 
       {/* Tabs Layout */}
       <Tabs defaultValue="refills" className="space-y-6">
-        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-3 max-w-[450px]">
+        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-2 sm:grid-cols-4 max-w-[640px]">
           <TabsTrigger value="refills" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">Refills & Efficiency</TabsTrigger>
+          <TabsTrigger value="stations" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">⛽ Fuel Stations</TabsTrigger>
           <TabsTrigger value="payments" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">Card Payments</TabsTrigger>
           <TabsTrigger value="analytics" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">Advanced Analytics</TabsTrigger>
         </TabsList>
@@ -1290,6 +1292,11 @@ const FuelTrackerPage = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Tab 4: Fuel Stations & Credit Master */}
+        <TabsContent value="stations" className="space-y-6 outline-none animate-in fade-in-50 duration-200">
+          <FuelStationsTab onRefreshRefills={() => setRefreshTrigger(p => p + 1)} />
         </TabsContent>
       </Tabs>
 
