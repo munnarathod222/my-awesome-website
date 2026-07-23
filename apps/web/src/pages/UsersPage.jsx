@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Search, UserPlus, MoreHorizontal, Trash2, Key, AlertCircle, Shield, CheckCircle2, XCircle, ShieldCheck, Clock, Eye, Check, UserCheck } from 'lucide-react';
+import { Search, UserPlus, MoreHorizontal, Trash2, Key, AlertCircle, Shield, CheckCircle2, XCircle, ShieldCheck, Clock, Eye, Check, UserCheck, Mail } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { usePageData } from '@/hooks/usePageData.js';
