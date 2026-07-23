@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import pb from './pocketbaseClient.js';
 import { getTranslation } from './payslipTranslations.js';
@@ -25,6 +26,33 @@ const formatAmountToWords = (amount) => {
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = [], language = 'en') => {
   try {
     const t = (key) => getTranslation(language, key);
+
+    // 🌟 MULTILINGUAL PIXEL-PERFECT PDF GENERATION:
+    // Standard jsPDF default fonts lack Indian non-Latin glyphs (Devanagari, Telugu, Tamil, etc.).
+    // We capture the exact rendered HTML preview DOM (#payslip-preview-content) via html2canvas
+    // to produce 100% crisp, uncorrupted PDF documents in any Indian language!
+    const elem = typeof document !== 'undefined' ? document.getElementById('payslip-preview-content') : null;
+    if (elem) {
+      try {
+        const canvas = await html2canvas(elem, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const doc = new jsPDF({ format: 'a4', orientation: 'portrait' });
+        const imgWidth = 210; // A4 width mm
+        const pageHeight = 297; // A4 height mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+        return doc.output('blob');
+      } catch (domErr) {
+        console.warn('html2canvas rendering fallback to jsPDF autoTable:', domErr);
+      }
+    }
+
     let companySettings = null;
     try {
       companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });

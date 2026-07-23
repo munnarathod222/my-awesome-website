@@ -131,7 +131,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
                 </tr>
               ))}
               <tr className="bg-amber-100 font-bold border-t border-amber-300" style={{ backgroundColor: '#fef3c7', color: '#000000' }}>
-                <td colSpan="2" className="p-2 border-r border-amber-300">Total Advance Balance</td>
+                <td colSpan="2" className="p-2 border-r border-amber-300">{t('totalAdvances')}</td>
                 <td className="p-2 text-right">₹{advances.reduce((s, a) => s + (a.amount || 0), 0).toLocaleString()}</td>
               </tr>
             </tbody>
@@ -143,42 +143,42 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       <table className="w-full mb-6 border border-slate-300 text-sm" style={{ borderCollapse: 'collapse', borderColor: '#cbd5e1' }}>
         <thead>
           <tr className="bg-slate-100 font-bold border-b border-slate-300 text-slate-950" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>
-            <th className="w-1/4 p-3 text-left border-r border-slate-300">Earnings Description</th>
-            <th className="w-1/4 p-3 text-right border-r border-slate-300">Amount (₹)</th>
-            <th className="w-1/4 p-3 text-left border-r border-slate-300">Deductions Description</th>
-            <th className="w-1/4 p-3 text-right">Amount (₹)</th>
+            <th className="w-1/4 p-3 text-left border-r border-slate-300">{t('earningsDesc')}</th>
+            <th className="w-1/4 p-3 text-right border-r border-slate-300">{t('amount')}</th>
+            <th className="w-1/4 p-3 text-left border-r border-slate-300">{t('deductionsDesc')}</th>
+            <th className="w-1/4 p-3 text-right">{t('amount')}</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>Basic Salary</td>
+            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>{t('basicSalary')}</td>
             <td className="p-2.5 text-right border-r border-b border-slate-300 font-mono font-medium text-slate-950" style={{ color: '#000000' }}>{basicSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>Absent Deduction</td>
+            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>{t('absentDeduction')}</td>
             <td className="p-2.5 text-right border-b border-slate-300 font-mono font-medium text-slate-950" style={{ color: '#000000' }}>{payroll?.attendance_deduction ? payroll.attendance_deduction.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}</td>
           </tr>
           <tr>
-            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>Trip Bonus / Allowances</td>
+            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>{t('tripBonus')}</td>
             <td className="p-2.5 text-right border-r border-b border-slate-300 font-mono font-medium text-emerald-700" style={{ color: '#047857' }}>{(payroll?.trip_bonus || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>Advance Recovery</td>
+            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>{t('advanceRecovery')}</td>
             <td className="p-2.5 text-right border-b border-slate-300 font-mono font-medium text-rose-700" style={{ color: '#be123c' }}>{advanceDeducted.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
           </tr>
           <tr>
             <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>
               {payroll?.allowances_breakdown ? Object.entries(payroll.allowances_breakdown)
                 .filter(([_, v]) => Number(v) > 0)
-                .map(([k]) => k.replace(/_/g, ' ')).join(', ') || 'Other Allowances' : 'Other Allowances'}
+                .map(([k]) => k.replace(/_/g, ' ')).join(', ') || t('otherAllowances') : t('otherAllowances')}
             </td>
             <td className="p-2.5 text-right border-r border-b border-slate-300 font-mono font-medium text-slate-950" style={{ color: '#000000' }}>
               {payroll?.allowances_breakdown ? Object.values(payroll.allowances_breakdown)
                 .reduce((sum, v) => sum + (Number(v) || 0), 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}
             </td>
-            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>Taxes (TDS / Other)</td>
+            <td className="p-2.5 border-r border-b border-slate-300 text-slate-700" style={{ color: '#334155' }}>{t('taxesLabel')}</td>
             <td className="p-2.5 text-right border-b border-slate-300 font-mono font-medium text-rose-700" style={{ color: '#be123c' }}>{(payroll?.taxes || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
           </tr>
           <tr className="bg-slate-100 font-bold border-t border-slate-300 text-slate-950" style={{ backgroundColor: '#f1f5f9', color: '#000000' }}>
-            <td className="p-3 border-r border-slate-300">Total Gross Earnings</td>
+            <td className="p-3 border-r border-slate-300">{t('grossSalary')}</td>
             <td className="p-3 text-right border-r border-slate-300 font-mono">{grossSalary.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td className="p-3 border-r border-slate-300">Total Deductions</td>
+            <td className="p-3 border-r border-slate-300">{t('totalDeductions')}</td>
             <td className="p-3 text-right font-mono">{totalDeductions.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
           </tr>
         </tbody>
@@ -188,8 +188,8 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       <div className="border border-slate-300 rounded-xl overflow-hidden mb-6" style={{ borderColor: '#cbd5e1' }}>
         <div className="bg-slate-50 p-4 border-b border-slate-300 flex justify-between items-center" style={{ backgroundColor: '#f8fafc', borderColor: '#cbd5e1' }}>
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700" style={{ color: '#334155' }}>Net Salary Payable (Net Pay)</h3>
-            <p className="text-xs text-slate-500">Gross Earnings - Total Deductions</p>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700" style={{ color: '#334155' }}>{t('netPayable')}</h3>
+            <p className="text-xs text-slate-500">{t('netPaySubtext')}</p>
           </div>
           <div className="text-right">
             <span className="text-2xl font-black font-mono text-slate-950" style={{ color: '#000000' }}>
@@ -198,7 +198,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
           </div>
         </div>
         <div className="p-3 bg-white text-xs font-medium text-slate-800" style={{ backgroundColor: '#ffffff', color: '#1e293b' }}>
-          Net Pay in Words: <span className="font-bold text-slate-950">{formatAmountToWords(netSalary)}</span>
+          {t('amountInWords')} <span className="font-bold text-slate-950">{formatAmountToWords(netSalary)}</span>
         </div>
       </div>
 
@@ -206,12 +206,12 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       <div className="grid grid-cols-2 gap-8 pt-12 mt-8 text-center text-xs border-t border-dashed border-slate-300" style={{ borderColor: '#cbd5e1' }}>
         <div>
           <div className="border-b border-slate-400 mb-2 h-10 border-dashed"></div>
-          <p className="font-semibold text-slate-800">Authorized Signatory</p>
+          <p className="font-semibold text-slate-800">{t('authorizedSignatory')}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">{compName}</p>
         </div>
         <div>
           <div className="border-b border-slate-400 mb-2 h-10 border-dashed"></div>
-          <p className="font-semibold text-slate-800">Employee Signature</p>
+          <p className="font-semibold text-slate-800">{t('employeeSignature')}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">{employee?.name || payroll?.employee_name || 'Employee'}</p>
         </div>
       </div>
