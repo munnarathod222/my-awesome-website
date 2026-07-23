@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -181,117 +182,81 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     toast.success(`Opening WhatsApp share for ${empName}...`);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const elem = document.getElementById('payslip-preview-content');
     if (!elem) {
       window.print();
       return;
     }
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
+    try {
+      setExporting(true);
+      const canvas = await html2canvas(elem, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Jai Bhavani Cargo - Payslip Print</title>
-          <style>
-            @page {
-              size: A4 portrait;
-              margin: 8mm 12mm;
-            }
-            * {
-              box-sizing: border-box;
-            }
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              margin: 0;
-              padding: 15px;
-              background: #ffffff !important;
-              color: #000000 !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            .payslip-container {
-              width: 100% !important;
-              max-width: 100% !important;
-              background: #ffffff !important;
-              color: #000000 !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              border: none !important;
-              box-shadow: none !important;
-            }
-            table {
-              width: 100% !important;
-              border-collapse: collapse !important;
-              margin-bottom: 16px !important;
-            }
-            td, th {
-              border: 1px solid #cbd5e1 !important;
-              padding: 8px 10px !important;
-              color: #000000 !important;
-              font-size: 12px !important;
-            }
-            th {
-              background-color: #f1f5f9 !important;
-              font-weight: 700 !important;
-            }
-            h1 {
-              font-size: 22px !important;
-              font-weight: 800 !important;
-              margin: 0 0 4px 0 !important;
-              color: #000000 !important;
-              text-align: center;
-            }
-            h2 {
-              font-size: 15px !important;
-              font-weight: 700 !important;
-              margin: 12px 0 6px 0 !important;
-              color: #000000 !important;
-              text-align: center;
-            }
-            p {
-              margin: 2px 0 !important;
-              color: #334155 !important;
-            }
-            .text-center { text-align: center !important; }
-            .text-right { text-align: right !important; }
-            .font-bold { font-weight: 700 !important; }
-            .font-semibold { font-weight: 600 !important; }
-            .font-mono { font-family: monospace !important; }
-            .bg-slate-100, .bg-slate-50 { background-color: #f8fafc !important; }
-            .bg-amber-100, .bg-amber-50 { background-color: #fef3c7 !important; }
-            .text-emerald-700 { color: #047857 !important; }
-            .text-rose-700 { color: #be123c !important; }
-            .border-dashed { border-style: dashed !important; }
-          </style>
-        </head>
-        <body>
-          ${elem.outerHTML}
-        </body>
-      </html>
-    `);
-    doc.close();
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
 
-    iframe.contentWindow.focus();
-    setTimeout(() => {
-      iframe.contentWindow.print();
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Jai Bhavani Cargo - Payslip Print</title>
+            <style>
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 10mm;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                background: #ffffff !important;
+              }
+              img {
+                width: 100%;
+                max-width: 190mm;
+                height: auto;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${imgData}" />
+          </body>
+        </html>
+      `);
+      doc.close();
+
+      iframe.contentWindow.focus();
       setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 1000);
-    }, 300);
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 300);
+    } catch (e) {
+      console.error('Print error:', e);
+      window.print();
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Listen to keyboard shortcuts
