@@ -43,6 +43,7 @@ const FuelTrackerPage = () => {
   
   // Modals
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [editingRefill, setEditingRefill] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
 
@@ -799,14 +800,29 @@ const FuelTrackerPage = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right pr-6">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteRefill(log.id)}
-                              className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 rounded-lg"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => {
+                                  setEditingRefill(log);
+                                  setIsLogModalOpen(true);
+                                }}
+                                className="text-muted-foreground hover:bg-primary/10 hover:text-primary h-8 w-8 rounded-lg"
+                                title="Edit Fuel Record"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteRefill(log.id)}
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 rounded-lg"
+                                title="Delete Record"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -869,14 +885,27 @@ const FuelTrackerPage = () => {
                         <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px]">
                           {log.payment_method || 'Cash'}
                         </Badge>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDeleteRefill(log.id)}
-                          className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 font-bold rounded-lg"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Delete
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              setEditingRefill(log);
+                              setIsLogModalOpen(true);
+                            }}
+                            className="h-7 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-1.5 font-bold rounded-lg"
+                          >
+                            <Pencil className="w-3.5 h-3.5" /> Edit
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeleteRefill(log.id)}
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 font-bold rounded-lg"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1303,9 +1332,13 @@ const FuelTrackerPage = () => {
       {/* Log Fuel Refill Modal (Tab 1) */}
       <LogFuelModal 
         isOpen={isLogModalOpen} 
-        onClose={() => setIsLogModalOpen(false)} 
+        onClose={() => {
+          setIsLogModalOpen(false);
+          setEditingRefill(null);
+        }} 
         onSuccess={() => setRefreshTrigger(p => p + 1)}
         savedCards={creditCards}
+        editLog={editingRefill}
       />
 
       {/* Fuel Payment Modal (Tab 2) */}

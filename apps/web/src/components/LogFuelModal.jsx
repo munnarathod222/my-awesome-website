@@ -42,7 +42,7 @@ const isValidExpiry = (expiry) => {
   return expDate >= today;
 };
 
-const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
+const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = null }) => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [trucksLoading, setTrucksLoading] = useState(false);
@@ -57,7 +57,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
 
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
-    vehicle_id: '', // Note: Stores truck_number, not ID, to match Select's value pattern
+    vehicle_id: '', 
     kms: '',
     liters: '',
     fuel_cost: '',
@@ -88,16 +88,34 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
     if (isOpen) {
       fetchTrucks();
       loadFuelStations();
-      setFormData({
-        date: format(new Date(), 'yyyy-MM-dd'),
-        vehicle_id: '',
-        kms: '',
-        liters: '',
-        fuel_cost: '',
-        notes: '',
-        payment_method: 'Cash',
-        fuel_station_id: 'none'
-      });
+      if (editLog) {
+        let rawDate = editLog.date;
+        if (rawDate && rawDate.includes('T')) rawDate = rawDate.split('T')[0];
+        if (rawDate && rawDate.includes(' ')) rawDate = rawDate.split(' ')[0];
+
+        setFormData({
+          id: editLog.id,
+          date: rawDate || format(new Date(), 'yyyy-MM-dd'),
+          vehicle_id: editLog.truck_number || editLog.vehicle_name || '',
+          kms: (editLog.distance || editLog.distance_driven || '').toString(),
+          liters: (editLog.liters || '').toString(),
+          fuel_cost: (editLog.total_cost || editLog.fuel_cost || '').toString(),
+          notes: editLog.notes || '',
+          payment_method: editLog.payment_method || 'Cash',
+          fuel_station_id: editLog.fuel_station_id || 'none'
+        });
+      } else {
+        setFormData({
+          date: format(new Date(), 'yyyy-MM-dd'),
+          vehicle_id: '',
+          kms: '',
+          liters: '',
+          fuel_cost: '',
+          notes: '',
+          payment_method: 'Cash',
+          fuel_station_id: 'none'
+        });
+      }
       setSelectedCardId(savedCards.length > 0 ? savedCards[0].id : 'new');
       setPaymentDetails({
         cardNumber: '',
@@ -114,7 +132,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
       });
       setValidationErrors({});
     }
-  }, [isOpen, savedCards]);
+  }, [isOpen, savedCards, editLog]);
 
   const loadFuelStations = async () => {
     try {
@@ -303,11 +321,18 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
         trackerPayload.credit_card_id = finalCreditCardId;
       }
 
-      console.log('Sending fuel_tracker creation payload:', trackerPayload);
-      const tracker = await pb.collection('fuel_tracker').create(trackerPayload, { $autoCancel: false });
-      console.log('Successfully created fuel_tracker record:', tracker);
+      let tracker;
+      if (formData.id) {
+        console.log('Updating existing fuel_tracker record:', formData.id, trackerPayload);
+        tracker = await pb.collection('fuel_tracker').update(formData.id, trackerPayload, { $autoCancel: false });
+        toast.success('Fuel log updated successfully');
+      } else {
+        console.log('Sending fuel_tracker creation payload:', trackerPayload);
+        tracker = await pb.collection('fuel_tracker').create(trackerPayload, { $autoCancel: false });
+        toast.success('Fuel refill record created successfully');
+      }
 
-      // Create linked expense record mapped exactly to `expenses` schema
+      // Create or update linked expense record mapped to `expenses` schema
       const expensePaymentMethodMap = {
         'Cash': 'Cash',
         'Credit Card': 'Credit Card',
@@ -334,11 +359,19 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
         expensePayload.credit_card_id = finalCreditCardId;
       }
 
-      console.log('Sending expenses creation payload:', expensePayload);
-      const expense = await pb.collection('expenses').create(expensePayload, { $autoCancel: false });
-      console.log('Successfully created expenses record:', expense);
-      
-      toast.success('Fuel refill and expense record created successfully');
+      try {
+        const existingExpenses = await pb.collection('expenses').getList(1, 1, {
+          filter: `fuel_tracker_id = "${tracker.id}"`,
+          $autoCancel: false
+        });
+        if (existingExpenses.items && existingExpenses.items.length > 0) {
+          await pb.collection('expenses').update(existingExpenses.items[0].id, expensePayload, { $autoCancel: false });
+        } else if (!formData.id) {
+          await pb.collection('expenses').create(expensePayload, { $autoCancel: false });
+        }
+      } catch (e) {
+        console.log('Linked expense update/creation note:', e?.message);
+      }
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
@@ -638,7 +671,10 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [] }) => {
       <Dialog open={isOpen} onOpenChange={(open) => !loading && onClose()}>
         <DialogContent className="sm:max-w-[600px] bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-foreground text-xl">Log Fuel Refill</DialogTitle>
+            <DialogTitle className="text-foreground text-xl font-bold font-heading flex items-center gap-2">
+              <Fuel className="w-5 h-5 text-primary" />
+              {formData.id ? 'Edit Fuel Refill Record' : 'Log Fuel Refill'}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5 pt-2">
             
