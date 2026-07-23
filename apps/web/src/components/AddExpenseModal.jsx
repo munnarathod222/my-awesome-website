@@ -12,6 +12,8 @@ import { format } from 'date-fns';
 import { useCashbookInit } from '@/hooks/useCashbookInit.js';
 import { logCashbookError } from '@/lib/cashbookErrorHandler.js';
 
+import { recordTollDeduction } from '@/lib/fastagDeductionUtils.js';
+
 const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => {
   const { currentUser } = useAuth();
   const { cashbook, loading: initLoading } = useCashbookInit();
@@ -142,6 +144,22 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
             }
           } catch (err) {
             console.error('Failed to sync fastag recharge from expense:', err);
+          }
+        }
+
+        // If this is a Toll Tax or FASTag expense, record FASTag deduction
+        if ((payload.category === 'Toll Tax' || payload.payment_method === 'FASTag') && payload.truck_id) {
+          try {
+            const trkObj = trucks.find(t => t.truck_number === payload.truck_id || t.id === payload.truck_id);
+            await recordTollDeduction({
+              truckId: trkObj ? trkObj.id : '',
+              truckNumber: payload.truck_id,
+              amount: payload.amount,
+              date: payload.date,
+              notes: payload.description || payload.notes || 'Toll Tax debit'
+            });
+          } catch (tollErr) {
+            console.error('Failed to auto-record FASTag toll deduction:', tollErr);
           }
         }
         

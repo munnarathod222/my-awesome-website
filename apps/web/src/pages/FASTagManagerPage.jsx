@@ -18,6 +18,8 @@ import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { motion } from 'framer-motion';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
+import RecordTollDeductionModal from '@/components/RecordTollDeductionModal.jsx';
+import { fetchAllFASTagDeductions } from '@/lib/fastagDeductionUtils.js';
 
 export default function FASTagManagerPage() {
   const [trucks, setTrucks] = useState([]);
@@ -30,14 +32,15 @@ export default function FASTagManagerPage() {
   
   const [selectedTruckForRecharge, setSelectedTruckForRecharge] = useState(null);
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
+  const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch trucks, fastag deductions, and fastag recharges in parallel
+      // Fetch trucks, fastag deductions (remote + local store), and fastag recharges in parallel
       const [trucksData, txData, rechargesData] = await Promise.all([
         pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }),
-        pb.collection('fastag_transactions').getFullList({ sort: '-date', $autoCancel: false }).catch(() => []),
+        fetchAllFASTagDeductions(),
         pb.collection('fastag_recharges').getFullList({ sort: '-recharge_date', expand: 'truck_id', $autoCancel: false }).catch(() => [])
       ]);
 
@@ -128,7 +131,7 @@ export default function FASTagManagerPage() {
             Monitor truck FASTag wallet balances, automated toll deduction logs, and recharge records.
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <Button 
             onClick={fetchData} 
             variant="outline" 
@@ -137,12 +140,21 @@ export default function FASTagManagerPage() {
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
           {trucks.length > 0 && (
-            <Button 
-              onClick={() => handleOpenRecharge(trucks[0])} 
-              className="rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Record FASTag Recharge
-            </Button>
+            <>
+              <Button 
+                onClick={() => setIsDeductionModalOpen(true)} 
+                variant="outline"
+                className="rounded-xl shadow-sm border-rose-500/30 text-rose-500 hover:bg-rose-500/10 font-bold"
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> Record Toll Deduction
+              </Button>
+              <Button 
+                onClick={() => handleOpenRecharge(trucks[0])} 
+                className="rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> Record FASTag Recharge
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -490,7 +502,7 @@ export default function FASTagManagerPage() {
         </Tabs>
       </Card>
 
-      {/* ── FASTag Recharge Modal ───────────────────────────────────────── */}
+      {/* ── FASTag Modals ───────────────────────────────────────── */}
       {selectedTruckForRecharge && (
         <FASTagRechargeModal
           isOpen={isRechargeModalOpen}
@@ -502,6 +514,13 @@ export default function FASTagManagerPage() {
           onSuccess={fetchData}
         />
       )}
+
+      <RecordTollDeductionModal
+        isOpen={isDeductionModalOpen}
+        onClose={() => setIsDeductionModalOpen(false)}
+        trucks={trucks}
+        onSuccess={fetchData}
+      />
     </motion.div>
   );
 }
