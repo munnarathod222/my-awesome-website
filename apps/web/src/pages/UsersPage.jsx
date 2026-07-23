@@ -227,6 +227,15 @@ const UsersPage = () => {
 
   useEffect(() => {
     fetchCounts(); // Always fetch counts on mount so badge is accurate
+    
+    // Subscribe to real-time users collection updates
+    pb.collection('users').subscribe('*', () => {
+      retry();
+    }).catch(err => console.log('Users subscription notice:', err));
+
+    return () => {
+      pb.collection('users').unsubscribe('*').catch(() => {});
+    };
   }, []);
 
   useEffect(() => {
@@ -238,13 +247,23 @@ const UsersPage = () => {
     }
   }, [requestSearchTerm, requestActiveTab, requestSortOrder, activeMainTab]);
 
-  const searchedUsers = users.filter(u => 
-    (u.full_name?.toLowerCase() || '').includes(search.toLowerCase()) || 
-    (u.email?.toLowerCase() || '').includes(search.toLowerCase())
-  );
+  const searchedUsers = users.filter(u => {
+    const q = search.toLowerCase();
+    const nameMatch = (u.full_name?.toLowerCase() || u.name?.toLowerCase() || '').includes(q);
+    const emailMatch = (u.email?.toLowerCase() || '').includes(q);
+    const roleMatch = (u.role?.toLowerCase() || '').includes(q);
+    return !q || nameMatch || emailMatch || roleMatch;
+  });
 
-  const activeUsers = searchedUsers.filter(u => u.status === 'active' || !u.status);
-  const inactiveUsers = searchedUsers.filter(u => u.status === 'inactive');
+  const activeUsers = searchedUsers.filter(u => {
+    const s = (u.status || '').toLowerCase();
+    return !s || s === 'active' || s === 'approved' || s === 'pending';
+  });
+
+  const inactiveUsers = searchedUsers.filter(u => {
+    const s = (u.status || '').toLowerCase();
+    return s === 'inactive' || s === 'rejected' || s === 'disabled';
+  });
 
   const getStatusBadge = (status) => {
     switch (status) {

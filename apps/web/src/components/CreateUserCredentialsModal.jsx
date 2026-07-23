@@ -110,39 +110,67 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         userRecord = await pb.collection('users').update(editUser.id, updatePayload, { $autoCancel: false });
         toast.success(`Updated login credentials for ${cleanName}`);
       } else {
-        // Create new user account in PocketBase
-        const createPayload = {
-          email: cleanEmail,
-          emailVisibility: true,
-          password: password,
-          passwordConfirm: password,
-          name: cleanName,
-          full_name: cleanName,
-          role: role,
-          status: 'active',
-          phone_number: cleanPhone || '0000000000'
-        };
-
+        // Create new user account using Server API or direct PocketBase SDK
         try {
-          userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
-        } catch (createErr) {
-          // If email already exists, update existing account's role & password
-          if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
-            const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
-            const updatePayload = {
-              name: cleanName,
-              full_name: cleanName,
+          const apiResp = await apiServerClient.fetch('/user/create-client-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: cleanEmail,
+              password: password,
               role: role,
-              status: 'active',
-              phone_number: cleanPhone || existing.phone_number
-            };
-            if (password) {
-              updatePayload.password = password;
-              updatePayload.passwordConfirm = password;
+              clientName: cleanName
+            })
+          });
+          if (apiResp.ok) {
+            const resData = await apiResp.json();
+            userRecord = resData.user;
+          }
+        } catch (apiErr) {
+          console.warn('[CreateUserCredentialsModal] Server API fallback:', apiErr);
+        }
+
+        if (!userRecord) {
+          const createPayload = {
+            email: cleanEmail,
+            emailVisibility: true,
+            password: password,
+            passwordConfirm: password,
+            name: cleanName,
+            full_name: cleanName,
+            role: role,
+            status: 'active',
+            phone_number: cleanPhone || '0000000000'
+          };
+
+          try {
+            userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
+          } catch (createErr) {
+            // If email already exists, update existing account's role & password
+            if (createErr.status === 400 && (createErr.data?.data?.email || createErr.message?.includes('email'))) {
+              const existing = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
+              const updatePayload = {
+                name: cleanName,
+                full_name: cleanName,
+                role: role,
+                status: 'active'
+              };
+              if (password) {
+                updatePayload.password = password;
+                updatePayload.passwordConfirm = password;
+              }
+              userRecord = await pb.collection('users').update(existing.id, updatePayload, { $autoCancel: false });
+            } else {
+              // Try minimal payload without extra custom fields if PocketBase schema is basic
+              userRecord = await pb.collection('users').create({
+                email: cleanEmail,
+                password: password,
+                passwordConfirm: password,
+                name: cleanName,
+                role: role,
+                status: 'active'
+              }, { $autoCancel: false });
             }
-            userRecord = await pb.collection('users').update(existing.id, updatePayload, { $autoCancel: false });
-          } else {
-            throw createErr;
           }
         }
         toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
