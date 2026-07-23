@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { cn } from '@/lib/utils.js';
+import PeriodicMaintenanceTab from '@/components/PeriodicMaintenanceTab.jsx';
 
 const CHECKLIST_ITEMS = [
   { key: 'engine_oil', label: 'Engine Oil', actionType: 'topup' },
@@ -734,6 +735,9 @@ export default function MaintenancePage() {
             <Truck className="w-4 h-4" /> Vehicles Roster
             <Badge variant="secondary" className="ml-1.5 opacity-70 bg-background">{trucks.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="periodic" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
+            <Droplets className="w-4 h-4 text-blue-400" /> Scheduled Greasing & Air Filters
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm shrink-0">
             <TrendingUp className="w-4 h-4" /> Diagnostics & Analytics
           </TabsTrigger>
@@ -871,6 +875,11 @@ export default function MaintenancePage() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        {/* TAB: Scheduled Greasing & Air Filter Cleaner */}
+        <TabsContent value="periodic" className="m-0 space-y-6">
+          <PeriodicMaintenanceTab trucks={trucks} onRefresh={fetchData} />
         </TabsContent>
 
         {/* TAB: Diagnostics & Analytics (Advanced) */}
