@@ -242,23 +242,36 @@ const PaymentRequestsPage = () => {
       };
 
       const columns = [
-        { header: 'Sl No', key: 'sl_no' },
-        { header: 'Description', key: 'description' },
+        { header: 'Sl', key: 'sl_no' },
+        { header: 'Trip Date', key: 'date' },
         { header: 'Trip ID', key: 'trip_id' },
-        { header: 'Amount', key: 'amount' }
+        { header: 'Pickup -> Drop Location', key: 'route' },
+        { header: 'Vehicle', key: 'vehicle' },
+        { header: 'Freight (₹)', key: 'amount' }
       ];
 
       const data = selectedReqs.map((r, idx) => {
-        const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
+        const tripObj = r.expand?.trip_id || {};
+        const tripId = tripObj.trip_id || r.trip_id || `TRIP-${idx + 1}`;
+        const dateStr = r.request_date && parseDateSafe(r.request_date) 
+          ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') 
+          : (tripObj.date ? format(parseDateSafe(tripObj.date) || new Date(), 'dd MMM yyyy') : '-');
+        const routeStr = tripObj.origin && tripObj.destination 
+          ? `${tripObj.origin} ➔ ${tripObj.destination}` 
+          : (tripObj.route || 'Freight Service');
+        const vehicleStr = tripObj.truck_number || '-';
+
         return {
           sl_no: String(idx + 1),
-          description: `Freight charges for trip log: ${tripId}`,
+          date: dateStr,
           trip_id: tripId,
+          route: routeStr,
+          vehicle: vehicleStr,
           amount: `₹${Number(r.amount || 0).toLocaleString('en-IN')}`
         };
       });
 
-      const filename = `Invoice_Bulk_${clientName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
+      const filename = `Statement_Unpaid_${clientName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
       const blob = generatePDF(data, filename, {
         type: 'invoice',
         invoiceObj,
@@ -266,11 +279,11 @@ const PaymentRequestsPage = () => {
       });
 
       downloadFile(blob, `${filename}.pdf`);
-      toast.success('Bulk Invoice PDF generated and downloaded');
+      toast.success('Itemized Unpaid Statement PDF generated and downloaded');
       return `${filename}.pdf`;
     } catch (err) {
-      console.error('Bulk Invoice PDF generation failed:', err);
-      toast.error('Failed to generate Bulk Invoice PDF: ' + err.message);
+      console.error('Bulk Statement PDF generation failed:', err);
+      toast.error('Failed to generate Statement PDF: ' + err.message);
       return null;
     }
   };
@@ -288,11 +301,12 @@ const PaymentRequestsPage = () => {
     const dueDate = r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'dd MMM yyyy') : '';
 
     const tripObj = r.expand?.trip_id;
+    const routeStr = tripObj?.origin && tripObj?.destination ? `${tripObj.origin} ➡️ ${tripObj.destination}` : (tripObj?.route || '-');
     const tripDetails = tripObj ? `
 *Trip Details:*
 • *Trip ID:* ${tripObj.trip_id || tripId}
 • *Date:* ${tripObj.date && parseDateSafe(tripObj.date) ? format(parseDateSafe(tripObj.date), 'dd MMM yyyy') : ''}
-• *Route:* ${tripObj.route || '-'}
+• *Pickup ➔ Drop:* ${routeStr}
 • *Vehicle:* ${tripObj.truck_number || '-'}
 • *Driver:* ${tripObj.driver_name || '-'}` : `
 *Trip Details:*
@@ -301,7 +315,7 @@ const PaymentRequestsPage = () => {
     const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
     const message = `${greeting}
 
-This is a payment request from Jai Bhavani Cargo.
+This is an official payment request from *Jai Bhavani Cargo*.
 
 *Payment Request Details:*
 • *Client:* ${clientName}
@@ -310,17 +324,15 @@ This is a payment request from Jai Bhavani Cargo.
 • *Due Date:* ${dueDate}
 ${tripDetails}
 
-_Note: We have generated and downloaded the Invoice PDF [Invoice_${tripId}.pdf] for you. Please attach it to this message._
+_Note: We have generated and downloaded the Invoice PDF [Invoice_${tripId}.pdf] for your records. Please attach it to this chat._
 
-Please process the payment at your earliest convenience. Let us know if you have any questions.
+Please process the payment at your earliest convenience. Thank you!
 
-Thank you,
-*Jai Bhavani Cargo*`;
+Best Regards,
+*Jai Bhavani Cargo Team*`;
 
     const encodedText = encodeURIComponent(message);
-    const cleanedPhone = phone.replace(/\D/g, ''); // strip non-digits
-    
-    // Add country code if not present (assuming Indian numbers default to 91 if length is 10)
+    const cleanedPhone = phone.replace(/\D/g, '');
     let finalPhone = cleanedPhone;
     if (cleanedPhone.length === 10) {
       finalPhone = `91${cleanedPhone}`;
@@ -354,36 +366,43 @@ Thank you,
     const pdfFilename = await handleGenerateBulkInvoicePDF();
     
     const clientReq = selectedReqs[0];
-    const clientName = clientReq.expand?.client_id?.client_name || 'Client';
+    const clientName = clientReq.expand?.client_id?.client_name || 'Valued Customer';
     const contactPerson = clientReq.expand?.client_id?.contact_person || '';
     const phone = clientReq.expand?.client_id?.phone || '';
 
-    const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
+    const greeting = contactPerson ? `Dear ${contactPerson},` : `Dear ${clientName},`;
     
     let tripBreakdown = '';
     selectedReqs.forEach((r, idx) => {
-      const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
-      const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM') : '';
+      const tripObj = r.expand?.trip_id || {};
+      const tripId = tripObj.trip_id || r.trip_id || `TRIP-${idx + 1}`;
+      const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : '';
+      const routeStr = tripObj.origin && tripObj.destination ? `${tripObj.origin} ➡️ ${tripObj.destination}` : (tripObj.route || '');
+      const vehicleStr = tripObj.truck_number ? ` | 🚛 ${tripObj.truck_number}` : '';
       const amt = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
-      tripBreakdown += `${idx + 1}. *Trip:* ${tripId} | *Date:* ${reqDate} | *Amount:* ${amt}\n`;
+      
+      tripBreakdown += `${idx + 1}️⃣ *Trip:* ${tripId} (${reqDate})\n   📍 *Route:* ${routeStr || 'Freight Service'}${vehicleStr}\n   💵 *Freight Amount:* ${amt}\n\n`;
     });
 
     const message = `${greeting}
 
-This is a summary of pending payment requests from Jai Bhavani Cargo.
+Here is the itemized summary of your outstanding payment dues with *Jai Bhavani Cargo*:
 
-*Bulk Request Summary:*
+*OUTSTANDING DUES SUMMARY:*
 • *Client:* ${clientName}
-• *Total Trips:* ${selectedReqs.length}
-• *Total Amount Due:* ₹${bulkTotal.toLocaleString('en-IN')}
+• *Total Unpaid Trips:* ${selectedReqs.length}
+• *Total Outstanding Amount:* *₹${bulkTotal.toLocaleString('en-IN')}*
 
-*Trip Details:*
-${tripBreakdown}
-${pdfFilename ? `_Note: We have generated and downloaded the Consolidated Invoice PDF [${pdfFilename}] for you. Please attach it to this message._\n` : ''}
-Please process the payment at your earliest convenience. Let us know if you have any questions.
+📋 *ITEMIZED TRIP BREAKDOWN:*
+-----------------------------------------
+${tripBreakdown}-----------------------------------------
+💰 *TOTAL AMOUNT DUE:* *₹${bulkTotal.toLocaleString('en-IN')}*
+-----------------------------------------
 
-Thank you,
-*Jai Bhavani Cargo*`;
+${pdfFilename ? `_Note: The official Statement PDF [${pdfFilename}] has been downloaded to your device. Please attach it to this message._\n\n` : ''}Please process the payment at your earliest convenience. Thank you for your continued business!
+
+Best Regards,
+*Jai Bhavani Cargo Team*`;
 
     const encodedText = encodeURIComponent(message);
     const cleanedPhone = phone.replace(/\D/g, '');
@@ -714,13 +733,47 @@ Thank you,
                   <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={clientFilter} onValueChange={setClientFilter}>
+              <Select value={clientFilter} onValueChange={(val) => {
+                setClientFilter(val);
+                if (val !== 'all') {
+                  const unpaidIds = requests
+                    .filter(r => r.client_id === val && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
+                    .map(r => r.id);
+                  if (unpaidIds.length > 0) {
+                    setSelectedIds(unpaidIds);
+                    const clientObj = clients.find(c => c.id === val);
+                    toast.success(`Auto-selected ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
+                  }
+                }
+              }}>
                 <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Clients" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Clients</SelectItem>
                   {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.client_name}</SelectItem>)}
                 </SelectContent>
               </Select>
+
+              {clientFilter !== 'all' && (
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                  onClick={() => {
+                    const unpaidIds = requests
+                      .filter(r => r.client_id === clientFilter && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue'))
+                      .map(r => r.id);
+                    if (unpaidIds.length > 0) {
+                      setSelectedIds(unpaidIds);
+                      const clientObj = clients.find(c => c.id === clientFilter);
+                      toast.success(`Selected all ${unpaidIds.length} unpaid dues for ${clientObj?.client_name || 'Client'}`);
+                    } else {
+                      toast.info('No unpaid dues found for this client');
+                    }
+                  }}
+                >
+                  <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> 1-Click Select All Unpaid
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -947,48 +1000,54 @@ Thank you,
       />
 
       {selectedIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-popover border border-border/80 shadow-2xl rounded-2xl px-6 py-4 flex items-center justify-between gap-6 z-50 animate-in slide-in-from-bottom-4 duration-300 w-[90%] max-w-xl">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Bulk Actions</span>
-            <span className="text-sm font-extrabold text-foreground mt-0.5">
-              {selectedIds.length} Trip{selectedIds.length > 1 ? 's' : ''} Selected (₹{bulkTotal.toLocaleString('en-IN')})
-            </span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950 text-white dark:bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-50 animate-in slide-in-from-bottom duration-300 w-[92%] max-w-2xl font-heading">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+              {selectedIds.length}
+            </div>
+            <div>
+              <p className="font-extrabold text-sm text-white">
+                {selectedIds.length} Unpaid Trip{selectedIds.length > 1 ? 's' : ''} Selected {isSameClient && selectedReqs[0]?.expand?.client_id?.client_name ? `(${selectedReqs[0].expand.client_id.client_name})` : ''}
+              </p>
+              <p className="text-xs text-emerald-400 font-semibold tabular-nums">
+                Total Amount: ₹{bulkTotal.toLocaleString('en-IN')}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="h-9 border-primary/20 text-primary hover:bg-primary/10 flex items-center gap-1.5"
+              className="h-9 border-slate-700 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold rounded-xl"
               onClick={handleGenerateBulkInvoicePDF}
-              title="Download consolidated PDF Invoice"
+              title="Download Itemized Statement PDF with Pickup & Drop Details"
             >
-              <FileText className="w-4 h-4" /> Invoice
+              <FileText className="w-3.5 h-3.5 mr-1.5 text-primary" /> Itemized PDF
             </Button>
             <Button 
-              variant="outline" 
               size="sm" 
-              className={cn("h-9 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 flex items-center gap-1.5", !isSameClient && "opacity-50 cursor-not-allowed")}
+              className={cn("h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-900/30", !isSameClient && "opacity-50 cursor-not-allowed")}
               onClick={handleBulkWhatsApp}
               disabled={!isSameClient}
-              title={isSameClient ? "Share pending total with client via WhatsApp" : "All selected trips must belong to the same client"}
+              title={isSameClient ? "Send Request on WhatsApp with PDF" : "All selected trips must belong to the same client"}
             >
-              <Send className="w-4 h-4" /> Share
+              <Send className="w-3.5 h-3.5 mr-1.5" /> WhatsApp Request
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              className="h-9 border-success/20 text-success hover:bg-success/10 flex items-center gap-1.5"
+              className="h-9 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold rounded-xl"
               onClick={handleBulkMarkAsPaid}
             >
-              <CheckCircle className="w-4 h-4" /> Pay
+              <CheckCircle className="w-3.5 h-3.5 mr-1" /> Mark Paid
             </Button>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-9 text-muted-foreground hover:bg-muted"
+              className="h-9 text-slate-400 hover:text-white rounded-xl text-xs"
               onClick={() => setSelectedIds([])}
             >
-              Cancel
+              Clear
             </Button>
           </div>
         </div>
