@@ -140,6 +140,33 @@ const ClientPaymentAnalysisPage = () => {
           </div>
         </div>
 
+        {/* ── 4 Rich KPI Analytics Header ────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4 border-border/40 bg-card/60 rounded-2xl shadow-sm">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Invoiced Portfolio</p>
+            <p className="text-2xl font-extrabold text-foreground tabular-nums mt-1">{formatCurrency(chartData.totalPending + chartData.totalReceived)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Total revenue across all clients</p>
+          </Card>
+          
+          <Card className="p-4 border-border/40 bg-card/60 rounded-2xl shadow-sm">
+            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Total Realized Cash</p>
+            <p className="text-2xl font-extrabold text-emerald-400 tabular-nums mt-1">{formatCurrency(chartData.totalReceived)}</p>
+            <p className="text-[10px] text-emerald-400/70 mt-1">{((chartData.totalReceived / Math.max(1, chartData.totalPending + chartData.totalReceived)) * 100).toFixed(1)}% Realized Rate</p>
+          </Card>
+
+          <Card className="p-4 border-border/40 bg-card/60 rounded-2xl shadow-sm">
+            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Total Outstanding Balance</p>
+            <p className="text-2xl font-extrabold text-rose-400 tabular-nums mt-1">{formatCurrency(chartData.totalPending)}</p>
+            <p className="text-[10px] text-rose-400/70 mt-1">{((chartData.totalPending / Math.max(1, chartData.totalPending + chartData.totalReceived)) * 100).toFixed(1)}% Uncollected</p>
+          </Card>
+
+          <Card className="p-4 border-border/40 bg-card/60 rounded-2xl shadow-sm">
+            <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Collection Efficiency</p>
+            <p className="text-2xl font-extrabold text-primary tabular-nums mt-1">{((chartData.totalReceived / Math.max(1, chartData.totalPending + chartData.totalReceived)) * 100).toFixed(1)}%</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Portfolio recovery score</p>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
             <CardHeader className="pb-3 border-b border-border/30 px-5 pt-5">
@@ -195,7 +222,7 @@ const ClientPaymentAnalysisPage = () => {
 
         <Card className="shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4">
-            <CardTitle>Client Ledger</CardTitle>
+            <CardTitle>Client Ledger &amp; Credit Rating</CardTitle>
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -227,6 +254,19 @@ const ClientPaymentAnalysisPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {analysisData.map((row) => {
                   const isPending = row.totalPending > 0;
+                  const handleShareClientStatementWhatsApp = (clientRow) => {
+                    const clientName = clientRow.client_name || 'Valued Customer';
+                    const totalInvoiced = formatCurrency(clientRow.totalInvoiced || 0);
+                    const totalReceived = formatCurrency(clientRow.totalReceived || 0);
+                    const totalPending = formatCurrency(clientRow.totalPending || 0);
+                    const pendingTrips = clientRow.pendingTrips || 0;
+                    
+                    const text = `*JAI BHAVANI CARGO - CLIENT ACCOUNT STATEMENT*\n\nDear *${clientName}*,\n\nHere is your current payment summary:\n\n📊 *Total Billed*: ${totalInvoiced}\n✅ *Total Paid*: ${totalReceived}\n⚠️ *Outstanding Balance*: ${totalPending}\n🚚 *Pending Trips*: ${pendingTrips}\n\nPlease review and settle the outstanding amount at your earliest convenience.\n\nThank you for choosing *Jai Bhavani Cargo*!\n\nBest Regards,\n*Jai Bhavani Cargo Team*`;
+                    
+                    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                    window.open(url, '_blank');
+                  };
+
                   return (
                     <div 
                       key={row.client_id} 
@@ -293,14 +333,25 @@ const ClientPaymentAnalysisPage = () => {
                           <div className="text-[10px] text-muted-foreground truncate">
                             Trips: <span className="text-destructive font-bold">{row.pendingTrips}</span> pending / <span className="text-success font-bold">{row.receivedTrips}</span> cleared
                           </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-xs font-bold rounded-lg border-border hover:bg-primary hover:text-primary-foreground transition-all duration-200 shrink-0"
-                            onClick={() => navigate(`/client/${row.client_id}`)}
-                          >
-                            Details
-                          </Button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-7 w-7 p-0 text-emerald-500 hover:bg-emerald-500/10 rounded-lg"
+                              title="Share Statement via WhatsApp"
+                              onClick={() => handleShareClientStatementWhatsApp(row)}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs font-bold rounded-lg border-border hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+                              onClick={() => navigate(`/client/${row.client_id}`)}
+                            >
+                              View
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
