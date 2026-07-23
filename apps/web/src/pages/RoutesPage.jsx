@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import RouteModal from '@/components/RouteModal.jsx';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
+import { formatMapUrl } from '@/lib/locationUtils.js';
 
 const getRates = (route) => {
   const rate = route.amount_per_trip || 0;
@@ -514,9 +515,9 @@ export default function RoutesPage() {
                       <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border w-fit ${styles.badge}`}>
                         {styles.text}
                       </span>
-                      {route.google_map_link && (
+                      {formatMapUrl(route.google_map_link, route.route_name) && (
                         <a 
-                          href={route.google_map_link} 
+                          href={formatMapUrl(route.google_map_link, route.route_name)} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -550,9 +551,16 @@ export default function RoutesPage() {
                         <div className="flex items-center justify-between px-2 py-1.5 bg-secondary/5 rounded-lg border border-border/40">
                           <div className="text-left w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Up Origin</div>
-                            <div className="font-semibold text-xs truncate text-foreground" title={route.start_location}>
-                              {route.start_location}
-                            </div>
+                            <a
+                              href={formatMapUrl('', route.start_location)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-xs truncate text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1"
+                              title={`Open ${route.start_location} in Google Maps`}
+                            >
+                              {route.start_location} <Map className="w-2.5 h-2.5 shrink-0" />
+                            </a>
                           </div>
                           
                           <div className="flex-1 flex flex-col items-center justify-center px-1 relative">
@@ -563,9 +571,16 @@ export default function RoutesPage() {
                           
                           <div className="text-right w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Up Dest</div>
-                            <div className="font-semibold text-xs truncate text-foreground" title={route.end_location}>
-                              {route.end_location}
-                            </div>
+                            <a
+                              href={formatMapUrl('', route.end_location)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-xs truncate text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 justify-end"
+                              title={`Open ${route.end_location} in Google Maps`}
+                            >
+                              <Map className="w-2.5 h-2.5 shrink-0" /> {route.end_location}
+                            </a>
                           </div>
                         </div>
 
@@ -573,9 +588,16 @@ export default function RoutesPage() {
                         <div className="flex items-center justify-between px-2 py-1.5 bg-secondary/5 rounded-lg border border-border/40">
                           <div className="text-left w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Down Origin</div>
-                            <div className="font-semibold text-xs truncate text-foreground" title={route.down_start_location}>
-                              {route.down_start_location}
-                            </div>
+                            <a
+                              href={formatMapUrl('', route.down_start_location)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-xs truncate text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+                              title={`Open ${route.down_start_location} in Google Maps`}
+                            >
+                              {route.down_start_location} <Map className="w-2.5 h-2.5 shrink-0" />
+                            </a>
                           </div>
                           
                           <div className="flex-1 flex flex-col items-center justify-center px-1 relative">
@@ -586,9 +608,16 @@ export default function RoutesPage() {
                           
                           <div className="text-right w-[40%]">
                             <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">Down Dest</div>
-                            <div className="font-semibold text-xs truncate text-foreground" title={route.down_end_location}>
-                              {route.down_end_location}
-                            </div>
+                            <a
+                              href={formatMapUrl('', route.down_end_location)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-semibold text-xs truncate text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 justify-end"
+                              title={`Open ${route.down_end_location} in Google Maps`}
+                            >
+                              <Map className="w-2.5 h-2.5 shrink-0" /> {route.down_end_location}
+                            </a>
                           </div>
                         </div>
                       </div>
@@ -597,22 +626,16 @@ export default function RoutesPage() {
                       <div className="flex items-center justify-between my-4 relative px-2">
                         <div className="text-left w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Origin</div>
-                          {route.start_location_map_link ? (
-                            <a
-                              href={route.start_location_map_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                              title={`Open ${start} in Google Maps`}
-                            >
-                              {start} <Map className="w-2.5 h-2.5 shrink-0" />
-                            </a>
-                          ) : (
-                            <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={start}>
-                              {start}
-                            </div>
-                          )}
+                          <a
+                            href={formatMapUrl(route.start_location_map_link, start || route.start_location)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                            title={`Open ${start} in Google Maps`}
+                          >
+                            {start} <Map className="w-2.5 h-2.5 shrink-0" />
+                          </a>
                         </div>
                         
                         <div className="flex-1 flex flex-col items-center justify-center px-2 relative">
@@ -625,22 +648,16 @@ export default function RoutesPage() {
                         
                         <div className="text-right w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Destination</div>
-                          {route.end_location_map_link ? (
-                            <a
-                              href={route.end_location_map_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 justify-end"
-                              title={`Open ${end} in Google Maps`}
-                            >
-                              <Map className="w-2.5 h-2.5 shrink-0" /> {end || 'N/A'}
-                            </a>
-                          ) : (
-                            <div className="font-semibold text-sm truncate text-foreground dark:text-foreground" title={end || 'N/A'}>
-                              {end || 'N/A'}
-                            </div>
-                          )}
+                          <a
+                            href={formatMapUrl(route.end_location_map_link, end || route.end_location)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 justify-end"
+                            title={`Open ${end || 'N/A'} in Google Maps`}
+                          >
+                            <Map className="w-2.5 h-2.5 shrink-0" /> {end || 'N/A'}
+                          </a>
                         </div>
                       </div>
                     )}

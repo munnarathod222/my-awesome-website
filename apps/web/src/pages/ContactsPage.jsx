@@ -21,6 +21,7 @@ import ContactDetailsModal  from '@/components/ContactDetailsModal.jsx';
 import ContactActionsMenu   from '@/components/ContactActionsMenu.jsx';
 import ContactExportModal   from '@/components/ContactExportModal.jsx';
 import BusinessCardUploadModal from '@/components/BusinessCardUploadModal.jsx';
+import { getPastedMapUrl }  from '@/lib/contactUtils.js';
 
 /* ─── Contact type taxonomy ─────────────────────────────────────────────────── */
 // Primary groups  →  which contact_type values they include
@@ -459,70 +460,73 @@ export default function ContactsPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredContacts.map(contact => (
-                        <TableRow key={contact.id} className="hover:bg-muted/30 transition-colors border-b-border-border/40">
-                          <TableCell className="pl-6 py-4">
-                            <p className="font-bold text-sm text-foreground">{contact.company_name}</p>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <p className="text-xs text-muted-foreground truncate max-w-[200px] font-medium" title={contact.physical_address}>
-                                {contact.physical_address}
-                              </p>
-                              {contact.google_maps_url && (
-                                <a 
-                                  href={contact.google_maps_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-rose-500 hover:text-rose-600 transition-colors shrink-0"
-                                  title="View on Google Maps"
-                                >
-                                  <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
-                                </a>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <p className="text-sm font-semibold text-foreground">{contact.phone_number}</p>
-                            {contact.email && <p className="text-xs text-muted-foreground mt-1 font-medium">{contact.email}</p>}
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="font-mono text-sm font-medium bg-secondary/40 px-2 py-1 rounded-md border border-border/50">
-                              {contact.gstin || 'N/A'}
-                            </span>
-                          </TableCell>
-                           <TableCell className="py-4">
-                            <div className="flex flex-col gap-1 items-start">
-                              {getTypeBadge(contact.contact_type)}
-                              {contact.warehouse_name && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                                  <Building2 className="w-3 h-3" />
-                                  {contact.warehouse_name}
-                                </span>
-                              )}
-                              {contact.designation && (
-                                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                  {contact.designation}
-                                </span>
-                              )}
-                              {contact.contact_type === 'Mechanic' && contact.truck_brand && (
-                                <p className="text-[10px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">
-                                  {contact.truck_brand}
+                      filteredContacts.map(contact => {
+                        const mapsUrl = getPastedMapUrl(contact);
+                        return (
+                          <TableRow key={contact.id} className="hover:bg-muted/30 transition-colors border-b-border-border/40">
+                            <TableCell className="pl-6 py-4">
+                              <p className="font-bold text-sm text-foreground">{contact.company_name}</p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <p className="text-xs text-muted-foreground truncate max-w-[200px] font-medium" title={contact.physical_address}>
+                                  {contact.physical_address}
                                 </p>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium text-muted-foreground py-4">
-                            {format(new Date(contact.created), 'MMM dd, yyyy')}
-                          </TableCell>
-                          <TableCell className="text-right pr-6 py-4">
-                            <ContactActionsMenu
-                              contact={contact}
-                              onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
-                              onEdit={(c) => { setSelectedContact(c); setIsFormOpen(true); }}
-                              onDelete={handleDelete}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))
+                                {mapsUrl && (
+                                  <a 
+                                    href={mapsUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="text-rose-500 hover:text-rose-600 transition-colors shrink-0 p-0.5 hover:bg-rose-500/10 rounded"
+                                    title="Open Google Maps GPS Navigation"
+                                  >
+                                    <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
+                                  </a>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <p className="text-sm font-semibold text-foreground">{contact.phone_number}</p>
+                              {contact.email && <p className="text-xs text-muted-foreground mt-1 font-medium">{contact.email}</p>}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <span className="font-mono text-sm font-medium bg-secondary/40 px-2 py-1 rounded-md border border-border/50">
+                                {contact.gstin || 'N/A'}
+                              </span>
+                            </TableCell>
+                             <TableCell className="py-4">
+                              <div className="flex flex-col gap-1 items-start">
+                                {getTypeBadge(contact.contact_type)}
+                                {contact.warehouse_name && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                    <Building2 className="w-3 h-3" />
+                                    {contact.warehouse_name}
+                                  </span>
+                                )}
+                                {contact.designation && (
+                                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    {contact.designation}
+                                  </span>
+                                )}
+                                {contact.contact_type === 'Mechanic' && contact.truck_brand && (
+                                  <p className="text-[10px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider">
+                                    {contact.truck_brand}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm font-medium text-muted-foreground py-4">
+                              {format(new Date(contact.created), 'MMM dd, yyyy')}
+                            </TableCell>
+                            <TableCell className="text-right pr-6 py-4">
+                              <ContactActionsMenu
+                                contact={contact}
+                                onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
+                                onEdit={(c) => { setSelectedContact(c); setIsFormOpen(true); }}
+                                onDelete={handleDelete}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -544,26 +548,28 @@ export default function ContactsPage() {
                     No contacts found.
                   </div>
                 ) : (
-                  filteredContacts.map(contact => (
-                    <div key={contact.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-base text-foreground truncate">{contact.company_name}</h4>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <p className="text-xs text-muted-foreground truncate">{contact.physical_address || 'No Address'}</p>
-                            {contact.google_maps_url && (
-                              <a 
-                                href={contact.google_maps_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-rose-500 hover:text-rose-600 transition-colors shrink-0"
-                                title="View on Google Maps"
-                              >
-                                <MapPin className="w-3 h-3 fill-rose-500/10" />
-                              </a>
-                            )}
+                  filteredContacts.map(contact => {
+                    const mobileMapsUrl = getPastedMapUrl(contact);
+                    return (
+                      <div key={contact.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-base text-foreground truncate">{contact.company_name}</h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <p className="text-xs text-muted-foreground truncate">{contact.physical_address || 'No Address'}</p>
+                              {mobileMapsUrl && (
+                                <a 
+                                  href={mobileMapsUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-rose-500 hover:text-rose-600 transition-colors shrink-0 p-0.5 hover:bg-rose-500/10 rounded"
+                                  title="Open Google Maps GPS Navigation"
+                                >
+                                  <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <div className="text-right flex flex-col items-end">
                             {getTypeBadge(contact.contact_type)}
@@ -637,9 +643,10 @@ export default function ContactsPage() {
                         )}
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  );
+                })
+              )}
+            </div>
             </>
           )}
         </CardContent>

@@ -1,23 +1,8 @@
 import { toast } from 'sonner';
+import { formatMapUrl } from './locationUtils.js';
 
 /**
- * Normalizes any pasted map URL or link string into a valid https:// URL.
- */
-function normalizeUrl(str) {
-  if (!str || typeof str !== 'string') return '';
-  const trimmed = str.trim();
-  if (!trimmed) return '';
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
-  }
-  if (trimmed.startsWith('maps.app.goo.gl') || trimmed.startsWith('goo.gl') || trimmed.startsWith('google.com') || trimmed.startsWith('www.google.com')) {
-    return `https://${trimmed}`;
-  }
-  return '';
-}
-
-/**
- * Extract pasted map URL from contact record.
+ * Extract and normalize Google Maps URL from contact record.
  */
 export function getPastedMapUrl(contact) {
   if (!contact) return '';
@@ -37,8 +22,8 @@ export function getPastedMapUrl(contact) {
 
   for (const val of explicitFields) {
     if (val && typeof val === 'string' && val.trim()) {
-      const normalized = normalizeUrl(val);
-      if (normalized) return normalized;
+      const formatted = formatMapUrl(val, contact.physical_address || contact.company_name);
+      if (formatted) return formatted;
     }
   }
 
@@ -47,23 +32,20 @@ export function getPastedMapUrl(contact) {
     const val = contact[key];
     if (typeof val === 'string' && val.trim()) {
       if (val.includes('maps') || val.includes('goo.gl')) {
-        const urlMatch = val.match(/(https?:\/\/[^\s]+|maps\.app\.goo\.gl[^\s]+|goo\.gl\/maps[^\s]+|google\.com\/maps[^\s]+)/i);
+        const urlMatch = val.match(/(https?:\/\/[^\s]+|maps\.app\.goo\.gl[^\s]+|goo\.gl\/maps[^\s]+|google\.com\/maps[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s]+)/i);
         if (urlMatch) {
-          return normalizeUrl(urlMatch[1]);
+          return formatMapUrl(urlMatch[1], contact.physical_address || contact.company_name);
         }
       }
     }
   }
 
   // Fallback scan on physical_address or notes
-  const generalUrlRegex = /(https?:\/\/[^\s]+)/i;
   if (contact.physical_address) {
-    const match = contact.physical_address.match(generalUrlRegex);
-    if (match) return match[1].trim();
+    return formatMapUrl(contact.physical_address, contact.company_name);
   }
-  if (contact.notes) {
-    const match = contact.notes.match(generalUrlRegex);
-    if (match) return match[1].trim();
+  if (contact.company_name) {
+    return formatMapUrl('', contact.company_name);
   }
 
   return '';
