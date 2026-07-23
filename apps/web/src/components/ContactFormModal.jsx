@@ -276,7 +276,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   <SelectItem value="Warehouse">Warehouse Contact</SelectItem>
                   <SelectItem value="Employee">Drivers & Employees</SelectItem>
                   <SelectItem value="Maintenance">Maintenance Network</SelectItem>
-                  <SelectItem value="Finance">Finance &amp; Banking</SelectItem>
+                  <SelectItem value="Finance">Finance, Banking &amp; Loan Agents</SelectItem>
                   <SelectItem value="Vendor">Vendor</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
@@ -353,7 +353,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                       </>
                     ) : mainCategory === 'Finance' ? (
                       <>
-                        <SelectItem value="Banking">Bank / Banking Contact</SelectItem>
+                        <SelectItem value="Banking">Bank Employee / Contact</SelectItem>
                         <SelectItem value="Loan Agent">Loan Agent / DSA</SelectItem>
                       </>
                     ) : (

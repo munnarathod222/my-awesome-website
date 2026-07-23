@@ -36,9 +36,9 @@ export const MAIN_GROUPS = [
 
 // Sub-filters for Finance & Banking group
 export const FINANCE_SUBS = [
-  { key: 'all_fin',    label: 'All Finance',  icon: Banknote,  types: ['Banking','Loan Agent'] },
-  { key: 'Banking',    label: 'Banking',      icon: CreditCard,types: ['Banking'] },
-  { key: 'Loan Agent', label: 'Loan Agents',  icon: HandCoins, types: ['Loan Agent'] },
+  { key: 'all_fin',    label: 'All Banking & Loans', icon: Banknote,  types: ['Banking','Loan Agent'] },
+  { key: 'Banking',    label: 'Bank Employees',     icon: CreditCard,types: ['Banking'] },
+  { key: 'Loan Agent', label: 'Loan Agents',        icon: HandCoins, types: ['Loan Agent'] },
 ];
 
 // Sub-filters only visible when "Maintenance Network" is active
