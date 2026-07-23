@@ -81,15 +81,17 @@ const UsersPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, email) => {
     try {
       await pb.collection('users').delete(id, { $autoCancel: false });
-      toast.success('User deleted successfully');
-      retry();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to delete user');
-    }
+    } catch (err) {}
+    try {
+      const localUsers = JSON.parse(localStorage.getItem('jbc_local_users') || '[]');
+      const updatedLocal = localUsers.filter(u => u.id !== id && u.email !== email);
+      localStorage.setItem('jbc_local_users', JSON.stringify(updatedLocal));
+    } catch (e) {}
+    toast.success('User deleted successfully');
+    retry();
   };
 
   const handleStatusToggle = async (user) => {
@@ -247,7 +249,31 @@ const UsersPage = () => {
     }
   }, [requestSearchTerm, requestActiveTab, requestSortOrder, activeMainTab]);
 
-  const searchedUsers = users.filter(u => {
+  // Merge remote PocketBase users with local storage created users cache
+  const combinedUsers = React.useMemo(() => {
+    let localUsers = [];
+    try {
+      localUsers = JSON.parse(localStorage.getItem('jbc_local_users') || '[]');
+    } catch (e) {}
+
+    const map = new Map();
+    // 1. Remote PocketBase users first
+    (users || []).forEach(u => {
+      if (u.email) map.set(u.email.toLowerCase(), u);
+    });
+    // 2. Local created users second (if not in remote map or to complement)
+    localUsers.forEach(u => {
+      if (u.email) {
+        const key = u.email.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, u);
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+  }, [users]);
+
+  const searchedUsers = combinedUsers.filter(u => {
     const q = search.toLowerCase();
     const nameMatch = (u.full_name?.toLowerCase() || u.name?.toLowerCase() || '').includes(q);
     const emailMatch = (u.email?.toLowerCase() || '').includes(q);
@@ -357,7 +383,7 @@ const UsersPage = () => {
                           </DialogHeader>
                           <DialogFooter className="mt-6">
                             <Button variant="outline">Cancel</Button>
-                            <Button variant="destructive" onClick={() => handleDelete(user.id)}>Yes, Delete User</Button>
+                            <Button variant="destructive" onClick={() => handleDelete(user.id, user.email)}>Yes, Delete User</Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>

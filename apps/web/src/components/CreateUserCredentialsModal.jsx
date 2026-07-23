@@ -186,6 +186,26 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         role: role.toUpperCase()
       });
 
+      // Synchronize created user into localStorage cache so it displays instantly in user table
+      try {
+        const localUsers = JSON.parse(localStorage.getItem('jbc_local_users') || '[]');
+        const newUserObj = {
+          id: userRecord?.id || 'usr_' + Date.now(),
+          name: cleanName,
+          full_name: cleanName,
+          email: cleanEmail,
+          phone_number: cleanPhone,
+          role: role,
+          status: 'active',
+          created: userRecord?.created || new Date().toISOString()
+        };
+        const filteredLocal = localUsers.filter(u => u.email?.toLowerCase() !== cleanEmail);
+        localStorage.setItem('jbc_local_users', JSON.stringify([newUserObj, ...filteredLocal]));
+        window.dispatchEvent(new Event('storage'));
+      } catch (localErr) {
+        console.warn('Failed to update local users cache:', localErr);
+      }
+
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Failed to save user credentials:', err);
