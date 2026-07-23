@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
-import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2, Send } from 'lucide-react';
+import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2, Send, Plus, DollarSign, Clock, ShieldCheck, TrendingUp, Users, ArrowUpRight, CheckSquare, Square, Share2, Eye, Filter, RefreshCw, Layers } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { downloadFile, generatePDF, generateExcel } from '@/lib/downloadUtils.js';
@@ -19,6 +20,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Cart
 import MarkPaymentPaidModal from '@/components/MarkPaymentPaidModal.jsx';
 import SendPaymentReminderModal from '@/components/SendPaymentReminderModal.jsx';
 import CancelPaymentRequestModal from '@/components/CancelPaymentRequestModal.jsx';
+import CreatePaymentRequestModal from '@/components/CreatePaymentRequestModal.jsx';
 import { cn } from '@/lib/utils.js';
 
 const STATUS_COLORS = {
@@ -41,10 +43,13 @@ const PaymentRequestsPage = () => {
   const [requests, setRequests] = useState([]);
   const [clients, setClients] = useState([]);
 
-  // Modals
+  // Modals & Active Tab
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   const [paidModalReq, setPaidModalReq] = useState(null);
   const [reminderModalReq, setReminderModalReq] = useState(null);
   const [cancelModalReq, setCancelModalReq] = useState(null);
+  const [selectedLedgerClient, setSelectedLedgerClient] = useState('all');
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -134,9 +139,62 @@ const PaymentRequestsPage = () => {
           }
         }
         
-        setRequests([...mappedReqs, ...generatedRequests]);
+        // Merge with local storage cache
+        let localReqs = [];
+        try {
+          localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
+        } catch (e) {}
+
+        const allRemote = [...mappedReqs, ...generatedRequests];
+        const remoteMap = new Map(allRemote.map(r => [r.id, r]));
+
+        localReqs.forEach(lr => {
+          if (!remoteMap.has(lr.id)) {
+            // Check overdue for local items
+            let currentStatus = lr.status;
+            let daysOverdue = 0;
+            if (lr.status === 'Pending' && lr.due_date) {
+              const due = parseDateSafe(lr.due_date);
+              if (due) {
+                due.setHours(0,0,0,0);
+                if (today > due) {
+                  currentStatus = 'Overdue';
+                  daysOverdue = differenceInDays(today, due);
+                }
+              }
+            }
+            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue });
+          }
+        });
+
+        setRequests(Array.from(remoteMap.values()));
       } else {
-        setRequests(mappedReqs);
+        // Merge mappedReqs with local storage
+        let localReqs = [];
+        try {
+          localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
+        } catch (e) {}
+
+        const remoteMap = new Map(mappedReqs.map(r => [r.id, r]));
+        localReqs.forEach(lr => {
+          if (!remoteMap.has(lr.id)) {
+            let currentStatus = lr.status;
+            let daysOverdue = 0;
+            if (lr.status === 'Pending' && lr.due_date) {
+              const due = parseDateSafe(lr.due_date);
+              if (due) {
+                due.setHours(0,0,0,0);
+                if (today > due) {
+                  currentStatus = 'Overdue';
+                  daysOverdue = differenceInDays(today, due);
+                }
+              }
+            }
+            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue });
+          }
+        });
+
+        setRequests(Array.from(remoteMap.values()));
       }
       setClients(cls);
     } catch (err) {
@@ -635,31 +693,41 @@ Best Regards,
 
   return (
     <>
-      <Helmet><title>Payment Requests - Jai Bhavani Cargo</title></Helmet>
+      <Helmet><title>Payment Requests & Collections - Jai Bhavani Cargo</title></Helmet>
       <div className="min-h-[calc(100dvh-4rem)] p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8 bg-background animate-in fade-in">
         
+        {/* Page Top Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Payment Requests</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Monitor outbounds and manage client collections.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{letterSpacing: '-0.02em'}}>Payment Requests & Collections</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Track client dues, generate GST invoices, and manage payment collections.</p>
           </div>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isExportingPDF || isExportingExcel}>
-                {isExportingPDF || isExportingExcel ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportPDF} disabled={isExportingPDF}>
-                <FileText className="w-4 h-4 mr-2 text-destructive" /> Export as PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportExcel} disabled={isExportingExcel}>
-                <TableIcon className="w-4 h-4 mr-2 text-success" /> Export as Excel
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md rounded-xl gap-2 flex-1 md:flex-initial"
+            >
+              <Plus className="w-4 h-4" /> Create Payment Request
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isExportingPDF || isExportingExcel} className="rounded-xl border-border">
+                  {isExportingPDF || isExportingExcel ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleExportPDF} disabled={isExportingPDF} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2 text-destructive" /> Export as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel} disabled={isExportingExcel} className="cursor-pointer">
+                  <TableIcon className="w-4 h-4 mr-2 text-success" /> Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -997,6 +1065,11 @@ Best Regards,
         onClose={() => setCancelModalReq(null)} 
         request={cancelModalReq} 
         onSuccess={fetchData} 
+      />
+      <CreatePaymentRequestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={fetchData}
       />
 
       {selectedIds.length > 0 && (
