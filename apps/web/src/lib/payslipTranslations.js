@@ -1,5 +1,5 @@
 /**
- * Multilingual Translation Engine for Driver Advance & Payslip Center
+ * Multilingual Translation & Transliteration Engine for Driver Advance & Payslip Center
  * Supports: English, Hindi, Telugu, Marathi, Tamil, Kannada, Gujarati, Bengali
  */
 
@@ -337,7 +337,66 @@ export const TRANSLATIONS = {
   }
 };
 
+export const COMMON_VOCABULARY = {
+  // Common terms in advance descriptions
+  'cash': { hi: 'नकद (कैश)', te: 'నగదు (క్యాష్)', mr: 'नगद (कॅश)', ta: 'ரொக்கம்', kn: 'ನಗದು', gu: 'રોકડ', bn: 'নগদ' },
+  'phonepe': { hi: 'फोनपे', te: 'ఫోన్‌పే', mr: 'फोनपे', ta: 'போன்பே', kn: 'ಫೋನ್‌ಪೇ', gu: 'ફોનપે', bn: 'ফোনপে' },
+  'extra': { hi: 'अतिरिक्त', te: 'అదనపు', mr: 'अतिरिक्त', ta: 'கூடுதல்', kn: 'ಹೆಚ್ಚುವರಿ', gu: 'વધારાનું', bn: 'অতিরিক্ত' },
+  'advance': { hi: 'एडवांस', te: 'అడ్వాన్స్', mr: 'ॲडव्हान्स', ta: 'அட்வான்ஸ்', kn: 'ಮುಂಗಡ', gu: 'એડવાન્સ', bn: 'অগ্রিম' },
+  'salary': { hi: 'वेतन (सैलरी)', te: 'జీతం (శాలరీ)', mr: 'पगार', ta: 'சம்பளம்', kn: 'ಸಂಬಳ', gu: 'પગાર', bn: 'বেতন' },
+  'took': { hi: 'लिया', te: 'తీసుకున్నారు', mr: 'घेतले', ta: 'எடுத்தார்', kn: 'ತೆಗೆದುಕೊಂಡರು', gu: 'લીધું', bn: 'নিয়েছেন' },
+  'took with': { hi: 'साथ में लिया', te: 'తో తీసుకున్నారు', mr: 'सोबत घेतले', ta: 'எடுத்துக் கொண்டார்', kn: 'ತೆಗೆದುಕೊಂಡರು', gu: 'સાથે લીધું', bn: 'সাথে নিয়েছেন' },
+  'with': { hi: 'साथ', te: 'తో', mr: 'सोबत', ta: 'உடன்', kn: 'ಜೊತೆಗೆ', gu: 'સાથે', bn: 'সাথে' },
+  'at': { hi: 'पर', te: 'వద్ద', mr: 'येथे', ta: 'இல்', kn: 'ನಲ್ಲಿ', gu: 'પર', bn: 'এ' },
+  
+  // Known Driver / Staff names
+  'dayanand': { hi: 'दयानंद', te: 'దయానంద్', mr: 'दयानंद', ta: 'தயானந்த்', kn: 'ದಯಾನಂದ್', gu: 'દયાનાંદ', bn: 'দয়ানন্দ' },
+  'surwase': { hi: 'सुरवसे', te: 'సురవసే', mr: 'सुरवसे', ta: 'சுரவஸே', kn: 'ಸುರವಸೆ', gu: 'સુરવસે', bn: 'সুরবসে' },
+  'sheik': { hi: 'शेख', te: 'షేక్', mr: 'शेख', ta: 'ஷேக்', kn: 'ಷೇಕ್', gu: 'શેખ', bn: 'শেখ' },
+  'abdul': { hi: 'अब्दुल', te: 'అబ్దుల్', mr: 'अब्दुल', ta: 'அப்துல்', kn: 'ಅಬ್ದುಲ್', gu: 'અબ્દુલ', bn: 'আব্দুল' },
+  'mannan': { hi: 'मन्नान', te: 'మన్నాన్', mr: 'मन्नान', ta: 'மன்னான்', kn: 'ಮನ್ನಾನ್', gu: 'ಮನ್ನಾನ್', bn: 'মান্নান' },
+  'ganga': { hi: 'गंगा', te: 'గంగా', mr: 'गंगा', ta: 'கங்கா', kn: 'ಗಂಗಾ', gu: 'ગંગા', bn: 'গঙ্গা' },
+  'narender': { hi: 'नरेंद्र', te: 'నరేందర్', mr: 'नरेंद्र', ta: 'நரேந்தர்', kn: 'ನರೇಂದರ್', gu: 'નરેન્દ્ર', bn: 'নরেন্দ্র' },
+  'narendra': { hi: 'नरेंद्र', te: 'నరేంద్ర', mr: 'नरेंद्र', ta: 'நரேந்திரா', kn: 'ನರೇಂದ್ರ', gu: 'નરેન્દ્ર', bn: 'নরেন্দ্র' },
+  'mekala': { hi: 'मेकाला', te: 'మేకల', mr: 'मेकाला', ta: 'மேகலா', kn: 'ಮೇಕಲ', gu: 'મેકાલા', bn: 'মেকালা' },
+  'srinivas': { hi: 'श्रीनिवास', te: 'శ్రీనివాస్', mr: 'श्रीनिवास', ta: 'ஸ்ரீனிவாஸ்', kn: 'ಶ್ರೀನಿವಾಸ್', gu: 'શ્રીનિવાસ', bn: 'শ্রীনিবাস' },
+  'ramesh': { hi: 'रमेश', te: 'రమేష్', mr: 'रमेश', ta: 'ரமேஷ்', kn: 'ರಮೇಶ್', gu: 'ರಮೇಶ್', bn: 'রমেশ' },
+  'kumar': { hi: 'कुमार', te: 'కుమార్', mr: 'कुमार', ta: 'குமார்', kn: 'ಕುಮಾರ್', gu: 'કુમાર', bn: 'কুমার' },
+  'patel': { hi: 'पटेल', te: 'పటేల్', mr: 'पटेल', ta: 'படேல்', kn: 'ಪಟೇಲ್', gu: 'પટેલ', bn: 'પટેલ' },
+  'nagar': { hi: 'नगर', te: 'నగర్', mr: 'नगर', ta: 'நகர்', kn: 'ನಗರ', gu: 'નગર', bn: 'নগর' },
+  'ghatkesar': { hi: 'घटकेसर', te: 'ఘట్‌కేసర్', mr: 'घटकेसर', ta: 'கட்கேசர்', kn: 'ಘಟ್‌ಕೇಸರ್', gu: 'ઘટકેસર', bn: 'ঘাটকেসর' }
+};
+
 export const getTranslation = (lang = 'en', key) => {
   const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
   return dict[key] || TRANSLATIONS.en[key] || key;
+};
+
+export const transliterateText = (text, lang = 'en') => {
+  if (!text || lang === 'en') return text;
+  
+  let str = String(text);
+  
+  // Try multi-word replacements first (e.g. 'took with')
+  Object.keys(COMMON_VOCABULARY).forEach(k => {
+    if (k.includes(' ')) {
+      const target = COMMON_VOCABULARY[k][lang];
+      if (target) {
+        const regex = new RegExp(`\\b${k}\\b`, 'gi');
+        str = str.replace(regex, target);
+      }
+    }
+  });
+
+  const words = str.split(/(\s+|:|-|\/|,)/);
+  
+  const mappedWords = words.map(w => {
+    const cleanWord = w.toLowerCase().trim();
+    if (COMMON_VOCABULARY[cleanWord] && COMMON_VOCABULARY[cleanWord][lang]) {
+      return COMMON_VOCABULARY[cleanWord][lang];
+    }
+    return w;
+  });
+
+  return mappedWords.join('');
 };

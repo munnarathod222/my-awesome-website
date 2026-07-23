@@ -20,11 +20,12 @@ const formatAmountToWords = (amount) => {
   return convert(value) + ' Rupees Only';
 };
 
-import { getTranslation } from '@/lib/payslipTranslations.js';
+import { getTranslation, transliterateText } from '@/lib/payslipTranslations.js';
 
 export default function EnhancedPayslipPreview({ payroll, employee, advances = [], language = 'en' }) {
   const [companySettings, setCompanySettings] = useState(null);
   const t = (key) => getTranslation(language, key);
+  const tr = (text) => transliterateText(text, language);
 
   useEffect(() => {
     pb.collection('company_settings').getOne('companysettings', { $autoCancel: false })
@@ -73,6 +74,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   const displayPosition = rawPosition.toLowerCase().includes('driver') ? t('driverRole') : (rawPosition || '-');
   const rawStatus = payroll?.payment_status || payroll?.status || 'Pending';
   const displayStatus = rawStatus.toLowerCase().includes('paid') ? t('paid') : t('pending');
+  const driverNameDisplay = tr(employee?.name || payroll?.employee_name || '-');
 
   return (
     <div className="print-content payslip-container bg-white text-slate-950 border border-slate-300 rounded-2xl shadow-md p-8" id="payslip-preview-content" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
@@ -89,7 +91,7 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
         <tbody>
           <tr>
             <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('empName')}</td>
-            <td className="w-1/4 p-2.5 border border-slate-300 font-bold text-slate-950" style={{ color: '#000000' }}>{employee?.name || payroll?.employee_name || '-'}</td>
+            <td className="w-1/4 p-2.5 border border-slate-300 font-bold text-slate-950" style={{ color: '#000000' }}>{driverNameDisplay}</td>
             <td className="w-1/4 font-semibold bg-slate-100 p-2.5 border border-slate-300" style={{ backgroundColor: '#f1f5f9', color: '#0f172a' }}>{t('empId')}</td>
             <td className="w-1/4 p-2.5 border border-slate-300 font-mono text-slate-700 font-bold" style={{ color: '#000000' }}>{getCleanEmployeeId(employee, payroll)}</td>
           </tr>
@@ -116,18 +118,18 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
           </div>
           <table className="w-full border border-amber-300 text-xs" style={{ borderCollapse: 'collapse', borderColor: '#fcd34d' }}>
             <thead>
-              <tr className="bg-amber-50 font-medium text-amber-950 border-b border-amber-300 text-left" style={{ backgroundColor: '#fffbeb', color: '#451a03' }}>
-                <th className="p-2 border-r border-amber-300">{t('date')}</th>
-                <th className="p-2 border-r border-amber-300">{t('reason')}</th>
-                <th className="p-2 text-right">{t('amount')}</th>
+              <tr className="bg-amber-100 font-bold text-amber-950 border-b border-amber-300 text-left" style={{ backgroundColor: '#fef3c7', color: '#451a03' }}>
+                <th className="p-2.5 border-r border-amber-300 font-bold text-amber-950" style={{ color: '#451a03', fontWeight: 'bold' }}>{t('date')}</th>
+                <th className="p-2.5 border-r border-amber-300 font-bold text-amber-950" style={{ color: '#451a03', fontWeight: 'bold' }}>{t('reason')}</th>
+                <th className="p-2.5 text-right font-bold text-amber-950" style={{ color: '#451a03', fontWeight: 'bold' }}>{t('amount')}</th>
               </tr>
             </thead>
             <tbody>
               {advances.map(adv => (
                 <tr key={adv.id} className="border-b border-amber-200 bg-white" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
-                  <td className="p-2 border-r border-amber-200 text-slate-700">{adv.date ? format(new Date(adv.date), 'dd MMM') : '-'}</td>
-                  <td className="p-2 border-r border-amber-200">{adv.reason || 'Advance'}</td>
-                  <td className="p-2 text-right font-semibold">₹{(adv.amount || 0).toLocaleString()}</td>
+                  <td className="p-2 border-r border-amber-200 text-slate-700" style={{ color: '#334155' }}>{adv.date ? format(new Date(adv.date), 'dd MMM') : '-'}</td>
+                  <td className="p-2 border-r border-amber-200 text-slate-900 font-medium" style={{ color: '#0f172a' }}>{tr(adv.reason || 'Advance')}</td>
+                  <td className="p-2 text-right font-semibold text-slate-950" style={{ color: '#000000' }}>₹{(adv.amount || 0).toLocaleString()}</td>
                 </tr>
               ))}
               <tr className="bg-amber-100 font-bold border-t border-amber-300" style={{ backgroundColor: '#fef3c7', color: '#000000' }}>

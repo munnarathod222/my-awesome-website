@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import pb from './pocketbaseClient.js';
-import { getTranslation } from './payslipTranslations.js';
+import { getTranslation, transliterateText } from './payslipTranslations.js';
 
 const formatAmountToWords = (amount) => {
   const value = Math.floor(amount);
@@ -25,6 +25,7 @@ const formatAmountToWords = (amount) => {
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = [], language = 'en') => {
   try {
     const t = (key) => getTranslation(language, key);
+    const tr = (text) => transliterateText(text, language);
     let companySettings = null;
     try {
       companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
@@ -52,7 +53,7 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       return String((hash % 100) + 1);
     };
 
-    const empName = employee?.name || payroll?.employee_name || '-';
+    const empName = tr(employee?.name || payroll?.employee_name || '-');
     const empId = getCleanEmpId(employee, payroll);
     const rawPos = employee?.position || employee?.employee_type || payroll?.designation || '-';
     const designation = rawPos.toLowerCase().includes('driver') ? t('driverRole') : rawPos;
@@ -99,17 +100,17 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #fcd34d; font-size: 12px;">
             <thead>
               <tr style="background-color: #fffbeb; color: #451a03; text-align: left;">
-                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d;">${t('date')}</th>
-                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d;">${t('reason')}</th>
-                <th style="padding: 6px 10px; text-align: right; border-bottom: 1px solid #fcd34d;">${t('amount')}</th>
+                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('date')}</th>
+                <th style="padding: 6px 10px; border-right: 1px solid #fcd34d; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('reason')}</th>
+                <th style="padding: 6px 10px; text-align: right; border-bottom: 1px solid #fcd34d; font-weight: bold; color: #451a03;">${t('amount')}</th>
               </tr>
             </thead>
             <tbody>
               ${advances.map(adv => `
                 <tr style="border-bottom: 1px solid #fde68a;">
-                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a;">${adv.date ? format(new Date(adv.date), 'dd MMM yyyy') : '-'}</td>
-                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a;">${adv.reason || 'Advance'}</td>
-                  <td style="padding: 6px 10px; text-align: right; font-weight: 600;">₹${(adv.amount || 0).toLocaleString('en-IN')}</td>
+                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a; color: #334155;">${adv.date ? format(new Date(adv.date), 'dd MMM yyyy') : '-'}</td>
+                  <td style="padding: 6px 10px; border-right: 1px solid #fde68a; color: #0f172a; font-weight: 500;">${tr(adv.reason || 'Advance')}</td>
+                  <td style="padding: 6px 10px; text-align: right; font-weight: 600; color: #000000;">₹${(adv.amount || 0).toLocaleString('en-IN')}</td>
                 </tr>
               `).join('')}
               <tr style="background-color: #fef3c7; font-weight: bold;">
