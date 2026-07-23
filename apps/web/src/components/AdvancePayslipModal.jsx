@@ -209,12 +209,12 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Jai Bhavani Cargo - Payslip Print</title>
+          <title>Jai Bhavani Cargo - Payslip Statement</title>
           ${styleTags}
           <style>
             @page {
               size: A4 portrait;
-              margin: 5mm 6mm;
+              margin: 6mm 8mm;
             }
             * {
               box-sizing: border-box !important;
@@ -230,44 +230,28 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
               color: #000000 !important;
               font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             }
-            .payslip-container {
+            .payslip-container, #payslip-preview-content {
               width: 100% !important;
               max-width: 100% !important;
               background: #ffffff !important;
               color: #000000 !important;
-              padding: 10px 12px !important;
+              padding: 16px 20px !important;
               margin: 0 !important;
-              border: none !important;
+              border: 1px solid #cbd5e1 !important;
+              border-radius: 12px !important;
               box-shadow: none !important;
               box-sizing: border-box !important;
             }
             table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 10px !important;
             }
-            td, th {
-              border: 1px solid #cbd5e1 !important;
-              padding: 4px 8px !important;
-              color: #000000 !important;
-              font-size: 11px !important;
-            }
-            th {
-              background-color: #f1f5f9 !important;
-              font-weight: 700 !important;
-            }
-            h1 { font-size: 20px !important; margin-bottom: 2px !important; }
-            h2 { font-size: 14px !important; margin-top: 6px !important; margin-bottom: 4px !important; }
-            .mb-8 { margin-bottom: 12px !important; }
-            .mb-6 { margin-bottom: 10px !important; }
-            .pb-6 { padding-bottom: 8px !important; }
-            .p-8 { padding: 10px !important; }
-            .pt-12 { padding-top: 16px !important; }
-            .mt-8 { margin-top: 12px !important; }
           </style>
         </head>
         <body class="bg-white text-black p-0 m-0">
-          ${elem.outerHTML}
+          <div style="padding: 4px;">
+            ${elem.outerHTML}
+          </div>
         </body>
       </html>
     `);
@@ -281,7 +265,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
           document.body.removeChild(iframe);
         }
       }, 1000);
-    }, 200);
+    }, 350);
   };
 
   // Listen to keyboard shortcuts
