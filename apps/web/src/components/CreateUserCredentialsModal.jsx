@@ -6,9 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ShieldCheck, Copy, Share2, KeyRound, Mail, User, Phone, CheckCircle2, RefreshCw, Eye, EyeOff, Shield, UserPlus } from 'lucide-react';
+import { ShieldCheck, Copy, Share2, User, Phone, CheckCircle2, RefreshCw, Eye, EyeOff, UserPlus } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
-import apiServerClient from '@/lib/apiServerClient.js';
 
 const ROLE_OPTIONS = [
   { value: 'dispatcher', label: 'Dispatcher', description: 'Manages trip logs, routes, and vehicle dispatching', badgeBg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
@@ -86,7 +85,7 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
 
     setLoading(true);
     try {
-      const cleanEmail = email.trim();
+      const cleanEmail = email.trim().toLowerCase();
       const cleanName = fullName.trim();
       const cleanPhone = phone.trim();
 
@@ -110,7 +109,6 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         try {
           userRecord = await pb.collection('users').update(editUser.id, updatePayload, { $autoCancel: false });
         } catch (updateErr) {
-          // Fallback update without custom fields if schema differs
           userRecord = await pb.collection('users').update(editUser.id, {
             name: cleanName,
             role: role,
@@ -120,75 +118,61 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         }
         toast.success(`Updated login credentials for ${cleanName}`);
       } else {
-        // Create new user account directly in PocketBase users collection
-        const createPayload = {
-          email: cleanEmail,
-          emailVisibility: true,
-          password: password,
-          passwordConfirm: password,
-          name: cleanName,
-          full_name: cleanName,
-          role: role,
-          status: 'active',
-          phone_number: cleanPhone || ''
-        };
-
+        // Check if user with this email already exists
+        let existingUser = null;
         try {
-          userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
-        } catch (createErr) {
-          console.warn('[CreateUserCredentialsModal] Initial create failed, checking fallback:', createErr);
-          
-          // Check if user with this email already exists
-          try {
-            const existingList = await pb.collection('users').getFullList({
-              filter: `email = "${cleanEmail}"`,
-              $autoCancel: false
-            });
-            
-            if (existingList.length > 0) {
-              const existing = existingList[0];
-              const updatePayload = {
-                name: cleanName,
-                role: role,
-                status: 'active'
-              };
-              if (password) {
-                updatePayload.password = password;
-                updatePayload.passwordConfirm = password;
-              }
-              userRecord = await pb.collection('users').update(existing.id, updatePayload, { $autoCancel: false });
-            } else {
-              // Try minimal payload without custom fields
-              userRecord = await pb.collection('users').create({
-                email: cleanEmail,
-                password: password,
-                passwordConfirm: password,
-                name: cleanName,
-                role: role,
-                status: 'active'
-              }, { $autoCancel: false });
-            }
-          } catch (fallbackErr) {
-            // Server API fallback if PocketBase SDK requires Admin token
-            const apiResp = await apiServerClient.fetch('/user/create-client-user', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: cleanEmail,
-                password: password,
-                role: role,
-                clientName: cleanName
-              })
-            });
-            if (apiResp.ok) {
-              const resData = await apiResp.json();
-              userRecord = resData.user;
-            } else {
-              throw fallbackErr;
-            }
+          const list = await pb.collection('users').getFullList({
+            filter: `email = "${cleanEmail}"`,
+            $autoCancel: false
+          });
+          if (list.length > 0) existingUser = list[0];
+        } catch (e) {}
+
+        if (existingUser) {
+          // Update existing user's role and password
+          const updatePayload = {
+            name: cleanName,
+            full_name: cleanName,
+            role: role,
+            status: 'active',
+            phone_number: cleanPhone || existingUser.phone_number
+          };
+          if (password) {
+            updatePayload.password = password;
+            updatePayload.passwordConfirm = password;
           }
+          userRecord = await pb.collection('users').update(existingUser.id, updatePayload, { $autoCancel: false });
+          toast.success(`Updated credentials for existing account (${cleanEmail})`);
+        } else {
+          // Create new user account directly in PocketBase
+          const createPayload = {
+            email: cleanEmail,
+            emailVisibility: true,
+            password: password,
+            passwordConfirm: password,
+            name: cleanName,
+            full_name: cleanName,
+            role: role,
+            status: 'active',
+            phone_number: cleanPhone || '0000000000'
+          };
+
+          try {
+            userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
+          } catch (createErr) {
+            console.warn('[CreateUserCredentialsModal] Primary payload failed, trying basic payload:', createErr);
+            // Fallback: minimal standard PocketBase fields
+            userRecord = await pb.collection('users').create({
+              email: cleanEmail,
+              password: password,
+              passwordConfirm: password,
+              name: cleanName,
+              role: role,
+              status: 'active'
+            }, { $autoCancel: false });
+          }
+          toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
         }
-        toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
       }
 
       setCreatedCredentials({
@@ -201,7 +185,8 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Failed to save user credentials:', err);
-      toast.error(`Failed to save credentials: ${err.message || 'Error occurred'}`);
+      const errMsg = err?.data?.message || err?.message || 'Email may already be registered or invalid.';
+      toast.error(`Failed to save credentials: ${errMsg}`);
     } finally {
       setLoading(false);
     }
