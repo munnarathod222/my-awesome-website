@@ -118,60 +118,64 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         }
         toast.success(`Updated login credentials for ${cleanName}`);
       } else {
-        // Check if user with this email already exists
-        let existingUser = null;
+        // Attempt to create new user account
+        const createPayload = {
+          email: cleanEmail,
+          emailVisibility: true,
+          password: password,
+          passwordConfirm: password,
+          name: cleanName,
+          full_name: cleanName,
+          role: role,
+          status: 'active',
+          phone_number: cleanPhone || ''
+        };
+
         try {
-          const list = await pb.collection('users').getFullList({
-            filter: `email = "${cleanEmail}"`,
-            $autoCancel: false
-          });
-          if (list.length > 0) existingUser = list[0];
-        } catch (e) {}
-
-        if (existingUser) {
-          // Update existing user's role and password
-          const updatePayload = {
-            name: cleanName,
-            full_name: cleanName,
-            role: role,
-            status: 'active',
-            phone_number: cleanPhone || existingUser.phone_number
-          };
-          if (password) {
-            updatePayload.password = password;
-            updatePayload.passwordConfirm = password;
-          }
-          userRecord = await pb.collection('users').update(existingUser.id, updatePayload, { $autoCancel: false });
-          toast.success(`Updated credentials for existing account (${cleanEmail})`);
-        } else {
-          // Create new user account directly in PocketBase
-          const createPayload = {
-            email: cleanEmail,
-            emailVisibility: true,
-            password: password,
-            passwordConfirm: password,
-            name: cleanName,
-            full_name: cleanName,
-            role: role,
-            status: 'active',
-            phone_number: cleanPhone || '0000000000'
-          };
-
-          try {
-            userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
-          } catch (createErr) {
-            console.warn('[CreateUserCredentialsModal] Primary payload failed, trying basic payload:', createErr);
-            // Fallback: minimal standard PocketBase fields
-            userRecord = await pb.collection('users').create({
-              email: cleanEmail,
-              password: password,
-              passwordConfirm: password,
-              name: cleanName,
-              role: role,
-              status: 'active'
-            }, { $autoCancel: false });
-          }
+          userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
           toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
+        } catch (createErr) {
+          console.warn('[CreateUserCredentialsModal] Initial create failed:', createErr);
+          
+          // Check if error is due to existing email
+          const isEmailInUse = createErr.status === 400 && 
+            (createErr.data?.data?.email || JSON.stringify(createErr).toLowerCase().includes('email'));
+
+          if (isEmailInUse) {
+            // Attempt to update the existing account's credentials & role!
+            try {
+              const existingUser = await pb.collection('users').getFirstListItem(`email="${cleanEmail}"`, { $autoCancel: false });
+              const updatePayload = {
+                name: cleanName,
+                role: role,
+                status: 'active'
+              };
+              if (password) {
+                updatePayload.password = password;
+                updatePayload.passwordConfirm = password;
+              }
+              userRecord = await pb.collection('users').update(existingUser.id, updatePayload, { $autoCancel: false });
+              toast.success(`Updated credentials for existing account (${cleanEmail})`);
+            } catch (updateErr) {
+              throw new Error(`Email "${cleanEmail}" is already registered. If you wish to update this user, please select them from the list below.`);
+            }
+          } else {
+            // Try minimal payload without optional fields
+            try {
+              userRecord = await pb.collection('users').create({
+                email: cleanEmail,
+                password: password,
+                passwordConfirm: password,
+                name: cleanName,
+                role: role,
+                status: 'active'
+              }, { $autoCancel: false });
+              toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
+            } catch (minimalErr) {
+              const detailedError = minimalErr.data?.data?.password?.message || minimalErr.data?.data?.email?.message || minimalErr.message || 'Failed to create user account';
+              throw new Error(detailedError);
+            }
+          }
         }
       }
 
@@ -185,8 +189,7 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error('Failed to save user credentials:', err);
-      const errMsg = err?.data?.message || err?.message || 'Email may already be registered or invalid.';
-      toast.error(`Failed to save credentials: ${errMsg}`);
+      toast.error(err.message || 'Failed to save credentials. Please check details.');
     } finally {
       setLoading(false);
     }
