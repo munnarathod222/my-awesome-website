@@ -667,62 +667,78 @@ export default function MaintenancePage() {
         <title>Fleet Maintenance | Dashboard</title>
       </Helmet>
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-card p-6 rounded-2xl shadow-sm border border-border">
+      {/* Premium Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-card/60 backdrop-blur-md p-6 rounded-2xl border border-border/50 shadow-md">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold px-3 py-0.5 text-xs rounded-full">
+              ⚡ Fleet Health & Preventive Maintenance
+            </Badge>
+          </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground" style={{ letterSpacing: '-0.02em' }}>
-            Fleet Maintenance & Diagnostics
+            Fleet Maintenance & Diagnostics Engine
           </h1>
-          <p className="text-muted-foreground mt-2">Monitor dynamically calculated live odometers, inspect vehicles, and track part intervals.</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Real-time live odometers, automated monthly greasing schedules, bi-weekly air filter blow-outs, and component diagnostics.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => fetchData()} className="rounded-xl border-border/80 text-muted-foreground hover:text-foreground">
+            <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh Diagnostics
+          </Button>
         </div>
       </div>
 
       {/* Advanced Diagnostics Analytics Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+        <Card className="relative overflow-hidden border border-border/60 shadow-sm bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-200">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500" />
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
+            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Health</p>
-              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.healthyTrucks}% <span className="text-xs font-medium text-emerald-600">Healthy</span></p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Health Index</p>
+              <p className="text-2xl font-black mt-1 font-mono text-emerald-400">{statsSummary.healthyTrucks}% <span className="text-xs font-normal text-muted-foreground">Healthy</span></p>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+        <Card className="relative overflow-hidden border border-border/60 shadow-sm bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-200">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-rose-500 to-amber-500" />
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-destructive/10 text-destructive rounded-xl">
-              <AlertTriangle className="w-6 h-6" />
+            <div className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl border border-rose-500/20">
+              <AlertTriangle className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Breakdown Issues</p>
-              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.activeIssues} <span className="text-xs font-medium text-destructive">Open Tickets</span></p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Breakdown Tickets</p>
+              <p className="text-2xl font-black mt-1 font-mono text-rose-400">{statsSummary.activeIssues} <span className="text-xs font-normal text-muted-foreground">Open Issues</span></p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+        <Card className="relative overflow-hidden border border-border/60 shadow-sm bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-200">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-success/10 text-success rounded-xl">
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
               <DollarSign className="w-6 h-6" />
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Maintenance Spent</p>
-              <p className="text-2xl font-black mt-1 text-foreground">₹{statsSummary.totalSpent.toLocaleString()}</p>
+              <p className="text-2xl font-black mt-1 font-mono text-blue-400">₹{statsSummary.totalSpent.toLocaleString('en-IN')}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-border/60 shadow-sm bg-card hover:shadow-md transition-shadow duration-200">
+        <Card className="relative overflow-hidden border border-border/60 shadow-sm bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-200">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500" />
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-warning/10 text-warning rounded-xl">
+            <div className="p-3 bg-violet-500/10 text-violet-400 rounded-2xl border border-violet-500/20">
               <Wrench className="w-6 h-6" />
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overdue Alerts</p>
-              <p className="text-2xl font-black mt-1 text-foreground">{statsSummary.overdueCount} <span className="text-xs font-medium text-warning">Trucks Overdue</span></p>
+              <p className="text-2xl font-black mt-1 font-mono text-violet-400">{statsSummary.overdueCount} <span className="text-xs font-normal text-muted-foreground">Trucks Overdue</span></p>
             </div>
           </CardContent>
         </Card>
