@@ -5,7 +5,7 @@ import {
   AlertCircle, LayoutGrid, List, Hash, CalendarDays, Clock,
   Fingerprint, FolderOpen, Folder, ChevronLeft, Truck,
   UserCog, Briefcase, Users, ShieldCheck, ArrowLeft,
-  BadgeCheck, File
+  BadgeCheck, File, Share2
 } from 'lucide-react';
 import { Button }       from '@/components/ui/button';
 import { Input }        from '@/components/ui/input';
@@ -21,6 +21,7 @@ import { differenceInDays, format } from 'date-fns';
 import pb               from '@/lib/pocketbaseClient.js';
 import LoadingSpinner   from '@/components/LoadingSpinner.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
+import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const ROLE_TABS = [
@@ -90,7 +91,7 @@ function RoleIcon({ type }) {
 }
 
 /* ─── Employee Folder Card ──────────────────────────────────────────────────── */
-function EmployeeFolderCard({ employee, docs, onClick }) {
+function EmployeeFolderCard({ employee, docs, onClick, onShare }) {
   const docCount = docs.length;
   const summary  = folderStatusSummary(docs);
   const hue      = (employee.name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
@@ -129,6 +130,20 @@ function EmployeeFolderCard({ employee, docs, onClick }) {
               </span>
             </div>
           </div>
+          {/* Share Button */}
+          {onShare && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(employee);
+              }}
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-colors border border-white/10 shrink-0"
+              title="Share Employee Document Folder"
+            >
+              <Share2 className="w-4 h-4 text-primary" />
+            </button>
+          )}
           {/* Doc count badge */}
           <div
             className="shrink-0 w-10 h-10 rounded-xl flex flex-col items-center justify-center border border-white/[0.08]"
@@ -317,6 +332,7 @@ export default function EmployeeDocsPage() {
   const [existingFiles,  setExistingFiles]  = useState([]);
   const [deletedFiles,   setDeletedFiles]   = useState([]);
   const [previewDoc,     setPreviewDoc]     = useState(null);
+  const [shareConfig,    setShareConfig]    = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
 
   /* ── Fetch ────────────────────────────────────────────────────────────────── */
   const fetchData = async () => {
@@ -511,13 +527,24 @@ export default function EmployeeDocsPage() {
             </p>
           </div>
 
-          <Button
-            onClick={() => handleOpenForm(null, openEmployee)}
-            className="shadow-sm rounded-xl h-10 px-5 shrink-0"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {openEmployee ? 'Add Document' : 'Add Document'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {openEmployee && (
+              <Button
+                variant="outline"
+                onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: openEmployee.id, entityName: openEmployee.name })}
+                className="shadow-sm rounded-xl h-10 px-4 shrink-0 font-bold border-primary/30 text-primary hover:bg-primary/10 gap-2"
+              >
+                <Share2 className="w-4 h-4" /> Share Folder
+              </Button>
+            )}
+            <Button
+              onClick={() => handleOpenForm(null, openEmployee)}
+              className="shadow-sm rounded-xl h-10 px-5 shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {openEmployee ? 'Add Document' : 'Add Document'}
+            </Button>
+          </div>
         </div>
 
         {/* ── KPI Cards ──────────────────────────────────────────────────────── */}
@@ -596,6 +623,7 @@ export default function EmployeeDocsPage() {
                     employee={emp}
                     docs={docsByEmployee[emp.id] || []}
                     onClick={() => { setOpenEmployee(emp); setSearch(''); setTypeFilter('all'); setStatusFilter('all'); }}
+                    onShare={(eObj) => setShareConfig({ isOpen: true, truckId: null, employeeId: eObj.id, entityName: eObj.name })}
                   />
                 ))}
               </div>
@@ -941,6 +969,14 @@ export default function EmployeeDocsPage() {
         onClose={() => setPreviewDoc(null)}
         document={previewDoc}
         collectionName="employee_documents"
+      />
+
+      <ShareFolderDialog
+        isOpen={shareConfig.isOpen}
+        onClose={() => setShareConfig(prev => ({ ...prev, isOpen: false }))}
+        truckId={shareConfig.truckId}
+        employeeId={shareConfig.employeeId}
+        entityName={shareConfig.entityName}
       />
     </div>
   );

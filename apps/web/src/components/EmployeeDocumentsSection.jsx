@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, AlertTriangle, FileBox, Eye, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, AlertTriangle, FileBox, Eye, FileText, Share2 } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import DocumentModal from './DocumentModal.jsx';
 import DocumentPreviewModal from './DocumentPreviewModal.jsx';
+import ShareFolderDialog from './ShareFolderDialog.jsx';
 
 const formatDateSafe = (dateVal, formatStr = 'dd MMM yyyy') => {
   if (!dateVal) return '-';
@@ -31,6 +32,7 @@ const EmployeeDocumentsSection = ({ employee }) => {
   const [editingDoc, setEditingDoc] = useState(null);
   const [expandedRows, setExpandedRows] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   useEffect(() => {
     if (employee) {
@@ -155,9 +157,14 @@ const EmployeeDocumentsSection = ({ employee }) => {
             <CardTitle className="text-xl">Documents for {employee.name}</CardTitle>
             <CardDescription>Manage IDs, contracts, and certifications.</CardDescription>
           </div>
-          <Button onClick={openAddModal} size="sm" className="gap-2">
-            <Plus className="w-4 h-4" /> Add Document
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsShareOpen(true)} className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-bold">
+              <Share2 className="w-4 h-4" /> Share Folder
+            </Button>
+            <Button onClick={openAddModal} size="sm" className="gap-2">
+              <Plus className="w-4 h-4" /> Add Document
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -275,6 +282,13 @@ const EmployeeDocumentsSection = ({ employee }) => {
         onClose={() => setPreviewDoc(null)}
         document={previewDoc}
         collectionName="employee_documents"
+      />
+
+      <ShareFolderDialog
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        employeeId={employee?.id}
+        entityName={employee?.name}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft } from 'lucide-react';
+import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +16,7 @@ import { differenceInDays, format, isPast } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
+import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
@@ -28,6 +29,7 @@ const TruckDocsPage = () => {
   
   const [viewMode, setViewMode] = useState('folder'); // 'folder' or 'table'
   const [selectedTruckFolder, setSelectedTruckFolder] = useState(null);
+  const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -266,15 +268,29 @@ const TruckDocsPage = () => {
           <div className={`p-4 bg-secondary/80 rounded-2xl border border-border/50 ${folderColor} group-hover:scale-105 transition-transform duration-300 shadow-inner`}>
             <Folder className="w-8 h-8 fill-current" />
           </div>
-          {docCount > 0 ? (
-            <Badge variant="outline" className={`capitalize font-semibold text-[10px] ${badgeColor}`}>
-              {overallStatus === 'expired' ? 'Expired' : overallStatus === 'expiring' ? 'Expiring' : 'Active'}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground/60 bg-muted/20">
-              Empty
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareConfig({ isOpen: true, truckId: truck.id, employeeId: null, entityName: truck.truck_number });
+              }}
+              title="Share Vehicle Folder"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+            {docCount > 0 ? (
+              <Badge variant="outline" className={`capitalize font-semibold text-[10px] ${badgeColor}`}>
+                {overallStatus === 'expired' ? 'Expired' : overallStatus === 'expiring' ? 'Expiring' : 'Active'}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] font-semibold text-muted-foreground/60 bg-muted/20">
+                Empty
+              </Badge>
+            )}
+          </div>
         </div>
         
         <div>
@@ -459,9 +475,19 @@ const TruckDocsPage = () => {
         {/* Selected Folder Header for Folder View */}
         {viewMode === 'folder' && selectedTruckFolder && (
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 border border-border/40 p-4 rounded-2xl">
-            <Button variant="ghost" onClick={handleBackToFolders} className="w-fit hover:bg-secondary rounded-xl pl-2">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Folders
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={handleBackToFolders} className="w-fit hover:bg-secondary rounded-xl pl-2">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Folders
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShareConfig({ isOpen: true, truckId: selectedTruckFolder, employeeId: null, entityName: truckMap[selectedTruckFolder] || 'Truck' })}
+                className="rounded-xl flex items-center gap-1.5 border-primary/30 text-primary hover:bg-primary/10 font-bold"
+              >
+                <Share2 className="w-4 h-4" /> Share Folder
+              </Button>
+            </div>
             <div className="sm:text-right">
               <h2 className="text-xl font-bold text-foreground">
                 Folder: {truckMap[selectedTruckFolder] || 'Unknown Truck'}
@@ -662,6 +688,14 @@ const TruckDocsPage = () => {
         isOpen={!!previewDoc} 
         onClose={() => setPreviewDoc(null)} 
         document={previewDoc} 
+      />
+
+      <ShareFolderDialog
+        isOpen={shareConfig.isOpen}
+        onClose={() => setShareConfig(prev => ({ ...prev, isOpen: false }))}
+        truckId={shareConfig.truckId}
+        employeeId={shareConfig.employeeId}
+        entityName={shareConfig.entityName}
       />
     </div>
   );
