@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { ShieldCheck, Copy, Share2, User, Phone, CheckCircle2, RefreshCw, Eye, EyeOff, UserPlus } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
+import { logAuditEvent } from '@/lib/auditLogger.js';
 
 const ROLE_OPTIONS = [
   { value: 'dispatcher', label: 'Dispatcher', description: 'Manages trip logs, routes, and vehicle dispatching', badgeBg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
@@ -225,6 +226,13 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         const filteredLocal = localUsers.filter(u => u.email?.toLowerCase() !== cleanEmail);
         localStorage.setItem('jbc_local_users', JSON.stringify([newUserObj, ...filteredLocal]));
         window.dispatchEvent(new Event('storage'));
+
+        logAuditEvent({
+          action: editUser?.id ? 'UPDATE' : 'CREATE',
+          module: 'User Management',
+          recordId: cleanEmail,
+          details: `${editUser?.id ? 'Updated' : 'Created'} user account credentials for "${cleanName}" (${cleanEmail}) with assigned role "${role.toUpperCase()}"`
+        });
       } catch (localErr) {
         console.warn('Failed to update local users cache:', localErr);
       }

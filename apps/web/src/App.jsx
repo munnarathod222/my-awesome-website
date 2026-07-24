@@ -34,6 +34,7 @@ import SharedFolderPage from './pages/SharedFolderPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
+import AuditLogsPage from './pages/AuditLogsPage.jsx';
 import AdminSignupRequestsPage from './pages/AdminSignupRequestsPage.jsx';
 import TripLogsPage from './pages/TripLogsPage.jsx';
 import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
@@ -202,6 +203,8 @@ function App() {
                   
                   {/* Admin/Super Admin only routes */}
                   <Route path="/dashboard/users" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><UsersPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
+                  <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
                   <Route path="/dashboard/requests" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminSignupRequestsPage /></ProtectedRoute>} />
                   
                   {/* Truck & Tyre Management */}

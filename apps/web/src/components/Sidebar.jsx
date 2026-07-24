@@ -135,9 +135,10 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Administration',
       items: [
-        { icon: Users,    label: 'User Management', path: '/dashboard/users',   roles: ['super_admin','admin'] },
-        { icon: FileText, label: 'Reports',          path: '/reports',           roles: ['super_admin','admin'] },
-        { icon: Settings, label: 'Settings',         path: '/dashboard/profile', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Users,       label: 'User Management',     path: '/dashboard/users',      roles: ['super_admin','admin'] },
+        { icon: ShieldCheck, label: 'Audit & Security Logs', path: '/dashboard/audit-logs', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: FileText,    label: 'Reports',             path: '/reports',              roles: ['super_admin','admin'] },
+        { icon: Settings,    label: 'Settings',            path: '/dashboard/profile',    roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
   ];

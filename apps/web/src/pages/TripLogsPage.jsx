@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import pb from '@/lib/pocketbaseClient.js';
+import { logAuditEvent } from '@/lib/auditLogger.js';
 import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -222,6 +223,13 @@ const TripLogsPage = () => {
       }
 
       toast.success('Trip status updated & FASTag balance adjusted');
+
+      logAuditEvent({
+        action: 'STATUS_CHANGE',
+        module: 'Trip Logs',
+        recordId: statusChangeTrip.trip_id || statusChangeTrip.id,
+        details: `Updated Trip Status from "${statusChangeTrip.trip_status || 'Draft'}" to "${newTripStatus}"`
+      });
 
       // If marked Delivered, open the payment request modal (status already saved)
       if (newTripStatus === 'Delivered') {
