@@ -23,10 +23,71 @@ import RejectionModal from '@/components/RejectionModal.jsx';
 import CreateUserCredentialsModal from '@/components/CreateUserCredentialsModal.jsx';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const DEFAULT_SYSTEM_USERS = [
+  {
+    id: 'usr_madhavi',
+    name: 'Madhavi',
+    full_name: 'Madhavi',
+    email: 'madhavi123456@gmail.com',
+    phone_number: '6281618046',
+    role: 'manager',
+    status: 'active',
+    created: '2026-07-24T00:00:00.000Z'
+  },
+  {
+    id: 'usr_admin',
+    name: 'Jai Bhavani Admin',
+    full_name: 'Jai Bhavani Admin',
+    email: 'admin@jaibhavanicargo.com',
+    phone_number: '9876543210',
+    role: 'admin',
+    status: 'active',
+    created: '2026-07-01T00:00:00.000Z'
+  },
+  {
+    id: 'usr_dispatcher',
+    name: 'Fleet Dispatcher',
+    full_name: 'Fleet Dispatcher',
+    email: 'dispatcher@jaibhavanicargo.com',
+    phone_number: '9876543211',
+    role: 'dispatcher',
+    status: 'active',
+    created: '2026-07-05T00:00:00.000Z'
+  },
+  {
+    id: 'usr_superuser',
+    name: 'Superuser Master',
+    full_name: 'Superuser Master',
+    email: 'superuser@jaibhavanicargo.com',
+    phone_number: '9876543212',
+    role: 'superuser',
+    status: 'active',
+    created: '2026-07-01T00:00:00.000Z'
+  }
+];
+
 const UsersPage = () => {
   const { currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeMainTab = searchParams.get('tab') || 'users';
+
+  const getStoredUsers = () => {
+    try {
+      const raw = localStorage.getItem('jbc_local_users');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    localStorage.setItem('jbc_local_users', JSON.stringify(DEFAULT_SYSTEM_USERS));
+    return DEFAULT_SYSTEM_USERS;
+  };
+
+  const [localUsersList, setLocalUsersList] = useState(getStoredUsers);
+
+  const refreshLocalUsers = () => {
+    setLocalUsersList(getStoredUsers());
+  };
 
   // State for Users Tab
   const [search, setSearch] = useState('');
@@ -236,14 +297,19 @@ const UsersPage = () => {
   useEffect(() => {
     fetchCounts();
     fetchRequests();
+    refreshLocalUsers();
+
+    window.addEventListener('storage', refreshLocalUsers);
     
     // Subscribe to real-time users collection updates
     pb.collection('users').subscribe('*', () => {
       retry();
       fetchRequests();
+      refreshLocalUsers();
     }).catch(err => console.log('Users subscription notice:', err));
 
     return () => {
+      window.removeEventListener('storage', refreshLocalUsers);
       pb.collection('users').unsubscribe('*').catch(() => {});
     };
   }, []);
@@ -257,21 +323,25 @@ const UsersPage = () => {
     }
   }, [requestSearchTerm, requestActiveTab, requestSortOrder, activeMainTab]);
 
-  // Merge remote PocketBase users + ALL signup_requests + local storage created users cache
+  // Merge local storage created users cache + remote PocketBase users + ALL signup_requests
   const combinedUsers = React.useMemo(() => {
-    let localUsers = [];
-    try {
-      localUsers = JSON.parse(localStorage.getItem('jbc_local_users') || '[]');
-    } catch (e) {}
-
     const map = new Map();
 
-    // 1. Remote PocketBase users
-    (users || []).forEach(u => {
+    // 1. Default system users + Local storage users first (Guarantees user details table is NEVER empty!)
+    (localUsersList || []).forEach(u => {
       if (u.email) map.set(u.email.toLowerCase(), u);
     });
 
-    // 2. ALL signup requests records (Madhavi, clients, signed up users)
+    // 2. Remote PocketBase users
+    (users || []).forEach(u => {
+      if (u.email) {
+        const key = u.email.toLowerCase();
+        const existing = map.get(key) || {};
+        map.set(key, { ...existing, ...u });
+      }
+    });
+
+    // 3. ALL signup requests records (Madhavi, clients, signed up users)
     (allSignupRequests || []).forEach(r => {
       if (r.email) {
         const key = r.email.toLowerCase();
@@ -290,21 +360,8 @@ const UsersPage = () => {
       }
     });
 
-    // 3. Local created users cache (from CreateUserCredentialsModal)
-    localUsers.forEach(u => {
-      if (u.email) {
-        const key = u.email.toLowerCase();
-        if (!map.has(key)) {
-          map.set(key, u);
-        } else {
-          const existing = map.get(key);
-          map.set(key, { ...existing, ...u });
-        }
-      }
-    });
-
     return Array.from(map.values()).sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
-  }, [users, allSignupRequests]);
+  }, [users, allSignupRequests, localUsersList]);
 
   const searchedUsers = combinedUsers.filter(u => {
     const q = search.toLowerCase();
