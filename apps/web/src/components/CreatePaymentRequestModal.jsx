@@ -89,10 +89,17 @@ export default function CreatePaymentRequestModal({ isOpen, onClose, onSuccess }
 
   const handleTripChange = (tripId) => {
     const tripObj = unpaidTrips.find(t => t.id === tripId);
+    let autoAmount = prev => prev.amount;
+    if (tripObj) {
+      const grossRevenue = Number(tripObj.revenue || tripObj.freight_amount) || 0;
+      const clientAdv = Number(tripObj.advance_received_from_client) || 0;
+      const netDue = Math.max(0, grossRevenue - clientAdv);
+      autoAmount = String(netDue > 0 ? netDue : grossRevenue || '');
+    }
     setFormData(prev => ({
       ...prev,
       trip_id: tripId,
-      amount: tripObj ? String(tripObj.revenue || tripObj.freight_amount || '') : prev.amount
+      amount: autoAmount
     }));
   };
 

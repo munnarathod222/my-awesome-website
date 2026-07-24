@@ -115,10 +115,14 @@ const PaymentRequestsPage = () => {
             const dueDate = new Date(tripDate);
             dueDate.setDate(dueDate.getDate() + 7); // Default due date in 7 days after the trip date
             
+            const grossRev = Number(trip.revenue) || 0;
+            const clientAdv = Number(trip.advance_received_from_client) || 0;
+            const netDue = Math.max(0, grossRev - clientAdv);
+
             const newReq = await pb.collection('payment_requests').create({
               trip_id: trip.id,
               client_id: trip.client_id,
-              amount: trip.revenue || 0,
+              amount: netDue > 0 ? netDue : grossRev,
               request_date: tripDate.toISOString(),
               due_date: dueDate.toISOString(),
               status: 'Pending',
@@ -1030,7 +1034,16 @@ Best Regards,
                           <div className="font-medium text-sm">{r.expand?.client_id?.client_name || 'Unknown Client'}</div>
                           <div className="text-[11px] text-muted-foreground font-mono">Trip: {r.expand?.trip_id?.trip_id || r.trip_id}</div>
                         </TableCell>
-                        <TableCell className="amount-display text-sm font-medium">{formatCurrency(r.amount)}</TableCell>
+                        <TableCell className="amount-display text-sm font-medium">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-primary">{formatCurrency(r.amount)}</span>
+                            {r.expand?.trip_id?.advance_received_from_client > 0 && (
+                              <span className="text-[10px] text-emerald-500 font-semibold" title="Client Advance Paid">
+                                (Adv: -{formatCurrency(r.expand.trip_id.advance_received_from_client)})
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {r.due_date && parseDateSafe(r.due_date) ? (
                             <span className={cn("text-sm", r.calculatedStatus === 'Overdue' && "text-destructive font-medium")}>
