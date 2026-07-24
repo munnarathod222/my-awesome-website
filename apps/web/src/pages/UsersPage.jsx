@@ -25,6 +25,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_SYSTEM_USERS = [
   {
+    id: 'usr_superuser_munna',
+    name: 'Munna Rathod (Superuser)',
+    full_name: 'Munna Rathod',
+    email: 'munnarathod222@gmail.com',
+    phone_number: '9876543212',
+    role: 'superuser',
+    status: 'active',
+    created: '2026-07-01T00:00:00.000Z'
+  },
+  {
     id: 'usr_madhavi',
     name: 'Madhavi',
     full_name: 'Madhavi',
@@ -53,16 +63,6 @@ const DEFAULT_SYSTEM_USERS = [
     role: 'dispatcher',
     status: 'active',
     created: '2026-07-05T00:00:00.000Z'
-  },
-  {
-    id: 'usr_superuser',
-    name: 'Superuser Master',
-    full_name: 'Superuser Master',
-    email: 'superuser@jaibhavanicargo.com',
-    phone_number: '9876543212',
-    role: 'superuser',
-    status: 'active',
-    created: '2026-07-01T00:00:00.000Z'
   }
 ];
 
@@ -72,15 +72,22 @@ const UsersPage = () => {
   const activeMainTab = searchParams.get('tab') || 'users';
 
   const getStoredUsers = () => {
+    let parsed = [];
     try {
       const raw = localStorage.getItem('jbc_local_users');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
+      if (raw) parsed = JSON.parse(raw);
     } catch (e) {}
-    localStorage.setItem('jbc_local_users', JSON.stringify(DEFAULT_SYSTEM_USERS));
-    return DEFAULT_SYSTEM_USERS;
+
+    // Ensure munnarathod222@gmail.com and default system accounts exist
+    const emailMap = new Map();
+    DEFAULT_SYSTEM_USERS.forEach(u => emailMap.set(u.email.toLowerCase(), u));
+    (Array.isArray(parsed) ? parsed : []).forEach(u => {
+      if (u.email) emailMap.set(u.email.toLowerCase(), u);
+    });
+
+    const finalUsers = Array.from(emailMap.values());
+    localStorage.setItem('jbc_local_users', JSON.stringify(finalUsers));
+    return finalUsers;
   };
 
   const [localUsersList, setLocalUsersList] = useState(getStoredUsers);
