@@ -24,17 +24,11 @@ const formatAmountToWords = (amount) => {
 
 export const generateAdvancePayslipPDF = async (payroll, employee, advances = [], language = 'en') => {
   try {
-    let sourceElem = document.getElementById('payslip-preview-content');
+    // Always create clean standalone offscreen container with explicit inline colors to avoid dark mode / oklch canvas errors
+    const t = (key) => getTranslation(language, key);
+    const tr = (text) => transliterateText(text, language);
     let container = null;
     let targetElem = null;
-
-    if (sourceElem) {
-      // Use exact live preview element rendered on screen!
-      targetElem = sourceElem;
-    } else {
-      // Build full-width offscreen replica matching EnhancedPayslipPreview
-      const t = (key) => getTranslation(language, key);
-      const tr = (text) => transliterateText(text, language);
       let companySettings = null;
       try {
         companySettings = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
@@ -230,7 +224,6 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
 
       document.body.appendChild(container);
       targetElem = container;
-    }
 
     const canvas = await html2canvas(targetElem, {
       scale: 2,

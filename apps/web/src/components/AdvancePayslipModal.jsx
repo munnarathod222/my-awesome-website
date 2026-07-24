@@ -143,41 +143,48 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
       shareText += `Thank you for your service!\n`;
       shareText += `Shared via Jai Bhavani Cargo Portal`;
 
-      // 1. Generate PDF Blob
-      const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
-      const fileName = `Advance_Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-
-      // 2. Try Mobile Native Web Share API (Attaches PDF file directly)
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: `Payslip Statement - ${empName}`,
-            text: shareText
-          });
-          toast.success('Payslip PDF shared to WhatsApp');
-          return;
-        } catch (shareErr) {
-          if (shareErr.name === 'AbortError') return; // User cancelled share sheet
+      // 1. Try PDF Generation
+      try {
+        const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
+        if (blob) {
+          const fileName = `Advance_Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
+          
+          // Mobile Native Web Share
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: `Payslip Statement - ${empName}`,
+                text: shareText
+              });
+              toast.success('Payslip PDF shared to WhatsApp');
+              return;
+            } catch (shareErr) {
+              if (shareErr.name === 'AbortError') return;
+            }
+          }
+          
+          // Fallback: auto download PDF
+          downloadFile(blob, fileName);
         }
+      } catch (pdfErr) {
+        console.warn('PDF blob generation warning:', pdfErr);
       }
 
-      // 3. Desktop / Web Fallback: Auto-download PDF & open WhatsApp with pre-filled text
-      downloadFile(blob, fileName);
-
+      // 2. Open WhatsApp link with pre-filled formatted text statement
       const cleanPhone = empPhone ? empPhone.replace(/\D/g, '') : '';
       let waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-      if (cleanPhone && (cleanPhone.length === 10 || cleanPhone.length === 12)) {
+      if (cleanPhone && cleanPhone.length >= 10) {
         const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
         waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareText)}`;
       }
 
       window.open(waUrl, '_blank');
-      toast.success(`PDF downloaded! Opening WhatsApp for ${empName} (attach downloaded file)...`);
+      toast.success(`Opening WhatsApp for ${empName}...`);
     } catch (err) {
       console.error('WhatsApp share error:', err);
-      toast.error('Failed to prepare WhatsApp PDF share');
+      toast.error('Failed to open WhatsApp');
     } finally {
       setExporting(false);
     }
