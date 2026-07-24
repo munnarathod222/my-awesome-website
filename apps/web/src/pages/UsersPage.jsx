@@ -25,16 +25,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_SYSTEM_USERS = [
   {
-    id: 'usr_superuser_munna',
-    name: 'Munna Rathod (Superuser)',
-    full_name: 'Munna Rathod',
-    email: 'munnarathod222@gmail.com',
-    phone_number: '9876543212',
-    role: 'superuser',
-    status: 'active',
-    created: '2026-07-01T00:00:00.000Z'
-  },
-  {
     id: 'usr_madhavi',
     name: 'Madhavi',
     full_name: 'Madhavi',
@@ -45,24 +35,14 @@ const DEFAULT_SYSTEM_USERS = [
     created: '2026-07-24T00:00:00.000Z'
   },
   {
-    id: 'usr_admin',
-    name: 'Jai Bhavani Admin',
-    full_name: 'Jai Bhavani Admin',
-    email: 'admin@jaibhavanicargo.com',
-    phone_number: '9876543210',
-    role: 'admin',
+    id: 'usr_superuser_munna',
+    name: 'Munna Rathod',
+    full_name: 'Munna Rathod',
+    email: 'munnarathod222@gmail.com',
+    phone_number: '9876543212',
+    role: 'superuser',
     status: 'active',
     created: '2026-07-01T00:00:00.000Z'
-  },
-  {
-    id: 'usr_dispatcher',
-    name: 'Fleet Dispatcher',
-    full_name: 'Fleet Dispatcher',
-    email: 'dispatcher@jaibhavanicargo.com',
-    phone_number: '9876543211',
-    role: 'dispatcher',
-    status: 'active',
-    created: '2026-07-05T00:00:00.000Z'
   }
 ];
 
@@ -78,12 +58,18 @@ const UsersPage = () => {
       if (raw) parsed = JSON.parse(raw);
     } catch (e) {}
 
-    // Ensure munnarathod222@gmail.com and default system accounts exist
+    // Filter out deleted demo accounts (dispatcher@jaibhavanicargo.com & admin@jaibhavanicargo.com)
+    const EXCLUDED_EMAILS = ['dispatcher@jaibhavanicargo.com', 'admin@jaibhavanicargo.com'];
+
     const emailMap = new Map();
     DEFAULT_SYSTEM_USERS.forEach(u => emailMap.set(u.email.toLowerCase(), u));
     (Array.isArray(parsed) ? parsed : []).forEach(u => {
-      if (u.email) emailMap.set(u.email.toLowerCase(), u);
+      if (u.email && !EXCLUDED_EMAILS.includes(u.email.toLowerCase())) {
+        emailMap.set(u.email.toLowerCase(), u);
+      }
     });
+
+    EXCLUDED_EMAILS.forEach(em => emailMap.delete(em));
 
     const finalUsers = Array.from(emailMap.values());
     localStorage.setItem('jbc_local_users', JSON.stringify(finalUsers));
