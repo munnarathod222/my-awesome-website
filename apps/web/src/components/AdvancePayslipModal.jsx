@@ -191,20 +191,23 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   };
 
   const handlePrint = () => {
-    const elem = document.getElementById('payslip-preview-content');
-    if (!elem) {
-      window.print();
-      return;
-    }
+    setActiveTab('preview');
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
+    setTimeout(() => {
+      const elem = document.getElementById('payslip-preview-content');
+      if (!elem) {
+        window.print();
+        return;
+      }
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
 
     // Extract all page styles (Tailwind, Google Fonts, inline stylesheets)
     const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
@@ -215,9 +218,14 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     doc.open();
     doc.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="${language}">
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Jai Bhavani Cargo - Payslip Statement</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
           ${styleTags}
           <style>
             @page {
@@ -228,6 +236,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
               box-sizing: border-box !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+              font-family: 'Noto Sans', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif !important;
             }
             html, body {
               width: 100% !important;
@@ -265,15 +274,16 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     `);
     doc.close();
 
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
       setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 1000);
-    }, 350);
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 350);
+    }, 150);
   };
 
   // Listen to keyboard shortcuts
