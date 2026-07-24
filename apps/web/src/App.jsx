@@ -193,13 +193,13 @@ function App() {
                   <Route path="/driver/inspection" element={<ProtectedRoute><RoadsideInspectionPage /></ProtectedRoute>} />
                   
                   {/* Analytics */}
-                  <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><AnalyticsHub /></ProtectedRoute>} />
-                  <Route path="/vehicle-tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><VehicleTCOPage /></ProtectedRoute>} />
-                  <Route path="/tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><VehicleTCOPage /></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><AnalyticsHub /></ProtectedRoute>} />
+                  <Route path="/vehicle-tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
+                  <Route path="/tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><CalendarPage /></ProtectedRoute>} />
-                  <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><LeaderboardPage /></ProtectedRoute>} />
-                  <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
-                  <Route path="/dashboard/trip-overview" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TripOverviewCalculator /></ProtectedRoute>} />
+                  <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><LeaderboardPage /></ProtectedRoute>} />
+                  <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/trip-overview" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><TripOverviewCalculator /></ProtectedRoute>} />
                   
                   {/* Superuser & Admin only security routes */}
                   <Route path="/dashboard/users" element={<ProtectedRoute allowedRoles={['superuser', 'super_admin', 'admin']}><UsersPage /></ProtectedRoute>} />
@@ -225,25 +225,27 @@ function App() {
                   <Route path="/inventory/deductions" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><DeductionHistoryPage /></ProtectedRoute>} />
                   <Route path="/inventory/reports" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><InventoryReportsPage /></ProtectedRoute>} />
                   
-                  {/* Client Management System */}
-                  <Route path="/client-portal" element={<ProtectedRoute><ClientPortalPage /></ProtectedRoute>} />
-                  <Route path="/clients" element={<ProtectedRoute><ClientsListPage /></ProtectedRoute>} />
-                  <Route path="/clients/new" element={<ProtectedRoute><ClientFormPage /></ProtectedRoute>} />
-                  <Route path="/clients/dashboard" element={<ProtectedRoute><ClientDashboardPage /></ProtectedRoute>} />
-                  <Route path="/client/:clientId" element={<ProtectedRoute><ClientDetailsPage /></ProtectedRoute>} />
-                  <Route path="/clients/:id/edit" element={<ProtectedRoute><ClientFormPage /></ProtectedRoute>} />
+                  {/* Client Management System - Restricted from Dispatcher */}
+                  <Route path="/client-portal" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'client']}><ClientPortalPage /></ProtectedRoute>} />
+                  <Route path="/clients" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientsListPage /></ProtectedRoute>} />
+                  <Route path="/clients/new" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientFormPage /></ProtectedRoute>} />
+                  <Route path="/clients/dashboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientDashboardPage /></ProtectedRoute>} />
+                  <Route path="/client/:clientId" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientDetailsPage /></ProtectedRoute>} />
+                  <Route path="/clients/:id/edit" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientFormPage /></ProtectedRoute>} />
   
                   {/* Operations */}
                   <Route path="/trip-logs" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TripLogsPage /></ProtectedRoute>} />
-                  <Route path="/payment-requests" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PaymentRequestsPage /></ProtectedRoute>} />
+                  <Route path="/payment-requests" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><PaymentRequestsPage /></ProtectedRoute>} />
                   <Route path="/dashboard/shipments" element={<Navigate to="/trip-logs" replace />} />
                   <Route path="/dashboard/delivery-proof" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><DeliveryProofUploadPage /></ProtectedRoute>} />
                   <Route path="/pod-management" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PODManagementPage /></ProtectedRoute>} />
                   <Route path="/exit-audit" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExitAuditPage /></ProtectedRoute>} />
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
                   
-                  {/* Cashbook */}
-                  <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><CashbookPage /></ProtectedRoute>} />
+                  {/* Cashbook & Financials - Restricted from Dispatcher */}
+                  <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
+                  <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ExpensesPage /></ProtectedRoute>} />
+                  <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><FASTagManagerPage /></ProtectedRoute>} />
                   <Route path="/dashboard/cashbook" element={<Navigate to="/cashbook" replace />} />
                   
                   <Route path="/quotes-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><QuotesManagerPage /></ProtectedRoute>} />

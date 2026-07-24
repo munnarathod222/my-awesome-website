@@ -92,6 +92,7 @@ const formatTripDateShort = (dateVal) => {
 
 const TripLogsPage = () => {
   const { currentUser } = useAuth();
+  const isDispatcher = (currentUser?.role?.toLowerCase() === 'dispatcher') && currentUser?.email?.toLowerCase() !== 'munnarathod222@gmail.com';
   
   const [employees, setEmployees] = useState([]);
   const [trucks, setTrucks] = useState([]);
@@ -643,10 +644,10 @@ const TripLogsPage = () => {
                       <TableHead className="font-semibold text-muted-foreground">Driver & Asset</TableHead>
                       <TableHead className="font-semibold text-muted-foreground">Route Info</TableHead>
                       <TableHead className="text-center font-semibold text-muted-foreground">Trip KMs</TableHead>
-                      <TableHead className="text-right font-semibold text-muted-foreground">Revenue</TableHead>
-                      <TableHead className="text-right font-semibold text-muted-foreground">Advances</TableHead>
+                      {!isDispatcher && <TableHead className="text-right font-semibold text-muted-foreground">Revenue</TableHead>}
+                      {!isDispatcher && <TableHead className="text-right font-semibold text-muted-foreground">Advances</TableHead>}
                       <TableHead className="text-center font-semibold text-muted-foreground">Trip State</TableHead>
-                      <TableHead className="text-center font-semibold text-muted-foreground">Payment</TableHead>
+                      {!isDispatcher && <TableHead className="text-center font-semibold text-muted-foreground">Payment</TableHead>}
                       <TableHead className="text-right pr-6 font-semibold text-muted-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -877,19 +878,23 @@ const TripLogsPage = () => {
                                 }} 
                               />
                             </TableCell>
-                            <TableCell className="text-right text-sm font-bold text-foreground">
-                              {formatCurrency(log.revenue)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex flex-col items-end gap-1">
-                                <span className="text-xs font-medium text-success bg-success/10 px-1.5 py-0.5 rounded" title="Received from Client">
-                                  +{log.advance_received_from_client > 0 ? formatCurrency(log.advance_received_from_client) : '0'}
-                                </span>
-                                <span className="text-xs font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded" title="Paid to Driver">
-                                  -{log.advance_paid_to_driver > 0 ? formatCurrency(log.advance_paid_to_driver) : '0'}
-                                </span>
-                              </div>
-                            </TableCell>
+                            {!isDispatcher && (
+                              <TableCell className="text-right text-sm font-bold text-foreground">
+                                {formatCurrency(log.revenue)}
+                              </TableCell>
+                            )}
+                            {!isDispatcher && (
+                              <TableCell className="text-right">
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="text-xs font-medium text-success bg-success/10 px-1.5 py-0.5 rounded" title="Received from Client">
+                                    +{log.advance_received_from_client > 0 ? formatCurrency(log.advance_received_from_client) : '0'}
+                                  </span>
+                                  <span className="text-xs font-medium text-warning bg-warning/10 px-1.5 py-0.5 rounded" title="Paid to Driver">
+                                    -{log.advance_paid_to_driver > 0 ? formatCurrency(log.advance_paid_to_driver) : '0'}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="text-center">
                               <Select
                                 value={log.trip_status || 'Upcoming'}
@@ -901,7 +906,7 @@ const TripLogsPage = () => {
                                       await deductFastagForTrip(log);
                                     }
                                     toast.success(`Trip status updated to ${newStatus} & FASTag balance adjusted`);
-                                    if (newStatus === 'Delivered') {
+                                    if (newStatus === 'Delivered' && !isDispatcher) {
                                       setPaymentRequestTrip(log);
                                     }
                                     fetchData();
@@ -926,17 +931,19 @@ const TripLogsPage = () => {
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell className="text-center">
-                              <span className={cn(
-                                "inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border shadow-sm",
-                                log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
-                                log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
-                                log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
-                                'bg-muted text-muted-foreground border-border/50'
-                              )}>
-                                {log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'UNSET')}
-                              </span>
-                            </TableCell>
+                            {!isDispatcher && (
+                              <TableCell className="text-center">
+                                <span className={cn(
+                                  "inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border shadow-sm",
+                                  log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
+                                  log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
+                                  log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
+                                  'bg-muted text-muted-foreground border-border/50'
+                                )}>
+                                  {log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'UNSET')}
+                                </span>
+                              </TableCell>
+                            )}
                             <TableCell className="text-right pr-6">
                               <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button 

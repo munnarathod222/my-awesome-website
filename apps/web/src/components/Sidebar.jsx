@@ -86,12 +86,12 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       title: 'Overview',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: BarChart3,       label: 'Analytics',      path: '/analytics',               roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: Calculator,      label: 'Vehicle TCO',    path: '/vehicle-tco',             roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: BarChart3,       label: 'Analytics',      path: '/analytics',               roles: ['super_admin','admin','manager'] },
+        { icon: Calculator,      label: 'Vehicle TCO',    path: '/vehicle-tco',             roles: ['super_admin','admin','manager'] },
         { icon: CalendarDays,    label: 'Calendar',       path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: Trophy,          label: 'Leaderboard',    path: '/leaderboard',             roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: PieChart,        label: 'Client Analysis',path: '/client-analysis',         roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: TrendingUp,      label: 'Trip Overview',  path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Trophy,          label: 'Leaderboard',    path: '/leaderboard',             roles: ['super_admin','admin','manager'] },
+        { icon: PieChart,        label: 'Client Analysis',path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
+        { icon: TrendingUp,      label: 'Trip Overview',  path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager'] },
         { icon: Bell,            label: 'Reminders',      path: '/reminders',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: CheckSquare,     label: 'To-Do List',     path: '/todo',                    roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
@@ -100,13 +100,13 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Finance',
       items: [
-        { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: CreditCard,           label: 'FASTag Management', path: '/fastag',           roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: MessageSquareWarning, label: 'Payment Requests', path: '/payment-requests', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager'] },
+        { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager'] },
+        { icon: CreditCard,           label: 'FASTag Management', path: '/fastag',           roles: ['super_admin','admin','manager'] },
+        { icon: MessageSquareWarning, label: 'Payment Requests', path: '/payment-requests', roles: ['super_admin','admin','manager'] },
         { icon: CreditCard,           label: 'Credit Cards',     path: '/credit-cards',     roles: ['super_admin','admin'] },
         { icon: FileText,             label: 'Payroll',          path: '/payroll',          roles: ['super_admin','admin'] },
-        { icon: Calculator,           label: 'EMI Calculator',   path: '/emi-calculator',   roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Calculator,           label: 'EMI Calculator',   path: '/emi-calculator',   roles: ['super_admin','admin','manager'] },
       ]
     },
     {
@@ -116,7 +116,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: FileBox,      label: 'Vehicle Docs',  path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
         { icon: Users,        label: 'Employees',     path: '/employees',            roles: ['super_admin','admin','manager','supervisor'] },
         { icon: FileBox,      label: 'Employee Docs', path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
-        { icon: CalendarDays, label: 'Attendance',    path: '/dashboard/attendance', roles: ['super_admin','admin','manager','supervisor'] },
+        { icon: CalendarDays, label: 'Attendance',    path: '/dashboard/attendance', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     {
@@ -129,7 +129,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       title: 'Directory',
       items: [
         { icon: Contact2, label: 'Contacts', path: '/contacts', roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: Users,    label: 'Clients',  path: '/clients',  roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Users,    label: 'Clients',  path: '/clients',  roles: ['super_admin','admin','manager'] },
       ]
     },
     {
