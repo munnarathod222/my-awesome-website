@@ -7,6 +7,8 @@ import { formatMapUrl } from './locationUtils.js';
 export function getPastedMapUrl(contact) {
   if (!contact) return '';
 
+  const fallbackLocation = [contact.company_name, contact.physical_address].filter(Boolean).join(', ');
+
   const explicitFields = [
     contact.google_maps_url,
     contact.google_map_link,
@@ -22,7 +24,7 @@ export function getPastedMapUrl(contact) {
 
   for (const val of explicitFields) {
     if (val && typeof val === 'string' && val.trim()) {
-      const formatted = formatMapUrl(val, contact.physical_address || contact.company_name);
+      const formatted = formatMapUrl(val, fallbackLocation);
       if (formatted) return formatted;
     }
   }
@@ -34,18 +36,15 @@ export function getPastedMapUrl(contact) {
       if (val.includes('maps') || val.includes('goo.gl')) {
         const urlMatch = val.match(/(https?:\/\/[^\s]+|maps\.app\.goo\.gl[^\s]+|goo\.gl\/maps[^\s]+|google\.com\/maps[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s]+)/i);
         if (urlMatch) {
-          return formatMapUrl(urlMatch[1], contact.physical_address || contact.company_name);
+          return formatMapUrl(urlMatch[1], fallbackLocation);
         }
       }
     }
   }
 
-  // Fallback scan on physical_address or notes
-  if (contact.physical_address) {
-    return formatMapUrl(contact.physical_address, contact.company_name);
-  }
-  if (contact.company_name) {
-    return formatMapUrl('', contact.company_name);
+  // Fallback scan on physical_address or company_name
+  if (fallbackLocation) {
+    return formatMapUrl('', fallbackLocation);
   }
 
   return '';
