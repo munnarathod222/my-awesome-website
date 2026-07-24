@@ -611,15 +611,15 @@ const UsersPage = () => {
               </TabsContent>
 
               <TabsContent value="roles" className="m-0 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {['admin', 'manager', 'dispatcher'].map(role => {
-                    const roleUsers = users.filter(u => u.role === role);
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {['admin', 'manager', 'dispatcher', 'supervisor', 'client'].map(role => {
+                    const roleUsers = combinedUsers.filter(u => (u.role || '').toLowerCase() === role.toLowerCase());
                     return (
                       <Card key={role} className="border-border shadow-sm bg-card">
                         <CardHeader className="pb-3 border-b border-border/50">
                           <div className="flex justify-between items-center">
                             <CardTitle className="capitalize text-lg">{role}</CardTitle>
-                            <Badge variant="secondary">{roleUsers.length}</Badge>
+                            <Badge variant="secondary" className="font-bold">{roleUsers.length}</Badge>
                           </div>
                         </CardHeader>
                         <CardContent className="p-4 pt-4">
@@ -630,10 +630,10 @@ const UsersPage = () => {
                               {roleUsers.slice(0, 5).map(u => (
                                 <div key={u.id} className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                                    {u.full_name?.[0]?.toUpperCase() || 'U'}
+                                    {(u.full_name || u.name || u.email)?.[0]?.toUpperCase() || 'U'}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate">{u.full_name}</p>
+                                    <p className="text-sm font-medium truncate">{u.full_name || u.name || 'Unnamed'}</p>
                                     <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                                   </div>
                                 </div>
