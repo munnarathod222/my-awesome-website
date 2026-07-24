@@ -17,6 +17,7 @@ import AdvancePayslipModal from '@/components/AdvancePayslipModal.jsx';
 import AdvanceHistoryModal from '@/components/AdvanceHistoryModal.jsx';
 import PayrollGenerationModal from '@/components/PayrollGenerationModal.jsx';
 import { useAdvanceSyncStatus } from '@/hooks/useAdvanceSyncStatus.js';
+import { calculateCyclePayroll } from '@/lib/payrollCycleUtils.js';
 import { format } from 'date-fns';
 
 const PayrollPage = () => {
@@ -94,41 +95,28 @@ const PayrollPage = () => {
 
   const getCalculatedPayroll = () => {
     const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-    const totalWorkingDays = new Date(currentYear, currentMonth, 0).getDate();
-
-    const startStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-    const endStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(totalWorkingDays).padStart(2, '0')}`;
 
     return employees.map(emp => {
-      const empAtts = attendanceRecords.filter(r => 
-        r.staff_member === emp.id && 
-        r.date >= `${startStr} 00:00:00` && 
-        r.date <= `${endStr} 23:59:59`
-      );
+      const calc = calculateCyclePayroll(emp, attendanceRecords, advances, currentDate);
 
-      const presentDays = empAtts.filter(r => r.status?.toLowerCase() === 'present' || r.status?.toLowerCase() === 'work from home').length + 
-                          (empAtts.filter(r => r.status?.toLowerCase() === 'half day').length * 0.5);
-
-      const empAdvances = advances.filter(a => a.employee_id === emp.id && a.status === 'Pending');
-      const totalAdvances = empAdvances.reduce((sum, a) => sum + (Number(a.remaining_balance ?? a.amount) || 0), 0);
-      
-      const baseSalary = Number(emp.salary_amount || emp.base_salary) || 0;
-      const grossSalary = baseSalary * (totalWorkingDays > 0 ? presentDays / totalWorkingDays : 0);
-      const taxes = grossSalary * 0.10;
-      const netPayout = grossSalary - taxes - totalAdvances;
-
-      const empPayments = payments.filter(p => p.employee_id === emp.id && p.payroll_month === currentMonth && p.payroll_year === currentYear);
+      const empPayments = payments.filter(p => p.employee_id === emp.id && p.payroll_month === (currentDate.getMonth() + 1) && p.payroll_year === currentDate.getFullYear());
       const isSettled = empPayments.length > 0 && empPayments[0].payment_status === 'paid';
 
       return {
         ...emp,
-        baseSalary,
-        presentDays,
-        totalWorkingDays,
-        totalAdvances,
-        netPayout: parseFloat(netPayout.toFixed(2)),
+        baseSalary: calc.baseSalary,
+        adjustedBaseSalary: calc.adjustedBaseSalary,
+        presentDays: calc.presentDays,
+        totalWorkingDays: calc.totalWorkingDays,
+        activeDays: calc.activeDays,
+        totalAdvances: calc.totalAdvances,
+        grossSalary: calc.grossSalary,
+        taxDeductions: calc.taxDeductions,
+        netPayout: calc.netPayout,
+        payDate: calc.payDate,
+        cycleInfo: calc.cycleInfo,
+        status: calc.status,
+        statusLabel: calc.statusLabel,
         isSettled
       };
     });
@@ -209,9 +197,10 @@ const PayrollPage = () => {
                       <TableRow>
                         <TableHead className="font-semibold py-4 pl-6">Employee Details</TableHead>
                         <TableHead className="font-semibold text-right">Base Salary</TableHead>
-                        <TableHead className="font-semibold text-right">Present / Working Days</TableHead>
-                        <TableHead className="font-semibold text-right">Advances Taken</TableHead>
-                        <TableHead className="font-semibold text-right text-primary font-bold">Net Payout (Current Month)</TableHead>
+                        <TableHead className="font-semibold">Payroll Cycle & Pay Date</TableHead>
+                        <TableHead className="font-semibold text-right">Present / Working</TableHead>
+                        <TableHead className="font-semibold text-right">Advances</TableHead>
+                        <TableHead className="font-semibold text-right text-primary font-bold">Net Payout</TableHead>
                         <TableHead className="font-semibold text-center">Status</TableHead>
                         <TableHead className="font-semibold text-right pr-6">Action</TableHead>
                       </TableRow>
@@ -222,6 +211,8 @@ const PayrollPage = () => {
                           <TableRow key={i}>
                             <TableCell className="pl-6"><Skeleton className="h-10 w-40" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-20 mx-auto" /></TableCell>
@@ -230,17 +221,27 @@ const PayrollPage = () => {
                         ))
                       ) : calculatedPayroll.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">No employees found.</TableCell>
+                          <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">No employees found.</TableCell>
                         </TableRow>
                       ) : (
                         calculatedPayroll.map(emp => (
                           <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors">
                             <TableCell className="py-4 pl-6">
                               <div className="font-medium text-foreground">{emp.name}</div>
-                              <div className="text-sm text-muted-foreground mt-0.5 capitalize">{emp.position || emp.employee_type}</div>
+                              <div className="text-xs text-muted-foreground mt-0.5 capitalize">{emp.position || emp.employee_type} • Joined {emp.joining_date ? emp.joining_date.split(' ')[0] : 'N/A'}</div>
                             </TableCell>
                             <TableCell className="text-right font-medium tabular-nums text-muted-foreground">
                               ₹{emp.baseSalary.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-bold text-xs text-foreground">
+                                  🗓️ {emp.cycleInfo?.formattedCycleRange}
+                                </span>
+                                <span className="text-[11px] font-semibold text-primary">
+                                  💳 Pay Date: {emp.cycleInfo?.formattedPayDate}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell className="text-right font-medium tabular-nums text-muted-foreground">
                               {emp.presentDays} / {emp.totalWorkingDays} days
@@ -254,6 +255,10 @@ const PayrollPage = () => {
                             <TableCell className="text-center">
                               {emp.isSettled ? (
                                 <Badge variant="outline" className="bg-success/10 text-success border-success/20">Settled</Badge>
+                              ) : emp.status === 'due_soon' ? (
+                                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30">Due on {emp.payDate}</Badge>
+                              ) : emp.status === 'overdue' ? (
+                                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">Overdue Pay</Badge>
                               ) : (
                                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">Action Required</Badge>
                               )}

@@ -109,7 +109,8 @@ const EmployeeDatabasePage = () => {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: ''
+    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '',
+    payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10'
   });
 
   // Agreement template state
@@ -319,7 +320,10 @@ const EmployeeDatabasePage = () => {
     setEditingId(employee.id);
     const empNum = employee.employee_number || employee.emp_number || employee.employee_code || `EMP-${String(index + 1).padStart(3, '0')}`;
     setFormData({
-      employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || ''
+      employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || '',
+      payroll_cycle_start_day: employee.payroll_cycle_start_day || '1',
+      payroll_cycle_end_day: employee.payroll_cycle_end_day || '30',
+      salary_disbursement_day: employee.salary_disbursement_day || '10'
     });
     setPhotoFile(null); setRemovePhoto(false);
     setPhotoPreview(employee.photo ? getEmployeePhotoUrl(employee) : null);
@@ -342,7 +346,7 @@ const EmployeeDatabasePage = () => {
   const resetForm = () => {
     setEditingId(null);
     const nextNum = employees.length + 1;
-    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '' });
+    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
     clearPhoto();
     setUploadedDocs([]);
   };
@@ -573,6 +577,73 @@ const EmployeeDatabasePage = () => {
                       </Select>
                     </div>
                   </div>
+
+                  {/* Payroll Cycle & Disbursement Setup */}
+                  <div className="p-5 rounded-2xl bg-muted/20 border border-border/50 space-y-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-primary" /> Payroll Cycle & Salary Processing Rules
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">Define employee billing cycle start/end dates and salary processing window (e.g., 10 days post-month).</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold">1st Date of Cycle (Start Day)</Label>
+                        <Select 
+                          value={String(formData.payroll_cycle_start_day || '1')} 
+                          onValueChange={v => setFormData({...formData, payroll_cycle_start_day: v})}
+                        >
+                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
+                            <SelectValue placeholder="1st Day of Month" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="1">1st of Month (Default)</SelectItem>
+                            <SelectItem value="5">5th of Month</SelectItem>
+                            <SelectItem value="10">10th of Month</SelectItem>
+                            <SelectItem value="15">15th of Month</SelectItem>
+                            <SelectItem value="20">20th of Month</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold">Last Date of Cycle (End Day)</Label>
+                        <Select 
+                          value={String(formData.payroll_cycle_end_day || '30')} 
+                          onValueChange={v => setFormData({...formData, payroll_cycle_end_day: v})}
+                        >
+                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
+                            <SelectValue placeholder="End of Month" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="30">30th / End of Month (Default)</SelectItem>
+                            <SelectItem value="28">28th of Month</SelectItem>
+                            <SelectItem value="31">31st of Month</SelectItem>
+                            <SelectItem value="15">15th of Month</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold">Salary Processing Date</Label>
+                        <Select 
+                          value={String(formData.salary_disbursement_day || '10')} 
+                          onValueChange={v => setFormData({...formData, salary_disbursement_day: v})}
+                        >
+                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
+                            <SelectValue placeholder="10th (10 Days Post-Cycle)" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="10">10th of Month (10 Days After 1 Month Complete)</SelectItem>
+                            <SelectItem value="5">5th of Month (5 Days Post-Cycle)</SelectItem>
+                            <SelectItem value="7">7th of Month (7 Days Post-Cycle)</SelectItem>
+                            <SelectItem value="15">15th of Month (15 Days Post-Cycle)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
                   
                   {/* Documents Section */}
                   <div className="pt-6 border-t border-border space-y-4">
@@ -753,6 +824,9 @@ const EmployeeDatabasePage = () => {
                                       <Route className="w-3 h-3" /> {emp.expand.assigned_routes.route_code}
                                     </Badge>
                                   )}
+                                  <Badge variant="outline" className="font-normal text-[10px] text-indigo-400 border-indigo-500/30 bg-indigo-500/5">
+                                    🗓️ Cycle: Day {emp.payroll_cycle_start_day || 1}-{emp.payroll_cycle_end_day || 30} (Pay on {emp.salary_disbursement_day || 10}th)
+                                  </Badge>
                                 </div>
                               </TableCell>
                               <TableCell className="text-muted-foreground">{formatDateSafe(emp.joining_date) || '-'}</TableCell>
