@@ -191,7 +191,11 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         <div className="flex-1 overflow-y-auto overflow-x-hidden py-2 hide-scrollbar">
           <nav className="px-2 space-y-3.5">
             {menuGroups.map((group, idx) => {
-              const visibleItems = group.items.filter(item => item.roles.includes(role));
+              const isMasterSuperuser = currentUser?.email?.toLowerCase() === 'munnarathod222@gmail.com' || role === 'superuser' || role === 'super_admin';
+              const visibleItems = group.items.filter(item => {
+                if (isMasterSuperuser) return true;
+                return item.roles.includes(role);
+              });
               if (visibleItems.length === 0) return null;
               const GroupIcon = GROUP_ICON[group.title] || FileText;
               const groupColor = GROUP_COLOR[group.title] || 'text-muted-foreground';

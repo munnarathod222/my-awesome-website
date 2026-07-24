@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, initialLoading } = useAuth();
+  const { currentUser, isAuthenticated, initialLoading } = useAuth();
   const { role } = useRoleBasedAccess();
   const location = useLocation();
 
@@ -20,8 +20,11 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-    // If user is authenticated but doesn't have the right role, redirect to their dashboard
+  // Master Superuser (munnarathod222@gmail.com) always bypasses role checks
+  const isMasterSuperuser = currentUser?.email?.toLowerCase() === 'munnarathod222@gmail.com' || role === 'superuser' || role === 'super_admin';
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role) && !isMasterSuperuser) {
+    // If user is authenticated but doesn't have the right role, redirect to dashboard
     const redirectPath = (role === 'Client' || role === 'client') ? "/client-portal" : "/dashboard";
     return <Navigate to={redirectPath} replace />;
   }
