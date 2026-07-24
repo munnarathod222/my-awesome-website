@@ -40,6 +40,7 @@ const UsersPage = () => {
   const [savingPermissions, setSavingPermissions] = useState(false);
 
   // State for Signup Requests Tab
+  const [allSignupRequests, setAllSignupRequests] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [requestSearchTerm, setRequestSearchTerm] = useState('');
@@ -96,7 +97,7 @@ const UsersPage = () => {
 
   const handleStatusToggle = async (user) => {
     try {
-      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      const newStatus = user.status === 'inactive' ? 'active' : 'inactive';
       await pb.collection('users').update(user.id, { status: newStatus }, { $autoCancel: false });
       toast.success(`User marked as ${newStatus}`);
       retry();
@@ -202,6 +203,14 @@ const UsersPage = () => {
   const fetchRequests = async () => {
     setLoadingRequests(true);
     try {
+      // 1. Fetch ALL signup requests for master directory without status filter
+      const allRes = await pb.collection('signup_requests').getFullList({
+        sort: '-requested_date',
+        $autoCancel: false
+      }).catch(() => []);
+      setAllSignupRequests(allRes);
+
+      // 2. Filter requests for the Signup Requests tab
       const filters = [`status = "${requestActiveTab}"`];
       if (requestSearchTerm) {
         filters.push(`(email ~ "${requestSearchTerm}" || full_name ~ "${requestSearchTerm}" || company_name ~ "${requestSearchTerm}")`);
@@ -213,23 +222,20 @@ const UsersPage = () => {
         sort: requestSortOrder,
         expand: 'approved_by',
         $autoCancel: false
-      });
+      }).catch(() => ({ items: [] }));
       
       setRequests(res.items);
       fetchCounts();
     } catch (err) {
       console.error("Failed to fetch signup requests", err);
-      if (activeMainTab === 'signup-requests') {
-        toast.error("Failed to load requests.");
-      }
     } finally {
       setLoadingRequests(false);
     }
   };
 
   useEffect(() => {
-    fetchCounts(); // Always fetch counts on mount so badge is accurate
-    fetchRequests(); // Fetch signup requests on mount to merge all pending & created user profiles
+    fetchCounts();
+    fetchRequests();
     
     // Subscribe to real-time users collection updates
     pb.collection('users').subscribe('*', () => {
@@ -251,7 +257,7 @@ const UsersPage = () => {
     }
   }, [requestSearchTerm, requestActiveTab, requestSortOrder, activeMainTab]);
 
-  // Merge remote PocketBase users + signup_requests + local storage created users cache
+  // Merge remote PocketBase users + ALL signup_requests + local storage created users cache
   const combinedUsers = React.useMemo(() => {
     let localUsers = [];
     try {
@@ -259,43 +265,46 @@ const UsersPage = () => {
     } catch (e) {}
 
     const map = new Map();
+
     // 1. Remote PocketBase users
     (users || []).forEach(u => {
       if (u.email) map.set(u.email.toLowerCase(), u);
     });
-    // 2. Signup requests records (e.g. Madhavi, signed up users)
-    (requests || []).forEach(r => {
+
+    // 2. ALL signup requests records (Madhavi, clients, signed up users)
+    (allSignupRequests || []).forEach(r => {
       if (r.email) {
         const key = r.email.toLowerCase();
         if (!map.has(key)) {
           map.set(key, {
             id: r.id,
-            name: r.full_name || r.name || 'Unnamed',
-            full_name: r.full_name || r.name || 'Unnamed',
+            name: r.full_name || r.name || 'Unnamed User',
+            full_name: r.full_name || r.name || 'Unnamed User',
             email: r.email,
             phone_number: r.phone_number || r.phone || '',
-            role: r.role || 'manager',
+            role: r.role || 'Fleet Manager',
             status: r.status === 'Rejected' ? 'inactive' : 'active',
             created: r.created || r.requested_date || new Date().toISOString()
           });
         }
       }
     });
-    // 3. Local created users cache
+
+    // 3. Local created users cache (from CreateUserCredentialsModal)
     localUsers.forEach(u => {
       if (u.email) {
         const key = u.email.toLowerCase();
         if (!map.has(key)) {
           map.set(key, u);
         } else {
-          // Merge local properties into existing entry
           const existing = map.get(key);
           map.set(key, { ...existing, ...u });
         }
       }
     });
+
     return Array.from(map.values()).sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
-  }, [users, requests]);
+  }, [users, allSignupRequests]);
 
   const searchedUsers = combinedUsers.filter(u => {
     const q = search.toLowerCase();
@@ -307,7 +316,7 @@ const UsersPage = () => {
 
   const activeUsers = searchedUsers.filter(u => {
     const s = (u.status || '').toLowerCase();
-    return !s || s === 'active' || s === 'approved' || s === 'pending';
+    return s !== 'inactive' && s !== 'rejected' && s !== 'disabled';
   });
 
   const inactiveUsers = searchedUsers.filter(u => {
