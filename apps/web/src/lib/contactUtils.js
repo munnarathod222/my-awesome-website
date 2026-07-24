@@ -3,11 +3,17 @@ import { formatMapUrl } from './locationUtils.js';
 
 /**
  * Extract and normalize Google Maps URL from contact record.
+ * Handles explicit map fields, notes scanning, and fallback address/company generation.
  */
 export function getPastedMapUrl(contact) {
   if (!contact) return '';
 
-  const fallbackLocation = [contact.company_name, contact.physical_address].filter(Boolean).join(', ');
+  const fallbackLocation = [
+    contact.company_name,
+    contact.physical_address,
+    contact.warehouse_name,
+    contact.designation
+  ].filter(Boolean).join(', ');
 
   const explicitFields = [
     contact.google_maps_url,
@@ -51,14 +57,13 @@ export function getPastedMapUrl(contact) {
 }
 
 /**
- * Format contact details for sharing.
+ * Format contact details for sharing via WhatsApp or Web Share.
  */
 export function formatContactShareText(contact) {
   if (!contact) return '';
 
   let mapsUrl = getPastedMapUrl(contact);
 
-  // If no explicit map URL was pasted in record, generate a direct Google Maps search link from company & address
   if (!mapsUrl && (contact.physical_address || contact.company_name)) {
     const queryParts = [contact.company_name, contact.physical_address].filter(Boolean).join(', ');
     mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParts)}`;
@@ -97,34 +102,35 @@ export async function shareContact(contact) {
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `${contact.company_name} Contact Details`,
-        text: shareText
+        title: contact.company_name || 'Contact Info',
+        text: shareText,
       });
       return;
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error('Web share failed:', err);
+        console.warn('Web Share API failed, falling back to WhatsApp:', err);
+      } else {
+        return;
       }
     }
   }
 
-  // Fallback to WhatsApp share
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-  window.open(whatsappUrl, '_blank');
+  // Fallback to WhatsApp link
+  const encodedText = encodeURIComponent(shareText);
+  window.open(`https://wa.me/?text=${encodedText}`, '_blank');
 }
 
 /**
- * Copy contact details formatted text to clipboard.
+ * Copy contact details to clipboard.
  */
 export async function copyContactDetails(contact) {
   if (!contact) return;
-  const shareText = formatContactShareText(contact);
-
+  const text = formatContactShareText(contact);
   try {
-    await navigator.clipboard.writeText(shareText);
-    toast.success('Contact details copied to clipboard');
+    await navigator.clipboard.writeText(text);
+    toast.success('Contact details copied to clipboard!');
   } catch (err) {
-    console.error('Clipboard copy failed:', err);
-    toast.error('Failed to copy to clipboard');
+    console.error('Failed to copy contact details:', err);
+    toast.error('Failed to copy contact details.');
   }
 }
