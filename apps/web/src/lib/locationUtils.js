@@ -3,57 +3,48 @@
  */
 
 /**
- * Normalizes any pasted map URL, short link, coordinate, or address text into a 100% valid external Google Maps URL.
- * Completely eliminates dead Firebase Dynamic Links (goo.gl/app/maps/..., goo.gl/maps/..., etc.) which throw "Invalid Dynamic Link".
+ * Normalizes any pasted map URL, short link, coordinate, or address text into a valid external Google Maps URL.
+ * Preserves exact pasted URLs (maps.app.goo.gl, google.com/maps, etc.) as requested by the user, while fixing dead legacy goo.gl/app/maps links.
  * 
  * @param {string} urlOrAddress - The map URL, short link, coordinates, or location address.
- * @param {string} [fallbackLocationName=''] - Fallback location name if urlOrAddress is empty or a legacy dead shortlink.
+ * @param {string} [fallbackLocationName=''] - Fallback location name if urlOrAddress is an empty text string.
  * @returns {string} Fully qualified external https:// Google Maps URL.
  */
 export function formatMapUrl(urlOrAddress, fallbackLocationName = '') {
   let raw = (urlOrAddress || '').trim();
   let fallback = (fallbackLocationName || '').trim();
 
-  // 1. Detect ALL shortlinks & legacy Firebase Dynamic Links (goo.gl/app/maps, goo.gl/maps, goo.gl, page.link, etc.)
-  const isShortlinkOrDynamicLink = 
-    /goo\.gl/i.test(raw) || 
-    /page\.link/i.test(raw) || 
-    /g\.co\/maps/i.test(raw);
-
-  if (isShortlinkOrDynamicLink) {
-    // CRITICAL: Never pass or open goo.gl / shortlinks directly because Firebase Dynamic Links service was shut down by Google and returns "Invalid Dynamic Link".
-    // Convert to direct Google Maps search query URL using fallback location name or clean text.
-    let searchQuery = fallback;
-
-    if (!searchQuery) {
-      const cleanRaw = raw
-        .replace(/https?:\/\/[^\s]+/i, '')
-        .replace(/[^\w\s,.-]/gi, ' ')
-        .trim();
-      searchQuery = cleanRaw || 'Jai Bhavani Cargo Location';
-    }
-
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
-  }
-
   if (!raw && !fallback) return '';
 
-  // 2. Full valid HTTP/HTTPS URLs (e.g. https://www.google.com/maps/place/... or https://maps.google.com/...):
+  // 1. If it's already a full HTTP/HTTPS URL, open the EXACT pasted link directly!
   if (/^https?:\/\//i.test(raw)) {
+    // Only fix legacy broken "goo.gl/app/maps/" links that trigger Firebase errors
+    if (/goo\.gl\/app\/maps/i.test(raw)) {
+      if (fallback) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fallback)}`;
+      }
+      return raw.replace(/goo\.gl\/app\/maps/i, 'maps.google.com/maps');
+    }
     return raw;
   }
 
-  // 3. Common map domains missing https://:
-  if (/^(maps\.google|www\.google\.com\/maps|google\.com\/maps|waze\.com|maps\.apple\.com)/i.test(raw)) {
+  // 2. If it starts with common map domains missing https:// (e.g. maps.app.goo.gl/..., goo.gl/maps/..., google.com/maps/...)
+  if (/^(maps\.app\.goo\.gl|goo\.gl|maps\.google|www\.google\.com\/maps|google\.com\/maps|waze\.com|maps\.apple\.com)/i.test(raw)) {
+    if (/goo\.gl\/app\/maps/i.test(raw)) {
+      if (fallback) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fallback)}`;
+      }
+      return `https://${raw.replace(/goo\.gl\/app\/maps/i, 'maps.google.com/maps')}`;
+    }
     return `https://${raw}`;
   }
 
-  // 4. Latitude,Longitude coordinates (e.g. "17.445, 78.685"):
+  // 3. Latitude,Longitude coordinates (e.g. "17.445, 78.685"):
   if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(raw)) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
   }
 
-  // 5. Generic address or location name:
+  // 4. Plain text address or location name:
   const query = raw || fallback;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
