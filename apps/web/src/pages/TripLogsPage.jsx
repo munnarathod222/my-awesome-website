@@ -24,6 +24,7 @@ import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
+import { formatMapUrl } from '@/lib/locationUtils.js';
 import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor } from '@/lib/tripStatusUtils.js';
 import { motion } from 'framer-motion';
 
@@ -815,7 +816,7 @@ const TripLogsPage = () => {
                                       </span>
                                       {routeRec?.google_map_link && (
                                         <a
-                                          href={routeRec.google_map_link}
+                                          href={formatMapUrl(routeRec.google_map_link, log.route || 'Trip Route')}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           onClick={e => e.stopPropagation()}
@@ -844,7 +845,7 @@ const TripLogsPage = () => {
                                             )}
                                             {loc.mapLink ? (
                                               <a
-                                                href={loc.mapLink}
+                                                href={formatMapUrl(loc.mapLink, loc.name)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}

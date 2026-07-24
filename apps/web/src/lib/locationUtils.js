@@ -4,51 +4,56 @@
 
 /**
  * Normalizes any pasted map URL, short link, coordinate, or address text into a 100% valid external Google Maps URL.
- * Completely eliminates dead Firebase Dynamic Links (goo.gl/app/maps/...) which throw "Invalid Dynamic Link".
+ * Completely eliminates dead Firebase Dynamic Links (goo.gl/app/maps/..., goo.gl/maps/..., etc.) which throw "Invalid Dynamic Link".
  * 
  * @param {string} urlOrAddress - The map URL, short link, coordinates, or location address.
- * @param {string} [fallbackLocationName=''] - Fallback location name if urlOrAddress is empty or a legacy dead link.
+ * @param {string} [fallbackLocationName=''] - Fallback location name if urlOrAddress is empty or a legacy dead shortlink.
  * @returns {string} Fully qualified external https:// Google Maps URL.
  */
 export function formatMapUrl(urlOrAddress, fallbackLocationName = '') {
   let raw = (urlOrAddress || '').trim();
   let fallback = (fallbackLocationName || '').trim();
 
-  // 1. Detect dead Firebase Dynamic Links (e.g. goo.gl/app/maps/... or goo.gl/maps/...)
-  const isLegacyFirebaseDynamicLink = /goo\.gl\/app\/maps/i.test(raw) || /goo\.gl\/maps/i.test(raw) || /page\.link\/maps/i.test(raw);
+  // 1. Detect ALL shortlinks & legacy Firebase Dynamic Links (goo.gl/app/maps, goo.gl/maps, goo.gl, page.link, etc.)
+  const isShortlinkOrDynamicLink = 
+    /goo\.gl/i.test(raw) || 
+    /page\.link/i.test(raw) || 
+    /g\.co\/maps/i.test(raw);
 
-  if (isLegacyFirebaseDynamicLink) {
-    // CRITICAL: Never redirect or pass goo.gl/app/maps to Google Maps search as Google Maps will resolve the shortlink and hit Firebase's dead "Invalid Dynamic Link" page.
-    const searchQuery = fallback || 'Jai Bhavani Cargo Location';
+  if (isShortlinkOrDynamicLink) {
+    // CRITICAL: Never pass or open goo.gl / shortlinks directly because Firebase Dynamic Links service was shut down by Google and returns "Invalid Dynamic Link".
+    // Convert to direct Google Maps search query URL using fallback location name or clean text.
+    let searchQuery = fallback;
+
+    if (!searchQuery) {
+      const cleanRaw = raw
+        .replace(/https?:\/\/[^\s]+/i, '')
+        .replace(/[^\w\s,.-]/gi, ' ')
+        .trim();
+      searchQuery = cleanRaw || 'Jai Bhavani Cargo Location';
+    }
+
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
   }
 
   if (!raw && !fallback) return '';
 
-  // 2. Modern valid Google Maps app share links (e.g. maps.app.goo.gl/XYZ):
-  if (/^https?:\/\/maps\.app\.goo\.gl/i.test(raw)) {
-    return raw;
-  }
-  if (/^maps\.app\.goo\.gl/i.test(raw)) {
-    return `https://${raw}`;
-  }
-
-  // 3. Full valid HTTP/HTTPS URLs (excluding dead goo.gl links):
+  // 2. Full valid HTTP/HTTPS URLs (e.g. https://www.google.com/maps/place/... or https://maps.google.com/...):
   if (/^https?:\/\//i.test(raw)) {
     return raw;
   }
 
-  // 4. Common map domains missing https://:
+  // 3. Common map domains missing https://:
   if (/^(maps\.google|www\.google\.com\/maps|google\.com\/maps|waze\.com|maps\.apple\.com)/i.test(raw)) {
     return `https://${raw}`;
   }
 
-  // 5. Latitude,Longitude coordinates (e.g. "17.445, 78.685"):
+  // 4. Latitude,Longitude coordinates (e.g. "17.445, 78.685"):
   if (/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(raw)) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
   }
 
-  // 6. Generic address or location name:
+  // 5. Generic address or location name:
   const query = raw || fallback;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
