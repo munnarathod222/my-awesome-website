@@ -353,7 +353,13 @@ const UsersPage = () => {
       }
     });
 
-    return Array.from(map.values()).sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+    // Exclude Superusers from the User Directory as explicitly requested
+    const nonSuperUsers = Array.from(map.values()).filter(u => {
+      const r = (u.role || '').toLowerCase();
+      return r !== 'superuser' && r !== 'superadmin';
+    });
+
+    return nonSuperUsers.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
   }, [users, allSignupRequests, localUsersList]);
 
   const searchedUsers = combinedUsers.filter(u => {
