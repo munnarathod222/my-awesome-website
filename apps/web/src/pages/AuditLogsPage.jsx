@@ -14,6 +14,8 @@ import { getLocalAuditLogs } from '@/lib/auditLogger.js';
 import { downloadFile, generatePDF, generateExcel } from '@/lib/downloadUtils.js';
 import { cn } from '@/lib/utils.js';
 
+import { useAuth } from '@/contexts/AuthContext.jsx';
+
 const ACTION_COLORS = {
   CREATE: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
   UPDATE: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -23,6 +25,9 @@ const ACTION_COLORS = {
 };
 
 export default function AuditLogsPage() {
+  const { currentUser } = useAuth();
+  const isSuperUser = currentUser?.role === 'superuser' || currentUser?.role === 'super_admin' || currentUser?.email === 'munnarathod222@gmail.com';
+
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -159,6 +164,25 @@ export default function AuditLogsPage() {
       setIsExportingExcel(false);
     }
   };
+
+  if (!isSuperUser) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-3xl flex items-center justify-center border border-rose-500/20 shadow-xl">
+          <ShieldAlert className="w-10 h-10 animate-pulse" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-extrabold text-foreground">Superuser Access Restricted</h2>
+          <p className="text-muted-foreground max-w-md mx-auto text-sm">
+            System Audit & Anti-Scam Security Logs are strictly protected and accessible exclusively by the Master Superuser (<span className="font-semibold text-foreground">munnarathod222@gmail.com</span>).
+          </p>
+        </div>
+        <Button asChild className="rounded-xl font-bold px-6">
+          <a href="/dashboard">Return to Dashboard</a>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

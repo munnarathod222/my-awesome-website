@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
+import { logAuditEvent } from '@/lib/auditLogger.js';
 import { toast } from 'sonner';
 import ExpenseFilters from '@/components/ExpenseFilters.jsx';
 import ExpenseModal from '@/components/ExpenseModal.jsx';
@@ -197,6 +198,12 @@ const ExpensesPage = () => {
     setProcessingAdvanceId(id);
     try {
       await AdvanceIntegrationService.updateAdvanceStatus(id, 'Settled', 'Marked settled from Expenses ledger');
+      logAuditEvent({
+        action: 'STATUS_CHANGE',
+        module: 'Expenses',
+        recordId: id,
+        details: `Marked Advance ${id} as Settled`
+      });
       toast.success('Advance marked as settled');
       setRefreshTrigger(p => p + 1);
     } catch (err) {
@@ -210,6 +217,12 @@ const ExpensesPage = () => {
     if (!window.confirm('Are you sure you want to delete this advance?')) return;
     try {
       await pb.collection('advances').delete(id, { $autoCancel: false });
+      logAuditEvent({
+        action: 'DELETE',
+        module: 'Expenses',
+        recordId: id,
+        details: `Deleted Advance transaction ${id}`
+      });
       toast.success('Advance deleted successfully');
       setSelectedAdvanceIds(prev => { const next = new Set(prev); next.delete(id); return next; });
       setRefreshTrigger(p => p + 1);

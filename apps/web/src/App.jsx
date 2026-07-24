@@ -201,10 +201,10 @@ function App() {
                   <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
                   <Route path="/dashboard/trip-overview" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TripOverviewCalculator /></ProtectedRoute>} />
                   
-                  {/* Admin/Super Admin only routes */}
-                  <Route path="/dashboard/users" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><UsersPage /></ProtectedRoute>} />
-                  <Route path="/dashboard/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
-                  <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
+                  {/* Superuser & Admin only security routes */}
+                  <Route path="/dashboard/users" element={<ProtectedRoute allowedRoles={['superuser', 'super_admin', 'admin']}><UsersPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/audit-logs" element={<ProtectedRoute allowedRoles={['superuser', 'super_admin']}><AuditLogsPage /></ProtectedRoute>} />
+                  <Route path="/audit-logs" element={<ProtectedRoute allowedRoles={['superuser', 'super_admin']}><AuditLogsPage /></ProtectedRoute>} />
                   <Route path="/dashboard/requests" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminSignupRequestsPage /></ProtectedRoute>} />
                   
                   {/* Truck & Tyre Management */}
