@@ -229,10 +229,12 @@ const UsersPage = () => {
 
   useEffect(() => {
     fetchCounts(); // Always fetch counts on mount so badge is accurate
+    fetchRequests(); // Fetch signup requests on mount to merge all pending & created user profiles
     
     // Subscribe to real-time users collection updates
     pb.collection('users').subscribe('*', () => {
       retry();
+      fetchRequests();
     }).catch(err => console.log('Users subscription notice:', err));
 
     return () => {
@@ -249,7 +251,7 @@ const UsersPage = () => {
     }
   }, [requestSearchTerm, requestActiveTab, requestSortOrder, activeMainTab]);
 
-  // Merge remote PocketBase users with local storage created users cache
+  // Merge remote PocketBase users + signup_requests + local storage created users cache
   const combinedUsers = React.useMemo(() => {
     let localUsers = [];
     try {
@@ -257,21 +259,43 @@ const UsersPage = () => {
     } catch (e) {}
 
     const map = new Map();
-    // 1. Remote PocketBase users first
+    // 1. Remote PocketBase users
     (users || []).forEach(u => {
       if (u.email) map.set(u.email.toLowerCase(), u);
     });
-    // 2. Local created users second (if not in remote map or to complement)
+    // 2. Signup requests records (e.g. Madhavi, signed up users)
+    (requests || []).forEach(r => {
+      if (r.email) {
+        const key = r.email.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            id: r.id,
+            name: r.full_name || r.name || 'Unnamed',
+            full_name: r.full_name || r.name || 'Unnamed',
+            email: r.email,
+            phone_number: r.phone_number || r.phone || '',
+            role: r.role || 'manager',
+            status: r.status === 'Rejected' ? 'inactive' : 'active',
+            created: r.created || r.requested_date || new Date().toISOString()
+          });
+        }
+      }
+    });
+    // 3. Local created users cache
     localUsers.forEach(u => {
       if (u.email) {
         const key = u.email.toLowerCase();
         if (!map.has(key)) {
           map.set(key, u);
+        } else {
+          // Merge local properties into existing entry
+          const existing = map.get(key);
+          map.set(key, { ...existing, ...u });
         }
       }
     });
     return Array.from(map.values()).sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
-  }, [users]);
+  }, [users, requests]);
 
   const searchedUsers = combinedUsers.filter(u => {
     const q = search.toLowerCase();
