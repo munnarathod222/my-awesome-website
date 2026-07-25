@@ -1121,17 +1121,17 @@ const EmployeeDatabasePage = () => {
                     {/* Desktop Table View (Hidden on mobile) */}
                     <div className="hidden md:block overflow-x-auto">
                       <Table>
-                        <TableHeader className="bg-muted/30">
-                          <TableRow>
-                            <TableHead className="w-[80px]">Photo</TableHead>
-                            <TableHead className="w-[100px]">EMP ID</TableHead>
-                            <TableHead>Employee Profile</TableHead>
-                            <TableHead>Joining Date</TableHead>
+                        <TableHeader className="bg-muted/40">
+                          <TableRow className="border-b border-border/60">
+                            <TableHead className="w-[60px] pl-4">Photo</TableHead>
+                            <TableHead className="min-w-[180px]">Employee Profile</TableHead>
+                            <TableHead className="min-w-[220px]">Assigned Truck & Routes</TableHead>
+                            <TableHead className="min-w-[160px]">Salary & Cycle</TableHead>
+                            <TableHead className="whitespace-nowrap">Joining Date</TableHead>
                             <TableHead>Contact Info</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Attendance</TableHead>
-                            <TableHead>Salary</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right pr-4">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1140,82 +1140,132 @@ const EmployeeDatabasePage = () => {
                           ) : employees.map((emp, idx) => {
                             const empCode = emp.employee_number || emp.emp_number || emp.employee_code || `EMP-${String(idx + 1).padStart(3, '0')}`;
                             return (
-                              <TableRow key={emp.id} className="hover:bg-muted/30">
-                                <TableCell>
-                                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-border shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
-                                    {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-5 h-5 text-muted-foreground/50" />}
+                              <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors border-b border-border/40">
+                                <TableCell className="pl-4 py-3">
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-border/60 shadow-sm bg-muted/50 flex items-center justify-center cursor-pointer hover:border-primary transition-colors" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
+                                    {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-4 h-4 text-muted-foreground/50" />}
                                   </div>
                                 </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 font-mono font-extrabold text-xs px-2 py-0.5 rounded-lg">
-                                    {empCode}
+                                <TableCell className="py-3">
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-foreground text-sm tracking-tight">{emp.name}</span>
+                                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 font-mono font-extrabold text-[10px] px-1.5 py-0 rounded-md">
+                                        {empCode}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex gap-1.5 flex-wrap items-center">
+                                      <Badge variant="secondary" className="font-semibold text-[9px] uppercase tracking-wider px-1.5 py-0 bg-muted/80">{emp.employee_type || 'Staff'}</Badge>
+                                      <Badge variant="outline" className="font-normal text-[9px] uppercase tracking-wider px-1.5 py-0 border-border/60">{emp.employment_type || 'Permanent'}</Badge>
+                                      {emp.education && (
+                                        <Badge variant="outline" className="font-normal text-[9px] text-amber-400 border-amber-500/30 bg-amber-500/5 px-1.5 py-0">
+                                          🎓 {emp.education}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3">
+                                  <div className="flex flex-wrap gap-1.5 items-center max-w-[280px]">
+                                    {emp.expand?.assigned_truck && (
+                                      <Badge variant="outline" className="font-semibold text-[10px] text-primary border-primary/30 bg-primary/10 flex items-center gap-1 py-0.5 px-2 rounded-lg">
+                                        <Truck className="w-3 h-3" /> {emp.expand.assigned_truck.truck_number}
+                                      </Badge>
+                                    )}
+                                    {(() => {
+                                      const rel = emp.expand?.assigned_routes;
+                                      const routeList = Array.isArray(rel) ? rel : (rel ? [rel] : []);
+                                      if (!emp.expand?.assigned_truck && routeList.length === 0) {
+                                        return <span className="text-xs text-muted-foreground italic">None</span>;
+                                      }
+                                      return routeList.map((r, rIdx) => (
+                                        <Badge 
+                                          key={r.id || rIdx} 
+                                          variant="outline" 
+                                          className="font-medium text-[10px] text-emerald-400 border-emerald-500/30 bg-emerald-500/10 flex items-center gap-1 py-0.5 px-2 rounded-lg truncate max-w-[170px]"
+                                          title={`${r.route_code} (${r.start_location} → ${r.end_location})`}
+                                        >
+                                          <Route className="w-3 h-3 flex-shrink-0 text-emerald-400" /> 
+                                          <span className="truncate">{r.route_code}</span>
+                                        </Badge>
+                                      ));
+                                    })()}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="font-bold text-foreground text-sm">
+                                      {emp.salary_amount ? `₹${emp.salary_amount.toLocaleString('en-IN')}` : '-'}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                                      <span>🗓️ Cycle:</span> Day {emp.payroll_cycle_start_day || 1}-{emp.payroll_cycle_end_day || 30} (Pay on {emp.salary_disbursement_day || 10}th)
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3 text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatDateSafe(emp.joining_date) || '-'}
+                                </TableCell>
+                                <TableCell className="py-3 text-xs">
+                                  <div className="font-medium text-foreground">{emp.contact || '-'}</div>
+                                  {emp.emergency_contact && <div className="text-[10px] text-muted-foreground">Alt: {emp.emergency_contact}</div>}
+                                </TableCell>
+                                <TableCell className="py-3">
+                                  <Badge 
+                                    variant={emp.active_status === 'active' ? 'success' : 'secondary'} 
+                                    className="capitalize text-[10px] px-2 py-0.5 rounded-md font-semibold"
+                                  >
+                                    {emp.active_status || 'active'}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="font-medium">
-                                <span className="truncate max-w-[150px] block font-semibold">{emp.name}</span>
-                                <div className="flex gap-1.5 flex-wrap items-center mt-1">
-                                  <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employee_type || 'Staff'}</Badge>
-                                  <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider">{emp.employment_type || 'Permanent'}</Badge>
-                                  {emp.education && (
-                                    <Badge variant="outline" className="font-normal text-[10px] text-amber-500 border-amber-500/30 bg-amber-500/5">
-                                      🎓 {emp.education}
-                                    </Badge>
-                                  )}
-                                  {emp.expand?.assigned_truck && (
-                                    <Badge variant="outline" className="font-normal text-[10px] text-primary border-primary/30 bg-primary/5 flex items-center gap-1">
-                                      <Truck className="w-3 h-3" /> {emp.expand.assigned_truck.truck_number}
-                                    </Badge>
-                                  )}
-                                  {(() => {
-                                     const rel = emp.expand?.assigned_routes;
-                                     const routeList = Array.isArray(rel) ? rel : (rel ? [rel] : []);
-                                     return routeList.map((r, rIdx) => (
-                                       <Badge key={r.id || rIdx} variant="outline" className="font-normal text-[10px] text-success border-success/30 bg-success/5 flex items-center gap-1">
-                                         <Route className="w-3 h-3" /> {r.route_code}
-                                       </Badge>
-                                     ));
-                                   })()}
-                                  <Badge variant="outline" className="font-normal text-[10px] text-indigo-400 border-indigo-500/30 bg-indigo-500/5">
-                                    🗓️ Cycle: Day {emp.payroll_cycle_start_day || 1}-{emp.payroll_cycle_end_day || 30} (Pay on {emp.salary_disbursement_day || 10}th)
-                                  </Badge>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">{formatDateSafe(emp.joining_date) || '-'}</TableCell>
-                              <TableCell className="text-muted-foreground">{emp.contact}</TableCell>
-                              <TableCell>
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${emp.active_status === 'active' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>{emp.active_status}</span>
-                              </TableCell>
-                              <TableCell>
-                                <button 
-                                  onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
-                                  className="text-primary hover:text-primary/80 hover:underline font-medium text-sm transition-all focus:outline-none"
-                                >
-                                  View Logs
-                                </button>
-                              </TableCell>
-                              <TableCell>
-                                <button 
-                                  onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
-                                  className="text-primary hover:text-primary/80 hover:underline font-medium tabular-nums text-sm transition-all focus:outline-none"
-                                >
-                                  {emp.salary_amount ? `₹${emp.salary_amount.toLocaleString()}` : '-'}
-                                </button>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-1">
-                                  <Button size="sm" variant={selectedEmployeeForDocs?.id === emp.id ? 'secondary' : 'ghost'} onClick={() => setSelectedEmployeeForDocs(selectedEmployeeForDocs?.id === emp.id ? null : emp)}>
-                                    <FileText className="w-4 h-4 mr-1.5" /> Docs
+                                <TableCell className="py-3">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-7 text-xs text-primary font-semibold px-2 hover:bg-primary/10 rounded-lg" 
+                                    onClick={() => navigate(`/dashboard/attendance?employeeId=${emp.id}`)}
+                                  >
+                                    View Logs
                                   </Button>
-                                  <Button size="sm" variant="ghost" onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: emp.id, entityName: emp.name })} title="Share document folder">
-                                    <Share2 className="w-4 h-4 mr-1.5" /> Share
-                                  </Button>
-                                  <Button size="icon" variant="ghost" onClick={() => handleEdit(emp, idx)}><Pencil className="w-4 h-4" /></Button>
-                                  <Button size="icon" variant="ghost" onClick={() => handleDelete(emp.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                                </TableCell>
+                                <TableCell className="py-3 text-right pr-4">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Button 
+                                      size="sm" 
+                                      variant={selectedEmployeeForDocs?.id === emp.id ? 'secondary' : 'outline'} 
+                                      className="h-8 text-xs font-semibold rounded-lg px-2.5" 
+                                      onClick={() => setSelectedEmployeeForDocs(selectedEmployeeForDocs?.id === emp.id ? null : emp)}
+                                    >
+                                      <FileText className="w-3.5 h-3.5 mr-1" /> Docs
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-8 text-xs font-semibold rounded-lg px-2.5" 
+                                      onClick={() => setShareConfig({ isOpen: true, truckId: null, employeeId: emp.id, entityName: emp.name })}
+                                    >
+                                      <Share2 className="w-3.5 h-3.5 mr-1" /> Share
+                                    </Button>
+                                    <Button 
+                                      size="icon" 
+                                      variant="outline" 
+                                      className="h-8 w-8 rounded-lg hover:border-primary hover:text-primary" 
+                                      onClick={() => handleEdit(emp, idx)}
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button 
+                                      size="icon" 
+                                      variant="outline" 
+                                      className="h-8 w-8 rounded-lg text-destructive border-destructive/20 hover:bg-destructive/10" 
+                                      onClick={() => handleDelete(emp.id)}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
