@@ -5,6 +5,7 @@ import pb from './pocketbaseClient.js';
 
 let companySettingsCache = null;
 let cachedLogoBase64 = null;
+let cachedSignatureBase64 = null;
 
 const loadImageBase64 = (url) => {
   return new Promise((resolve, reject) => {
@@ -34,12 +35,23 @@ export const fetchCompanySettings = async () => {
     } else {
       cachedLogoBase64 = null;
     }
+
+    if (record && record.e_signature) {
+      const sigUrl = pb.files.getUrl(record, record.e_signature);
+      cachedSignatureBase64 = await loadImageBase64(sigUrl);
+    } else {
+      const localSig = localStorage.getItem('jbc_e_signature');
+      cachedSignatureBase64 = localSig || null;
+    }
+
     return record;
   } catch (error) {
     console.error('Failed to pre-fetch company settings:', error);
     return null;
   }
 };
+
+export const getCachedSignatureBase64 = () => cachedSignatureBase64 || localStorage.getItem('jbc_e_signature');
 
 // Initial load
 fetchCompanySettings().catch(() => {});

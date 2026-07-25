@@ -13,8 +13,10 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
 import ChangePasswordModal from '@/components/ChangePasswordModal.jsx';
 import ChangeEmailModal from '@/components/ChangeEmailModal.jsx';
+import SignaturePadModal from '@/components/SignaturePadModal.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
+import { PenTool } from 'lucide-react';
 
 const ProfilePage = () => {
   const { currentUser, setCurrentUser } = useAuth();
@@ -47,11 +49,15 @@ const ProfilePage = () => {
 
   // Company Settings States
   const companyLogoInputRef = useRef(null);
+  const companySignatureInputRef = useRef(null);
+  const [isDrawPadOpen, setIsDrawPadOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [isSavingCompany, setIsSavingCompany] = useState(false);
   const [companySettings, setCompanySettings] = useState(null);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
   const [companyLogoPreview, setCompanyLogoPreview] = useState('');
+  const [companySignatureFile, setCompanySignatureFile] = useState(null);
+  const [companySignaturePreview, setCompanySignaturePreview] = useState('');
   const [companyFormData, setCompanyFormData] = useState({
     company_name: '',
     company_address: '',
@@ -63,7 +69,9 @@ const ProfilePage = () => {
     account_name: '',
     account_number: '',
     ifsc_code: '',
-    branch_name: ''
+    branch_name: '',
+    signatory_name: '',
+    signatory_title: ''
   });
 
   const fetchCompanySettings = async () => {
@@ -81,12 +89,21 @@ const ProfilePage = () => {
         account_name: record.account_name || '',
         account_number: record.account_number || '',
         ifsc_code: record.ifsc_code || '',
-        branch_name: record.branch_name || ''
+        branch_name: record.branch_name || '',
+        signatory_name: record.signatory_name || localStorage.getItem('jbc_signatory_name') || '',
+        signatory_title: record.signatory_title || localStorage.getItem('jbc_signatory_title') || ''
       });
       if (record.company_logo) {
         setCompanyLogoPreview(pb.files.getUrl(record, record.company_logo));
       } else {
         setCompanyLogoPreview('');
+      }
+
+      if (record.e_signature) {
+        setCompanySignaturePreview(pb.files.getUrl(record, record.e_signature));
+      } else {
+        const localSig = localStorage.getItem('jbc_e_signature');
+        setCompanySignaturePreview(localSig || '');
       }
     } catch (error) {
       console.error('Failed to load company settings:', error);
@@ -270,9 +287,20 @@ const ProfilePage = () => {
       payload.append('account_number', companyFormData.account_number);
       payload.append('ifsc_code', companyFormData.ifsc_code);
       payload.append('branch_name', companyFormData.branch_name);
+      payload.append('signatory_name', companyFormData.signatory_name || '');
+      payload.append('signatory_title', companyFormData.signatory_title || '');
+
+      localStorage.setItem('jbc_signatory_name', companyFormData.signatory_name || '');
+      localStorage.setItem('jbc_signatory_title', companyFormData.signatory_title || '');
       
       if (companyLogoFile instanceof File) {
         payload.append('company_logo', companyLogoFile);
+      }
+
+      if (companySignatureFile instanceof File) {
+        payload.append('e_signature', companySignatureFile);
+      } else if (typeof companySignaturePreview === 'string' && companySignaturePreview.startsWith('data:image')) {
+        localStorage.setItem('jbc_e_signature', companySignaturePreview);
       }
 
       await pb.collection('company_settings').update('companysettings', payload, { $autoCancel: false });
@@ -284,7 +312,8 @@ const ProfilePage = () => {
       await fetchCompanySettings();
       
       setCompanyLogoFile(null);
-      toast.success('Company settings saved successfully');
+      setCompanySignatureFile(null);
+      toast.success('Company settings & E-Signature saved successfully');
     } catch (err) {
       console.error('Failed to save company settings:', err);
       toast.error('Failed to save company settings');
@@ -304,6 +333,33 @@ const ProfilePage = () => {
     }
     setCompanyLogoFile(file);
     setCompanyLogoPreview(URL.createObjectURL(file));
+  };
+
+  const handleCompanySignatureChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      return toast.error('Invalid signature format. Use JPG, PNG, GIF, or WEBP.');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return toast.error('Signature size must be less than 5MB');
+    }
+    setCompanySignatureFile(file);
+    const blobUrl = URL.createObjectURL(file);
+    setCompanySignaturePreview(blobUrl);
+    localStorage.setItem('jbc_e_signature', blobUrl);
+  };
+
+  const handleDrawnSignatureSave = (dataUrl) => {
+    setCompanySignatureFile(null);
+    setCompanySignaturePreview(dataUrl);
+    localStorage.setItem('jbc_e_signature', dataUrl);
+  };
+
+  const handleRemoveSignature = () => {
+    setCompanySignatureFile(null);
+    setCompanySignaturePreview('');
+    localStorage.removeItem('jbc_e_signature');
   };
 
   // Initialize form data
@@ -1050,6 +1106,111 @@ const ProfilePage = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Official E-Signature & Stamp Setup */}
+              <div className="pt-6 border-t border-border/50 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                    <PenTool className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-foreground">Authorized E-Signature & Company Stamp</h3>
+                    <p className="text-xs text-muted-foreground">Attach or draw your official digital signature to auto-stamp Invoices, Quotes, Payslips, and Agreements.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signatory_name_input">Signatory Full Name</Label>
+                    <Input 
+                      id="signatory_name_input"
+                      value={companyFormData.signatory_name} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, signatory_name: e.target.value }))}
+                      className="bg-background"
+                      placeholder="e.g. Vinod Kumar Rathod"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signatory_title_input">Designation / Title</Label>
+                    <Input 
+                      id="signatory_title_input"
+                      value={companyFormData.signatory_title} 
+                      onChange={e => setCompanyFormData(prev => ({ ...prev, signatory_title: e.target.value }))}
+                      className="bg-background"
+                      placeholder="e.g. Authorized Signatory / Managing Director"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground">Digital Signature Image</Label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-muted/20 border border-border/50">
+                      <div className="w-48 h-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-background overflow-hidden relative group shrink-0">
+                        {companySignaturePreview ? (
+                          <img src={companySignaturePreview} alt="E-Signature Preview" className="w-full h-full object-contain p-2" />
+                        ) : (
+                          <div className="text-center p-2 text-muted-foreground/40">
+                            <PenTool className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                            <span className="text-[11px]">No E-Signature</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 w-full">
+                        <div className="flex flex-wrap gap-2">
+                          <Button 
+                            type="button" 
+                            variant="default" 
+                            size="sm" 
+                            onClick={() => setIsDrawPadOpen(true)}
+                            className="rounded-xl flex items-center gap-1.5"
+                          >
+                            <PenTool className="w-3.5 h-3.5" /> Draw Signature Pad
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => companySignatureInputRef.current?.click()}
+                            className="rounded-xl flex items-center gap-1.5"
+                          >
+                            <UploadCloud className="w-3.5 h-3.5" /> Upload File (PNG/JPG)
+                          </Button>
+                          {companySignaturePreview && (
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={handleRemoveSignature}
+                              className="rounded-xl text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1" /> Remove
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          Transparent PNG signatures with dark ink look best on official PDF invoices and payslips.
+                        </p>
+                      </div>
+
+                      <input 
+                        type="file" 
+                        ref={companySignatureInputRef} 
+                        className="hidden" 
+                        accept="image/jpeg,image/png,image/gif,image/webp" 
+                        onChange={handleCompanySignatureChange} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Draw Signature Pad Modal */}
+              <SignaturePadModal 
+                isOpen={isDrawPadOpen} 
+                onClose={() => setIsDrawPadOpen(false)} 
+                onSave={handleDrawnSignatureSave} 
+              />
             </form>
           </CardContent>
           <CardFooter className="flex justify-end border-t border-border/50 pt-6">
