@@ -647,9 +647,6 @@ const EmployeeDatabasePage = () => {
         <Tabs defaultValue="directory" className="w-full">
           <TabsList className="mb-6 h-12 p-1 bg-muted/50 rounded-xl w-full sm:w-auto inline-flex overflow-x-auto hide-scrollbar">
             <TabsTrigger value="directory" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
-              <Users className="w-4 h-4 mr-2" /> Employee Directory
-            </TabsTrigger>
-            <TabsTrigger value="staff" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
               <Briefcase className="w-4 h-4 mr-2" /> Staff Directory
             </TabsTrigger>
             <TabsTrigger value="attendance" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
@@ -1021,7 +1018,7 @@ const EmployeeDatabasePage = () => {
             </Card>
 
             <Card className="shadow-sm border-border overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4"><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> Employee Directory</CardTitle></CardHeader>
+              <CardHeader className="bg-muted/30 pb-4"><CardTitle className="flex items-center gap-2"><Briefcase className="w-5 h-5 text-primary" /> Staff Directory</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {isFetching ? <div className="py-24 flex justify-center"><LoadingSpinner text="Loading employee database..." /></div> : error ? (
                   <div className="py-24 text-center"><AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4 opacity-50" /><p className="text-lg font-medium text-destructive">{error}</p></div>
