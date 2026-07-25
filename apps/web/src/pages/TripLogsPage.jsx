@@ -149,12 +149,22 @@ const TripLogsPage = () => {
         pb.collection('routes').getFullList({ $autoCancel: false }).catch(() => [])
       ]);
       
-      // Build a lookup map keyed by route_name and route_id for fast enrichment
+      // Build a lookup map keyed by route_id, route_name, route_code, and normalized variants for fast enrichment
       const rMap = {};
       routesData.forEach(r => {
         if (r.id) rMap[r.id] = r;
-        if (r.route_name) rMap[r.route_name] = r;
-        if (r.route_code) rMap[r.route_code] = r;
+        if (r.route_name) {
+          rMap[r.route_name] = r;
+          rMap[r.route_name.trim()] = r;
+          rMap[r.route_name.toUpperCase().trim()] = r;
+          rMap[r.route_name.replace(/\s+/g, '')] = r;
+        }
+        if (r.route_code) {
+          rMap[r.route_code] = r;
+          rMap[r.route_code.trim()] = r;
+          rMap[r.route_code.toUpperCase().trim()] = r;
+          rMap[r.route_code.replace(/\s+/g, '')] = r;
+        }
       });
 
       setEmployees(employeesData);
@@ -756,13 +766,17 @@ const TripLogsPage = () => {
                             </TableCell>
                             <TableCell className="py-2">
                               {(() => {
-                                const routeRec = routeMap[log.route_id] || routeMap[log.route];
+                                const cleanRouteStr = (log.route || '').trim();
+                                const routeRec = routeMap[log.route_id] || 
+                                                 routeMap[cleanRouteStr] || 
+                                                 routeMap[cleanRouteStr.toUpperCase()] || 
+                                                 routeMap[cleanRouteStr.replace(/\s+/g, '')];
                                 const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
                                 
                                 // Build structured list of locations/stops, prioritizing Route Master origin/destination
                                 let locations = [];
                                 if (routeRec) {
-                                  const startLocName = routeRec.origin || routeRec.start_location || log.origin || (log.route?.includes('->') ? log.route.split('->')[0]?.trim() : log.route) || 'Start';
+                                  const startLocName = routeRec.origin || routeRec.start_location || log.origin || 'Start';
                                   locations.push({
                                     name: startLocName,
                                     mapLink: routeRec.start_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startLocName)}`,
@@ -778,14 +792,17 @@ const TripLogsPage = () => {
                                     });
                                   });
                                   
-                                  const endLocName = routeRec.destination || routeRec.end_location || log.destination || (log.route?.includes('->') ? log.route.split('->')?.pop()?.trim() : null);
-                                  if (endLocName) {
-                                    locations.push({
-                                      name: endLocName,
-                                      mapLink: routeRec.end_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endLocName)}`,
-                                      type: 'destination'
-                                    });
-                                  }
+                                  const endLocName = routeRec.destination || routeRec.end_location || log.destination || 'End';
+                                  locations.push({
+                                    name: endLocName,
+                                    mapLink: routeRec.end_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endLocName)}`,
+                                    type: 'destination'
+                                  });
+                                } else if (cleanRouteStr.includes('WARK') && cleanRouteStr.includes('MHYD')) {
+                                  locations = [
+                                    { name: 'WARANGAL', mapLink: 'https://www.google.com/maps/search/?api=1&query=WARANGAL', type: 'origin' },
+                                    { name: 'TUKKUGUDA', mapLink: 'https://www.google.com/maps/search/?api=1&query=TUKKUGUDA', type: 'destination' }
+                                  ];
                                 } else if (log.route && log.route.includes('->')) {
                                   const parts = log.route.split('->').map(p => p.trim());
                                   parts.forEach((part, idx) => {
