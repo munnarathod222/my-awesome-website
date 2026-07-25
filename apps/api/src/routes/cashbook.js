@@ -94,30 +94,53 @@ router.delete('/:id', async (req, res) => {
     throw err;
   }
 
-  // 2. Check for dependencies - verify transaction is NOT linked to payroll, advances, or expenses
+  // 2. Handle linked expenses: delete linked expense if present, or continue if already deleted
   if (transaction.reference_type === 'expense') {
-    logger.warn('DELETE /cashbook/:id - Transaction is linked to an expense', {
-      transactionId: id,
-      referenceId: transaction.reference_id
-    });
-    const error = new Error('This transaction is linked to an expense. Please delete the expense from the Expenses page.');
-    error.status = 409;
-    throw error;
+    if (transaction.reference_id) {
+      try {
+        await pb.collection('expenses').delete(transaction.reference_id, { $autoCancel: false });
+        logger.info(`DELETE /cashbook/:id - Also deleted linked expense ${transaction.reference_id}`);
+      } catch (expErr) {
+        if (expErr.status !== 404) {
+          logger.warn('DELETE /cashbook/:id - Could not delete linked expense:', expErr.message);
+        }
+      }
+    }
   }
 
+  // 3. Check for active system-linked modules (advance, payroll, salary)
   const systemLinkedTypes = ['salary', 'advance', 'payroll'];
-  if (systemLinkedTypes.includes(transaction.reference_type) || transaction.reference_id) {
-    logger.warn('DELETE /cashbook/:id - Transaction is linked to system module', {
-      transactionId: id,
-      referenceType: transaction.reference_type
-    });
-    const error = new Error('This transaction is linked to a system module (payroll, advance, etc) and cannot be deleted.');
-    error.status = 409;
-    throw error;
+  if (systemLinkedTypes.includes(transaction.reference_type) && transaction.reference_id) {
+    let linkedExists = false;
+    if (transaction.reference_type === 'advance') {
+      try {
+        await pb.collection('advances').getOne(transaction.reference_id, { $autoCancel: false });
+        linkedExists = true;
+      } catch (e) {
+        linkedExists = false;
+      }
+    } else if (transaction.reference_type === 'payroll' || transaction.reference_type === 'salary') {
+      try {
+        await pb.collection('payroll_payments').getOne(transaction.reference_id, { $autoCancel: false });
+        linkedExists = true;
+      } catch (e) {
+        linkedExists = false;
+      }
+    }
+
+    if (linkedExists) {
+      logger.warn('DELETE /cashbook/:id - Transaction is linked to an active system module', {
+        transactionId: id,
+        referenceType: transaction.reference_type
+      });
+      const error = new Error(`This transaction is linked to an active ${transaction.reference_type} record. Please manage it from that section.`);
+      error.status = 409;
+      throw error;
+    }
   }
 
-  // 3. Delete the transaction
-  await pb.collection('cashbook').delete(id);
+  // 4. Delete the transaction
+  await pb.collection('cashbook').delete(id, { $autoCancel: false });
 
   logger.info('DELETE /cashbook/:id - Transaction deleted successfully', {
     transactionId: id,
