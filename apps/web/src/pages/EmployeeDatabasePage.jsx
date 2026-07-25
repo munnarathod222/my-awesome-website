@@ -276,6 +276,11 @@ const EmployeeDatabasePage = () => {
         }
       });
 
+      const pStart = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_start_day, 10) || 1));
+      const pEnd = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_end_day, 10) || 30));
+      const pDisb = Math.max(1, Math.min(31, parseInt(formData.salary_disbursement_day, 10) || 10));
+      submitData.set('salary_billing_cycle', `Day ${pStart}-${pEnd} (Pay on ${pDisb})`);
+
       if (photoFile) submitData.append('photo', photoFile);
       else if (removePhoto && editingId) submitData.append('photo', ''); 
 

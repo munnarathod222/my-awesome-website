@@ -91,10 +91,15 @@ const PayrollPage = () => {
     if (!editingCycleEmployee) return;
     setIsSavingCycle(true);
     try {
+      const sDay = Number(cycleForm.startDay) || 1;
+      const eDay = Number(cycleForm.endDay) || 30;
+      const dDay = Number(cycleForm.disbursementDay) || 10;
+
       await pb.collection('employees').update(editingCycleEmployee.id, {
-        payroll_cycle_start_day: Number(cycleForm.startDay) || 1,
-        payroll_cycle_end_day: Number(cycleForm.endDay) || 30,
-        salary_disbursement_day: Number(cycleForm.disbursementDay) || 10
+        payroll_cycle_start_day: sDay,
+        payroll_cycle_end_day: eDay,
+        salary_disbursement_day: dDay,
+        salary_billing_cycle: `Day ${sDay}-${eDay} (Pay on ${dDay})`
       }, { $autoCancel: false });
       toast.success(`Updated payroll cycle for ${editingCycleEmployee.name}`);
       setEditingCycleEmployee(null);

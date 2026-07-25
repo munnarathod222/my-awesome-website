@@ -917,6 +917,36 @@ const runPocketBase = async () => {
         logger.info("Migrating: Company settings bank detail fields updated successfully!");
       }
     }
+
+    // 7. Employees schema migration for payroll cycle fields
+    const empCols = db.prepare("PRAGMA table_info(employees)").all().map(c => c.name);
+    const empCycleCols = [
+      { name: 'payroll_cycle_start_day', type: 'INTEGER DEFAULT 1' },
+      { name: 'payroll_cycle_end_day', type: 'INTEGER DEFAULT 30' },
+      { name: 'salary_disbursement_day', type: 'INTEGER DEFAULT 10' }
+    ];
+    for (const item of empCycleCols) {
+      if (!empCols.includes(item.name)) {
+        logger.info(`Migrating: Adding column '${item.name}' to 'employees' table...`);
+        db.prepare(`ALTER TABLE employees ADD COLUMN ${item.name} ${item.type}`).run();
+      }
+    }
+
+    const empRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='employees'").get();
+    if (empRecordBoot) {
+      const empFieldsBoot = JSON.parse(empRecordBoot.fields);
+      let updatedEmp = false;
+      for (const item of empCycleCols) {
+        if (!empFieldsBoot.some(f => f.name === item.name)) {
+          empFieldsBoot.push({ name: item.name, type: 'number', required: false, system: false, hidden: false, id: `emp_${item.name}_field` });
+          updatedEmp = true;
+        }
+      }
+      if (updatedEmp) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(empFieldsBoot), empRecordBoot.id);
+        logger.info("Migrating: Employee payroll cycle fields updated in PocketBase schema!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   }
