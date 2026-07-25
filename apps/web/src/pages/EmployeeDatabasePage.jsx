@@ -138,6 +138,7 @@ const EmployeeDatabasePage = () => {
   const [trucks, setTrucks] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [accidentModalOpen, setAccidentModalOpen] = useState(false);
+  const [editingAccidentId, setEditingAccidentId] = useState(null);
   const [accidentForm, setAccidentForm] = useState({
     employee_id: '',
     truck_id: '',
@@ -390,6 +391,33 @@ const EmployeeDatabasePage = () => {
     setAccidentFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleEditAccident = (log) => {
+    setEditingAccidentId(log.id);
+    setAccidentForm({
+      employee_id: log.employee_id || '',
+      truck_id: log.truck_id || '',
+      accident_date: formatDateForInput(log.accident_date) || todayStr,
+      description: log.description || '',
+      damage_cost: log.damage_cost || '',
+      fined_to_employee: log.fined_to_employee === true || log.fined_to_employee === 'true'
+    });
+    setAccidentFiles([]);
+    setAccidentPreviews([]);
+    setAccidentModalOpen(true);
+  };
+
+  const handleDeleteAccident = async (accidentId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this accident report?')) return;
+    try {
+      await pb.collection('driver_accident_reports').delete(accidentId, { $autoCancel: false });
+      toast.success('Accident report deleted successfully');
+      fetchAccidents();
+    } catch (err) {
+      console.error('Failed to delete accident report:', err);
+      toast.error('Failed to delete accident report');
+    }
+  };
+
   const handleAccidentSubmit = async (e) => {
     e.preventDefault();
     if (!accidentForm.employee_id || !accidentForm.truck_id) {
@@ -416,68 +444,74 @@ const EmployeeDatabasePage = () => {
         data.append('image_urls', file);
       });
 
-      await pb.collection('driver_accident_reports').create(data, { $autoCancel: false });
-
-      // Financial Ledger Integration
-      if (accidentForm.fined_to_employee) {
-        // 1. Add to Expenses as Employee Advance
-        let createdExpense = null;
-        try {
-          createdExpense = await pb.collection('expenses').create({
-            category: 'Employee Advance',
-            amount: damageCostNum,
-            date: accDateIso,
-            expense_date: accDateIso,
-            description: `Fine: ${descText} (${empName})`,
-            employee_id: accidentForm.employee_id,
-            truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
-            status: 'Approved',
-            payment_method: 'Cash',
-            notes: `Accident damage fine levied on ${empName}`
-          }, { $autoCancel: false });
-        } catch (expErr) {
-          console.error('Failed to create advance expense:', expErr);
-        }
-
-        // 2. Add to Employee Advances (drives salary deduction in Payroll)
-        try {
-          await pb.collection('advances').create({
-            employee_id: accidentForm.employee_id,
-            amount: damageCostNum,
-            date: accDateIso,
-            advance_date: accDateIso,
-            reason: `Fine: ${descText}`,
-            status: 'Pending',
-            expense_id: createdExpense?.id || undefined
-          }, { $autoCancel: false });
-          toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to ${empName}'s advance balance!`);
-        } catch (advErr) {
-          console.error('Failed to create advance entry:', advErr);
-          toast.success('Accident report logged successfully');
-        }
+      if (editingAccidentId) {
+        await pb.collection('driver_accident_reports').update(editingAccidentId, data, { $autoCancel: false });
+        toast.success('Accident report updated successfully');
       } else {
-        // Not fined to employee -> Add as Miscellaneous Expense
-        try {
-          await pb.collection('expenses').create({
-            category: 'Miscellaneous',
-            amount: damageCostNum,
-            date: accDateIso,
-            expense_date: accDateIso,
-            description: `Accident damage cost: ${descText} (${empName})`,
-            employee_id: accidentForm.employee_id,
-            truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
-            status: 'Approved',
-            payment_method: 'Cash',
-            notes: `Accident damage cost logged as company expense (Miscellaneous)`
-          }, { $autoCancel: false });
-          toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses!`);
-        } catch (expErr) {
-          console.error('Failed to create miscellaneous expense:', expErr);
-          toast.success('Accident report logged successfully');
+        await pb.collection('driver_accident_reports').create(data, { $autoCancel: false });
+
+        // Financial Ledger Integration for new accident report
+        if (accidentForm.fined_to_employee) {
+          // 1. Add to Expenses as Employee Advance
+          let createdExpense = null;
+          try {
+            createdExpense = await pb.collection('expenses').create({
+              category: 'Employee Advance',
+              amount: damageCostNum,
+              date: accDateIso,
+              expense_date: accDateIso,
+              description: `Fine: ${descText} (${empName})`,
+              employee_id: accidentForm.employee_id,
+              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              status: 'Approved',
+              payment_method: 'Cash',
+              notes: `Accident damage fine levied on ${empName}`
+            }, { $autoCancel: false });
+          } catch (expErr) {
+            console.error('Failed to create advance expense:', expErr);
+          }
+
+          // 2. Add to Employee Advances (drives salary deduction in Payroll)
+          try {
+            await pb.collection('advances').create({
+              employee_id: accidentForm.employee_id,
+              amount: damageCostNum,
+              date: accDateIso,
+              advance_date: accDateIso,
+              reason: `Fine: ${descText}`,
+              status: 'Pending',
+              expense_id: createdExpense?.id || undefined
+            }, { $autoCancel: false });
+            toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to ${empName}'s advance balance!`);
+          } catch (advErr) {
+            console.error('Failed to create advance entry:', advErr);
+            toast.success('Accident report logged successfully');
+          }
+        } else {
+          // Not fined to employee -> Add as Miscellaneous Expense
+          try {
+            await pb.collection('expenses').create({
+              category: 'Miscellaneous',
+              amount: damageCostNum,
+              date: accDateIso,
+              expense_date: accDateIso,
+              description: `Accident damage cost: ${descText} (${empName})`,
+              employee_id: accidentForm.employee_id,
+              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              status: 'Approved',
+              payment_method: 'Cash',
+              notes: `Accident damage cost logged as company expense (Miscellaneous)`
+            }, { $autoCancel: false });
+            toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses!`);
+          } catch (expErr) {
+            console.error('Failed to create miscellaneous expense:', expErr);
+            toast.success('Accident report logged successfully');
+          }
         }
       }
 
       setAccidentModalOpen(false);
+      setEditingAccidentId(null);
       setAccidentForm({
         employee_id: '',
         truck_id: '',
@@ -491,7 +525,7 @@ const EmployeeDatabasePage = () => {
       fetchAccidents();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to log accident report');
+      toast.error('Failed to save accident report');
     } finally {
       setIsSubmitting(false);
     }
@@ -1231,11 +1265,12 @@ const EmployeeDatabasePage = () => {
                             <TableHead>Description</TableHead>
                             <TableHead>Damage Cost</TableHead>
                             <TableHead>Snapshots</TableHead>
+                            <TableHead className="text-right pr-6">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {accidents.length === 0 ? (
-                            <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">No accident reports logged yet.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={7} className="h-48 text-center text-muted-foreground">No accident reports logged yet.</TableCell></TableRow>
                           ) : accidents.map(log => {
                             const driver = log.expand?.employee_id;
                             const truckRec = log.expand?.truck_id;
@@ -1250,9 +1285,20 @@ const EmployeeDatabasePage = () => {
                                   <span className="block text-[10px] text-muted-foreground">{driver?.contact}</span>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline" className="font-bold font-mono">
-                                    {truckRec?.truck_number || 'N/A'}
-                                  </Badge>
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <Badge variant="outline" className="font-bold font-mono">
+                                      {truckRec?.truck_number || 'N/A'}
+                                    </Badge>
+                                    {log.fined_to_employee ? (
+                                      <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold">
+                                        Fined (Advance)
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 font-semibold">
+                                        Company Expense
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="max-w-xs truncate text-muted-foreground text-xs" title={log.description}>
                                   {log.description}
@@ -1276,6 +1322,28 @@ const EmployeeDatabasePage = () => {
                                     {(!log.image_urls || log.image_urls.length === 0) && (
                                       <span className="text-[10px] text-muted-foreground">No Photos</span>
                                     )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right pr-6">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary hover:border-primary/50 bg-background"
+                                      onClick={() => handleEditAccident(log)}
+                                      title="Edit accident report"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:border-destructive/50 bg-background"
+                                      onClick={() => handleDeleteAccident(log.id)}
+                                      title="Delete accident report"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -1311,9 +1379,20 @@ const EmployeeDatabasePage = () => {
                               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/20 text-xs">
                                 <div>
                                   <p className="text-[10px] text-muted-foreground uppercase font-medium">Vehicle / Photos</p>
-                                  <Badge variant="outline" className="font-bold font-mono mt-1">
-                                    {truckRec?.truck_number || 'N/A'}
-                                  </Badge>
+                                  <div className="flex flex-wrap gap-1 items-center mt-1">
+                                    <Badge variant="outline" className="font-bold font-mono">
+                                      {truckRec?.truck_number || 'N/A'}
+                                    </Badge>
+                                    {log.fined_to_employee ? (
+                                      <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                                        Fined
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30">
+                                        Misc Expense
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <div className="flex gap-1.5 mt-2 overflow-x-auto">
                                     {log.image_urls && (Array.isArray(log.image_urls) ? log.image_urls : [log.image_urls]).slice(0, 3).map((img, i) => (
                                       <a 
@@ -1338,6 +1417,25 @@ const EmployeeDatabasePage = () => {
                                   </p>
                                 </div>
                               </div>
+
+                              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/20">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold"
+                                  onClick={() => handleEditAccident(log)}
+                                >
+                                  <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-3 rounded-lg text-xs font-semibold text-destructive border-destructive/20 hover:bg-destructive/10"
+                                  onClick={() => handleDeleteAccident(log.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                                </Button>
+                              </div>
                             </div>
                           );
                         })
@@ -1352,11 +1450,21 @@ const EmployeeDatabasePage = () => {
         </Tabs>
       </main>
 
-      {/* Log Accident Dialog */}
-      <Dialog open={accidentModalOpen} onOpenChange={(val) => !val && !isSubmitting && setAccidentModalOpen(false)}>
+      {/* Log / Edit Accident Dialog */}
+      <Dialog 
+        open={accidentModalOpen} 
+        onOpenChange={(val) => {
+          if (!val && !isSubmitting) {
+            setAccidentModalOpen(false);
+            setEditingAccidentId(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[450px] rounded-3xl border-border/50 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-xl font-heading font-bold">Log Driver Accident Report</DialogTitle>
+            <DialogTitle className="text-xl font-heading font-bold">
+              {editingAccidentId ? 'Edit Accident Report' : 'Log Driver Accident Report'}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAccidentSubmit} className="space-y-4 py-2">
             <div className="space-y-2">
@@ -1478,10 +1586,21 @@ const EmployeeDatabasePage = () => {
             </div>
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => setAccidentModalOpen(false)} disabled={isSubmitting} className="rounded-xl">Cancel</Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => {
+                  setAccidentModalOpen(false);
+                  setEditingAccidentId(null);
+                }} 
+                disabled={isSubmitting} 
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
               <Button type="submit" disabled={isSubmitting} className="rounded-xl shadow-sm">
                 {isSubmitting && <LoadingSpinner className="w-4 h-4 mr-2 animate-spin" />}
-                Log Report
+                {editingAccidentId ? 'Update Report' : 'Log Report'}
               </Button>
             </DialogFooter>
           </form>
