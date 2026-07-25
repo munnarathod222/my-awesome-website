@@ -482,13 +482,29 @@ const EmployeeDatabasePage = () => {
               status: 'Pending',
               expense_id: createdExpense?.id || undefined
             }, { $autoCancel: false });
-            toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to ${empName}'s advance balance!`);
           } catch (advErr) {
             console.error('Failed to create advance entry:', advErr);
-            toast.success('Accident report logged successfully');
           }
+
+          // 3. Add to Cashbook (Debit / Cash Out)
+          try {
+            await pb.collection('cashbook').create({
+              transaction_type: 'debit',
+              category: 'Employee Advance',
+              amount: damageCostNum,
+              date: accDateIso,
+              description: `Fine: ${descText} (${empName})`,
+              employee_id: accidentForm.employee_id,
+              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              notes: `Accident damage fine levied on ${empName}`
+            }, { $autoCancel: false });
+          } catch (cbErr) {
+            console.error('Failed to create cashbook entry:', cbErr);
+          }
+
+          toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to Expenses, Employee Advances & Cashbook!`);
         } else {
-          // Not fined to employee -> Add as Miscellaneous Expense
+          // Not fined to employee -> Add as Miscellaneous Expense & Cashbook Debit
           try {
             await pb.collection('expenses').create({
               category: 'Miscellaneous',
@@ -502,11 +518,27 @@ const EmployeeDatabasePage = () => {
               payment_method: 'Cash',
               notes: `Accident damage cost logged as company expense (Miscellaneous)`
             }, { $autoCancel: false });
-            toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses!`);
           } catch (expErr) {
             console.error('Failed to create miscellaneous expense:', expErr);
-            toast.success('Accident report logged successfully');
           }
+
+          // Add to Cashbook (Debit / Cash Out)
+          try {
+            await pb.collection('cashbook').create({
+              transaction_type: 'debit',
+              category: 'Miscellaneous',
+              amount: damageCostNum,
+              date: accDateIso,
+              description: `Accident damage cost: ${descText} (${empName})`,
+              employee_id: accidentForm.employee_id,
+              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              notes: `Accident damage cost logged as company expense`
+            }, { $autoCancel: false });
+          } catch (cbErr) {
+            console.error('Failed to create cashbook entry:', cbErr);
+          }
+
+          toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses & Cashbook!`);
         }
       }
 
