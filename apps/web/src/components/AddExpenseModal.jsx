@@ -116,41 +116,11 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
       } else {
         const newExpense = await pb.collection('expenses').create(payload, { $autoCancel: false });
         
-        // If this is a FASTag Recharge expense, update the fastag balance
-        if (payload.category === 'FASTag Recharge' && payload.truck_id) {
-          try {
-            const trs = await pb.collection('trucks').getFullList({
-              filter: `truck_number = "${payload.truck_id}"`,
-              $autoCancel: false
-            });
-            if (trs.length > 0) {
-              const trk = trs[0];
-              const curBal = trk.current_fastag_balance || 0;
-              await pb.collection('trucks').update(trk.id, {
-                current_fastag_balance: curBal + payload.amount,
-                last_recharge_date: `${payload.date} 12:00:00.000Z`,
-                last_recharge_amount: payload.amount
-              }, { $autoCancel: false });
-
-              // Also create a fastag_recharges log
-              await pb.collection('fastag_recharges').create({
-                truck_id: trk.id,
-                recharge_date: `${payload.date} 12:00:00.000Z`,
-                recharge_amount: payload.amount,
-                payment_method: payload.payment_method || 'UPI',
-                reference_number: '',
-                notes: payload.notes || 'Added from Expense Manager'
-              }, { $autoCancel: false });
-            }
-          } catch (err) {
-            console.error('Failed to sync fastag recharge from expense:', err);
-          }
-        }
-
-        // If this is a Toll or FASTag expense, record FASTag deduction
+        // If this is a Toll or FASTag expense, update the truck FASTag balance (+ amount) and log recharge
         const isTollExpense = 
           payload.category === 'Toll' ||
           payload.category === 'Toll Tax' ||
+          payload.category === 'FASTag Recharge' ||
           payload.subcategory === 'Toll' ||
           payload.subcategory === 'FASTag' ||
           payload.subcategory === 'Toll / FASTag' ||
@@ -159,18 +129,32 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
           /toll|fastag/i.test(payload.subcategory || '') ||
           /toll|fastag/i.test(payload.description || '');
 
-        if (isTollExpense) {
+        if (isTollExpense && payload.truck_id) {
           try {
-            const trkObj = trucks.find(t => t.truck_number === payload.truck_id || t.id === payload.truck_id);
-            await recordTollDeduction({
-              truckId: trkObj ? trkObj.id : '',
-              truckNumber: trkObj ? trkObj.truck_number : (payload.truck_id || ''),
-              amount: payload.amount,
-              date: payload.date,
-              notes: payload.description || payload.notes || 'Toll Tax debit'
-            });
-          } catch (tollErr) {
-            console.error('Failed to auto-record FASTag toll deduction:', tollErr);
+            const trk = trucks.find(t => t.truck_number === payload.truck_id || t.id === payload.truck_id);
+            if (trk) {
+              const curBal = Number(trk.current_fastag_balance) || 0;
+              const newBal = curBal + Number(payload.amount);
+              await pb.collection('trucks').update(trk.id, {
+                current_fastag_balance: newBal,
+                last_recharge_date: `${payload.date} 12:00:00.000Z`,
+                last_recharge_amount: Number(payload.amount)
+              }, { $autoCancel: false });
+
+              // Also create a fastag_recharges log
+              await pb.collection('fastag_recharges').create({
+                truck_id: trk.id,
+                recharge_date: `${payload.date} 12:00:00.000Z`,
+                recharge_amount: Number(payload.amount),
+                payment_method: payload.payment_method || 'Cash',
+                reference_number: '',
+                notes: payload.notes || payload.description || 'Added from Expense Manager'
+              }, { $autoCancel: false });
+
+              toast.success(`₹${payload.amount.toLocaleString('en-IN')} added to ${trk.truck_number}'s FASTag balance!`);
+            }
+          } catch (err) {
+            console.error('Failed to sync fastag recharge from expense:', err);
           }
         }
         

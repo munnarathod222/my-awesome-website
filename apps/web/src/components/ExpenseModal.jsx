@@ -328,10 +328,12 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         const isTollExpense = 
           payload.category === 'Toll' ||
           payload.category === 'Toll Tax' ||
+          payload.category === 'FASTag Recharge' ||
           payload.subcategory === 'Toll' ||
           payload.subcategory === 'FASTag' ||
           payload.subcategory === 'Toll / FASTag' ||
           payload.payment_method === 'FASTag' ||
+          /toll|fastag/i.test(payload.category || '') ||
           /toll|fastag/i.test(payload.subcategory || '') ||
           /toll|fastag/i.test(payload.description || '');
 
@@ -346,20 +348,39 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
           });
           toast.success(`Advance record automatically created for ${empName}`);
         } else if (isTollExpense) {
-          const selectedTruck = trucks.find(t => t.id === payload.truck_id);
-          const truckNum = selectedTruck ? selectedTruck.truck_number : '';
           try {
-            await recordTollDeduction({
-              truckId: payload.truck_id !== 'none' ? payload.truck_id : '',
-              truckNumber: truckNum,
-              amount: payload.amount,
-              date: dateISO,
-              tollPlazaName: payload.description || 'Toll Expense',
-              notes: payload.description ? `Toll Expense: ${payload.description}` : 'Toll expense logged from Expense Manager'
-            });
-            toast.success('Toll expense recorded & synced to FASTag Management!');
+            let targetTruck = null;
+            if (payload.truck_id && payload.truck_id !== 'none') {
+              targetTruck = trucks.find(t => t.id === payload.truck_id || t.truck_number === payload.truck_id);
+            }
+
+            if (targetTruck) {
+              const currentBal = Number(targetTruck.current_fastag_balance) || 0;
+              const newBal = currentBal + Number(payload.amount);
+
+              // 1. Update truck FASTag balance (+ amount)
+              await pb.collection('trucks').update(targetTruck.id, {
+                current_fastag_balance: newBal,
+                last_recharge_date: dateISO,
+                last_recharge_amount: Number(payload.amount)
+              }, { $autoCancel: false });
+
+              // 2. Create fastag_recharges log
+              await pb.collection('fastag_recharges').create({
+                truck_id: targetTruck.id,
+                recharge_date: dateISO,
+                recharge_amount: Number(payload.amount),
+                payment_method: payload.payment_method || 'Cash',
+                reference_number: '',
+                notes: payload.description || 'FASTag Recharge from Expense Manager'
+              }, { $autoCancel: false });
+
+              toast.success(`₹${payload.amount.toLocaleString('en-IN')} added to ${targetTruck.truck_number}'s FASTag balance!`);
+            } else {
+              toast.success('Toll expense recorded successfully');
+            }
           } catch (fastagErr) {
-            console.error('Failed to sync toll expense to FASTag Management:', fastagErr);
+            console.error('Failed to sync FASTag recharge balance:', fastagErr);
             toast.success('Expense created successfully');
           }
         } else {
@@ -517,10 +538,10 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
               )}
 
               {formData.category === 'Regular' && (formData.subcategory === 'Toll' || formData.subcategory === 'FASTag') && (
-                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl flex gap-3 text-purple-400">
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex gap-3 text-emerald-500">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <p className="text-sm">
-                    Selecting "Toll" will automatically record a toll deduction in FASTag Management and adjust the truck's FASTag wallet balance.
+                    Selecting "Toll" will automatically <strong>add this amount to the truck's FASTag wallet balance</strong> and log a recharge in FASTag Management.
                   </p>
                 </div>
               )}
