@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
-import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2 } from 'lucide-react';
+import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import EmployeeDocumentsSection from '@/components/EmployeeDocumentsSection.jsx';
@@ -95,6 +95,32 @@ const EmployeeDatabasePage = () => {
   const [filterType, setFilterType] = useState('all');
   const [filterEmpType, setFilterEmpType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [staffSearchTerm, setStaffSearchTerm] = useState('');
+  const [staffRoleFilter, setStaffRoleFilter] = useState('all');
+
+  const filteredStaffList = React.useMemo(() => {
+    return employees.filter(emp => {
+      const type = (emp.employee_type || '').toLowerCase();
+      const isStaff = type !== 'driver';
+      if (!isStaff) return false;
+
+      if (staffRoleFilter !== 'all' && type !== staffRoleFilter.toLowerCase()) {
+        return false;
+      }
+
+      if (staffSearchTerm) {
+        const q = staffSearchTerm.toLowerCase();
+        return (
+          emp.name?.toLowerCase().includes(q) ||
+          emp.contact?.toLowerCase().includes(q) ||
+          emp.emergency_contact?.toLowerCase().includes(q) ||
+          emp.address?.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [employees, staffRoleFilter, staffSearchTerm]);
   
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [selectedEmployeeForPhoto, setSelectedEmployeeForPhoto] = useState(null);
@@ -621,7 +647,10 @@ const EmployeeDatabasePage = () => {
         <Tabs defaultValue="directory" className="w-full">
           <TabsList className="mb-6 h-12 p-1 bg-muted/50 rounded-xl w-full sm:w-auto inline-flex overflow-x-auto hide-scrollbar">
             <TabsTrigger value="directory" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
-              <Briefcase className="w-4 h-4 mr-2" /> Directory
+              <Users className="w-4 h-4 mr-2" /> Employee Directory
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
+              <Briefcase className="w-4 h-4 mr-2" /> Staff Directory
             </TabsTrigger>
             <TabsTrigger value="attendance" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
               <CalendarCheck className="w-4 h-4 mr-2" /> Attendance Hub
@@ -992,7 +1021,7 @@ const EmployeeDatabasePage = () => {
             </Card>
 
             <Card className="shadow-sm border-border overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4"><CardTitle>Staff Directory</CardTitle></CardHeader>
+              <CardHeader className="bg-muted/30 pb-4"><CardTitle className="flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> Employee Directory</CardTitle></CardHeader>
               <CardContent className="p-0">
                 {isFetching ? <div className="py-24 flex justify-center"><LoadingSpinner text="Loading employee database..." /></div> : error ? (
                   <div className="py-24 text-center"><AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4 opacity-50" /><p className="text-lg font-medium text-destructive">{error}</p></div>
@@ -1170,6 +1199,119 @@ const EmployeeDatabasePage = () => {
               </CardContent>
             </Card>
             {selectedEmployeeForDocs && <div className="animate-in slide-in-from-bottom-4"><EmployeeDocumentsSection employee={selectedEmployeeForDocs} /></div>}
+          </TabsContent>
+
+          {/* Staff Directory Tab Content */}
+          <TabsContent value="staff" className="space-y-6 mt-0 outline-none">
+            <Card className="shadow-sm border-border overflow-hidden bg-card">
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+                  <div className="flex-1 w-full max-w-sm">
+                    <Input 
+                      placeholder="Search office staff by name or contact..." 
+                      value={staffSearchTerm} 
+                      onChange={e => setStaffSearchTerm(e.target.value)} 
+                      className="bg-background"
+                    />
+                  </div>
+                  <div className="flex gap-4 w-full md:w-auto">
+                    <Select value={staffRoleFilter} onValueChange={setStaffRoleFilter}>
+                      <SelectTrigger className="w-[180px] bg-background">
+                        <SelectValue placeholder="Staff Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Office & Ops Staff</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="staff">Office Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-border overflow-hidden">
+              <CardHeader className="bg-muted/30 pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" /> Staff Directory (Office & Operations)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {isFetching ? (
+                  <div className="py-24 flex justify-center"><LoadingSpinner text="Loading staff records..." /></div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow>
+                          <TableHead className="w-[80px]">Photo</TableHead>
+                          <TableHead className="w-[100px]">EMP ID</TableHead>
+                          <TableHead>Staff Name & Role</TableHead>
+                          <TableHead>Joining Date</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Salary</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredStaffList.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                              No staff records found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredStaffList.map((emp, idx) => {
+                            const empCode = emp.employee_number || emp.emp_number || emp.employee_code || `EMP-${String(idx + 1).padStart(3, '0')}`;
+                            return (
+                              <TableRow key={emp.id} className="hover:bg-muted/30">
+                                <TableCell>
+                                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-border bg-muted/50 flex items-center justify-center cursor-pointer" onClick={() => {setSelectedEmployeeForPhoto(emp); setIsPhotoModalOpen(true);}}>
+                                    {emp.photo ? <img src={getEmployeePhotoUrl(emp, true)} alt={emp.name} className="w-full h-full object-cover"/> : <ImageIcon className="w-4 h-4 text-muted-foreground/50" />}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20 font-mono font-bold text-xs px-2 py-0.5 rounded-lg">
+                                    {empCode}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  <span className="font-semibold block text-foreground">{emp.name}</span>
+                                  <Badge variant="secondary" className="font-normal text-[10px] uppercase tracking-wider mt-1">{emp.employee_type || 'Office Staff'}</Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {emp.joining_date ? new Date(emp.joining_date).toLocaleDateString('en-IN') : 'N/A'}
+                                </TableCell>
+                                <TableCell className="text-xs">
+                                  <div>{emp.contact || 'N/A'}</div>
+                                  {emp.emergency_contact && <div className="text-[10px] text-muted-foreground">Alt: {emp.emergency_contact}</div>}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={emp.active_status === 'active' ? 'success' : 'secondary'} className="capitalize text-[10px]">
+                                    {emp.active_status || 'active'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-medium text-xs">
+                                  ₹{(emp.salary_amount || 0).toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleEdit(emp)}><Pencil className="w-3.5 h-3.5" /></Button>
+                                    <Button size="icon" variant="outline" className="h-8 w-8 text-destructive border-destructive/20 hover:bg-destructive/10" onClick={() => handleDelete(emp.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="attendance" className="mt-0 outline-none space-y-6">
