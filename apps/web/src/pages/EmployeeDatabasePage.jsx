@@ -144,6 +144,7 @@ const EmployeeDatabasePage = () => {
     accident_date: todayStr,
     description: '',
     damage_cost: '',
+    fined_to_employee: false
   });
   const [accidentFiles, setAccidentFiles] = useState([]);
   const [accidentPreviews, setAccidentPreviews] = useState([]);
@@ -397,19 +398,85 @@ const EmployeeDatabasePage = () => {
     }
     setIsSubmitting(true);
     try {
+      const damageCostNum = Number(accidentForm.damage_cost) || 0;
+      const accDateIso = new Date(accidentForm.accident_date).toISOString();
+      const descText = accidentForm.description ? accidentForm.description.trim() : 'Vehicle damage';
+      const emp = employees.find(e => e.id === accidentForm.employee_id);
+      const empName = emp?.name || 'Driver';
+
       const data = new FormData();
       data.append('employee_id', accidentForm.employee_id);
       data.append('truck_id', accidentForm.truck_id);
-      data.append('accident_date', new Date(accidentForm.accident_date).toISOString());
+      data.append('accident_date', accDateIso);
       data.append('description', accidentForm.description);
-      data.append('damage_cost', Number(accidentForm.damage_cost));
+      data.append('damage_cost', damageCostNum);
+      data.append('fined_to_employee', accidentForm.fined_to_employee ? 'true' : 'false');
 
       accidentFiles.forEach(file => {
         data.append('image_urls', file);
       });
 
       await pb.collection('driver_accident_reports').create(data, { $autoCancel: false });
-      toast.success('Accident report logged successfully');
+
+      // Financial Ledger Integration
+      if (accidentForm.fined_to_employee) {
+        // 1. Add to Expenses as Employee Advance
+        let createdExpense = null;
+        try {
+          createdExpense = await pb.collection('expenses').create({
+            category: 'Employee Advance',
+            amount: damageCostNum,
+            date: accDateIso,
+            expense_date: accDateIso,
+            description: `Fine: ${descText} (${empName})`,
+            employee_id: accidentForm.employee_id,
+            truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+            status: 'Approved',
+            payment_method: 'Cash',
+            notes: `Accident damage fine levied on ${empName}`
+          }, { $autoCancel: false });
+        } catch (expErr) {
+          console.error('Failed to create advance expense:', expErr);
+        }
+
+        // 2. Add to Employee Advances (drives salary deduction in Payroll)
+        try {
+          await pb.collection('advances').create({
+            employee_id: accidentForm.employee_id,
+            amount: damageCostNum,
+            date: accDateIso,
+            advance_date: accDateIso,
+            reason: `Fine: ${descText}`,
+            status: 'Pending',
+            expense_id: createdExpense?.id || undefined
+          }, { $autoCancel: false });
+          toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to ${empName}'s advance balance!`);
+        } catch (advErr) {
+          console.error('Failed to create advance entry:', advErr);
+          toast.success('Accident report logged successfully');
+        }
+      } else {
+        // Not fined to employee -> Add as Miscellaneous Expense
+        try {
+          await pb.collection('expenses').create({
+            category: 'Miscellaneous',
+            amount: damageCostNum,
+            date: accDateIso,
+            expense_date: accDateIso,
+            description: `Accident damage cost: ${descText} (${empName})`,
+            employee_id: accidentForm.employee_id,
+            truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+            status: 'Approved',
+            payment_method: 'Cash',
+            notes: `Accident damage cost logged as company expense (Miscellaneous)`
+          }, { $autoCancel: false });
+          toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses!`);
+        } catch (expErr) {
+          console.error('Failed to create miscellaneous expense:', expErr);
+          toast.success('Accident report logged successfully');
+        }
+      }
+
       setAccidentModalOpen(false);
       setAccidentForm({
         employee_id: '',
@@ -417,6 +484,7 @@ const EmployeeDatabasePage = () => {
         accident_date: todayStr,
         description: '',
         damage_cost: '',
+        fined_to_employee: false
       });
       setAccidentFiles([]);
       setAccidentPreviews([]);
@@ -1341,6 +1409,28 @@ const EmployeeDatabasePage = () => {
                 onChange={e => setAccidentForm({...accidentForm, damage_cost: e.target.value})} 
                 placeholder="e.g. 15000"
               />
+            </div>
+
+            {/* Fined to Employee Checkbox Banner */}
+            <div className="flex items-start space-x-3 p-3.5 bg-amber-500/10 dark:bg-amber-500/15 rounded-2xl border border-amber-500/30 transition-all">
+              <input 
+                type="checkbox"
+                id="fined_to_employee"
+                checked={accidentForm.fined_to_employee}
+                onChange={e => setAccidentForm({...accidentForm, fined_to_employee: e.target.checked})}
+                className="w-4 h-4 mt-0.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0"
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="fined_to_employee" className="text-xs font-bold text-amber-800 dark:text-amber-300 cursor-pointer select-none block">
+                  Fined to Employee
+                </Label>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium leading-tight">
+                  {accidentForm.fined_to_employee 
+                    ? '⚠️ Cost will be added to Employee Advance (deducted from salary) and logged under Expenses as "Employee Advance".'
+                    : 'ℹ️ Cost will be logged directly under Expenses as "Miscellaneous" (no employee salary deduction).'
+                  }
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
