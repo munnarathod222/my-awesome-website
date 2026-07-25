@@ -682,16 +682,19 @@ Best Regards,
   }, [requests]);
 
   const prepareExportData = () => {
-    return processedData.map(r => ({
-      'Trip ID': r.expand?.trip_id?.trip_id || r.trip_id,
-      'Client Name': r.expand?.client_id?.client_name || 'Unknown',
-      'Amount': r.amount,
-      'Request Date': r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'yyyy-MM-dd') : '',
-      'Due Date': r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'yyyy-MM-dd') : '',
-      'Status': r.calculatedStatus,
-      'Days Overdue': r.daysOverdue || 0,
-      'Notes': r.notes || ''
-    }));
+    return processedData.map(r => {
+      const tripDateVal = r.expand?.trip_id?.date || r.request_date;
+      return {
+        'Trip ID': r.expand?.trip_id?.trip_id || r.trip_id,
+        'Client Name': r.expand?.client_id?.client_name || 'Unknown',
+        'Amount': r.amount,
+        'Trip Date': tripDateVal && parseDateSafe(tripDateVal) ? format(parseDateSafe(tripDateVal), 'yyyy-MM-dd') : '',
+        'Due Date': r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'yyyy-MM-dd') : '',
+        'Status': r.calculatedStatus,
+        'Days Overdue': r.daysOverdue || 0,
+        'Notes': r.notes || ''
+      };
+    });
   };
 
   const handleExportPDF = async () => {
@@ -1021,7 +1024,7 @@ Best Regards,
                         }}
                       />
                     </TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Trip Date</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('client_name')}>Client</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('amount')}>Amount</TableHead>
                     <TableHead className="cursor-pointer hover:text-foreground" onClick={() => handleSort('due_date')}>Due Date</TableHead>
@@ -1038,27 +1041,30 @@ Best Regards,
                       </TableCell>
                     </TableRow>
                   ) : (
-                    processedData.map(r => (
-                      <TableRow key={r.id} className="hover:bg-muted/30">
-                        <TableCell className="pl-6">
-                          {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') ? (
-                            <input 
-                              type="checkbox"
-                              className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                              checked={selectedIds.includes(r.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedIds(prev => [...prev, r.id]);
-                                } else {
-                                  setSelectedIds(prev => prev.filter(id => id !== r.id));
-                                }
-                              }}
-                            />
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                          {r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : ''}
-                        </TableCell>
+                    processedData.map(r => {
+                      const tripDateVal = r.expand?.trip_id?.date || r.request_date;
+                      const formattedTripDate = tripDateVal && parseDateSafe(tripDateVal) ? format(parseDateSafe(tripDateVal), 'dd MMM yyyy') : '';
+                      return (
+                        <TableRow key={r.id} className="hover:bg-muted/30">
+                          <TableCell className="pl-6">
+                            {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') ? (
+                              <input 
+                                type="checkbox"
+                                className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                                checked={selectedIds.includes(r.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedIds(prev => [...prev, r.id]);
+                                  } else {
+                                    setSelectedIds(prev => prev.filter(id => id !== r.id));
+                                  }
+                                }}
+                              />
+                            ) : null}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-foreground font-medium">
+                            {formattedTripDate}
+                          </TableCell>
                         <TableCell>
                           <div className="font-medium text-sm">{r.expand?.client_id?.client_name || 'Unknown Client'}</div>
                           <div className="text-[11px] text-muted-foreground font-mono">Trip: {r.expand?.trip_id?.trip_id || r.trip_id}</div>
@@ -1115,8 +1121,9 @@ Best Regards,
                           )}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
+                    );
+                  })
+                )}
                 </TableBody>
               </Table>
             </div>
