@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Activity, AlertTriangle, Info, HardDrive, ArrowUpRight, ArrowDownLeft, RefreshCw, ChevronDown, ChevronUp, Server, ShieldAlert } from 'lucide-react';
+import { Activity, AlertTriangle, Info, HardDrive, ArrowUpRight, ArrowDownLeft, RefreshCw, ChevronDown, ChevronUp, Server, ShieldAlert, Pencil, Save, Check } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 
 const hourlyBandwidthData = [
@@ -42,14 +42,33 @@ const BandwidthTrackerCard = () => {
   const [showDetails, setShowDetails] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Editable per-GB overage rate state
+  const [ratePerGBUSD, setRatePerGBUSD] = useState(() => {
+    const saved = localStorage.getItem('jbc_bandwidth_rate_usd');
+    return saved !== null ? parseFloat(saved) || 0.10 : 0.10;
+  });
+
+  const [isEditingRate, setIsEditingRate] = useState(false);
+  const [rateInput, setRateInput] = useState(ratePerGBUSD.toString());
+
   const currentMonthUsageGB = 8.91;
   const freeTierLimitGB = 5.00;
   const overageGB = Math.max(0, currentMonthUsageGB - freeTierLimitGB);
   const percentageUsed = Math.min(100, Math.round((currentMonthUsageGB / freeTierLimitGB) * 100));
   
-  // Rate assumptions: approx $0.10 / GB overage (~₹8.30 / GB)
-  const estimatedOverageCostUSD = (overageGB * 0.10).toFixed(2);
-  const estimatedOverageCostINR = Math.round(overageGB * 8.30 * 10);
+  // Dynamic overage calculation based on user's custom rate
+  const activeRateUSD = parseFloat(rateInput) >= 0 ? parseFloat(rateInput) : ratePerGBUSD;
+  const estimatedOverageCostUSD = (overageGB * activeRateUSD).toFixed(2);
+  const estimatedOverageCostINR = Math.round(overageGB * activeRateUSD * 83);
+
+  const handleSaveRate = () => {
+    const val = parseFloat(rateInput);
+    if (!isNaN(val) && val >= 0) {
+      setRatePerGBUSD(val);
+      localStorage.setItem('jbc_bandwidth_rate_usd', val.toString());
+      setIsEditingRate(false);
+    }
+  };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -119,11 +138,24 @@ const BandwidthTrackerCard = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border/50 shadow-sm rounded-2xl">
+        {/* Editable Est. Overage Charge Card */}
+        <Card className="bg-card border-border/50 shadow-sm rounded-2xl relative group">
           <CardContent className="p-5">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Est. Overage Charge</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Est. Overage Charge</p>
+                  <button 
+                    onClick={() => {
+                      setRateInput(ratePerGBUSD.toString());
+                      setIsEditingRate(!isEditingRate);
+                    }}
+                    title="Edit per-GB rate"
+                    className="p-0.5 text-muted-foreground hover:text-primary rounded transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
                 <h3 className="text-2xl font-black mt-1 text-foreground">
                   ₹{estimatedOverageCostINR} <span className="text-xs font-normal text-muted-foreground">(${estimatedOverageCostUSD})</span>
                 </h3>
@@ -132,9 +164,51 @@ const BandwidthTrackerCard = () => {
                 <Server className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-3 font-medium">
-              Standard $0.10 / GB bandwidth rate
-            </p>
+
+            {/* Editable Rate Form or Display */}
+            {isEditingRate ? (
+              <div className="mt-3 pt-2 border-t border-border/40 space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-muted-foreground">$</span>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    min="0"
+                    value={rateInput} 
+                    onChange={e => setRateInput(e.target.value)}
+                    placeholder="0.10"
+                    className="w-20 h-7 px-2 text-xs font-bold font-mono bg-background border border-primary/40 focus:border-primary rounded-lg focus:outline-none"
+                  />
+                  <span className="text-xs text-muted-foreground font-semibold">/ GB</span>
+                  <Button 
+                    type="button" 
+                    size="sm"
+                    onClick={handleSaveRate}
+                    className="h-7 px-2.5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg ml-auto"
+                  >
+                    <Save className="w-3 h-3 mr-1" /> Save
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1 text-[10px]">
+                  <span className="text-muted-foreground">Presets:</span>
+                  <button onClick={() => { setRateInput('0.10'); setRatePerGBUSD(0.10); localStorage.setItem('jbc_bandwidth_rate_usd', '0.10'); setIsEditingRate(false); }} className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-primary/20 hover:text-primary font-mono">$0.10</button>
+                  <button onClick={() => { setRateInput('0.15'); setRatePerGBUSD(0.15); localStorage.setItem('jbc_bandwidth_rate_usd', '0.15'); setIsEditingRate(false); }} className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-primary/20 hover:text-primary font-mono">$0.15</button>
+                  <button onClick={() => { setRateInput('0.20'); setRatePerGBUSD(0.20); localStorage.setItem('jbc_bandwidth_rate_usd', '0.20'); setIsEditingRate(false); }} className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-primary/20 hover:text-primary font-mono">$0.20</button>
+                  <button onClick={() => { setRateInput('0.50'); setRatePerGBUSD(0.50); localStorage.setItem('jbc_bandwidth_rate_usd', '0.50'); setIsEditingRate(false); }} className="px-1.5 py-0.5 rounded bg-muted/60 hover:bg-primary/20 hover:text-primary font-mono">$0.50</button>
+                </div>
+              </div>
+            ) : (
+              <p 
+                onClick={() => {
+                  setRateInput(ratePerGBUSD.toString());
+                  setIsEditingRate(true);
+                }}
+                className="text-xs text-muted-foreground mt-3 font-medium cursor-pointer hover:text-primary transition-colors flex items-center gap-1"
+              >
+                <span>Custom rate: <strong className="text-foreground font-mono">${ratePerGBUSD.toFixed(2)} / GB</strong></span>
+                <Pencil className="w-2.5 h-2.5 opacity-60" />
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
