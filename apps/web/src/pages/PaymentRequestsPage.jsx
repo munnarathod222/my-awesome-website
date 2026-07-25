@@ -66,14 +66,22 @@ const PaymentRequestsPage = () => {
     setLoading(true);
     setSelectedIds([]);
     try {
-      const [reqs, cls] = await Promise.all([
+      const [reqs, cls, allTrips] = await Promise.all([
         pb.collection('payment_requests').getFullList({
           expand: 'trip_id,client_id',
           sort: '-request_date',
           $autoCancel: false
         }),
-        pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false })
+        pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }),
+        pb.collection('trip_logs').getFullList({ sort: '-date', $autoCancel: false }).catch(() => [])
       ]);
+
+      // Lookup map for trips by PocketBase record ID and string trip_id code (e.g. TRIP-227)
+      const tripMap = {};
+      allTrips.forEach(t => {
+        if (t.id) tripMap[t.id] = t;
+        if (t.trip_id) tripMap[t.trip_id] = t;
+      });
 
       // Calculate dynamic overdue
       const today = new Date();
@@ -84,8 +92,10 @@ const PaymentRequestsPage = () => {
         let daysOverdue = 0;
         let effectiveAmount = r.amount;
 
-        // Sync with linked Trip Log if present
-        const linkedTrip = r.expand?.trip_id;
+        // Sync with linked Trip Log if present (by relation expand or tripMap lookup)
+        const linkedTrip = r.expand?.trip_id || tripMap[r.trip_id];
+        const actualTripDate = linkedTrip?.date || r.request_date;
+
         if (linkedTrip) {
           const isTripPaid = (linkedTrip.client_payment_status || '').toLowerCase() === 'received' || (linkedTrip.client_payment_status || '').toLowerCase() === 'paid';
           const isDelivered = !linkedTrip.trip_status || linkedTrip.trip_status === 'Delivered';
@@ -123,7 +133,15 @@ const PaymentRequestsPage = () => {
           }
         }
 
-        return { ...r, amount: effectiveAmount, status: currentStatus, calculatedStatus: currentStatus, daysOverdue };
+        return { 
+          ...r, 
+          amount: effectiveAmount, 
+          status: currentStatus, 
+          calculatedStatus: currentStatus, 
+          daysOverdue,
+          linkedTrip,
+          actualTripDate
+        };
       });
 
       // Fetch ONLY DELIVERED unpaid trips to auto-generate requests if they don't exist
@@ -1042,7 +1060,7 @@ Best Regards,
                     </TableRow>
                   ) : (
                     processedData.map(r => {
-                      const tripDateVal = r.expand?.trip_id?.date || r.request_date;
+                      const tripDateVal = r.actualTripDate || r.expand?.trip_id?.date || r.linkedTrip?.date || r.request_date;
                       const formattedTripDate = tripDateVal && parseDateSafe(tripDateVal) ? format(parseDateSafe(tripDateVal), 'dd MMM yyyy') : '';
                       return (
                         <TableRow key={r.id} className="hover:bg-muted/30">
