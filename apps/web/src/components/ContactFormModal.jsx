@@ -83,7 +83,32 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           if (match) mapUrl = match[1];
         }
 
-        const displayNotes = (contact.notes || '').replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim();
+        let bankName = contact.bank_name || '';
+        let branchName = contact.branch_name || '';
+        let ifscCode = contact.ifsc_code || '';
+        let accountType = contact.account_type || '';
+        let agentCompany = contact.agent_company || '';
+        let loanType = contact.loan_type || '';
+
+        if (contact.notes) {
+          const finMatch = contact.notes.match(/\[Finance:\s*([^\]]+)\]/i);
+          if (finMatch) {
+            const parts = finMatch[1].split('|').map(s => s.trim());
+            parts.forEach(p => {
+              if (p.startsWith('Bank:')) bankName = bankName || p.replace('Bank:', '').trim();
+              if (p.startsWith('Branch:')) branchName = branchName || p.replace('Branch:', '').trim();
+              if (p.startsWith('IFSC:')) ifscCode = ifscCode || p.replace('IFSC:', '').trim();
+              if (p.startsWith('Account:')) accountType = accountType || p.replace('Account:', '').trim();
+              if (p.startsWith('Agency:')) agentCompany = agentCompany || p.replace('Agency:', '').trim();
+              if (p.startsWith('Loan Type:')) loanType = loanType || p.replace('Loan Type:', '').trim();
+            });
+          }
+        }
+
+        const displayNotes = (contact.notes || '')
+          .replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '')
+          .replace(/\[Finance:\s*[^\]]+\]/gi, '')
+          .trim();
 
         setFormData({
           contact_type: type,
@@ -98,12 +123,12 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           warehouse_name: contact.warehouse_name || '',
           designation: contact.designation || '',
           client_name: contact.client_name || '',
-          bank_name: contact.bank_name || '',
-          branch_name: contact.branch_name || '',
-          ifsc_code: contact.ifsc_code || '',
-          account_type: contact.account_type || '',
-          loan_type: contact.loan_type || '',
-          agent_company: contact.agent_company || '',
+          bank_name: bankName,
+          branch_name: branchName,
+          ifsc_code: ifscCode,
+          account_type: accountType,
+          loan_type: loanType,
+          agent_company: agentCompany,
         });
       } else {
         setFormData({
@@ -124,7 +149,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
           ifsc_code: '',
           account_type: '',
           loan_type: '',
-          agent_company: '',
+          agent_company: ''
         });
       }
     }
@@ -134,7 +159,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     setMainCategory(val);
     if (val === 'Client') {
       setSubCategory('Corporate');
-      setFormData(prev => ({ ...prev, contact_type: 'Corporate' }));
+      setFormData(prev => ({ ...prev, contact_type: 'Client' }));
     } else if (val === 'Warehouse') {
       setSubCategory('Warehouse');
       setFormData(prev => ({ ...prev, contact_type: 'Warehouse' }));
@@ -162,9 +187,17 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
   };
 
   const validateForm = () => {
-    if (!formData.company_name.trim()) return 'Company/Full name is required';
+    if (!formData.company_name.trim()) return 'Company / Contact name is required';
     if (!formData.phone_number.trim()) return 'Phone number is required';
     if (!formData.physical_address.trim()) return 'Physical address is required';
+    
+    if (formData.contact_type === 'Banking' && !formData.bank_name?.trim()) {
+      return 'Bank Name is required';
+    }
+
+    if (formData.contact_type === 'Loan Agent' && !formData.agent_company?.trim()) {
+      return 'Agent / DSA Company is required';
+    }
     
     // GSTIN is optional for all contacts (Clients, Vendors, Employees, Maintenance)
     if (formData.gstin.trim()) {
@@ -223,19 +256,54 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
     try {
       const mapsUrl = formData.google_maps_url ? formData.google_maps_url.trim() : '';
 
-      let cleanNotes = (formData.notes || '').replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim();
+      let extraDetails = [];
+      if (formData.contact_type === 'Banking') {
+        if (formData.bank_name) extraDetails.push(`Bank: ${formData.bank_name}`);
+        if (formData.branch_name) extraDetails.push(`Branch: ${formData.branch_name}`);
+        if (formData.ifsc_code) extraDetails.push(`IFSC: ${formData.ifsc_code}`);
+        if (formData.account_type) extraDetails.push(`Account: ${formData.account_type}`);
+      } else if (formData.contact_type === 'Loan Agent') {
+        if (formData.agent_company) extraDetails.push(`Agency: ${formData.agent_company}`);
+        if (formData.loan_type) extraDetails.push(`Loan Type: ${formData.loan_type}`);
+      }
+
+      let cleanNotes = (formData.notes || '')
+        .replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '')
+        .replace(/\[Finance:\s*[^\]]+\]/gi, '')
+        .trim();
+
+      if (extraDetails.length > 0) {
+        const detailStr = `[Finance: ${extraDetails.join(' | ')}]`;
+        cleanNotes = cleanNotes ? `${cleanNotes}\n${detailStr}` : detailStr;
+      }
+
       if (mapsUrl) {
         cleanNotes = cleanNotes ? `${cleanNotes}\n[Location: ${mapsUrl}]` : `[Location: ${mapsUrl}]`;
       }
 
+      let finalDesignation = formData.designation || '';
+      if (formData.contact_type === 'Banking' && !finalDesignation) {
+        finalDesignation = [formData.bank_name, formData.account_type].filter(Boolean).join(' - ') || 'Bank Contact';
+      } else if (formData.contact_type === 'Loan Agent' && !finalDesignation) {
+        finalDesignation = [formData.agent_company, formData.loan_type].filter(Boolean).join(' - ') || 'Loan Agent';
+      }
+
       const payload = {
-        ...formData,
+        contact_type: formData.contact_type || 'Banking',
+        company_name: formData.company_name ? formData.company_name.trim() : '',
+        phone_number: formData.phone_number ? formData.phone_number.trim() : '',
+        physical_address: formData.physical_address ? formData.physical_address.trim() : '',
+        gstin: formData.gstin ? formData.gstin.trim().toUpperCase() : '',
+        email: formData.email ? formData.email.trim() : '',
         notes: cleanNotes,
         google_maps_url: mapsUrl,
         google_map_link: mapsUrl,
         location_url: mapsUrl,
-        gstin: formData.gstin.toUpperCase(),
-        created_by: currentUser.id
+        truck_brand: formData.truck_brand || '',
+        warehouse_name: formData.warehouse_name || '',
+        designation: finalDesignation,
+        client_name: formData.client_name || '',
+        created_by: currentUser?.id || ''
       };
 
       if (contact) {
