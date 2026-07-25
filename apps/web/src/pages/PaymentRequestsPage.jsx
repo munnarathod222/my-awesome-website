@@ -82,8 +82,33 @@ const PaymentRequestsPage = () => {
       const mappedReqs = reqs.map(r => {
         let currentStatus = r.status;
         let daysOverdue = 0;
+        let effectiveAmount = r.amount;
 
-        if (r.status === 'Pending' && r.due_date) {
+        // Sync with linked Trip Log if present
+        const linkedTrip = r.expand?.trip_id;
+        if (linkedTrip) {
+          const isTripPaid = (linkedTrip.client_payment_status || '').toLowerCase() === 'received' || (linkedTrip.client_payment_status || '').toLowerCase() === 'paid';
+          if (isTripPaid) {
+            currentStatus = 'Paid';
+          }
+
+          const grossRev = Number(linkedTrip.revenue) || 0;
+          const clientAdv = Number(linkedTrip.advance_received_from_client) || 0;
+          const calculatedNet = Math.max(0, grossRev - clientAdv);
+          if (calculatedNet > 0) {
+            effectiveAmount = calculatedNet;
+          }
+
+          // Self-heal DB record if discrepancy found
+          if ((r.amount !== effectiveAmount || (isTripPaid && r.status !== 'Paid')) && r.id) {
+            pb.collection('payment_requests').update(r.id, {
+              amount: effectiveAmount,
+              status: isTripPaid ? 'Paid' : r.status
+            }, { $autoCancel: false }).catch(err => console.warn('Background request sync failed:', err));
+          }
+        }
+
+        if (currentStatus === 'Pending' && r.due_date) {
           const due = parseDateSafe(r.due_date);
           if (due) {
             due.setHours(0,0,0,0);
@@ -94,7 +119,7 @@ const PaymentRequestsPage = () => {
           }
         }
 
-        return { ...r, calculatedStatus: currentStatus, daysOverdue };
+        return { ...r, amount: effectiveAmount, status: currentStatus, calculatedStatus: currentStatus, daysOverdue };
       });
 
       // Fetch completed unpaid trips to auto-generate requests if they don't exist
