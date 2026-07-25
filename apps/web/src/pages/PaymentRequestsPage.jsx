@@ -88,8 +88,12 @@ const PaymentRequestsPage = () => {
         const linkedTrip = r.expand?.trip_id;
         if (linkedTrip) {
           const isTripPaid = (linkedTrip.client_payment_status || '').toLowerCase() === 'received' || (linkedTrip.client_payment_status || '').toLowerCase() === 'paid';
+          const isDelivered = !linkedTrip.trip_status || linkedTrip.trip_status === 'Delivered';
+
           if (isTripPaid) {
             currentStatus = 'Paid';
+          } else if (!isDelivered) {
+            currentStatus = 'In Transit';
           }
 
           const grossRev = Number(linkedTrip.revenue) || 0;
@@ -122,9 +126,9 @@ const PaymentRequestsPage = () => {
         return { ...r, amount: effectiveAmount, status: currentStatus, calculatedStatus: currentStatus, daysOverdue };
       });
 
-      // Fetch completed unpaid trips to auto-generate requests if they don't exist
+      // Fetch ONLY DELIVERED unpaid trips to auto-generate requests if they don't exist
       const unpaidTrips = await pb.collection('trip_logs').getFullList({
-        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && client_id != ""',
+        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && (trip_status = "Delivered" || trip_status = "") && client_id != ""',
         $autoCancel: false
       });
 

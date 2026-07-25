@@ -65,7 +65,7 @@ export default function CreatePaymentRequestModal({ isOpen, onClose, onSuccess }
       const [cls, trips] = await Promise.all([
         pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }),
         pb.collection('trip_logs').getFullList({
-          filter: 'client_payment_status = "pending" || client_payment_status = "delayed"',
+          filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && (trip_status = "Delivered" || trip_status = "")',
           sort: '-date',
           $autoCancel: false
         })
