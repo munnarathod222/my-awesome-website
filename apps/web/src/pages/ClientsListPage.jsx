@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Filter, MoreHorizontal, Trash2, Edit2, Eye, Download, Users, Building, User, Store, ShieldCheck, MapPin } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import CreateClientUserModal from '@/components/CreateClientUserModal.jsx';
+import { formatMapUrl } from '@/lib/locationUtils.js';
 
 export default function ClientsListPage() {
   const [clients, setClients] = useState([]);
@@ -302,30 +303,57 @@ export default function ClientsListPage() {
                         {getStatusBadge(client.status)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
-                              <MoreHorizontal className="h-4 w-4" />
+                        <div className="flex items-center justify-end gap-1">
+                          {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"
+                              title="Open Location on Google Maps"
+                              onClick={() => {
+                                const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
+                                window.open(formatMapUrl(target), '_blank');
+                              }}
+                            >
+                              <MapPin className="h-4 w-4" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-[160px]">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                             <DropdownMenuItem onClick={() => setPortalModalClient(client)} className="cursor-pointer text-primary font-semibold">
-                              <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Setup Portal Login
-                             </DropdownMenuItem>
-                             <DropdownMenuItem asChild className="cursor-pointer">
-                              <Link to={`/client/${client.id}`}><Eye className="h-4 w-4 mr-2" /> View Details</Link>
-                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="cursor-pointer">
-                              <Link to={`/clients/${client.id}/edit`}><Edit2 className="h-4 w-4 mr-2" /> Edit Client</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive cursor-pointer focus:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-[180px]">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
+                                    window.open(formatMapUrl(target), '_blank');
+                                  }} 
+                                  className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
+                                >
+                                  <MapPin className="h-4 w-4 mr-2 text-rose-500" /> Open Location
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem onClick={() => setPortalModalClient(client)} className="cursor-pointer text-primary font-semibold">
+                                <ShieldCheck className="h-4 w-4 mr-2 text-primary" /> Setup Portal Login
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild className="cursor-pointer">
+                                <Link to={`/client/${client.id}`}><Eye className="h-4 w-4 mr-2" /> View Details</Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild className="cursor-pointer">
+                                <Link to={`/clients/${client.id}/edit`}><Edit2 className="h-4 w-4 mr-2" /> Edit Client</Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDelete(client.id)} className="text-destructive cursor-pointer focus:text-destructive">
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

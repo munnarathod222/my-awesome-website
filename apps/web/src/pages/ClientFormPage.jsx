@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ export default function ClientFormPage() {
     phone: '',
     company_name: '',
     address: '',
+    google_maps_url: '',
     city: '',
     state: '',
     postal_code: '',
@@ -57,6 +58,7 @@ export default function ClientFormPage() {
             phone: client.phone || '',
             company_name: client.company_name || '',
             address: client.address || '',
+            google_maps_url: client.google_maps_url || client.google_map_link || client.location_url || client.map_url || '',
             city: client.city || '',
             state: client.state || '',
             postal_code: client.postal_code || '',
@@ -239,6 +241,20 @@ export default function ClientFormPage() {
                 <Label htmlFor="address">Full Address</Label>
                 <Input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Street, Building, Area" />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="google_maps_url" className="flex items-center gap-1.5 text-primary">
+                  <MapPin className="w-4 h-4 text-rose-500" /> Google Maps URL / Location Link
+                </Label>
+                <Input 
+                  id="google_maps_url" 
+                  name="google_maps_url" 
+                  value={formData.google_maps_url} 
+                  onChange={handleChange} 
+                  placeholder="Paste Google Maps link (e.g. https://maps.app.goo.gl/... or dropped pin link)" 
+                />
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>

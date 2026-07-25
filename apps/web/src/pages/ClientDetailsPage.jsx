@@ -17,6 +17,7 @@ import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tool
 
 import { calculateClientMetrics } from '@/lib/clientPaymentUtils.js';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
+import { formatMapUrl } from '@/lib/locationUtils.js';
 import { cn } from '@/lib/utils.js';
 
 const ClientDetailsPage = () => {
@@ -163,11 +164,26 @@ const ClientDetailsPage = () => {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <MapPin className="w-4 h-4 mt-1 text-muted-foreground" />
-                <div className="text-sm">
-                  <p className="font-medium">Address</p>
-                  <p className="text-muted-foreground">
-                    {[client.address, client.city, client.state].filter(Boolean).join(', ') || 'Not provided'}
+                <MapPin className="w-4 h-4 mt-1 text-rose-500 shrink-0" />
+                <div className="text-sm w-full">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium">Address & Location</p>
+                    {(client.google_maps_url || client.google_map_link || client.location_url || client.address) && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-rose-500 hover:text-rose-600 font-semibold text-xs flex items-center gap-1"
+                        onClick={() => {
+                          const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
+                          window.open(formatMapUrl(target), '_blank');
+                        }}
+                      >
+                        <MapPin className="w-3.5 h-3.5" /> Open Google Maps
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground mt-0.5">
+                    {[client.address, client.city, client.state, client.postal_code].filter(Boolean).join(', ') || 'Not provided'}
                   </p>
                 </div>
               </div>
