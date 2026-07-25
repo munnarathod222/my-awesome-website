@@ -765,64 +765,71 @@ const TripLogsPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="py-2">
-                              {(() => {
-                                const cleanRouteStr = (log.route || '').trim();
-                                const routeRec = routeMap[log.route_id] || 
-                                                 routeMap[cleanRouteStr] || 
-                                                 routeMap[cleanRouteStr.toUpperCase()] || 
-                                                 routeMap[cleanRouteStr.replace(/\s+/g, '')];
-                                const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
-                                
-                                // Build structured list of locations/stops, prioritizing Route Master origin/destination
-                                let locations = [];
-                                if (routeRec) {
-                                  const startLocName = routeRec.origin || routeRec.start_location || log.origin || 'Start';
-                                  locations.push({
-                                    name: startLocName,
-                                    mapLink: routeRec.start_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startLocName)}`,
-                                    type: 'origin'
-                                  });
-                                  
-                                  const sortedStops = [...stops].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-                                  sortedStops.forEach(s => {
-                                    locations.push({
-                                      name: s.stop_name,
-                                      mapLink: s.map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.stop_name)}`,
-                                      type: 'stop'
-                                    });
-                                  });
-                                  
-                                  const endLocName = routeRec.destination || routeRec.end_location || log.destination || 'End';
-                                  locations.push({
-                                    name: endLocName,
-                                    mapLink: routeRec.end_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endLocName)}`,
-                                    type: 'destination'
-                                  });
-                                } else if (cleanRouteStr.includes('WARK') && cleanRouteStr.includes('MHYD')) {
-                                  locations = [
-                                    { name: 'WARANGAL', mapLink: 'https://www.google.com/maps/search/?api=1&query=WARANGAL', type: 'origin' },
-                                    { name: 'TUKKUGUDA', mapLink: 'https://www.google.com/maps/search/?api=1&query=TUKKUGUDA', type: 'destination' }
-                                  ];
-                                } else if (log.route && log.route.includes('->')) {
-                                  const parts = log.route.split('->').map(p => p.trim());
-                                  parts.forEach((part, idx) => {
-                                    let type = 'stop';
-                                    if (idx === 0) type = 'origin';
-                                    else if (idx === parts.length - 1) type = 'destination';
-                                    
-                                    locations.push({
-                                      name: part,
-                                      mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(part)}`,
-                                      type
-                                    });
-                                  });
-                                } else if (log.route) {
-                                  locations.push({
-                                    name: log.route,
-                                    mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(log.route)}`,
-                                    type: 'origin'
-                                  });
-                                }
+                               {(() => {
+                                 const cleanRouteStr = (log.route || '').trim().toUpperCase();
+                                 const routeRec = routeMap[log.route_id] || 
+                                                  routeMap[cleanRouteStr] || 
+                                                  routeMap[cleanRouteStr.replace(/\s+/g, '')];
+                                 const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
+                                 
+                                 // Build structured list of locations/stops, prioritizing Route Master origin/destination
+                                 let locations = [];
+                                 if (routeRec) {
+                                   const startLocName = routeRec.origin || routeRec.start_location || log.origin || 'Start';
+                                   locations.push({
+                                     name: startLocName,
+                                     mapLink: routeRec.start_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startLocName)}`,
+                                     type: 'origin'
+                                   });
+                                   
+                                   const sortedStops = [...stops].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                                   sortedStops.forEach(s => {
+                                     locations.push({
+                                       name: s.stop_name,
+                                       mapLink: s.map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.stop_name)}`,
+                                       type: 'stop'
+                                     });
+                                   });
+                                   
+                                   let endLocName = routeRec.destination || routeRec.end_location || log.destination || 'End';
+                                   if (endLocName === 'HUZURABAD' || cleanRouteStr.includes('WARK') || cleanRouteStr.includes('MHYD')) {
+                                     endLocName = 'TUKKUGUDA';
+                                   }
+                                   locations.push({
+                                     name: endLocName,
+                                     mapLink: routeRec.end_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endLocName)}`,
+                                     type: 'destination'
+                                   });
+                                 } else if (cleanRouteStr.includes('WARK') || cleanRouteStr.includes('MHYD') || cleanRouteStr.includes('HUZURABAD')) {
+                                   locations = [
+                                     { name: 'WARANGAL', mapLink: 'https://www.google.com/maps/search/?api=1&query=WARANGAL', type: 'origin' },
+                                     { name: 'TUKKUGUDA', mapLink: 'https://www.google.com/maps/search/?api=1&query=TUKKUGUDA', type: 'destination' }
+                                   ];
+                                 } else if (log.route && log.route.includes('->')) {
+                                   const parts = log.route.split('->').map(p => p.trim());
+                                   parts.forEach((part, idx) => {
+                                     let type = 'stop';
+                                     if (idx === 0) type = 'origin';
+                                     else if (idx === parts.length - 1) type = 'destination';
+                                     
+                                     let name = part;
+                                     if (name === 'HUZURABAD' || (idx === parts.length - 1 && (part === 'MHYD' || part === 'HUZURABAD'))) {
+                                       name = 'TUKKUGUDA';
+                                     }
+
+                                     locations.push({
+                                       name,
+                                       mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+                                       type
+                                     });
+                                   });
+                                 } else if (log.route) {
+                                   locations.push({
+                                     name: log.route,
+                                     mapLink: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(log.route)}`,
+                                     type: 'origin'
+                                   });
+                                 }
 
                                 if (locations.length === 0) return <span className="text-muted-foreground">—</span>;
 
