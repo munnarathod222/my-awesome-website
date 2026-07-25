@@ -563,6 +563,43 @@ Best Regards,
     }
   };
 
+  const [bulkDueDateInput, setBulkDueDateInput] = useState('');
+  const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
+
+  const handleBulkUpdateDueDate = async (dueDateVal) => {
+    if (!dueDateVal || selectedIds.length === 0) {
+      return toast.error('Please select a Due Date first');
+    }
+    setIsUpdatingDueDate(true);
+    try {
+      const dueIso = new Date(dueDateVal).toISOString();
+      for (const id of selectedIds) {
+        await pb.collection('payment_requests').update(id, { due_date: dueIso }, { $autoCancel: false });
+      }
+      toast.success(`Updated Due Date to ${format(new Date(dueDateVal), 'dd MMM yyyy')} for ${selectedIds.length} requests`);
+      setBulkDueDateInput('');
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to update due dates:', err);
+      toast.error('Failed to update due dates');
+    } finally {
+      setIsUpdatingDueDate(false);
+    }
+  };
+
+  const handleUpdateSingleDueDate = async (reqId, dueDateVal) => {
+    if (!dueDateVal) return;
+    try {
+      const dueIso = new Date(dueDateVal).toISOString();
+      await pb.collection('payment_requests').update(reqId, { due_date: dueIso }, { $autoCancel: false });
+      toast.success(`Due date updated to ${format(new Date(dueDateVal), 'dd MMM yyyy')}`);
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to update single due date:', err);
+      toast.error('Failed to update due date');
+    }
+  };
+
   const processedData = useMemo(() => {
     let filtered = requests.filter(r => {
       const matchStatus = statusFilter === 'all' || r.calculatedStatus === statusFilter;
@@ -1022,6 +1059,76 @@ Best Regards,
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Sticky Bulk Action Banner when trips/requests are selected */}
+            {selectedIds.length > 0 && (
+              <div className="p-3 px-6 bg-primary/10 border-b border-primary/20 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+                    {selectedIds.length} Selected
+                  </span>
+                  <span className="text-xs font-semibold text-foreground">
+                    Total: <span className="text-primary font-bold">{formatCurrency(bulkTotal)}</span>
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Set Bulk Due Date Controls */}
+                  <div className="flex items-center gap-1.5 bg-background p-1 px-2 rounded-xl border border-border">
+                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">Set Due Date:</span>
+                    <input 
+                      type="date"
+                      value={bulkDueDateInput}
+                      onChange={e => setBulkDueDateInput(e.target.value)}
+                      className="bg-transparent text-xs font-medium focus:outline-none cursor-pointer"
+                    />
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="default"
+                      disabled={isUpdatingDueDate || !bulkDueDateInput}
+                      onClick={() => handleBulkUpdateDueDate(bulkDueDateInput)}
+                      className="h-7 text-xs rounded-lg px-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                    >
+                      {isUpdatingDueDate ? 'Saving...' : 'Apply Date'}
+                    </Button>
+                  </div>
+
+                  {isSameClient && (
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleBulkWhatsApp}
+                      className="h-8 text-xs rounded-xl border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold"
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" /> WhatsApp Statement
+                    </Button>
+                  )}
+
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleBulkMarkAsPaid}
+                    className="h-8 text-xs rounded-xl border-success/30 text-success hover:bg-success/10 font-semibold"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Mark Paid
+                  </Button>
+
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setSelectedIds([])}
+                    className="h-8 text-xs rounded-xl text-muted-foreground hover:bg-muted"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Desktop Table View (Hidden on mobile) */}
             <div className="hidden md:block overflow-x-auto">
               <Table>
@@ -1031,11 +1138,10 @@ Best Regards,
                       <input 
                         type="checkbox"
                         className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                        checked={processedData.length > 0 && selectedIds.length === processedData.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').length}
+                        checked={processedData.length > 0 && selectedIds.length === processedData.length}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            const pendings = processedData.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').map(r => r.id);
-                            setSelectedIds(pendings);
+                            setSelectedIds(processedData.map(r => r.id));
                           } else {
                             setSelectedIds([]);
                           }
@@ -1065,20 +1171,18 @@ Best Regards,
                       return (
                         <TableRow key={r.id} className="hover:bg-muted/30">
                           <TableCell className="pl-6">
-                            {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') ? (
-                              <input 
-                                type="checkbox"
-                                className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                                checked={selectedIds.includes(r.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedIds(prev => [...prev, r.id]);
-                                  } else {
-                                    setSelectedIds(prev => prev.filter(id => id !== r.id));
-                                  }
-                                }}
-                              />
-                            ) : null}
+                            <input 
+                              type="checkbox"
+                              className="rounded border-muted-foreground/30 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                              checked={selectedIds.includes(r.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedIds(prev => [...prev, r.id]);
+                                } else {
+                                  setSelectedIds(prev => prev.filter(id => id !== r.id));
+                                }
+                              }}
+                            />
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-sm text-foreground font-medium">
                             {formattedTripDate}
@@ -1098,11 +1202,20 @@ Best Regards,
                           </div>
                         </TableCell>
                         <TableCell>
-                          {r.due_date && parseDateSafe(r.due_date) ? (
-                            <span className={cn("text-sm", r.calculatedStatus === 'Overdue' && "text-destructive font-medium")}>
-                              {format(parseDateSafe(r.due_date), 'dd MMM yyyy')}
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn("text-sm font-medium", r.calculatedStatus === 'Overdue' && "text-destructive font-bold")}>
+                              {r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'dd MMM yyyy') : 'No Due Date'}
                             </span>
-                          ) : '-'}
+                            <div className="relative group/due inline-flex">
+                              <input 
+                                type="date" 
+                                className="w-6 h-6 p-0 border-0 bg-muted/40 hover:bg-primary/20 cursor-pointer rounded text-transparent font-mono text-xs opacity-60 hover:opacity-100 transition-opacity" 
+                                title="Change Due Date"
+                                value={r.due_date ? new Date(r.due_date).toISOString().split('T')[0] : ''}
+                                onChange={(e) => handleUpdateSingleDueDate(r.id, e.target.value)}
+                              />
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col items-start gap-1">
