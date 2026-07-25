@@ -275,13 +275,15 @@ const PaymentRequestsPage = () => {
       const email = r.expand?.client_id?.email || '';
       const phone = r.expand?.client_id?.phone || '';
       
-      const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
+      const tripObj = r.expand?.trip_id || r.linkedTrip || {};
+      const tripId = tripObj.trip_id || r.trip_id || '';
+      const actualTripDateVal = r.actualTripDate || tripObj.date || r.request_date;
       
       const invoiceObj = {
         invoice_number: `INV-${r.id.substring(0, 8).toUpperCase()}`,
-        invoice_date: r.request_date,
+        invoice_date: actualTripDateVal,
         due_date: r.due_date || (() => {
-          const parsed = parseDateSafe(r.request_date);
+          const parsed = parseDateSafe(actualTripDateVal);
           const tVal = parsed ? parsed.getTime() : Date.now();
           return new Date(tVal + 7 * 24 * 60 * 60 * 1000).toISOString();
         })(),
@@ -296,7 +298,10 @@ const PaymentRequestsPage = () => {
         total_amount: r.amount
       };
 
+      const tripDateFormatted = actualTripDateVal && parseDateSafe(actualTripDateVal) ? format(parseDateSafe(actualTripDateVal), 'dd MMM yyyy') : '-';
+
       const columns = [
+        { header: 'Trip Date', key: 'trip_date' },
         { header: 'Description', key: 'description' },
         { header: 'Trip ID', key: 'trip_id' },
         { header: 'Amount', key: 'amount' }
@@ -304,7 +309,8 @@ const PaymentRequestsPage = () => {
 
       const data = [
         {
-          description: `Freight charges for trip log: ${tripId}`,
+          trip_date: tripDateFormatted,
+          description: `Freight charges for trip: ${tripId}`,
           trip_id: tripId,
           amount: `₹${Number(r.amount || 0).toLocaleString('en-IN')}`
         }
@@ -360,11 +366,12 @@ const PaymentRequestsPage = () => {
       ];
 
       const data = selectedReqs.map((r, idx) => {
-        const tripObj = r.expand?.trip_id || {};
+        const tripObj = r.expand?.trip_id || r.linkedTrip || {};
         const tripId = tripObj.trip_id || r.trip_id || `TRIP-${idx + 1}`;
-        const dateStr = r.request_date && parseDateSafe(r.request_date) 
-          ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') 
-          : (tripObj.date ? format(parseDateSafe(tripObj.date) || new Date(), 'dd MMM yyyy') : '-');
+        const actualTripDateVal = r.actualTripDate || tripObj.date || r.expand?.trip_id?.date || r.request_date;
+        const dateStr = actualTripDateVal && parseDateSafe(actualTripDateVal) 
+          ? format(parseDateSafe(actualTripDateVal), 'dd MMM yyyy') 
+          : '-';
         const routeStr = tripObj.origin && tripObj.destination 
           ? `${tripObj.origin} ➔ ${tripObj.destination}` 
           : (tripObj.route || 'Freight Service');
