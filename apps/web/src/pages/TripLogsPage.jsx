@@ -759,12 +759,13 @@ const TripLogsPage = () => {
                                 const routeRec = routeMap[log.route_id] || routeMap[log.route];
                                 const stops = Array.isArray(routeRec?.stops) ? routeRec.stops : [];
                                 
-                                // 1. Build a structured list of locations/stops with fallback mapping for parsed string segments
+                                // Build structured list of locations/stops, prioritizing Route Master origin/destination
                                 let locations = [];
                                 if (routeRec) {
+                                  const startLocName = routeRec.origin || routeRec.start_location || log.origin || (log.route?.includes('->') ? log.route.split('->')[0]?.trim() : log.route) || 'Start';
                                   locations.push({
-                                    name: routeRec.start_location || log.route?.split('->')[0]?.trim() || 'Start',
-                                    mapLink: routeRec.start_location_map_link || (routeRec.start_location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(routeRec.start_location)}` : null),
+                                    name: startLocName,
+                                    mapLink: routeRec.start_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(startLocName)}`,
                                     type: 'origin'
                                   });
                                   
@@ -777,10 +778,11 @@ const TripLogsPage = () => {
                                     });
                                   });
                                   
-                                  if (routeRec.end_location || routeRec.end_location_map_link) {
+                                  const endLocName = routeRec.destination || routeRec.end_location || log.destination || (log.route?.includes('->') ? log.route.split('->')?.pop()?.trim() : null);
+                                  if (endLocName) {
                                     locations.push({
-                                      name: routeRec.end_location || log.route?.split('->')?.pop()?.trim() || 'End',
-                                      mapLink: routeRec.end_location_map_link || (routeRec.end_location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(routeRec.end_location)}` : null),
+                                      name: endLocName,
+                                      mapLink: routeRec.end_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endLocName)}`,
                                       type: 'destination'
                                     });
                                   }
