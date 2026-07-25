@@ -573,17 +573,22 @@ Best Regards,
   const [bulkDueDateInput, setBulkDueDateInput] = useState('');
   const [isUpdatingDueDate, setIsUpdatingDueDate] = useState(false);
 
+  const [isBatchDueDateModalOpen, setIsBatchDueDateModalOpen] = useState(false);
+  const [modalSelectedDate, setModalSelectedDate] = useState('');
+
   const handleBulkUpdateDueDate = async (dueDateVal) => {
-    if (!dueDateVal || selectedIds.length === 0) {
-      return toast.error('Please select a Due Date first');
+    if (!dueDateVal) return;
+    const idsToUpdate = selectedIds.length > 0 ? selectedIds : processedData.map(r => r.id);
+    if (idsToUpdate.length === 0) {
+      return toast.error('No trips available to set Due Date');
     }
     setIsUpdatingDueDate(true);
     try {
       const dueIso = new Date(dueDateVal).toISOString();
-      for (const id of selectedIds) {
+      for (const id of idsToUpdate) {
         await pb.collection('payment_requests').update(id, { due_date: dueIso }, { $autoCancel: false });
       }
-      toast.success(`Updated Due Date to ${format(new Date(dueDateVal), 'dd MMM yyyy')} for ${selectedIds.length} requests`);
+      toast.success(`Updated Due Date to ${format(new Date(dueDateVal), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
       setBulkDueDateInput('');
       await fetchData();
     } catch (err) {
@@ -1042,6 +1047,18 @@ Best Regards,
                 </SelectContent>
               </Select>
 
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => {
+                  setModalSelectedDate('');
+                  setIsBatchDueDateModalOpen(true);
+                }}
+                className="h-9 px-3 bg.amber-500 hover:bg-amber-600 bg-amber-600 text-white font-bold rounded-lg shadow-sm flex items-center gap-1.5"
+              >
+                <Clock className="w-4 h-4" /> Mark Due Date {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
+              </Button>
+
               {clientFilter !== 'all' && (
                 <Button 
                   variant="default" 
@@ -1079,14 +1096,18 @@ Best Regards,
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Set Bulk Due Date Controls */}
+                  {/* Set Bulk Due Date Controls with Auto-Apply */}
                   <div className="flex items-center gap-1.5 bg-background p-1 px-2 rounded-xl border border-border">
                     <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                     <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">Set Due Date:</span>
                     <input 
                       type="date"
                       value={bulkDueDateInput}
-                      onChange={e => setBulkDueDateInput(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setBulkDueDateInput(val);
+                        if (val) handleBulkUpdateDueDate(val);
+                      }}
                       className="bg-transparent text-xs font-medium focus:outline-none cursor-pointer"
                     />
                     <Button 
@@ -1680,6 +1701,131 @@ Best Regards,
           </div>
         </div>
       )}
+
+      {/* Batch Set Due Date Dialog Modal */}
+      <Dialog open={isBatchDueDateModalOpen} onOpenChange={setIsBatchDueDateModalOpen}>
+        <DialogContent className="max-w-xl rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Clock className="w-5 h-5 text-amber-500" />
+              Set Due Date for Multiple Trips ({selectedIds.length > 0 ? selectedIds.length : processedData.length} Selected)
+            </DialogTitle>
+            <DialogDescription>
+              Select multiple trip requests and pick a due date to update them in bulk.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Date Picker & Quick Presets */}
+            <div className="space-y-2">
+              <Label className="font-semibold text-xs text-muted-foreground uppercase">Target Due Date</Label>
+              <Input 
+                type="date"
+                value={modalSelectedDate}
+                onChange={e => setModalSelectedDate(e.target.value)}
+                className="font-bold text-sm bg-background"
+              />
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-xs text-muted-foreground font-semibold self-center mr-1">Presets:</span>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => { const d = new Date(); d.setDate(d.getDate() + 7); setModalSelectedDate(d.toISOString().split('T')[0]); }}>+7 Days</Button>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => { const d = new Date(); d.setDate(d.getDate() + 10); setModalSelectedDate(d.toISOString().split('T')[0]); }}>+10 Days</Button>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => { const d = new Date(); d.setDate(d.getDate() + 15); setModalSelectedDate(d.toISOString().split('T')[0]); }}>+15 Days</Button>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => { const d = new Date(); d.setDate(d.getDate() + 30); setModalSelectedDate(d.toISOString().split('T')[0]); }}>+30 Days</Button>
+                <Button type="button" variant="outline" size="sm" className="h-7 text-xs rounded-lg" onClick={() => { const d = new Date(); d.setMonth(d.getMonth() + 1, 10); setModalSelectedDate(d.toISOString().split('T')[0]); }}>10th Next Month</Button>
+              </div>
+            </div>
+
+            {/* Selected Items Quick List */}
+            <div className="border border-border/50 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+              <div className="p-2 px-3 bg-muted/40 font-bold text-xs flex justify-between items-center border-b border-border/40">
+                <span>Trips ({selectedIds.length > 0 ? selectedIds.length : processedData.length})</span>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-[11px] font-semibold text-primary p-0 hover:bg-transparent"
+                  onClick={() => {
+                    if (selectedIds.length === processedData.length) {
+                      setSelectedIds([]);
+                    } else {
+                      setSelectedIds(processedData.map(r => r.id));
+                    }
+                  }}
+                >
+                  {selectedIds.length === processedData.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+
+              <div className="divide-y divide-border/20">
+                {processedData.map(r => {
+                  const isChecked = selectedIds.includes(r.id);
+                  return (
+                    <div 
+                      key={r.id}
+                      onClick={() => {
+                        if (isChecked) {
+                          setSelectedIds(prev => prev.filter(id => id !== r.id));
+                        } else {
+                          setSelectedIds(prev => [...prev, r.id]);
+                        }
+                      }}
+                      className={cn(
+                        "p-2.5 px-3 flex items-center justify-between text-xs cursor-pointer transition-colors",
+                        isChecked ? "bg-primary/5" : "hover:bg-muted/30"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={() => {}} 
+                          className="rounded text-primary cursor-pointer"
+                        />
+                        <div>
+                          <span className="font-bold">{r.expand?.client_id?.client_name || 'Client'}</span>
+                          <span className="text-muted-foreground ml-2 font-mono text-[11px]">Trip: {r.expand?.trip_id?.trip_id || r.trip_id}</span>
+                        </div>
+                      </div>
+                      <span className="font-bold font-mono">{formatCurrency(r.amount)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-row justify-between sm:justify-between items-center gap-2 pt-3 border-t border-border/40">
+            <Button variant="ghost" size="sm" onClick={() => setIsBatchDueDateModalOpen(false)}>Cancel</Button>
+            <Button 
+              variant="default"
+              disabled={isUpdatingDueDate || !modalSelectedDate || (selectedIds.length === 0 && processedData.length === 0)}
+              onClick={async () => {
+                const idsToUpdate = selectedIds.length > 0 ? selectedIds : processedData.map(r => r.id);
+                if (!modalSelectedDate) return toast.error('Please pick a Due Date');
+                setIsUpdatingDueDate(true);
+                try {
+                  const dueIso = new Date(modalSelectedDate).toISOString();
+                  for (const id of idsToUpdate) {
+                    await pb.collection('payment_requests').update(id, { due_date: dueIso }, { $autoCancel: false });
+                  }
+                  toast.success(`Updated Due Date to ${format(new Date(modalSelectedDate), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
+                  setIsBatchDueDateModalOpen(false);
+                  setModalSelectedDate('');
+                  await fetchData();
+                } catch (err) {
+                  toast.error('Failed to update due dates');
+                } finally {
+                  setIsUpdatingDueDate(false);
+                }
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl"
+            >
+              {isUpdatingDueDate ? 'Updating...' : `Apply Due Date to ${selectedIds.length > 0 ? selectedIds.length : processedData.length} Trips`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
