@@ -20,6 +20,7 @@ import taxRouter from './tax.js';
 import leaderboardRouter from './leaderboard.js';
 import userRouter from './user.js';
 import sharedRouter from './shared.js';
+import bandwidthRouter from './bandwidth.js';
 
 
 const router = Router();
@@ -52,6 +53,8 @@ export default () => {
     router.use('/api/user', userRouter);
     router.use('/shared', sharedRouter);
     router.use('/api/shared', sharedRouter);
+    router.use('/bandwidth', bandwidthRouter);
+    router.use('/api/bandwidth', bandwidthRouter);
 
     return router;
 };
