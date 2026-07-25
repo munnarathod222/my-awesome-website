@@ -263,6 +263,10 @@ const EmployeeDatabasePage = () => {
       Object.keys(formData).forEach(key => {
         if (key === 'salary_amount') {
           submitData.append(key, parseFloat(formData[key]) || 0);
+        } else if (key === 'payroll_cycle_start_day' || key === 'payroll_cycle_end_day' || key === 'salary_disbursement_day') {
+          const defaultVal = key === 'payroll_cycle_start_day' ? 1 : key === 'payroll_cycle_end_day' ? 30 : 10;
+          const parsedVal = parseInt(formData[key], 10);
+          submitData.append(key, isNaN(parsedVal) ? defaultVal : Math.max(1, Math.min(31, parsedVal)));
         } else if (key === 'joining_date') {
           submitData.append(key, new Date(formData[key]).toISOString());
         } else if (key === 'assigned_truck' || key === 'assigned_routes') {
@@ -323,9 +327,9 @@ const EmployeeDatabasePage = () => {
     const empNum = employee.employee_number || employee.emp_number || employee.employee_code || `EMP-${String(index + 1).padStart(3, '0')}`;
     setFormData({
       employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || '',
-      payroll_cycle_start_day: employee.payroll_cycle_start_day || '1',
-      payroll_cycle_end_day: employee.payroll_cycle_end_day || '30',
-      salary_disbursement_day: employee.salary_disbursement_day || '10'
+      payroll_cycle_start_day: employee.payroll_cycle_start_day != null ? String(employee.payroll_cycle_start_day) : '1',
+      payroll_cycle_end_day: employee.payroll_cycle_end_day != null ? String(employee.payroll_cycle_end_day) : '30',
+      salary_disbursement_day: employee.salary_disbursement_day != null ? String(employee.salary_disbursement_day) : '10'
     });
     setPhotoFile(null); setRemovePhoto(false);
     setPhotoPreview(employee.photo ? getEmployeePhotoUrl(employee) : null);
@@ -746,10 +750,20 @@ const EmployeeDatabasePage = () => {
                             type="number"
                             min="1"
                             max="31"
-                            value={formData.payroll_cycle_start_day || ''}
+                            value={formData.payroll_cycle_start_day ?? ''}
                             onChange={e => {
-                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 1));
-                              setFormData({...formData, payroll_cycle_start_day: String(val)});
+                              const raw = e.target.value;
+                              if (raw === '') {
+                                setFormData(prev => ({ ...prev, payroll_cycle_start_day: '' }));
+                              } else {
+                                const num = parseInt(raw, 10);
+                                setFormData(prev => ({ ...prev, payroll_cycle_start_day: isNaN(num) ? '' : String(num) }));
+                              }
+                            }}
+                            onBlur={e => {
+                              const num = parseInt(e.target.value, 10);
+                              const validNum = isNaN(num) ? 1 : Math.max(1, Math.min(31, num));
+                              setFormData(prev => ({ ...prev, payroll_cycle_start_day: String(validNum) }));
                             }}
                             placeholder="Custom"
                             className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"
@@ -781,10 +795,20 @@ const EmployeeDatabasePage = () => {
                             type="number"
                             min="1"
                             max="31"
-                            value={formData.payroll_cycle_end_day || ''}
+                            value={formData.payroll_cycle_end_day ?? ''}
                             onChange={e => {
-                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 30));
-                              setFormData({...formData, payroll_cycle_end_day: String(val)});
+                              const raw = e.target.value;
+                              if (raw === '') {
+                                setFormData(prev => ({ ...prev, payroll_cycle_end_day: '' }));
+                              } else {
+                                const num = parseInt(raw, 10);
+                                setFormData(prev => ({ ...prev, payroll_cycle_end_day: isNaN(num) ? '' : String(num) }));
+                              }
+                            }}
+                            onBlur={e => {
+                              const num = parseInt(e.target.value, 10);
+                              const validNum = isNaN(num) ? 30 : Math.max(1, Math.min(31, num));
+                              setFormData(prev => ({ ...prev, payroll_cycle_end_day: String(validNum) }));
                             }}
                             placeholder="Custom"
                             className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"
@@ -816,10 +840,20 @@ const EmployeeDatabasePage = () => {
                             type="number"
                             min="1"
                             max="31"
-                            value={formData.salary_disbursement_day || ''}
+                            value={formData.salary_disbursement_day ?? ''}
                             onChange={e => {
-                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 10));
-                              setFormData({...formData, salary_disbursement_day: String(val)});
+                              const raw = e.target.value;
+                              if (raw === '') {
+                                setFormData(prev => ({ ...prev, salary_disbursement_day: '' }));
+                              } else {
+                                const num = parseInt(raw, 10);
+                                setFormData(prev => ({ ...prev, salary_disbursement_day: isNaN(num) ? '' : String(num) }));
+                              }
+                            }}
+                            onBlur={e => {
+                              const num = parseInt(e.target.value, 10);
+                              const validNum = isNaN(num) ? 10 : Math.max(1, Math.min(31, num));
+                              setFormData(prev => ({ ...prev, salary_disbursement_day: String(validNum) }));
                             }}
                             placeholder="Custom"
                             className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"

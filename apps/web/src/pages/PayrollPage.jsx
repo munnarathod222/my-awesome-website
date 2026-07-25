@@ -10,12 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Users, IndianRupee, TrendingUp, Calculator, Search, CheckCircle2, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, IndianRupee, TrendingUp, Calculator, Search, CheckCircle2, Clock, AlertCircle, RefreshCw, Pencil } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import AdvancePayslipModal from '@/components/AdvancePayslipModal.jsx';
 import AdvanceHistoryModal from '@/components/AdvanceHistoryModal.jsx';
 import PayrollGenerationModal from '@/components/PayrollGenerationModal.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { useAdvanceSyncStatus } from '@/hooks/useAdvanceSyncStatus.js';
 import { calculateCyclePayroll } from '@/lib/payrollCycleUtils.js';
 import { format } from 'date-fns';
@@ -36,6 +39,11 @@ const PayrollPage = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [advanceModalEmployee, setAdvanceModalEmployee] = useState(null);
   const [isGenerationModalOpen, setIsGenerationModalOpen] = useState(false);
+  
+  // Payroll Cycle Edit State
+  const [editingCycleEmployee, setEditingCycleEmployee] = useState(null);
+  const [cycleForm, setCycleForm] = useState({ startDay: 1, endDay: 30, disbursementDay: 10 });
+  const [isSavingCycle, setIsSavingCycle] = useState(false);
   
   const [activeTab, setActiveTab] = useState('overview');
   
@@ -75,6 +83,27 @@ const PayrollPage = () => {
       console.error("Failed to fetch advance records:", error);
     } finally {
       setRecordsLoading(false);
+    }
+  };
+
+  const handleSaveCycle = async (e) => {
+    e?.preventDefault();
+    if (!editingCycleEmployee) return;
+    setIsSavingCycle(true);
+    try {
+      await pb.collection('employees').update(editingCycleEmployee.id, {
+        payroll_cycle_start_day: Number(cycleForm.startDay) || 1,
+        payroll_cycle_end_day: Number(cycleForm.endDay) || 30,
+        salary_disbursement_day: Number(cycleForm.disbursementDay) || 10
+      }, { $autoCancel: false });
+      toast.success(`Updated payroll cycle for ${editingCycleEmployee.name}`);
+      setEditingCycleEmployee(null);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to update payroll cycle');
+    } finally {
+      setIsSavingCycle(false);
     }
   };
 
@@ -234,13 +263,31 @@ const PayrollPage = () => {
                               ₹{emp.baseSalary.toLocaleString()}
                             </TableCell>
                             <TableCell className="py-4">
-                              <div className="flex flex-col gap-1">
-                                <span className="font-bold text-xs text-foreground">
-                                  🗓️ {emp.cycleInfo?.formattedCycleRange}
-                                </span>
-                                <span className="text-[11px] font-semibold text-primary">
-                                  💳 Pay Date: {emp.cycleInfo?.formattedPayDate}
-                                </span>
+                              <div className="flex items-center justify-between gap-2 group">
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-bold text-xs text-foreground">
+                                    🗓️ {emp.cycleInfo?.formattedCycleRange}
+                                  </span>
+                                  <span className="text-[11px] font-semibold text-primary">
+                                    💳 Pay Date: {emp.cycleInfo?.formattedPayDate}
+                                  </span>
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-7 px-2 text-[10px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg shrink-0 opacity-80 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setEditingCycleEmployee(emp);
+                                    setCycleForm({
+                                      startDay: emp.payroll_cycle_start_day || 1,
+                                      endDay: emp.payroll_cycle_end_day || 30,
+                                      disbursementDay: emp.salary_disbursement_day || 10
+                                    });
+                                  }}
+                                  title="Change payroll cycle start/end dates"
+                                >
+                                  <Pencil className="w-3 h-3 mr-1" /> Edit
+                                </Button>
                               </div>
                             </TableCell>
                             <TableCell className="text-right font-medium tabular-nums text-muted-foreground">
@@ -630,6 +677,85 @@ const PayrollPage = () => {
       <AdvanceHistoryModal isOpen={!!advanceModalEmployee} onClose={() => setAdvanceModalEmployee(null)} employee={advanceModalEmployee} onSuccess={fetchData} />
 
       <PayrollGenerationModal isOpen={isGenerationModalOpen} onClose={() => setIsGenerationModalOpen(false)} employees={employees} onSuccess={fetchData} />
+
+      {/* Quick Edit Payroll Cycle Modal */}
+      <Dialog open={!!editingCycleEmployee} onOpenChange={(val) => !val && setEditingCycleEmployee(null)}>
+        <DialogContent className="sm:max-w-[420px] rounded-3xl border-border/50 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-heading font-bold flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" />
+              Edit Payroll Cycle - {editingCycleEmployee?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveCycle} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">1st Date of Billing Cycle (Start Day)</Label>
+              <Select 
+                value={String(cycleForm.startDay)} 
+                onValueChange={val => setCycleForm({ ...cycleForm, startDay: val })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select Start Day" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-56">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month {day === 1 ? '(Default Start)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Last Date of Billing Cycle (End Day)</Label>
+              <Select 
+                value={String(cycleForm.endDay)} 
+                onValueChange={val => setCycleForm({ ...cycleForm, endDay: val })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select End Day" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-56">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month {day === 30 ? '(Default End)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Salary Processing / Pay Date (Post-Month)</Label>
+              <Select 
+                value={String(cycleForm.disbursementDay)} 
+                onValueChange={val => setCycleForm({ ...cycleForm, disbursementDay: val })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Select Pay Day" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-56">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <SelectItem key={day} value={String(day)}>
+                      {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month ({day} Days Post-Cycle)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="ghost" onClick={() => setEditingCycleEmployee(null)} disabled={isSavingCycle} className="rounded-xl">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSavingCycle} className="rounded-xl shadow-sm">
+                {isSavingCycle ? 'Saving...' : 'Save Payroll Cycle'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
