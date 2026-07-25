@@ -9,6 +9,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { shareContact, copyContactDetails, getPastedMapUrl } from '@/lib/contactUtils.js';
+import { openMapLocation } from '@/lib/locationUtils.js';
+import { toast } from 'sonner';
 
 export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }) {
   const handleCopy = () => {
@@ -19,14 +21,18 @@ export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }
     shareContact(contact);
   };
 
-  const handleOpenMaps = () => {
+  const handleOpenMaps = (e) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const mapsUrl = getPastedMapUrl(contact);
     if (mapsUrl) {
-      window.open(mapsUrl, '_blank');
+      openMapLocation(mapsUrl);
     } else {
-      toast.error('No Google Maps link was pasted for this contact');
+      toast.error('No Google Maps link available for this contact');
     }
   };
+
+  const mapsUrl = getPastedMapUrl(contact);
 
   return (
     <DropdownMenu>
@@ -40,11 +46,11 @@ export default function ContactActionsMenu({ contact, onView, onEdit, onDelete }
         <DropdownMenuItem onClick={() => onView(contact)} className="cursor-pointer">
           <Eye className="mr-2 h-4 w-4 text-primary" /> View Card
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open(`tel:${contact.phone_number}`)} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => window.location.href = `tel:${contact.phone_number}`} className="cursor-pointer">
           <Phone className="mr-2 h-4 w-4 text-emerald-500" /> Call {contact.phone_number ? `(${contact.phone_number})` : ''}
         </DropdownMenuItem>
-        {Boolean(getPastedMapUrl(contact)) && (
-          <DropdownMenuItem onClick={handleOpenMaps} className="cursor-pointer">
+        {Boolean(mapsUrl) && (
+          <DropdownMenuItem onClick={handleOpenMaps} className="cursor-pointer text-rose-600 dark:text-rose-400 font-semibold">
             <MapPin className="mr-2 h-4 w-4 text-rose-500" /> Open Maps Navigation
           </DropdownMenuItem>
         )}

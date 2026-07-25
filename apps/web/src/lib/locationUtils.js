@@ -50,11 +50,30 @@ export function formatMapUrl(urlOrAddress, fallbackLocationName = '') {
 }
 
 /**
- * Open a location safely in a new browser tab.
+ * Open a location smoothly on 1-click across Desktop, Android, and Apple iOS.
+ * On mobile devices, direct window.location.href assignment triggers native Google Maps or Apple Maps apps seamlessly without popup blocking.
  */
 export function openMapLocation(urlOrAddress, fallbackLocationName = '') {
   const validUrl = formatMapUrl(urlOrAddress, fallbackLocationName);
-  if (validUrl) {
-    window.open(validUrl, '_blank', 'noopener,noreferrer');
+  if (!validUrl) return;
+
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+
+  if (isMobile) {
+    // Mobile Chrome (Android) & Safari (iOS) launch Google Maps / Apple Maps app directly via location assignment
+    window.location.href = validUrl;
+  } else {
+    // Desktop browser: open in new tab via dynamic anchor element
+    try {
+      const link = document.createElement('a');
+      link.href = validUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      window.open(validUrl, '_blank', 'noopener,noreferrer');
+    }
   }
 }

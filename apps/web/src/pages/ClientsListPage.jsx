@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import CreateClientUserModal from '@/components/CreateClientUserModal.jsx';
-import { formatMapUrl } from '@/lib/locationUtils.js';
+import { formatMapUrl, openMapLocation } from '@/lib/locationUtils.js';
 
 export default function ClientsListPage() {
   const [clients, setClients] = useState([]);
@@ -312,7 +312,7 @@ export default function ClientsListPage() {
                               title="Open Location on Google Maps"
                               onClick={() => {
                                 const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
-                                window.open(formatMapUrl(target), '_blank');
+                                openMapLocation(target);
                               }}
                             >
                               <MapPin className="h-4 w-4" />
@@ -331,7 +331,7 @@ export default function ClientsListPage() {
                                 <DropdownMenuItem 
                                   onClick={() => {
                                     const target = client.google_maps_url || client.google_map_link || client.location_url || [client.address, client.city, client.state].filter(Boolean).join(', ');
-                                    window.open(formatMapUrl(target), '_blank');
+                                    openMapLocation(target);
                                   }} 
                                   className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
                                 >

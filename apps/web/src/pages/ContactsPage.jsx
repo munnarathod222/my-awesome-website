@@ -22,6 +22,7 @@ import ContactActionsMenu   from '@/components/ContactActionsMenu.jsx';
 import ContactExportModal   from '@/components/ContactExportModal.jsx';
 import BusinessCardUploadModal from '@/components/BusinessCardUploadModal.jsx';
 import { getPastedMapUrl }  from '@/lib/contactUtils.js';
+import { openMapLocation }  from '@/lib/locationUtils.js';
 
 /* ─── Contact type taxonomy ─────────────────────────────────────────────────── */
 // Primary groups  →  which contact_type values they include
@@ -471,15 +472,17 @@ export default function ContactsPage() {
                                   {contact.physical_address}
                                 </p>
                                 {mapsUrl && (
-                                  <a 
-                                    href={mapsUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="text-rose-500 hover:text-rose-600 transition-colors shrink-0 p-0.5 hover:bg-rose-500/10 rounded"
+                                  <button 
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openMapLocation(mapsUrl);
+                                    }} 
+                                    className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-600 transition-colors shrink-0 p-1 hover:bg-rose-500/10 rounded-md active:scale-95 cursor-pointer"
                                     title="Open Google Maps GPS Navigation"
                                   >
                                     <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
-                                  </a>
+                                  </button>
                                 )}
                               </div>
                             </TableCell>
@@ -558,15 +561,18 @@ export default function ContactsPage() {
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <p className="text-xs text-muted-foreground truncate">{contact.physical_address || 'No Address'}</p>
                               {mobileMapsUrl && (
-                                <a 
-                                  href={mobileMapsUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-rose-500 hover:text-rose-600 transition-colors shrink-0 p-0.5 hover:bg-rose-500/10 rounded"
+                                <button 
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openMapLocation(mobileMapsUrl);
+                                  }} 
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 rounded-md border border-rose-500/20 shrink-0 transition-all cursor-pointer"
                                   title="Open Google Maps GPS Navigation"
                                 >
-                                  <MapPin className="w-3.5 h-3.5 fill-rose-500/10" />
-                                </a>
+                                  <MapPin className="w-3.5 h-3.5 fill-rose-500/10 shrink-0" />
+                                  <span>Map</span>
+                                </button>
                               )}
                             </div>
                           </div>

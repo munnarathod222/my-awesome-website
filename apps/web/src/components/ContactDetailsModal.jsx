@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, MapPin, FileText, Copy, Share2, Building2, Wrench } from 'lucide-react';
 import { shareContact, copyContactDetails, getPastedMapUrl } from '@/lib/contactUtils.js';
+import { openMapLocation } from '@/lib/locationUtils.js';
 
 export default function ContactDetailsModal({ isOpen, onClose, contact }) {
   if (!contact) return null;
@@ -16,6 +17,15 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
     shareContact(contact);
   };
 
+  const mapsUrl = getPastedMapUrl(contact);
+
+  const handleOpenMap = (e) => {
+    e?.preventDefault();
+    if (mapsUrl) {
+      openMapLocation(mapsUrl);
+    }
+  };
+
   const getTypeColor = (type) => {
     switch (type) {
       case 'Client': return 'bg-primary/10 text-primary border-primary/20';
@@ -24,8 +34,6 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
       default: return 'bg-muted text-muted-foreground';
     }
   };
-
-  const mapsUrl = getPastedMapUrl(contact);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -86,15 +94,14 @@ export default function ContactDetailsModal({ isOpen, onClose, contact }) {
                     {contact.physical_address || 'No address specified'}
                   </p>
                   {mapsUrl && (
-                    <a 
-                      href={mapsUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors"
+                    <button 
+                      type="button"
+                      onClick={handleOpenMap}
+                      className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-xs font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 rounded-lg border border-rose-500/20 transition-all cursor-pointer"
                     >
-                      <MapPin className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                      <MapPin className="w-4 h-4 text-rose-500 fill-rose-500/20" />
                       Open Google Maps GPS Navigation
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
