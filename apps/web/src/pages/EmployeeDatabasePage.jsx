@@ -452,26 +452,42 @@ const EmployeeDatabasePage = () => {
 
         // Financial Ledger Integration for new accident report
         if (accidentForm.fined_to_employee) {
-          // 1. Add to Expenses as Employee Advance
+          // 1. Add to Expenses as Employee → Employee Advance
           let createdExpense = null;
           try {
             createdExpense = await pb.collection('expenses').create({
-              category: 'Employee Advance',
+              category: 'Employee',
+              subcategory: 'Employee Advance',
               amount: damageCostNum,
               date: accDateIso,
-              expense_date: accDateIso,
               description: `Fine: ${descText} (${empName})`,
               employee_id: accidentForm.employee_id,
-              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              truck_id: accidentForm.truck_id && accidentForm.truck_id !== 'none' ? accidentForm.truck_id : '',
               status: 'Approved',
               payment_method: 'Cash',
-              notes: `Accident damage fine levied on ${empName}`
             }, { $autoCancel: false });
           } catch (expErr) {
             console.error('Failed to create advance expense:', expErr);
           }
 
-          // 2. Add to Employee Advances (drives salary deduction in Payroll)
+          // 2. Add to Cashbook as Expense debit
+          try {
+            await pb.collection('cashbook').create({
+              date: accDateIso,
+              description: `Fine: ${descText} (${empName})`,
+              amount: damageCostNum,
+              transaction_type: 'Expense',
+              category: 'Employee - Employee Advance',
+              reference_id: createdExpense?.id || '',
+              reference_type: 'expense',
+              status: 'Completed',
+              added_by: currentUser?.id || '',
+            }, { $autoCancel: false });
+          } catch (cbErr) {
+            console.error('Failed to create cashbook entry:', cbErr);
+          }
+
+          // 3. Add to Employee Advances (drives salary deduction in Payroll)
           try {
             await pb.collection('advances').create({
               employee_id: accidentForm.employee_id,
@@ -486,59 +502,44 @@ const EmployeeDatabasePage = () => {
             console.error('Failed to create advance entry:', advErr);
           }
 
-          // 3. Add to Cashbook (Debit / Cash Out)
-          try {
-            await pb.collection('cashbook').create({
-              transaction_type: 'debit',
-              category: 'Employee Advance',
-              amount: damageCostNum,
-              date: accDateIso,
-              description: `Fine: ${descText} (${empName})`,
-              employee_id: accidentForm.employee_id,
-              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
-              notes: `Accident damage fine levied on ${empName}`
-            }, { $autoCancel: false });
-          } catch (cbErr) {
-            console.error('Failed to create cashbook entry:', cbErr);
-          }
-
-          toast.success(`Logged accident & added ₹${damageCostNum.toLocaleString()} fine to Expenses, Employee Advances & Cashbook!`);
+          toast.success(`Accident logged! ₹${damageCostNum.toLocaleString()} fine added to Expenses, Advances & Cashbook.`);
         } else {
-          // Not fined to employee -> Add as Miscellaneous Expense & Cashbook Debit
+          // Not fined to employee → Add as Regular → Miscellaneous Expense
+          let createdExpense = null;
           try {
-            await pb.collection('expenses').create({
-              category: 'Miscellaneous',
+            createdExpense = await pb.collection('expenses').create({
+              category: 'Regular',
+              subcategory: 'Miscellaneous',
               amount: damageCostNum,
               date: accDateIso,
-              expense_date: accDateIso,
               description: `Accident damage cost: ${descText} (${empName})`,
               employee_id: accidentForm.employee_id,
-              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
+              truck_id: accidentForm.truck_id && accidentForm.truck_id !== 'none' ? accidentForm.truck_id : '',
               status: 'Approved',
               payment_method: 'Cash',
-              notes: `Accident damage cost logged as company expense (Miscellaneous)`
             }, { $autoCancel: false });
           } catch (expErr) {
             console.error('Failed to create miscellaneous expense:', expErr);
           }
 
-          // Add to Cashbook (Debit / Cash Out)
+          // Add to Cashbook as Expense debit
           try {
             await pb.collection('cashbook').create({
-              transaction_type: 'debit',
-              category: 'Miscellaneous',
-              amount: damageCostNum,
               date: accDateIso,
               description: `Accident damage cost: ${descText} (${empName})`,
-              employee_id: accidentForm.employee_id,
-              truck_id: accidentForm.truck_id !== 'none' ? accidentForm.truck_id : undefined,
-              notes: `Accident damage cost logged as company expense`
+              amount: damageCostNum,
+              transaction_type: 'Expense',
+              category: 'Regular - Miscellaneous',
+              reference_id: createdExpense?.id || '',
+              reference_type: 'expense',
+              status: 'Completed',
+              added_by: currentUser?.id || '',
             }, { $autoCancel: false });
           } catch (cbErr) {
             console.error('Failed to create cashbook entry:', cbErr);
           }
 
-          toast.success(`Logged accident report & added ₹${damageCostNum.toLocaleString()} to Miscellaneous Expenses & Cashbook!`);
+          toast.success(`Accident logged! ₹${damageCostNum.toLocaleString()} added to Miscellaneous Expenses & Cashbook.`);
         }
       }
 
