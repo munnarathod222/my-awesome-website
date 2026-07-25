@@ -942,9 +942,14 @@ const runPocketBase = async () => {
           updatedEmp = true;
         }
       }
+      const routesField = empFieldsBoot.find(f => f.name === 'assigned_routes');
+      if (routesField && routesField.maxSelect !== 99) {
+        routesField.maxSelect = 99;
+        updatedEmp = true;
+      }
       if (updatedEmp) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(empFieldsBoot), empRecordBoot.id);
-        logger.info("Migrating: Employee payroll cycle fields updated in PocketBase schema!");
+        logger.info("Migrating: Employee payroll cycle & multi-route assignment fields updated in PocketBase schema!");
       }
     }
   } catch (migrationErr) {

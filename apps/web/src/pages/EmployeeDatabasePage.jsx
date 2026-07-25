@@ -136,9 +136,25 @@ const EmployeeDatabasePage = () => {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '',
+    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '',
     payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10'
   });
+
+  const toggleRouteSelection = (routeId) => {
+    setFormData(prev => {
+      const current = Array.isArray(prev.assigned_routes)
+        ? prev.assigned_routes
+        : (prev.assigned_routes && prev.assigned_routes !== 'none' ? [prev.assigned_routes] : []);
+      
+      let updated;
+      if (current.includes(routeId)) {
+        updated = current.filter(id => id !== routeId);
+      } else {
+        updated = [...current, routeId];
+      }
+      return { ...prev, assigned_routes: updated };
+    });
+  };
 
   // Agreement template state
   const [selectedEmployeeForAgreement, setSelectedEmployeeForAgreement] = useState('');
@@ -311,6 +327,14 @@ const EmployeeDatabasePage = () => {
       submitData.set('payroll_cycle_end_day', pEnd);
       submitData.set('salary_disbursement_day', pDisb);
 
+      submitData.delete('assigned_routes');
+      const routesList = Array.isArray(formData.assigned_routes)
+        ? formData.assigned_routes
+        : (formData.assigned_routes && formData.assigned_routes !== 'none' ? [formData.assigned_routes] : []);
+      routesList.forEach(rId => {
+        submitData.append('assigned_routes', rId);
+      });
+
       if (photoFile) submitData.append('photo', photoFile);
       else if (removePhoto && editingId) submitData.append('photo', ''); 
 
@@ -361,8 +385,15 @@ const EmployeeDatabasePage = () => {
   const handleEdit = (employee, index = 0) => {
     setEditingId(employee.id);
     const empNum = employee.employee_number || employee.emp_number || employee.employee_code || `EMP-${String(index + 1).padStart(3, '0')}`;
+    let parsedRoutes = [];
+    if (Array.isArray(employee.assigned_routes)) {
+      parsedRoutes = employee.assigned_routes;
+    } else if (employee.assigned_routes && employee.assigned_routes !== 'none') {
+      parsedRoutes = [employee.assigned_routes];
+    }
+
     setFormData({
-      employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: employee.assigned_routes || '', assigned_truck: employee.assigned_truck || '', education: employee.education || '',
+      employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: parsedRoutes, assigned_truck: employee.assigned_truck || '', education: employee.education || '',
       payroll_cycle_start_day: employee.payroll_cycle_start_day != null ? String(employee.payroll_cycle_start_day) : '1',
       payroll_cycle_end_day: employee.payroll_cycle_end_day != null ? String(employee.payroll_cycle_end_day) : '30',
       salary_disbursement_day: employee.salary_disbursement_day != null ? String(employee.salary_disbursement_day) : '10'
@@ -389,7 +420,7 @@ const EmployeeDatabasePage = () => {
   const resetForm = () => {
     setEditingId(null);
     const nextNum = employees.length + 1;
-    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: '', assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
+    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
     clearPhoto();
     setUploadedDocs([]);
   };
@@ -736,24 +767,74 @@ const EmployeeDatabasePage = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Assigned Route</Label>
-                      <Select 
-                        value={formData.assigned_routes || 'none'} 
-                        onValueChange={v => setFormData({...formData, assigned_routes: v})}
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Select a Route" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {routes.map(r => (
-                            <SelectItem key={r.id} value={r.id}>
-                              {r.route_code} ({r.start_location} → {r.end_location})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3">
+                      <Label className="flex items-center justify-between text-xs font-medium">
+                        <span>Assigned Routes (Select Multiple Routes)</span>
+                        <span className="text-[11px] text-muted-foreground font-normal">
+                          {(Array.isArray(formData.assigned_routes) ? formData.assigned_routes : (formData.assigned_routes && formData.assigned_routes !== 'none' ? [formData.assigned_routes] : [])).length} route(s) selected
+                        </span>
+                      </Label>
+
+                      {/* Selected Route Badges */}
+                      <div className="flex flex-wrap gap-1.5 p-2.5 bg-muted/20 rounded-xl border border-border min-h-[42px] items-center">
+                        {(() => {
+                          const selectedList = Array.isArray(formData.assigned_routes)
+                            ? formData.assigned_routes
+                            : (formData.assigned_routes && formData.assigned_routes !== 'none' ? [formData.assigned_routes] : []);
+                          if (selectedList.length === 0) {
+                            return <span className="text-xs text-muted-foreground px-1">No routes assigned yet. Click routes below to assign:</span>;
+                          }
+                          return selectedList.map(rId => {
+                            const routeObj = routes.find(r => r.id === rId);
+                            if (!routeObj) return null;
+                            return (
+                              <Badge key={rId} variant="secondary" className="bg-primary/10 text-primary border-primary/20 flex items-center gap-1.5 text-xs py-1 px-2.5 rounded-lg">
+                                <Route className="w-3.5 h-3.5" />
+                                <span className="font-semibold">{routeObj.route_code} ({routeObj.start_location} → {routeObj.end_location})</span>
+                                <X 
+                                  className="w-3.5 h-3.5 ml-1 cursor-pointer hover:text-destructive transition-colors" 
+                                  onClick={(e) => { e.stopPropagation(); toggleRouteSelection(rId); }}
+                                />
+                              </Badge>
+                            );
+                          });
+                        })()}
+                      </div>
+
+                      {/* Route Selection Checklist Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto p-2 bg-background border border-border/60 rounded-xl">
+                        {routes.length === 0 ? (
+                          <div className="text-xs text-muted-foreground p-2 col-span-full">No routes found in database.</div>
+                        ) : (
+                          routes.map(r => {
+                            const selectedList = Array.isArray(formData.assigned_routes)
+                              ? formData.assigned_routes
+                              : (formData.assigned_routes && formData.assigned_routes !== 'none' ? [formData.assigned_routes] : []);
+                            const isSelected = selectedList.includes(r.id);
+                            return (
+                              <div
+                                key={r.id}
+                                onClick={() => toggleRouteSelection(r.id)}
+                                className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                                  isSelected 
+                                    ? 'border-primary bg-primary/10 font-semibold text-primary shadow-sm' 
+                                    : 'border-border/60 hover:bg-muted/40 text-foreground'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={isSelected} 
+                                    readOnly
+                                    className="rounded text-primary focus:ring-primary h-3.5 w-3.5 pointer-events-none" 
+                                  />
+                                  <span className="truncate font-medium">{r.route_code} ({r.start_location} → {r.end_location})</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -1085,11 +1166,15 @@ const EmployeeDatabasePage = () => {
                                       <Truck className="w-3 h-3" /> {emp.expand.assigned_truck.truck_number}
                                     </Badge>
                                   )}
-                                  {emp.expand?.assigned_routes && (
-                                    <Badge variant="outline" className="font-normal text-[10px] text-success border-success/30 bg-success/5 flex items-center gap-1">
-                                      <Route className="w-3 h-3" /> {emp.expand.assigned_routes.route_code}
-                                    </Badge>
-                                  )}
+                                  {(() => {
+                                     const rel = emp.expand?.assigned_routes;
+                                     const routeList = Array.isArray(rel) ? rel : (rel ? [rel] : []);
+                                     return routeList.map((r, rIdx) => (
+                                       <Badge key={r.id || rIdx} variant="outline" className="font-normal text-[10px] text-success border-success/30 bg-success/5 flex items-center gap-1">
+                                         <Route className="w-3 h-3" /> {r.route_code}
+                                       </Badge>
+                                     ));
+                                   })()}
                                   <Badge variant="outline" className="font-normal text-[10px] text-indigo-400 border-indigo-500/30 bg-indigo-500/5">
                                     🗓️ Cycle: Day {emp.payroll_cycle_start_day || 1}-{emp.payroll_cycle_end_day || 30} (Pay on {emp.salary_disbursement_day || 10}th)
                                   </Badge>
@@ -1174,11 +1259,15 @@ const EmployeeDatabasePage = () => {
                                       <Truck className="w-2.5 h-2.5" /> {emp.expand.assigned_truck.truck_number}
                                     </span>
                                   )}
-                                  {emp.expand?.assigned_routes && (
-                                    <span className="text-[9px] text-success font-bold bg-success/5 px-1 py-0.5 rounded border border-success/10 flex items-center gap-0.5">
-                                      <Route className="w-2.5 h-2.5" /> {emp.expand.assigned_routes.route_code}
-                                    </span>
-                                  )}
+                                  {(() => {
+                                    const rel = emp.expand?.assigned_routes;
+                                    const routeList = Array.isArray(rel) ? rel : (rel ? [rel] : []);
+                                    return routeList.map((r, rIdx) => (
+                                      <span key={r.id || rIdx} className="text-[9px] text-success font-bold bg-success/5 px-1 py-0.5 rounded border border-success/10 flex items-center gap-0.5">
+                                        <Route className="w-2.5 h-2.5" /> {r.route_code}
+                                      </span>
+                                    ));
+                                  })()}
                                 </div>
                               </div>
                             </div>
