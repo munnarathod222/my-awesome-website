@@ -9,6 +9,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
+import { recordTollDeduction } from '@/lib/fastagDeductionUtils.js';
 import DocumentFilePreview from './DocumentFilePreview.jsx';
 
 
@@ -324,6 +325,16 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
           console.error('Failed to create cashbook entry for expense:', syncErr);
         }
 
+        const isTollExpense = 
+          payload.category === 'Toll' ||
+          payload.category === 'Toll Tax' ||
+          payload.subcategory === 'Toll' ||
+          payload.subcategory === 'FASTag' ||
+          payload.subcategory === 'Toll / FASTag' ||
+          payload.payment_method === 'FASTag' ||
+          /toll|fastag/i.test(payload.subcategory || '') ||
+          /toll|fastag/i.test(payload.description || '');
+
         if (payload.category === 'Employee' && payload.subcategory === 'Employee Advance') {
           const empName = employees.find(e => e.id === payload.employee_id)?.name || 'Employee';
           await AdvanceIntegrationService.createAdvanceFromExpense({
@@ -334,6 +345,23 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
             expense_id: record.id
           });
           toast.success(`Advance record automatically created for ${empName}`);
+        } else if (isTollExpense) {
+          const selectedTruck = trucks.find(t => t.id === payload.truck_id);
+          const truckNum = selectedTruck ? selectedTruck.truck_number : '';
+          try {
+            await recordTollDeduction({
+              truckId: payload.truck_id !== 'none' ? payload.truck_id : '',
+              truckNumber: truckNum,
+              amount: payload.amount,
+              date: dateISO,
+              tollPlazaName: payload.description || 'Toll Expense',
+              notes: payload.description ? `Toll Expense: ${payload.description}` : 'Toll expense logged from Expense Manager'
+            });
+            toast.success('Toll expense recorded & synced to FASTag Management!');
+          } catch (fastagErr) {
+            console.error('Failed to sync toll expense to FASTag Management:', fastagErr);
+            toast.success('Expense created successfully');
+          }
         } else {
           toast.success('Expense created successfully');
         }
@@ -484,6 +512,15 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <p className="text-sm">
                     Selecting "Employee Advance" will automatically create a pending advance record for the selected employee in the Payroll system.
+                  </p>
+                </div>
+              )}
+
+              {formData.category === 'Regular' && (formData.subcategory === 'Toll' || formData.subcategory === 'FASTag') && (
+                <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl flex gap-3 text-purple-400">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p className="text-sm">
+                    Selecting "Toll" will automatically record a toll deduction in FASTag Management and adjust the truck's FASTag wallet balance.
                   </p>
                 </div>
               )}

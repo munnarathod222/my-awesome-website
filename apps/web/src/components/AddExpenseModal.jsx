@@ -147,13 +147,24 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
           }
         }
 
-        // If this is a Toll Tax or FASTag expense, record FASTag deduction
-        if ((payload.category === 'Toll Tax' || payload.payment_method === 'FASTag') && payload.truck_id) {
+        // If this is a Toll or FASTag expense, record FASTag deduction
+        const isTollExpense = 
+          payload.category === 'Toll' ||
+          payload.category === 'Toll Tax' ||
+          payload.subcategory === 'Toll' ||
+          payload.subcategory === 'FASTag' ||
+          payload.subcategory === 'Toll / FASTag' ||
+          payload.payment_method === 'FASTag' ||
+          /toll|fastag/i.test(payload.category || '') ||
+          /toll|fastag/i.test(payload.subcategory || '') ||
+          /toll|fastag/i.test(payload.description || '');
+
+        if (isTollExpense) {
           try {
             const trkObj = trucks.find(t => t.truck_number === payload.truck_id || t.id === payload.truck_id);
             await recordTollDeduction({
               truckId: trkObj ? trkObj.id : '',
-              truckNumber: payload.truck_id,
+              truckNumber: trkObj ? trkObj.truck_number : (payload.truck_id || ''),
               amount: payload.amount,
               date: payload.date,
               notes: payload.description || payload.notes || 'Toll Tax debit'
