@@ -584,63 +584,113 @@ const EmployeeDatabasePage = () => {
                       <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                         <Briefcase className="w-4 h-4 text-primary" /> Payroll Cycle & Salary Processing Rules
                       </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">Define employee billing cycle start/end dates and salary processing window (e.g., 10 days post-month).</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Define employee billing cycle start/end dates and salary processing window (e.g., 10 days post-month). Select or type any custom day (1-31).</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Start Day */}
                       <div className="space-y-1.5">
                         <Label className="text-xs font-semibold">1st Date of Cycle (Start Day)</Label>
-                        <Select 
-                          value={String(formData.payroll_cycle_start_day || '1')} 
-                          onValueChange={v => setFormData({...formData, payroll_cycle_start_day: v})}
-                        >
-                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
-                            <SelectValue placeholder="1st Day of Month" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="1">1st of Month (Default)</SelectItem>
-                            <SelectItem value="5">5th of Month</SelectItem>
-                            <SelectItem value="10">10th of Month</SelectItem>
-                            <SelectItem value="15">15th of Month</SelectItem>
-                            <SelectItem value="20">20th of Month</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <Select 
+                            value={String(formData.payroll_cycle_start_day || '1')} 
+                            onValueChange={v => setFormData({...formData, payroll_cycle_start_day: v})}
+                          >
+                            <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium flex-1">
+                              <SelectValue placeholder="Select Start Day" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl max-h-56">
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                <SelectItem key={day} value={String(day)}>
+                                  {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month {day === 1 ? '(Default)' : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={formData.payroll_cycle_start_day || ''}
+                            onChange={e => {
+                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 1));
+                              setFormData({...formData, payroll_cycle_start_day: String(val)});
+                            }}
+                            placeholder="Custom"
+                            className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"
+                            title="Type custom start day of month (1-31)"
+                          />
+                        </div>
                       </div>
 
+                      {/* End Day */}
                       <div className="space-y-1.5">
                         <Label className="text-xs font-semibold">Last Date of Cycle (End Day)</Label>
-                        <Select 
-                          value={String(formData.payroll_cycle_end_day || '30')} 
-                          onValueChange={v => setFormData({...formData, payroll_cycle_end_day: v})}
-                        >
-                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
-                            <SelectValue placeholder="End of Month" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="30">30th / End of Month (Default)</SelectItem>
-                            <SelectItem value="28">28th of Month</SelectItem>
-                            <SelectItem value="31">31st of Month</SelectItem>
-                            <SelectItem value="15">15th of Month</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <Select 
+                            value={String(formData.payroll_cycle_end_day || '30')} 
+                            onValueChange={v => setFormData({...formData, payroll_cycle_end_day: v})}
+                          >
+                            <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium flex-1">
+                              <SelectValue placeholder="Select End Day" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl max-h-56">
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                <SelectItem key={day} value={String(day)}>
+                                  {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month {day === 30 ? '(Default End)' : ''}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={formData.payroll_cycle_end_day || ''}
+                            onChange={e => {
+                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 30));
+                              setFormData({...formData, payroll_cycle_end_day: String(val)});
+                            }}
+                            placeholder="Custom"
+                            className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"
+                            title="Type custom end day of month (1-31)"
+                          />
+                        </div>
                       </div>
 
+                      {/* Salary Processing Date */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold">Salary Processing Date</Label>
-                        <Select 
-                          value={String(formData.salary_disbursement_day || '10')} 
-                          onValueChange={v => setFormData({...formData, salary_disbursement_day: v})}
-                        >
-                          <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium">
-                            <SelectValue placeholder="10th (10 Days Post-Cycle)" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="10">10th of Month (10 Days After 1 Month Complete)</SelectItem>
-                            <SelectItem value="5">5th of Month (5 Days Post-Cycle)</SelectItem>
-                            <SelectItem value="7">7th of Month (7 Days Post-Cycle)</SelectItem>
-                            <SelectItem value="15">15th of Month (15 Days Post-Cycle)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label className="text-xs font-semibold">Salary Processing Date (Post-Month)</Label>
+                        <div className="flex gap-2">
+                          <Select 
+                            value={String(formData.salary_disbursement_day || '10')} 
+                            onValueChange={v => setFormData({...formData, salary_disbursement_day: v})}
+                          >
+                            <SelectTrigger className="bg-background h-10 rounded-xl text-xs font-medium flex-1">
+                              <SelectValue placeholder="Select Processing Date" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl max-h-56">
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                <SelectItem key={day} value={String(day)}>
+                                  {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of Month ({day} Days Post-Cycle)
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={formData.salary_disbursement_day || ''}
+                            onChange={e => {
+                              const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 10));
+                              setFormData({...formData, salary_disbursement_day: String(val)});
+                            }}
+                            placeholder="Custom"
+                            className="w-20 bg-background h-10 rounded-xl text-xs font-mono text-center"
+                            title="Type custom processing day of month (1-31)"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
