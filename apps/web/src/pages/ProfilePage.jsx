@@ -14,9 +14,10 @@ import { cn } from '@/lib/utils.js';
 import ChangePasswordModal from '@/components/ChangePasswordModal.jsx';
 import ChangeEmailModal from '@/components/ChangeEmailModal.jsx';
 import SignaturePadModal from '@/components/SignaturePadModal.jsx';
+import BandwidthTrackerCard from '@/components/BandwidthTrackerCard.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
-import { PenTool } from 'lucide-react';
+import { PenTool, Activity } from 'lucide-react';
 
 const ProfilePage = () => {
   const { currentUser, setCurrentUser } = useAuth();
@@ -1448,13 +1449,16 @@ const ProfilePage = () => {
       {isAdmin ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
           <TabsList className="bg-muted/50 p-1 w-full sm:w-auto inline-flex h-12 rounded-xl border border-border/30">
-            <TabsTrigger value="profile" className="flex-1 sm:px-8 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
+            <TabsTrigger value="profile" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <User className="w-4 h-4" /> Personal Profile
             </TabsTrigger>
-            <TabsTrigger value="company" className="flex-1 sm:px-8 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
+            <TabsTrigger value="company" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <Building className="w-4 h-4" /> Company Settings
             </TabsTrigger>
-            <TabsTrigger value="backup" className="flex-1 sm:px-8 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
+            <TabsTrigger value="bandwidth" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
+              <Activity className="w-4 h-4 text-purple-500" /> Bandwidth & Usage
+            </TabsTrigger>
+            <TabsTrigger value="backup" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <UploadCloud className="w-4 h-4" /> System Backup
             </TabsTrigger>
           </TabsList>
@@ -1465,6 +1469,10 @@ const ProfilePage = () => {
 
           <TabsContent value="company" className="space-y-6 m-0 outline-none">
             {renderCompanySettingsView()}
+          </TabsContent>
+
+          <TabsContent value="bandwidth" className="space-y-6 m-0 outline-none">
+            <BandwidthTrackerCard />
           </TabsContent>
 
           <TabsContent value="backup" className="space-y-6 m-0 outline-none">
