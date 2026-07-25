@@ -99,7 +99,7 @@ const PayrollPage = () => {
         payroll_cycle_start_day: sDay,
         payroll_cycle_end_day: eDay,
         salary_disbursement_day: dDay,
-        salary_billing_cycle: `Day ${sDay}-${eDay} (Pay on ${dDay})`
+        salary_billing_cycle: 'Monthly'
       }, { $autoCancel: false });
       toast.success(`Updated payroll cycle for ${editingCycleEmployee.name}`);
       setEditingCycleEmployee(null);
