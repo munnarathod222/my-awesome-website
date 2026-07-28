@@ -67,6 +67,18 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
   });
 
   const [selectedCardId, setSelectedCardId] = useState('new');
+  const [card1Amount, setCard1Amount] = useState('');
+
+  const [selectedCard2Id, setSelectedCard2Id] = useState('none');
+  const [card2Amount, setCard2Amount] = useState('');
+
+  const [paymentDetails2, setPaymentDetails2] = useState({
+    cardNumber: '',
+    cardholderName: '',
+    expiryDate: '',
+    cvv: '',
+    bankName: ''
+  });
 
   const [paymentDetails, setPaymentDetails] = useState({
     cardNumber: '',
@@ -93,17 +105,19 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
         if (rawDate && rawDate.includes('T')) rawDate = rawDate.split('T')[0];
         if (rawDate && rawDate.includes(' ')) rawDate = rawDate.split(' ')[0];
 
+        const cost = (editLog.total_cost || editLog.fuel_cost || '').toString();
         setFormData({
           id: editLog.id,
           date: rawDate || format(new Date(), 'yyyy-MM-dd'),
           vehicle_id: editLog.truck_number || editLog.vehicle_name || '',
           kms: (editLog.distance || editLog.distance_driven || '').toString(),
           liters: (editLog.liters || '').toString(),
-          fuel_cost: (editLog.total_cost || editLog.fuel_cost || '').toString(),
+          fuel_cost: cost,
           notes: editLog.notes || '',
           payment_method: editLog.payment_method || 'Cash',
           fuel_station_id: editLog.fuel_station_id || 'none'
         });
+        setCard1Amount(cost);
       } else {
         setFormData({
           date: format(new Date(), 'yyyy-MM-dd'),
@@ -115,8 +129,11 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
           payment_method: 'Cash',
           fuel_station_id: 'none'
         });
+        setCard1Amount('');
       }
       setSelectedCardId(savedCards.length > 0 ? savedCards[0].id : 'new');
+      setSelectedCard2Id('none');
+      setCard2Amount('0');
       setPaymentDetails({
         cardNumber: '',
         cardholderName: '',
@@ -129,6 +146,13 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
         ifscCode: '',
         accountHolderName: '',
         cashAmount: ''
+      });
+      setPaymentDetails2({
+        cardNumber: '',
+        cardholderName: '',
+        expiryDate: '',
+        cvv: '',
+        bankName: ''
       });
       setValidationErrors({});
     }
@@ -171,21 +195,52 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
     const errors = {};
     const pm = formData.payment_method;
 
-    if (pm === 'Credit Card' && selectedCardId === 'new') {
-      if (!isValidLuhn(paymentDetails.cardNumber.replace(/\s/g, ''))) {
-        errors.cardNumber = 'Invalid card number';
+    if (pm === 'Credit Card') {
+      const totalCost = parseFloat(formData.fuel_cost) || 0;
+      const c1Amt = parseFloat(card1Amount) || 0;
+      const c2Amt = parseFloat(card2Amount) || 0;
+
+      if (selectedCard2Id && selectedCard2Id !== 'none') {
+        if (Math.abs((c1Amt + c2Amt) - totalCost) > 0.01) {
+          toast.error(`Split card amounts (₹${c1Amt} + ₹${c2Amt}) must equal Total Fuel Cost (₹${totalCost}).`);
+          return false;
+        }
       }
-      if (!isValidExpiry(paymentDetails.expiryDate)) {
-        errors.expiryDate = 'Invalid or expired date (MM/YY)';
+
+      if (selectedCardId === 'new') {
+        if (!isValidLuhn(paymentDetails.cardNumber.replace(/\s/g, ''))) {
+          errors.cardNumber = 'Invalid Card 1 number';
+        }
+        if (!isValidExpiry(paymentDetails.expiryDate)) {
+          errors.expiryDate = 'Invalid or expired date (MM/YY)';
+        }
+        if (!/^\d{3,4}$/.test(paymentDetails.cvv)) {
+          errors.cvv = 'CVV must be 3 or 4 digits';
+        }
+        if (!paymentDetails.cardholderName.trim()) {
+          errors.cardholderName = 'Card 1 cardholder name is required';
+        }
+        if (!paymentDetails.bankName.trim()) {
+          errors.bankName = 'Card 1 bank name is required';
+        }
       }
-      if (!/^\d{3,4}$/.test(paymentDetails.cvv)) {
-        errors.cvv = 'CVV must be 3 or 4 digits';
-      }
-      if (!paymentDetails.cardholderName.trim()) {
-        errors.cardholderName = 'Cardholder name is required';
-      }
-      if (!paymentDetails.bankName.trim()) {
-        errors.bankName = 'Bank name is required';
+
+      if (selectedCard2Id === 'new') {
+        if (!isValidLuhn(paymentDetails2.cardNumber.replace(/\s/g, ''))) {
+          errors.cardNumber2 = 'Invalid Card 2 number';
+        }
+        if (!isValidExpiry(paymentDetails2.expiryDate)) {
+          errors.expiryDate2 = 'Invalid or expired date (MM/YY)';
+        }
+        if (!/^\d{3,4}$/.test(paymentDetails2.cvv)) {
+          errors.cvv2 = 'CVV must be 3 or 4 digits';
+        }
+        if (!paymentDetails2.cardholderName.trim()) {
+          errors.cardholderName2 = 'Card 2 cardholder name is required';
+        }
+        if (!paymentDetails2.bankName.trim()) {
+          errors.bankName2 = 'Card 2 bank name is required';
+        }
       }
     } else if (pm === 'Debit Card') {
       if (!isValidLuhn(paymentDetails.cardNumber.replace(/\s/g, ''))) {
@@ -237,6 +292,7 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
     
     try {
       let finalCreditCardId = null;
+      let finalCreditCardId2 = null;
 
       // Handle Credit Card creation if "Add New Card" is selected
       if (formData.payment_method === 'Credit Card') {
@@ -251,12 +307,31 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
             status: 'Active',
             user_id: currentUser?.id || ''
           };
-          console.log('Creating new credit card with payload:', newCardPayload);
           const newCard = await pb.collection('credit_cards').create(newCardPayload, { $autoCancel: false });
           finalCreditCardId = newCard.id;
-          toast.success('New credit card saved successfully.');
+          toast.success('Primary credit card saved.');
         } else {
           finalCreditCardId = selectedCardId;
+        }
+
+        if (selectedCard2Id && selectedCard2Id !== 'none') {
+          if (selectedCard2Id === 'new') {
+            const newCardPayload2 = {
+              card_name: paymentDetails2.cardholderName,
+              card_number_last4: paymentDetails2.cardNumber.replace(/\D/g, '').slice(-4),
+              card_type: 'Credit',
+              bank_name: paymentDetails2.bankName,
+              billing_cycle_start: 1,
+              billing_cycle_end: 30,
+              status: 'Active',
+              user_id: currentUser?.id || ''
+            };
+            const newCard2 = await pb.collection('credit_cards').create(newCardPayload2, { $autoCancel: false });
+            finalCreditCardId2 = newCard2.id;
+            toast.success('Second credit card saved.');
+          } else {
+            finalCreditCardId2 = selectedCard2Id;
+          }
         }
       }
 
@@ -282,13 +357,23 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
       }
 
       if (formData.payment_method === 'Credit Card') {
-        if (selectedCardId === 'new') {
-          const maskedCard = paymentDetails.cardNumber.slice(-4).padStart(paymentDetails.cardNumber.length, '*');
-          paymentInfoStr += `Card: ${maskedCard}, Name: ${paymentDetails.cardholderName}, Bank: ${paymentDetails.bankName}\n`;
+        if (selectedCard2Id && selectedCard2Id !== 'none') {
+          const c1Obj = savedCards.find(c => c.id === finalCreditCardId);
+          const c2Obj = savedCards.find(c => c.id === finalCreditCardId2);
+
+          const c1Str = c1Obj ? `${c1Obj.card_name} (****${c1Obj.card_number_last4})` : (paymentDetails.cardNumber ? `****${paymentDetails.cardNumber.slice(-4)}` : 'Card 1');
+          const c2Str = c2Obj ? `${c2Obj.card_name} (****${c2Obj.card_number_last4})` : (paymentDetails2.cardNumber ? `****${paymentDetails2.cardNumber.slice(-4)}` : 'Card 2');
+
+          paymentInfoStr += `Split Credit Cards:\n- Card 1: ${c1Str} => ₹${card1Amount}\n- Card 2: ${c2Str} => ₹${card2Amount}\n`;
         } else {
-          const card = savedCards.find(c => c.id === finalCreditCardId);
-          if (card) {
-            paymentInfoStr += `Card: ****${card.card_number_last4}, Name: ${card.card_name}, Bank: ${card.bank_name}\n`;
+          if (selectedCardId === 'new') {
+            const maskedCard = paymentDetails.cardNumber.slice(-4).padStart(paymentDetails.cardNumber.length, '*');
+            paymentInfoStr += `Card: ${maskedCard}, Name: ${paymentDetails.cardholderName}, Bank: ${paymentDetails.bankName}\n`;
+          } else {
+            const card = savedCards.find(c => c.id === finalCreditCardId);
+            if (card) {
+              paymentInfoStr += `Card: ****${card.card_number_last4}, Name: ${card.card_name}, Bank: ${card.bank_name}\n`;
+            }
           }
         }
       } else if (formData.payment_method === 'Debit Card') {
@@ -399,113 +484,316 @@ const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = n
 
   const renderPaymentFields = () => {
     switch (formData.payment_method) {
-      case 'Credit Card':
+      case 'Credit Card': {
+        const totalCost = parseFloat(formData.fuel_cost) || 0;
+        const c1Amt = parseFloat(card1Amount) || 0;
+        const c2Amt = parseFloat(card2Amount) || 0;
+        const isSplit = selectedCard2Id && selectedCard2Id !== 'none';
+        const sumAmts = c1Amt + c2Amt;
+        const isSumValid = !isSplit || Math.abs(sumAmts - totalCost) < 0.01;
+
         return (
-          <div className="grid grid-cols-1 gap-4 mt-2 p-4 bg-muted/20 rounded-xl border border-border">
-            <div className="space-y-2">
-              <Label>Select Credit Card *</Label>
-              <Select 
-                value={selectedCardId} 
-                onValueChange={(v) => {
-                  setSelectedCardId(v);
-                  setValidationErrors({});
-                }}
-              >
-                <SelectTrigger className="bg-background h-12">
-                  <SelectValue placeholder="Select a saved card..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="new" className="font-semibold text-primary">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Add New Card
-                    </div>
-                  </SelectItem>
-                  {savedCards.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.card_name} (****{c.card_number_last4}) - {c.bank_name} - {c.card_type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4 mt-2 p-4 bg-muted/20 rounded-xl border border-border">
+            <div className="flex items-center justify-between">
+              <Label className="font-bold text-sm flex items-center gap-2 text-foreground">
+                <CreditCard className="w-4 h-4 text-primary" />
+                Credit Card Payment Options
+              </Label>
+              {isSplit && (
+                <Badge variant={isSumValid ? "outline" : "destructive"} className={`text-[11px] font-mono ${isSumValid ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : ''}`}>
+                  {isSumValid ? `₹${c1Amt.toLocaleString()} + ₹${c2Amt.toLocaleString()} = ₹${totalCost.toLocaleString()}` : `Sum ₹${sumAmts.toLocaleString()} ≠ Total ₹${totalCost.toLocaleString()}`}
+                </Badge>
+              )}
             </div>
 
-            {selectedCardId === 'new' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-border animate-in fade-in slide-in-from-top-2">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Card Number *</Label>
-                  <Input 
-                    type="text"
-                    maxLength={19}
-                    placeholder="0000 0000 0000 0000"
-                    value={paymentDetails.cardNumber}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      setPaymentDetails({...paymentDetails, cardNumber: val});
-                      if (validationErrors.cardNumber) setValidationErrors({...validationErrors, cardNumber: null});
+            {/* Credit Card 1 (Primary) */}
+            <div className="p-3 bg-background/60 rounded-xl border border-border/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-primary flex items-center gap-1">
+                  💳 Credit Card 1 (Primary)
+                </span>
+                {isSplit && (
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Card 1 Share
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className={isSplit ? "sm:col-span-2 space-y-1" : "sm:col-span-3 space-y-1"}>
+                  <Label className="text-xs text-muted-foreground">Select Primary Card *</Label>
+                  <Select 
+                    value={selectedCardId} 
+                    onValueChange={(v) => {
+                      setSelectedCardId(v);
+                      setValidationErrors({});
                     }}
-                    className={`bg-background ${validationErrors.cardNumber ? 'border-destructive' : ''}`}
-                  />
-                  {validationErrors.cardNumber && <p className="text-xs text-destructive">{validationErrors.cardNumber}</p>}
+                  >
+                    <SelectTrigger className="bg-background h-10 text-xs">
+                      <SelectValue placeholder="Select primary card..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new" className="font-semibold text-primary">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          + Add New Card
+                        </div>
+                      </SelectItem>
+                      {savedCards.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.card_name} (****{c.card_number_last4}) - {c.bank_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Cardholder Name *</Label>
-                  <Input 
-                    type="text"
-                    placeholder="Name on card"
-                    value={paymentDetails.cardholderName}
-                    onChange={(e) => setPaymentDetails({...paymentDetails, cardholderName: e.target.value})}
-                    className={`bg-background ${validationErrors.cardholderName ? 'border-destructive' : ''}`}
-                  />
-                  {validationErrors.cardholderName && <p className="text-xs text-destructive">{validationErrors.cardholderName}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Bank Name *</Label>
-                  <Input 
-                    type="text"
-                    placeholder="e.g. HDFC, ICICI"
-                    value={paymentDetails.bankName}
-                    onChange={(e) => setPaymentDetails({...paymentDetails, bankName: e.target.value})}
-                    className={`bg-background ${validationErrors.bankName ? 'border-destructive' : ''}`}
-                  />
-                  {validationErrors.bankName && <p className="text-xs text-destructive">{validationErrors.bankName}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-4 sm:col-span-2">
-                  <div className="space-y-2">
-                    <Label>Expiry (MM/YY) *</Label>
+
+                {isSplit && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Card 1 Amount (₹) *</Label>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={card1Amount}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCard1Amount(val);
+                        if (totalCost > 0) {
+                          const rem = Math.max(0, totalCost - (parseFloat(val) || 0));
+                          setCard2Amount(rem.toFixed(2));
+                        }
+                      }}
+                      className="bg-background h-10 text-xs font-mono font-bold text-primary"
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {selectedCardId === 'new' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border/60 animate-in fade-in">
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Card 1 Number *</Label>
                     <Input 
                       type="text"
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      value={paymentDetails.expiryDate}
+                      maxLength={19}
+                      placeholder="0000 0000 0000 0000"
+                      value={paymentDetails.cardNumber}
                       onChange={(e) => {
-                        let val = e.target.value.replace(/[^\d/]/g, '');
-                        if (val.length === 2 && !val.includes('/') && paymentDetails.expiryDate.length === 1) {
-                          val += '/';
-                        }
-                        setPaymentDetails({...paymentDetails, expiryDate: val});
+                        const val = e.target.value.replace(/\D/g, '');
+                        setPaymentDetails({...paymentDetails, cardNumber: val});
+                        if (validationErrors.cardNumber) setValidationErrors({...validationErrors, cardNumber: null});
                       }}
-                      className={`bg-background ${validationErrors.expiryDate ? 'border-destructive' : ''}`}
+                      className={`bg-background h-9 text-xs ${validationErrors.cardNumber ? 'border-destructive' : ''}`}
                     />
-                    {validationErrors.expiryDate && <p className="text-xs text-destructive">{validationErrors.expiryDate}</p>}
+                    {validationErrors.cardNumber && <p className="text-[10px] text-destructive">{validationErrors.cardNumber}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <Label>CVV *</Label>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cardholder Name *</Label>
                     <Input 
-                      type="password"
-                      maxLength={4}
-                      placeholder="***"
-                      value={paymentDetails.cvv}
-                      onChange={(e) => setPaymentDetails({...paymentDetails, cvv: e.target.value.replace(/\D/g, '')})}
-                      className={`bg-background ${validationErrors.cvv ? 'border-destructive' : ''}`}
+                      type="text"
+                      placeholder="Name on card"
+                      value={paymentDetails.cardholderName}
+                      onChange={(e) => setPaymentDetails({...paymentDetails, cardholderName: e.target.value})}
+                      className={`bg-background h-9 text-xs ${validationErrors.cardholderName ? 'border-destructive' : ''}`}
                     />
-                    {validationErrors.cvv && <p className="text-xs text-destructive">{validationErrors.cvv}</p>}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bank Name *</Label>
+                    <Input 
+                      type="text"
+                      placeholder="e.g. HDFC, ICICI"
+                      value={paymentDetails.bankName}
+                      onChange={(e) => setPaymentDetails({...paymentDetails, bankName: e.target.value})}
+                      className={`bg-background h-9 text-xs ${validationErrors.bankName ? 'border-destructive' : ''}`}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Expiry (MM/YY) *</Label>
+                      <Input 
+                        type="text"
+                        placeholder="MM/YY"
+                        maxLength={5}
+                        value={paymentDetails.expiryDate}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/[^\d/]/g, '');
+                          if (val.length === 2 && !val.includes('/') && paymentDetails.expiryDate.length === 1) {
+                            val += '/';
+                          }
+                          setPaymentDetails({...paymentDetails, expiryDate: val});
+                        }}
+                        className={`bg-background h-9 text-xs ${validationErrors.expiryDate ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">CVV *</Label>
+                      <Input 
+                        type="password"
+                        maxLength={4}
+                        placeholder="***"
+                        value={paymentDetails.cvv}
+                        onChange={(e) => setPaymentDetails({...paymentDetails, cvv: e.target.value.replace(/\D/g, '')})}
+                        className={`bg-background h-9 text-xs ${validationErrors.cvv ? 'border-destructive' : ''}`}
+                      />
+                    </div>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Credit Card 2 (Split Option) */}
+            <div className="p-3 bg-background/60 rounded-xl border border-border/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-500 flex items-center gap-1">
+                  💳 Credit Card 2 (Split Option)
+                </span>
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  {isSplit ? 'Split Active' : 'Optional Split'}
+                </span>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Select Card 2</Label>
+                  <Select 
+                    value={selectedCard2Id} 
+                    onValueChange={(v) => {
+                      setSelectedCard2Id(v);
+                      if (v === 'none') {
+                        setCard1Amount(formData.fuel_cost);
+                        setCard2Amount('0');
+                      } else {
+                        const half = totalCost > 0 ? (totalCost / 2).toFixed(2) : '';
+                        setCard1Amount(half);
+                        setCard2Amount(half);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="bg-background h-10 text-xs">
+                      <SelectValue placeholder="-- None (Single Card Payment) --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-muted-foreground font-medium">
+                        -- None (Single Card Payment) --
+                      </SelectItem>
+                      <SelectItem value="new" className="font-semibold text-primary">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          + Add New Second Card
+                        </div>
+                      </SelectItem>
+                      {savedCards.filter(c => c.id !== selectedCardId).map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.card_name} (****{c.card_number_last4}) - {c.bank_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isSplit && (
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Card 2 Amount (₹) *</Label>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={card2Amount}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCard2Amount(val);
+                        if (totalCost > 0) {
+                          const rem = Math.max(0, totalCost - (parseFloat(val) || 0));
+                          setCard1Amount(rem.toFixed(2));
+                        }
+                      }}
+                      className="bg-background h-10 text-xs font-mono font-bold text-amber-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {selectedCard2Id === 'new' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border/60 animate-in fade-in">
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Card 2 Number *</Label>
+                    <Input 
+                      type="text"
+                      maxLength={19}
+                      placeholder="0000 0000 0000 0000"
+                      value={paymentDetails2.cardNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setPaymentDetails2({...paymentDetails2, cardNumber: val});
+                      }}
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Cardholder Name *</Label>
+                    <Input 
+                      type="text"
+                      placeholder="Name on card"
+                      value={paymentDetails2.cardholderName}
+                      onChange={(e) => setPaymentDetails2({...paymentDetails2, cardholderName: e.target.value})}
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bank Name *</Label>
+                    <Input 
+                      type="text"
+                      placeholder="e.g. HDFC, ICICI"
+                      value={paymentDetails2.bankName}
+                      onChange={(e) => setPaymentDetails2({...paymentDetails2, bankName: e.target.value})}
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Expiry (MM/YY) *</Label>
+                      <Input 
+                        type="text"
+                        placeholder="MM/YY"
+                        maxLength={5}
+                        value={paymentDetails2.expiryDate}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/[^\d/]/g, '');
+                          if (val.length === 2 && !val.includes('/') && paymentDetails2.expiryDate.length === 1) {
+                            val += '/';
+                          }
+                          setPaymentDetails2({...paymentDetails2, expiryDate: val});
+                        }}
+                        className="bg-background h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">CVV *</Label>
+                      <Input 
+                        type="password"
+                        maxLength={4}
+                        placeholder="***"
+                        value={paymentDetails2.cvv}
+                        onChange={(e) => setPaymentDetails2({...paymentDetails2, cvv: e.target.value.replace(/\D/g, '')})}
+                        className="bg-background h-9 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!isSumValid && isSplit && (
+              <p className="text-xs text-destructive font-semibold">
+                ⚠️ Card 1 (₹{c1Amt}) + Card 2 (₹{c2Amt}) = ₹{sumAmts}. Must equal Total Fuel Cost (₹{totalCost}).
+              </p>
             )}
           </div>
         );
+      }
 
       case 'Debit Card':
         return (
