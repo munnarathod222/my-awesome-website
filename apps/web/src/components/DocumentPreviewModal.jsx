@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, FileImage, FileQuestion, ExternalLink } from 'lucide-react';
+import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
 const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'truck_documents' }) => {
   const [activeFile, setActiveFile] = useState(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const filesList = document?.files || (document?.file ? [document.file] : []);
 
@@ -18,14 +20,41 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
     }
   }, [document]);
 
-  if (!document || !activeFile) return null;
-
-  const rawUrl = pb.files.getURL(document, activeFile);
-  const fileUrl = rawUrl.includes('?') ? `${rawUrl}&inline=1` : `${rawUrl}?inline=1`;
-  const fileExt = activeFile.split('.').pop().toLowerCase();
-  
+  const rawUrl = activeFile ? pb.files.getURL(document, activeFile) : '';
+  const fileExt = activeFile ? activeFile.split('.').pop().toLowerCase() : '';
   const isPdf = fileExt === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+
+  // Convert PDF to blob with application/pdf header so browser renders inline without downloading
+  useEffect(() => {
+    let currentBlobUrl = null;
+
+    if (isOpen && isPdf && rawUrl) {
+      setPdfLoading(true);
+      fetch(rawUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+          currentBlobUrl = URL.createObjectURL(pdfBlob);
+          setPdfBlobUrl(currentBlobUrl);
+        })
+        .catch(err => {
+          console.error('Failed to create PDF blob:', err);
+          setPdfBlobUrl(rawUrl);
+        })
+        .finally(() => setPdfLoading(false));
+    } else {
+      setPdfBlobUrl(null);
+    }
+
+    return () => {
+      if (currentBlobUrl && currentBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(currentBlobUrl);
+      }
+    };
+  }, [isOpen, activeFile, rawUrl, isPdf]);
+
+  if (!document || !activeFile) return null;
 
   const handleDownload = () => {
     const a = window.document.createElement('a');
@@ -37,7 +66,11 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
   };
 
   const handleOpenNewTab = () => {
-    window.open(fileUrl, '_blank');
+    if (pdfBlobUrl) {
+      window.open(pdfBlobUrl, '_blank');
+    } else {
+      window.open(rawUrl, '_blank');
+    }
   };
 
   return (
@@ -98,28 +131,41 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
             <div className="w-full h-full flex flex-col">
               <div className="bg-slate-900 px-3 py-2 text-xs text-slate-300 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
                 <span className="font-semibold text-white flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-blue-400" /> PDF Document Preview
+                  <FileText className="w-4 h-4 text-blue-400" /> Interactive PDF Preview
                 </span>
                 <button
                   type="button"
                   onClick={handleOpenNewTab}
                   className="text-primary hover:underline font-semibold flex items-center gap-1 text-xs"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open in New Browser Window
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Fullscreen Tab
                 </button>
               </div>
               
-              <div className="flex-1 relative w-full h-full bg-white flex items-center justify-center overflow-hidden">
-                <iframe 
-                  src={fileUrl} 
-                  className="w-full h-full border-0 bg-white"
-                  title="PDF Preview"
-                />
+              <div className="flex-1 relative w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
+                {pdfLoading ? (
+                  <div className="flex flex-col items-center justify-center space-y-2 text-slate-300 text-xs">
+                    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                    <span>Loading PDF Preview...</span>
+                  </div>
+                ) : pdfBlobUrl ? (
+                  <iframe 
+                    src={pdfBlobUrl} 
+                    className="w-full h-full border-0 bg-white"
+                    title="PDF Blob Preview"
+                  />
+                ) : (
+                  <iframe 
+                    src={rawUrl} 
+                    className="w-full h-full border-0 bg-white"
+                    title="PDF Fallback Preview"
+                  />
+                )}
               </div>
             </div>
           ) : isImage ? (
             <img 
-              src={fileUrl} 
+              src={rawUrl} 
               alt={`${document.document_type} preview`}
               className="max-w-full max-h-full object-contain p-2"
             />
@@ -143,7 +189,7 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
               Close
             </Button>
             <Button size="sm" onClick={handleDownload} className="rounded-xl font-bold flex items-center gap-1 bg-primary text-primary-foreground">
-              <Download className="w-3.5 h-3.5" /> Download PDF / Copy
+              <Download className="w-3.5 h-3.5" /> Download PDF / File
             </Button>
           </div>
         </div>
