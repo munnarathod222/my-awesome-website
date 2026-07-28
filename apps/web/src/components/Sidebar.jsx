@@ -130,6 +130,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Directory',
       items: [
+        { icon: Building2, label: 'Transport CRM', path: '/transport-crm', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Contact2, label: 'Contacts', path: '/contacts', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Users,    label: 'Clients',  path: '/clients',  roles: ['super_admin','admin','manager'] },
       ]
