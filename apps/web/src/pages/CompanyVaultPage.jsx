@@ -197,8 +197,10 @@ export default function CompanyVaultPage() {
       if (selectedFile) {
         const fileData = new FormData();
         fileData.append('file', selectedFile);
-        fileData.append('document_type', uploadFormData.category);
-        fileData.append('notes', `Company Vault: ${uploadFormData.title}`);
+        fileData.append('truck_id', 'COMPANY_VAULT');
+        fileData.append('document_type', 'Other');
+        fileData.append('document_name', uploadFormData.title.trim());
+        fileData.append('notes', `Company Vault: ${uploadFormData.title} (${uploadFormData.category})`);
 
         // Upload to PocketBase truck_documents storage bucket for permanent file hosting
         const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
@@ -229,7 +231,8 @@ export default function CompanyVaultPage() {
       setIsUploadModalOpen(false);
     } catch (err) {
       console.error('Error uploading vault document:', err);
-      toast.error('Failed to upload document to vault');
+      const detail = err?.data?.message || err?.message || 'Failed to upload document to vault';
+      toast.error(`Upload error: ${detail}`);
     } finally {
       setUploadingDoc(false);
     }
