@@ -483,6 +483,9 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
                         <SelectValue placeholder="Select driver" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
+                          ⚡ Temporary Driver
+                        </SelectItem>
                         {employees.map(e => <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>)}
                       </SelectContent>
                     </Select>

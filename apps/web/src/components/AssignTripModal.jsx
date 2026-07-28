@@ -225,6 +225,9 @@ export default function AssignTripModal({ isOpen, onClose, vehicleId, vehicleNam
                   <SelectValue placeholder="Assign driver" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
+                    ⚡ Temporary Driver
+                  </SelectItem>
                   {drivers.map(d => (
                     <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                   ))}

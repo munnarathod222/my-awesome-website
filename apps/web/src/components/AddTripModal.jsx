@@ -395,9 +395,20 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       <SelectValue placeholder="Select driver" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
+                        ⚡ Temporary Driver
+                      </SelectItem>
                       {employees.map(e => <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {formData.driver_name?.startsWith('Temporary Driver') && (
+                    <Input
+                      placeholder="Custom Temp Name (Optional, e.g. Temporary - Ramesh)"
+                      value={formData.driver_name === 'Temporary Driver' ? '' : formData.driver_name}
+                      onChange={e => setFormData({ ...formData, driver_name: e.target.value ? e.target.value : 'Temporary Driver' })}
+                      className="text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Truck <span className="text-destructive">*</span></Label>
