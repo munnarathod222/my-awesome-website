@@ -259,8 +259,8 @@ export default function ContactsPage() {
           <Button variant="outline" onClick={() => setIsExportOpen(true)} className="bg-card shadow-sm rounded-xl">
             <Download className="w-4 h-4 mr-2" /> Export
           </Button>
-          <Button variant="secondary" onClick={() => setIsAiModalOpen(true)} className="shadow-sm rounded-xl">
-            <Camera className="w-4 h-4 mr-2" /> AI Scan
+          <Button variant="secondary" onClick={() => setIsAiModalOpen(true)} className="shadow-sm rounded-xl font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20">
+            <Camera className="w-4 h-4 mr-2 text-primary" /> 📸 Scan Visiting Card
           </Button>
           <Button onClick={() => { setSelectedContact(null); setIsFormOpen(true); }} className="shadow-sm rounded-xl">
             <Plus className="w-4 h-4 mr-2" /> Add Contact
