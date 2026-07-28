@@ -419,8 +419,8 @@ const ExpensesPage = () => {
         if (e.category === 'Regular' && e.subcategory === 'Fuel') return false;
         if (e.category === 'Regular' && e.subcategory === 'Toll') return false;
         if (e.category === 'Regular' && e.subcategory === 'Maintenance') return false;
-        if (e.category === 'Employee' && e.subcategory === 'Employee Advance') return false;
-        if (e.category === 'Employee Advance') return false;
+        if (e.category === 'Employee' || e.category === 'Employee Advance' || e.category === 'Salary') return false;
+        if (e.subcategory === 'Employee Advance' || e.subcategory === 'Salary') return false;
         if (e.category === 'EMI') return false;
         return true;
       })
