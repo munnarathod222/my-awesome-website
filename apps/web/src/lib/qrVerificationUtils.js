@@ -20,10 +20,21 @@ export function calculateVehicleCompliance(truck = {}, documents = []) {
   
   // Find matching document records for each type
   docTypes.forEach(typeObj => {
-    let docRecord = documents.find(d => 
-      (d.truck_number === truck.truck_number || d.truck_id === truck.id) && 
-      (d.document_type?.toLowerCase().includes(typeObj.key) || d.notes?.toLowerCase().includes(typeObj.key))
-    );
+    let docRecord = documents.find(d => {
+      const isTruckMatch = d.truck_id === truck.id || d.truck_number === truck.truck_number || d.truck_id === truck.truck_number;
+      if (!isTruckMatch) return false;
+      const typeLower = (d.document_type || '').toLowerCase();
+      const notesLower = (d.notes || '').toLowerCase();
+      const targetKey = typeObj.key;
+
+      if (targetKey === 'puc') return typeLower.includes('puc') || typeLower.includes('pollution');
+      if (targetKey === 'rc') return typeLower.includes('rc') || typeLower.includes('registration');
+      if (targetKey === 'insurance') return typeLower.includes('insurance');
+      if (targetKey === 'fitness') return typeLower.includes('fitness');
+      if (targetKey === 'permit') return typeLower.includes('permit');
+      if (targetKey === 'road_tax') return typeLower.includes('tax');
+      return typeLower.includes(targetKey) || notesLower.includes(targetKey);
+    });
 
     // Also fallback to truck object properties if document collection record not found
     let expiryDateStr = docRecord?.expiry_date || docRecord?.valid_till;

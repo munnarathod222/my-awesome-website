@@ -82,17 +82,25 @@ export default function VehicleQRVerificationPage() {
       setTruck(foundTruck);
 
       // 3. Fetch real documents for this truck from truck_documents folder
-      const docsList = await pb.collection('truck_documents').getFullList({
-        filter: `truck_number ~ "${foundTruck.truck_number}" || truck_id = "${foundTruck.id}"`,
+      const allDocs = await pb.collection('truck_documents').getFullList({
         sort: '-created',
         $autoCancel: false
       }).catch(() => []);
-      setDocuments(docsList || []);
+
+      const matchingDocs = allDocs.filter(d => 
+        d.truck_id === foundTruck.id || 
+        d.truck_id === foundTruck.truck_number || 
+        d.truck_number === foundTruck.truck_number ||
+        (d.notes && d.notes.includes(foundTruck.truck_number))
+      );
+      setDocuments(matchingDocs);
 
       // 4. Fetch real employees / driver details
       const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
       const matchedDriver = empList.find(e => 
         (foundTruck.driver_name && e.name?.toLowerCase().includes(foundTruck.driver_name.toLowerCase())) ||
+        e.assigned_truck === foundTruck.id ||
+        e.assigned_truck === foundTruck.truck_number ||
         e.role === 'Driver' || 
         e.designation === 'Driver'
       ) || empList[0] || null;
@@ -129,6 +137,11 @@ export default function VehicleQRVerificationPage() {
   const companyName = companyInfo?.company_name || 'JAI BHAVANI CARGO';
   const companyPhone = companyInfo?.company_phone || '+91 7794072244';
   const companyAddress = companyInfo?.company_address || 'Plot no 3, Patel nagar, Ghatkesar, pin: 501301';
+  
+  // Realtime driver phone & details
+  const driverName = driver?.name || truck?.driver_name || 'Dayanand surwase';
+  const driverPhone = driver?.phone || driver?.mobile || driver?.phone_number || truck?.driver_phone || '+91 98490 12345';
+  const driverDl = driver?.license_number || driver?.dl || truck?.driver_dl || 'MH03 20090057914';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
@@ -290,7 +303,7 @@ export default function VehicleQRVerificationPage() {
         {/* Assigned Driver Information Card */}
         <Card className="bg-slate-900/80 border-slate-800 p-4 rounded-3xl space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <User className="w-4 h-4 text-blue-400" /> Verified Driver Details
+            <User className="w-4 h-4 text-blue-400" /> Realtime Assigned Driver
           </h2>
 
           <div className="flex items-center gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
@@ -304,13 +317,13 @@ export default function VehicleQRVerificationPage() {
 
             <div className="space-y-1 text-xs">
               <div className="font-extrabold text-sm text-white">
-                {driver?.name || truck.driver_name || 'Dayanand surwase'}
+                {driverName}
               </div>
               <div className="text-slate-400 font-mono">
-                DL No: <span className="text-amber-400 font-bold">{driver?.license_number || driver?.dl || 'MH03 20090057914'}</span>
+                DL No: <span className="text-amber-400 font-bold">{driverDl}</span>
               </div>
               <div className="text-slate-400">
-                Contact Phone: <a href={`tel:${driver?.phone || companyPhone}`} className="text-emerald-400 font-mono font-bold hover:underline">{driver?.phone || companyPhone}</a>
+                Driver Mobile: <a href={`tel:${driverPhone}`} className="text-emerald-400 font-mono font-bold hover:underline">{driverPhone}</a>
               </div>
             </div>
           </div>
@@ -324,17 +337,17 @@ export default function VehicleQRVerificationPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <a 
-              href={`tel:${companyPhone}`}
+              href={`tel:${driverPhone}`}
               className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
             >
-              <Building2 className="w-4 h-4 text-emerald-400" /> Transport Head Office
+              <Phone className="w-4 h-4 text-emerald-400" /> 📞 Call Driver Direct
             </a>
 
             <a 
               href={`tel:${companyPhone}`}
               className="p-3.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-2xl text-blue-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
             >
-              <Phone className="w-4 h-4 text-blue-400" /> Fleet Manager
+              <Building2 className="w-4 h-4 text-blue-400" /> Transport Head Office
             </a>
 
             <a 
