@@ -95,15 +95,17 @@ export default function VehicleQRVerificationPage() {
       );
       setDocuments(matchingDocs);
 
-      // 4. Fetch real employees / driver details
+      // 4. Fetch real employees / driver details only for ACTIVE drivers assigned to this truck
       const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
-      const matchedDriver = empList.find(e => 
-        (foundTruck.driver_name && e.name?.toLowerCase().includes(foundTruck.driver_name.toLowerCase())) ||
-        e.assigned_truck === foundTruck.id ||
-        e.assigned_truck === foundTruck.truck_number ||
-        e.role === 'Driver' || 
-        e.designation === 'Driver'
-      ) || empList[0] || null;
+      const matchedDriver = empList.find(e => {
+        const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
+        if (isInactive) return false;
+        
+        const isTruckAssigned = e.assigned_truck === foundTruck.id || e.assigned_truck === foundTruck.truck_number;
+        const isNameMatched = Boolean(foundTruck.driver_name && e.name?.toLowerCase().includes(foundTruck.driver_name.toLowerCase()));
+        
+        return isTruckAssigned || isNameMatched;
+      }) || null;
       
       setDriver(matchedDriver);
 
@@ -139,9 +141,10 @@ export default function VehicleQRVerificationPage() {
   const companyAddress = companyInfo?.company_address || 'Plot no 3, Patel nagar, Ghatkesar, pin: 501301';
   
   // Realtime driver phone & details
-  const driverName = driver?.name || truck?.driver_name || 'Dayanand surwase';
-  const driverPhone = driver?.phone || driver?.mobile || driver?.phone_number || truck?.driver_phone || '+91 98490 12345';
-  const driverDl = driver?.license_number || driver?.dl || truck?.driver_dl || 'MH03 20090057914';
+  const hasAssignedDriver = !!(driver || truck?.driver_name || truck?.driver_phone);
+  const driverName = hasAssignedDriver ? (driver?.name || truck?.driver_name) : 'No Driver Assigned';
+  const driverPhone = hasAssignedDriver ? (driver?.phone || driver?.mobile || driver?.phone_number || truck?.driver_phone) : null;
+  const driverDl = hasAssignedDriver ? (driver?.license_number || driver?.dl || truck?.driver_dl || 'N/A') : 'N/A';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
@@ -302,9 +305,14 @@ export default function VehicleQRVerificationPage() {
 
         {/* Assigned Driver Information Card */}
         <Card className="bg-slate-900/80 border-slate-800 p-4 rounded-3xl space-y-3">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-            <User className="w-4 h-4 text-blue-400" /> Realtime Assigned Driver
-          </h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <User className="w-4 h-4 text-blue-400" /> Realtime Assigned Driver
+            </h2>
+            <Badge variant="outline" className={`text-[10px] font-mono font-bold ${hasAssignedDriver ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+              {hasAssignedDriver ? '🟢 Active Driver Assigned' : '⚠️ Standby Fleet Vehicle'}
+            </Badge>
+          </div>
 
           <div className="flex items-center gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
             <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
@@ -323,7 +331,11 @@ export default function VehicleQRVerificationPage() {
                 DL No: <span className="text-amber-400 font-bold">{driverDl}</span>
               </div>
               <div className="text-slate-400">
-                Driver Mobile: <a href={`tel:${driverPhone}`} className="text-emerald-400 font-mono font-bold hover:underline">{driverPhone}</a>
+                Driver Mobile: {driverPhone ? (
+                  <a href={`tel:${driverPhone}`} className="text-emerald-400 font-mono font-bold hover:underline">{driverPhone}</a>
+                ) : (
+                  <span className="text-amber-400 font-semibold">Contact Head Office ({companyPhone})</span>
+                )}
               </div>
             </div>
           </div>
@@ -336,12 +348,21 @@ export default function VehicleQRVerificationPage() {
           </h2>
 
           <div className="grid grid-cols-2 gap-3">
-            <a 
-              href={`tel:${driverPhone}`}
-              className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
-            >
-              <Phone className="w-4 h-4 text-emerald-400" /> 📞 Call Driver Direct
-            </a>
+            {hasAssignedDriver && driverPhone ? (
+              <a 
+                href={`tel:${driverPhone}`}
+                className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
+              >
+                <Phone className="w-4 h-4 text-emerald-400" /> 📞 Call Driver Direct
+              </a>
+            ) : (
+              <a 
+                href={`tel:${companyPhone}`}
+                className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
+              >
+                <Phone className="w-4 h-4 text-emerald-400" /> 📞 24x7 Fleet Helpline
+              </a>
+            )}
 
             <a 
               href={`tel:${companyPhone}`}
