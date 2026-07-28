@@ -40,6 +40,7 @@ import TripLogsPage from './pages/TripLogsPage.jsx';
 import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
 import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
 import InsuranceManagerPage from './pages/InsuranceManagerPage.jsx';
+import VehicleQRVerificationPage from './pages/VehicleQRVerificationPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
@@ -128,7 +129,8 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   
   const publicRoutes = ['/', '/services', '/about', '/contact', '/quote', '/login', '/signup', '/signup-request', '/forgot-password', '/accept-invitation'];
-  const isPublicPage = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/shared/');
+  const isQrPage = location.pathname.startsWith('/v/') || location.pathname.startsWith('/verify-vehicle/');
+  const isPublicPage = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/shared/') || isQrPage;
   
   const showSidebar = isAuthenticated && !isPublicPage;
 
@@ -139,7 +141,7 @@ const AppLayout = ({ children }) => {
       <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none z-0" />
       <div className="absolute top-[30%] right-[10%] w-[400px] h-[400px] rounded-full bg-indigo-500/5 blur-[130px] pointer-events-none z-0" />
 
-      <Header />
+      {!isQrPage && <Header />}
       
       <div className="flex flex-1 overflow-hidden relative z-10">
         {showSidebar && (
@@ -155,7 +157,7 @@ const AppLayout = ({ children }) => {
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
-          {isPublicPage && <Footer />}
+          {isPublicPage && !isQrPage && <Footer />}
         </main>
         {showSidebar && <MobileQuickActions />}
         {showSidebar && <BottomNavigation />}
@@ -176,6 +178,8 @@ function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/v/:qrToken" element={<VehicleQRVerificationPage />} />
+                  <Route path="/verify-vehicle/:qrToken" element={<VehicleQRVerificationPage />} />
                   <Route path="/services" element={<ServicesPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />

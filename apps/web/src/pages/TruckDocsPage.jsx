@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2 } from 'lucide-react';
+import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,8 @@ import pb from '@/lib/pocketbaseClient.js';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
+import PrintableQRStickerModal from '@/components/PrintableQRStickerModal.jsx';
+import VehicleScanAnalyticsModal from '@/components/VehicleScanAnalyticsModal.jsx';
 
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
@@ -30,6 +32,12 @@ const TruckDocsPage = () => {
   const [viewMode, setViewMode] = useState('folder'); // 'folder' or 'table'
   const [selectedTruckFolder, setSelectedTruckFolder] = useState(null);
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
+  
+  // QR Verification Pass & Scan Audit state
+  const [selectedQRStickerTruck, setSelectedQRStickerTruck] = useState(null);
+  const [isQRStickerOpen, setIsQRStickerOpen] = useState(false);
+  const [selectedScanAnalyticsTruck, setSelectedScanAnalyticsTruck] = useState(null);
+  const [isScanAnalyticsOpen, setIsScanAnalyticsOpen] = useState(false);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -269,6 +277,19 @@ const TruckDocsPage = () => {
             <Folder className="w-8 h-8 fill-current" />
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedQRStickerTruck(truck);
+                setIsQRStickerOpen(true);
+              }}
+              title="Print Windshield QR Verification Sticker Pass"
+            >
+              <QrCode className="w-3.5 h-3.5 mr-1" /> QR Pass
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -696,6 +717,19 @@ const TruckDocsPage = () => {
         truckId={shareConfig.truckId}
         employeeId={shareConfig.employeeId}
         entityName={shareConfig.entityName}
+      />
+
+      <PrintableQRStickerModal
+        isOpen={isQRStickerOpen}
+        onClose={() => setIsQRStickerOpen(false)}
+        truck={selectedQRStickerTruck}
+        qrToken={selectedQRStickerTruck?.truck_number}
+      />
+
+      <VehicleScanAnalyticsModal
+        isOpen={isScanAnalyticsOpen}
+        onClose={() => setIsScanAnalyticsOpen(false)}
+        truck={selectedScanAnalyticsTruck}
       />
     </div>
   );
