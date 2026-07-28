@@ -100,6 +100,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Finance',
       items: [
+        { icon: ShieldCheck,          label: 'Company Vault',    path: '/company-vault',    roles: ['super_admin','admin','manager'] },
         { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager'] },
         { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager'] },
         { icon: CreditCard,           label: 'FASTag Management', path: '/fastag',           roles: ['super_admin','admin','manager'] },

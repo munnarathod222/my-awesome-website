@@ -38,6 +38,7 @@ import AuditLogsPage from './pages/AuditLogsPage.jsx';
 import AdminSignupRequestsPage from './pages/AdminSignupRequestsPage.jsx';
 import TripLogsPage from './pages/TripLogsPage.jsx';
 import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
+import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
@@ -243,6 +244,7 @@ function App() {
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
                   
                   {/* Cashbook & Financials - Restricted from Dispatcher */}
+                  <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CompanyVaultPage /></ProtectedRoute>} />
                   <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
                   <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><FASTagManagerPage /></ProtectedRoute>} />

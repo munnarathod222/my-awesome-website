@@ -892,9 +892,9 @@ const runPocketBase = async () => {
       }
     }
 
-    // 6. Company settings schema migration for bank details
+    // 6. Company settings schema migration for bank and vault details
     const csCols = db.prepare("PRAGMA table_info(company_settings)").all().map(c => c.name);
-    const bankCols = ['bank_name', 'account_name', 'account_number', 'ifsc_code', 'branch_name'];
+    const bankCols = ['bank_name', 'account_name', 'account_number', 'ifsc_code', 'branch_name', 'pan_number', 'tan_number', 'cin_number', 'msme_number', 'udyam_number', 'company_docs_json'];
     for (const col of bankCols) {
       if (!csCols.includes(col)) {
         logger.info(`Migrating: Adding column '${col}' to 'company_settings' table...`);
