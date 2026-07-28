@@ -33,7 +33,8 @@ export default function EditTruckTCOModal({ isOpen, onClose, truckTCO, onSuccess
         annual_insurance: (truckTCO.insurancePerYear || 45000).toString(),
         breakdown_days: (truckTCO.estimatedBreakdownDays || 12).toString(),
         daily_opportunity_cost: (truckTCO.dailyOpportunityCost || 5000).toString(),
-        manual_maintenance_cost: (truckTCO.totalMaintenanceCost || 0).toString()
+        manual_maintenance_cost: (truckTCO.totalMaintenanceCost || 0).toString(),
+        manual_total_revenue: (truckTCO.totalTripRevenue || 0).toString()
       });
     }
   }, [isOpen, truckTCO]);
@@ -57,7 +58,8 @@ export default function EditTruckTCOModal({ isOpen, onClose, truckTCO, onSuccess
         annual_insurance: parseFloat(formData.annual_insurance) || 0,
         breakdown_days: parseFloat(formData.breakdown_days) || 0,
         daily_opportunity_cost: parseFloat(formData.daily_opportunity_cost) || 0,
-        manual_maintenance_cost: parseFloat(formData.manual_maintenance_cost) || 0
+        manual_maintenance_cost: parseFloat(formData.manual_maintenance_cost) || 0,
+        manual_total_revenue: parseFloat(formData.manual_total_revenue) || 0
       };
 
       // 1. Try to update PocketBase record

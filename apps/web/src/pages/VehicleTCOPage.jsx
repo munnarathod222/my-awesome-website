@@ -32,6 +32,7 @@ export default function VehicleTCOPage() {
   const [fuelLogs, setFuelLogs] = useState([]);
   const [maintenanceLogs, setMaintenanceLogs] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [tripLogs, setTripLogs] = useState([]);
   
   const [loading, setLoading] = useState(true);
   const [selectedTruckId, setSelectedTruckId] = useState('all');
@@ -52,24 +53,26 @@ export default function VehicleTCOPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [trucksRes, fuelRes, maintRes, expRes] = await Promise.all([
+      const [trucksRes, fuelRes, maintRes, expRes, tripsRes] = await Promise.all([
         pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }),
         pb.collection('fuel_tracker').getFullList({ $autoCancel: false }),
         pb.collection('maintenance_logs').getFullList({ $autoCancel: false }).catch(() => []),
-        pb.collection('expenses').getFullList({ $autoCancel: false }).catch(() => [])
+        pb.collection('expenses').getFullList({ $autoCancel: false }).catch(() => []),
+        pb.collection('trip_logs').getFullList({ $autoCancel: false }).catch(() => [])
       ]);
 
       setTrucks(trucksRes || []);
       setFuelLogs(fuelRes || []);
       setMaintenanceLogs(maintRes || []);
       setExpenses(expRes || []);
+      setTripLogs(tripsRes || []);
 
       if (trucksRes && trucksRes.length > 0) {
         setSelectedTruckId(trucksRes[0].id);
       }
     } catch (err) {
-      console.error('Failed to load TCO analytics data:', err);
-      toast.error('Failed to load fleet TCO data');
+      console.error('Failed to load TCO & ROI analytics data:', err);
+      toast.error('Failed to load fleet TCO & ROI data');
     } finally {
       setLoading(false);
     }
@@ -79,10 +82,10 @@ export default function VehicleTCOPage() {
     fetchData();
   }, []);
 
-  // Compute TCO for all trucks
+  // Compute TCO & ROI for all trucks
   const vehicleTCOList = useMemo(() => {
-    return trucks.map(truck => calculateVehicleTCO(truck, fuelLogs, maintenanceLogs, expenses));
-  }, [trucks, fuelLogs, maintenanceLogs, expenses]);
+    return trucks.map(truck => calculateVehicleTCO(truck, fuelLogs, maintenanceLogs, expenses, tripLogs));
+  }, [trucks, fuelLogs, maintenanceLogs, expenses, tripLogs]);
 
   // Compute Fleet Aggregates
   const fleetSummary = useMemo(() => {
@@ -168,93 +171,117 @@ export default function VehicleTCOPage() {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 font-sans print:p-0 print:max-w-none">
       <Helmet>
-        <title>Vehicle TCO & Replacement Analytics | Jai Bhavani Cargo</title>
+        <title>Vehicle TCO & ROI Analytics | Jai Bhavani Cargo</title>
       </Helmet>
 
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-6 print:hidden">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2.5" style={{letterSpacing: '-0.02em'}}>
-            <Calculator className="w-8 h-8 text-primary" /> Vehicle TCO & Replacement Signal Analytics
+            <Calculator className="w-8 h-8 text-primary" /> Vehicle TCO & ROI Analytics
+            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono">
+              📊 Profitability & Payback
+            </Badge>
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Total Cost of Ownership (CapEx + Fuel + Maintenance + Downtime) & Economic Tipping Point Replacement Signals.
+            Total Cost of Ownership (CapEx + Fuel + Maint) vs Trip Revenue Yield & Return on Investment (ROI).
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={fetchData} className="rounded-xl border-border/80 text-muted-foreground hover:text-foreground">
-            <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh
+            <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh Analytics
           </Button>
           <Button onClick={handlePrintReport} className="rounded-xl shadow-md">
-            <Printer className="w-4 h-4 mr-2" /> Print TCO Report
+            <Printer className="w-4 h-4 mr-2" /> Print TCO & ROI Report
           </Button>
         </div>
       </div>
 
       {/* Top Fleet Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 print:grid-cols-5">
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500" />
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Trip Revenue</CardTitle>
+            <TrendingUp className="w-4 h-4 text-emerald-400 opacity-80" />
+          </CardHeader>
+          <CardContent>
+            {loading ? <Skeleton className="h-8 w-28" /> : (
+              <div className="text-2xl font-extrabold font-mono text-emerald-400">
+                ₹{fleetSummary.totalFleetRevenue.toLocaleString('en-IN')}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1">Total completed trip earnings</p>
+          </CardContent>
+        </Card>
+
         <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500" />
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Fleet Net TCO</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Net TCO</CardTitle>
             <DollarSign className="w-4 h-4 text-blue-500 opacity-80" />
           </CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-8 w-28" /> : (
-              <div className="text-2xl font-extrabold font-mono text-blue-500">
+              <div className="text-2xl font-extrabold font-mono text-blue-400">
                 ₹{fleetSummary.totalFleetTCO.toLocaleString('en-IN')}
               </div>
             )}
-            <p className="text-[11px] text-muted-foreground mt-1">CapEx + Fuel + Maintenance - Resale</p>
+            <p className="text-[11px] text-muted-foreground mt-1">CapEx + Fuel + Maint - Salvage</p>
           </CardContent>
         </Card>
 
         <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500" />
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-purple-500 to-violet-500" />
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Avg Cost / KM (CPKM)</CardTitle>
-            <TrendingUp className="w-4 h-4 text-emerald-500 opacity-80" />
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Fleet Net Profit & ROI</CardTitle>
+            <Sparkles className="w-4 h-4 text-purple-400 opacity-80" />
+          </CardHeader>
+          <CardContent>
+            {loading ? <Skeleton className="h-8 w-28" /> : (
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-extrabold font-mono text-purple-400">
+                  ₹{(fleetSummary.totalFleetNetProfit / 100000).toFixed(1)}L
+                </span>
+                <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30 font-mono font-bold">
+                  +{fleetSummary.avgFleetROI}% ROI
+                </Badge>
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1">Net profit after total operating costs</p>
+          </CardContent>
+        </Card>
+
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-cyan-500 to-blue-500" />
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit Economics (RPKM / CPKM)</CardTitle>
+            <Calculator className="w-4 h-4 text-cyan-400 opacity-80" />
           </CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-8 w-20" /> : (
-              <div className="text-2xl font-extrabold font-mono text-emerald-500">
-                ₹{fleetSummary.avgFleetCPKM} <span className="text-xs font-normal text-muted-foreground">/ km</span>
+              <div className="text-xl font-extrabold font-mono text-cyan-400">
+                ₹{fleetSummary.avgFleetRPKM} <span className="text-xs font-normal text-muted-foreground">vs ₹{fleetSummary.avgFleetCPKM}</span>
               </div>
             )}
-            <p className="text-[11px] text-muted-foreground mt-1">Across {fleetSummary.totalFleetDistance.toLocaleString()} km driven</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Revenue per KM vs Net Cost per KM</p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-rose-500 to-amber-500" />
+        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md sm:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sell / Replace Signal</CardTitle>
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Replace Signal & Equity</CardTitle>
             <ShieldAlert className="w-4 h-4 text-rose-500 opacity-80" />
           </CardHeader>
           <CardContent>
             {loading ? <Skeleton className="h-8 w-16" /> : (
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold font-mono text-rose-500">{fleetSummary.replaceNowCount}</span>
-                <span className="text-xs text-amber-400 font-semibold">({fleetSummary.planCount} Plan Soon)</span>
+                <span className="text-2xl font-extrabold font-mono text-rose-400">{fleetSummary.replaceNowCount}</span>
+                <span className="text-xs text-amber-400 font-semibold">({fleetSummary.planCount} Plan)</span>
+                <span className="text-[11px] font-mono text-muted-foreground ml-auto">₹{(fleetSummary.totalFleetSalvageValue / 100000).toFixed(1)}L Resale</span>
               </div>
             )}
             <p className="text-[11px] text-muted-foreground mt-1">Vehicles past economic tipping point</p>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md">
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500" />
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Fleet Resale Equity</CardTitle>
-            <Building2 className="w-4 h-4 text-violet-500 opacity-80" />
-          </CardHeader>
-          <CardContent>
-            {loading ? <Skeleton className="h-8 w-28" /> : (
-              <div className="text-2xl font-extrabold font-mono text-violet-500">
-                ₹{fleetSummary.totalFleetSalvageValue.toLocaleString('en-IN')}
-              </div>
-            )}
-            <p className="text-[11px] text-muted-foreground mt-1">Estimated current market asset value</p>
           </CardContent>
         </Card>
       </div>
@@ -302,12 +329,13 @@ export default function VehicleTCOPage() {
                   <TableRow className="border-b-border/40">
                     <TableHead className="font-semibold text-muted-foreground pl-6 py-4">Vehicle & Model</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4">Age & Mileage</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Initial CapEx (₹)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Cum. Maintenance (₹)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Resale Value (₹)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">CapEx (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Net TCO (₹)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">CPKM (₹/km)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Economic Tipping Signal</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Trip Revenue (₹)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Net Profit (₹)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">ROI (%)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">RPKM vs CPKM</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Tipping Signal</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right pr-6">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -322,13 +350,14 @@ export default function VehicleTCOPage() {
                         <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                        <TableCell className="py-4 text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-7 w-32 ml-auto rounded-md" /></TableCell>
                         <TableCell className="py-4 text-right pr-6"><Skeleton className="h-8 w-8 ml-auto rounded-md" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredTCOList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
+                      <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
                         <Truck className="w-10 h-10 opacity-30 mx-auto mb-2" />
                         No vehicles found matching criteria.
                       </TableCell>
@@ -337,39 +366,48 @@ export default function VehicleTCOPage() {
                     filteredTCOList.map(v => (
                       <TableRow key={v.truckId} className="hover:bg-muted/20 transition-colors border-b-border/30">
                         <TableCell className="pl-6 py-4">
-                          <div className="font-bold text-base text-foreground">{v.truckNumber}</div>
+                          <div className="font-bold text-base text-foreground flex items-center gap-1.5">
+                            {v.truckNumber}
+                          </div>
                           <div className="text-xs text-muted-foreground">{v.manufacturer} • {v.model}</div>
                         </TableCell>
 
                         <TableCell className="py-4 text-xs">
-                          <div className="font-semibold text-foreground">{v.vehicleAgeYears} Years Old</div>
+                          <div className="font-semibold text-foreground">{v.vehicleAgeYears} Yrs Old</div>
                           <div className="text-muted-foreground font-mono">{v.totalDistanceKm.toLocaleString()} KMs</div>
                         </TableCell>
 
-                        <TableCell className="py-4 text-right font-mono text-sm">
-                          ₹{v.totalCapEx.toLocaleString('en-IN')}
+                        <TableCell className="py-4 text-right font-mono text-xs text-muted-foreground">
+                          ₹{(v.totalCapEx / 100000).toFixed(2)}L
                         </TableCell>
 
-                        <TableCell className="py-4 text-right font-mono text-sm text-amber-400 font-semibold">
-                          ₹{v.totalMaintenanceCost.toLocaleString('en-IN')}
-                          <span className="block text-[10px] text-muted-foreground">{v.estimatedBreakdownDays} breakdown days</span>
+                        <TableCell className="py-4 text-right font-mono font-bold text-sm text-blue-400">
+                          ₹{(v.netTCO / 100000).toFixed(2)}L
                         </TableCell>
 
-                        <TableCell className="py-4 text-right font-mono text-sm text-emerald-400 font-semibold">
-                          ₹{v.estimatedSalvageValue.toLocaleString('en-IN')}
+                        <TableCell className="py-4 text-right font-mono font-bold text-sm text-emerald-400">
+                          ₹{(v.totalTripRevenue / 100000).toFixed(2)}L
+                          <span className="block text-[10px] text-muted-foreground font-normal">{v.totalTripsCount} trips</span>
                         </TableCell>
 
-                        <TableCell className="py-4 text-right font-mono font-extrabold text-base text-foreground">
-                          ₹{v.netTCO.toLocaleString('en-IN')}
-                        </TableCell>
-
-                        <TableCell className="py-4 text-right font-mono font-bold text-sm text-primary">
-                          ₹{v.costPerKm}
+                        <TableCell className="py-4 text-right font-mono font-extrabold text-sm text-purple-400">
+                          ₹{(v.netProfit / 100000).toFixed(2)}L
                         </TableCell>
 
                         <TableCell className="py-4 text-right">
-                          <Badge variant="outline" className={`font-bold px-3 py-1 text-xs rounded-lg border ${v.signalBadgeColor}`}>
-                            {v.signalTitle}
+                          <Badge variant="outline" className={`font-mono font-bold text-xs px-2.5 py-0.5 rounded-lg border ${v.roiBadgeColor}`}>
+                            +{v.roiPercent}%
+                          </Badge>
+                        </TableCell>
+
+                        <TableCell className="py-4 text-right font-mono text-xs">
+                          <div className="font-bold text-emerald-400">₹{v.revenuePerKm}/km</div>
+                          <div className="text-muted-foreground">vs ₹{v.costPerKm}/km</div>
+                        </TableCell>
+
+                        <TableCell className="py-4 text-right">
+                          <Badge variant="outline" className={`font-bold px-2.5 py-0.5 text-xs rounded-lg border ${v.signalBadgeColor}`}>
+                            {v.signalTitle.split(' ')[0]} {v.replacementSignal}
                           </Badge>
                         </TableCell>
 
@@ -382,7 +420,7 @@ export default function VehicleTCOPage() {
                               setIsEditTCOModalOpen(true);
                             }}
                             className="h-8 px-2 text-xs rounded-lg border-primary/30 text-primary hover:bg-primary/10"
-                            title="Edit TCO Financial Values"
+                            title="Edit TCO / Revenue Values"
                           >
                             <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
                           </Button>
