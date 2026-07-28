@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2 } from 'lucide-react';
+import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
-const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'truck_documents' }) => {
+export default function DocumentPreviewModal({ isOpen, onClose, document, collectionName = 'truck_documents' }) {
   const [activeFile, setActiveFile] = useState(null);
-  const [pdfBlobUrl, setPdfBlobUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [numPages, setNumPages] = useState(1);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.2);
+  const [pdfDoc, setPdfDoc] = useState(null);
+  const [renderError, setRenderError] = useState(false);
+
+  const canvasRef = useRef(null);
 
   const filesList = document?.files || (document?.file ? [document.file] : []);
 
@@ -25,34 +31,91 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
   const isPdf = fileExt === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
 
-  // Convert PDF to blob with application/pdf header so browser renders inline without downloading
+  // Load PDF.js script dynamically if needed
   useEffect(() => {
-    let currentBlobUrl = null;
+    let isMounted = true;
 
     if (isOpen && isPdf && rawUrl) {
-      setPdfLoading(true);
-      fetch(rawUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-          currentBlobUrl = URL.createObjectURL(pdfBlob);
-          setPdfBlobUrl(currentBlobUrl);
-        })
-        .catch(err => {
-          console.error('Failed to create PDF blob:', err);
-          setPdfBlobUrl(rawUrl);
-        })
-        .finally(() => setPdfLoading(false));
+      setLoading(true);
+      setRenderError(false);
+      setPageNumber(1);
+
+      const loadPdfLib = async () => {
+        if (!window.pdfjsLib) {
+          await new Promise((resolve, reject) => {
+            const script = window.document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            window.document.head.appendChild(script);
+          });
+        }
+
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          
+          const response = await fetch(rawUrl);
+          const arrayBuffer = await response.arrayBuffer();
+          const loadedPdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+          
+          if (isMounted) {
+            setPdfDoc(loadedPdf);
+            setNumPages(loadedPdf.numPages);
+            setLoading(false);
+          }
+        }
+      };
+
+      loadPdfLib().catch(err => {
+        console.error('Failed to load PDF with PDF.js:', err);
+        if (isMounted) {
+          setRenderError(true);
+          setLoading(false);
+        }
+      });
     } else {
-      setPdfBlobUrl(null);
+      setPdfDoc(null);
     }
 
     return () => {
-      if (currentBlobUrl && currentBlobUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(currentBlobUrl);
-      }
+      isMounted = false;
     };
   }, [isOpen, activeFile, rawUrl, isPdf]);
+
+  // Render current PDF page onto canvas
+  useEffect(() => {
+    let renderTask = null;
+
+    if (pdfDoc && canvasRef.current && isPdf) {
+      pdfDoc.getPage(pageNumber).then(page => {
+        const viewport = page.getViewport({ scale });
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+
+        renderTask = page.render(renderContext);
+        renderTask.promise.catch(err => {
+          if (err?.name !== 'RenderingCancelledException') {
+            console.error('Canvas render error:', err);
+          }
+        });
+      }).catch(console.error);
+    }
+
+    return () => {
+      if (renderTask) {
+        renderTask.cancel();
+      }
+    };
+  }, [pdfDoc, pageNumber, scale, isPdf]);
 
   if (!document || !activeFile) return null;
 
@@ -66,16 +129,12 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
   };
 
   const handleOpenNewTab = () => {
-    if (pdfBlobUrl) {
-      window.open(pdfBlobUrl, '_blank');
-    } else {
-      window.open(rawUrl, '_blank');
-    }
+    window.open(rawUrl, '_blank');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[900px] w-[95vw] h-[88vh] flex flex-col bg-slate-950 text-slate-100 p-4 sm:p-6 rounded-2xl border border-slate-800 shadow-2xl">
+      <DialogContent className="sm:max-w-[920px] w-[95vw] h-[88vh] flex flex-col bg-slate-950 text-slate-100 p-4 sm:p-6 rounded-2xl border border-slate-800 shadow-2xl">
         <DialogHeader className="flex-shrink-0 pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
           <div>
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-white">
@@ -126,49 +185,87 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
           </div>
         )}
 
-        <div className="flex-1 min-h-0 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center my-2">
+        <div className="flex-1 min-h-0 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 relative flex flex-col items-center justify-between my-2">
           {isPdf ? (
             <div className="w-full h-full flex flex-col">
+              {/* PDF Toolbar */}
               <div className="bg-slate-900 px-3 py-2 text-xs text-slate-300 border-b border-slate-800 flex justify-between items-center flex-shrink-0">
-                <span className="font-semibold text-white flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-blue-400" /> Interactive PDF Preview
-                </span>
-                <button
-                  type="button"
-                  onClick={handleOpenNewTab}
-                  className="text-primary hover:underline font-semibold flex items-center gap-1 text-xs"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open Fullscreen Tab
-                </button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={pageNumber <= 1 || loading}
+                    onClick={() => setPageNumber(p => Math.max(1, p - 1))}
+                    className="h-7 w-7 p-0 text-white hover:bg-slate-800 rounded-lg"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="font-mono text-slate-300 font-semibold">
+                    Page {pageNumber} of {numPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={pageNumber >= numPages || loading}
+                    onClick={() => setPageNumber(p => Math.min(numPages, p + 1))}
+                    className="h-7 w-7 p-0 text-white hover:bg-slate-800 rounded-lg"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setScale(s => Math.max(0.6, s - 0.2))}
+                    className="h-7 w-7 p-0 text-white hover:bg-slate-800 rounded-lg"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </Button>
+                  <span className="font-mono text-xs text-slate-400">{Math.round(scale * 100)}%</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setScale(s => Math.min(2.5, s + 0.2))}
+                    className="h-7 w-7 p-0 text-white hover:bg-slate-800 rounded-lg"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex-1 relative w-full h-full bg-slate-950 flex items-center justify-center overflow-hidden">
-                {pdfLoading ? (
-                  <div className="flex flex-col items-center justify-center space-y-2 text-slate-300 text-xs">
+              {/* PDF Canvas Viewport */}
+              <div className="flex-1 relative w-full h-full bg-slate-950 flex items-start justify-center overflow-auto p-4">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center h-full space-y-2 text-slate-300 text-xs">
                     <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-                    <span>Loading PDF Preview...</span>
+                    <span>Rendering High-Resolution PDF Pages...</span>
                   </div>
-                ) : pdfBlobUrl ? (
-                  <iframe 
-                    src={pdfBlobUrl} 
-                    className="w-full h-full border-0 bg-white"
-                    title="PDF Blob Preview"
-                  />
+                ) : renderError ? (
+                  <div className="flex flex-col items-center justify-center h-full text-white p-6 text-center">
+                    <p className="text-xs mb-3 text-slate-300">Native canvas preview unavailable.</p>
+                    <Button onClick={handleOpenNewTab} size="sm" className="rounded-xl bg-primary text-primary-foreground font-bold">
+                      <ExternalLink className="w-4 h-4 mr-2" /> Open PDF in Fullscreen Tab
+                    </Button>
+                  </div>
                 ) : (
-                  <iframe 
-                    src={rawUrl} 
-                    className="w-full h-full border-0 bg-white"
-                    title="PDF Fallback Preview"
-                  />
+                  <div className="shadow-2xl rounded-lg overflow-hidden bg-white">
+                    <canvas ref={canvasRef} className="max-w-full block" />
+                  </div>
                 )}
               </div>
             </div>
           ) : isImage ? (
-            <img 
-              src={rawUrl} 
-              alt={`${document.document_type} preview`}
-              className="max-w-full max-h-full object-contain p-2"
-            />
+            <div className="w-full h-full flex items-center justify-center p-2">
+              <img 
+                src={rawUrl} 
+                alt={`${document.document_type} preview`}
+                className="max-w-full max-h-full object-contain p-2"
+              />
+            </div>
           ) : (
             <div className="text-center p-8 flex flex-col items-center justify-center text-white">
               <FileQuestion className="w-16 h-16 text-slate-600 mb-4" />
@@ -196,6 +293,4 @@ const DocumentPreviewModal = ({ isOpen, onClose, document, collectionName = 'tru
       </DialogContent>
     </Dialog>
   );
-};
-
-export default DocumentPreviewModal;
+}
