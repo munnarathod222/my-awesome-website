@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard,
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
-  TrendingUp, Mail, Trophy, Package, ShieldCheck
+  TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -100,6 +100,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Finance',
       items: [
+        { icon: ShieldAlert,          label: 'Insurance Manager',path: '/insurance-manager', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: ShieldCheck,          label: 'Company Vault',    path: '/company-vault',    roles: ['super_admin','admin','manager'] },
         { icon: FileText,             label: 'Cashbook',         path: '/cashbook',         roles: ['super_admin','admin','manager'] },
         { icon: FileText,             label: 'Expenses',         path: '/expenses',         roles: ['super_admin','admin','manager'] },

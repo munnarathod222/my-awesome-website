@@ -39,6 +39,7 @@ import AdminSignupRequestsPage from './pages/AdminSignupRequestsPage.jsx';
 import TripLogsPage from './pages/TripLogsPage.jsx';
 import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
 import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
+import InsuranceManagerPage from './pages/InsuranceManagerPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
@@ -199,6 +200,9 @@ function App() {
                   <Route path="/vehicle-roi" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/roi" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
+                  <Route path="/insurance-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><InsuranceManagerPage /></ProtectedRoute>} />
+                  <Route path="/insurance-claims" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><InsuranceManagerPage /></ProtectedRoute>} />
+                  <Route path="/insurance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><InsuranceManagerPage /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><CalendarPage /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><LeaderboardPage /></ProtectedRoute>} />
                   <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
