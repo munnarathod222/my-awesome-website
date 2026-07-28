@@ -14,6 +14,9 @@ export function formatMapUrl(urlOrAddress, fallbackLocationName = '') {
   let raw = (urlOrAddress || '').trim();
   let fallback = (fallbackLocationName || '').trim();
 
+  // Strip any trailing brackets, parentheses, quotes, punctuation or invalid end characters
+  raw = raw.replace(/[\]\)\}>\s.,;'"]+$/, '').trim();
+
   if (!raw && !fallback) return '';
 
   // 1. If it's already a full HTTP/HTTPS URL, open the EXACT pasted link directly!

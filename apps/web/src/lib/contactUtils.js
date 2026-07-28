@@ -40,9 +40,10 @@ export function getPastedMapUrl(contact) {
     const val = contact[key];
     if (typeof val === 'string' && val.trim()) {
       if (val.includes('maps') || val.includes('goo.gl')) {
-        const urlMatch = val.match(/(https?:\/\/[^\s]+|maps\.app\.goo\.gl[^\s]+|goo\.gl\/maps[^\s]+|google\.com\/maps[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s]+)/i);
+        const urlMatch = val.match(/(https?:\/\/[^\s\]\)>"']+|maps\.app\.goo\.gl[^\s\]\)>"']+|goo\.gl\/maps[^\s\]\)>"']+|google\.com\/maps[^\s\]\)>"']+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s\]\)>"']+)/i);
         if (urlMatch) {
-          return formatMapUrl(urlMatch[1], fallbackLocation);
+          const rawUrl = urlMatch[1].replace(/[\]\)\}>\s.,;'"]+$/, '').trim();
+          return formatMapUrl(rawUrl, fallbackLocation);
         }
       }
     }
@@ -70,7 +71,10 @@ export function formatContactShareText(contact) {
   }
 
   const cleanNotes = contact.notes 
-    ? contact.notes.replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, '').trim() 
+    ? contact.notes
+        .replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi, '')
+        .replace(/Location:\s*https?:\/\/[^\s\n]+/gi, '')
+        .trim() 
     : '';
 
   const lines = [
