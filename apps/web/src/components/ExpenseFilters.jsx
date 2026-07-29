@@ -49,13 +49,20 @@ const ExpenseFilters = ({ filters, setFilters, trucks, creditCards = [], onClear
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="Employee Advance">Employee Advance</SelectItem>
+            <SelectItem value="Fuel">Fuel</SelectItem>
+            <SelectItem value="FASTag - Toll">FASTag - Toll</SelectItem>
+            <SelectItem value="Driver Advance">Driver Advance</SelectItem>
+            <SelectItem value="Salary">Salary</SelectItem>
+            <SelectItem value="Maintenance">Maintenance</SelectItem>
+            <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
             <SelectItem value="EMI">EMI</SelectItem>
-            <SelectItem value="Regular">Regular</SelectItem>
+            <SelectItem value="All Other Expenses">All Other Expenses</SelectItem>
+            <SelectItem value="Regular">Regular Expense</SelectItem>
+            <SelectItem value="Employee Advance">Employee Advance</SelectItem>
           </SelectContent>
         </Select>
 
-        {/* Subcategory (Only visible when Regular is selected) */}
+        {/* Subcategory (Visible when Regular is selected) */}
         {filters.category === 'Regular' && (
           <Select value={filters.subcategory} onValueChange={(val) => setFilters({ ...filters, subcategory: val })}>
             <SelectTrigger className="bg-background text-foreground border-border">
@@ -64,15 +71,13 @@ const ExpenseFilters = ({ filters, setFilters, trucks, creditCards = [], onClear
             <SelectContent>
               <SelectItem value="all">All Subcategories</SelectItem>
               <SelectItem value="Fuel">Fuel</SelectItem>
-              <SelectItem value="Maintenance">Maintenance</SelectItem>
-              <SelectItem value="Toll">Toll</SelectItem>
-              <SelectItem value="Insurance">Insurance</SelectItem>
+              <SelectItem value="Toll">FASTag - Toll</SelectItem>
+              <SelectItem value="Driver Advance">Driver Advance</SelectItem>
               <SelectItem value="Salary">Salary</SelectItem>
-              <SelectItem value="Rent">Rent</SelectItem>
-              <SelectItem value="Utilities">Utilities</SelectItem>
-              <SelectItem value="Rapido">Rapido</SelectItem>
+              <SelectItem value="Maintenance">Maintenance</SelectItem>
               <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+              <SelectItem value="EMI">EMI</SelectItem>
+              <SelectItem value="Other">All Other Expenses</SelectItem>
             </SelectContent>
           </Select>
         )}

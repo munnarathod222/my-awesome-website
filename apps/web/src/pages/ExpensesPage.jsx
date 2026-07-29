@@ -351,7 +351,43 @@ const ExpensesPage = () => {
       result = result.filter(e => new Date(e.date) <= toDate);
     }
     if (filters.category !== 'all') {
-      result = result.filter(e => e.category === filters.category);
+      result = result.filter(e => {
+        const cat = (e.category || '').toLowerCase();
+        const sub = (e.subcategory || '').toLowerCase();
+
+        if (filters.category === 'Fuel') {
+          return sub === 'fuel' || cat === 'fuel' || /fuel/i.test(sub) || /fuel/i.test(cat);
+        }
+        if (filters.category === 'FASTag - Toll' || filters.category === 'Toll') {
+          return sub === 'toll' || sub === 'fastag' || sub === 'fastag - toll' || cat === 'toll' || /toll|fastag/i.test(sub) || /toll|fastag/i.test(cat);
+        }
+        if (filters.category === 'Driver Advance') {
+          return cat === 'employee advance' || sub === 'driver advance' || sub === 'employee advance' || (cat === 'employee' && sub === 'employee advance');
+        }
+        if (filters.category === 'Salary') {
+          return cat === 'salary' || sub === 'salary' || /salary/i.test(cat) || /salary/i.test(sub);
+        }
+        if (filters.category === 'Maintenance') {
+          return sub === 'maintenance' || cat === 'maintenance' || /maintenance/i.test(sub) || /maintenance/i.test(cat);
+        }
+        if (filters.category === 'Miscellaneous') {
+          return sub === 'miscellaneous' || cat === 'miscellaneous' || /misc/i.test(sub) || /misc/i.test(cat);
+        }
+        if (filters.category === 'EMI') {
+          return cat === 'emi' || sub === 'emi' || /emi/i.test(cat) || /emi/i.test(sub);
+        }
+        if (filters.category === 'All Other Expenses' || filters.category === 'Other') {
+          if (sub === 'fuel' || cat === 'fuel' || /fuel/.test(sub)) return false;
+          if (sub === 'toll' || sub === 'fastag' || cat === 'toll' || /toll|fastag/.test(sub)) return false;
+          if (cat === 'employee advance' || sub === 'driver advance' || sub === 'employee advance' || (cat === 'employee' && sub === 'employee advance')) return false;
+          if (cat === 'salary' || sub === 'salary' || /salary/.test(sub)) return false;
+          if (sub === 'maintenance' || cat === 'maintenance' || /maintenance/.test(sub)) return false;
+          if (sub === 'miscellaneous' || cat === 'miscellaneous' || /misc/.test(sub)) return false;
+          if (cat === 'emi' || sub === 'emi' || /emi/.test(sub)) return false;
+          return true;
+        }
+        return e.category === filters.category;
+      });
       if (filters.category === 'Regular' && filters.subcategory !== 'all') result = result.filter(e => e.subcategory === filters.subcategory);
     }
     if (filters.truckNo !== 'all') result = result.filter(e => e.truck_id === filters.truckNo);
@@ -378,8 +414,8 @@ const ExpensesPage = () => {
     return result;
   }, [advances, advFilters]);
 
-  // Current active month expense summary grid calculations (strictly parsed using Number)
-  const { fuelTotal, fastagTotal, driverAdvanceTotal, maintenanceTotal, miscTotal, fixedEmiTotal } = useMemo(() => {
+  // Current active month expense summary grid calculations for all 8 categories
+  const { fuelTotal, fastagTotal, driverAdvanceTotal, salaryTotal, maintenanceTotal, miscTotal, fixedEmiTotal, allOtherTotal } = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
@@ -394,34 +430,58 @@ const ExpensesPage = () => {
       return advDate.getFullYear() === currentYear && advDate.getMonth() === currentMonth;
     });
 
+    // 1. Fuel
     const fuel = currentMonthExpenses
-      .filter(e => e.category === 'Regular' && e.subcategory === 'Fuel')
+      .filter(e => e.subcategory === 'Fuel' || e.category === 'Fuel' || /fuel/i.test(e.subcategory || '') || /fuel/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
+    // 2. FASTag - Toll
     const fastag = currentMonthExpenses
-      .filter(e => e.category === 'Regular' && e.subcategory === 'Toll')
+      .filter(e => e.subcategory === 'Toll' || e.subcategory === 'FASTag' || e.subcategory === 'FASTag - Toll' || e.category === 'Toll' || /toll|fastag/i.test(e.subcategory || '') || /toll|fastag/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
+    // 3. Driver Advance
     const unlinkedExpAdvance = currentMonthExpenses
-      .filter(e => e.category === 'Employee Advance' || (e.category === 'Employee' && e.subcategory === 'Employee Advance'))
+      .filter(e => e.category === 'Employee Advance' || e.subcategory === 'Driver Advance' || e.subcategory === 'Employee Advance' || (e.category === 'Employee' && e.subcategory === 'Employee Advance'))
       .filter(e => !currentMonthAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     const driverAdvance = currentMonthAdvances
       .reduce((sum, a) => Number(sum) + Number(a.amount || 0), 0) + unlinkedExpAdvance;
 
-    const maintenance = currentMonthExpenses
-      .filter(e => e.category === 'Regular' && e.subcategory === 'Maintenance')
+    // 4. Salary
+    const salary = currentMonthExpenses
+      .filter(e => e.category === 'Salary' || e.subcategory === 'Salary' || /salary/i.test(e.category || '') || /salary/i.test(e.subcategory || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
+    // 5. Maintenance
+    const maintenance = currentMonthExpenses
+      .filter(e => e.subcategory === 'Maintenance' || e.category === 'Maintenance' || /maintenance/i.test(e.subcategory || '') || /maintenance/i.test(e.category || ''))
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    // 6. Miscellaneous
     const misc = currentMonthExpenses
+      .filter(e => e.subcategory === 'Miscellaneous' || e.category === 'Miscellaneous' || /misc/i.test(e.subcategory || '') || /misc/i.test(e.category || ''))
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+
+    // 7. EMI
+    const emiRecorded = currentMonthExpenses
+      .filter(e => e.category === 'EMI' || e.subcategory === 'EMI' || /emi/i.test(e.category || '') || /emi/i.test(e.subcategory || ''))
+      .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
+    const emi = emiRecorded > 0 ? emiRecorded : 33410;
+
+    // 8. All Other Expenses
+    const allOther = currentMonthExpenses
       .filter(e => {
-        if (e.category === 'Regular' && e.subcategory === 'Fuel') return false;
-        if (e.category === 'Regular' && e.subcategory === 'Toll') return false;
-        if (e.category === 'Regular' && e.subcategory === 'Maintenance') return false;
-        if (e.category === 'Employee' || e.category === 'Employee Advance' || e.category === 'Salary') return false;
-        if (e.subcategory === 'Employee Advance' || e.subcategory === 'Salary') return false;
-        if (e.category === 'EMI') return false;
+        const cat = (e.category || '').toLowerCase();
+        const sub = (e.subcategory || '').toLowerCase();
+        if (sub === 'fuel' || cat === 'fuel' || /fuel/.test(sub)) return false;
+        if (sub === 'toll' || sub === 'fastag' || cat === 'toll' || /toll|fastag/.test(sub)) return false;
+        if (cat === 'employee advance' || sub === 'driver advance' || sub === 'employee advance' || (cat === 'employee' && sub === 'employee advance')) return false;
+        if (cat === 'salary' || sub === 'salary' || /salary/.test(sub)) return false;
+        if (sub === 'maintenance' || cat === 'maintenance' || /maintenance/.test(sub)) return false;
+        if (sub === 'miscellaneous' || cat === 'miscellaneous' || /misc/.test(sub)) return false;
+        if (cat === 'emi' || sub === 'emi' || /emi/.test(sub)) return false;
         return true;
       })
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
@@ -430,9 +490,11 @@ const ExpensesPage = () => {
       fuelTotal: Number(fuel),
       fastagTotal: Number(fastag),
       driverAdvanceTotal: Number(driverAdvance),
+      salaryTotal: Number(salary),
       maintenanceTotal: Number(maintenance),
       miscTotal: Number(misc),
-      fixedEmiTotal: Number(33410)
+      fixedEmiTotal: Number(emi),
+      allOtherTotal: Number(allOther)
     };
   }, [expenses, advances]);
 
@@ -483,30 +545,32 @@ const ExpensesPage = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="space-y-4 m-0">
-            {/* Real-time current month expense category summary grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            {/* Real-time current month expense category summary grid (8 Categories) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
               {[
                 { title: 'Fuel Expense', amount: fuelTotal, color: 'text-orange-500' },
-                { title: 'FASTag Tolls', amount: fastagTotal, color: 'text-blue-500' },
+                { title: 'FASTag - Toll', amount: fastagTotal, color: 'text-blue-500' },
                 { title: 'Driver Advance', amount: driverAdvanceTotal, color: 'text-emerald-500' },
+                { title: 'Salary', amount: salaryTotal, color: 'text-teal-500' },
                 { title: 'Maintenance', amount: maintenanceTotal, color: 'text-purple-500' },
                 { title: 'Miscellaneous', amount: miscTotal, color: 'text-pink-500' },
-                { title: 'Fixed EMI', amount: fixedEmiTotal, color: 'text-amber-500' }
+                { title: 'EMI', amount: fixedEmiTotal, color: 'text-amber-500' },
+                { title: 'All Other Expenses', amount: allOtherTotal, color: 'text-indigo-500' }
               ].map((card, idx) => (
                 <Card key={idx} className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden">
-                  <CardContent className="p-4 flex flex-col justify-between h-full">
+                  <CardContent className="p-3 sm:p-4 flex flex-col justify-between h-full">
                     <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest font-mono">
+                      <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-mono truncate" title={card.title}>
                         {card.title}
                       </p>
-                      <p className="text-2xl sm:text-3xl font-black text-foreground mt-2 font-heading tracking-tight">
-                        <span className="text-base sm:text-lg font-bold text-muted-foreground mr-0.5">₹</span>
+                      <p className="text-xl sm:text-2xl font-black text-foreground mt-1.5 font-heading tracking-tight">
+                        <span className="text-sm font-bold text-muted-foreground mr-0.5">₹</span>
                         {Number(card.amount).toLocaleString('en-IN')}
                       </p>
                     </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-[9px] text-muted-foreground font-semibold">
-                        {card.title === 'Fixed EMI' ? 'Monthly Liability' : format(new Date(), 'MMMM yyyy')}
+                    <div className="mt-2.5 flex items-center justify-between">
+                      <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold">
+                        {card.title === 'EMI' ? 'Monthly' : format(new Date(), 'MMM yyyy')}
                       </span>
                       <div className={`w-2 h-2 rounded-full ${card.color.replace('text', 'bg')} animate-pulse`} />
                     </div>

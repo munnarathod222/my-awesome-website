@@ -47,10 +47,14 @@ export const downloadTripLogsTemplate = () => {
 export const downloadExpensesTemplate = () => {
   const headers = ['Date (YYYY-MM-DD)', 'Category', 'Subcategory', 'Employee Name', 'Description', 'Amount', 'Payment Method', 'Truck Number'];
   const rows = [
-    ['2023-10-05', 'Regular', 'Fuel', '', 'Refill at HP Pump', '3000', 'Cash', 'MH04AB1234'],
-    ['2023-10-06', 'Regular', 'Maintenance', '', 'Tyre replacement', '5000', 'UPI', 'GJ12CD5678'],
-    ['2023-10-07', 'Employee Advance', '', 'John Doe', 'Advance for trip expenses', '2000', 'Cash', ''],
-    ['2023-10-08', 'EMI', '', '', 'Monthly vehicle EMI', '15000', 'Bank Transfer', '']
+    ['2026-07-01', 'Regular', 'Fuel', '', 'Diesel refill at HP Pump', '4500', 'Cash', 'MH04AB1234'],
+    ['2026-07-02', 'Regular', 'Toll', '', 'FASTag toll plaza debit', '1200', 'FASTag', 'MH04AB1234'],
+    ['2026-07-03', 'Employee Advance', 'Driver Advance', 'John Doe', 'Advance for trip food & tea', '2000', 'Cash', ''],
+    ['2026-07-04', 'Employee', 'Salary', 'John Doe', 'Monthly driver salary', '25000', 'Bank Transfer', ''],
+    ['2026-07-05', 'Regular', 'Maintenance', '', 'Engine oil change & tyre repair', '8500', 'UPI', 'GJ12CD5678'],
+    ['2026-07-06', 'Regular', 'Miscellaneous', '', 'Office supplies & tea snack', '650', 'Cash', ''],
+    ['2026-07-07', 'EMI', '', '', 'Monthly vehicle loan EMI', '33410', 'Bank Transfer', ''],
+    ['2026-07-08', 'Regular', 'Other', '', 'Municipal permit & parking fee', '450', 'Cash', '']
   ];
   triggerDownload('expenses_template.csv', headers, rows);
 };

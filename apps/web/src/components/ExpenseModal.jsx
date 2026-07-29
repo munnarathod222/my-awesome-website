@@ -509,17 +509,17 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                     <SelectContent className="rounded-xl">
                       {formData.category === 'Regular' ? (
                         <>
-                          <SelectItem value="Maintenance">Maintenance / Repair</SelectItem>
                           <SelectItem value="Fuel">Fuel</SelectItem>
-                          <SelectItem value="Toll">Toll</SelectItem>
+                          <SelectItem value="Toll">FASTag - Toll</SelectItem>
+                          <SelectItem value="Maintenance">Maintenance</SelectItem>
+                          <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
                           <SelectItem value="Insurance">Insurance</SelectItem>
                           <SelectItem value="Utilities">Utilities</SelectItem>
-                          <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="Other">All Other Expenses</SelectItem>
                         </>
                       ) : (
                         <>
-                          <SelectItem value="Employee Advance">Employee Advance</SelectItem>
+                          <SelectItem value="Employee Advance">Driver / Employee Advance</SelectItem>
                           <SelectItem value="Salary">Salary</SelectItem>
                         </>
                       )}

@@ -221,14 +221,15 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Fuel">Fuel</SelectItem>
-                  <SelectItem value="Maintenance">Maintenance</SelectItem>
-                  <SelectItem value="Toll">Toll</SelectItem>
-                  <SelectItem value="Insurance">Insurance</SelectItem>
+                  <SelectItem value="Toll">FASTag - Toll</SelectItem>
+                  <SelectItem value="Driver Advance">Driver Advance</SelectItem>
                   <SelectItem value="Salary">Salary</SelectItem>
-                  <SelectItem value="Rent">Rent</SelectItem>
+                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+                  <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
+                  <SelectItem value="EMI">EMI</SelectItem>
+                  <SelectItem value="Other">All Other Expenses</SelectItem>
+                  <SelectItem value="Insurance">Insurance</SelectItem>
                   <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="FASTag Recharge">FASTag Recharge</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
