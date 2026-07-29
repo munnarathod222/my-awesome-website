@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,20 +8,88 @@ import { Slider } from '@/components/ui/slider';
 import { 
   Fuel, TrendingUp, TrendingDown, Award, Target, Zap, 
   IndianRupee, ArrowUpRight, ArrowDownRight, ShieldCheck, Scale, 
-  CheckCircle2, AlertTriangle, HelpCircle, BarChart3, PieChartIcon, RefreshCw
+  CheckCircle2, AlertTriangle, HelpCircle, BarChart3, PieChartIcon, RefreshCw, Save
 } from 'lucide-react';
 import { 
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, Cell, ReferenceLine, Legend, ComposedChart, Line
 } from 'recharts';
+import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient.js';
 
-const DIESEL_PRICE_PER_LITER = 94.5; // Average Indian Diesel Rate in INR
+const DIESEL_PRICE_PER_LITER = 94.5; // Default Indian Diesel Rate in INR
 
 export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading = false }) {
-  // Target benchmark mileage slider state (default 4.5 km/L)
-  const [targetBenchmark, setTargetBenchmark] = useState(4.5);
-  const [dieselPrice, setDieselPrice] = useState(DIESEL_PRICE_PER_LITER);
+  // Target benchmark mileage slider state (default 4.5 km/L) - load from localStorage first
+  const [targetBenchmark, setTargetBenchmark] = useState(() => {
+    const saved = localStorage.getItem('target_benchmark_mileage');
+    return saved ? parseFloat(saved) : 4.5;
+  });
+
+  const [dieselPrice, setDieselPrice] = useState(() => {
+    const saved = localStorage.getItem('fuel_diesel_price');
+    return saved ? parseFloat(saved) : DIESEL_PRICE_PER_LITER;
+  });
+
   const [searchTruck, setSearchTruck] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load from PocketBase company_settings if available
+  useEffect(() => {
+    async function loadCompanySettings() {
+      try {
+        const records = await pb.collection('company_settings').getFullList({ $autoCancel: false });
+        if (records.length > 0) {
+          const setting = records[0];
+          if (setting.target_mileage) {
+            setTargetBenchmark(Number(setting.target_mileage));
+            localStorage.setItem('target_benchmark_mileage', setting.target_mileage.toString());
+          }
+          if (setting.diesel_price) {
+            setDieselPrice(Number(setting.diesel_price));
+            localStorage.setItem('fuel_diesel_price', setting.diesel_price.toString());
+          }
+        }
+      } catch (err) {
+        console.log('Company settings load note:', err);
+      }
+    }
+    loadCompanySettings();
+  }, []);
+
+  // Save Benchmark Settings Handler
+  const handleSaveSettings = async (mileageVal, priceVal) => {
+    const m = mileageVal !== undefined ? mileageVal : targetBenchmark;
+    const p = priceVal !== undefined ? priceVal : dieselPrice;
+
+    // 1. Immediately save to localStorage
+    localStorage.setItem('target_benchmark_mileage', m.toString());
+    localStorage.setItem('fuel_diesel_price', p.toString());
+
+    // 2. Persist to PocketBase
+    setIsSaving(true);
+    try {
+      const records = await pb.collection('company_settings').getFullList({ $autoCancel: false }).catch(() => []);
+      if (records.length > 0) {
+        await pb.collection('company_settings').update(records[0].id, {
+          target_mileage: m,
+          diesel_price: p
+        }, { $autoCancel: false });
+      } else {
+        await pb.collection('company_settings').create({
+          company_name: 'Jai Bhavani Cargo',
+          target_mileage: m,
+          diesel_price: p
+        }, { $autoCancel: false });
+      }
+      toast.success(`Saved! Target: ${m} km/L • Diesel Price: ₹${p}/L`);
+    } catch (err) {
+      console.warn('Saved to local storage:', err);
+      toast.success(`Benchmark saved to browser storage (${m} km/L, ₹${p}/L)`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Process Truck Level Statistics
   const truckStats = useMemo(() => {
@@ -99,34 +167,20 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
       efficientCount,
       inefficientCount,
       topPerformer,
-      worstPerformer,
+      worstPerformer
     };
   }, [truckStats]);
 
-  // Filtered trucks list for search
-  const filteredTrucks = useMemo(() => {
-    if (!searchTruck) return truckStats;
-    const q = searchTruck.toLowerCase();
-    return truckStats.filter(t => t.name.toLowerCase().includes(q));
+  const filteredTruckStats = useMemo(() => {
+    if (!searchTruck.trim()) return truckStats;
+    return truckStats.filter(t => t.name.toLowerCase().includes(searchTruck.toLowerCase()));
   }, [truckStats, searchTruck]);
-
-  // Chart Data for comparison
-  const chartData = useMemo(() => {
-    return truckStats.map(t => ({
-      name: t.name.split(' ')[0], // short name
-      fullName: t.name,
-      mileage: t.avgMileage,
-      benchmark: targetBenchmark,
-      costPerKm: t.costPerKm,
-      excessLiters: t.excessLiters,
-      savings: t.potentialCostSavings,
-    }));
-  }, [truckStats, targetBenchmark]);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Dynamic Slider Controls */}
-      <Card className="rounded-3xl border border-primary/20 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 shadow-xl relative overflow-hidden">
+      
+      {/* Top Banner & Benchmark Selector */}
+      <Card className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/80 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
@@ -141,7 +195,7 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
           </div>
 
           {/* Interactive Controls Card */}
-          <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700 p-4 rounded-2xl w-full lg:w-80 space-y-4 shadow-lg">
+          <div className="bg-slate-800/90 backdrop-blur-md border border-slate-700 p-4 rounded-2xl w-full lg:w-80 space-y-4 shadow-xl">
             <div>
               <div className="flex justify-between items-center text-xs font-bold text-slate-300 mb-1.5">
                 <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-blue-400" /> Target Benchmark Mileage:</span>
@@ -153,7 +207,11 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
                 max="7.0" 
                 step="0.1" 
                 value={targetBenchmark}
-                onChange={e => setTargetBenchmark(parseFloat(e.target.value))}
+                onChange={e => {
+                  const val = parseFloat(e.target.value);
+                  setTargetBenchmark(val);
+                  localStorage.setItem('target_benchmark_mileage', val.toString());
+                }}
                 className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
               <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
@@ -170,221 +228,183 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
                 <Input 
                   type="number" 
                   value={dieselPrice}
-                  onChange={e => setDieselPrice(Number(e.target.value) || 0)}
-                  className="w-20 h-7 text-xs bg-slate-900 border-slate-700 text-white font-mono rounded-lg text-right"
+                  onChange={e => {
+                    const val = Number(e.target.value) || 0;
+                    setDieselPrice(val);
+                    localStorage.setItem('fuel_diesel_price', val.toString());
+                  }}
+                  className="w-20 h-7 text-xs bg-slate-900 border-slate-700 text-white font-mono rounded-lg text-right font-bold"
                 />
               </div>
             </div>
+
+            {/* Save Button */}
+            <Button 
+              onClick={() => handleSaveSettings()}
+              disabled={isSaving}
+              className="w-full h-8 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5" /> {isSaving ? 'Saving...' : 'Save Benchmark Settings'}
+            </Button>
           </div>
         </div>
       </Card>
 
-      {/* KPI Cards Overview */}
+      {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Fleet Average Mileage */}
-        <Card className="rounded-2xl border-border/60 bg-card p-4 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fleet Avg Mileage</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500"><Fuel className="w-4 h-4" /></div>
-          </div>
-          <div className="text-2xl font-black font-mono text-foreground">{fleetSummary.fleetAvgMileage} <span className="text-xs font-normal text-muted-foreground">km/L</span></div>
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
-            <span>Target: <strong className="text-primary font-mono">{targetBenchmark} km/L</strong></span>
-            <Badge variant="outline" className={`ml-auto font-mono text-[10px] ${fleetSummary.fleetAvgMileage >= targetBenchmark ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-rose-500/10 text-rose-500 border-rose-500/30'}`}>
-              {fleetSummary.fleetAvgMileage >= targetBenchmark ? 'On Target' : `${(targetBenchmark - fleetSummary.fleetAvgMileage).toFixed(2)} km/L Below`}
-            </Badge>
-          </div>
-        </Card>
-
-        {/* Potential Savings Opportunity */}
-        <Card className="rounded-2xl border-emerald-500/30 bg-emerald-500/5 p-4 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Potential Fuel Savings</span>
-            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-500"><IndianRupee className="w-4 h-4" /></div>
-          </div>
-          <div className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-            ₹{fleetSummary.totalPotentialSavings.toLocaleString('en-IN')}
-          </div>
-          <div className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80 mt-2 font-medium flex items-center justify-between">
-            <span>Excess Fuel: <strong className="font-mono">{fleetSummary.totalExcessLiters.toLocaleString()} L</strong></span>
-            <span className="text-[10px] bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">If benchmark met</span>
+        <Card className="bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div className="text-xs text-slate-400 uppercase font-mono font-extrabold tracking-wider">Fleet Avg Mileage</div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-white flex items-baseline gap-1">
+                {fleetSummary.fleetAvgMileage} <span className="text-xs font-normal text-slate-400">km/L</span>
+              </div>
+              <div className="text-[11px] font-medium flex items-center gap-1 mt-1">
+                <span>Target: <strong className="text-blue-400 font-mono">{targetBenchmark} km/L</strong></span>
+                {fleetSummary.fleetAvgMileage >= targetBenchmark ? (
+                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">On Target</Badge>
+                ) : (
+                  <Badge className="bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]">Below Target</Badge>
+                )}
+              </div>
+            </div>
+            <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400">
+              <Fuel className="w-6 h-6" />
+            </div>
           </div>
         </Card>
 
-        {/* Top Performer Truck */}
-        <Card className="rounded-2xl border-border/60 bg-card p-4 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Top Performing Truck</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500"><Award className="w-4 h-4" /></div>
-          </div>
-          <div className="text-lg font-black text-foreground truncate">{fleetSummary.topPerformer ? fleetSummary.topPerformer.name : 'N/A'}</div>
-          <div className="flex items-center justify-between mt-2 text-[11px]">
-            <span className="font-mono text-emerald-500 font-extrabold text-sm">{fleetSummary.topPerformer ? fleetSummary.topPerformer.avgMileage : 0} km/L</span>
-            <span className="text-muted-foreground font-mono">₹{fleetSummary.topPerformer ? fleetSummary.topPerformer.costPerKm : 0}/km</span>
+        <Card className="bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div className="text-xs text-emerald-400 uppercase font-mono font-extrabold tracking-wider">Potential Fuel Savings</div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 flex items-baseline gap-0.5">
+                ₹{fleetSummary.totalPotentialSavings.toLocaleString('en-IN')}
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1 font-mono">
+                <span>Excess Fuel: <strong>{fleetSummary.totalExcessLiters.toLocaleString('en-IN')} L</strong></span>
+              </div>
+            </div>
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400">
+              <IndianRupee className="w-6 h-6" />
+            </div>
           </div>
         </Card>
 
-        {/* Inefficient Trucks Flagged */}
-        <Card className="rounded-2xl border-border/60 bg-card p-4 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Below Benchmark Trucks</span>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500"><AlertTriangle className="w-4 h-4" /></div>
+        <Card className="bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div className="text-xs text-amber-400 uppercase font-mono font-extrabold tracking-wider">Top Performing Truck</div>
+              {fleetSummary.topPerformer ? (
+                <>
+                  <div className="text-lg font-bold text-white truncate max-w-[170px]" title={fleetSummary.topPerformer.name}>
+                    {fleetSummary.topPerformer.name}
+                  </div>
+                  <div className="text-xs font-mono font-extrabold text-emerald-400">
+                    {fleetSummary.topPerformer.avgMileage} km/L <span className="text-[10px] text-slate-400 font-normal">({fleetSummary.topPerformer.costPerKm ? `₹${fleetSummary.topPerformer.costPerKm}/km` : ''})</span>
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-slate-500">No truck data</div>
+              )}
+            </div>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
+              <Award className="w-6 h-6" />
+            </div>
           </div>
-          <div className="text-2xl font-black font-mono text-rose-500">
-            {fleetSummary.inefficientCount} <span className="text-xs font-normal text-muted-foreground">/ {truckStats.length} Trucks</span>
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-2">
-            Requires driver training & maintenance check
+        </Card>
+
+        <Card className="bg-slate-900 border-slate-800 text-slate-100 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <div className="text-xs text-rose-400 uppercase font-mono font-extrabold tracking-wider">Below Benchmark Trucks</div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-rose-400">
+                {fleetSummary.inefficientCount} <span className="text-xs text-slate-400 font-normal">/ {truckStats.length} Trucks</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1">
+                Requires driver training & maintenance check
+              </div>
+            </div>
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
           </div>
         </Card>
       </div>
 
-      {/* Main Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Truck Mileage Comparison Chart */}
-        <Card className="lg:col-span-2 rounded-3xl border border-border/60 bg-card p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div>
-              <CardTitle className="text-base font-extrabold flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-primary" /> Truck Mileage vs Benchmark Comparison
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Visualizing mileage (km/L) per truck against target benchmark ({targetBenchmark} km/L)
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="font-mono text-xs text-primary border-primary/30">
-              {truckStats.length} Trucks Active
-            </Badge>
-          </div>
-
-          <div className="h-72 w-full pt-2">
-            {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-muted-foreground">No fuel logs recorded yet</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" />
-                  <YAxis tick={{ fontSize: 11 }} unit=" km/l" />
-                  <Tooltip 
-                    formatter={(val, name) => [
-                      name === 'mileage' ? `${val} km/L` : name === 'savings' ? `₹${val.toLocaleString()}` : val,
-                      name === 'mileage' ? 'Avg Mileage' : name === 'benchmark' ? 'Benchmark' : name
-                    ]}
-                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label}
-                  />
-                  <ReferenceLine y={targetBenchmark} stroke="#10B981" strokeDasharray="4 4" label={{ value: `Target ${targetBenchmark} km/L`, fill: '#10B981', fontSize: 11, position: 'top' }} />
-                  <Bar dataKey="mileage" radius={[8, 8, 0, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.mileage >= targetBenchmark ? '#10B981' : entry.mileage >= targetBenchmark * 0.85 ? '#F59E0B' : '#EF4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-
-        {/* Potential Savings Breakdown */}
-        <Card className="rounded-3xl border border-border/60 bg-card p-5 shadow-sm space-y-4 flex flex-col justify-between">
+      {/* Truck Benchmark Efficiency Table */}
+      <Card className="bg-slate-900 border-slate-800 text-slate-100 rounded-3xl p-5 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
           <div>
-            <CardTitle className="text-base font-extrabold flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" /> Potential Savings Impact
-            </CardTitle>
-            <CardDescription className="text-xs mt-1">
-              Estimated savings if underperforming vehicles achieve target mileage of {targetBenchmark} km/L.
-            </CardDescription>
-
-            <div className="mt-5 space-y-3">
-              <div className="p-4 rounded-2xl bg-muted/40 border border-border/50 space-y-2">
-                <div className="text-xs text-muted-foreground font-semibold">Total Excess Fuel Wasted</div>
-                <div className="text-2xl font-black font-mono text-rose-500">
-                  {fleetSummary.totalExcessLiters.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">Liters</span>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
-                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold">Estimated Financial Savings</div>
-                <div className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                  ₹{fleetSummary.totalPotentialSavings.toLocaleString('en-IN')}
-                </div>
-                <div className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
-                  Calculated at ₹{dieselPrice}/Liter diesel cost
-                </div>
-              </div>
-            </div>
+            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-400" /> Individual Vehicle Mileage vs Target Benchmark ({targetBenchmark} km/L)
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">Real-time audit comparing actual mileage against target benchmark.</p>
           </div>
 
-          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-2 mt-4">
-            <HelpCircle className="w-4 h-4 flex-shrink-0" />
-            <span>Driver eco-driving training & tire pressure checks typically recover 10-15% of lost mileage.</span>
+          <div className="w-full sm:w-64">
+            <Input 
+              placeholder="Search truck..."
+              value={searchTruck}
+              onChange={e => setSearchTruck(e.target.value)}
+              className="h-9 bg-slate-950 border-slate-800 text-xs rounded-xl text-white"
+            />
           </div>
-        </Card>
-      </div>
-
-      {/* Detailed Truck & Driver Comparison Table */}
-      <Card className="rounded-3xl border border-border/60 bg-card overflow-hidden shadow-md space-y-4 p-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <CardTitle className="text-base font-extrabold flex items-center gap-2">
-              <Scale className="w-5 h-5 text-primary" /> Truck Mileage & Savings Breakdown
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Detailed fuel efficiency matrix comparing distance driven, total liters consumed, and mileage variance
-            </CardDescription>
-          </div>
-          <Input 
-            placeholder="Search truck number..." 
-            value={searchTruck} 
-            onChange={e => setSearchTruck(e.target.value)}
-            className="w-full sm:w-64 h-9 text-xs rounded-xl"
-          />
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-border/50">
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-muted/40">
-              <TableRow>
-                <TableHead className="text-xs font-bold py-3.5 pl-4">Truck / Vehicle</TableHead>
-                <TableHead className="text-xs font-bold">Total Dist (KM)</TableHead>
-                <TableHead className="text-xs font-bold">Fuel Used (L)</TableHead>
-                <TableHead className="text-xs font-bold text-center">Avg Mileage (km/L)</TableHead>
-                <TableHead className="text-xs font-bold text-center">Variance vs Target</TableHead>
-                <TableHead className="text-xs font-bold">Cost / KM (₹)</TableHead>
-                <TableHead className="text-xs font-bold text-right pr-4">Potential Savings (₹)</TableHead>
+            <TableHeader>
+              <TableRow className="border-slate-800 hover:bg-transparent">
+                <TableHead className="text-xs text-slate-400 font-mono">TRUCK NAME</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-center">TOTAL DISTANCE</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-center">TOTAL DIESEL</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-center">ACTUAL MILEAGE</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-center">TARGET VARIANCE</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-right">EXCESS FUEL COST</TableHead>
+                <TableHead className="text-xs text-slate-400 font-mono text-center">STATUS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {filteredTruckStats.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-xs text-muted-foreground">Loading benchmark analysis...</TableCell>
-                </TableRow>
-              ) : filteredTrucks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-xs text-muted-foreground">No trucks matching criteria</TableCell>
+                  <TableCell colSpan={7} className="text-center text-xs text-slate-500 py-8">
+                    No fuel logs found matching truck search.
+                  </TableCell>
                 </TableRow>
               ) : (
-                filteredTrucks.map(t => (
-                  <TableRow key={t.id} className="hover:bg-muted/20 text-xs">
-                    <TableCell className="pl-4 py-3 font-extrabold text-foreground flex items-center gap-2">
-                      <div className={`w-2.5 h-2.5 rounded-full ${t.status === 'efficient' ? 'bg-emerald-500' : t.status === 'moderate' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                      {t.name}
+                filteredTruckStats.map(t => (
+                  <TableRow key={t.id} className="border-slate-800/60 hover:bg-slate-800/40 text-xs">
+                    <TableCell className="font-extrabold text-white font-mono">{t.name}</TableCell>
+                    <TableCell className="text-center font-mono text-slate-300">{t.totalDistance.toLocaleString()} km</TableCell>
+                    <TableCell className="text-center font-mono text-slate-300">{t.totalLiters.toLocaleString()} L</TableCell>
+                    <TableCell className="text-center font-mono font-black text-sm text-white">
+                      {t.avgMileage} <span className="text-[10px] text-slate-400 font-normal">km/L</span>
                     </TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{t.totalDistance.toLocaleString()} km</TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{t.totalLiters.toLocaleString()} L</TableCell>
-                    <TableCell className="text-center font-mono font-black text-sm">
-                      <span className={t.avgMileage >= targetBenchmark ? 'text-emerald-500' : t.avgMileage >= targetBenchmark * 0.85 ? 'text-amber-500' : 'text-rose-500'}>
-                        {t.avgMileage} km/L
-                      </span>
+                    <TableCell className="text-center font-mono">
+                      {t.mileageVariance >= 0 ? (
+                        <span className="text-emerald-400 font-bold">+{t.mileageVariance} km/L</span>
+                      ) : (
+                        <span className="text-rose-400 font-bold">{t.mileageVariance} km/L</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono font-bold">
+                      {t.potentialCostSavings > 0 ? (
+                        <span className="text-rose-400">₹{t.potentialCostSavings.toLocaleString('en-IN')}</span>
+                      ) : (
+                        <span className="text-emerald-400">₹0 (On Target)</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className={`font-mono text-[10px] font-bold ${t.mileageVariance >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-rose-500/10 text-rose-500 border-rose-500/30'}`}>
-                        {t.mileageVariance >= 0 ? `+${t.mileageVariance}` : t.mileageVariance} km/L
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono font-bold text-foreground">₹{t.costPerKm}</TableCell>
-                    <TableCell className="text-right pr-4 font-mono font-black text-emerald-600 dark:text-emerald-400">
-                      {t.potentialCostSavings > 0 ? `₹${t.potentialCostSavings.toLocaleString('en-IN')}` : '—'}
+                      {t.status === 'efficient' && (
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">Optimal</Badge>
+                      )}
+                      {t.status === 'moderate' && (
+                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">Acceptable</Badge>
+                      )}
+                      {t.status === 'inefficient' && (
+                        <Badge className="bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]">Below Target</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -393,6 +413,7 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
           </Table>
         </div>
       </Card>
+
     </div>
   );
 }
