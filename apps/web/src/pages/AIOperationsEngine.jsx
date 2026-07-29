@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrainCircuit, Sparkles, Truck, Package, MapPin, IndianRupee, Zap, ArrowRight, ShieldCheck, RefreshCw, BarChart3, Clock } from 'lucide-react';
+import { BrainCircuit, Sparkles, Truck, Package, MapPin, IndianRupee, Zap, ArrowRight, ShieldCheck, RefreshCw, BarChart3, Clock, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
