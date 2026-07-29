@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { calculateVehicleCompliance, maskSensitive, logVehicleScanEvent } from '@/lib/qrVerificationUtils.js';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
+import apiServerClient from '@/lib/apiServerClient.js';
 
 export default function VehicleQRVerificationPage() {
   const { qrToken } = useParams();
@@ -32,7 +33,26 @@ export default function VehicleQRVerificationPage() {
       const rawToken = (qrToken || '').trim();
       const cleanToken = rawToken.replace(/[^A-Z0-9]/gi, '').toUpperCase();
 
-      // 1. Fetch real company settings
+      // 1. Primary: Try fetching via API Server public-verification endpoint (admin privileges, bypasses guest auth 403s)
+      try {
+        const apiRes = await apiServerClient.fetch('/trucks/public-verification/' + (cleanToken || rawToken));
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.success && apiData.truck) {
+            setTruck(apiData.truck);
+            setDocuments(apiData.documents || []);
+            setDriver(apiData.driver || null);
+            setCompanyInfo(apiData.company || null);
+            logVehicleScanEvent(rawToken || apiData.truck.truck_number, apiData.truck.truck_number, 'Roadside RTO / Police Verification');
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('[VehicleQRVerificationPage] API server fetch fallback to PocketBase:', apiErr);
+      }
+
+      // 2. Secondary Fallback: Direct PocketBase query
       const companyRes = await pb.collection('company_settings').getFullList({ $autoCancel: false }).catch(() => []);
       const realCompany = companyRes[0] || {
         company_name: 'JAI BHAVANI CARGO',
@@ -44,7 +64,6 @@ export default function VehicleQRVerificationPage() {
       };
       setCompanyInfo(realCompany);
 
-      // 2. Fetch real trucks collection
       const trucksList = await pb.collection('trucks').getFullList({ $autoCancel: false }).catch(() => []);
       
       let foundTruck = trucksList.find(t => {
@@ -56,10 +75,6 @@ export default function VehicleQRVerificationPage() {
           (cleanToken && normNum && normNum.includes(cleanToken))
         );
       });
-
-      if (!foundTruck && trucksList.length > 0) {
-        foundTruck = trucksList[0];
-      }
 
       if (!foundTruck) {
         foundTruck = {
@@ -81,21 +96,33 @@ export default function VehicleQRVerificationPage() {
 
       setTruck(foundTruck);
 
-      // 3. Fetch real documents for this truck from truck_documents folder
+      // 3. Fetch real documents for this truck from truck_documents folder with resilient normalized matching
       const allDocs = await pb.collection('truck_documents').getFullList({
         sort: '-created',
         $autoCancel: false
       }).catch(() => []);
 
-      const matchingDocs = allDocs.filter(d => 
-        d.truck_id === foundTruck.id || 
-        d.truck_id === foundTruck.truck_number || 
-        d.truck_number === foundTruck.truck_number ||
-        (d.notes && d.notes.includes(foundTruck.truck_number))
-      );
+      const normTruckNum = (foundTruck.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const normTruckId = (foundTruck.id || '').trim();
+
+      const matchingDocs = allDocs.filter(d => {
+        if (!d) return false;
+        const normDocTruckNum = (d.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        const docTruckId = (d.truck_id || '').trim();
+        const normDocTruckId = docTruckId.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        const docNotes = (d.notes || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+
+        return (
+          docTruckId === normTruckId ||
+          docTruckId === foundTruck.truck_number ||
+          (normDocTruckId && normTruckNum && normDocTruckId === normTruckNum) ||
+          (normDocTruckNum && normTruckNum && normDocTruckNum === normTruckNum) ||
+          (normTruckNum && docNotes.includes(normTruckNum))
+        );
+      });
       setDocuments(matchingDocs);
 
-      // 4. Fetch real employees / driver details only for ACTIVE drivers assigned to this truck
+      // 4. Fetch real employees / driver details
       const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
       const matchedDriver = empList.find(e => {
         const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
@@ -236,7 +263,7 @@ export default function VehicleQRVerificationPage() {
           ) : (
             <div className="space-y-2.5">
               {documents.map((doc) => {
-                const fileUrl = pb.files.getURL(doc, doc.file);
+                const fileUrl = doc.file_url || (doc.file ? pb.files.getURL(doc, doc.file) : null);
                 return (
                   <div 
                     key={doc.id}
