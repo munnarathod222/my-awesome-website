@@ -23,6 +23,7 @@ import MarkPaymentPaidModal from '@/components/MarkPaymentPaidModal.jsx';
 import SendPaymentReminderModal from '@/components/SendPaymentReminderModal.jsx';
 import CancelPaymentRequestModal from '@/components/CancelPaymentRequestModal.jsx';
 import CreatePaymentRequestModal from '@/components/CreatePaymentRequestModal.jsx';
+import { exportEnterpriseBackupJSON } from '@/lib/backupUtils.js';
 import { cn } from '@/lib/utils.js';
 
 const STATUS_COLORS = {
@@ -892,12 +893,16 @@ Best Regards,
                   Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuItem onClick={handleExportPDF} disabled={isExportingPDF} className="cursor-pointer">
                   <FileText className="w-4 h-4 mr-2 text-destructive" /> Export as PDF
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportExcel} disabled={isExportingExcel} className="cursor-pointer">
                   <TableIcon className="w-4 h-4 mr-2 text-success" /> Export as Excel
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={exportEnterpriseBackupJSON} className="cursor-pointer font-bold text-primary">
+                  <Download className="w-4 h-4 mr-2 text-primary" /> Download Database Backup (JSON)
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

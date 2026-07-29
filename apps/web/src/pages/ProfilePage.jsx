@@ -17,7 +17,8 @@ import SignaturePadModal from '@/components/SignaturePadModal.jsx';
 import BandwidthTrackerCard from '@/components/BandwidthTrackerCard.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
-import { PenTool, Activity } from 'lucide-react';
+import { exportEnterpriseBackupJSON } from '@/lib/backupUtils.js';
+import { PenTool, Activity, FileJson, Download as DownloadIcon } from 'lucide-react';
 
 const ProfilePage = () => {
   const { currentUser, setCurrentUser } = useAuth();
@@ -1317,12 +1318,20 @@ const ProfilePage = () => {
             </Button>
 
             <Button
+              onClick={exportEnterpriseBackupJSON}
+              className="w-full sm:w-auto min-w-[200px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md"
+            >
+              <FileJson className="w-4 h-4 mr-2" />
+              Export Full JSON Backup (Incl. Payments)
+            </Button>
+
+            <Button
               variant="outline"
               onClick={handleDownloadLocalBackup}
               className="w-full sm:w-auto min-w-[180px] rounded-xl"
             >
               <DownloadIcon className="w-4 h-4 mr-2" />
-              Download Local Copy
+              Download Local Copy (.db)
             </Button>
 
             <input 
