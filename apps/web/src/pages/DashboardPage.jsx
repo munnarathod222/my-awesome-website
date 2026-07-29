@@ -23,6 +23,7 @@ import AddTripModal from '@/components/AddTripModal.jsx';
 import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';
 import MaintenanceFormModal from '@/components/MaintenanceFormModal.jsx';
 import { Badge } from '@/components/ui/badge';
+import RenderBandwidthMonitor from '@/components/RenderBandwidthMonitor.jsx';
 
 // ── Animated counter hook ─────────────────────────────────────────────────────
 function useCountUp(target, duration = 900) {
@@ -459,7 +460,12 @@ const DashboardPage = () => {
             />
           </motion.div>
 
-          {/* Active Shipment Pipeline */}
+          {/* Live Outbound Bandwidth Telemetry Monitor */}
+          <motion.div variants={item}>
+            <RenderBandwidthMonitor />
+          </motion.div>
+
+          {/* Active Operations Pipeline Status */}
           <motion.div variants={item}>
             <Card className="border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4">
