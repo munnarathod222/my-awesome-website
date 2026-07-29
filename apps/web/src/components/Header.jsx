@@ -12,6 +12,7 @@ import pb from '@/lib/pocketbaseClient.js';
 
 // ── Breadcrumb resolver ───────────────────────────────────────────────────────
 const ROUTE_LABELS = {
+  '/marketplace':            'AI Freight Marketplace',
   '/dashboard':              'Dashboard',
   '/analytics':              'Analytics',
   '/trip-logs':              'Trip Logs',

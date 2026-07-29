@@ -86,6 +86,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       title: 'Overview',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',      path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Sparkles,        label: 'AI Freight Marketplace', path: '/marketplace',     roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { icon: BarChart3,       label: 'Analytics',      path: '/analytics',               roles: ['super_admin','admin','manager'] },
         { icon: Calculator,      label: 'Vehicle TCO & ROI',path: '/vehicle-tco',             roles: ['super_admin','admin','manager'] },
         { icon: CalendarDays,    label: 'Calendar',       path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },

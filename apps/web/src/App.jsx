@@ -29,6 +29,7 @@ import SignupRequestPage from './pages/SignupRequestPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import AcceptInvitationPage from './pages/AcceptInvitationPage.jsx';
 import SharedFolderPage from './pages/SharedFolderPage.jsx';
+import MarketplaceHub from './pages/MarketplaceHub.jsx';
 
 // Dashboard Pages
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -181,6 +182,8 @@ function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<HomePage />} />
+                  <Route path="/marketplace" element={<MarketplaceHub />} />
+                  <Route path="/marketplace/*" element={<MarketplaceHub />} />
                   <Route path="/v/:qrToken" element={<VehicleQRVerificationPage />} />
                   <Route path="/verify-vehicle/:qrToken" element={<VehicleQRVerificationPage />} />
                   <Route path="/services" element={<ServicesPage />} />
