@@ -263,8 +263,8 @@ function App() {
                   <Route path="/exit-audit" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExitAuditPage /></ProtectedRoute>} />
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
                   
-                  {/* Cashbook & Financials - Restricted from Dispatcher */}
-                  <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CompanyVaultPage /></ProtectedRoute>} />
+                  {/* Cashbook & Financials */}
+                  <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><CompanyVaultPage /></ProtectedRoute>} />
                   <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
                   <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><FASTagManagerPage /></ProtectedRoute>} />

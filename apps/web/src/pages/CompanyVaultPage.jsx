@@ -257,24 +257,28 @@ export default function CompanyVaultPage() {
 
   // Filtered documents
   const filteredDocuments = useMemo(() => {
+    if (!Array.isArray(documents)) return [];
     return documents.filter(doc => {
+      if (!doc) return false;
       const matchesCategory = selectedCategory === 'All' || doc.category === selectedCategory;
       const matchesFY = selectedFY === 'All' || doc.financial_year === selectedFY;
-      const matchesSearch = !searchQuery.trim() || 
-        doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (doc.sub_category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (doc.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const docTitle = (doc.title || doc.file_name || 'Document').toLowerCase();
+      const docSub = (doc.sub_category || '').toLowerCase();
+      const docNotes = (doc.notes || '').toLowerCase();
+      const search = searchQuery.trim().toLowerCase();
+      const matchesSearch = !search || docTitle.includes(search) || docSub.includes(search) || docNotes.includes(search);
       return matchesCategory && matchesFY && matchesSearch;
     });
   }, [documents, selectedCategory, selectedFY, searchQuery]);
 
   // Document Counts
   const stats = useMemo(() => {
+    if (!Array.isArray(documents)) return { total: 0, itr: 0, gst: 0, reg: 0, fin: 0 };
     const total = documents.length;
-    const itr = documents.filter(d => d.category === 'Tax Returns (ITR)').length;
-    const gst = documents.filter(d => d.category === 'Tax Returns (GST)').length;
-    const reg = documents.filter(d => d.category === 'Registration & Identity').length;
-    const fin = documents.filter(d => d.category === 'Financials & Banking').length;
+    const itr = documents.filter(d => d && d.category === 'Tax Returns (ITR)').length;
+    const gst = documents.filter(d => d && d.category === 'Tax Returns (GST)').length;
+    const reg = documents.filter(d => d && d.category === 'Registration & Identity').length;
+    const fin = documents.filter(d => d && d.category === 'Financials & Banking').length;
     return { total, itr, gst, reg, fin };
   }, [documents]);
 
