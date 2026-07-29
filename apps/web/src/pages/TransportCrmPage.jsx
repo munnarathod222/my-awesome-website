@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { 
   Building2, Users, TrendingUp, CreditCard, ShieldCheck, ShieldAlert, 
   Search, Filter, Plus, Download, Eye, Zap, AlertTriangle, MessageSquare, 
-  Sparkles, CheckCircle2, Phone, Mail, ArrowRight, RefreshCw, BarChart2
+  Sparkles, CheckCircle2, Phone, Mail, ArrowRight, RefreshCw, BarChart2, CheckSquare, Square
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +17,14 @@ import { toast } from 'sonner';
 import { getCrmCustomers } from '@/lib/transportCrmClient.js';
 import TransportCrmCustomerDetailModal from '@/components/TransportCrmCustomerDetailModal.jsx';
 import TransportCrmNewCustomerModal from '@/components/TransportCrmNewCustomerModal.jsx';
+import TransportCrmWhatsAppShareModal from '@/components/TransportCrmWhatsAppShareModal.jsx';
 
 export default function TransportCrmPage() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Multi-Select State
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState([]);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,6 +36,7 @@ export default function TransportCrmPage() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -70,6 +75,25 @@ export default function TransportCrmPage() {
     });
   }, [customers, searchTerm, industryFilter, riskFilter, statusFilter]);
 
+  // Selected customers list object
+  const selectedCustomersList = useMemo(() => {
+    return customers.filter(c => selectedCustomerIds.includes(c.id));
+  }, [customers, selectedCustomerIds]);
+
+  const toggleSelectCustomer = (id) => {
+    setSelectedCustomerIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCustomerIds.length === filteredCustomers.length && filteredCustomers.length > 0) {
+      setSelectedCustomerIds([]);
+    } else {
+      setSelectedCustomerIds(filteredCustomers.map(c => c.id));
+    }
+  };
+
   // Overall KPI Metrics
   const metrics = useMemo(() => {
     const totalCust = customers.length;
@@ -85,8 +109,9 @@ export default function TransportCrmPage() {
   }, [customers]);
 
   const handleExportExcel = () => {
+    const exportData = selectedCustomerIds.length > 0 ? selectedCustomersList : filteredCustomers;
     const headers = ['Company Name', 'Customer Code', 'Industry', 'GSTIN', 'City', 'Primary Contact', 'Phone', 'Credit Limit', 'Outstanding', 'Risk Level', 'Status'];
-    const rows = filteredCustomers.map(c => [
+    const rows = exportData.map(c => [
       `"${c.company_name}"`,
       `"${c.customer_code}"`,
       `"${c.industry}"`,
@@ -108,7 +133,7 @@ export default function TransportCrmPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Transport CRM Customer directory exported to Excel CSV!');
+    toast.success(`Exported ${exportData.length} CRM Accounts to Excel CSV!`);
   };
 
   return (
@@ -116,7 +141,7 @@ export default function TransportCrmPage() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 font-sans"
+      className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 font-sans relative pb-24"
     >
       <Helmet>
         <title>Enterprise Transport CRM | Freight Logistics Dashboard</title>
@@ -132,11 +157,20 @@ export default function TransportCrmPage() {
             Enterprise Transport CRM
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
-            360° Logistics Customer Management • Rate Contracts • Credit Limits • Shipment History & Complaints SLA
+            360° Customer Directory • Multi-Contact WhatsApp Broadcast • Credit Risk & Outstanding Balances
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {selectedCustomerIds.length > 0 && (
+            <Button 
+              onClick={() => setIsWhatsAppModalOpen(true)}
+              className="rounded-xl shadow-md font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              <MessageSquare className="w-4 h-4 mr-1.5" /> WhatsApp ({selectedCustomerIds.length})
+            </Button>
+          )}
+
           <Button variant="outline" onClick={handleExportExcel} className="rounded-xl text-xs font-bold shadow-sm">
             <Download className="w-4 h-4 mr-1.5" /> Export Excel
           </Button>
@@ -156,7 +190,7 @@ export default function TransportCrmPage() {
 
         <Card className="rounded-2xl border-border/60 bg-card p-4 space-y-1 shadow-sm">
           <div className="text-[11px] font-bold text-muted-foreground uppercase">Lifetime Revenue</div>
-          <div className="text-2xl font-black font-mono text-emerald-400">₹ {(metrics.totalRev / 10000000).toFixed(2)} Cr</div>
+          <div className="text-2xl font-black font-mono text-emerald-400">₹ {(metrics.totalRev / 100000).toFixed(1)} L</div>
           <div className="text-[10px] text-muted-foreground font-semibold">Freight Business</div>
         </Card>
 
@@ -232,12 +266,20 @@ export default function TransportCrmPage() {
         </div>
       </Card>
 
-      {/* Customer Directory Table */}
+      {/* Customer Directory Table with Checkboxes */}
       <Card className="rounded-3xl border border-border/60 bg-card overflow-hidden shadow-md">
         <Table>
           <TableHeader className="bg-muted/40">
             <TableRow>
-              <TableHead className="text-xs font-bold py-3.5 pl-5">Company & Code</TableHead>
+              <TableHead className="w-10 text-center py-3.5 pl-4">
+                <input 
+                  type="checkbox"
+                  checked={filteredCustomers.length > 0 && selectedCustomerIds.length === filteredCustomers.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-slate-700 accent-primary cursor-pointer w-4 h-4"
+                />
+              </TableHead>
+              <TableHead className="text-xs font-bold">Company & Code</TableHead>
               <TableHead className="text-xs font-bold">Industry & Location</TableHead>
               <TableHead className="text-xs font-bold">Contact Person</TableHead>
               <TableHead className="text-xs font-bold text-center">Credit Score</TableHead>
@@ -253,18 +295,19 @@ export default function TransportCrmPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-32 text-center text-xs text-muted-foreground">
+                <TableCell colSpan={11} className="h-32 text-center text-xs text-muted-foreground">
                   Loading Transport CRM Accounts...
                 </TableCell>
               </TableRow>
             ) : filteredCustomers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-32 text-center text-xs text-muted-foreground">
+                <TableCell colSpan={11} className="h-32 text-center text-xs text-muted-foreground">
                   No matching transport customer accounts found.
                 </TableCell>
               </TableRow>
             ) : (
               filteredCustomers.map(c => {
+                const isSelected = selectedCustomerIds.includes(c.id);
                 const riskBadge = c.risk_level === 'Excellent' 
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
                   : c.risk_level === 'Average' 
@@ -272,37 +315,46 @@ export default function TransportCrmPage() {
                   : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
 
                 return (
-                  <TableRow key={c.id} className="hover:bg-muted/20 text-xs">
-                    <TableCell className="pl-5 py-3 font-semibold">
+                  <TableRow key={c.id} className={`hover:bg-muted/20 text-xs transition-colors ${isSelected ? 'bg-primary/10' : ''}`}>
+                    <TableCell className="text-center pl-4 py-3">
+                      <input 
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectCustomer(c.id)}
+                        className="rounded border-slate-700 accent-primary cursor-pointer w-4 h-4"
+                      />
+                    </TableCell>
+
+                    <TableCell className="py-3 font-semibold">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-black text-xs flex-shrink-0">
                           {c.company_name?.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-extrabold text-foreground">{c.company_name}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground">{c.customer_code} • GST: {c.gstin}</div>
+                          <div className="font-bold text-foreground">{c.company_name}</div>
+                          <div className="text-[10px] font-mono text-muted-foreground">{c.customer_code} • GST: {c.gstin || 'N/A'}</div>
                         </div>
                       </div>
                     </TableCell>
 
                     <TableCell>
                       <div className="font-medium text-foreground">{c.industry}</div>
-                      <div className="text-[10px] text-muted-foreground font-mono">{c.city}</div>
+                      <div className="text-[10px] text-muted-foreground">{c.city || 'Hyderabad'}</div>
                     </TableCell>
 
                     <TableCell>
-                      <div className="font-semibold text-foreground">{c.primary_contact}</div>
-                      <a href={`tel:${c.phone}`} className="text-[10px] text-primary font-mono font-bold hover:underline">{c.phone}</a>
+                      <div className="font-medium text-foreground">{c.primary_contact || 'N/A'}</div>
+                      <div className="text-[10px] font-mono text-muted-foreground">{c.phone || c.email}</div>
                     </TableCell>
 
                     <TableCell className="text-center">
-                      <Badge variant="outline" className={`font-mono text-[10px] font-black ${c.score_color || 'bg-emerald-500/10 text-emerald-400'}`}>
+                      <Badge variant="outline" className={`font-mono text-xs font-bold ${c.score_color || 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}>
                         {c.credit_score || 750} ({c.credit_tier || 'AAA'})
                       </Badge>
                     </TableCell>
 
                     <TableCell className="text-center font-mono font-bold text-foreground">
-                      {c.avg_payment_days || 24} Days
+                      {c.avg_payment_days || 15} Days
                     </TableCell>
 
                     <TableCell className="text-right font-mono font-semibold">
@@ -345,6 +397,44 @@ export default function TransportCrmPage() {
         </Table>
       </Card>
 
+      {/* Floating Multi-Select Batch Action Bar */}
+      {selectedCustomerIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs font-extrabold">{selectedCustomerIds.length} Accounts Selected</span>
+          </div>
+
+          <div className="h-4 w-[1px] bg-slate-700" />
+
+          <Button 
+            size="sm" 
+            onClick={() => setIsWhatsAppModalOpen(true)}
+            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg"
+          >
+            <MessageSquare className="w-4 h-4 mr-1.5" /> Share via WhatsApp
+          </Button>
+
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleExportExcel}
+            className="text-xs border-slate-700 text-slate-200 hover:bg-slate-800 rounded-xl font-bold"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" /> Export Selected
+          </Button>
+
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => setSelectedCustomerIds([])}
+            className="text-xs text-slate-400 hover:text-white rounded-xl p-1"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Customer 360° Detail Modal */}
       <TransportCrmCustomerDetailModal
         isOpen={isDetailOpen}
@@ -361,6 +451,13 @@ export default function TransportCrmPage() {
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onSaved={fetchCustomers}
+      />
+
+      {/* WhatsApp Multi-Contact Share Modal */}
+      <TransportCrmWhatsAppShareModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        selectedCustomers={selectedCustomersList}
       />
     </motion.div>
   );
