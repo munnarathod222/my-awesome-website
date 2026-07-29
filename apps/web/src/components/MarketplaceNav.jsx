@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Sparkles, ShieldCheck, Truck, Package, Users, UserCheck, 
-  Building2, Wrench, BrainCircuit, CreditCard, LayoutDashboard, 
-  ChevronRight, CheckCircle2, QrCode
+  Building2, Wrench, BrainCircuit, CreditCard, ChevronRight, QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +16,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export const MARKETPLACE_ROLES = [
-  { id: 'customer', label: 'Customer / Shipper', icon: Package, badge: 'Book Cargo', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-  { id: 'transporter', label: 'Transporter / Fleet Owner', icon: Truck, badge: 'Bid & Fleet', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-  { id: 'driver', label: 'Driver / Operator', icon: UserCheck, badge: 'On Duty', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-  { id: 'warehouse', label: 'Warehouse Owner', icon: Building2, badge: 'Storage Host', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
-  { id: 'vendor', label: 'Vendor Partner', icon: Wrench, badge: 'Highway Services', color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
-  { id: 'admin', label: 'Admin (Marketplace OS)', icon: ShieldCheck, badge: 'Super Control', color: 'text-teal-400 bg-teal-500/10 border-teal-500/30' },
+  { id: 'customer', label: 'Customer / Shipper', icon: Package, color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
+  { id: 'transporter', label: 'Transporter / Fleet Owner', icon: Truck, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
+  { id: 'driver', label: 'Driver / Operator', icon: UserCheck, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
+  { id: 'warehouse', label: 'Warehouse Owner', icon: Building2, color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
+  { id: 'vendor', label: 'Vendor Partner', icon: Wrench, color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+  { id: 'admin', label: 'Admin (Marketplace OS)', icon: ShieldCheck, color: 'text-teal-400 bg-teal-500/10 border-teal-500/30' },
 ];
 
 export const MARKETPLACE_TABS = [
@@ -34,7 +33,7 @@ export const MARKETPLACE_TABS = [
   { id: 'vendors', label: 'Vendor Network', icon: Wrench, path: '/marketplace/vendors' },
   { id: 'ai-ops', label: 'AI Route & Profit Engine', icon: BrainCircuit, path: '/marketplace/ai-ops' },
   { id: 'payments', label: 'Payments & Escrow', icon: CreditCard, path: '/marketplace/payments' },
-  { id: 'admin', label: 'Marketplace Control', icon: ShieldCheck, path: '/marketplace/admin' },
+  { id: 'admin', label: 'Admin Control Desk', icon: ShieldCheck, path: '/marketplace/admin' },
 ];
 
 export default function MarketplaceNav({ activeRole, setActiveRole, onOpenScanner }) {
@@ -43,35 +42,34 @@ export default function MarketplaceNav({ activeRole, setActiveRole, onOpenScanne
 
   const currentRoleObj = MARKETPLACE_ROLES.find(r => r.id === activeRole) || MARKETPLACE_ROLES[0];
   const CurrentRoleIcon = currentRoleObj.icon;
-
   const currentPath = location.pathname;
 
   return (
     <div className="space-y-4 mb-6">
       
-      {/* Clean Header Bar */}
+      {/* Sleek, Uncluttered Top Bar */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur-xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 border border-primary/30 rounded-xl text-primary">
+          <div className="p-2.5 bg-primary/10 border border-primary/30 rounded-xl text-primary shrink-0">
             <Sparkles className="w-6 h-6 text-amber-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Jai Bhavani Freight Exchange
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white font-heading">
+                AI Freight Exchange
               </h1>
-              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
-                LIVE
+              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono font-bold">
+                LIVE MARKET
               </Badge>
             </div>
-            <p className="text-xs text-slate-400">
-              AI Freight Rate Calculator, Vehicle Discovery & On-Highway Vendor Network
+            <p className="text-xs text-slate-400 mt-0.5">
+              Dedicated Load Bidding, Verified Fleet & Highway Service Network
             </p>
           </div>
         </div>
 
-        {/* Role Switcher & QR Scanner */}
+        {/* Role Switcher & Pass Scanner */}
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
           
           <Button 
@@ -92,7 +90,7 @@ export default function MarketplaceNav({ activeRole, setActiveRole, onOpenScanne
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 rounded-xl text-slate-100 p-1.5 shadow-2xl">
               <DropdownMenuLabel className="text-[10px] font-mono uppercase text-slate-400 px-2 py-1">
-                Select Role Perspective
+                Select Marketplace Role
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-slate-800" />
               {MARKETPLACE_ROLES.map((r) => {
@@ -117,8 +115,8 @@ export default function MarketplaceNav({ activeRole, setActiveRole, onOpenScanne
         </div>
       </div>
 
-      {/* Clean Tab Pill Bar */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      {/* Clean Horizontal Navigation Pills */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
         {MARKETPLACE_TABS.map((tab) => {
           const TabIcon = tab.icon;
           const isActive = currentPath === tab.path || (tab.id === 'loads' && currentPath === '/marketplace');
@@ -127,13 +125,13 @@ export default function MarketplaceNav({ activeRole, setActiveRole, onOpenScanne
             <button
               key={tab.id}
               onClick={() => navigate(tab.path)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
                 isActive 
-                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-md' 
-                  : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 border-slate-800/80 hover:border-slate-700'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-md' 
+                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-800 hover:border-slate-700'
               }`}
             >
-              <TabIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+              <TabIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
             </button>
           );
