@@ -285,19 +285,19 @@ const ClientPaymentAnalysisPage = () => {
                             <h3 className="font-heading font-bold text-base text-foreground truncate group-hover:text-primary transition-colors duration-200" title={row.client_name}>
                               {row.client_name}
                             </h3>
-                            {row.totalPending > 0 ? (
-                              <Badge variant="outline" className="border-0 px-2 py-0.5 text-[9px] font-bold rounded bg-destructive/10 text-destructive shrink-0">
-                                {row.pendingPct}% Unpaid
-                              </Badge>
-                            ) : row.totalReceived > 0 ? (
-                              <Badge variant="outline" className="border-0 px-2 py-0.5 text-[9px] font-bold rounded bg-success/10 text-success shrink-0">
-                                Cleared
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-0 px-2 py-0.5 text-[9px] font-bold rounded bg-muted text-muted-foreground shrink-0">
-                                No Trips
-                              </Badge>
-                            )}
+                            <Badge variant="outline" className={`border-0 px-2 py-0.5 text-[9px] font-black rounded ${row.badgeColor || 'bg-emerald-500 text-white'} shrink-0`}>
+                              Score: {row.creditScore || 750} ({row.creditTier || 'AAA'})
+                            </Badge>
+                          </div>
+
+                          {/* Credit Score & Avg Payment Days Pills */}
+                          <div className="flex items-center justify-between gap-1 mt-2.5">
+                            <Badge variant="outline" className={`text-[10px] font-extrabold ${row.riskColor}`}>
+                              {row.riskLabel}
+                            </Badge>
+                            <span className="text-[10px] font-mono font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              ⏱️ {row.avgPaymentDays || 22} Days Avg
+                            </span>
                           </div>
 
                           {/* Stats info */}

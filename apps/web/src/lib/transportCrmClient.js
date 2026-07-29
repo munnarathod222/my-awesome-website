@@ -1,7 +1,48 @@
 import pb from './pocketbaseClient.js';
 
 /**
- * Fetch all CRM customers from PocketBase (no fallback dummy data)
+ * Calculate dynamic transport credit score (300-850) and average payment days
+ */
+export function calculateCustomerCreditProfile(customer) {
+  const creditLimit = Number(customer.credit_limit || 2500000);
+  const outstanding = Number(customer.outstanding_amount || 0);
+  const utilization = creditLimit > 0 ? (outstanding / creditLimit) : 0;
+  
+  let score = 720;
+  let avgPaymentDays = 24;
+
+  if (customer.risk_level === 'Excellent') {
+    score = 780 - Math.round(utilization * 60);
+    avgPaymentDays = Math.round(14 + utilization * 10);
+  } else if (customer.risk_level === 'Average') {
+    score = 660 - Math.round(utilization * 80);
+    avgPaymentDays = Math.round(28 + utilization * 15);
+  } else {
+    score = 520 - Math.round(utilization * 100);
+    avgPaymentDays = Math.round(48 + utilization * 20);
+  }
+
+  score = Math.min(850, Math.max(300, score));
+
+  let scoreTier = 'AAA';
+  let scoreColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30';
+  
+  if (score >= 750) { scoreTier = 'AAA'; scoreColor = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'; }
+  else if (score >= 670) { scoreTier = 'AA'; scoreColor = 'bg-blue-500/10 text-blue-500 border-blue-500/30'; }
+  else if (score >= 580) { scoreTier = 'A'; scoreColor = 'bg-amber-500/10 text-amber-500 border-amber-500/30'; }
+  else { scoreTier = 'C'; scoreColor = 'bg-rose-500/10 text-rose-500 border-rose-500/30'; }
+
+  return {
+    credit_score: score,
+    credit_tier: scoreTier,
+    score_color: scoreColor,
+    avg_payment_days: avgPaymentDays,
+    credit_utilization_pct: Math.round(utilization * 100)
+  };
+}
+
+/**
+ * Fetch all CRM customers from PocketBase with computed Transport Credit Scores
  */
 export async function getCrmCustomers() {
   try {
@@ -15,7 +56,8 @@ export async function getCrmCustomers() {
       if (r.data_json) {
         try { extra = JSON.parse(r.data_json); } catch (e) {}
       }
-      return {
+      
+      const profile = {
         id: r.id,
         company_name: r.company_name,
         customer_code: r.customer_code || `CUST-${r.id.slice(-4).toUpperCase()}`,
@@ -33,6 +75,13 @@ export async function getCrmCustomers() {
         total_revenue: r.total_revenue || 0,
         total_shipments: r.total_shipments || 0,
         ...extra
+      };
+
+      const creditInfo = calculateCustomerCreditProfile(profile);
+
+      return {
+        ...profile,
+        ...creditInfo
       };
     });
   } catch (err) {

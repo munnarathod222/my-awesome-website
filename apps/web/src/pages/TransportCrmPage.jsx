@@ -238,6 +238,8 @@ export default function TransportCrmPage() {
               <TableHead className="text-xs font-bold py-3.5 pl-5">Company & Code</TableHead>
               <TableHead className="text-xs font-bold">Industry & Location</TableHead>
               <TableHead className="text-xs font-bold">Contact Person</TableHead>
+              <TableHead className="text-xs font-bold text-center">Credit Score</TableHead>
+              <TableHead className="text-xs font-bold text-center">Avg Payment</TableHead>
               <TableHead className="text-xs font-bold text-right">Credit Limit</TableHead>
               <TableHead className="text-xs font-bold text-right">Outstanding</TableHead>
               <TableHead className="text-xs font-bold text-center">Credit Risk</TableHead>
@@ -249,13 +251,13 @@ export default function TransportCrmPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-xs text-muted-foreground">
+                <TableCell colSpan={10} className="h-32 text-center text-xs text-muted-foreground">
                   Loading Transport CRM Accounts...
                 </TableCell>
               </TableRow>
             ) : filteredCustomers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-xs text-muted-foreground">
+                <TableCell colSpan={10} className="h-32 text-center text-xs text-muted-foreground">
                   No matching transport customer accounts found.
                 </TableCell>
               </TableRow>
@@ -289,6 +291,16 @@ export default function TransportCrmPage() {
                     <TableCell>
                       <div className="font-semibold text-foreground">{c.primary_contact}</div>
                       <a href={`tel:${c.phone}`} className="text-[10px] text-primary font-mono font-bold hover:underline">{c.phone}</a>
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={`font-mono text-[10px] font-black ${c.score_color || 'bg-emerald-500/10 text-emerald-400'}`}>
+                        {c.credit_score || 750} ({c.credit_tier || 'AAA'})
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-center font-mono font-bold text-foreground">
+                      {c.avg_payment_days || 24} Days
                     </TableCell>
 
                     <TableCell className="text-right font-mono font-semibold">

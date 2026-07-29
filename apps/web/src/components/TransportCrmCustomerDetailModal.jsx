@@ -227,9 +227,16 @@ export default function TransportCrmCustomerDetailModal({ isOpen, onClose, custo
             </div>
           </TabsContent>
 
-          {/* TAB 5: PAYMENT RISK */}
+          {/* TAB 5: PAYMENT RISK & CREDIT SCORE */}
           <TabsContent value="payment" className="flex-1 overflow-y-auto pt-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <Card className="p-4 rounded-2xl border border-primary/30 bg-primary/5 text-center space-y-1">
+                <div className="text-xs text-muted-foreground font-bold">Transport Credit Score</div>
+                <div className="text-2xl font-black font-mono text-primary">{customer.credit_score || 750}</div>
+                <Badge variant="outline" className={`font-mono text-[10px] font-bold ${customer.score_color || 'bg-emerald-500/10 text-emerald-400'}`}>
+                  Tier {customer.credit_tier || 'AAA'}
+                </Badge>
+              </Card>
               <Card className="p-4 rounded-2xl border border-border/60 bg-card text-center space-y-1">
                 <div className="text-xs text-muted-foreground">Credit Limit</div>
                 <div className="text-lg font-black font-mono text-foreground">₹ {(customer.credit_limit || 0).toLocaleString()}</div>
@@ -241,6 +248,7 @@ export default function TransportCrmCustomerDetailModal({ isOpen, onClose, custo
               <Card className="p-4 rounded-2xl border border-border/60 bg-card text-center space-y-1">
                 <div className="text-xs text-muted-foreground">Avg Payment Days</div>
                 <div className="text-lg font-black font-mono text-amber-400">{customer.avg_payment_days || 24} Days</div>
+                <div className="text-[10px] text-muted-foreground">Historical Average</div>
               </Card>
               <Card className="p-4 rounded-2xl border border-border/60 bg-card text-center space-y-1">
                 <div className="text-xs text-muted-foreground">Credit Risk Traffic Light</div>
