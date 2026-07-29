@@ -4,15 +4,16 @@ import {
   Building2, Truck, FileText, Download, Eye, Phone, MapPin, 
   CheckCircle2, Clock, AlertCircle, Search, RefreshCw, Filter, 
   Calendar, IndianRupee, ArrowUpRight, ShieldCheck, Sparkles, FileBox,
-  Receipt, ArrowRight, UserCheck
+  Receipt, ArrowRight, UserCheck, Send, Package
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -37,6 +38,40 @@ export default function ClientPortalPage() {
   // Selected POD Preview Modal
   const [selectedPodTrip, setSelectedPodTrip] = useState(null);
   const [isPodModalOpen, setIsPodModalOpen] = useState(false);
+
+  // Client Bidding State
+  const [biddingModalOpen, setBiddingModalOpen] = useState(false);
+  const [selectedLane, setSelectedLane] = useState(null);
+  const [clientBidAmount, setClientBidAmount] = useState('');
+  const [clientCargoWeight, setClientCargoWeight] = useState('18');
+  const [activeLanes] = useState([
+    { id: 'LANE-101', route: 'Hyderabad → Mumbai', origin: 'Hyderabad, TS', destination: 'Mumbai, MH', benchmark_rate: 48000, ai_rate: 49500, distance_km: 710, required_truck: '32 FT Container SXL' },
+    { id: 'LANE-102', route: 'Bengaluru → Delhi NCR', origin: 'Bengaluru, KA', destination: 'Delhi NCR', benchmark_rate: 85000, ai_rate: 87200, distance_km: 1740, required_truck: '40 FT High Cube Trailer' },
+    { id: 'LANE-103', route: 'Chennai → Kolkata', origin: 'Chennai, TN', destination: 'Kolkata, WB', benchmark_rate: 62000, ai_rate: 61500, distance_km: 1660, required_truck: '24 FT Open Body' },
+    { id: 'LANE-104', route: 'Ahmedabad → Hyderabad', origin: 'Ahmedabad, GJ', destination: 'Hyderabad, TS', benchmark_rate: 54000, ai_rate: 55800, distance_km: 1210, required_truck: '32 FT Multi-Axle' }
+  ]);
+
+  const handleClientSubmitBid = async () => {
+    if (!clientBidAmount || !selectedLane) return;
+    try {
+      await pb.collection('trip_logs').create({
+        route: selectedLane.route,
+        start_location: selectedLane.origin,
+        end_location: selectedLane.destination,
+        cargo_type: 'Client Dedicated Load',
+        revenue: Number(clientBidAmount),
+        trip_status: 'Bidding Open',
+        notes: `Client Bid: ₹${clientBidAmount} for ${selectedLane.route} by ${clientData?.client_name || currentUser?.email}`
+      }, { $autoCancel: false }).catch(() => null);
+
+      toast.success(`Bid of ₹${Number(clientBidAmount).toLocaleString('en-IN')} submitted for ${selectedLane.route}! Admin will review your bid.`);
+      setBiddingModalOpen(false);
+      setClientBidAmount('');
+    } catch (err) {
+      console.error('Bid submission error:', err);
+      toast.error('Could not submit bid');
+    }
+  };
 
   const fetchClientPortalData = async (targetClientId = null) => {
     setLoading(true);
@@ -403,6 +438,9 @@ export default function ClientPortalPage() {
                   <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5">
                     All Freight ({tripLogs.length})
                   </TabsTrigger>
+                  <TabsTrigger value="bidding" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-amber-500/30 text-amber-400">
+                    <Send className="w-3 h-3 mr-1" /> Lane Bidding & Rates
+                  </TabsTrigger>
                 </TabsList>
               </div>
             </div>
@@ -681,8 +719,115 @@ export default function ClientPortalPage() {
               </Table>
             </div>
           </TabsContent>
+
+          {/* Tab 5: Route Lane Bidding for Clients */}
+          <TabsContent value="bidding" className="p-5 m-0 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-border/50">
+              <div>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Send className="w-4 h-4 text-amber-400" /> Active Route Lanes Bidding Exchange
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Submit custom freight bids directly for dedicated transport lanes.
+                </p>
+              </div>
+              <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs font-mono">
+                {activeLanes.length} Active Bidding Lanes
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeLanes.map((lane) => (
+                <Card key={lane.id} className="bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/30 font-mono">
+                        {lane.id}
+                      </Badge>
+                      <h4 className="text-base font-extrabold text-foreground mt-1">{lane.route}</h4>
+                    </div>
+                    <span className="text-xs text-muted-foreground font-mono">{lane.distance_km} KM</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl font-mono">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground">BENCHMARK RATE:</span>
+                      <div className="font-bold text-foreground">₹{lane.benchmark_rate.toLocaleString('en-IN')}</div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-400">AI RECOMMENDED:</span>
+                      <div className="font-bold text-amber-400">₹{lane.ai_rate.toLocaleString('en-IN')}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-muted-foreground text-[11px] flex items-center gap-1">
+                      <Truck className="w-3.5 h-3.5 text-primary" /> {lane.required_truck}
+                    </span>
+                    <Button 
+                      size="sm"
+                      onClick={() => { setSelectedLane(lane); setClientBidAmount(lane.benchmark_rate.toString()); setBiddingModalOpen(true); }}
+                      className="h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl"
+                    >
+                      <Send className="w-3 h-3 mr-1" /> Bid For Lane
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
       </Card>
+
+      {/* ── Client Bidding Modal ────────────────────────────────────────────── */}
+      <Dialog open={biddingModalOpen} onOpenChange={setBiddingModalOpen}>
+        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-amber-400">
+              <Send className="w-5 h-5 text-amber-400" /> Submit Freight Bid for {selectedLane?.route}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Submit your target price for this dedicated transport lane.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="bg-muted/40 p-3 rounded-xl border border-border text-xs space-y-1 font-mono">
+              <div>Target Benchmark: <strong className="text-foreground">₹{selectedLane?.benchmark_rate?.toLocaleString('en-IN')}</strong></div>
+              <div>AI Market Estimate: <strong className="text-amber-400">₹{selectedLane?.ai_rate?.toLocaleString('en-IN')}</strong></div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Your Bid Amount (₹)</Label>
+              <Input 
+                type="number"
+                value={clientBidAmount}
+                onChange={(e) => setClientBidAmount(e.target.value)}
+                className="bg-background border-border text-sm font-bold font-mono text-emerald-400 rounded-xl"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Cargo Weight (Tons)</Label>
+              <Input 
+                type="number"
+                value={clientCargoWeight}
+                onChange={(e) => setClientCargoWeight(e.target.value)}
+                className="bg-background border-border text-xs rounded-xl text-foreground"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBiddingModalOpen(false)} className="rounded-xl text-xs">
+              Cancel
+            </Button>
+            <Button onClick={handleClientSubmitBid} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl">
+              Submit Bid to Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── POD Preview Modal ────────────────────────────────────────────── */}
       {selectedPodTrip && (
