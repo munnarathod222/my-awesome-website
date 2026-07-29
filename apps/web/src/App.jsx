@@ -57,6 +57,8 @@ import ClientDetailsPage from './pages/ClientDetailsPage.jsx';
 import ClientDashboardPage from './pages/ClientDashboardPage.jsx';
 import ClientPaymentAnalysisPage from './pages/ClientPaymentAnalysisPage.jsx';
 import TransportCrmPage from './pages/TransportCrmPage.jsx';
+import DriverApplicationPage from './pages/DriverApplicationPage.jsx';
+import RecruitmentDashboardPage from './pages/RecruitmentDashboardPage.jsx';
 
 // Features
 import ClientPortalPage from './pages/ClientPortalPage.jsx';
@@ -192,6 +194,7 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   <Route path="/shared/:id" element={<SharedFolderPage />} />
+                  <Route path="/apply/driver" element={<DriverApplicationPage />} />
                   
                   {/* Dashboard Base */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
@@ -240,6 +243,7 @@ function App() {
                   {/* Client Management & Transport CRM */}
                   <Route path="/transport-crm" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TransportCrmPage /></ProtectedRoute>} />
                   <Route path="/crm" element={<Navigate to="/transport-crm" replace />} />
+                  <Route path="/recruitment" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><RecruitmentDashboardPage /></ProtectedRoute>} />
                   <Route path="/client-portal" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'client']}><ClientPortalPage /></ProtectedRoute>} />
                   <Route path="/clients" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientsListPage /></ProtectedRoute>} />
                   <Route path="/clients/new" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientFormPage /></ProtectedRoute>} />
