@@ -107,19 +107,9 @@ export default function GoogleFreightRouteEstimator() {
       const res = await calculateGoogleRoute(orig, dest);
       setRouteInfo(res);
       await renderGoogleMap(res);
-      toast.success(`Google Route Calculated: ${res.distanceText} • ${res.durationText}`);
+      toast.success(`Route Distance Calculated: ${res.distanceText} • ${res.durationText}`);
     } catch (err) {
-      console.error('Route calculation error:', err);
-      toast.error(`Route calculated via fallback highway grid: ${orig} → ${dest}`);
-      // Fallback estimate
-      setRouteInfo({
-        distanceKm: 720,
-        distanceText: '720 km (Approx)',
-        durationText: '13 hrs 15 mins',
-        durationMins: 795,
-        startAddress: orig,
-        endAddress: dest
-      });
+      console.warn('Route calculation warning:', err);
     } finally {
       setLoading(false);
     }
