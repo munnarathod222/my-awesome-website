@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, Globe, Bell, ChevronRight, Home, Building2 } from 'lucide-react';
+import { LogOut, Menu, Globe, Bell, ChevronRight, Home, Building2, UserPlus, Truck, Users, ChevronDown } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { cn } from '@/lib/utils.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -165,6 +166,27 @@ export default function Header() {
           <div className="flex items-center gap-2 ml-auto shrink-0">
             {!isAuthenticated ? (
               <>
+                {/* Recruitment Portals Apply Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-amber-500/40 text-amber-400 hover:bg-amber-500/10 font-bold gap-1.5 shadow-sm">
+                      <UserPlus className="w-3.5 h-3.5" /> Apply Now <ChevronDown className="w-3 h-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 rounded-xl text-slate-100 p-1.5 shadow-2xl">
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-2 flex items-center gap-2 text-xs hover:bg-slate-800">
+                      <Link to="/apply/driver" className="flex items-center gap-2 w-full text-amber-400 font-bold">
+                        <Truck className="w-4 h-4" /> Driver Recruitment Portal
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-2 flex items-center gap-2 text-xs hover:bg-slate-800">
+                      <Link to="/signup-request" className="flex items-center gap-2 w-full text-blue-400 font-bold">
+                        <Users className="w-4 h-4" /> Employee & Staff Portal
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button asChild size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1.5">
                   <Link to="/client-login">
                     <Building2 className="w-3.5 h-3.5" /> Client Login
@@ -176,9 +198,6 @@ export default function Header() {
                 >
                   Admin Login
                 </Link>
-                <Button asChild size="sm" className="rounded-lg text-[12.5px] h-8 px-3.5 shadow-sm">
-                  <Link to="/signup">Get Started</Link>
-                </Button>
               </>
             ) : (
               <div className="hidden md:flex items-center gap-2">

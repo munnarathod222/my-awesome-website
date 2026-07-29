@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ShieldCheck, Clock, DollarSign, Headphones as HeadphonesIcon, ArrowRight,
   Sparkles, ChevronLeft, ChevronRight, MessageSquare, Quote, Star, Truck,
-  Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard
+  Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard, UserPlus, Users
 } from 'lucide-react';
 import QuoteCalculator from '@/components/QuoteCalculator.jsx';
 import FAQAccordion from '@/components/FAQAccordion.jsx';
@@ -138,12 +138,17 @@ const HomePage = () => {
                     Empowering corporate supply chains with GPS-tracked 32ft SXL containers, automated FASTag toll tracking, and guaranteed zero-delay dispatches.
                   </p>
 
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" className="h-14 px-8 text-base font-bold rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 shadow-xl" asChild>
-                      <Link to="/quote">Get Instant Quote <ArrowRight className="w-5 h-5 ml-2" /></Link>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button size="lg" className="h-12 px-6 text-sm font-bold rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 transition-all shadow-xl" asChild>
+                      <Link to="/quote">Get Instant Quote <ArrowRight className="w-4 h-4 ml-1.5" /></Link>
                     </Button>
-                    <Button size="lg" variant="outline" className="h-14 px-8 text-base font-bold rounded-2xl bg-white/5 text-white border-white/10 hover:bg-white/15 hover:scale-105 backdrop-blur-md transition-all duration-300" asChild>
-                      <Link to="/services">Explore Services</Link>
+                    
+                    <Button size="lg" variant="outline" className="h-12 px-5 text-sm font-bold rounded-2xl bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20 hover:scale-105 transition-all" asChild>
+                      <Link to="/apply/driver"><Truck className="w-4 h-4 mr-1.5" /> Apply Driver Job</Link>
+                    </Button>
+
+                    <Button size="lg" variant="outline" className="h-12 px-5 text-sm font-bold rounded-2xl bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 hover:scale-105 transition-all" asChild>
+                      <Link to="/signup-request"><UserPlus className="w-4 h-4 mr-1.5" /> Apply Staff Job</Link>
                     </Button>
                   </div>
                   
@@ -528,6 +533,69 @@ const HomePage = () => {
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Recruitment & Careers Portals Section */}
+        <section className="py-20 bg-slate-900/60 border-t border-slate-800 relative">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 font-mono text-xs uppercase px-3 py-1 mb-3">
+                CAREERS & RECRUITMENT
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-black text-white font-heading">
+                Join Jai Bhavani Logistics Team
+              </h2>
+              <p className="text-sm text-slate-400 mt-2">
+                We are actively hiring commercial drivers, fleet managers, supervisors, and office staff.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              
+              {/* Driver Portal Card */}
+              <div className="p-6 bg-slate-950 border border-slate-800 rounded-3xl space-y-4 hover:border-amber-500/40 transition-all shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-400">
+                    <Truck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white">Driver Recruitment Portal</h3>
+                    <p className="text-xs text-slate-400">Heavy Commercial Vehicle (HGV / Container) Drivers</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Apply for long-haul container driving positions. Instant online application, verified DL checks, weekly payouts, and zero-delay trip allowances.
+                </p>
+                <Button size="lg" className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md" asChild>
+                  <Link to="/apply/driver">
+                    Apply for Driver Position <ArrowRight className="w-4 h-4 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+
+              {/* Staff & Employee Portal Card */}
+              <div className="p-6 bg-slate-950 border border-slate-800 rounded-3xl space-y-4 hover:border-blue-500/40 transition-all shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-blue-400">
+                    <UserPlus className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white">Employee & Staff Portal</h3>
+                    <p className="text-xs text-slate-400">Dispatchers, Supervisors, Operations & Admin</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Join our logistics operations team as a Fleet Dispatcher, Route Planner, Accounts Manager, or Transport Supervisor across India.
+                </p>
+                <Button size="lg" className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md" asChild>
+                  <Link to="/signup-request">
+                    Apply for Staff / Office Job <ArrowRight className="w-4 h-4 ml-1.5" />
+                  </Link>
+                </Button>
+              </div>
+
             </div>
           </div>
         </section>
