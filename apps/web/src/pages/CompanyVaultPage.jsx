@@ -875,42 +875,180 @@ export default function CompanyVaultPage() {
 
       {/* ── MODAL 2: ⚡ One-Click Share Dossier Modal ────────────── */}
       <Dialog open={isShareModalOpen} onOpenChange={setIsShareModalOpen}>
-        <DialogContent className="sm:max-w-2xl bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Share2 className="w-5 h-5 text-amber-500" />
-              ⚡ One-Click Company Dossier Share
+        <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 text-slate-100 rounded-3xl p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogHeader className="shrink-0 pb-3 border-b border-slate-800">
+            <DialogTitle className="text-xl font-black text-white flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-amber-400" />
+              One-Click Company Dossier Share
             </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Share complete company identity, tax registrations, bank accounts, and direct download links for all vault documents in a single click.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <p className="text-xs text-muted-foreground">
-              Share complete company identity, tax registrations, bank accounts, and direct download links for all vault documents in a single click for loan processing or vendor onboarding.
-            </p>
+          <Tabs defaultValue="visual" className="flex-1 overflow-hidden flex flex-col pt-3">
+            <TabsList className="bg-slate-950 border border-slate-800 p-1 rounded-xl shrink-0 w-fit">
+              <TabsTrigger value="visual" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                📋 Visual Preview
+              </TabsTrigger>
+              <TabsTrigger value="raw" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                💬 WhatsApp Text
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="p-4 bg-muted/30 rounded-xl border border-border/80 max-h-80 overflow-y-auto font-mono text-xs text-foreground whitespace-pre-wrap leading-relaxed select-all">
-              {dossierShareText}
-            </div>
+            <TabsContent value="visual" className="flex-1 overflow-y-auto space-y-4 pt-3 pr-1 scrollbar-none">
+              
+              {/* Company Info Box */}
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-extrabold text-white">{companyInfo.company_name}</h3>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                    Verified Dossier
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-300 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-rose-400 shrink-0" /> {companyInfo.company_address}
+                </p>
+                <div className="flex items-center gap-4 text-xs text-slate-400 flex-wrap pt-1 border-t border-slate-800/60">
+                  <span>📧 {companyInfo.company_email}</span>
+                  <span>📞 {companyInfo.company_phone}</span>
+                </div>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button 
-                variant="default"
-                className="flex-1 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={handleShareWhatsApp}
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share via WhatsApp
-              </Button>
+              {/* Tax & Registration Identifiers */}
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Tax & Registration Identifiers
+                </h4>
 
-              <Button 
-                variant="secondary"
-                className="flex-1 font-semibold"
-                onClick={handleCopyDossier}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Full Dossier Text
-              </Button>
-            </div>
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-mono">GSTIN</div>
+                      <div className="font-mono font-bold text-white mt-0.5">{companyInfo.company_gstin || 'N/A'}</div>
+                    </div>
+                    {companyInfo.company_gstin && (
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-slate-400 hover:text-white" onClick={() => { navigator.clipboard.writeText(companyInfo.company_gstin); toast.success('GSTIN Copied'); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-mono">PAN NUMBER</div>
+                      <div className="font-mono font-bold text-white mt-0.5">{companyInfo.pan_number || 'N/A'}</div>
+                    </div>
+                    {companyInfo.pan_number && (
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-slate-400 hover:text-white" onClick={() => { navigator.clipboard.writeText(companyInfo.pan_number); toast.success('PAN Copied'); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 font-mono">TAN NUMBER</div>
+                    <div className="font-mono font-bold text-slate-300 mt-0.5">{companyInfo.tan_number || 'N/A'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500 font-mono">MSME / UDYAM</div>
+                    <div className="font-mono font-bold text-slate-300 mt-0.5">{companyInfo.udyam_number || companyInfo.msme_number || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Account Details */}
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4" /> Bank Account Details (For Payments & Loans)
+                </h4>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500">BANK NAME</div>
+                    <div className="font-bold text-white mt-0.5">{companyInfo.bank_name || 'HDFC BANK'}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <div className="text-[10px] text-slate-500">ACCOUNT NAME</div>
+                    <div className="font-bold text-white mt-0.5 truncate">{companyInfo.account_name || companyInfo.company_name}</div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <div className="text-[10px] text-slate-500">ACCOUNT NUMBER</div>
+                      <div className="font-bold text-emerald-400 mt-0.5">{companyInfo.account_number || 'N/A'}</div>
+                    </div>
+                    {companyInfo.account_number && (
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-slate-400 hover:text-white" onClick={() => { navigator.clipboard.writeText(companyInfo.account_number); toast.success('Account Number Copied'); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <div className="text-[10px] text-slate-500">IFSC CODE</div>
+                      <div className="font-bold text-emerald-400 mt-0.5">{companyInfo.ifsc_code || 'N/A'}</div>
+                    </div>
+                    {companyInfo.ifsc_code && (
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-slate-400 hover:text-white" onClick={() => { navigator.clipboard.writeText(companyInfo.ifsc_code); toast.success('IFSC Code Copied'); }}>
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Attached Vault Documents */}
+              {documents.length > 0 && (
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" /> Attached Vault Documents ({documents.length})
+                  </h4>
+                  <div className="space-y-1.5 pt-1">
+                    {documents.slice(0, 5).map(d => (
+                      <div key={d.id} className="p-2 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                        <div className="truncate pr-2">
+                          <span className="font-bold text-white">{d.title}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">{d.category}</span>
+                        </div>
+                        {d.file_url && (
+                          <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs shrink-0 font-bold flex items-center gap-1">
+                            Download <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </TabsContent>
+
+            <TabsContent value="raw" className="flex-1 overflow-hidden pt-3 flex flex-col">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap overflow-y-auto flex-1 select-all">
+                {dossierShareText}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-800 shrink-0">
+            <Button 
+              className="w-full sm:flex-1 h-11 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20"
+              onClick={handleShareWhatsApp}
+            >
+              <Share2 className="w-4 h-4 mr-2" /> Share via WhatsApp
+            </Button>
+
+            <Button 
+              variant="outline"
+              className="w-full sm:flex-1 h-11 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs rounded-xl border-slate-700"
+              onClick={handleCopyDossier}
+            >
+              <Copy className="w-4 h-4 mr-2" /> Copy Full Dossier Text
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
