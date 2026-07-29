@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
-  ArrowUpRight, Info, Check, HelpCircle, FilePlus
+  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
