@@ -31,14 +31,14 @@ export const fetchCompanySettings = async () => {
     companySettingsCache = record;
     if (record && record.company_logo) {
       const logoUrl = pb.files.getUrl(record, record.company_logo);
-      cachedLogoBase64 = await loadImageBase64(logoUrl);
+      cachedLogoBase64 = await loadImageBase64(logoUrl).catch(() => null);
     } else {
       cachedLogoBase64 = null;
     }
 
     if (record && record.e_signature) {
       const sigUrl = pb.files.getUrl(record, record.e_signature);
-      cachedSignatureBase64 = await loadImageBase64(sigUrl);
+      cachedSignatureBase64 = await loadImageBase64(sigUrl).catch(() => null);
     } else {
       const localSig = localStorage.getItem('jbc_e_signature');
       cachedSignatureBase64 = localSig || null;
@@ -58,8 +58,6 @@ fetchCompanySettings().catch(() => {});
 
 /**
  * Creates a blob URL, triggers download, and cleans up resources.
- * @param {Blob} blob - The file blob to download
- * @param {string} filename - The name of the file to save as
  */
 export const downloadFile = (blob, filename) => {
   try {
@@ -78,11 +76,7 @@ export const downloadFile = (blob, filename) => {
 };
 
 /**
- * Generates a PDF document from data using jsPDF and jspdf-autotable.
- * @param {Array} data - Array of objects representing rows
- * @param {string} filename - The name of the file (without extension)
- * @param {Object} options - Configuration options (title, columns, companyInfo)
- * @returns {Blob} The generated PDF blob
+ * Generates a PDF document using jsPDF and jspdf-autotable with Company Settings integration.
  */
 export const generatePDF = (data, filename, options = {}) => {
   try {
@@ -97,467 +91,362 @@ export const generatePDF = (data, filename, options = {}) => {
       companyInfo = companySettingsCache?.company_name || 'Jai Bhavani Cargo'
     } = options;
 
-    if (type === 'invoice' && invoiceObj) {
+    const parseDateSafe = (dStr) => {
+      if (!dStr) return null;
+      const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
+      const dObj = new Date(normalized);
+      return isNaN(dObj.getTime()) ? null : dObj;
+    };
+
+    // ---------------------------------------------------------
+    // 1. INVOICE & PAYMENT REQUEST PDF GENERATOR
+    // ---------------------------------------------------------
+    if ((type === 'invoice' || type === 'payment_request') && invoiceObj) {
       const inv = invoiceObj;
-      const primaryColor = [26, 54, 93]; // Deep Navy Blue
-      const secondaryColor = [74, 85, 104]; // Slate Grey
-      const borderColor = [226, 232, 240]; // Light Grey
-      
-      // Top colored bar
-      doc.setFillColor(...primaryColor);
-      doc.rect(0, 0, doc.internal.pageSize.width, 6, 'F');
-      
-      // Header: Company Name & Type (Dynamic Settings)
+      const isPaymentReq = type === 'payment_request' || inv.invoice_number?.startsWith('REQ-') || inv.invoice_number?.startsWith('PR-');
+
+      const primaryNavy = [15, 23, 42];    // Deep Slate Navy (#0F172A)
+      const accentGold = [217, 119, 6];    // Amber Gold (#D97706)
+      const secondaryGray = [71, 85, 105];  // Slate 600 (#475569)
+      const lightBgColor = [248, 250, 252]; // Slate 50 (#F8FAFC)
+      const borderColor = [226, 232, 240];  // Slate 200 (#E2E8F0)
+
+      // Top Dual Colored Banners
+      doc.setFillColor(...primaryNavy);
+      doc.rect(0, 0, doc.internal.pageSize.width, 7, 'F');
+      doc.setFillColor(...accentGold);
+      doc.rect(0, 7, doc.internal.pageSize.width, 1.5, 'F');
+
+      // Dynamic Company Info from Company Settings
       const cName = companySettingsCache?.company_name || inv.company_name || 'JAI BHAVANI CARGO';
       const cAddress = companySettingsCache?.company_address || inv.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
-      const cPhone = companySettingsCache?.company_phone || inv.company_phone || '7794072244';
+      const cPhone = companySettingsCache?.company_phone || inv.company_phone || '+91 7794072244';
       const cEmail = companySettingsCache?.company_email || inv.company_email || 'vinod@jaibhavanicargo.com';
-      const cContact = [cPhone ? `Phone: ${cPhone}` : null, cEmail ? `Email: ${cEmail}` : null].filter(Boolean).join(' | ');
-      const cGstin = companySettingsCache?.company_gstin || '36AAACJ2230M1Z2';
+      const cWebsite = companySettingsCache?.company_website || 'www.jaibhavanicargo.com';
+      const cGstin = companySettingsCache?.company_gstin || '36DPXPR9171A1Z8';
 
+      // Draw Company Logo or Name Header
       if (cachedLogoBase64) {
-        doc.addImage(cachedLogoBase64, 'PNG', 14, 10, 24, 12);
-        
+        doc.addImage(cachedLogoBase64, 'PNG', 14, 12, 28, 14);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(...primaryColor);
-        doc.text(cName, 42, 18);
-        
+        doc.setFontSize(16);
+        doc.setTextColor(...primaryNavy);
+        doc.text(cName, 46, 19);
+
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.setTextColor(...secondaryColor);
-        doc.text(cAddress, 42, 23);
-        doc.text(cContact + (cGstin ? ` | GSTIN: ${cGstin}` : ''), 42, 27);
+        doc.setFontSize(8);
+        doc.setTextColor(...secondaryGray);
+        doc.text(cAddress, 46, 24, { maxWidth: 85 });
+        doc.text(`Phone: ${cPhone} | Email: ${cEmail} | GSTIN: ${cGstin}`, 46, 31);
       } else {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        doc.setTextColor(...primaryColor);
-        doc.text(cName, 14, 20);
-        
+        doc.setFontSize(20);
+        doc.setTextColor(...primaryNavy);
+        doc.text(cName, 14, 21);
+
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(...secondaryColor);
-        doc.text(cAddress, 14, 26);
-        doc.text(cContact + (cGstin ? ` | GSTIN: ${cGstin}` : ''), 14, 31);
+        doc.setFontSize(8.5);
+        doc.setTextColor(...secondaryGray);
+        doc.text(cAddress, 14, 26, { maxWidth: 110 });
+        doc.text(`Phone: ${cPhone} | Email: ${cEmail} | GSTIN: ${cGstin}`, 14, 31);
       }
-      
-      // Document type label on the right
+
+      // Document Type Header Label (Top Right)
+      const docLabel = isPaymentReq ? 'PAYMENT REQUEST & DEMAND NOTE' : 'TAX INVOICE';
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(24);
-      doc.setTextColor(...primaryColor);
-      doc.text('INVOICE', doc.internal.pageSize.width - 14, 22, { align: 'right' });
-      
+      doc.setFontSize(14);
+      doc.setTextColor(...primaryNavy);
+      doc.text(docLabel, doc.internal.pageSize.width - 14, 20, { align: 'right' });
+
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Invoice No: ${inv.invoice_number}`, doc.internal.pageSize.width - 14, 29, { align: 'right' });
-      
-      const parseDateSafe = (dStr) => {
-        if (!dStr) return null;
-        const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
-        const dObj = new Date(normalized);
-        return isNaN(dObj.getTime()) ? null : dObj;
-      };
-      
-      const invDateObj = parseDateSafe(inv.invoice_date);
+      doc.setFontSize(9);
+      doc.setTextColor(...secondaryGray);
+      doc.text(`${isPaymentReq ? 'Req No' : 'Invoice No'}: ${inv.invoice_number || inv.request_number || 'INV-001'}`, doc.internal.pageSize.width - 14, 26, { align: 'right' });
+
+      const invDateObj = parseDateSafe(inv.invoice_date || inv.request_date);
       const dueDateObj = parseDateSafe(inv.due_date);
-      const invDate = invDateObj ? invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-      const dueDate = dueDateObj ? dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
-      doc.text(`Date: ${invDate}`, doc.internal.pageSize.width - 14, 35, { align: 'right' });
-      doc.text(`Due Date: ${dueDate}`, doc.internal.pageSize.width - 14, 41, { align: 'right' });
+      const invDate = invDateObj ? invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN');
+      const dueDate = dueDateObj ? dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'On Receipt';
       
-      // Divider line
+      doc.text(`Date: ${invDate}`, doc.internal.pageSize.width - 14, 31, { align: 'right' });
+      doc.text(`Due Date: ${dueDate}`, doc.internal.pageSize.width - 14, 36, { align: 'right' });
+
+      // Horizontal Divider
       doc.setDrawColor(...borderColor);
-      doc.line(14, 47, doc.internal.pageSize.width - 14, 47);
-      
-      // Bill To & Payment Info columns
+      doc.line(14, 41, doc.internal.pageSize.width - 14, 41);
+
+      // Bill To Box (Customer Info)
+      doc.setFillColor(...lightBgColor);
+      doc.roundedRect(14, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'F');
+      doc.setDrawColor(...borderColor);
+      doc.roundedRect(14, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'D');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...accentGold);
+      doc.text('BILLED TO / CUSTOMER DETAILS:', 18, 51);
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
-      doc.setTextColor(...primaryColor);
-      doc.text('BILL TO:', 14, 55);
-      doc.text('INVOICE SUMMARY:', doc.internal.pageSize.width / 2 + 10, 55);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
-      doc.text(inv.customer_name, 14, 61);
-      
+      doc.text(inv.customer_name || 'Valued Client', 18, 57);
+
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...secondaryColor);
-      const custAddress = inv.customer_address || 'Customer Address Details';
-      const custEmail = inv.customer_email ? `Email: ${inv.customer_email}` : '';
+      doc.setFontSize(8);
+      doc.setTextColor(...secondaryGray);
+      const custAddr = inv.customer_address || 'Registered Business Location';
       const custPhone = inv.customer_phone ? `Phone: ${inv.customer_phone}` : '';
-      doc.text(custAddress, 14, 67, { maxWidth: doc.internal.pageSize.width / 2 - 20 });
-      doc.text(`${custEmail} ${custEmail && custPhone ? '| ' : ''}${custPhone}`, 14, 73);
-      
-      // Right side metadata values
-      doc.setFontSize(9);
-      doc.setTextColor(0, 0, 0);
-      const statusText = (inv.status || 'Draft').toUpperCase();
-      let statusColor = [243, 156, 18]; // Orange
-      if (statusText === 'PAID') statusColor = [39, 174, 96]; // Green
-      else if (statusText === 'OVERDUE') statusColor = [192, 57, 43]; // Red
-      
+      const custEmail = inv.customer_email ? `Email: ${inv.customer_email}` : '';
+      doc.text(custAddr, 18, 62, { maxWidth: doc.internal.pageSize.width / 2 - 26 });
+      doc.text(`${custPhone} ${custPhone && custEmail ? '| ' : ''}${custEmail}`, 18, 70);
+
+      // Payment Summary Box (Right Side)
+      doc.setFillColor(...lightBgColor);
+      doc.roundedRect(doc.internal.pageSize.width / 2 + 4, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'F');
+      doc.setDrawColor(...borderColor);
+      doc.roundedRect(doc.internal.pageSize.width / 2 + 4, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'D');
+
       doc.setFont('helvetica', 'bold');
-      doc.text('Status: ', doc.internal.pageSize.width / 2 + 10, 61);
+      doc.setFontSize(8.5);
+      doc.setTextColor(...accentGold);
+      doc.text('PAYMENT & STATUS SUMMARY:', doc.internal.pageSize.width / 2 + 8, 51);
+
+      const statusText = (inv.status || 'Pending').toUpperCase();
+      let statusColor = [217, 119, 6]; // Amber
+      if (statusText === 'PAID') statusColor = [16, 185, 129]; // Emerald
+      else if (statusText === 'OVERDUE') statusColor = [225, 29, 72]; // Rose Red
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...secondaryGray);
+      doc.text('Payment Status: ', doc.internal.pageSize.width / 2 + 8, 57);
       doc.setTextColor(...statusColor);
-      doc.text(statusText, doc.internal.pageSize.width / 2 + 35, 61);
-      
+      doc.text(statusText, doc.internal.pageSize.width / 2 + 36, 57);
+
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...secondaryColor);
-      doc.text('Payment Terms: Net 30 Days', doc.internal.pageSize.width / 2 + 10, 67);
-      doc.text('Currency: INR (Rs.)', doc.internal.pageSize.width / 2 + 10, 73);
-      
-      // Table data formatting
+      doc.setTextColor(...secondaryGray);
+      doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 63);
+      doc.text('Currency: Indian Rupee (INR ₹)', doc.internal.pageSize.width / 2 + 8, 69);
+
+      // Line Items Table
       const tableData = data.map(row => columns.map(col => {
         const val = row[col.key];
         return val !== undefined && val !== null ? String(val) : '';
       }));
-      
+
       autoTable(doc, {
-        startY: 82,
+        startY: 80,
         head: [columns.map(c => c.header)],
         body: tableData,
         theme: 'striped',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 10 },
-        styles: { fontSize: 9, cellPadding: 4, font: 'helvetica' },
+        headStyles: { fillColor: primaryNavy, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+        styles: { fontSize: 8.5, cellPadding: 4, font: 'helvetica' },
         alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          1: { halign: 'right' },
-          2: { halign: 'right' },
-          3: { halign: 'right' }
+          [columns.length - 1]: { halign: 'right', fontStyle: 'bold' }
         }
       });
-      
-      let finalY = doc.lastAutoTable.finalY + 10;
-      
-      // Prevent overflow onto new page for summary details
-      if (finalY > doc.internal.pageSize.height - 75) {
+
+      let finalY = doc.lastAutoTable.finalY + 8;
+
+      if (finalY > doc.internal.pageSize.height - 85) {
         doc.addPage();
         finalY = 20;
       }
-      
-      // Draw subtotal and total on the right
+
+      // Subtotal and Total Cards (Right Side)
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...secondaryColor);
-      doc.text('Subtotal:', doc.internal.pageSize.width - 60, finalY, { align: 'right' });
+      doc.setFontSize(9);
+      doc.setTextColor(...secondaryGray);
+      doc.text('Subtotal Amount:', doc.internal.pageSize.width - 65, finalY, { align: 'right' });
       doc.setTextColor(0, 0, 0);
       doc.text(`₹${Number(inv.subtotal || inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
-      
+
       if (inv.tax_amount && inv.tax_amount > 0) {
-        finalY += 6;
+        finalY += 5;
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...secondaryColor);
-        doc.text(`GST / Taxes (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 60, finalY, { align: 'right' });
+        doc.setTextColor(...secondaryGray);
+        doc.text(`GST / Tax (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 65, finalY, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         doc.text(`₹${Number(inv.tax_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       }
-      
-      finalY += 8;
-      doc.setFillColor(...borderColor);
-      doc.rect(doc.internal.pageSize.width - 70, finalY - 5, 56, 9, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(...primaryColor);
-      doc.text('TOTAL DUE:', doc.internal.pageSize.width - 60, finalY, { align: 'right' });
-      doc.text(`₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
-      
-      // Draw Bank Details on the left
-      let bankY = finalY - (inv.tax_amount && inv.tax_amount > 0 ? 14 : 8);
+
+      finalY += 7;
+      doc.setFillColor(...primaryNavy);
+      doc.roundedRect(doc.internal.pageSize.width - 72, finalY - 5, 58, 9, 1.5, 1.5, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
-      doc.setTextColor(...primaryColor);
-      doc.text('PAYMENT & BANK DETAILS:', 14, bankY);
-      
-      const bName = companySettingsCache?.bank_name || 'HDFC Bank';
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL AMOUNT DUE:', doc.internal.pageSize.width - 64, finalY, { align: 'left' });
+      doc.text(`₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 16, finalY, { align: 'right' });
+
+      // Remittance Bank Details (From Company Settings) - Bottom Left
+      let bankY = finalY - (inv.tax_amount && inv.tax_amount > 0 ? 12 : 5);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...primaryNavy);
+      doc.text('REMITTANCE BANK DETAILS (COMPANY SETTINGS):', 14, bankY);
+
+      const bName = companySettingsCache?.bank_name || 'HDFC BANK';
       const bAccName = (companySettingsCache?.account_name || companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase();
-      const bAccNo = companySettingsCache?.account_number || '50200087654321';
-      const bIfsc = companySettingsCache?.ifsc_code || 'HDFC0000123';
-      const bBranch = companySettingsCache?.branch_name || 'Ghatkesar Branch';
+      const bAccNo = companySettingsCache?.account_number || '50200117182677';
+      const bIfsc = companySettingsCache?.ifsc_code || 'HDFC0004480';
+      const bBranch = companySettingsCache?.branch_name || 'GHATKESAR BRANCH';
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(...secondaryColor);
+      doc.setTextColor(...secondaryGray);
       doc.text(`Bank Name: ${bName}`, 14, bankY + 5);
       doc.text(`Account Name: ${bAccName}`, 14, bankY + 9);
       doc.text(`Account No: ${bAccNo}`, 14, bankY + 13);
       doc.text(`IFSC Code: ${bIfsc}`, 14, bankY + 17);
       doc.text(`Branch / UPI: ${bBranch}`, 14, bankY + 21);
-      
-      // Terms / Signature line
+
+      // Terms & Signature Footer
       let footerY = bankY + 30;
-      if (footerY > doc.internal.pageSize.height - 30) {
+      if (footerY > doc.internal.pageSize.height - 35) {
         doc.addPage();
-        footerY = 30;
+        footerY = 25;
       }
-      
+
       doc.setDrawColor(...borderColor);
       doc.line(14, footerY, doc.internal.pageSize.width - 14, footerY);
-      
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...primaryColor);
+      doc.setFontSize(8.5);
+      doc.setTextColor(...primaryNavy);
       doc.text('Terms & Conditions:', 14, footerY + 5);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
-      doc.setTextColor(...secondaryColor);
-      doc.text('1. Payment is due within the stipulated due date.\n2. Interest @ 18% p.a. will be charged for delayed payment.\n3. All disputes are subject to Hyderabad jurisdiction.', 14, footerY + 10);
-      
-      // Signature
+      doc.setTextColor(...secondaryGray);
+      doc.text('1. Payment is due as per agreed credit terms.\n2. Interest @ 18% p.a. will apply to overdue balances.\n3. All disputes subject to Hyderabad jurisdiction.', 14, footerY + 9);
+
+      // Authorized Signatory (From Company Settings)
+      const sigName = companySettingsCache?.signatory_name || localStorage.getItem('jbc_signatory_name') || 'Vinod Rathod';
+      const sigTitle = companySettingsCache?.signatory_title || localStorage.getItem('jbc_signatory_title') || 'Authorized Signatory';
+
+      if (cachedSignatureBase64) {
+        try {
+          doc.addImage(cachedSignatureBase64, 'PNG', doc.internal.pageSize.width - 55, footerY + 2, 35, 12);
+        } catch (e) {}
+      }
+
+      doc.line(doc.internal.pageSize.width - 65, footerY + 16, doc.internal.pageSize.width - 14, footerY + 16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`For ${cName}`, doc.internal.pageSize.width - 14, footerY + 20, { align: 'right' });
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...secondaryColor);
-      doc.text('Authorized Signature', doc.internal.pageSize.width - 14, footerY + 22, { align: 'right' });
-      doc.line(doc.internal.pageSize.width - 60, footerY + 17, doc.internal.pageSize.width - 14, footerY + 17);
+      doc.setFontSize(7.5);
+      doc.setTextColor(...secondaryGray);
+      doc.text(`${sigName} (${sigTitle})`, doc.internal.pageSize.width - 14, footerY + 24, { align: 'right' });
     }
+
+    // ---------------------------------------------------------
+    // 2. FREIGHT QUOTE PDF GENERATOR
+    // ---------------------------------------------------------
     else if (type === 'quote' && quoteObj) {
       const q = quoteObj;
-      const primaryColor = [26, 54, 93]; // Deep Navy Blue
-      const secondaryColor = [74, 85, 104]; // Slate Grey
-      const borderColor = [226, 232, 240]; // Light Grey
-      
-      // Top colored bar
-      doc.setFillColor(...primaryColor);
-      doc.rect(0, 0, doc.internal.pageSize.width, 6, 'F');
-      
-      // Header: Company Name & Type (Dynamic Settings)
-      const cNameQuote = companySettingsCache?.company_name || 'JAI BHAVANI CARGO';
-      const cAddressQuote = companySettingsCache?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad';
-      const cPhoneQuote = companySettingsCache?.company_phone || '+91 98765 43210';
-      const cEmailQuote = companySettingsCache?.company_email || 'quotes@jbcargo.com';
-      const cContactQuote = `Phone: ${cPhoneQuote} | Email: ${cEmailQuote}`;
-      const cGstinQuote = companySettingsCache?.company_gstin;
+      const primaryNavy = [15, 23, 42];
+      const accentGold = [217, 119, 6];
+      const secondaryGray = [71, 85, 105];
+      const borderColor = [226, 232, 240];
 
-      if (cachedLogoBase64) {
-        doc.addImage(cachedLogoBase64, 'PNG', 14, 10, 24, 12);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(...primaryColor);
-        doc.text(cNameQuote, 42, 18);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.setTextColor(...secondaryColor);
-        doc.text(cAddressQuote, 42, 23);
-        doc.text(cContactQuote + (cGstinQuote ? ` | GSTIN: ${cGstinQuote}` : ''), 42, 27);
-      } else {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
-        doc.setTextColor(...primaryColor);
-        doc.text(cNameQuote, 14, 20);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(...secondaryColor);
-        doc.text(cAddressQuote, 14, 26);
-        doc.text(cContactQuote + (cGstinQuote ? ` | GSTIN: ${cGstinQuote}` : ''), 14, 31);
-      }
-      
-      // Document label
+      doc.setFillColor(...primaryNavy);
+      doc.rect(0, 0, doc.internal.pageSize.width, 7, 'F');
+      doc.setFillColor(...accentGold);
+      doc.rect(0, 7, doc.internal.pageSize.width, 1.5, 'F');
+
+      const cNameQuote = companySettingsCache?.company_name || 'JAI BHAVANI CARGO';
+      const cAddressQuote = companySettingsCache?.company_address || 'Plot No 3, Patel Nagar, Ghatkesar';
+      const cPhoneQuote = companySettingsCache?.company_phone || '+91 7794072244';
+      const cEmailQuote = companySettingsCache?.company_email || 'vinod@jaibhavanicargo.com';
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(24);
-      doc.setTextColor(...primaryColor);
-      doc.text('FREIGHT QUOTE', doc.internal.pageSize.width - 14, 22, { align: 'right' });
-      
+      doc.setFontSize(18);
+      doc.setTextColor(...primaryNavy);
+      doc.text(cNameQuote, 14, 20);
+
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Quote No: ${q.quote_number}`, doc.internal.pageSize.width - 14, 29, { align: 'right' });
-      
-      const qDate = q.created ? new Date(q.created).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString();
-      doc.text(`Date: ${qDate}`, doc.internal.pageSize.width - 14, 35, { align: 'right' });
-      doc.text(`Valid Until: ${new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`, doc.internal.pageSize.width - 14, 41, { align: 'right' });
-      
-      // Divider
-      doc.setDrawColor(...borderColor);
-      doc.line(14, 47, doc.internal.pageSize.width - 14, 47);
-      
-      // Customer Details & Cargo specifications Columns
+      doc.setFontSize(8.5);
+      doc.setTextColor(...secondaryGray);
+      doc.text(cAddressQuote, 14, 25);
+      doc.text(`Phone: ${cPhoneQuote} | Email: ${cEmailQuote}`, 14, 29);
+
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...primaryColor);
-      doc.text('PREPARED FOR:', 14, 55);
-      doc.text('CARGO SPECIFICATIONS:', doc.internal.pageSize.width / 2 + 10, 55);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.text(q.customer_name, 14, 61);
-      
+      doc.setFontSize(16);
+      doc.setTextColor(...primaryNavy);
+      doc.text('FREIGHT QUOTATION', doc.internal.pageSize.width - 14, 20, { align: 'right' });
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Email: ${q.customer_email}`, 14, 67);
-      doc.text(`Phone: ${q.customer_phone || '-'}`, 14, 72);
-      
-      // Cargo specs details
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Origin: ${q.origin}`, doc.internal.pageSize.width / 2 + 10, 61);
-      doc.text(`Destination: ${q.destination}`, doc.internal.pageSize.width / 2 + 10, 66);
-      doc.text(`Container Type: ${q.container_type}`, doc.internal.pageSize.width / 2 + 10, 71);
-      doc.text(`Chargeable Weight: ${q.chargeable_weight} kg (Actual: ${q.actual_weight} kg)`, doc.internal.pageSize.width / 2 + 10, 76);
-      
-      // Table data formatting (Key-Value table)
-      const tableData = data.map(row => columns.map(col => {
-        const val = row[col.key];
-        return val !== undefined && val !== null ? String(val) : '';
-      }));
-      
+      doc.setTextColor(...secondaryGray);
+      doc.text(`Quote No: ${q.quote_number}`, doc.internal.pageSize.width - 14, 26, { align: 'right' });
+
+      // Table Data
+      const tableData = data.map(row => columns.map(col => String(row[col.key] || '')));
       autoTable(doc, {
-        startY: 82,
+        startY: 50,
         head: [columns.map(c => c.header)],
         body: tableData,
         theme: 'striped',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 10 },
-        styles: { fontSize: 9.5, cellPadding: 4.5, font: 'helvetica' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        columnStyles: {
-          1: { halign: 'right', fontStyle: 'bold' }
-        }
+        headStyles: { fillColor: primaryNavy, textColor: 255, fontStyle: 'bold', fontSize: 9 }
       });
-      
-      let finalY = doc.lastAutoTable.finalY + 12;
-      if (finalY > doc.internal.pageSize.height - 50) {
-        doc.addPage();
-        finalY = 25;
-      }
-      
-      // Highlight final Total Price
-      doc.setFillColor(...borderColor);
-      doc.rect(doc.internal.pageSize.width - 80, finalY - 6, 66, 11, 'F');
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11.5);
-      doc.setTextColor(...primaryColor);
-      doc.text('Estimated Total:', doc.internal.pageSize.width - 74, finalY + 1);
-      doc.text(`₹${Number(q.total_price || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
-      
-      // Draw Bank Details on the left side of quote
-      let quoteBankY = finalY - 5;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...primaryColor);
-      doc.text('REMITTANCE BANK DETAILS:', 14, quoteBankY);
-
-      const qBankName = companySettingsCache?.bank_name || 'HDFC Bank';
-      const qAccNo = companySettingsCache?.account_number || '50200087654321';
-      const qIfsc = companySettingsCache?.ifsc_code || 'HDFC0000123';
-      const qBranch = companySettingsCache?.branch_name || 'Ghatkesar Branch';
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Bank: ${qBankName} | Acc No: ${qAccNo}`, 14, quoteBankY + 4);
-      doc.text(`IFSC: ${qIfsc} | Branch/UPI: ${qBranch}`, 14, quoteBankY + 8);
-      
-      // Terms / Notes
-      let footerY = finalY + 18;
-      if (footerY > doc.internal.pageSize.height - 40) {
-        doc.addPage();
-        footerY = 30;
-      }
-      
-      doc.setDrawColor(...borderColor);
-      doc.line(14, footerY, doc.internal.pageSize.width - 14, footerY);
-      
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9.5);
-      doc.setTextColor(...primaryColor);
-      doc.text('Terms & Notes:', 14, footerY + 6);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(...secondaryColor);
-      const quoteNotes = q.notes || '1. Rates are subject to market conditions and space availability.\n2. Demurrage and detention charges are extra as applicable.\n3. Valid for 15 days from the date of issue.';
-      doc.text(quoteNotes, 14, footerY + 11, { maxWidth: doc.internal.pageSize.width - 28 });
-      
-      // Signature
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...secondaryColor);
-      doc.text(`Prepared By: ${companySettingsCache?.company_name || 'JAI BHAVANI CARGO'}`, doc.internal.pageSize.width - 14, footerY + 38, { align: 'right' });
-      doc.line(doc.internal.pageSize.width - 70, footerY + 32, doc.internal.pageSize.width - 14, footerY + 32);
     }
+
+    // ---------------------------------------------------------
+    // 3. GENERIC / REPORT PDF GENERATOR
+    // ---------------------------------------------------------
     else {
-      // Header
-      doc.setFontSize(18);
-      doc.setTextColor(41, 128, 185);
+      doc.setFontSize(16);
+      doc.setTextColor(15, 23, 42);
       doc.text(companyInfo, 14, 15);
       
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text(title, 14, 25);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 32);
+      doc.setFontSize(12);
+      doc.setTextColor(71, 85, 105);
+      doc.text(title, 14, 23);
 
-      // Table Data
-      const tableData = data.map(row => columns.map(col => {
-        const val = row[col.key];
-        return val !== undefined && val !== null ? String(val) : '';
-      }));
-
+      const tableData = data.map(row => columns.map(col => String(row[col.key] || '')));
       if (totals) {
         tableData.push(columns.map(col => totals[col.key] ? String(totals[col.key]) : ''));
       }
 
       autoTable(doc, {
-        startY: 40,
+        startY: 30,
         head: [columns.map(c => c.header)],
         body: tableData,
         theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        styles: { fontSize: 9, cellPadding: 3 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-        didParseCell: function(data) {
-          // Bold the totals row
-          if (totals && data.row.index === tableData.length - 1) {
-            data.cell.styles.fontStyle = 'bold';
-            data.cell.styles.fillColor = [230, 235, 245];
-          }
-        }
+        headStyles: { fillColor: [15, 23, 42], textColor: 255 }
       });
     }
 
-    // Footer
+    // Page Number Footer
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
       doc.text(
-        `Page ${i} of ${pageCount} - Generated by Jai Bhavani Cargo System`,
+        `Page ${i} of ${pageCount} — Jai Bhavani Cargo Enterprise System (Official Document)`,
         doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
+        doc.internal.pageSize.height - 8,
         { align: 'center' }
       );
     }
 
     return doc.output('blob');
   } catch (error) {
-    console.log('PDF generation failed:', error);
+    console.error('PDF generation failed:', error);
     throw error;
   }
 };
 
 /**
  * Generates an Excel workbook from data using xlsx.
- * @param {Array} data - Array of objects representing rows
- * @param {string} filename - The name of the file (without extension)
- * @param {string} sheetName - The name of the worksheet
- * @returns {Blob} The generated Excel blob
  */
 export const generateExcel = (data, filename, sheetName = 'Sheet1') => {
   try {
     const worksheet = XLSX.utils.json_to_sheet(data);
-    
-    // Auto-size columns roughly based on header length
     if (data.length > 0) {
       const cols = Object.keys(data[0]).map(key => ({ wch: Math.max(key.length + 5, 15) }));
       worksheet['!cols'] = cols;
