@@ -3,13 +3,15 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Activity, Key, RefreshCw, Info, ExternalLink, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Activity, Key, RefreshCw, Info, ExternalLink, ShieldCheck, CheckCircle2, Edit3, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import pb from '@/lib/pocketbaseClient.js';
 
 export default function RenderNetworkMetrics() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('RENDER_API_KEY') || '');
   const [serviceId, setServiceId] = useState(() => localStorage.getItem('RENDER_SERVICE_ID') || 'srv-d91t98m7r5hc738tjdag');
   const [showConfig, setShowConfig] = useState(false);
+  const [isEditingUsage, setIsEditingUsage] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Live calculated network bandwidth state
@@ -17,6 +19,8 @@ export default function RenderNetworkMetrics() {
   const [monthlyUsageGb, setMonthlyUsageGb] = useState(() => {
     return parseFloat(localStorage.getItem('RENDER_MONTHLY_USAGE_GB') || '11.58');
   });
+
+  const [tempUsageInput, setTempUsageInput] = useState(monthlyUsageGb.toString());
 
   const [bandwidthData, setBandwidthData] = useState([
     { time: '7/24', outboundMb: 48 },
@@ -27,6 +31,22 @@ export default function RenderNetworkMetrics() {
     { time: '7/29', outboundMb: 12, label: '12 MB' },
     { time: '7/30', outboundMb: 60, label: '60 MB' }
   ]);
+
+  // Load persistent monthly usage from PocketBase if available
+  useEffect(() => {
+    pb.collection('app_settings').getList(1, 1, { filter: 'key = "render_monthly_usage_gb"', $autoCancel: false })
+      .then(res => {
+        if (res.items?.length > 0 && res.items[0].value) {
+          const val = parseFloat(res.items[0].value);
+          if (!isNaN(val)) {
+            setMonthlyUsageGb(val);
+            setTempUsageInput(val.toString());
+            localStorage.setItem('RENDER_MONTHLY_USAGE_GB', val.toString());
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Measure actual browser network performance entries
   const calculateRealtimeNetworkData = () => {
@@ -51,7 +71,6 @@ export default function RenderNetworkMetrics() {
     const totalTransferred = totalInbound + totalOutbound;
     setRealtimeBytes(totalTransferred);
 
-    // Dynamically update the latest graph data bar with real measured session MB
     const measuredMb = Math.max(1, Math.round(totalTransferred / (1024 * 1024)));
     setBandwidthData(prev => {
       const copy = [...prev];
@@ -72,21 +91,45 @@ export default function RenderNetworkMetrics() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleSaveUsage = async (newVal) => {
+    const val = parseFloat(newVal);
+    if (isNaN(val) || val < 0) {
+      toast.error('Please enter a valid monthly usage number in GB');
+      return;
+    }
+
+    setMonthlyUsageGb(val);
+    localStorage.setItem('RENDER_MONTHLY_USAGE_GB', val.toString());
+    setIsEditingUsage(false);
+    toast.success(`Updated Render Monthly Usage to ${val.toFixed(2)} GB!`);
+
+    // Persist to PocketBase settings if collection exists
+    try {
+      const existing = await pb.collection('app_settings').getList(1, 1, { filter: 'key = "render_monthly_usage_gb"', $autoCancel: false });
+      if (existing.items?.length > 0) {
+        await pb.collection('app_settings').update(existing.items[0].id, { value: val.toString() });
+      } else {
+        await pb.collection('app_settings').create({ key: 'render_monthly_usage_gb', value: val.toString() });
+      }
+    } catch (err) {
+      // Ignore if collection not present
+    }
+  };
+
   const syncRenderMetrics = () => {
     setLoading(true);
     calculateRealtimeNetworkData();
     setTimeout(() => {
       setLoading(false);
       const measuredMb = (realtimeBytes / (1024 * 1024)).toFixed(2);
-      toast.success(`Network Telemetry Refreshed! Measured Session Traffic: ${measuredMb} MB`);
+      toast.success(`Telemetry Refreshed! Live Session Traffic: ${measuredMb} MB`);
     }, 400);
   };
 
   const handleSaveConfig = () => {
     localStorage.setItem('RENDER_API_KEY', apiKey.trim());
     localStorage.setItem('RENDER_SERVICE_ID', serviceId.trim());
-    localStorage.setItem('RENDER_MONTHLY_USAGE_GB', monthlyUsageGb.toString());
-    toast.success('Render Network Usage & API Settings Saved!');
+    handleSaveUsage(tempUsageInput);
     setShowConfig(false);
   };
 
@@ -110,9 +153,35 @@ export default function RenderNetworkMetrics() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-black text-purple-400">
-            Usage this month: <strong className="text-white">{monthlyUsageGb.toFixed(2)} GB</strong> / 100 GB
-          </span>
+          {/* Monthly Usage Display & Inline Editor */}
+          {isEditingUsage ? (
+            <div className="flex items-center gap-1 bg-slate-900 border border-purple-500/50 rounded-lg p-1">
+              <Input
+                type="number"
+                step="0.01"
+                value={tempUsageInput}
+                onChange={(e) => setTempUsageInput(e.target.value)}
+                className="w-20 h-6 text-xs bg-slate-950 border-slate-800 text-purple-400 font-mono font-bold px-1.5 rounded"
+              />
+              <span className="text-[10px] text-slate-400 font-mono font-bold">GB</span>
+              <Button size="sm" onClick={() => handleSaveUsage(tempUsageInput)} className="h-6 px-1.5 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded">
+                <Save className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-mono font-black text-purple-400">
+                Usage this month: <strong className="text-white text-sm">{monthlyUsageGb.toFixed(2)} GB</strong> / 100 GB
+              </span>
+              <button
+                onClick={() => { setIsEditingUsage(true); setTempUsageInput(monthlyUsageGb.toString()); }}
+                className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+                title="Edit Monthly Usage (GB)"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           <Button
             size="sm"
@@ -172,12 +241,12 @@ export default function RenderNetworkMetrics() {
               />
             </div>
             <div>
-              <label className="text-[9px] font-bold text-slate-400 uppercase">Usage Month (GB)</label>
+              <label className="text-[9px] font-bold text-slate-400 uppercase">Monthly Usage (GB)</label>
               <Input
                 type="number"
                 step="0.01"
-                value={monthlyUsageGb}
-                onChange={(e) => setMonthlyUsageGb(parseFloat(e.target.value) || 0)}
+                value={tempUsageInput}
+                onChange={(e) => setTempUsageInput(e.target.value)}
                 className="bg-slate-950 border-slate-800 text-[11px] h-7 mt-0.5 rounded-lg text-purple-400 font-mono font-bold"
               />
             </div>
