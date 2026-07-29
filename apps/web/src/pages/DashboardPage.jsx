@@ -460,10 +460,7 @@ const DashboardPage = () => {
             />
           </motion.div>
 
-          {/* Render Network Metrics & Billing Bandwidth Graph */}
-          <motion.div variants={item}>
-            <RenderNetworkMetrics />
-          </motion.div>
+
 
           {/* Active Operations Pipeline Status */}
           <motion.div variants={item}>
@@ -791,6 +788,10 @@ const DashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+          {/* Compact Render Network Metrics & Bandwidth Telemetry */}
+          <motion.div variants={item} className="pt-2">
+            <RenderNetworkMetrics />
           </motion.div>
         </>
       ) : (
