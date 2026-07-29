@@ -10,6 +10,7 @@ import {
   Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard, UserPlus, Users
 } from 'lucide-react';
 import QuoteCalculator from '@/components/QuoteCalculator.jsx';
+import GoogleFreightRouteEstimator from '@/components/GoogleFreightRouteEstimator.jsx';
 import FAQAccordion from '@/components/FAQAccordion.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 
@@ -237,6 +238,11 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Live Google Maps Freight Estimator Section */}
+        <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative">
+          <GoogleFreightRouteEstimator />
         </section>
 
         {/* Client Logo Marquee Ticker */}
