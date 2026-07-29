@@ -89,6 +89,12 @@ import BusinessMailPage from './pages/BusinessMailPage.jsx';
 import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
 
+// Google Maps Logistics Platform Pages
+import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
+import AdminFleetMapPage from './pages/AdminFleetMapPage.jsx';
+import DriverDashboardPage from './pages/DriverDashboardPage.jsx';
+import AdminMapsSettingsPage from './pages/AdminMapsSettingsPage.jsx';
+
 // Inventory Management
 import InventoryDashboard from './pages/InventoryDashboard.jsx';
 import DeductionHistoryPage from './pages/DeductionHistoryPage.jsx';
@@ -198,12 +204,17 @@ function App() {
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   <Route path="/shared/:id" element={<SharedFolderPage />} />
                   <Route path="/apply/driver" element={<DriverApplicationPage />} />
+                  <Route path="/tracking" element={<PublicShipmentTrackingPage />} />
+                  <Route path="/track-shipment" element={<PublicShipmentTrackingPage />} />
                   
-                  {/* Dashboard Base */}
+                  {/* Dashboard Base & Google Maps Features */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                   <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                   <Route path="/launchpad" element={<ProtectedRoute><LaunchpadPage /></ProtectedRoute>} />
                   <Route path="/driver/inspection" element={<ProtectedRoute><RoadsideInspectionPage /></ProtectedRoute>} />
+                  <Route path="/driver/dashboard" element={<ProtectedRoute><DriverDashboardPage /></ProtectedRoute>} />
+                  <Route path="/admin/fleet-map" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><AdminFleetMapPage /></ProtectedRoute>} />
+                  <Route path="/admin/maps-settings" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminMapsSettingsPage /></ProtectedRoute>} />
                   
                   {/* Analytics */}
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><AnalyticsHub /></ProtectedRoute>} />
