@@ -44,11 +44,13 @@ export default function ClientPortalPage() {
   const [selectedLane, setSelectedLane] = useState(null);
   const [clientBidAmount, setClientBidAmount] = useState('');
   const [clientCargoWeight, setClientCargoWeight] = useState('18');
+  const [clientContractTenure, setClientContractTenure] = useState('Monthly (1 Month)');
   const [activeLanes] = useState([
-    { id: 'LANE-101', route: 'Hyderabad → Mumbai', origin: 'Hyderabad, TS', destination: 'Mumbai, MH', benchmark_rate: 48000, ai_rate: 49500, distance_km: 710, required_truck: '32 FT Container SXL' },
-    { id: 'LANE-102', route: 'Bengaluru → Delhi NCR', origin: 'Bengaluru, KA', destination: 'Delhi NCR', benchmark_rate: 85000, ai_rate: 87200, distance_km: 1740, required_truck: '40 FT High Cube Trailer' },
-    { id: 'LANE-103', route: 'Chennai → Kolkata', origin: 'Chennai, TN', destination: 'Kolkata, WB', benchmark_rate: 62000, ai_rate: 61500, distance_km: 1660, required_truck: '24 FT Open Body' },
-    { id: 'LANE-104', route: 'Ahmedabad → Hyderabad', origin: 'Ahmedabad, GJ', destination: 'Hyderabad, TS', benchmark_rate: 54000, ai_rate: 55800, distance_km: 1210, required_truck: '32 FT Multi-Axle' }
+    { id: 'LANE-101', route: 'Hyderabad → Mumbai', origin: 'Hyderabad, TS', destination: 'Mumbai, MH', benchmark_rate: 48000, ai_rate: 49500, distance_km: 710, required_truck: '32 FT Container SXL', contract_duration: 'Weekly (7 Days)' },
+    { id: 'LANE-102', route: 'Bengaluru → Delhi NCR', origin: 'Bengaluru, KA', destination: 'Delhi NCR', benchmark_rate: 85000, ai_rate: 87200, distance_km: 1740, required_truck: '40 FT High Cube Trailer', contract_duration: 'Monthly (1 Month)' },
+    { id: 'LANE-103', route: 'Chennai → Kolkata', origin: 'Chennai, TN', destination: 'Kolkata, WB', benchmark_rate: 62000, ai_rate: 61500, distance_km: 1660, required_truck: '24 FT Open Body', contract_duration: '3 Months (Quarterly)' },
+    { id: 'LANE-104', route: 'Ahmedabad → Hyderabad', origin: 'Ahmedabad, GJ', destination: 'Hyderabad, TS', benchmark_rate: 54000, ai_rate: 55800, distance_km: 1210, required_truck: '32 FT Multi-Axle', contract_duration: '6 Months (Half-Yearly)' },
+    { id: 'LANE-105', route: 'Mumbai → Delhi NCR', origin: 'Mumbai, MH', destination: 'Delhi NCR', benchmark_rate: 92000, ai_rate: 94000, distance_km: 1420, required_truck: '32 FT SXL Container', contract_duration: '1 Year (Annual)' }
   ]);
 
   const handleClientSubmitBid = async () => {
@@ -58,13 +60,13 @@ export default function ClientPortalPage() {
         route: selectedLane.route,
         start_location: selectedLane.origin,
         end_location: selectedLane.destination,
-        cargo_type: 'Client Dedicated Load',
+        cargo_type: `${clientContractTenure} Contract Load`,
         revenue: Number(clientBidAmount),
         trip_status: 'Bidding Open',
-        notes: `Client Bid: ₹${clientBidAmount} for ${selectedLane.route} by ${clientData?.client_name || currentUser?.email}`
+        notes: `Client Contract Bid: ₹${clientBidAmount} (${clientContractTenure}) for ${selectedLane.route} by ${clientData?.client_name || currentUser?.email}`
       }, { $autoCancel: false }).catch(() => null);
 
-      toast.success(`Bid of ₹${Number(clientBidAmount).toLocaleString('en-IN')} submitted for ${selectedLane.route}! Admin will review your bid.`);
+      toast.success(`Bid of ₹${Number(clientBidAmount).toLocaleString('en-IN')} (${clientContractTenure}) submitted for ${selectedLane.route}! Admin will review your bid.`);
       setBiddingModalOpen(false);
       setClientBidAmount('');
     } catch (err) {
@@ -741,9 +743,14 @@ export default function ClientPortalPage() {
                 <Card key={lane.id} className="bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all">
                   <div className="flex justify-between items-start">
                     <div>
-                      <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/30 font-mono">
-                        {lane.id}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/30 font-mono">
+                          {lane.id}
+                        </Badge>
+                        <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] font-mono">
+                          {lane.contract_duration}
+                        </Badge>
+                      </div>
                       <h4 className="text-base font-extrabold text-foreground mt-1">{lane.route}</h4>
                     </div>
                     <span className="text-xs text-muted-foreground font-mono">{lane.distance_km} KM</span>
@@ -766,10 +773,10 @@ export default function ClientPortalPage() {
                     </span>
                     <Button 
                       size="sm"
-                      onClick={() => { setSelectedLane(lane); setClientBidAmount(lane.benchmark_rate.toString()); setBiddingModalOpen(true); }}
+                      onClick={() => { setSelectedLane(lane); setClientBidAmount(lane.benchmark_rate.toString()); setClientContractTenure(lane.contract_duration || 'Monthly (1 Month)'); setBiddingModalOpen(true); }}
                       className="h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl"
                     >
-                      <Send className="w-3 h-3 mr-1" /> Bid For Lane
+                      <Send className="w-3 h-3 mr-1" /> Bid For Contract
                     </Button>
                   </div>
                 </Card>
@@ -784,10 +791,10 @@ export default function ClientPortalPage() {
         <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-amber-400">
-              <Send className="w-5 h-5 text-amber-400" /> Submit Freight Bid for {selectedLane?.route}
+              <Send className="w-5 h-5 text-amber-400" /> Submit Freight Contract Bid for {selectedLane?.route}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Submit your target price for this dedicated transport lane.
+              Submit your target price and preferred contract tenure for this dedicated transport lane.
             </DialogDescription>
           </DialogHeader>
 
@@ -798,7 +805,23 @@ export default function ClientPortalPage() {
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs">Your Bid Amount (₹)</Label>
+              <Label className="text-xs">Contract Tenure / Duration</Label>
+              <Select value={clientContractTenure} onValueChange={setClientContractTenure}>
+                <SelectTrigger className="bg-background border-border text-xs rounded-xl font-bold">
+                  <SelectValue placeholder="Select Contract Duration" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectItem value="Weekly (7 Days)">Weekly Contract (7 Days)</SelectItem>
+                  <SelectItem value="Monthly (1 Month)">Monthly Contract (1 Month)</SelectItem>
+                  <SelectItem value="3 Months (Quarterly)">3 Months Contract (Quarterly)</SelectItem>
+                  <SelectItem value="6 Months (Half-Yearly)">6 Months Contract (Half-Yearly)</SelectItem>
+                  <SelectItem value="1 Year (Annual)">1 Year Contract (Annual Dedicated)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Your Bid Amount per Trip / Month (₹)</Label>
               <Input 
                 type="number"
                 value={clientBidAmount}

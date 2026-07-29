@@ -33,7 +33,8 @@ export default function AdminMarketplaceOS() {
     destination: '',
     benchmark_rate: '',
     required_truck: '32 FT Container SXL',
-    distance_km: ''
+    distance_km: '',
+    contract_duration: 'Monthly (1 Month)'
   });
 
   const fetchRealAdminStats = async () => {
@@ -327,6 +328,25 @@ export default function AdminMarketplaceOS() {
                   className="bg-slate-950 border-slate-800 text-xs rounded-xl text-white"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Contract Tenure / Duration</Label>
+              <Select 
+                value={newLane.contract_duration} 
+                onValueChange={(val) => setNewLane({ ...newLane, contract_duration: val })}
+              >
+                <SelectTrigger className="bg-slate-950 border-slate-800 text-xs rounded-xl font-bold text-teal-400">
+                  <SelectValue placeholder="Select Contract Tenure" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectItem value="Weekly (7 Days)">Weekly Contract (7 Days)</SelectItem>
+                  <SelectItem value="Monthly (1 Month)">Monthly Contract (1 Month)</SelectItem>
+                  <SelectItem value="3 Months (Quarterly)">3 Months Contract (Quarterly)</SelectItem>
+                  <SelectItem value="6 Months (Half-Yearly)">6 Months Contract (Half-Yearly)</SelectItem>
+                  <SelectItem value="1 Year (Annual)">1 Year Contract (Annual Dedicated)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter className="pt-2">

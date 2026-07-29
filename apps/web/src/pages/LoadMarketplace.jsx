@@ -36,7 +36,8 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
     weight_tons: '',
     required_truck: '32 FT Container SXL',
     target_price: '',
-    pickup_date: new Date().toISOString().split('T')[0]
+    pickup_date: new Date().toISOString().split('T')[0],
+    contract_duration: 'Single Trip'
   });
 
   const [aiPrice, setAiPrice] = useState(null);
@@ -507,6 +508,26 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
               >
                 {isCalculatingAi ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Get Rate'}
               </Button>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs">Load Type / Contract Tenure</Label>
+              <Select 
+                value={formData.contract_duration || 'Single Trip'} 
+                onValueChange={(val) => setFormData({ ...formData, contract_duration: val })}
+              >
+                <SelectTrigger className="bg-slate-950 border-slate-800 text-xs rounded-xl font-bold text-amber-400">
+                  <SelectValue placeholder="Select Contract Tenure" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                  <SelectItem value="Single Trip">Single Spot Trip</SelectItem>
+                  <SelectItem value="Weekly (7 Days)">Weekly Contract (7 Days)</SelectItem>
+                  <SelectItem value="Monthly (1 Month)">Monthly Contract (1 Month)</SelectItem>
+                  <SelectItem value="3 Months (Quarterly)">3 Months Contract (Quarterly)</SelectItem>
+                  <SelectItem value="6 Months (Half-Yearly)">6 Months Contract (Half-Yearly)</SelectItem>
+                  <SelectItem value="1 Year (Annual)">1 Year Contract (Annual Dedicated)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">
