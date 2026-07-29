@@ -212,7 +212,10 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                     <div className="flex items-center gap-1.5 px-2 mb-1.5">
                       <GroupIcon className={cn('w-2.5 h-2.5 shrink-0', groupColor)} />
                       <span className={cn('text-[9.5px] font-bold tracking-[0.12em] uppercase', groupColor, 'opacity-60')}>
-                        {t(key(group.title))}
+                        {(() => {
+                          const gTrans = t(key(group.title));
+                          return (gTrans && !gTrans.includes('_')) ? gTrans : group.title;
+                        })()}
                       </span>
                     </div>
                   ) : (
@@ -266,7 +269,10 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                                     'truncate text-[12px] font-medium leading-none',
                                     isActive ? 'text-primary font-semibold' : ''
                                   )}>
-                                    {t(key(item.label))}
+                                    {(() => {
+                                      const translated = t(key(item.label));
+                                      return (translated && !translated.includes('_')) ? translated : item.label;
+                                    })()}
                                   </span>
                                 )}
                               </Link>
