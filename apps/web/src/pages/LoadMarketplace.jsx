@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Package, MapPin, Calendar, IndianRupee, ArrowRight, Sparkles, 
   Search, Filter, Plus, ShieldCheck, CheckCircle2, Clock, Truck, 
-  SlidersHorizontal, RefreshCw, Send, Eye, Edit, Trash2, MoreVertical
+  SlidersHorizontal, RefreshCw, Send, Eye, Edit, Trash2, MoreVertical, AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,25 +50,39 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
         $autoCancel: false
       }).catch(() => []);
 
-      const mapped = records.map(r => ({
-        id: r.id,
-        raw_record: r,
-        load_number: r.trip_number || `LOAD-${r.id.slice(0, 6).toUpperCase()}`,
-        origin: r.route_start || r.start_location || r.route?.split('-')[0]?.trim() || 'Hyderabad',
-        destination: r.route_end || r.end_location || r.route?.split('-')[1]?.trim() || 'Mumbai',
-        cargo_type: r.cargo_type || r.material || 'General Freight',
-        weight_tons: Number(r.weight) || (Number(r.kms_driven) ? Math.round(Number(r.kms_driven) / 40) || 18 : 18),
-        required_truck: r.truck_number ? `Truck ${r.truck_number}` : '32 FT Container SXL',
-        post_date: r.date ? r.date.split('T')[0] : r.created.split('T')[0],
-        pickup_date: r.date ? r.date.split('T')[0] : new Date().toISOString().split('T')[0],
-        target_price: Number(r.revenue || r.amount || r.rate) || 45000,
-        ai_suggested_price: Math.round((Number(r.revenue || r.amount || r.rate) || 45000) * 1.04),
-        bids_count: Number(r.bids_count) || 0,
-        status: r.trip_status || r.status || 'Bidding Open',
-        posted_by: r.driver_name || 'Verified Shipper',
-        distance_km: Number(r.kms_driven) || 680,
-        eta_hours: Math.round((Number(r.kms_driven) || 680) / 45)
-      }));
+      // Filter to ONLY include records created explicitly as marketplace loads or with valid revenue/route
+      const validMarketplaceRecords = records.filter(r => {
+        const hasRoute = Boolean(r.route || (r.start_location && r.end_location) || r.route_start);
+        const hasRevenue = Number(r.revenue || r.amount || r.rate) > 0;
+        const isMarketplace = r.notes?.includes('Truck:') || r.notes?.includes('Marketplace') || r.trip_status === 'Bidding Open';
+        return (hasRoute && hasRevenue) || isMarketplace;
+      });
+
+      const mapped = validMarketplaceRecords.map(r => {
+        const origin = r.start_location || r.route_start || (r.route?.includes('-') ? r.route.split('-')[0].trim() : r.route);
+        const destination = r.end_location || r.route_end || (r.route?.includes('-') ? r.route.split('-')[1].trim() : '');
+        const revenue = Number(r.revenue || r.amount || r.rate) || 0;
+
+        return {
+          id: r.id,
+          raw_record: r,
+          load_number: r.trip_number || `LOAD-${r.id.slice(0, 6).toUpperCase()}`,
+          origin: origin || 'Hyderabad',
+          destination: destination || 'Mumbai',
+          cargo_type: r.cargo_type || r.material || 'Freight Cargo',
+          weight_tons: Number(r.weight) || (Number(r.kms_driven) ? Math.round(Number(r.kms_driven) / 40) : 18),
+          required_truck: r.truck_number ? `Truck ${r.truck_number}` : '32 FT Container SXL',
+          post_date: r.date ? r.date.split('T')[0] : (r.created ? r.created.split('T')[0] : new Date().toISOString().split('T')[0]),
+          pickup_date: r.date ? r.date.split('T')[0] : new Date().toISOString().split('T')[0],
+          target_price: revenue,
+          ai_suggested_price: Math.round(revenue * 1.04),
+          bids_count: Number(r.bids_count) || 0,
+          status: r.trip_status || r.status || 'Bidding Open',
+          posted_by: r.driver_name || r.client_name || 'Verified Shipper',
+          distance_km: Number(r.kms_driven) || 680,
+          eta_hours: Math.round((Number(r.kms_driven) || 680) / 45)
+        };
+      });
 
       setLoads(mapped);
     } catch (err) {
@@ -107,10 +121,10 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
         cargo_type: formData.cargo_type,
         revenue: Number(formData.target_price),
         trip_status: 'Bidding Open',
-        notes: `Truck: ${formData.required_truck}, Weight: ${formData.weight_tons} Tons`
+        notes: `Marketplace Load | Truck: ${formData.required_truck}, Weight: ${formData.weight_tons} Tons`
       }, { $autoCancel: false });
 
-      toast.success(`Load published successfully!`);
+      toast.success(`Real cargo load published successfully!`);
       setPostModalOpen(false);
       fetchRealLoads();
     } catch (err) {
@@ -143,7 +157,7 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
         end_location: formData.destination,
         cargo_type: formData.cargo_type,
         revenue: Number(formData.target_price),
-        notes: `Truck: ${formData.required_truck}, Weight: ${formData.weight_tons} Tons`
+        notes: `Marketplace Load | Truck: ${formData.required_truck}, Weight: ${formData.weight_tons} Tons`
       }, { $autoCancel: false });
 
       toast.success(`Load ${selectedLoad.load_number} updated successfully!`);
@@ -164,6 +178,22 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
     } catch (err) {
       console.error('Failed to delete load:', err);
       toast.error('Could not delete load');
+    }
+  };
+
+  const handleClearAllDummyLoads = async () => {
+    if (!window.confirm('Are you sure you want to delete all current marketplace loads?')) return;
+    try {
+      setLoading(true);
+      for (const l of loads) {
+        await pb.collection('trip_logs').delete(l.id, { $autoCancel: false }).catch(() => {});
+      }
+      toast.success('All marketplace load logs deleted!');
+      setLoads([]);
+    } catch (err) {
+      toast.error('Could not clear logs');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -197,14 +227,21 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
             <Package className="w-5 h-5 text-primary" /> Cargo Load Marketplace
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Post cargo loads, receive bids from verified transporters, and manage active freight shipments.
+            Post real cargo loads, receive transporter bids, and manage active freight shipments.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {loads.length > 0 && (
+            <Button onClick={handleClearAllDummyLoads} variant="outline" className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 text-xs rounded-xl h-10">
+              <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-400" /> Clear All Loads ({loads.length})
+            </Button>
+          )}
+
           <Button onClick={fetchRealLoads} variant="outline" className="border-slate-800 text-xs rounded-xl h-10">
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
+
           <Button 
             onClick={() => {
               setFormData({
@@ -247,10 +284,16 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
           ))}
         </div>
       ) : filteredLoads.length === 0 ? (
-        <Card className="bg-slate-900/60 border-slate-800 p-8 text-center text-slate-400 text-xs rounded-2xl space-y-3">
-          <Package className="w-10 h-10 mx-auto text-slate-600" />
-          <p className="font-bold text-white text-sm">No active freight loads found.</p>
-          <p className="text-slate-400">Click <strong>"Post Freight Load"</strong> above to list a new cargo load.</p>
+        <Card className="bg-slate-900/60 border-slate-800 p-10 text-center text-slate-400 text-xs rounded-2xl space-y-3">
+          <Package className="w-12 h-12 mx-auto text-slate-600" />
+          <p className="font-bold text-white text-base">No active cargo loads listed yet.</p>
+          <p className="text-slate-400 max-w-md mx-auto">All sample dummy logs have been cleared. Click <strong>"Post Freight Load"</strong> above to list a real cargo load.</p>
+          <Button 
+            onClick={() => setPostModalOpen(true)} 
+            className="mt-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs rounded-xl px-5 h-10"
+          >
+            <Plus className="w-4 h-4 mr-1.5" /> Post Freight Load Now
+          </Button>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
