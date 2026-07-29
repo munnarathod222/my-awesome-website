@@ -18,7 +18,7 @@ import BandwidthTrackerCard from '@/components/BandwidthTrackerCard.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
 import { exportEnterpriseBackupJSON } from '@/lib/backupUtils.js';
-import { PenTool, Activity, FileJson, Download as DownloadIcon } from 'lucide-react';
+import { PenTool, Activity, FileJson, Download } from 'lucide-react';
 
 const ProfilePage = () => {
   const { currentUser, setCurrentUser } = useAuth();
