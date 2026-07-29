@@ -304,10 +304,15 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
                 {/* Header & Explicit EDIT/DELETE Buttons */}
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/30">
                         {load.load_number}
                       </span>
+
+                      <Badge variant="outline" className="text-[10px] text-emerald-400 bg-emerald-500/10 border-emerald-500/30 flex items-center gap-1 font-mono font-bold">
+                        <Calendar className="w-3 h-3" /> Pickup: {load.pickup_date}
+                      </Badge>
+
                       <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-700">
                         {load.posted_by}
                       </Badge>
@@ -393,8 +398,9 @@ export default function LoadMarketplace({ activeRole = 'customer' }) {
 
                 {/* Bottom Actions */}
                 <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80">
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                    <Truck className="w-3.5 h-3.5 text-primary" /> {load.required_truck}
+                  <div className="text-[11px] text-slate-400 flex items-center gap-3 flex-wrap">
+                    <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5 text-primary" /> {load.required_truck}</span>
+                    <span className="flex items-center gap-1 font-mono text-[10px] text-slate-500"><Clock className="w-3 h-3 text-slate-500" /> Posted: {load.post_date}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
