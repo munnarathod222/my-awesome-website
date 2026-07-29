@@ -4,22 +4,22 @@ import pb from './pocketbaseClient.js';
  * Calculate dynamic transport credit score (300-850) and average payment days
  */
 export function calculateCustomerCreditProfile(customer) {
-  const creditLimit = Number(customer.credit_limit || 2500000);
+  const creditLimit = Number(customer.credit_limit || 0);
   const outstanding = Number(customer.outstanding_amount || 0);
   const utilization = creditLimit > 0 ? (outstanding / creditLimit) : 0;
   
-  let score = 720;
-  let avgPaymentDays = 24;
+  let score = 750;
+  let avgPaymentDays = 15;
 
-  if (customer.risk_level === 'Excellent') {
-    score = 780 - Math.round(utilization * 60);
-    avgPaymentDays = Math.round(14 + utilization * 10);
-  } else if (customer.risk_level === 'Average') {
-    score = 660 - Math.round(utilization * 80);
-    avgPaymentDays = Math.round(28 + utilization * 15);
+  if (customer.risk_level === 'High Risk' || utilization > 0.8) {
+    score = 540 - Math.round(utilization * 100);
+    avgPaymentDays = Math.round(45 + utilization * 20);
+  } else if (customer.risk_level === 'Average' || utilization > 0.4) {
+    score = 670 - Math.round(utilization * 60);
+    avgPaymentDays = Math.round(28 + utilization * 10);
   } else {
-    score = 520 - Math.round(utilization * 100);
-    avgPaymentDays = Math.round(48 + utilization * 20);
+    score = 780 - Math.round(utilization * 40);
+    avgPaymentDays = Math.round(14 + utilization * 5);
   }
 
   score = Math.min(850, Math.max(300, score));
@@ -60,7 +60,7 @@ export async function getCrmCustomers() {
         
         const profile = {
           id: r.id,
-          company_name: r.company_name,
+          company_name: r.company_name || 'Client',
           customer_code: r.customer_code || `CUST-${r.id.slice(-4).toUpperCase()}`,
           industry: r.industry || 'Logistics & Trade',
           gstin: r.gstin || '',
@@ -69,12 +69,12 @@ export async function getCrmCustomers() {
           phone: r.phone || '',
           email: r.email || '',
           city: r.city || '',
-          credit_limit: r.credit_limit || 2500000,
-          outstanding_amount: r.outstanding_amount || 0,
+          credit_limit: Number(r.credit_limit || 0),
+          outstanding_amount: Number(r.outstanding_amount || 0),
           risk_level: r.risk_level || 'Excellent',
           status: r.status || 'Active',
-          total_revenue: r.total_revenue || 0,
-          total_shipments: r.total_shipments || 0,
+          total_revenue: Number(r.total_revenue || 0),
+          total_shipments: Number(r.total_shipments || 0),
           ...extra
         };
 
@@ -85,7 +85,7 @@ export async function getCrmCustomers() {
       });
     }
 
-    // Fallback: Query real PocketBase `clients` and `trip_logs` to build CRM database
+    // Query real PocketBase `clients` and `trip_logs` to build CRM database
     const [clientsList, tripLogsList] = await Promise.all([
       pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }).catch(() => []),
       pb.collection('trip_logs').getFullList({ $autoCancel: false }).catch(() => [])
@@ -108,21 +108,21 @@ export async function getCrmCustomers() {
 
         const profile = {
           id: c.id,
-          company_name: c.company_name || c.client_name || 'Corporate Enterprise',
+          company_name: c.company_name || c.client_name || 'Client',
           customer_code: `CUST-${c.id.slice(-4).toUpperCase()}`,
-          industry: c.industry || 'FMCG & Industrial Supply Chain',
-          gstin: c.gst_number || c.gstin || '36AAACJ1234F1Z5',
-          pan: c.pan_number || 'AAACJ1234F',
-          primary_contact: c.contact_person || c.primary_contact || 'Operations Manager',
-          phone: c.phone_number || c.phone || '+91 9876543210',
-          email: c.email || 'logistics@client.com',
-          city: c.city || 'Hyderabad',
-          credit_limit: Number(c.credit_limit || 3500000),
-          outstanding_amount: outstanding || Number(c.outstanding_dues || 125000),
+          industry: c.industry || 'General Freight',
+          gstin: c.gst_number || c.gstin || '',
+          pan: c.pan_number || c.pan || '',
+          primary_contact: c.contact_person || c.primary_contact || '',
+          phone: c.phone_number || c.phone || '',
+          email: c.email || '',
+          city: c.city || '',
+          credit_limit: Number(c.credit_limit || 0),
+          outstanding_amount: Number(c.outstanding_dues || outstanding || 0),
           risk_level: c.risk_level || (outstanding > 500000 ? 'High Risk' : 'Excellent'),
-          status: 'Active',
-          total_revenue: totalRev || 1850000,
-          total_shipments: clientTrips.length || 24
+          status: c.status || 'Active',
+          total_revenue: totalRev,
+          total_shipments: clientTrips.length
         };
 
         return {
@@ -154,7 +154,7 @@ export async function saveCrmCustomer(customerData) {
       phone: customerData.phone || '',
       email: customerData.email || '',
       city: customerData.city || '',
-      credit_limit: Number(customerData.credit_limit || 2500000),
+      credit_limit: Number(customerData.credit_limit || 0),
       outstanding_amount: Number(customerData.outstanding_amount || 0),
       risk_level: customerData.risk_level || 'Excellent',
       status: customerData.status || 'Active',

@@ -77,9 +77,11 @@ export default function TransportCrmPage() {
     const totalRev = customers.reduce((acc, c) => acc + (c.total_revenue || 0), 0);
     const totalOut = customers.reduce((acc, c) => acc + (c.outstanding_amount || 0), 0);
     const highRiskCount = customers.filter(c => c.risk_level === 'High Risk').length;
-    const avgSatisfaction = customers.length ? Math.round(customers.reduce((acc, c) => acc + (c.satisfaction_score || 95), 0) / customers.length) : 96;
+    const totalShipments = customers.reduce((acc, c) => acc + (c.total_shipments || 0), 0);
+    const avgDays = customers.length ? Math.round(customers.reduce((acc, c) => acc + (c.avg_payment_days || 20), 0) / customers.length) : 0;
+    const avgSatisfaction = customers.length ? Math.round(customers.reduce((acc, c) => acc + (c.satisfaction_score || 96), 0) / customers.length) : 100;
 
-    return { totalCust, activeCust, totalRev, totalOut, highRiskCount, avgSatisfaction };
+    return { totalCust, activeCust, totalRev, totalOut, highRiskCount, totalShipments, avgDays, avgSatisfaction };
   }, [customers]);
 
   const handleExportExcel = () => {
@@ -166,14 +168,14 @@ export default function TransportCrmPage() {
 
         <Card className="rounded-2xl border-border/60 bg-card p-4 space-y-1 shadow-sm">
           <div className="text-[11px] font-bold text-muted-foreground uppercase">Avg Payment Days</div>
-          <div className="text-2xl font-black font-mono text-amber-400">26 Days</div>
-          <div className="text-[10px] text-muted-foreground">30-Day Credit Limit</div>
+          <div className="text-2xl font-black font-mono text-amber-400">{metrics.avgDays} Days</div>
+          <div className="text-[10px] text-muted-foreground">Turnaround Time</div>
         </Card>
 
         <Card className="rounded-2xl border-border/60 bg-card p-4 space-y-1 shadow-sm">
-          <div className="text-[11px] font-bold text-muted-foreground uppercase">Active Trips</div>
-          <div className="text-2xl font-black font-mono text-primary">45 Trips</div>
-          <div className="text-[10px] text-emerald-400 font-bold">In Transit</div>
+          <div className="text-[11px] font-bold text-muted-foreground uppercase">Total Shipments</div>
+          <div className="text-2xl font-black font-mono text-primary">{metrics.totalShipments} Trips</div>
+          <div className="text-[10px] text-emerald-400 font-bold">Recorded Loads</div>
         </Card>
 
         <Card className="rounded-2xl border-border/60 bg-card p-4 space-y-1 shadow-sm">
