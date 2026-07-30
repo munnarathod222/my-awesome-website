@@ -144,6 +144,8 @@ const TruckDocsPage = () => {
       });
     }
     setSelectedFile(null);
+    setFrontFile(null);
+    setBackFile(null);
     setIsFormOpen(true);
   };
 
@@ -151,6 +153,8 @@ const TruckDocsPage = () => {
     setIsFormOpen(false);
     setEditingDoc(null);
     setSelectedFile(null);
+    setFrontFile(null);
+    setBackFile(null);
   };
 
   const handleSubmit = async (e) => {
@@ -171,7 +175,9 @@ const TruckDocsPage = () => {
           }
         }
       });
-      if (selectedFile) data.append('file', selectedFile);
+      if (frontFile) data.append('file', frontFile);
+      if (backFile) data.append('files', backFile);
+      if (!frontFile && selectedFile) data.append('file', selectedFile);
 
       if (editingDoc) {
         await pb.collection('truck_documents').update(editingDoc.id, data, { $autoCancel: false });
@@ -673,15 +679,39 @@ const TruckDocsPage = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Upload File (PDF/Image)</Label>
-              <Input 
-                type="file" 
-                accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-              />
-              {editingDoc?.file && !selectedFile && (
-                <p className="text-xs text-muted-foreground">Current file: {editingDoc.file}</p>
+            <div className="space-y-2 p-3 bg-slate-900/60 rounded-2xl border border-slate-800">
+              <Label className="text-xs font-bold text-slate-200">Upload Document Pages (Front Page & Back Page)</Label>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <Label htmlFor="file_front_truck" className="text-[11px] font-bold text-emerald-400">
+                    📄 Front Page (Front Side) *
+                  </Label>
+                  <Input 
+                    id="file_front_truck"
+                    type="file" 
+                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => setFrontFile(e.target.files[0])}
+                    className="text-xs"
+                  />
+                  {frontFile && <p className="text-[10px] text-emerald-400 truncate">Selected: {frontFile.name}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="file_back_truck" className="text-[11px] font-bold text-amber-400">
+                    📄 Back Page (Back Side)
+                  </Label>
+                  <Input 
+                    id="file_back_truck"
+                    type="file" 
+                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => setBackFile(e.target.files[0])}
+                    className="text-xs"
+                  />
+                  {backFile && <p className="text-[10px] text-amber-400 truncate">Selected: {backFile.name}</p>}
+                </div>
+              </div>
+              {editingDoc?.file && !frontFile && !selectedFile && (
+                <p className="text-[10px] text-slate-400 pt-1">Current file: {editingDoc.file}</p>
               )}
             </div>
 

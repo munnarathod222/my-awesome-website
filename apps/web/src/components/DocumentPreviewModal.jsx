@@ -170,6 +170,9 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
             {filesList.map((file, index) => {
               const ext = file.split('.').pop().toLowerCase();
               const isActive = file === activeFile;
+              const pageLabel = filesList.length === 2 
+                ? (index === 0 ? '📄 Front Page (Front Side)' : '📄 Back Page (Back Side)')
+                : `Page ${index + 1} (${ext.toUpperCase()})`;
               return (
                 <Button 
                   key={index}
@@ -177,10 +180,10 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
                   variant={isActive ? "default" : "outline"}
                   size="sm"
                   onClick={() => setActiveFile(file)}
-                  className="rounded-xl text-xs flex items-center gap-1.5"
+                  className={`rounded-xl text-xs flex items-center gap-1.5 font-bold ${isActive ? 'bg-primary text-primary-foreground' : 'bg-slate-900 border-slate-800 text-slate-300'}`}
                 >
                   {ext === 'pdf' ? <FileText className="w-3.5 h-3.5" /> : <FileImage className="w-3.5 h-3.5" />}
-                  File {index + 1} ({ext.toUpperCase()})
+                  {pageLabel}
                 </Button>
               );
             })}

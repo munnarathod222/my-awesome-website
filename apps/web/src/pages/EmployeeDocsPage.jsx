@@ -913,12 +913,44 @@ export default function EmployeeDocsPage() {
                 <Input id="exp_date" type="date" className="rounded-xl dark:[color-scheme:dark]" value={formData.expiry_date} onChange={e => setFormData(p => ({ ...p, expiry_date: e.target.value }))} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="file_up">Upload Files (PDF / Images, max 20 MB each)</Label>
-              <Input id="file_up" type="file" className="rounded-xl" accept=".pdf,image/jpeg,image/png,image/gif,image/webp" multiple onChange={e => {
-                const files = Array.from(e.target.files);
-                setSelectedFiles(prev => [...prev, ...files]);
-              }} />
+            <div className="space-y-2 p-3 bg-muted/40 rounded-2xl border border-border">
+              <Label className="text-xs font-bold text-foreground">Upload Document Pages (Front Side & Back Side)</Label>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <Label htmlFor="emp_file_front" className="text-[11px] font-bold text-emerald-500">
+                    📄 Front Page (Front Side) *
+                  </Label>
+                  <Input 
+                    id="emp_file_front" 
+                    type="file" 
+                    className="rounded-xl text-xs" 
+                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp" 
+                    onChange={e => {
+                      if (e.target.files[0]) {
+                        setSelectedFiles(prev => [...prev, e.target.files[0]]);
+                      }
+                    }} 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="emp_file_back" className="text-[11px] font-bold text-amber-500">
+                    📄 Back Page (Back Side)
+                  </Label>
+                  <Input 
+                    id="emp_file_back" 
+                    type="file" 
+                    className="rounded-xl text-xs" 
+                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp" 
+                    onChange={e => {
+                      if (e.target.files[0]) {
+                        setSelectedFiles(prev => [...prev, e.target.files[0]]);
+                      }
+                    }} 
+                  />
+                </div>
+              </div>
+            </div>
               
               {/* Existing files list */}
               {existingFiles.length > 0 && (
@@ -950,7 +982,6 @@ export default function EmployeeDocsPage() {
                   ))}
                 </div>
               )}
-            </div>
             <div className="space-y-2">
               <Label htmlFor="notes_txt">Notes</Label>
               <Textarea id="notes_txt" className="rounded-xl" value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} rows={2} placeholder="Additional details..." />
