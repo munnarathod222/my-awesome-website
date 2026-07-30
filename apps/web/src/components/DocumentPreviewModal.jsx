@@ -238,7 +238,16 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
               </div>
               
               {/* PDF Canvas Viewport */}
-              <div className="flex-1 relative w-full h-full bg-slate-950 flex items-start justify-center overflow-auto p-4">
+              <div className="flex-1 relative w-full h-full bg-slate-950 flex items-start justify-center overflow-auto p-4 select-none">
+                {/* DRM Security Overlay Watermark */}
+                <div className="absolute inset-0 z-20 pointer-events-none opacity-25 overflow-hidden flex flex-wrap items-center justify-around gap-8 p-4">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="transform -rotate-45 text-[10px] font-mono font-black text-slate-300 tracking-widest uppercase whitespace-nowrap">
+                      OFFICIAL COMPLIANCE PASSPORT • CONFIDENTIAL • DO NOT COPY
+                    </div>
+                  ))}
+                </div>
+
                 {loading ? (
                   <div className="flex flex-col items-center justify-center h-full space-y-2 text-slate-300 text-xs">
                     <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
@@ -247,23 +256,33 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
                 ) : renderError ? (
                   <div className="flex flex-col items-center justify-center h-full text-white p-6 text-center">
                     <p className="text-xs mb-3 text-slate-300">Native canvas preview unavailable.</p>
-                    <Button onClick={handleOpenNewTab} size="sm" className="rounded-xl bg-primary text-primary-foreground font-bold">
-                      <ExternalLink className="w-4 h-4 mr-2" /> Open PDF in Fullscreen Tab
-                    </Button>
+                    {!hideDownload && (
+                      <Button onClick={handleOpenNewTab} size="sm" className="rounded-xl bg-primary text-primary-foreground font-bold">
+                        <ExternalLink className="w-4 h-4 mr-2" /> Open PDF in Fullscreen Tab
+                      </Button>
+                    )}
                   </div>
                 ) : (
-                  <div className="shadow-2xl rounded-lg overflow-hidden bg-white">
-                    <canvas ref={canvasRef} className="max-w-full block" />
+                  <div className="shadow-2xl rounded-lg overflow-hidden bg-white select-none pointer-events-none">
+                    <canvas ref={canvasRef} className="max-w-full block select-none pointer-events-none" />
                   </div>
                 )}
               </div>
             </div>
           ) : isImage ? (
-            <div className="w-full h-full flex items-center justify-center p-2">
+            <div className="w-full h-full flex items-center justify-center p-2 relative select-none">
+              {/* DRM Security Overlay Watermark */}
+              <div className="absolute inset-0 z-20 pointer-events-none opacity-25 overflow-hidden flex flex-wrap items-center justify-around gap-8 p-4">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div key={i} className="transform -rotate-45 text-[10px] font-mono font-black text-slate-300 tracking-widest uppercase whitespace-nowrap">
+                    OFFICIAL COMPLIANCE PASSPORT • CONFIDENTIAL • DO NOT COPY
+                  </div>
+                ))}
+              </div>
               <img 
                 src={rawUrl} 
                 alt={`${document.document_type} preview`}
-                className="max-w-full max-h-full object-contain p-2"
+                className="max-w-full max-h-full object-contain p-2 select-none pointer-events-none"
               />
             </div>
           ) : (

@@ -165,21 +165,26 @@ export default function VehicleQRVerificationPage() {
     };
 
     const handleKeyDown = (e) => {
-      if (e.key === 'PrintScreen' || e.keyCode === 44) {
+      const key = e.key ? e.key.toUpperCase() : '';
+      if (
+        key === 'PRINTSCREEN' || e.keyCode === 44 ||
+        key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C', 'S'].includes(key)) ||
+        (e.ctrlKey && ['S', 'P', 'U', 'C'].includes(key)) ||
+        (e.metaKey && e.shiftKey && ['3', '4', '5', 'S'].includes(key)) ||
+        (e.metaKey && ['S', 'P'].includes(key))
+      ) {
         e.preventDefault();
         setIsScreenProtected(true);
         try { navigator.clipboard?.writeText(''); } catch (err) {}
         toast.warning('Screenshots disabled on security pass page.');
-        setTimeout(() => setIsScreenProtected(false), 2000);
+        setTimeout(() => setIsScreenProtected(false), 3000);
       }
+    };
 
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && ['S', 'P', 'U'].includes(e.key.toUpperCase())) ||
-        (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key))
-      ) {
-        e.preventDefault();
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsScreenProtected(true);
       }
     };
 
@@ -193,14 +198,18 @@ export default function VehicleQRVerificationPage() {
 
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyDown);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyDown);
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -229,10 +238,37 @@ export default function VehicleQRVerificationPage() {
   const driverDl = hasAssignedDriver ? (driver?.license_number || driver?.dl || truck?.driver_dl || 'N/A') : 'N/A';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
+    <div className={`min-h-screen bg-slate-950 text-slate-100 font-sans pb-16 select-none drm-protected-content relative transition-all duration-75 ${isScreenProtected ? 'filter blur-3xl opacity-0 pointer-events-none' : ''}`}>
       <Helmet>
         <title>Official Vehicle Verification Pass | {truck?.truck_number} | {companyName}</title>
       </Helmet>
+
+      <style>{`
+        @media print {
+          body, html { display: none !important; }
+        }
+        .drm-protected-content {
+          -webkit-user-select: none !important;
+          -moz-user-select: none !important;
+          -ms-user-select: none !important;
+          user-select: none !important;
+          -webkit-touch-callout: none !important;
+        }
+        .drm-protected-content img, .drm-protected-content canvas {
+          -webkit-user-drag: none !important;
+          user-drag: none !important;
+          pointer-events: none !important;
+        }
+      `}</style>
+
+      {/* Permanent Security Watermark */}
+      <div className="fixed inset-0 pointer-events-none z-30 opacity-15 overflow-hidden select-none flex flex-wrap items-center justify-around gap-12 p-8">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className="transform -rotate-45 text-xs font-mono font-black tracking-widest text-slate-400 whitespace-nowrap">
+            OFFICIAL USE ONLY • DO NOT COPY • {truck?.truck_number || 'JBC FLEET'}
+          </div>
+        ))}
+      </div>
 
       {/* Top Banner for Inspection Officers */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800 p-4 sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
