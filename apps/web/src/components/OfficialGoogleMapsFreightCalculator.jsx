@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, Navigation, Truck, Calculator, Clock, MessageSquare, 
-  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText, AlertTriangle
+  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loadGoogleMapsScript, GOOGLE_MAPS_API_KEY } from '@/lib/googleMapsLoader.js';
@@ -14,7 +14,7 @@ const OFFICIAL_VEHICLES = [
   { id: 'tata_ace', name: 'Tata Ace (1.5 Ton)', baseFare: 800, ratePerKm: 18, minCharge: 1200, loading: 400, unloading: 400 },
   { id: 'pickup_truck', name: 'Pickup Truck (2.5 Ton)', baseFare: 1200, ratePerKm: 24, minCharge: 1800, loading: 600, unloading: 600 },
   { id: '14ft_truck', name: '14 Ft Truck (4 Ton)', baseFare: 1800, ratePerKm: 28, minCharge: 2500, loading: 800, unloading: 800 },
-  { id: '17ft_truck', name: '17 Ft Truck (6 Ton)', baseFare: 2400, ratePerKm: 34, minCharge: 3200, loading: 1000, unloading: 1000 },
+  { id: '17ft_truck', name: '17 Ft Truck (6 Ton)', baseFare: 3400, ratePerKm: 34, minCharge: 3200, loading: 1000, unloading: 1000 },
   { id: '19ft_truck', name: '19 Ft Truck (8 Ton)', baseFare: 3000, ratePerKm: 38, minCharge: 4000, loading: 1200, unloading: 1200 },
   { id: '22ft_truck', name: '22 Ft Truck (10 Ton)', baseFare: 3800, ratePerKm: 42, minCharge: 5000, loading: 1500, unloading: 1500 },
   { id: '32ft_sxl', name: '32 Ft SXL Container (7 Ton)', baseFare: 4500, ratePerKm: 38, minCharge: 6000, loading: 1800, unloading: 1800 },
@@ -27,7 +27,6 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const [destinationText, setDestinationText] = useState('Hyderabad, Telangana, India');
   const [selectedVehicleId, setSelectedVehicleId] = useState('32ft_sxl');
   const [loading, setLoading] = useState(false);
-  const [googleMapError, setGoogleMapError] = useState(null);
 
   // Extracted Distance & Duration
   const [extractedData, setExtractedData] = useState({
@@ -54,8 +53,8 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  // Render Real Google Maps JS SDK Window & Directions API Route
-  const renderRealGoogleMap = (maps, orig = originText, dest = destinationText) => {
+  // Render Real Google Maps Window
+  const initGoogleMap = (maps, orig = originText, dest = destinationText) => {
     if (!mapElementRef.current || !maps) return;
 
     try {
@@ -96,60 +95,60 @@ export default function OfficialGoogleMapsFreightCalculator() {
                 distanceKm: roadKm,
                 durationText: duration
               });
-              setGoogleMapError(null);
-            } else {
-              console.warn('Google Directions Status:', status);
             }
           }
         );
       }
     } catch (e) {
-      console.warn('Google Maps JS error:', e);
-      setGoogleMapError('Google Maps API key domain referrer check in progress');
+      console.warn('Google Map Init Error:', e);
     }
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     loadGoogleMapsScript().then(maps => {
-      if (maps) {
-        renderRealGoogleMap(maps, originText, destinationText);
+      if (!isMounted || !maps) return;
 
-        // Google Places Autocomplete dropdown
-        if (maps.places) {
-          if (originInputRef.current) {
-            const autoOrig = new maps.places.Autocomplete(originInputRef.current, {
-              componentRestrictions: { country: 'in' }
-            });
-            autoOrig.addListener('place_changed', () => {
-              const p = autoOrig.getPlace();
-              if (p && (p.formatted_address || p.name)) {
-                const val = p.formatted_address || p.name;
-                setOriginText(val);
-                calculateRoute(val, destinationText);
-              }
-            });
-          }
+      setTimeout(() => {
+        initGoogleMap(maps, originText, destinationText);
+      }, 100);
 
-          if (destinationInputRef.current) {
-            const autoDest = new maps.places.Autocomplete(destinationInputRef.current, {
-              componentRestrictions: { country: 'in' }
-            });
-            autoDest.addListener('place_changed', () => {
-              const p = autoDest.getPlace();
-              if (p && (p.formatted_address || p.name)) {
-                const val = p.formatted_address || p.name;
-                setDestinationText(val);
-                calculateRoute(originText, val);
-              }
-            });
-          }
+      // Google Places Autocomplete dropdown
+      if (maps.places) {
+        if (originInputRef.current) {
+          const autoOrig = new maps.places.Autocomplete(originInputRef.current, {
+            componentRestrictions: { country: 'in' }
+          });
+          autoOrig.addListener('place_changed', () => {
+            const p = autoOrig.getPlace();
+            if (p && (p.formatted_address || p.name)) {
+              const val = p.formatted_address || p.name;
+              setOriginText(val);
+              calculateRoute(val, destinationText);
+            }
+          });
         }
-      } else {
-        setGoogleMapError('Could not load Google Maps JS SDK');
+
+        if (destinationInputRef.current) {
+          const autoDest = new maps.places.Autocomplete(destinationInputRef.current, {
+            componentRestrictions: { country: 'in' }
+          });
+          autoDest.addListener('place_changed', () => {
+            const p = autoDest.getPlace();
+            if (p && (p.formatted_address || p.name)) {
+              const val = p.formatted_address || p.name;
+              setDestinationText(val);
+              calculateRoute(originText, val);
+            }
+          });
+        }
       }
-    }).catch(err => {
-      setGoogleMapError(err.toString());
-    });
+    }).catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const calculateRoute = (orig = originText, dest = destinationText) => {
@@ -161,9 +160,9 @@ export default function OfficialGoogleMapsFreightCalculator() {
     setLoading(true);
 
     if (window.google && window.google.maps) {
-      renderRealGoogleMap(window.google.maps, orig, dest);
+      initGoogleMap(window.google.maps, orig, dest);
       setLoading(false);
-      toast.success('Official Google Maps Route Calculated!');
+      toast.success('Official Google Route Calculated!');
     } else {
       setLoading(false);
     }
@@ -193,7 +192,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               OFFICIAL GOOGLE MAPS PLATFORM API INTEGRATED
             </Badge>
             <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Key: {GOOGLE_MAPS_API_KEY.slice(0, 10)}... Active
+              <CheckCircle2 className="w-3 h-3" /> Places Autocomplete & Directions Active
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
