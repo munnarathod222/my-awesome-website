@@ -1567,8 +1567,8 @@ app.use((req, res) => {
 
 const port = process.env.PORT || 3001;
 
-app.listen(port, () => {
-  logger.info(`🚀 Unified Full-Stack Server running on http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  logger.info(`🚀 Unified Full-Stack Server running on http://0.0.0.0:${port}`);
 });
 
 // Triggering full container redeploy to restore storage files from Supabase
