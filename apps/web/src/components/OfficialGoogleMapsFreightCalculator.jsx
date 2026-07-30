@@ -64,6 +64,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const [destinationText, setDestinationText] = useState('Hyderabad, Telangana, India');
   const [selectedVehicleId, setSelectedVehicleId] = useState('32ft_sxl');
   const [loading, setLoading] = useState(false);
+  const [mapMode, setMapMode] = useState('interactive'); // 'interactive' or 'google_embed'
 
   // Extracted Route Data
   const [extractedData, setExtractedData] = useState({
@@ -90,7 +91,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  // Instant Synchronous Visual Map Renderer (< 5ms)
+  // Render Visual Map with InvalidateSize & Height Fix
   const renderVisualMapInstant = (origStr = originText, destStr = destinationText) => {
     if (!mapContainerRef.current) return;
 
@@ -124,44 +125,54 @@ export default function OfficialGoogleMapsFreightCalculator() {
     const midLat = (c1[0] + c2[0]) / 2;
     const midLng = (c1[1] + c2[1]) / 2;
 
-    const map = L.map(mapContainerRef.current, {
-      center: [midLat, midLng],
-      zoom: 6,
-      zoomControl: true
-    });
+    try {
+      const map = L.map(mapContainerRef.current, {
+        center: [midLat, midLng],
+        zoom: 6,
+        zoomControl: true
+      });
 
-    leafletInstance.current = map;
+      leafletInstance.current = map;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap Route Visualizer'
-    }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap Route Visualizer'
+      }).addTo(map);
 
-    const startIcon = L.divIcon({
-      className: 'custom-map-marker-start',
-      html: '<div style="background:#10b981; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(16,185,129,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">A</div>'
-    });
+      const startIcon = L.divIcon({
+        className: 'custom-map-marker-start',
+        html: '<div style="background:#10b981; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(16,185,129,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">A</div>'
+      });
 
-    const endIcon = L.divIcon({
-      className: 'custom-map-marker-end',
-      html: '<div style="background:#ef4444; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(239,68,68,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">B</div>'
-    });
+      const endIcon = L.divIcon({
+        className: 'custom-map-marker-end',
+        html: '<div style="background:#ef4444; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(239,68,68,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">B</div>'
+      });
 
-    L.marker(c1, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origStr}`);
-    L.marker(c2, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destStr}`);
+      L.marker(c1, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origStr}`);
+      L.marker(c2, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destStr}`);
 
-    const polyline = L.polyline([c1, c2], {
-      color: '#3b82f6',
-      weight: 6,
-      opacity: 0.9,
-      dashArray: '8, 8'
-    }).addTo(map);
+      const polyline = L.polyline([c1, c2], {
+        color: '#3b82f6',
+        weight: 6,
+        opacity: 0.9,
+        dashArray: '8, 8'
+      }).addTo(map);
 
-    map.fitBounds(polyline.getBounds(), { padding: [45, 45] });
+      map.fitBounds(polyline.getBounds(), { padding: [45, 45] });
+
+      setTimeout(() => {
+        if (map) map.invalidateSize();
+      }, 100);
+    } catch (err) {
+      console.warn('Leaflet render error:', err);
+    }
   };
 
   useEffect(() => {
-    renderVisualMapInstant(originText, destinationText);
+    const timer = setTimeout(() => {
+      renderVisualMapInstant(originText, destinationText);
+    }, 150);
 
     loadGoogleMapsScript().then(maps => {
       if (maps && maps.places) {
@@ -192,6 +203,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
     }).catch(() => {});
 
     return () => {
+      clearTimeout(timer);
       if (leafletInstance.current) {
         leafletInstance.current.remove();
         leafletInstance.current = null;
@@ -245,6 +257,9 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
+
+  // Google Maps Embed Iframe URL Fallback
+  const googleEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(originText)}%20to%20${encodeURIComponent(destinationText)}&output=embed`;
 
   return (
     <Card className="rounded-3xl border border-primary/30 bg-slate-950 text-slate-100 shadow-2xl p-5 sm:p-6 font-sans space-y-6">
@@ -340,11 +355,33 @@ export default function OfficialGoogleMapsFreightCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Real 100% Guaranteed Visual Map Box (7 Columns) */}
         <div className="lg:col-span-7 rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden relative min-h-[380px] shadow-xl">
-          <div ref={mapContainerRef} className="w-full h-full min-h-[380px] z-10" />
+          {mapMode === 'interactive' ? (
+            <div 
+              ref={mapContainerRef} 
+              style={{ width: '100%', height: '380px', minHeight: '380px' }} 
+              className="z-10 bg-slate-900"
+            />
+          ) : (
+            <iframe
+              title="Google Route Embed"
+              src={googleEmbedUrl}
+              style={{ width: '100%', height: '380px', border: 0 }}
+              allowFullScreen
+              loading="lazy"
+            />
+          )}
 
           <div className="absolute top-3 left-3 z-[400] bg-slate-950/90 border border-slate-800 backdrop-blur rounded-xl p-3 shadow-xl text-xs space-y-1">
-            <div className="flex items-center gap-2 font-bold text-white">
-              <Navigation className="w-4 h-4 text-primary animate-pulse" /> Official Route Corridor Map
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 font-bold text-white">
+                <Navigation className="w-4 h-4 text-primary animate-pulse" /> Official Route Corridor Map
+              </div>
+              <button
+                onClick={() => setMapMode(mapMode === 'interactive' ? 'google_embed' : 'interactive')}
+                className="text-[9px] font-bold text-purple-400 hover:text-white bg-slate-900 px-2 py-0.5 rounded-md border border-slate-700"
+              >
+                {mapMode === 'interactive' ? '🛰️ Switch Google Embed' : '🗺️ Switch Interactive'}
+              </button>
             </div>
             <div className="text-[11px] text-emerald-400 font-mono font-bold">
               {extractedData.distanceKm} KM • {extractedData.durationText}
