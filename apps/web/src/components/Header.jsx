@@ -6,7 +6,8 @@ import {
   LogOut, Menu, Globe, Bell, ChevronRight, Home, Building2, UserPlus, Truck, Users, ChevronDown,
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
-  ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings
+  ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
+  QrCode, Navigation
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -55,6 +56,8 @@ const ROUTE_LABELS = {
   '/dashboard/attendance':   'Attendance',
   '/dashboard/trip-overview':'Trip Overview',
   '/quotes-manager':         'Quotes',
+  '/qr-scanner':             'QR Scanner Pass',
+  '/tracking':               'Track Shipment',
 };
 
 function useBreadcrumbs(pathname) {
@@ -127,6 +130,8 @@ export default function Header() {
     {
       title: 'Operations',
       items: [
+        { label: 'QR Scanner Pass', path: '/qr-scanner', icon: QrCode },
+        { label: 'Track Shipment', path: '/tracking', icon: Navigation },
         { label: 'Trip Logs', path: '/trip-logs', icon: ClipboardList },
         { label: 'Route Master', path: '/routes-master', icon: MapPin },
         { label: 'Quotes', path: '/quotes-manager', icon: FileText },
@@ -175,6 +180,7 @@ export default function Header() {
       title: 'Administration',
       items: [
         { label: 'User Management', path: '/dashboard/users', icon: Users },
+        { label: 'Access Requests', path: '/dashboard/signup-requests', icon: UserPlus },
         { label: 'Audit & Security Logs', path: '/dashboard/audit-logs', icon: ShieldCheck },
         { label: 'Reports Center', path: '/reports', icon: FileText },
         { label: 'Settings', path: '/dashboard/profile', icon: Settings },
@@ -358,16 +364,28 @@ export default function Header() {
 
         <div className="flex items-center gap-1.5">
           {isAuthenticated && (
-            <Button
-              asChild
-              size="sm"
-              className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-[11px] gap-1 shadow-sm"
-            >
-              <Link to="/dashboard">
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Dashboard
-              </Link>
-            </Button>
+            <>
+              <Button
+                asChild
+                size="sm"
+                className="h-7 px-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-extrabold text-[11px] gap-1 shadow-sm"
+              >
+                <Link to="/qr-scanner">
+                  <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">QR Pass</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="sm"
+                className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-[11px] gap-1 shadow-sm"
+              >
+                <Link to="/dashboard">
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  Dashboard
+                </Link>
+              </Button>
+            </>
           )}
           <LangSelector compact={true} language={language} setLanguage={setLanguage} />
           {isAuthenticated && (
