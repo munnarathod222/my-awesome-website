@@ -998,6 +998,29 @@ const runPocketBase = async () => {
   // Files are instead downloaded on-demand (lazily) as they are requested by users.
   logger.info(`📥 Lazy-download system active. Skipping boot-time storage download for light speed startup.`);
 
+  // Copy pre-populated SQLite data.db (1,305 records) & storage files to target dataDir if target DB is fresh/empty
+  try {
+    const targetDb = path.join(dataDir, 'data.db');
+    const srcDb = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+    if (fs.existsSync(srcDb)) {
+      const srcSize = fs.statSync(srcDb).size;
+      const targetSize = fs.existsSync(targetDb) ? fs.statSync(targetDb).size : 0;
+      if (targetSize < srcSize / 2) {
+        logger.info(`💾 Seeding pre-populated SQLite database (${(srcSize/1024/1024).toFixed(2)} MB, 1,305 records) to ${targetDb}...`);
+        fs.copyFileSync(srcDb, targetDb);
+        logger.info(`✅ Database file copied successfully to persistent disk!`);
+      }
+    }
+    const targetStorage = path.join(dataDir, 'storage');
+    const srcStorage = path.resolve(__dirname, '../../pocketbase/pb_data/storage');
+    if (fs.existsSync(srcStorage)) {
+      logger.info(`📁 Copying storage files from ${srcStorage} to ${targetStorage}...`);
+      fs.cpSync(srcStorage, targetStorage, { recursive: true, force: false });
+    }
+  } catch (copyErr) {
+    logger.error(`⚠️ Failed to copy pre-populated data.db: ${copyErr.message}`);
+  }
+
   if (!isWin) {
     try {
       fs.chmodSync(pbPath, '755');
