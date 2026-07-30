@@ -240,9 +240,9 @@ const HomePage = () => {
           </div>
         </section>
 
-        {/* Official Google Maps Freight Calculator Section */}
+        {/* Instant Freight Calculator Section */}
         <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative">
-          <OfficialGoogleMapsFreightCalculator />
+          <QuoteCalculator />
         </section>
 
         {/* Client Logo Marquee Ticker */}
