@@ -14,21 +14,26 @@ export function loadGoogleMapsScript() {
   if (mapsPromise) return mapsPromise;
 
   mapsPromise = new Promise((resolve) => {
-    const existingScript = document.getElementById('google-maps-js-sdk');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(window.google?.maps || null));
-      existingScript.addEventListener('error', () => resolve(null));
-      return;
-    }
+    try {
+      const existingScript = document.getElementById('google-maps-js-sdk');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(window.google?.maps || null));
+        existingScript.addEventListener('error', () => resolve(null));
+        return;
+      }
 
-    const script = document.createElement('script');
-    script.id = 'google-maps-js-sdk';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve(window.google?.maps || null);
-    script.onerror = () => resolve(null);
-    document.head.appendChild(script);
+      const script = document.createElement('script');
+      script.id = 'google-maps-js-sdk';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve(window.google?.maps || null);
+      script.onerror = () => resolve(null);
+      document.head.appendChild(script);
+    } catch (e) {
+      console.warn('loadGoogleMapsScript error:', e);
+      resolve(null);
+    }
   });
 
   return mapsPromise;
@@ -50,18 +55,23 @@ const INDIAN_CITY_COORDINATES = {
   nagpur:    { lat: 21.1458, lng: 79.0882, label: 'Nagpur, Maharashtra' },
   vizag:     { lat: 17.6868, lng: 83.2185, label: 'Visakhapatnam, Andhra Pradesh' },
   indore:    { lat: 22.7196, lng: 75.8577, label: 'Indore, Madhya Pradesh' },
-  coimbatore:{ lat: 11.0168, lng: 76.9558, label: 'Coimbatore, Tamil Nadu' }
+  bhopal:    { lat: 23.2599, lng: 77.4126, label: 'Bhopal, Madhya Pradesh' },
+  coimbatore:{ lat: 11.0168, lng: 76.9558, label: 'Coimbatore, Tamil Nadu' },
+  lucknow:   { lat: 26.8467, lng: 80.9462, label: 'Lucknow, Uttar Pradesh' },
+  chandigarh:{ lat: 30.7333, lng: 76.7794, label: 'Chandigarh, Punjab' }
 };
 
-const EXACT_HIGHWAY_PAIRS = {
+const HIGHWAY_DISTANCE_MATRIX = {
   'mumbai-hyderabad': { km: 708, hours: 12, mins: 45 },
   'mumbai-delhi':     { km: 1415, hours: 22, mins: 30 },
   'mumbai-bangalore': { km: 984, hours: 16, mins: 15 },
   'mumbai-chennai':   { km: 1338, hours: 22, mins: 0 },
   'mumbai-pune':      { km: 148, hours: 3, mins: 15 },
+  'mumbai-ahmedabad': { km: 524, hours: 9, mins: 0 },
   'delhi-bangalore':  { km: 2150, hours: 35, mins: 0 },
   'delhi-hyderabad':  { km: 1580, hours: 26, mins: 0 },
   'delhi-kolkata':    { km: 1530, hours: 25, mins: 30 },
+  'delhi-jaipur':     { km: 280, hours: 5, mins: 0 },
   'hyderabad-vijayawada': { km: 275, hours: 4, mins: 30 },
   'hyderabad-bangalore':  { km: 570, hours: 9, mins: 15 },
   'hyderabad-chennai':    { km: 625, hours: 10, mins: 30 },
@@ -69,102 +79,50 @@ const EXACT_HIGHWAY_PAIRS = {
   'chennai-pune':         { km: 1180, hours: 19, mins: 30 }
 };
 
-// Haversine formula to compute distance between 2 geographical points
-function haversineDistanceKm(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Math.round(R * c * 1.26); // 1.26x factor for actual winding highways
-}
+export function getIndianRouteDistance(origin, destination) {
+  const o = (origin || '').toLowerCase();
+  const d = (destination || '').toLowerCase();
 
-function findCityKey(name) {
-  const str = (name || '').toLowerCase();
-  for (const key of Object.keys(INDIAN_CITY_COORDINATES)) {
-    if (str.includes(key)) return key;
-  }
-  return null;
-}
-
-/**
- * Robust Route Calculation Function: Uses Google Directions API if available, 
- * or instant Indian Highway Telematics Engine.
- */
-export async function calculateGoogleRoute(origin, destination) {
-  const origKey = findCityKey(origin);
-  const destKey = findCityKey(destination);
-
-  // Check exact highway lookup
-  if (origKey && destKey) {
-    const pairKey1 = `${origKey}-${destKey}`;
-    const pairKey2 = `${destKey}-${origKey}`;
-    const exact = EXACT_HIGHWAY_PAIRS[pairKey1] || EXACT_HIGHWAY_PAIRS[pairKey2];
-    if (exact) {
+  for (const key of Object.keys(HIGHWAY_DISTANCE_MATRIX)) {
+    const [c1, c2] = key.split('-');
+    if ((o.includes(c1) && d.includes(c2)) || (o.includes(c2) && d.includes(c1))) {
+      const match = HIGHWAY_DISTANCE_MATRIX[key];
       return {
-        distanceKm: exact.km,
-        distanceText: `${exact.km} km`,
-        durationText: `${exact.hours} hrs ${exact.mins} mins`,
-        durationMins: exact.hours * 60 + exact.mins,
-        startAddress: origin,
-        endAddress: destination
+        distanceKm: match.km,
+        durationText: `${match.hours} hours ${match.mins} mins`,
+        exact: true
       };
     }
   }
 
-  // Fallback to Google Maps API if loaded
-  try {
-    const maps = await loadGoogleMapsScript();
-    if (maps && maps.DirectionsService) {
-      const directionsService = new maps.DirectionsService();
-      const res = await new Promise((resolve, reject) => {
-        directionsService.route(
-          {
-            origin,
-            destination,
-            travelMode: maps.TravelMode.DRIVING
-          },
-          (result, status) => {
-            if (status === maps.DirectionsStatus.OK && result.routes.length > 0) {
-              const leg = result.routes[0].legs[0];
-              resolve({
-                distanceKm: Math.round(leg.distance.value / 1000),
-                distanceText: leg.distance.text,
-                durationText: leg.duration.text,
-                durationMins: Math.round(leg.duration.value / 60),
-                startAddress: leg.start_address,
-                endAddress: leg.end_address,
-                rawDirections: result
-              });
-            } else {
-              reject(status);
-            }
-          }
-        );
-      });
-      return res;
-    }
-  } catch (err) {
-    // Silent catch
+  // Haversine fallback estimate
+  let p1 = null;
+  let p2 = null;
+
+  for (const city of Object.keys(INDIAN_CITY_COORDINATES)) {
+    if (o.includes(city)) p1 = INDIAN_CITY_COORDINATES[city];
+    if (d.includes(city)) p2 = INDIAN_CITY_COORDINATES[city];
   }
 
-  // Haversine fallback
-  const c1 = INDIAN_CITY_COORDINATES[origKey] || { lat: 19.0760, lng: 72.8777 };
-  const c2 = INDIAN_CITY_COORDINATES[destKey] || { lat: 17.3850, lng: 78.4867 };
-  const distKm = haversineDistanceKm(c1.lat, c1.lng, c2.lat, c2.lng);
-  const totalMins = Math.round((distKm / 55) * 60); // ~55 km/h avg truck speed
-  const hrs = Math.floor(totalMins / 60);
-  const mins = totalMins % 60;
+  if (p1 && p2) {
+    const R = 6371; // Earth radius in KM
+    const dLat = (p2.lat - p1.lat) * (Math.PI / 180);
+    const dLon = (p2.lng - p1.lng) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(p1.lat * (Math.PI / 180)) * Math.cos(p2.lat * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const dist = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.25); // 1.25 road curvature factor
+    const totalMins = Math.round((dist / 55) * 60);
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    return {
+      distanceKm: dist,
+      durationText: `${hrs} hours ${mins} mins`,
+      exact: false
+    };
+  }
 
   return {
-    distanceKm: distKm,
-    distanceText: `${distKm} km`,
-    durationText: `${hrs} hrs ${mins} mins`,
-    durationMins: totalMins,
-    startAddress: origin,
-    endAddress: destination
+    distanceKm: 680,
+    durationText: '11 hours 30 mins',
+    exact: false
   };
 }
