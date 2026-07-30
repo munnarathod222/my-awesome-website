@@ -111,79 +111,91 @@ export default function Header() {
     }).then(r => setPendingCount(r.totalItems)).catch(() => {});
   }, [isAdmin, isSuperAdmin]);
 
+  const userRole = (currentUser?.role || 'user').toLowerCase();
+  const hasRoleAccess = (roles) => {
+    if (!roles || roles.length === 0) return true;
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superuser') return true;
+    return roles.some(r => r.toLowerCase() === userRole);
+  };
+
   const mobileNavGroups = [
     {
       title: 'Overview',
       items: [
-        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-        { label: 'AI Freight Marketplace', path: '/marketplace', icon: Sparkles },
-        { label: 'Analytics', path: '/analytics', icon: BarChart3 },
-        { label: 'Vehicle TCO & ROI', path: '/vehicle-tco', icon: Calculator },
-        { label: 'Calendar', path: '/calendar', icon: CalendarDays },
-        { label: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-        { label: 'Client Analysis', path: '/client-analysis', icon: PieChart },
-        { label: 'Trip Overview', path: '/dashboard/trip-overview', icon: TrendingUp },
-        { label: 'Reminders', path: '/reminders', icon: Bell },
-        { label: 'To-Do List', path: '/todo', icon: CheckSquare },
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'AI Freight Marketplace', path: '/marketplace', icon: Sparkles, roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['super_admin','admin','manager'] },
+        { label: 'Vehicle TCO & ROI', path: '/vehicle-tco', icon: Calculator, roles: ['super_admin','admin','manager'] },
+        { label: 'Calendar', path: '/calendar', icon: CalendarDays, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'Leaderboard', path: '/leaderboard', icon: Trophy, roles: ['super_admin','admin','manager'] },
+        { label: 'Client Analysis', path: '/client-analysis', icon: PieChart, roles: ['super_admin','admin','manager'] },
+        { label: 'Trip Overview', path: '/dashboard/trip-overview', icon: TrendingUp, roles: ['super_admin','admin','manager'] },
+        { label: 'Reminders', path: '/reminders', icon: Bell, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'To-Do List', path: '/todo', icon: CheckSquare, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     {
       title: 'Operations',
       items: [
-        { label: 'QR Scanner Pass', path: '/qr-scanner', icon: QrCode },
-        { label: 'Track Shipment', path: '/tracking', icon: Navigation },
-        { label: 'Trip Logs', path: '/trip-logs', icon: ClipboardList },
-        { label: 'Route Master', path: '/routes-master', icon: MapPin },
-        { label: 'Quotes', path: '/quotes-manager', icon: FileText },
-        { label: 'Fuel Tracker', path: '/fuel-tracker', icon: Droplet },
-        { label: 'Fleet Maintenance', path: '/fleet-maintenance', icon: Wrench },
-        { label: 'Inventory', path: '/inventory', icon: Package },
-        { label: 'POD Management', path: '/pod-management', icon: FileBox },
-        { label: 'Exit Audit', path: '/exit-audit', icon: CheckSquare },
+        { label: 'QR Scanner Pass', path: '/qr-scanner', icon: QrCode, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Track Shipment', path: '/tracking', icon: Navigation, roles: ['super_admin','admin','dispatcher','manager','user'] },
+        { label: 'Trip Logs', path: '/trip-logs', icon: ClipboardList, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Route Master', path: '/routes-master', icon: MapPin, roles: ['super_admin','admin','dispatcher'] },
+        { label: 'Quotes', path: '/quotes-manager', icon: FileText, roles: ['super_admin','admin','manager'] },
+        { label: 'Fuel Tracker', path: '/fuel-tracker', icon: Droplet, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Fleet Maintenance', path: '/fleet-maintenance', icon: Wrench, roles: ['super_admin','admin','dispatcher'] },
+        { label: 'Inventory Management', path: '/inventory', icon: Package, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'POD Management', path: '/pod-management', icon: FileBox, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Exit Audit', path: '/exit-audit', icon: CheckSquare, roles: ['super_admin','admin','manager','dispatcher'] },
       ]
     },
     {
       title: 'Finance',
       items: [
-        { label: 'Insurance Manager', path: '/insurance-manager', icon: ShieldAlert },
-        { label: 'Company Vault', path: '/company-vault', icon: ShieldCheck },
-        { label: 'Cashbook', path: '/cashbook', icon: FileText },
-        { label: 'Expenses', path: '/expenses', icon: FileText },
-        { label: 'FASTag Management', path: '/fastag', icon: CreditCard },
-        { label: 'Payment Requests', path: '/payment-requests', icon: MessageSquareWarning },
-        { label: 'Credit Cards', path: '/credit-cards', icon: CreditCard },
-        { label: 'Payroll', path: '/payroll', icon: FileText },
-        { label: 'EMI Calculator', path: '/emi-calculator', icon: Calculator },
+        { label: 'Insurance Manager', path: '/insurance-manager', icon: ShieldAlert, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Company Vault', path: '/company-vault', icon: ShieldCheck, roles: ['super_admin','admin','manager'] },
+        { label: 'Cashbook', path: '/cashbook', icon: FileText, roles: ['super_admin','admin','manager'] },
+        { label: 'Expenses', path: '/expenses', icon: FileText, roles: ['super_admin','admin','manager'] },
+        { label: 'FASTag Management', path: '/fastag', icon: CreditCard, roles: ['super_admin','admin','manager'] },
+        { label: 'Payment Requests', path: '/payment-requests', icon: MessageSquareWarning, roles: ['super_admin','admin','manager'] },
+        { label: 'Credit Cards', path: '/credit-cards', icon: CreditCard, roles: ['super_admin','admin'] },
+        { label: 'Payroll', path: '/payroll', icon: FileText, roles: ['super_admin','admin'] },
+        { label: 'EMI Calculator', path: '/emi-calculator', icon: Calculator, roles: ['super_admin','admin','manager'] },
       ]
     },
     {
       title: 'Fleet & Staff',
       items: [
-        { label: 'Truck Manager', path: '/truck-manager', icon: Truck },
-        { label: 'Vehicle Docs', path: '/truck-docs', icon: FileBox },
-        { label: 'Employees', path: '/employees', icon: Users },
-        { label: 'Employee Docs', path: '/employee-docs', icon: FileBox },
-        { label: 'Attendance', path: '/dashboard/attendance', icon: CalendarDays },
-        { label: 'Recruitment Portal', path: '/recruitment', icon: UserPlus },
+        { label: 'Truck Manager', path: '/truck-manager', icon: Truck, roles: ['super_admin','admin','dispatcher','supervisor'] },
+        { label: 'Vehicle Docs', path: '/truck-docs', icon: FileBox, roles: ['super_admin','admin','dispatcher','supervisor'] },
+        { label: 'Employees', path: '/employees', icon: Users, roles: ['super_admin','admin','manager','supervisor'] },
+        { label: 'Employee Docs', path: '/employee-docs', icon: FileBox, roles: ['super_admin','admin','supervisor'] },
+        { label: 'Attendance', path: '/dashboard/attendance', icon: CalendarDays, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'Recruitment Portal', path: '/recruitment', icon: UserPlus, roles: ['super_admin','admin','manager'] },
       ]
     },
     {
-      title: 'Directory & CRM',
+      title: 'Communication',
       items: [
-        { label: 'Transport CRM', path: '/transport-crm', icon: Building2 },
-        { label: 'Contacts Directory', path: '/contacts', icon: Contact2 },
-        { label: 'Clients List', path: '/clients', icon: Users },
-        { label: 'Business Mail', path: '/business-mail', icon: Mail },
+        { label: 'Business Mail', path: '/business-mail', icon: Mail, roles: ['super_admin','admin','manager','dispatcher'] },
+      ]
+    },
+    {
+      title: 'Directory',
+      items: [
+        { label: 'Transport CRM', path: '/transport-crm', icon: Building2, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Contacts Directory', path: '/contacts', icon: Contact2, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Clients List', path: '/clients', icon: Users, roles: ['super_admin','admin','manager'] },
       ]
     },
     {
       title: 'Administration',
       items: [
-        { label: 'User Management', path: '/dashboard/users', icon: Users },
-        { label: 'Access Requests', path: '/dashboard/signup-requests', icon: UserPlus },
-        { label: 'Audit & Security Logs', path: '/dashboard/audit-logs', icon: ShieldCheck },
-        { label: 'Reports Center', path: '/reports', icon: FileText },
-        { label: 'Settings', path: '/dashboard/profile', icon: Settings },
+        { label: 'User Management', path: '/dashboard/users', icon: Users, roles: ['superuser', 'super_admin', 'admin'] },
+        { label: 'Access Requests', path: '/dashboard/signup-requests', icon: UserPlus, roles: ['superuser', 'super_admin', 'admin'] },
+        { label: 'Audit & Security Logs', path: '/dashboard/audit-logs', icon: ShieldCheck, roles: ['superuser', 'super_admin'] },
+        { label: 'Reports Center', path: '/reports', icon: FileText, roles: ['super_admin','admin'] },
+        { label: 'Settings', path: '/dashboard/profile', icon: Settings, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     }
   ];
@@ -322,7 +334,7 @@ export default function Header() {
                         {group.title}
                       </div>
                       <div className="space-y-0.5">
-                        {group.items.map((item, iIdx) => {
+                        {group.items.filter(item => hasRoleAccess(item.roles)).map((item, iIdx) => {
                           const isActive = location.pathname === item.path;
                           const ItemIcon = item.icon;
                           return (
