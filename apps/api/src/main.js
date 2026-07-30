@@ -1008,7 +1008,7 @@ const runPocketBase = async () => {
 
   // Enforce superuser existence (non-fatal — PocketBase should still start even if this fails)
   const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
-  const password = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
+  const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
   try {
     const { spawnSync } = await import('node:child_process');
     logger.info(`🔑 Upserting superuser: ${email}...`);
@@ -1034,7 +1034,9 @@ const runPocketBase = async () => {
     'serve',
     '--http=127.0.0.1:8090',
     `--dir=${dataDir}`,
-    '--hooksWatch=false'
+    '--hooksWatch=false',
+    `--migrationsDir=${path.resolve(__dirname, '../../pocketbase/pb_migrations')}`,
+    `--hooksDir=${path.resolve(__dirname, '../../pocketbase/pb_hooks')}`
   ];
   if (process.env.NODE_ENV !== 'production') {
     pbArgs.push('--dev');
