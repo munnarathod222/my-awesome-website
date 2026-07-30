@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <div className="space-y-1">
           {payload
             .slice()
-            .sort((a, b) => b.value - a.value)
+            .sort((a, b) => (b.value || 0) - (a.value || 0))
             .map((entry, index) => (
               <div key={index} className="flex items-center justify-between gap-6 text-sm">
                 <div className="flex items-center gap-2">
@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload, label }) => {
                   <span className="text-muted-foreground">{entry.name}</span>
                 </div>
                 <span className="font-semibold tabular-nums text-foreground">
-                  ₹{entry.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  ₹{typeof entry.value === 'number' ? entry.value.toLocaleString(undefined, { maximumFractionDigits: 0 }) : (entry.value || 0)}
                 </span>
               </div>
           ))}
@@ -42,7 +42,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
+const MultiLineChart = ({ data, categories, title }) => (
   <Card className="shadow-sm border-border">
     <CardHeader>
       <CardTitle className="text-lg">{title}</CardTitle>
@@ -50,7 +50,7 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
     <CardContent>
       <div className="w-full h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+          <LineChart data={data || []} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
             <XAxis 
               dataKey="month" 
@@ -65,7 +65,7 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
               fontSize={11}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}k`}
+              tickFormatter={(value) => `₹${((value || 0) / 1000).toFixed(0)}k`}
               dx={-5}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -74,7 +74,7 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
               iconType="circle"
               iconSize={8}
             />
-            {categories.map((cat, index) => (
+            {(categories || []).map((cat, index) => (
               <Line 
                 key={cat}
                 type="monotone" 
@@ -95,7 +95,7 @@ const MultiLineChart = ({ data, categories, title, formatterLabel }) => (
 );
 
 const CategoryMonthlyCharts = ({ chartData }) => {
-  if (!chartData || chartData.categories.length === 0) return null;
+  if (!chartData || !chartData.categories || chartData.categories.length === 0) return null;
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">

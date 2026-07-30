@@ -182,10 +182,10 @@ export default function LaunchpadPage() {
           if (activeCategory !== 'All' && group.title !== activeCategory) return null;
 
           const visibleItems = group.items.filter(item => 
-            item.roles.includes(role) && 
+            Array.isArray(item.roles) && item.roles.includes(role) && 
             (searchQuery === '' || 
-              item.label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              item.desc.toLowerCase().includes(searchQuery.toLowerCase()))
+              (item.label || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+              (item.desc || '').toLowerCase().includes(searchQuery.toLowerCase()))
           );
 
           if (visibleItems.length === 0) return null;
