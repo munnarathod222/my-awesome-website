@@ -1524,9 +1524,8 @@ process.on('unhandledRejection', (reason, promise) => {
 // Note: SIGINT and SIGTERM are handled inside watchAndSyncDatabase()
 // to ensure a final database sync to Supabase before the process exits.
 
-// API Router - Mount under root and prefixes to handle different environments cleanly
+// API Router - Mount under prefixes to handle API calls without hijacking React page routes
 const apiRouter = routes();
-app.use('/', apiRouter);
 app.use('/hcgi/api', apiRouter);
 app.use('/api', apiRouter);
 
