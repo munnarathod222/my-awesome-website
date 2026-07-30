@@ -14,7 +14,7 @@ const OFFICIAL_VEHICLES = [
   { id: 'tata_ace', name: 'Tata Ace (1.5 Ton)', baseFare: 800, ratePerKm: 18, minCharge: 1200, loading: 400, unloading: 400 },
   { id: 'pickup_truck', name: 'Pickup Truck (2.5 Ton)', baseFare: 1200, ratePerKm: 24, minCharge: 1800, loading: 600, unloading: 600 },
   { id: '14ft_truck', name: '14 Ft Truck (4 Ton)', baseFare: 1800, ratePerKm: 28, minCharge: 2500, loading: 800, unloading: 800 },
-  { id: '17ft_truck', name: '17 Ft Truck (6 Ton)', baseFare: 3400, ratePerKm: 34, minCharge: 3200, loading: 1000, unloading: 1000 },
+  { id: '17ft_truck', name: '17 Ft Truck (6 Ton)', baseFare: 2400, ratePerKm: 34, minCharge: 3200, loading: 1000, unloading: 1000 },
   { id: '19ft_truck', name: '19 Ft Truck (8 Ton)', baseFare: 3000, ratePerKm: 38, minCharge: 4000, loading: 1200, unloading: 1200 },
   { id: '22ft_truck', name: '22 Ft Truck (10 Ton)', baseFare: 3800, ratePerKm: 42, minCharge: 5000, loading: 1500, unloading: 1500 },
   { id: '32ft_sxl', name: '32 Ft SXL Container (7 Ton)', baseFare: 4500, ratePerKm: 38, minCharge: 6000, loading: 1800, unloading: 1800 },
@@ -111,12 +111,12 @@ export default function OfficialGoogleMapsFreightCalculator() {
       if (!isMounted || !maps) return;
 
       setTimeout(() => {
-        initGoogleMap(maps, originText, destinationText);
+        if (isMounted) initGoogleMap(maps, originText, destinationText);
       }, 100);
 
-      // Google Places Autocomplete dropdown
-      if (maps.places) {
-        if (originInputRef.current) {
+      // Safe Places Autocomplete initialization preventing Illegal constructor
+      try {
+        if (maps.places && originInputRef.current && originInputRef.current instanceof HTMLInputElement) {
           const autoOrig = new maps.places.Autocomplete(originInputRef.current, {
             componentRestrictions: { country: 'in' }
           });
@@ -129,8 +129,12 @@ export default function OfficialGoogleMapsFreightCalculator() {
             }
           });
         }
+      } catch (err) {
+        console.warn('Origin Autocomplete catch:', err);
+      }
 
-        if (destinationInputRef.current) {
+      try {
+        if (maps.places && destinationInputRef.current && destinationInputRef.current instanceof HTMLInputElement) {
           const autoDest = new maps.places.Autocomplete(destinationInputRef.current, {
             componentRestrictions: { country: 'in' }
           });
@@ -143,6 +147,8 @@ export default function OfficialGoogleMapsFreightCalculator() {
             }
           });
         }
+      } catch (err) {
+        console.warn('Destination Autocomplete catch:', err);
       }
     }).catch(() => {});
 
