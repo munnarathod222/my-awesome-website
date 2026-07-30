@@ -7,7 +7,7 @@ import {
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
   TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
-  Navigation
+  Navigation, QrCode
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -52,6 +52,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   }, []);
 
   const operationsItems = [
+    { icon: QrCode,        label: 'QR Scanner Pass',      path: '/qr-scanner',       roles: ['super_admin','admin','manager','dispatcher'] },
     { icon: Navigation,    label: 'Track Shipment',       path: '/tracking',          roles: ['super_admin','admin','dispatcher','manager','user'] },
     { icon: ClipboardList, label: 'Trip Logs',           path: '/trip-logs',        roles: ['super_admin','admin','manager','dispatcher'] },
     { icon: MapPin,        label: 'Route Master',         path: '/routes-master',    roles: ['super_admin','admin','dispatcher'] },

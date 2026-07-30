@@ -42,6 +42,7 @@ import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
 import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
 import InsuranceManagerPage from './pages/InsuranceManagerPage.jsx';
 import VehicleQRVerificationPage from './pages/VehicleQRVerificationPage.jsx';
+import QRScannerPage from './pages/QRScannerPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
@@ -209,6 +210,7 @@ function App() {
                   
                   {/* Dashboard Base & Google Maps Features */}
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                  <Route path="/qr-scanner" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><QRScannerPage /></ProtectedRoute>} />
                   <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                   <Route path="/launchpad" element={<ProtectedRoute><LaunchpadPage /></ProtectedRoute>} />
                   <Route path="/driver/inspection" element={<ProtectedRoute><RoadsideInspectionPage /></ProtectedRoute>} />
