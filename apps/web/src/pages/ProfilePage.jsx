@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { User, Phone, Mail, Shield, Calendar, Upload, MapPin, Briefcase, Building2, X, Globe, Building, UploadCloud, RefreshCw } from 'lucide-react';
+import { User, Phone, Mail, Shield, Calendar, Upload, MapPin, Briefcase, Building2, X, Globe, Building, UploadCloud, RefreshCw, KeyRound } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { validateEmail } from '@/lib/validators.js';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
@@ -75,6 +76,63 @@ const ProfilePage = () => {
     signatory_name: '',
     signatory_title: ''
   });
+
+  // Quick PIN Settings State
+  const [deviceProfile, setDeviceProfile] = useState(null);
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [isUpdatingPin, setIsUpdatingPin] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('jbc_device_pin_profile');
+    if (stored) {
+      try {
+        setDeviceProfile(JSON.parse(stored));
+      } catch (e) {}
+    } else if (currentUser) {
+      setDeviceProfile({
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.full_name || currentUser.name || 'User',
+        role: currentUser.role || 'user',
+        pin: '2525'
+      });
+    }
+  }, [currentUser]);
+
+  const handleUpdateQuickPin = (e) => {
+    e.preventDefault();
+    if (!/^\d{4}$/.test(newPinInput)) {
+      return toast.error('PIN must be exactly 4 numeric digits (e.g. 9876)');
+    }
+    if (newPinInput !== confirmPinInput) {
+      return toast.error('New PIN and Confirm PIN do not match');
+    }
+
+    setIsUpdatingPin(true);
+    try {
+      const updatedProfile = {
+        ...(deviceProfile || {}),
+        id: currentUser?.id || 'usr_saved',
+        email: currentUser?.email || 'admin@jaibhavanicargo.com',
+        name: currentUser?.full_name || currentUser?.name || 'User',
+        role: currentUser?.role || 'admin',
+        pin: newPinInput
+      };
+      localStorage.setItem('jbc_device_pin_profile', JSON.stringify(updatedProfile));
+      setDeviceProfile(updatedProfile);
+
+      setCurrentPinInput('');
+      setNewPinInput('');
+      setConfirmPinInput('');
+      toast.success(`4-Digit Quick Security PIN updated successfully to ${newPinInput}!`);
+    } catch (err) {
+      toast.error('Failed to update 4-digit PIN');
+    } finally {
+      setIsUpdatingPin(false);
+    }
+  };
 
   const fetchCompanySettings = async () => {
     try {
@@ -910,6 +968,85 @@ const ProfilePage = () => {
                 </div>
 
               </div>
+            </CardContent>
+          </Card>
+
+          {/* 4-Digit Quick PIN Device Security Card */}
+          <Card className="shadow-sm border-none rounded-2xl bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-emerald-400" /> Change 4-Digit Quick Security PIN
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground mt-1">
+                  Configure your 4-digit PIN for 1-tap instant sign in on recognized devices.
+                </CardDescription>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs font-mono font-bold">
+                Active PIN: {deviceProfile?.pin || '2525'}
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleUpdateQuickPin} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="curr_pin" className="text-xs font-bold text-muted-foreground">
+                      Current 4-Digit PIN
+                    </Label>
+                    <Input
+                      id="curr_pin"
+                      type="password"
+                      maxLength={4}
+                      placeholder="e.g. 2525"
+                      value={currentPinInput}
+                      onChange={(e) => setCurrentPinInput(e.target.value.replace(/\D/g, ''))}
+                      className="font-mono text-center font-bold tracking-widest text-emerald-400 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new_pin" className="text-xs font-bold text-muted-foreground">
+                      New 4-Digit PIN *
+                    </Label>
+                    <Input
+                      id="new_pin"
+                      type="password"
+                      maxLength={4}
+                      placeholder="e.g. 9876"
+                      value={newPinInput}
+                      onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                      className="font-mono text-center font-bold tracking-widest text-emerald-400 text-sm"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="conf_pin" className="text-xs font-bold text-muted-foreground">
+                      Confirm New PIN *
+                    </Label>
+                    <Input
+                      id="conf_pin"
+                      type="password"
+                      maxLength={4}
+                      placeholder="e.g. 9876"
+                      value={confirmPinInput}
+                      onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D/g, ''))}
+                      className="font-mono text-center font-bold tracking-widest text-emerald-400 text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isUpdatingPin || newPinInput.length < 4 || confirmPinInput.length < 4}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl px-5 h-10 shadow-md"
+                  >
+                    {isUpdatingPin ? 'Updating PIN...' : 'Update 4-Digit Security PIN'}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>
