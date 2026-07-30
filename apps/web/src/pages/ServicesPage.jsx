@@ -85,7 +85,7 @@ const ServicesPage = () => {
                 </ul>
                 <div className="pt-6">
                   <Button size="lg" asChild>
-                    <Link to="/quote">Request Quote for {service.title.split('(')[0].trim()}</Link>
+                    <Link to="/quote">Request Quote for {(service?.title || '').split('(')[0].trim()}</Link>
                   </Button>
                 </div>
               </div>

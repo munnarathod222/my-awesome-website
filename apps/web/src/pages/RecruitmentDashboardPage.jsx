@@ -240,7 +240,7 @@ export default function RecruitmentDashboardPage() {
             ) : (
               filtered.map(app => {
                 const cfg = getStatusConfig(app.status);
-                const vehicles = app.vehicle_types ? app.vehicle_types.split(',').slice(0, 2).map(v => v.trim()) : [];
+                const vehicles = app.vehicle_types ? (app?.vehicle_types || '').split(',').slice(0, 2).map(v => v.trim()) : [];
                 return (
                   <TableRow key={app.id} className="hover:bg-muted/20 text-xs">
                     <TableCell className="pl-5 py-3">
@@ -266,7 +266,7 @@ export default function RecruitmentDashboardPage() {
                           <Badge key={v} variant="outline" className="text-[10px] font-bold text-primary border-primary/30 py-0">{v}</Badge>
                         ))}
                         {app.vehicle_types?.split(',').length > 2 && (
-                          <Badge variant="outline" className="text-[10px] text-muted-foreground">+{app.vehicle_types.split(',').length - 2}</Badge>
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground">+{(app?.vehicle_types || '').split(',').length - 2}</Badge>
                         )}
                       </div>
                     </TableCell>

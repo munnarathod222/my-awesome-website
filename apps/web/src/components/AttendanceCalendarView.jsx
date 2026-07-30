@@ -32,7 +32,7 @@ const AttendanceCalendarView = ({ attendanceData }) => {
   const attendanceByDay = useMemo(() => {
     const map = {};
     attendanceData.forEach(record => {
-      const dateStr = record.date.split(' ')[0];
+      const dateStr = (record?.date || '').split(' ')[0];
       if (!map[dateStr]) map[dateStr] = [];
       map[dateStr].push(record);
     });

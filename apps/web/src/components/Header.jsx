@@ -188,7 +188,7 @@ export default function Header() {
       <header className="hidden md:flex sticky top-0 z-30 w-full border-b border-white/[0.05] bg-[#070a13]/85 backdrop-blur-xl transition-all duration-200">
         <div className="flex h-14 w-full items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2 font-heading font-extrabold text-foreground hover:opacity-90 transition-opacity">
+            <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-2 font-heading font-extrabold text-foreground hover:opacity-90 transition-opacity">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-md shadow-primary/20">
                 JB
               </div>
@@ -238,12 +238,24 @@ export default function Header() {
               </>
             ) : (
               <div className="flex items-center gap-2">
+                <Button
+                  asChild
+                  size="sm"
+                  className="rounded-xl text-[12px] h-8 px-3.5 bg-gradient-to-r from-indigo-600 via-primary to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold gap-1.5 shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all hover:scale-[1.02]"
+                >
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="w-3.5 h-3.5 text-white" />
+                    Dashboard
+                  </Link>
+                </Button>
+
                 <LangSelector compact={false} language={language} setLanguage={setLanguage} />
 
                 {(isAdmin || isSuperAdmin) && (
                   <button
                     onClick={() => navigate('/dashboard/users?tab=signup-requests')}
                     className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+                    title="Signup Requests"
                   >
                     <Bell className="w-3.5 h-3.5" />
                     {pendingCount > 0 && (
@@ -265,7 +277,8 @@ export default function Header() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-rose-400"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-rose-400 transition-colors"
+                  title="Logout"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
@@ -344,6 +357,18 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          {isAuthenticated && (
+            <Button
+              asChild
+              size="sm"
+              className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-[11px] gap-1 shadow-sm"
+            >
+              <Link to="/dashboard">
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Dashboard
+              </Link>
+            </Button>
+          )}
           <LangSelector compact={true} language={language} setLanguage={setLanguage} />
           {isAuthenticated && (
             <button

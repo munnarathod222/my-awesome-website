@@ -277,7 +277,7 @@ const TripLogsPage = () => {
     const map = {};
     tripLogs.forEach(log => {
       if (log.trip_status === 'Cancelled' || !log.date || !log.truck_number) return;
-      const dateStr = log.date.split(' ')[0];
+      const dateStr = (log?.date || '').split(' ')[0];
       if (!map[dateStr]) {
         map[dateStr] = new Set();
       }
@@ -719,7 +719,7 @@ const TripLogsPage = () => {
                                       otherLog.id !== log.id &&
                                       otherLog.truck_number === newTruck &&
                                       otherLog.trip_status !== 'Cancelled' &&
-                                      otherLog.date.split(' ')[0] === log.date.split(' ')[0]
+                                      (otherLog?.date || '').split(' ')[0] === (log?.date || '').split(' ')[0]
                                     );
                                     if (conflicting) {
                                       const proceed = window.confirm(`Warning: Truck ${newTruck} is already assigned to ${conflicting.trip_id || 'another trip'} on this date. Assign anyway?`);
@@ -733,7 +733,7 @@ const TripLogsPage = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {trucks.map(t => {
-                                      const dateStr = log.date ? log.date.split(' ')[0] : '';
+                                      const dateStr = log.date ? (log?.date || '').split(' ')[0] : '';
                                       const isConflicted = bookedTrucksPerDate[dateStr]?.has(t.truck_number) && t.truck_number !== log.truck_number;
                                       return (
                                         <SelectItem key={t.id} value={t.truck_number}>
@@ -809,7 +809,7 @@ const TripLogsPage = () => {
                                      { name: 'TUKKUGUDA', mapLink: 'https://www.google.com/maps/search/?api=1&query=TUKKUGUDA', type: 'destination' }
                                    ];
                                  } else if (log.route && log.route.includes('->')) {
-                                   const parts = log.route.split('->').map(p => p.trim());
+                                   const parts = (log?.route || '').split('->').map(p => p.trim());
                                    parts.forEach((part, idx) => {
                                      let type = 'stop';
                                      if (idx === 0) type = 'origin';

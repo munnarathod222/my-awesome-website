@@ -109,12 +109,12 @@ const AttendanceManagerPage = () => {
     }
     
     if (filters.dateFrom) {
-      result = result.filter(r => new Date(r.date.split(' ')[0]) >= new Date(filters.dateFrom));
+      result = result.filter(r => new Date((r?.date || '').split(' ')[0]) >= new Date(filters.dateFrom));
     }
     if (filters.dateTo) {
       const toDate = new Date(filters.dateTo);
       toDate.setHours(23, 59, 59, 999);
-      result = result.filter(r => new Date(r.date.split(' ')[0]) <= toDate);
+      result = result.filter(r => new Date((r?.date || '').split(' ')[0]) <= toDate);
     }
 
     return result;
@@ -337,7 +337,7 @@ const AttendanceManagerPage = () => {
                       filteredAttendance.map(record => (
                         <TableRow key={record.id} className={`transition-colors ${urlEmployeeId === record.staff_member ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-muted/30'}`}>
                           <TableCell className="font-medium whitespace-nowrap text-sm">
-                            {format(parseISO(record.date.split(' ')[0]), 'MMM dd, yyyy')}
+                            {format(parseISO((record?.date || '').split(' ')[0]), 'MMM dd, yyyy')}
                           </TableCell>
                           <TableCell className="font-medium text-foreground">
                             {record.expand?.staff_member?.name || 'Unknown'}

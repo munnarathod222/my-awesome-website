@@ -6,7 +6,8 @@ import {
   ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard,
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
-  TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles
+  TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
+  Navigation
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -193,7 +194,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
               const isMasterSuperuser = currentUser?.email?.toLowerCase() === 'munnarathod222@gmail.com' || role === 'superuser' || role === 'super_admin';
               const visibleItems = group.items.filter(item => {
                 if (isMasterSuperuser) return true;
-                return item.roles.includes(role);
+                return (item?.roles || []).includes(role);
               });
               if (visibleItems.length === 0) return null;
               const GroupIcon = GROUP_ICON[group.title] || FileText;

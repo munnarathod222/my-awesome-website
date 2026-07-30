@@ -40,7 +40,7 @@ const AddExpenseModal = ({ isOpen, onClose, onSuccess, editExpense = null }) => 
       fetchEmployees();
       if (editExpense) {
         setFormData({
-          date: editExpense.date.split('T')[0],
+          date: editExpense?.date ? editExpense.date.split('T')[0] : format(new Date(), 'yyyy-MM-dd'),
           category: editExpense.category || 'Maintenance',
           description: editExpense.description || '',
           amount: editExpense.amount || '',

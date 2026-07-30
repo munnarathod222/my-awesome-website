@@ -54,8 +54,8 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
     if (invoice) {
       setFormData({
         invoice_number: invoice.invoice_number,
-        invoice_date: invoice.invoice_date.split('T')[0],
-        due_date: invoice.due_date.split('T')[0],
+        invoice_date: (invoice?.invoice_date || '').split('T')[0],
+        due_date: (invoice?.due_date || '').split('T')[0],
         customer_name: invoice.customer_name || '',
         customer_email: invoice.customer_email || '',
         customer_address: invoice.customer_address || '',

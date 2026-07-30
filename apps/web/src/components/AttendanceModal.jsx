@@ -24,7 +24,7 @@ const AttendanceModal = ({ isOpen, onClose, onSuccess, employees, editRecord = n
     if (editRecord) {
       setFormData({
         staff_member: editRecord.staff_member,
-        date: editRecord.date.split(' ')[0],
+        date: (editRecord?.date || '').split(' ')[0],
         status: editRecord.status,
         check_in_time: editRecord.check_in_time || '',
         check_out_time: editRecord.check_out_time || '',

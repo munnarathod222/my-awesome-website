@@ -319,7 +319,7 @@ const ExpensesPage = () => {
     try {
       const formData = new FormData();
       files.forEach(file => {
-        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileExt = (file?.name || '').split('.').pop().toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
           formData.append('image_urls', file);
         } else {

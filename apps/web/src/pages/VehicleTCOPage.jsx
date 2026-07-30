@@ -407,7 +407,7 @@ export default function VehicleTCOPage() {
 
                         <TableCell className="py-4 text-right">
                           <Badge variant="outline" className={`font-bold px-2.5 py-0.5 text-xs rounded-lg border ${v.signalBadgeColor}`}>
-                            {v.signalTitle.split(' ')[0]} {v.replacementSignal}
+                            {(v?.signalTitle || '').split(' ')[0]} {v.replacementSignal}
                           </Badge>
                         </TableCell>
 
@@ -448,7 +448,7 @@ export default function VehicleTCOPage() {
                     <SelectItem key={v.truckId} value={v.truckId}>
                       <div className="flex items-center justify-between w-full gap-3">
                         <span className="font-bold">{v.truckNumber}</span>
-                        <span className="text-xs text-muted-foreground">{v.signalTitle.split(' ')[0]}</span>
+                        <span className="text-xs text-muted-foreground">{(v?.signalTitle || '').split(' ')[0]}</span>
                       </div>
                     </SelectItem>
                   ))}

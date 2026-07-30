@@ -215,7 +215,7 @@ export default function TruckManagerPage() {
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
                             {assignedDriver ? (
-                              assignedDriver.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
+                              (assignedDriver?.name || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
                             ) : (
                               <User className="w-4 h-4 opacity-40" />
                             )}

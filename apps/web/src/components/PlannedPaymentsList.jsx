@@ -63,7 +63,7 @@ export default function PlannedPaymentsList() {
       // Group by Date 
       const groupsByDate = {};
       records.forEach(r => {
-        const dateKey = r.payment_date.split('T')[0];
+        const dateKey = (r?.payment_date || '').split('T')[0];
         if (!groupsByDate[dateKey]) {
           groupsByDate[dateKey] = {
             date: r.payment_date,

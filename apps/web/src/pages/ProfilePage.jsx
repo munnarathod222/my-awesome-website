@@ -369,7 +369,7 @@ const ProfilePage = () => {
     if (currentUser && !isEditing) {
       // Handle both name and full_name for backward compatibility with schema
       const rawName = currentUser.full_name || currentUser.name || '';
-      const nameParts = rawName.split(' ');
+      const nameParts = (rawName || '').split(' ');
       const first = nameParts[0] || '';
       const last = nameParts.slice(1).join(' ') || '';
       

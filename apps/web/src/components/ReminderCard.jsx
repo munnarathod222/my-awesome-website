@@ -146,7 +146,7 @@ const ReminderCard = ({ reminder, onViewDetails, onRefresh, onRecharge }) => {
           <div className="space-y-3 my-3">
             <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
               <FileText className="w-4 h-4 text-primary/70" />
-              Document: <span className="font-bold">{reminder.title.split(' Expiring:')[0]}</span>
+              Document: <span className="font-bold">{(reminder?.title || '').split(' Expiring:')[0]}</span>
             </p>
             <div className="flex justify-between items-center text-xs text-muted-foreground bg-muted/20 p-2.5 rounded-lg border border-border/30">
               <div>

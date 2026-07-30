@@ -16,16 +16,17 @@ export async function logAuditEvent({ action, module, recordId, details, perform
     };
 
     const timestamp = new Date().toISOString();
+    const userObj = typeof currentUser === 'object' && currentUser !== null ? currentUser : {};
     const logEntry = {
       id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
       action: action || 'UPDATE', // CREATE, UPDATE, DELETE, STATUS_CHANGE, PAYMENT_MARKED
       module: module || 'System', // Trip Logs, Payment Requests, Cashbook, Users, etc.
       record_id: recordId || '-',
       details: typeof details === 'object' ? JSON.stringify(details) : (details || 'System operation executed'),
-      performed_by_id: currentUser.id || 'usr_unknown',
-      performed_by_name: currentUser.name || currentUser.full_name || currentUser.email || 'Unknown User',
-      performed_by_email: currentUser.email || '',
-      performed_by_role: currentUser.role || 'Operator',
+      performed_by_id: userObj.id || 'usr_unknown',
+      performed_by_name: userObj.name || userObj.full_name || userObj.email || 'Unknown User',
+      performed_by_email: userObj.email || '',
+      performed_by_role: userObj.role || 'Operator',
       timestamp: timestamp,
       created: timestamp
     };

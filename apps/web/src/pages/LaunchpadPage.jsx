@@ -182,7 +182,7 @@ export default function LaunchpadPage() {
           if (activeCategory !== 'All' && group.title !== activeCategory) return null;
 
           const visibleItems = group.items.filter(item => 
-            Array.isArray(item.roles) && item.roles.includes(role) && 
+            Array.isArray(item.roles) && (item?.roles || []).includes(role) && 
             (searchQuery === '' || 
               (item.label || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
               (item.desc || '').toLowerCase().includes(searchQuery.toLowerCase()))

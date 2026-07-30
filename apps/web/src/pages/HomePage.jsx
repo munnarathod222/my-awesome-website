@@ -7,14 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ShieldCheck, Clock, DollarSign, Headphones as HeadphonesIcon, ArrowRight,
   Sparkles, ChevronLeft, ChevronRight, MessageSquare, Quote, Star, Truck,
-  Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard, UserPlus, Users
+  Building2, Activity, MapPin, CheckCircle2, Shield, CreditCard, UserPlus, Users,
+  LayoutDashboard
 } from 'lucide-react';
 import QuoteCalculator from '@/components/QuoteCalculator.jsx';
 import OfficialGoogleMapsFreightCalculator from '@/components/OfficialGoogleMapsFreightCalculator.jsx';
 import FAQAccordion from '@/components/FAQAccordion.jsx';
 import pb from '@/lib/pocketbaseClient.js';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 
 const HomePage = () => {
+  const { isAuthenticated } = useAuth();
   const [realStats, setRealStats] = useState({
     fleetSize: null,
     tripsCompleted: null,
@@ -140,6 +143,14 @@ const HomePage = () => {
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3">
+                    {isAuthenticated && (
+                      <Button size="lg" className="h-12 px-6 text-sm font-extrabold rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 text-slate-950 hover:from-emerald-400 hover:to-teal-300 hover:scale-105 transition-all shadow-xl shadow-emerald-500/25 gap-2 border border-emerald-300/40" asChild>
+                        <Link to="/dashboard">
+                          <LayoutDashboard className="w-4 h-4" /> Go to Dashboard <ArrowRight className="w-4 h-4 ml-0.5" />
+                        </Link>
+                      </Button>
+                    )}
+
                     <Button size="lg" className="h-12 px-6 text-sm font-bold rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 transition-all shadow-xl" asChild>
                       <Link to="/quote">Get Instant Quote <ArrowRight className="w-4 h-4 ml-1.5" /></Link>
                     </Button>

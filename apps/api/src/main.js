@@ -23,6 +23,44 @@ const __dirname = path.dirname(__filename);
 
 app.set('trust proxy', true);
 
+// Enable security headers, CORS, and request body parsing early
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*"],
+      connectSrc: ["'self'", "http://127.0.0.1:8090", "http://localhost:3001", "https://api.render.com", "https://*.supabase.co"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+const defaultOrigins = [
+  'https://www.jaibhavanicargo.com',
+  'https://jaibhavanicargo.com',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+const corsOrigin = process.env.CORS_ORIGIN 
+  ? (process.env.CORS_ORIGIN === '*' ? true : process.env.CORS_ORIGIN.split(',')) 
+  : defaultOrigins;
+
+app.use(cors({
+  origin: corsOrigin,
+  credentials: true,
+}));
+app.use(morgan('combined'));
+app.use(globalRateLimit);
+app.use(express.json({ limit: BodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: BodyLimit }));
+
 // ----------------------------------------------------
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
@@ -1437,41 +1475,6 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Note: SIGINT and SIGTERM are handled inside watchAndSyncDatabase()
 // to ensure a final database sync to Supabase before the process exits.
-
-// Middlewares
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*"],
-      connectSrc: ["'self'", "http://127.0.0.1:8090", "http://localhost:3001", "https://api.render.com", "https://*.supabase.co"],
-      frameSrc: ["'self'"],
-      objectSrc: ["'none'"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
-const defaultOrigins = [
-  'https://www.jaibhavanicargo.com',
-  'https://jaibhavanicargo.com',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-];
-const corsOrigin = process.env.CORS_ORIGIN 
-  ? (process.env.CORS_ORIGIN === '*' ? true : process.env.CORS_ORIGIN.split(',')) 
-  : defaultOrigins;
-
-app.use(cors({
-  origin: corsOrigin,
-  credentials: true,
-}));
-app.use(morgan('combined'));
-app.use(globalRateLimit);
-app.use(express.json({ limit: BodyLimit }));
-app.use(express.urlencoded({ extended: true, limit: BodyLimit }));
 
 // API Router - Mount under root and prefixes to handle different environments cleanly
 const apiRouter = routes();

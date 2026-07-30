@@ -665,7 +665,7 @@ Best Regards,
       
       stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
 
-      const d = r.request_date.split('T')[0];
+      const d = (r?.request_date || '').split('T')[0];
       if (!timelineObj[d]) timelineObj[d] = 0;
       timelineObj[d]++;
     });

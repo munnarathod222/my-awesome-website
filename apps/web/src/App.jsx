@@ -277,8 +277,8 @@ function App() {
                   {/* Cashbook & Financials */}
                   <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><CompanyVaultPage /></ProtectedRoute>} />
                   <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
-                  <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ExpensesPage /></ProtectedRoute>} />
-                  <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><FASTagManagerPage /></ProtectedRoute>} />
+                  <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExpensesPage /></ProtectedRoute>} />
+                  <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FASTagManagerPage /></ProtectedRoute>} />
                   <Route path="/dashboard/cashbook" element={<Navigate to="/cashbook" replace />} />
                   
                   <Route path="/quotes-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><QuotesManagerPage /></ProtectedRoute>} />
@@ -294,8 +294,6 @@ function App() {
                   <Route path="/payroll" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><PayrollPage /></ProtectedRoute>} />
                   <Route path="/payroll-dashboard" element={<Navigate to="/payroll" replace />} />
                   
-                  <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FASTagManagerPage /></ProtectedRoute>} />
-                  <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/reports" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><ReportsPage /></ProtectedRoute>} />
                   <Route path="/fuel-tracker" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FuelTrackerPage /></ProtectedRoute>} />
                   <Route path="/credit-cards" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><CreditCardsPage /></ProtectedRoute>} />
