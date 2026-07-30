@@ -122,9 +122,7 @@ export default function VehicleQRVerificationPage() {
           (normTruckNum && docNotes.includes(normTruckNum))
         );
       });
-      setDocuments(matchingDocs);
-
-      // 4. Fetch real employees / driver details
+      // 4. Fetch real employees / driver details & driving license document
       const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
       const matchedDriver = empList.find(e => {
         const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
@@ -137,6 +135,35 @@ export default function VehicleQRVerificationPage() {
       }) || null;
       
       setDriver(matchedDriver);
+
+      if (matchedDriver) {
+        const driverDocs = await pb.collection('employee_documents').getFullList({
+          filter: `employee_id = "${matchedDriver.id}"`,
+          $autoCancel: false
+        }).catch(() => []);
+
+        driverDocs.forEach(dlDoc => {
+          const file = Array.isArray(dlDoc.files) ? dlDoc.files[0] : (dlDoc.file || dlDoc.files);
+          const colId = dlDoc.collectionId || 'pbc_5654350664';
+          const isAlreadyInList = matchingDocs.some(d => d.id === dlDoc.id);
+          if (!isAlreadyInList) {
+            matchingDocs.unshift({
+              id: dlDoc.id,
+              collectionId: colId,
+              document_type: `Driver License (${matchedDriver.name})`,
+              document_number: matchedDriver.license_number || dlDoc.document_number || 'N/A',
+              expiry_date: dlDoc.expiry_date || null,
+              issue_date: dlDoc.issue_date || null,
+              file: file,
+              files: dlDoc.files,
+              file_url: file ? pb.files.getURL(dlDoc, file) : null,
+              notes: `Assigned Driver: ${matchedDriver.name}`
+            });
+          }
+        });
+      }
+
+      setDocuments(matchingDocs);
 
       // Auto-log scan event for roadside audit logs
       logVehicleScanEvent(rawToken || foundTruck.truck_number, foundTruck.truck_number, 'Roadside RTO / Police Verification');
