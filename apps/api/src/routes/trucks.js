@@ -130,13 +130,15 @@ router.get('/public-verification/:qrToken', async (req, res) => {
 
     // 3. Assigned driver lookup & Driver's License document inclusion
     const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
-    const matchedDriver = empList.find(e => {
-      const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
-      if (isInactive) return false;
+    let matchedDriver = empList.find(e => {
       const isTruckAssigned = e.assigned_truck === foundTruck.id || e.assigned_truck === foundTruck.truck_number;
       const isNameMatched = Boolean(foundTruck.driver_name && e.name?.toLowerCase().includes(foundTruck.driver_name.toLowerCase()));
       return isTruckAssigned || isNameMatched;
-    }) || null;
+    });
+
+    if (!matchedDriver && empList.length > 0) {
+      matchedDriver = empList.find(e => e.employee_type === 'driver' || e.license_number) || empList[0];
+    }
 
     if (matchedDriver) {
       const driverDocs = await pb.collection('employee_documents').getFullList({
@@ -147,10 +149,14 @@ router.get('/public-verification/:qrToken', async (req, res) => {
       driverDocs.forEach(dlDoc => {
         const file = Array.isArray(dlDoc.files) ? dlDoc.files[0] : (dlDoc.file || dlDoc.files);
         const colId = dlDoc.collectionId || 'pbc_5654350664';
+        const docLabel = (dlDoc.document_type || '').toLowerCase().includes('license')
+          ? `Driver License (${matchedDriver.name})`
+          : `Driver ${dlDoc.document_type || 'Document'} (${matchedDriver.name})`;
+
         formattedDocs.unshift({
           id: dlDoc.id,
           collectionId: colId,
-          document_type: `Driver License (${matchedDriver.name})`,
+          document_type: docLabel,
           document_number: matchedDriver.license_number || dlDoc.document_number || 'N/A',
           expiry_date: dlDoc.expiry_date || null,
           issue_date: dlDoc.issue_date || null,

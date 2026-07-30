@@ -245,6 +245,11 @@ export default function VehicleQRVerificationPage() {
     return calculateVehicleCompliance(truck || {}, documents);
   }, [truck, documents]);
 
+  // Find assigned driver's license document
+  const driverDlDoc = useMemo(() => {
+    return documents.find(d => (d.document_type || '').toLowerCase().includes('license'));
+  }, [documents]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 space-y-4 select-none">
@@ -468,9 +473,18 @@ export default function VehicleQRVerificationPage() {
               )}
             </div>
 
-            <div className="space-y-1 text-xs">
-              <div className="font-extrabold text-sm text-white">
-                {driverName}
+            <div className="space-y-1 text-xs flex-1">
+              <div className="font-extrabold text-sm text-white flex items-center justify-between">
+                <span>{driverName}</span>
+                {driverDlDoc && (
+                  <Button
+                    size="sm"
+                    onClick={() => setPreviewDoc(driverDlDoc)}
+                    className="h-6 px-2.5 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg font-extrabold shadow-sm"
+                  >
+                    <Eye className="w-3 h-3 mr-1 text-amber-400" /> View Driving License (DL)
+                  </Button>
+                )}
               </div>
               <div className="text-slate-400 font-mono">
                 DL No: <span className="text-amber-400 font-bold">{driverDl}</span>
