@@ -8,20 +8,28 @@ let cachedLogoBase64 = null;
 let cachedSignatureBase64 = null;
 
 const loadImageBase64 = (url) => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const dataURL = canvas.toDataURL('image/png');
-      resolve(dataURL);
-    };
-    img.onerror = (err) => reject(err);
-    img.src = url;
+  return new Promise((resolve) => {
+    try {
+      const img = document.createElement('img');
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width || 100;
+          canvas.height = img.height || 100;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const dataURL = canvas.toDataURL('image/png');
+          resolve(dataURL);
+        } catch (e) {
+          resolve(url);
+        }
+      };
+      img.onerror = () => resolve(url);
+      img.src = url;
+    } catch (err) {
+      resolve(url);
+    }
   });
 };
 
