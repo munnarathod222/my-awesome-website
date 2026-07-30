@@ -36,7 +36,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
 
     if (!pocketbaseClient.authStore.isValid && !authPromise) {
         const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
-        const password = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
+        const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
         
         authPromise = pocketbaseClient.collection('_superusers').authWithPassword(
             email,
@@ -59,7 +59,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
 
         if (!pocketbaseClient.authStore.isValid && !authPromise) {
             const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
-            const password = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
+            const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
             
             authPromise = pocketbaseClient.collection('_superusers').authWithPassword(
                 email,

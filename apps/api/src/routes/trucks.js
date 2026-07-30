@@ -125,7 +125,7 @@ router.get('/public-verification/:qrToken', async (req, res) => {
     // Format file URLs so guest clients can preview or download docs directly
     const formattedDocs = matchingDocs.map(doc => ({
       ...doc,
-      file_url: doc.file ? `/api/files/${doc.collectionId || 'truck_documents'}/${doc.id}/${doc.file}` : null
+      file_url: doc.file ? `/hcgi/platform/api/files/${doc.collectionId || 'pbc_9574740198'}/${doc.id}/${doc.file}` : null
     }));
 
     // 3. Assigned driver lookup

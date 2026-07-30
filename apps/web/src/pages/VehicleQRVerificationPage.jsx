@@ -40,12 +40,14 @@ export default function VehicleQRVerificationPage() {
           const apiData = await apiRes.json();
           if (apiData.success && apiData.truck) {
             setTruck(apiData.truck);
-            setDocuments(apiData.documents || []);
             setDriver(apiData.driver || null);
             setCompanyInfo(apiData.company || null);
-            logVehicleScanEvent(rawToken || apiData.truck.truck_number, apiData.truck.truck_number, 'Roadside RTO / Police Verification');
-            setLoading(false);
-            return;
+            if (Array.isArray(apiData.documents) && apiData.documents.length > 0) {
+              setDocuments(apiData.documents);
+              logVehicleScanEvent(rawToken || apiData.truck.truck_number, apiData.truck.truck_number, 'Roadside RTO / Police Verification');
+              setLoading(false);
+              return;
+            }
           }
         }
       } catch (apiErr) {
