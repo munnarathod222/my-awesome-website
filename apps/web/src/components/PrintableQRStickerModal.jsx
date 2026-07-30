@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Printer, QrCode, ShieldCheck, Download, ExternalLink, Phone, Truck, Building2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Printer, QrCode, ShieldCheck, Download, ExternalLink, Phone, Truck, Building2, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PrintableQRStickerModal({ isOpen, onClose, truck, qrToken }) {
+  const [allowDownload, setAllowDownload] = useState(false);
+
   if (!truck) return null;
 
   const originUrl = window.location.origin;
-  const verificationUrl = `${originUrl}/v/${qrToken || truck.truck_number}`;
+  const verificationUrl = `${originUrl}/v/${qrToken || truck.truck_number}${allowDownload ? '?dl=1' : ''}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(verificationUrl)}`;
 
   const handlePrint = () => {
@@ -190,6 +194,23 @@ export default function PrintableQRStickerModal({ isOpen, onClose, truck, qrToke
             Print and paste this tamper-resistant QR sticker on the truck's front windshield and side cabin doors.
           </p>
         </DialogHeader>
+
+        {/* Admin Downloadable Privilege Toggle */}
+        <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Checkbox 
+              id="dl-permission-check" 
+              checked={allowDownload} 
+              onCheckedChange={(val) => setAllowDownload(Boolean(val))} 
+            />
+            <Label htmlFor="dl-permission-check" className="text-xs font-extrabold cursor-pointer text-foreground">
+              Enable Document Downloads for End-Users
+            </Label>
+          </div>
+          <Badge variant="outline" className={`text-[10px] font-mono ${allowDownload ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-slate-800 text-slate-400'}`}>
+            {allowDownload ? '📥 Download Enabled' : '🔒 View Only (Protected)'}
+          </Badge>
+        </div>
 
         {/* Preview Pass Container */}
         <div className="py-4">

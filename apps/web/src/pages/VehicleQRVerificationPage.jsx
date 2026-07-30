@@ -147,9 +147,62 @@ export default function VehicleQRVerificationPage() {
     }
   };
 
+  const [isScreenProtected, setIsScreenProtected] = useState(false);
+
+  const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const isDownloadAllowed = useMemo(() => {
+    return searchParams.get('dl') === '1' || searchParams.get('allow_download') === 'true';
+  }, [searchParams]);
+
   useEffect(() => {
     fetchVehicleData();
   }, [qrToken]);
+
+  // Anti-screenshot & DRM security protections
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'PrintScreen' || e.keyCode === 44) {
+        e.preventDefault();
+        setIsScreenProtected(true);
+        try { navigator.clipboard?.writeText(''); } catch (err) {}
+        toast.warning('Screenshots disabled on security pass page.');
+        setTimeout(() => setIsScreenProtected(false), 2000);
+      }
+
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
+        (e.ctrlKey && ['S', 'P', 'U'].includes(e.key.toUpperCase())) ||
+        (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const handleBlur = () => {
+      setIsScreenProtected(true);
+    };
+
+    const handleFocus = () => {
+      setIsScreenProtected(false);
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   // Compute compliance score and status
   const compliance = useMemo(() => {
@@ -158,7 +211,7 @@ export default function VehicleQRVerificationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 space-y-4">
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 space-y-4 select-none">
         <ShieldCheck className="w-12 h-12 text-emerald-400 animate-pulse" />
         <p className="text-sm font-mono tracking-wider font-bold">Verifying Official Transport Security Pass...</p>
       </div>
@@ -288,6 +341,19 @@ export default function VehicleQRVerificationPage() {
                       >
                         <Eye className="w-3.5 h-3.5 mr-1" /> View Doc
                       </Button>
+                      
+                      {isDownloadAllowed && fileUrl && (
+                        <a 
+                          href={fileUrl}
+                          download
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700"
+                          title="Download Copy"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 );
@@ -369,16 +435,9 @@ export default function VehicleQRVerificationPage() {
                 href={`tel:${driverPhone}`}
                 className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
               >
-                <Phone className="w-4 h-4 text-emerald-400" /> 📞 Call Driver Direct
+                <Phone className="w-4 h-4 text-emerald-400" /> Call Driver Direct
               </a>
-            ) : (
-              <a 
-                href={`tel:${companyPhone}`}
-                className="p-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-xs flex items-center gap-2.5 transition-colors shadow-sm"
-              >
-                <Phone className="w-4 h-4 text-emerald-400" /> 📞 24x7 Fleet Helpline
-              </a>
-            )}
+            ) : null}
 
             <a 
               href={`tel:${companyPhone}`}
@@ -428,12 +487,23 @@ export default function VehicleQRVerificationPage() {
 
       </div>
 
+      {/* Screen Protection Anti-Screenshot Overlay */}
+      {isScreenProtected && (
+        <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center text-white pointer-events-none select-none">
+          <ShieldAlert className="w-16 h-16 text-rose-500 mb-3 animate-pulse" />
+          <h2 className="text-lg font-black tracking-tight text-rose-400 uppercase">Protected Digital Pass</h2>
+          <p className="text-xs text-slate-400 mt-1 max-w-xs">
+            Screen captures, print screen, and right click downloads are restricted on this statutory document verification page.
+          </p>
+        </div>
+      )}
+
       {/* Document Preview Modal for Police & RTO Inspection */}
       <DocumentPreviewModal 
         isOpen={!!previewDoc} 
         onClose={() => setPreviewDoc(null)} 
         document={previewDoc} 
-        hideDownload={true}
+        hideDownload={!isDownloadAllowed}
       />
     </div>
   );
