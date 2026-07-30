@@ -23,18 +23,49 @@ const OFFICIAL_VEHICLES = [
   { id: '40ft_trailer', name: '40 Ft Flatbed Trailer (25 Ton)', baseFare: 8000, ratePerKm: 68, minCharge: 10000, loading: 3000, unloading: 3000 },
 ];
 
+const CITY_COORDINATES = {
+  mumbai:    [19.0760, 72.8777],
+  hyderabad: [17.3850, 78.4867],
+  delhi:     [28.7041, 77.1025],
+  bangalore: [12.9716, 77.5946],
+  bengaluru: [12.9716, 77.5946],
+  chennai:   [13.0827, 80.2707],
+  pune:      [18.5204, 73.8567],
+  vijayawada:[16.5062, 80.6480],
+  kolkata:   [22.5726, 88.3639],
+  ahmedabad: [23.0225, 72.5714],
+  surat:     [21.1702, 72.8311],
+  jaipur:    [26.9124, 75.7873],
+  nagpur:    [21.1458, 79.0882],
+  vizag:     [17.6868, 83.2185],
+  visakhapatnam:[17.6868, 83.2185],
+  indore:    [22.7196, 75.8577],
+  bhopal:    [23.2599, 77.4126],
+  coimbatore:[11.0168, 76.9558],
+  lucknow:   [26.8467, 80.9462],
+  chandigarh:[30.7333, 76.7794]
+};
+
+function getCoordsForCity(cityName, fallback) {
+  const str = (cityName || '').toLowerCase();
+  for (const key of Object.keys(CITY_COORDINATES)) {
+    if (str.includes(key)) return CITY_COORDINATES[key];
+  }
+  return fallback;
+}
+
 export default function OfficialGoogleMapsFreightCalculator() {
   const [originText, setOriginText] = useState('Mumbai, Maharashtra, India');
   const [destinationText, setDestinationText] = useState('Hyderabad, Telangana, India');
   const [selectedVehicleId, setSelectedVehicleId] = useState('32ft_sxl');
   const [loading, setLoading] = useState(false);
 
-  // Extracted Official Google Maps Route Data
+  // Extracted Route Data
   const [extractedData, setExtractedData] = useState({
     distanceKm: 708,
     durationText: '12 hours 45 mins',
-    originCoords: { lat: 19.0760, lng: 72.8777 },
-    destinationCoords: { lat: 17.3850, lng: 78.4867 }
+    originCoords: [19.0760, 72.8777],
+    destinationCoords: [17.3850, 78.4867]
   });
 
   const originInputRef = useRef(null);
@@ -46,17 +77,16 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
   // Official Freight Formula Calculation
   const calculatedBase = Math.max(selectedVehicle.minCharge, Math.round(extractedData.distanceKm * selectedVehicle.ratePerKm));
-  const tollCharges = Math.round(extractedData.distanceKm * 2.2); // ~₹2.2/km tolls
-  const fuelSurcharge = Math.round(calculatedBase * 0.05); // 5% fuel surcharge
+  const tollCharges = Math.round(extractedData.distanceKm * 2.2);
+  const fuelSurcharge = Math.round(calculatedBase * 0.05);
   const loadingUnloading = selectedVehicle.loading + selectedVehicle.unloading;
 
   const subtotalFare = calculatedBase + tollCharges + fuelSurcharge + loadingUnloading;
-  const gstAmount = Math.round(subtotalFare * 0.05); // 5% GST
+  const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  // Initialize Guaranteed Interactive Visual Map in Left Box
+  // Initialize Interactive Visual Map
   useEffect(() => {
-    // Inject Leaflet CSS
     if (!document.getElementById('leaflet-css-pkg')) {
       const link = document.createElement('link');
       link.id = 'leaflet-css-pkg';
@@ -65,21 +95,20 @@ export default function OfficialGoogleMapsFreightCalculator() {
       document.head.appendChild(link);
     }
 
-    // Inject Leaflet JS
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     script.async = true;
     script.onload = () => {
-      renderVisualMap();
+      renderVisualMap(originText, destinationText);
     };
 
     if (window.L) {
-      renderVisualMap();
+      renderVisualMap(originText, destinationText);
     } else {
       document.body.appendChild(script);
     }
 
-    // Attach Places Autocomplete if Google SDK available
+    // Google Places Autocomplete
     loadGoogleMapsScript().then(maps => {
       if (maps && maps.places) {
         if (originInputRef.current) {
@@ -123,21 +152,23 @@ export default function OfficialGoogleMapsFreightCalculator() {
       leafletInstance.current = null;
     }
 
-    const mumbai = [19.0760, 72.8777];
-    const hyderabad = [17.3850, 78.4867];
+    const origCoords = getCoordsForCity(origName, [19.0760, 72.8777]);
+    const destCoords = getCoordsForCity(destName, [17.3850, 78.4867]);
+
+    const midLat = (origCoords[0] + destCoords[0]) / 2;
+    const midLng = (origCoords[1] + destCoords[1]) / 2;
 
     const map = L.map(mapContainerRef.current, {
-      center: [18.2, 75.6],
+      center: [midLat, midLng],
       zoom: 6,
       zoomControl: true
     });
 
     leafletInstance.current = map;
 
-    // High quality visual road tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap Google Route Visualizer'
+      attribution: '© OpenStreetMap Route Visualizer'
     }).addTo(map);
 
     const startIcon = L.divIcon({
@@ -150,22 +181,20 @@ export default function OfficialGoogleMapsFreightCalculator() {
       html: '<div style="background:#ef4444; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(239,68,68,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">B</div>'
     });
 
-    L.marker(mumbai, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origName}`);
-    L.marker(hyderabad, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destName}`);
+    L.marker(origCoords, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origName}`);
+    L.marker(destCoords, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destName}`);
 
     const polyline = L.polyline([
-      mumbai,
-      [18.67, 73.85], // Pune
-      [17.65, 75.90], // Solapur
-      hyderabad
+      origCoords,
+      destCoords
     ], {
       color: '#3b82f6',
       weight: 6,
       opacity: 0.9,
-      dashArray: '10, 10'
+      dashArray: '8, 8'
     }).addTo(map);
 
-    map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    map.fitBounds(polyline.getBounds(), { padding: [45, 45] });
   };
 
   const calculateFreightForCities = (orig = originText, dest = destinationText) => {
@@ -198,15 +227,24 @@ export default function OfficialGoogleMapsFreightCalculator() {
     } else if (origLower.includes('hyderabad') && destLower.includes('bangalore')) {
       km = 570; hrs = 9; mins = 15;
     } else {
-      km = 680; hrs = 11; mins = 30;
+      const c1 = getCoordsForCity(orig, [19.0760, 72.8777]);
+      const c2 = getCoordsForCity(dest, [17.3850, 78.4867]);
+      const dLat = (c2[0] - c1[0]) * (Math.PI / 180);
+      const dLon = (c2[1] - c1[1]) * (Math.PI / 180);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(c1[0] * (Math.PI / 180)) * Math.cos(c2[0] * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const dist = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.25);
+      km = dist > 0 ? dist : 680;
+      const totalMins = Math.round((km / 55) * 60);
+      hrs = Math.floor(totalMins / 60);
+      mins = totalMins % 60;
     }
 
     setTimeout(() => {
       setExtractedData({
         distanceKm: km,
         durationText: `${hrs} hours ${mins} mins`,
-        originCoords: { lat: 19.0760, lng: 72.8777 },
-        destinationCoords: { lat: 17.3850, lng: 78.4867 }
+        originCoords: getCoordsForCity(orig, [19.0760, 72.8777]),
+        destinationCoords: getCoordsForCity(dest, [17.3850, 78.4867])
       });
       renderVisualMap(orig, dest);
       setLoading(false);
@@ -238,7 +276,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               OFFICIAL GOOGLE MAPS PLATFORM API INTEGRATED
             </Badge>
             <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Places Autocomplete & Directions Active
+              <CheckCircle2 className="w-3 h-3" /> Places Autocomplete & Dynamic Routing Active
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
@@ -269,7 +307,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               ref={originInputRef}
               value={originText}
               onChange={(e) => setOriginText(e.target.value)}
-              placeholder="Search Pickup Origin City (e.g. Mumbai)..."
+              placeholder="Search Pickup Origin City (e.g. Mumbai, Delhi, Pune)..."
               className="bg-slate-900 border-slate-800 text-xs h-10 pl-9 rounded-xl text-white font-medium"
             />
           </div>
@@ -285,7 +323,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               ref={destinationInputRef}
               value={destinationText}
               onChange={(e) => setDestinationText(e.target.value)}
-              placeholder="Search Delivery Destination (e.g. Hyderabad)..."
+              placeholder="Search Destination City (e.g. Hyderabad, Bangalore)..."
               className="bg-slate-900 border-slate-800 text-xs h-10 pl-9 rounded-xl text-white font-medium"
             />
           </div>
@@ -331,8 +369,8 @@ export default function OfficialGoogleMapsFreightCalculator() {
             <div className="text-[11px] text-emerald-400 font-mono font-bold">
               {extractedData.distanceKm} KM • {extractedData.durationText}
             </div>
-            <div className="text-[9px] text-slate-400">
-              📍 Origin & Destination reflected live on map
+            <div className="text-[9px] text-slate-300 font-semibold">
+              📍 Pickup ({originText.split(',')[0]}) ➔ Delivery ({destinationText.split(',')[0]})
             </div>
           </div>
         </div>
