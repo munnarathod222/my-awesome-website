@@ -1,11 +1,11 @@
 import React from 'react';
-import { AlertTriangle, RefreshCw, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null, showDetails: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -16,6 +16,18 @@ export default class ErrorBoundary extends React.Component {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     this.setState({ errorInfo });
   }
+
+  handleForceReload = () => {
+    try {
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
+      sessionStorage.clear();
+    } catch (e) {}
+    window.location.href = window.location.pathname + '?nocache=' + Date.now();
+  };
 
   render() {
     if (this.state.hasError) {
@@ -49,12 +61,12 @@ export default class ErrorBoundary extends React.Component {
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button onClick={() => window.location.reload()} size="lg" className="gap-2 rounded-xl shadow-md">
-              <RefreshCw className="w-5 h-5" /> Refresh Page
+            <Button onClick={this.handleForceReload} size="lg" className="gap-2 rounded-xl shadow-md">
+              <RefreshCw className="w-5 h-5" /> Refresh Page (Clear Cache)
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => window.location.href = '/dashboard'} 
+              onClick={() => window.location.href = '/dashboard?nocache=' + Date.now()} 
               size="lg" 
               className="gap-2 rounded-xl"
             >
@@ -64,6 +76,7 @@ export default class ErrorBoundary extends React.Component {
         </div>
       );
     }
+
     return this.props.children;
   }
 }
