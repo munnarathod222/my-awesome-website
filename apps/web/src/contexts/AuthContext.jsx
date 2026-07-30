@@ -45,23 +45,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const localUser = getStoredUser();
-        if (localUser) {
-          setCurrentUser(localUser);
-          if (pb.authStore.isValid && pb.authStore.token && pb.authStore.token.split('.').length === 3) {
-            try {
-              const authData = await pb.collection('users').authRefresh({ $autoCancel: false });
-              setCurrentUser(authData.record);
-              localStorage.setItem('app_auth_user', JSON.stringify(authData.record));
-            } catch (err) {
-              console.warn('[AuthContext] PB Refresh skipped/failed, keeping cached user');
-            }
-          }
+        if (pb.authStore.isValid && pb.authStore.model) {
+          setCurrentUser(pb.authStore.model);
+          localStorage.setItem('app_auth_user', JSON.stringify(pb.authStore.model));
         } else {
+          pb.authStore.clear();
+          localStorage.removeItem('app_auth_user');
           setCurrentUser(null);
         }
       } catch (err) {
         console.error('[AuthContext] checkAuth error:', err);
+        pb.authStore.clear();
+        localStorage.removeItem('app_auth_user');
+        setCurrentUser(null);
       } finally {
         setInitialLoading(false);
       }
@@ -71,47 +67,27 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const cleanEmail = (email || '').trim().toLowerCase();
+    let authData;
     try {
-      const authData = await pb.collection('users').authWithPassword(email, password, { $autoCancel: false });
-      
+      try {
+        authData = await pb.collection('users').authWithPassword(email, password, { $autoCancel: false });
+      } catch (userErr) {
+        authData = await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+      }
+
       if (authData.record.status === 'inactive') {
         pb.authStore.clear();
         localStorage.removeItem('app_auth_user');
         throw new Error('Account is inactive. Please contact administrator.');
       }
 
-      await checkUserApprovalStatus(email);
-      
       setCurrentUser(authData.record);
       localStorage.setItem('app_auth_user', JSON.stringify(authData.record));
       return authData.record;
     } catch (error) {
-      if (cleanEmail === 'munnarathod222@gmail.com' || cleanEmail === 'admin@jaibhavanicargo.com') {
-        const superAdminRecord = {
-          id: 'usr_munna_superadmin',
-          email: cleanEmail,
-          name: 'Munna Rathod',
-          full_name: 'Munna Rathod',
-          role: 'super_admin',
-          status: 'active'
-        };
-
-        const dummyHeader = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-        const dummyPayload = btoa(JSON.stringify({ id: superAdminRecord.id, exp: Math.floor(Date.now() / 1000) + 315360000 }));
-        const dummySignature = "superadmin_signature";
-        const validJwt = `${dummyHeader}.${dummyPayload}.${dummySignature}`;
-        
-        try {
-          pb.authStore.save(validJwt, superAdminRecord);
-        } catch (e) {}
-        
-        localStorage.setItem('app_auth_user', JSON.stringify(superAdminRecord));
-        setCurrentUser(superAdminRecord);
-        return superAdminRecord;
-      }
       pb.authStore.clear();
       localStorage.removeItem('app_auth_user');
-      throw error;
+      throw new Error(error?.message || 'Invalid email or password.');
     }
   };
 
