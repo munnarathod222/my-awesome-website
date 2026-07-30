@@ -16,8 +16,8 @@ const LoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
   
-  const [email, setEmail] = useState('munnarathod222@gmail.com');
-  const [password, setPassword] = useState('Munnarathod@25');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -51,34 +51,9 @@ const LoginPage = () => {
         setError('Your account is pending approval. Please wait for admin confirmation.');
       } else if (msg.includes('rejected')) {
         setError('Your request has been rejected. Contact administrator.');
-      } else if (msg.includes('Failed to authenticate') || msg.includes('Something went wrong') || err?.status === 400) {
-        setError('Invalid email or password. Please check your credentials or click "1-Click Quick Sign In".');
       } else {
-        setError(msg || 'Invalid email or password.');
+        setError('Invalid email or password. Please check your login credentials.');
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickAdminLogin = async () => {
-    setEmail('munnarathod222@gmail.com');
-    setPassword('Munnarathod@25');
-    setLoading(true);
-    try {
-      await login('munnarathod222@gmail.com', 'Munnarathod@25');
-      toast.success('Signed in as Super Admin!');
-      navigate('/dashboard', { replace: true });
-    } catch (e) {
-      pb.authStore.save('super_admin_session_token_' + Date.now(), {
-        id: 'usr_munna_superadmin',
-        email: 'munnarathod222@gmail.com',
-        role: 'super_admin',
-        name: 'Munna Rathod',
-        full_name: 'Munna Rathod'
-      });
-      toast.success('Super Admin Session Active!');
-      window.location.href = '/dashboard';
     } finally {
       setLoading(false);
     }
@@ -108,24 +83,6 @@ const LoginPage = () => {
             </div>
           )}
 
-          <Button
-            onClick={handleQuickAdminLogin}
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs h-11 rounded-xl shadow-lg gap-2"
-          >
-            <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-            1-Click Quick Sign In to Dashboard
-          </Button>
-
-          <div className="relative flex items-center justify-center">
-            <span className="bg-slate-900 px-3 text-[10px] uppercase font-bold text-slate-400 z-10">
-              Or Sign In with Credentials
-            </span>
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1">
               <Label htmlFor="email" className="text-xs font-bold text-slate-300">
@@ -138,6 +95,7 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white"
+                required
               />
             </div>
 
@@ -157,13 +115,14 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white"
+                required
               />
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-10 rounded-xl shadow-md mt-2"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs h-11 rounded-xl shadow-md mt-4"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
