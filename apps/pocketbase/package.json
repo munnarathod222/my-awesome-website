@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "pocketbase.exe serve --http=0.0.0.0:8090 --encryptionEnv=PB_ENCRYPTION_KEY --hooksWatch=false",
-    "start": "mkdir -p /data/storage && cp ./pb_data/data.db /data/data.db 2>/dev/null; cp ./pb_data/auxiliary.db /data/auxiliary.db 2>/dev/null; cp -rn ./pb_data/storage/. /data/storage/ 2>/dev/null; pocketbase.exe --dir=/data superuser upsert munnarathod222@gmail.com Munnarathod@25 && pocketbase.exe serve --http=0.0.0.0:8090 --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
+    "start": "mkdir -p /data/storage && cp ./pb_data/data.db /data/data.db 2>/dev/null; cp ./pb_data/auxiliary.db /data/auxiliary.db 2>/dev/null; cp -rn ./pb_data/storage/. /data/storage/ 2>/dev/null; chmod +x ./pocketbase 2>/dev/null; (./pocketbase || ./pocketbase.exe) --dir=/data superuser upsert munnarathod222@gmail.com Munnarathod@25 && (./pocketbase || ./pocketbase.exe) serve --http=0.0.0.0:8090 --encryptionEnv=PB_ENCRYPTION_KEY --dir=/data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:up": "chmod +x ./pocketbase && ./pocketbase horizons migrations:up --encryptionEnv=PB_ENCRYPTION_KEY --dir=./pb_data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:revert": "chmod +x ./pocketbase && ./pocketbase horizons migrations:revert --encryptionEnv=PB_ENCRYPTION_KEY --dir=./pb_data --migrationsDir=./pb_migrations --hooksDir=./pb_hooks --hooksWatch=false",
     "migrations:snapshot": "mkdir -p ./pb_snapshots && echo 'y' | ./pocketbase migrate collections --encryptionEnv=PB_ENCRYPTION_KEY --dir=./pb_data --migrationsDir=./pb_snapshots",
