@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
+import Database from 'better-sqlite3';
 
 import routes from './routes/index.js';
 import { errorMiddleware } from './middleware/error.js';
@@ -998,19 +999,33 @@ const runPocketBase = async () => {
   // Files are instead downloaded on-demand (lazily) as they are requested by users.
   logger.info(`📥 Lazy-download system active. Skipping boot-time storage download for light speed startup.`);
 
-  // Copy pre-populated SQLite data.db (1,305 records) & storage files to target dataDir if target DB is fresh/empty
+  // Copy pre-populated SQLite data.db (1,305 records) & storage files to target dataDir if target DB is empty of records
   try {
     const targetDb = path.join(dataDir, 'data.db');
     const srcDb = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
-    if (fs.existsSync(srcDb)) {
-      const srcSize = fs.statSync(srcDb).size;
-      const targetSize = fs.existsSync(targetDb) ? fs.statSync(targetDb).size : 0;
-      if (targetSize < srcSize / 2) {
-        logger.info(`💾 Seeding pre-populated SQLite database (${(srcSize/1024/1024).toFixed(2)} MB, 1,305 records) to ${targetDb}...`);
-        fs.copyFileSync(srcDb, targetDb);
-        logger.info(`✅ Database file copied successfully to persistent disk!`);
+    
+    let targetHasData = false;
+    if (fs.existsSync(targetDb)) {
+      try {
+        const testDb = new Database(targetDb, { readonly: true });
+        const row = testDb.prepare("SELECT count(*) as cnt FROM expenses").get();
+        if (row && row.cnt > 0) {
+          targetHasData = true;
+        }
+        testDb.close();
+      } catch (e) {
+        targetHasData = false;
       }
     }
+
+    if (!targetHasData && fs.existsSync(srcDb)) {
+      logger.info(`💾 OVERWRITING / SEEDING pre-populated SQLite database with 1,305 records to ${targetDb}...`);
+      fs.copyFileSync(srcDb, targetDb);
+      if (fs.existsSync(srcDb + '-wal')) fs.copyFileSync(srcDb + '-wal', targetDb + '-wal');
+      if (fs.existsSync(srcDb + '-shm')) fs.copyFileSync(srcDb + '-shm', targetDb + '-shm');
+      logger.info(`✅ Database file with 1,305 records successfully copied to persistent disk!`);
+    }
+
     const targetStorage = path.join(dataDir, 'storage');
     const srcStorage = path.resolve(__dirname, '../../pocketbase/pb_data/storage');
     if (fs.existsSync(srcStorage)) {
