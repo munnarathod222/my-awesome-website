@@ -55,6 +55,8 @@ const TruckDocsPage = () => {
     status: 'Active'
   });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [frontFile, setFrontFile] = useState(null);
+  const [backFile, setBackFile] = useState(null);
 
   const docTypes = ['RC', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
 
