@@ -656,6 +656,7 @@ export default function PayrollPage() {
       <PayrollGenerationModal
         isOpen={isGenerationModalOpen}
         onClose={() => setIsGenerationModalOpen(false)}
+        employees={employees}
         onSuccess={() => { setIsGenerationModalOpen(false); fetchData(); }}
       />
 

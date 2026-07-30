@@ -10,7 +10,7 @@ import PayrollSlipPreview from '@/components/PayrollSlipPreview.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
-export default function PayrollGenerationModal({ isOpen, onClose, employees, onSuccess }) {
+export default function PayrollGenerationModal({ isOpen, onClose, employees = [], onSuccess }) {
   const { currentUser } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -21,6 +21,7 @@ export default function PayrollGenerationModal({ isOpen, onClose, employees, onS
   
   const [payrollData, setPayrollData] = useState(null);
   const [employeeData, setEmployeeData] = useState(null);
+  const [empList, setEmpList] = useState(employees || []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -28,8 +29,16 @@ export default function PayrollGenerationModal({ isOpen, onClose, employees, onS
       setPayrollData(null);
       setEmployeeData(null);
       setSelectedEmployeeId('');
+    } else {
+      if (employees && employees.length > 0) {
+        setEmpList(employees);
+      } else {
+        pb.collection('employees').getFullList({ $autoCancel: false })
+          .then(res => setEmpList(res || []))
+          .catch(() => setEmpList([]));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, employees]);
 
   const handleCalculate = async () => {
     if (!selectedEmployeeId) {
@@ -39,13 +48,13 @@ export default function PayrollGenerationModal({ isOpen, onClose, employees, onS
 
     setLoading(true);
     try {
-      const emp = employees.find(e => e.id === selectedEmployeeId);
+      const emp = (empList || []).find(e => e.id === selectedEmployeeId);
       
       // Fetch pending advances for this employee to show in breakdown
       const pendingAdvances = await pb.collection('advances').getFullList({
         filter: `employee_id = "${selectedEmployeeId}" && status = "Pending"`,
         $autoCancel: false
-      });
+      }).catch(() => []);
       
       setEmployeeData({ ...emp, pendingAdvances });
       
@@ -140,8 +149,8 @@ export default function PayrollGenerationModal({ isOpen, onClose, employees, onS
                     <SelectValue placeholder="Select Employee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.employee_type})</SelectItem>
+                    {(empList || []).map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>{emp.name || emp.full_name || 'Staff Member'} ({emp.employee_type || emp.position || 'Staff'})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
