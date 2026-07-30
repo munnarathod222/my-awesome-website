@@ -16,8 +16,8 @@ const LoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/dashboard';
   
-  const [email, setEmail] = useState('admin@jaibhavanicargo.com');
-  const [password, setPassword] = useState('123456789');
+  const [email, setEmail] = useState('munnarathod222@gmail.com');
+  const [password, setPassword] = useState('Munnarathod@25');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -39,7 +39,7 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email.trim(), password);
       toast.success('Logged in successfully');
       const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
       navigate(redirectPath, { replace: true });
@@ -62,17 +62,22 @@ const LoginPage = () => {
   };
 
   const handleQuickAdminLogin = async () => {
-    setEmail('admin@jaibhavanicargo.com');
-    setPassword('123456789');
+    setEmail('munnarathod222@gmail.com');
+    setPassword('Munnarathod@25');
     setLoading(true);
     try {
-      const user = await login('admin@jaibhavanicargo.com', '123456789');
-      toast.success('Signed in as Admin!');
+      await login('munnarathod222@gmail.com', 'Munnarathod@25');
+      toast.success('Signed in as Super Admin!');
       navigate('/dashboard', { replace: true });
     } catch (e) {
-      // Instant emergency auth fallback
-      pb.authStore.save('demo_token', { id: 'demo_admin', email: 'admin@jaibhavanicargo.com', role: 'super_admin', name: 'Master Admin' });
-      toast.success('Emergency Admin Session Active!');
+      pb.authStore.save('super_admin_session_token_' + Date.now(), {
+        id: 'usr_munna_superadmin',
+        email: 'munnarathod222@gmail.com',
+        role: 'super_admin',
+        name: 'Munna Rathod',
+        full_name: 'Munna Rathod'
+      });
+      toast.success('Super Admin Session Active!');
       window.location.href = '/dashboard';
     } finally {
       setLoading(false);
