@@ -1,7 +1,7 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate((app) => {
     const email = $os.getenv("PB_SUPERUSER_EMAIL") || "munnarathod222@gmail.com"
-    const password = $os.getenv("PB_SUPERUSER_PASSWORD") || "cargo123456"
+    const password = $os.getenv("PB_SUPERUSER_PASSWORD") || "Munnarathod@25"
 
     // Idempotent: skip if a superuser with this email already exists
     try {
