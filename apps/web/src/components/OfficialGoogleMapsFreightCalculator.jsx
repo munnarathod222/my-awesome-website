@@ -22,34 +22,35 @@ const OFFICIAL_VEHICLES = [
   { id: '40ft_trailer', name: '40 Ft Flatbed Trailer (25 Ton)', baseFare: 8000, ratePerKm: 68, minCharge: 10000, loading: 3000, unloading: 3000 },
 ];
 
-const CITY_COORDS = {
-  mumbai:     { x: 30, y: 55, name: 'Mumbai' },
-  hyderabad:  { x: 55, y: 60, name: 'Hyderabad' },
-  delhi:      { x: 42, y: 25, name: 'Delhi NCR' },
-  bangalore:  { x: 48, y: 80, name: 'Bangalore' },
-  bengaluru:  { x: 48, y: 80, name: 'Bangalore' },
-  chennai:    { x: 62, y: 78, name: 'Chennai' },
-  pune:       [34, 58],
-  vijayawada: { x: 65, y: 62, name: 'Vijayawada' },
-  kolkata:    { x: 82, y: 45, name: 'Kolkata' },
-  ahmedabad:  { x: 26, y: 42, name: 'Ahmedabad' },
-  surat:      { x: 28, y: 48, name: 'Surat' },
-  jaipur:     { x: 36, y: 32, name: 'Jaipur' },
-  nagpur:     { x: 50, y: 48, name: 'Nagpur' },
-  vizag:      { x: 70, y: 56, name: 'Visakhapatnam' },
-  bhiwandi:   { x: 31, y: 54, name: 'Bhiwandi' },
-  solapur:    { x: 44, y: 59, name: 'Solapur' }
+// Exact SVG ViewBox (800 x 400) Coordinate System for Indian Logistics Hubs
+const CITY_SVG_MAP = {
+  mumbai:     { x: 220, y: 220, label: 'Mumbai' },
+  bhiwandi:   { x: 230, y: 215, label: 'Bhiwandi' },
+  pune:       { x: 260, y: 240, label: 'Pune' },
+  solapur:    { x: 330, y: 250, label: 'Solapur' },
+  hyderabad:  { x: 440, y: 250, label: 'Hyderabad' },
+  vijayawada: { x: 540, y: 260, label: 'Vijayawada' },
+  vizag:      { x: 620, y: 230, label: 'Visakhapatnam' },
+  delhi:      { x: 320, y: 90,  label: 'Delhi NCR' },
+  jaipur:     { x: 260, y: 130, label: 'Jaipur' },
+  ahmedabad:  { x: 180, y: 170, label: 'Ahmedabad' },
+  surat:      { x: 200, y: 200, label: 'Surat' },
+  bangalore:  { x: 380, y: 330, label: 'Bangalore' },
+  bengaluru:  { x: 380, y: 330, label: 'Bangalore' },
+  chennai:    { x: 480, y: 320, label: 'Chennai' },
+  kolkata:    { x: 680, y: 180, label: 'Kolkata' },
+  nagpur:     { x: 420, y: 190, label: 'Nagpur' },
+  indore:     { x: 300, y: 190, label: 'Indore' }
 };
 
-function getCityPoint(text, isOrigin) {
+function getCitySvgPoint(text, isOrigin) {
   const str = (text || '').toLowerCase();
-  for (const k of Object.keys(CITY_COORDS)) {
-    if (str.includes(k)) {
-      const pt = CITY_COORDS[k];
-      return Array.isArray(pt) ? { x: pt[0], y: pt[1], name: text } : { ...pt, name: text };
+  for (const key of Object.keys(CITY_SVG_MAP)) {
+    if (str.includes(key)) {
+      return { ...CITY_SVG_MAP[key], text };
     }
   }
-  return isOrigin ? { x: 30, y: 55, name: text } : { x: 58, y: 62, name: text };
+  return isOrigin ? { x: 220, y: 220, label: text, text } : { x: 440, y: 250, label: text, text };
 }
 
 export default function OfficialGoogleMapsFreightCalculator() {
@@ -79,12 +80,13 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  const ptA = getCityPoint(originText, true);
-  const ptB = getCityPoint(destinationText, false);
+  // Exact ViewBox coordinates for Origin & Destination
+  const ptA = getCitySvgPoint(originText, true);
+  const ptB = getCitySvgPoint(destinationText, false);
 
-  // Calculate curve control point for beautiful highway arc
+  // Control point for smooth curved highway arc
   const midX = (ptA.x + ptB.x) / 2;
-  const midY = (ptA.y + ptB.y) / 2 - 12;
+  const midY = (ptA.y + ptB.y) / 2 - 35;
 
   useEffect(() => {
     // Google Places Autocomplete dropdown
@@ -142,12 +144,12 @@ export default function OfficialGoogleMapsFreightCalculator() {
     else if (o.includes('mumbai') && d.includes('delhi')) { km = 1415; hrs = 22; mins = 30; }
     else if (o.includes('mumbai') && d.includes('bangalore')) { km = 984; hrs = 16; mins = 15; }
     else {
-      const p1 = getCityPoint(orig, true);
-      const p2 = getCityPoint(dest, false);
+      const p1 = getCitySvgPoint(orig, true);
+      const p2 = getCitySvgPoint(dest, false);
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
-      const distPercent = Math.sqrt(dx * dx + dy * dy);
-      km = Math.round(distPercent * 28 + 180);
+      const distPx = Math.sqrt(dx * dx + dy * dy);
+      km = Math.round(distPx * 3.4 + 150);
       const totalMins = Math.round((km / 55) * 60);
       hrs = Math.floor(totalMins / 60);
       mins = totalMins % 60;
@@ -273,60 +275,55 @@ export default function OfficialGoogleMapsFreightCalculator() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* 100% GUARANTEED VISUAL VECTOR ROUTE MAP (7 Columns) */}
         <div className="lg:col-span-7 rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden relative min-h-[380px] shadow-xl flex flex-col justify-between p-4">
-          {/* Interactive SVG Route Map Canvas */}
+          {/* Interactive Responsive SVG Route Map Canvas (ViewBox 0 0 800 400) */}
           <div className="relative w-full h-[320px] bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center">
-            {/* Grid Mesh */}
-            <svg className="absolute inset-0 w-full h-full text-slate-800/40" xmlns="http://www.w3.org/2000/svg">
+            <svg 
+              viewBox="0 0 800 400" 
+              className="w-full h-full text-slate-800/40" 
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <defs>
-                <pattern id="route-grid-mesh" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="currentColor" strokeWidth="0.5" />
+                <pattern id="route-grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="1" />
                 </pattern>
-                <linearGradient id="route-gradient-line" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="route-line-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#10b981" />
                   <stop offset="50%" stopColor="#3b82f6" />
                   <stop offset="100%" stopColor="#ef4444" />
                 </linearGradient>
               </defs>
-              <rect width="100%" height="100%" fill="url(#route-grid-mesh)" />
+              <rect width="100%" height="100%" fill="url(#route-grid-pattern)" />
 
-              {/* Major Cities Points */}
-              <circle cx="30%" cy="55%" r="3" fill="#64748b" />
-              <text x="31%" y="58%" fill="#64748b" fontSize="9" fontWeight="bold">Mumbai</text>
-
-              <circle cx="55%" cy="60%" r="3" fill="#64748b" />
-              <text x="56%" y="63%" fill="#64748b" fontSize="9" fontWeight="bold">Hyderabad</text>
-
-              <circle cx="42%" cy="25%" r="3" fill="#64748b" />
-              <text x="43%" y="28%" fill="#64748b" fontSize="9" fontWeight="bold">Delhi</text>
-
-              <circle cx="48%" cy="80%" r="3" fill="#64748b" />
-              <text x="49%" y="83%" fill="#64748b" fontSize="9" fontWeight="bold">Bangalore</text>
-
-              <circle cx="62%" cy="78%" r="3" fill="#64748b" />
-              <text x="63%" y="81%" fill="#64748b" fontSize="9" fontWeight="bold">Chennai</text>
+              {/* Major Cities Reference Points */}
+              {Object.values(CITY_SVG_MAP).map((c, idx) => (
+                <g key={idx}>
+                  <circle cx={c.x} cy={c.y} r="4" fill="#334155" />
+                  <text x={c.x + 8} y={c.y + 3} fill="#64748b" fontSize="11" fontWeight="600">{c.label}</text>
+                </g>
+              ))}
 
               {/* Dynamic Curved Highway Route Arc */}
               <path
-                d={`M ${ptA.x}% ${ptA.y}% Q ${midX}% ${midY}% ${ptB.x}% ${ptB.y}%`}
+                d={`M ${ptA.x} ${ptA.y} Q ${midX} ${midY} ${ptB.x} ${ptB.y}`}
                 fill="none"
-                stroke="url(#route-gradient-line)"
-                strokeWidth="4"
-                strokeDasharray="6 4"
+                stroke="url(#route-line-gradient)"
+                strokeWidth="5"
+                strokeDasharray="8 6"
                 className="animate-pulse"
               />
 
-              {/* Origin Marker A */}
-              <g transform={`translate(${ptA.x * 3.8}, ${ptA.y * 3.1})`}>
-                <circle r="12" fill="#10b981" opacity="0.3" className="animate-ping" />
-                <circle r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
-                <text textAnchor="middle" y="3" fill="#ffffff" fontSize="9" fontWeight="900">A</text>
+              {/* Origin Beacon Marker A (Green) */}
+              <g transform={`translate(${ptA.x}, ${ptA.y})`}>
+                <circle r="16" fill="#10b981" opacity="0.3" className="animate-ping" />
+                <circle r="12" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
+                <text textAnchor="middle" y="4" fill="#ffffff" fontSize="11" fontWeight="900">A</text>
               </g>
 
-              {/* Destination Marker B */}
-              <g transform={`translate(${ptB.x * 3.8}, ${ptB.y * 3.1})`}>
-                <circle r="12" fill="#ef4444" opacity="0.3" className="animate-ping" />
-                <circle r="7" fill="#ef4444" stroke="#ffffff" strokeWidth="2" />
-                <text textAnchor="middle" y="3" fill="#ffffff" fontSize="9" fontWeight="900">B</text>
+              {/* Destination Beacon Marker B (Red) */}
+              <g transform={`translate(${ptB.x}, ${ptB.y})`}>
+                <circle r="16" fill="#ef4444" opacity="0.3" className="animate-ping" />
+                <circle r="12" fill="#ef4444" stroke="#ffffff" strokeWidth="2.5" />
+                <text textAnchor="middle" y="4" fill="#ffffff" fontSize="11" fontWeight="900">B</text>
               </g>
             </svg>
 
