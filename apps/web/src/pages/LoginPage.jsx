@@ -46,22 +46,15 @@ const LoginPage = () => {
     } catch (err) {
       console.error(err);
       
-      const msg = err.message || '';
+      const msg = err?.message || err?.response?.message || '';
       if (msg.includes('pending approval')) {
         setError('Your account is pending approval. Please wait for admin confirmation.');
       } else if (msg.includes('rejected')) {
         setError('Your request has been rejected. Contact administrator.');
-      } else if (msg.includes('Failed to authenticate')) {
-        // Fallback demo auth for instant access if offline or server credential issue
-        try {
-          pb.authStore.save('demo_token', { id: 'demo_admin', email: 'admin@jaibhavanicargo.com', role: 'super_admin', name: 'Master Admin' });
-          window.location.href = '/dashboard';
-          return;
-        } catch (demoErr) {
-          setError('Invalid email or password.');
-        }
+      } else if (msg.includes('Failed to authenticate') || msg.includes('Something went wrong') || err?.status === 400) {
+        setError('Invalid email or password. Please check your credentials or click "1-Click Quick Sign In".');
       } else {
-        setError(msg || 'An error occurred during login.');
+        setError(msg || 'Invalid email or password.');
       }
     } finally {
       setLoading(false);
