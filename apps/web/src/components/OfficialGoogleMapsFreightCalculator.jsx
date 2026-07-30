@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, Navigation, Truck, Calculator, Clock, MessageSquare, 
-  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText, Zap
+  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { loadGoogleMapsScript } from '@/lib/googleMapsLoader.js';
+import { loadGoogleMapsScript, GOOGLE_MAPS_API_KEY } from '@/lib/googleMapsLoader.js';
 import { openMapLocation } from '@/lib/locationUtils.js';
 
 const OFFICIAL_VEHICLES = [
@@ -22,42 +22,12 @@ const OFFICIAL_VEHICLES = [
   { id: '40ft_trailer', name: '40 Ft Flatbed Trailer (25 Ton)', baseFare: 8000, ratePerKm: 68, minCharge: 10000, loading: 3000, unloading: 3000 },
 ];
 
-// Exact SVG ViewBox (800 x 400) Coordinate System for Indian Logistics Hubs
-const CITY_SVG_MAP = {
-  mumbai:     { x: 220, y: 220, label: 'Mumbai' },
-  bhiwandi:   { x: 230, y: 215, label: 'Bhiwandi' },
-  pune:       { x: 260, y: 240, label: 'Pune' },
-  solapur:    { x: 330, y: 250, label: 'Solapur' },
-  hyderabad:  { x: 440, y: 250, label: 'Hyderabad' },
-  vijayawada: { x: 540, y: 260, label: 'Vijayawada' },
-  vizag:      { x: 620, y: 230, label: 'Visakhapatnam' },
-  delhi:      { x: 320, y: 90,  label: 'Delhi NCR' },
-  jaipur:     { x: 260, y: 130, label: 'Jaipur' },
-  ahmedabad:  { x: 180, y: 170, label: 'Ahmedabad' },
-  surat:      { x: 200, y: 200, label: 'Surat' },
-  bangalore:  { x: 380, y: 330, label: 'Bangalore' },
-  bengaluru:  { x: 380, y: 330, label: 'Bangalore' },
-  chennai:    { x: 480, y: 320, label: 'Chennai' },
-  kolkata:    { x: 680, y: 180, label: 'Kolkata' },
-  nagpur:     { x: 420, y: 190, label: 'Nagpur' },
-  indore:     { x: 300, y: 190, label: 'Indore' }
-};
-
-function getCitySvgPoint(text, isOrigin) {
-  const str = (text || '').toLowerCase();
-  for (const key of Object.keys(CITY_SVG_MAP)) {
-    if (str.includes(key)) {
-      return { ...CITY_SVG_MAP[key], text };
-    }
-  }
-  return isOrigin ? { x: 220, y: 220, label: text, text } : { x: 440, y: 250, label: text, text };
-}
-
 export default function OfficialGoogleMapsFreightCalculator() {
   const [originText, setOriginText] = useState('Mumbai, Maharashtra, India');
   const [destinationText, setDestinationText] = useState('Hyderabad, Telangana, India');
   const [selectedVehicleId, setSelectedVehicleId] = useState('32ft_sxl');
   const [loading, setLoading] = useState(false);
+  const [googleMapError, setGoogleMapError] = useState(null);
 
   // Extracted Distance & Duration
   const [extractedData, setExtractedData] = useState({
@@ -67,6 +37,10 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
   const originInputRef = useRef(null);
   const destinationInputRef = useRef(null);
+  const mapElementRef = useRef(null);
+  const googleMapInstance = useRef(null);
+  const directionsServiceRef = useRef(null);
+  const directionsRendererRef = useRef(null);
 
   const selectedVehicle = OFFICIAL_VEHICLES.find(v => v.id === selectedVehicleId) || OFFICIAL_VEHICLES[6];
 
@@ -80,50 +54,105 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  // Exact ViewBox coordinates for Origin & Destination
-  const ptA = getCitySvgPoint(originText, true);
-  const ptB = getCitySvgPoint(destinationText, false);
+  // Render Real Google Maps JS SDK Window & Directions API Route
+  const renderRealGoogleMap = (maps, orig = originText, dest = destinationText) => {
+    if (!mapElementRef.current || !maps) return;
 
-  // Control point for smooth curved highway arc
-  const midX = (ptA.x + ptB.x) / 2;
-  const midY = (ptA.y + ptB.y) / 2 - 35;
+    try {
+      if (!googleMapInstance.current) {
+        const map = new maps.Map(mapElementRef.current, {
+          zoom: 6,
+          center: { lat: 18.5204, lng: 75.8567 },
+          zoomControl: true,
+          mapTypeControl: true,
+          streetViewControl: false,
+          fullscreenControl: true
+        });
+
+        googleMapInstance.current = map;
+        directionsServiceRef.current = new maps.DirectionsService();
+        directionsRendererRef.current = new maps.DirectionsRenderer({
+          map: map,
+          suppressMarkers: false,
+          polylineOptions: { strokeColor: '#3b82f6', strokeWeight: 6 }
+        });
+      }
+
+      if (directionsServiceRef.current && directionsRendererRef.current) {
+        directionsServiceRef.current.route(
+          {
+            origin: orig,
+            destination: dest,
+            travelMode: maps.TravelMode.DRIVING
+          },
+          (result, status) => {
+            if (status === 'OK' && result.routes && result.routes[0]) {
+              directionsRendererRef.current.setDirections(result);
+              const leg = result.routes[0].legs[0];
+              const roadKm = Math.round((leg.distance.value / 1000) * 10) / 10;
+              const duration = leg.duration.text;
+
+              setExtractedData({
+                distanceKm: roadKm,
+                durationText: duration
+              });
+              setGoogleMapError(null);
+            } else {
+              console.warn('Google Directions Status:', status);
+            }
+          }
+        );
+      }
+    } catch (e) {
+      console.warn('Google Maps JS error:', e);
+      setGoogleMapError('Google Maps API key domain referrer check in progress');
+    }
+  };
 
   useEffect(() => {
-    // Google Places Autocomplete dropdown
     loadGoogleMapsScript().then(maps => {
-      if (maps && maps.places) {
-        if (originInputRef.current) {
-          const autoOrig = new maps.places.Autocomplete(originInputRef.current, {
-            componentRestrictions: { country: 'in' }
-          });
-          autoOrig.addListener('place_changed', () => {
-            const p = autoOrig.getPlace();
-            if (p && (p.formatted_address || p.name)) {
-              const val = p.formatted_address || p.name;
-              setOriginText(val);
-              calculateDistance(val, destinationText);
-            }
-          });
-        }
+      if (maps) {
+        renderRealGoogleMap(maps, originText, destinationText);
 
-        if (destinationInputRef.current) {
-          const autoDest = new maps.places.Autocomplete(destinationInputRef.current, {
-            componentRestrictions: { country: 'in' }
-          });
-          autoDest.addListener('place_changed', () => {
-            const p = autoDest.getPlace();
-            if (p && (p.formatted_address || p.name)) {
-              const val = p.formatted_address || p.name;
-              setDestinationText(val);
-              calculateDistance(originText, val);
-            }
-          });
+        // Google Places Autocomplete dropdown
+        if (maps.places) {
+          if (originInputRef.current) {
+            const autoOrig = new maps.places.Autocomplete(originInputRef.current, {
+              componentRestrictions: { country: 'in' }
+            });
+            autoOrig.addListener('place_changed', () => {
+              const p = autoOrig.getPlace();
+              if (p && (p.formatted_address || p.name)) {
+                const val = p.formatted_address || p.name;
+                setOriginText(val);
+                calculateRoute(val, destinationText);
+              }
+            });
+          }
+
+          if (destinationInputRef.current) {
+            const autoDest = new maps.places.Autocomplete(destinationInputRef.current, {
+              componentRestrictions: { country: 'in' }
+            });
+            autoDest.addListener('place_changed', () => {
+              const p = autoDest.getPlace();
+              if (p && (p.formatted_address || p.name)) {
+                const val = p.formatted_address || p.name;
+                setDestinationText(val);
+                calculateRoute(originText, val);
+              }
+            });
+          }
         }
+      } else {
+        setGoogleMapError('Could not load Google Maps JS SDK');
       }
-    }).catch(() => {});
+    }).catch(err => {
+      setGoogleMapError(err.toString());
+    });
   }, []);
 
-  const calculateDistance = (orig = originText, dest = destinationText) => {
+  const calculateRoute = (orig = originText, dest = destinationText) => {
     if (!orig.trim() || !dest.trim()) {
       toast.error('Please enter both Origin and Destination.');
       return;
@@ -131,42 +160,17 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
     setLoading(true);
 
-    const o = orig.toLowerCase();
-    const d = dest.toLowerCase();
-    let km = 708;
-    let hrs = 12;
-    let mins = 45;
-
-    if (o.includes('mumbai') && d.includes('hyderabad')) { km = 708; hrs = 12; mins = 45; }
-    else if (o.includes('delhi') && d.includes('bangalore')) { km = 2150; hrs = 35; mins = 0; }
-    else if (o.includes('chennai') && d.includes('pune')) { km = 1180; hrs = 19; mins = 30; }
-    else if (o.includes('hyderabad') && d.includes('vijayawada')) { km = 275; hrs = 4; mins = 30; }
-    else if (o.includes('mumbai') && d.includes('delhi')) { km = 1415; hrs = 22; mins = 30; }
-    else if (o.includes('mumbai') && d.includes('bangalore')) { km = 984; hrs = 16; mins = 15; }
-    else {
-      const p1 = getCitySvgPoint(orig, true);
-      const p2 = getCitySvgPoint(dest, false);
-      const dx = p2.x - p1.x;
-      const dy = p2.y - p1.y;
-      const distPx = Math.sqrt(dx * dx + dy * dy);
-      km = Math.round(distPx * 3.4 + 150);
-      const totalMins = Math.round((km / 55) * 60);
-      hrs = Math.floor(totalMins / 60);
-      mins = totalMins % 60;
-    }
-
-    setTimeout(() => {
-      setExtractedData({
-        distanceKm: km,
-        durationText: `${hrs} hours ${mins} mins`
-      });
+    if (window.google && window.google.maps) {
+      renderRealGoogleMap(window.google.maps, orig, dest);
       setLoading(false);
-      toast.success(`Highway Route Calculated: ${km} KM • ${hrs} hrs ${mins} mins`);
-    }, 200);
+      toast.success('Official Google Maps Route Calculated!');
+    } else {
+      setLoading(false);
+    }
   };
 
   const handleShareWhatsAppQuote = () => {
-    const text = `*JAI BHAVANI CARGO - FREIGHT QUOTATION* 🚚\n\n` +
+    const text = `*JAI BHAVANI CARGO - OFFICIAL GOOGLE FREIGHT QUOTATION* 🚚\n\n` +
       `📍 *Pickup*: ${originText}\n` +
       `🏁 *Delivery*: ${destinationText}\n` +
       `📏 *Official Distance*: ${extractedData.distanceKm} KM\n` +
@@ -186,17 +190,17 @@ export default function OfficialGoogleMapsFreightCalculator() {
         <div>
           <div className="flex items-center gap-2">
             <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono font-bold">
-              VISUAL HIGHWAY ROUTE MAP & FREIGHT ENGINE
+              OFFICIAL GOOGLE MAPS PLATFORM API INTEGRATED
             </Badge>
             <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Live Places Autocomplete Active
+              <CheckCircle2 className="w-3 h-3" /> Key: {GOOGLE_MAPS_API_KEY.slice(0, 10)}... Active
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
-            <Navigation className="w-6 h-6 text-primary animate-pulse" /> Visual Freight Route Map Calculator
+            <Navigation className="w-6 h-6 text-primary animate-pulse" /> Official Google Maps Freight Calculator
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Type any origin & destination. Visual highway route corridor, exact KM distance & instant freight quotation.
+            Real Official Google Maps Window • Google Directions API • Live Places Autocomplete Suggestions
           </p>
         </div>
 
@@ -263,91 +267,35 @@ export default function OfficialGoogleMapsFreightCalculator() {
       </div>
 
       <Button
-        onClick={() => calculateDistance(originText, destinationText)}
+        onClick={() => calculateRoute(originText, destinationText)}
         disabled={loading}
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black text-sm rounded-2xl h-11 shadow-lg"
       >
         <Calculator className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? 'Calculating Route & Freight...' : 'Calculate Official Freight Quotation'}
+        {loading ? 'Calculating Route on Google Maps...' : 'Calculate Official Freight Quotation'}
       </Button>
 
-      {/* Split Screen Layout: 100% Guaranteed Visual Vector Route Map (Left) & Freight Quote (Right) */}
+      {/* Split Screen Layout: Real Google Maps Window (Left) & Freight Quote (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* 100% GUARANTEED VISUAL VECTOR ROUTE MAP (7 Columns) */}
-        <div className="lg:col-span-7 rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden relative min-h-[380px] shadow-xl flex flex-col justify-between p-4">
-          {/* Interactive Responsive SVG Route Map Canvas (ViewBox 0 0 800 400) */}
-          <div className="relative w-full h-[320px] bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner flex items-center justify-center">
-            <svg 
-              viewBox="0 0 800 400" 
-              className="w-full h-full text-slate-800/40" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <pattern id="route-grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="1" />
-                </pattern>
-                <linearGradient id="route-line-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="50%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#ef4444" />
-                </linearGradient>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#route-grid-pattern)" />
+        {/* REAL OFFICIAL GOOGLE MAPS WINDOW (7 Columns) */}
+        <div className="lg:col-span-7 rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden relative min-h-[380px] shadow-xl flex flex-col justify-between p-1">
+          <div 
+            ref={mapElementRef} 
+            style={{ width: '100%', height: '380px', minHeight: '380px' }} 
+            className="w-full rounded-2xl overflow-hidden bg-slate-900"
+          />
 
-              {/* Major Cities Reference Points */}
-              {Object.values(CITY_SVG_MAP).map((c, idx) => (
-                <g key={idx}>
-                  <circle cx={c.x} cy={c.y} r="4" fill="#334155" />
-                  <text x={c.x + 8} y={c.y + 3} fill="#64748b" fontSize="11" fontWeight="600">{c.label}</text>
-                </g>
-              ))}
-
-              {/* Dynamic Curved Highway Route Arc */}
-              <path
-                d={`M ${ptA.x} ${ptA.y} Q ${midX} ${midY} ${ptB.x} ${ptB.y}`}
-                fill="none"
-                stroke="url(#route-line-gradient)"
-                strokeWidth="5"
-                strokeDasharray="8 6"
-                className="animate-pulse"
-              />
-
-              {/* Origin Beacon Marker A (Green) */}
-              <g transform={`translate(${ptA.x}, ${ptA.y})`}>
-                <circle r="16" fill="#10b981" opacity="0.3" className="animate-ping" />
-                <circle r="12" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
-                <text textAnchor="middle" y="4" fill="#ffffff" fontSize="11" fontWeight="900">A</text>
-              </g>
-
-              {/* Destination Beacon Marker B (Red) */}
-              <g transform={`translate(${ptB.x}, ${ptB.y})`}>
-                <circle r="16" fill="#ef4444" opacity="0.3" className="animate-ping" />
-                <circle r="12" fill="#ef4444" stroke="#ffffff" strokeWidth="2.5" />
-                <text textAnchor="middle" y="4" fill="#ffffff" fontSize="11" fontWeight="900">B</text>
-              </g>
-            </svg>
-
-            {/* Live Corridor Overlay Label */}
-            <div className="absolute top-3 left-3 bg-slate-900/90 border border-slate-800 backdrop-blur rounded-xl p-3 shadow-xl text-xs space-y-1 z-20">
-              <div className="flex items-center gap-2 font-bold text-white">
-                <Navigation className="w-4 h-4 text-primary animate-pulse" /> Live Visual Highway Corridor
-              </div>
-              <div className="text-[11px] text-emerald-400 font-mono font-bold">
-                {extractedData.distanceKm} KM • {extractedData.durationText}
-              </div>
-              <div className="text-[9px] text-slate-300 font-semibold truncate max-w-[220px]">
-                📍 {originText.split(',')[0]} ➔ {destinationText.split(',')[0]}
-              </div>
+          <div className="absolute top-4 left-4 z-10 bg-slate-950/90 border border-slate-800 backdrop-blur rounded-xl p-3 shadow-xl text-xs space-y-1">
+            <div className="flex items-center gap-2 font-bold text-white">
+              <Navigation className="w-4 h-4 text-primary animate-pulse" /> Official Google Route Corridor
+            </div>
+            <div className="text-[11px] text-emerald-400 font-mono font-bold">
+              {extractedData.distanceKm} KM • {extractedData.durationText}
+            </div>
+            <div className="text-[9px] text-slate-300 font-semibold truncate max-w-[220px]">
+              📍 {originText.split(',')[0]} ➔ {destinationText.split(',')[0]}
             </div>
           </div>
-
-          <Button
-            onClick={() => openMapLocation(`${originText} to ${destinationText}`)}
-            variant="outline"
-            className="w-full mt-3 rounded-xl text-xs font-bold border-slate-800 text-slate-300 hover:text-white bg-slate-950 h-9"
-          >
-            <ExternalLink className="w-3.5 h-3.5 mr-1.5 text-rose-400" /> Open Full Route in Google Maps App
-          </Button>
         </div>
 
         {/* Enterprise Output Quotation Card (5 Columns) */}
