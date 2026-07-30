@@ -293,15 +293,6 @@ export default function VehicleQRVerificationPage() {
         }
       `}</style>
 
-      {/* Permanent Security Watermark */}
-      <div className="fixed inset-0 pointer-events-none z-30 opacity-15 overflow-hidden select-none flex flex-wrap items-center justify-around gap-12 p-8">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="transform -rotate-45 text-xs font-mono font-black tracking-widest text-slate-400 whitespace-nowrap">
-            OFFICIAL USE ONLY • DO NOT COPY • {truck?.truck_number || 'JBC FLEET'}
-          </div>
-        ))}
-      </div>
-
       {/* Top Banner for Inspection Officers */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border-b border-slate-800 p-4 sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
         <div className="max-w-md mx-auto flex items-center justify-between">
