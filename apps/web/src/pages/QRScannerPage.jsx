@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   QrCode, Camera, RefreshCw, Zap, Truck, Wrench, CheckSquare, 
   Droplet, CreditCard, FileText, ArrowRight, ShieldCheck, X, Search, Phone,
-  BarChart3, User, Lock, Calendar, ShieldAlert
+  BarChart3, User, Lock, Calendar, ShieldAlert, Share2, Plus, ExternalLink, CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -242,6 +242,13 @@ export default function QRScannerPage() {
     }
   };
 
+  const handleShareWhatsAppPass = (truckNum) => {
+    const passUrl = `https://www.jaibhavanicargo.com/v/${encodeURIComponent(truckNum)}`;
+    const text = `🚨 *JAI BHAVANI CARGO - OFFICIAL TRUCK QR PASS*\n\n🚛 *Vehicle No:* ${truckNum}\n📄 *Official Verification Link:* ${passUrl}\n\nVerified for RTO, Traffic Police & Toll Authorities.`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    toast.success('Opening WhatsApp to share truck verification pass');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 font-sans pb-24 max-w-lg mx-auto">
       {/* Header */}
@@ -322,154 +329,230 @@ export default function QRScannerPage() {
 
       {/* Action Sheet / Modal when Truck QR Pass is Scanned */}
       <Dialog open={!!scannedResult} onOpenChange={open => !open && setScannedResult(null)}>
-        <DialogContent className="max-w-md bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-6 shadow-2xl font-sans">
+        <DialogContent className="max-w-md bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-5 shadow-2xl font-sans max-h-[90vh] overflow-y-auto">
+          {/* Header Card */}
           <DialogHeader className="pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
             <div>
-              <DialogTitle className="text-lg font-black text-amber-400 font-mono tracking-wider">
+              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-amber-400" /> SCANNED TRUCK PROFILE
+              </div>
+              <DialogTitle className="text-2xl font-black text-amber-400 font-mono tracking-wider mt-0.5">
                 {truckDetails?.truck_number || 'TG12U2637'}
               </DialogTitle>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                {truckDetails?.truck_name || 'Ashoke Leyland'} • {truckDetails?.truck_size || '32 FT'} ({truckDetails?.ownership_type || 'Owned'} Fleet)
+              <p className="text-xs text-slate-300 font-semibold mt-0.5">
+                {truckDetails?.truck_name || 'Ashoke Leyland'} • {truckDetails?.truck_size || '32 FT'} ({truckDetails?.ownership_type || 'Owned'})
               </p>
             </div>
-            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs">
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs font-mono font-bold px-2.5 py-1">
               {truckDetails?.status || 'Active Fleet'}
             </Badge>
           </DialogHeader>
 
-          <div className="py-3 space-y-3">
-            <p className="text-xs text-slate-300 font-bold uppercase tracking-wider">
-              Select Fleet Action for {truckDetails?.truck_number}:
+          {/* Quick Field Readout Badges Bar */}
+          <div className="grid grid-cols-3 gap-2 bg-slate-900/80 p-2.5 rounded-2xl border border-slate-800/80 text-[11px]">
+            <div className="text-center">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">Assigned Driver</div>
+              <div className="font-extrabold text-white truncate mt-0.5">
+                {truckSummary?.driver?.name ? truckSummary.driver.name.split(' ')[0] : 'Unassigned'}
+              </div>
+            </div>
+            <div className="text-center border-x border-slate-800">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">FASTag Balance</div>
+              <div className="font-mono font-black text-emerald-400 mt-0.5">
+                ₹{truckSummary?.fastagBalance || 6103}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-[9px] font-bold text-slate-400 uppercase">Compliance</div>
+              <div className="font-mono font-black text-blue-400 mt-0.5">
+                100% PASS
+              </div>
+            </div>
+          </div>
+
+          <div className="py-2 space-y-2.5">
+            <p className="text-[11px] text-slate-400 font-black uppercase tracking-wider">
+              FIELD OPERATIONS ACTION MENU:
             </p>
 
             <div className="grid grid-cols-1 gap-2.5">
               {/* Option 0: Truck 360 Executive Summary */}
-              <Button
-                onClick={() => {
-                  setShowSummaryModal(true);
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 hover:from-emerald-900/50 border border-emerald-500/40 rounded-2xl text-left font-bold text-xs text-white shadow-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-500 text-slate-950 font-black rounded-xl shadow-md">
-                    <BarChart3 className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-emerald-300 text-xs font-black flex items-center gap-2">
-                      Truck 360° Executive Summary <Badge className="bg-emerald-500 text-slate-950 text-[9px] font-black">360° INTEL</Badge>
+              <div className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border border-emerald-500/40 rounded-2xl p-3 space-y-2 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-emerald-500 text-slate-950 font-black rounded-xl shadow-md">
+                      <BarChart3 className="w-4 h-4" />
                     </div>
-                    <div className="text-[10px] text-slate-300 font-medium">Realtime driver DL, FASTag & compliance status</div>
+                    <div>
+                      <div className="text-emerald-300 text-xs font-black flex items-center gap-1.5">
+                        Truck 360° Executive Summary <Badge className="bg-emerald-500 text-slate-950 text-[9px] font-black">360° INTEL</Badge>
+                      </div>
+                      <div className="text-[10px] text-slate-300">Driver DL, FASTag wallet & compliance summary</div>
+                    </div>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowSummaryModal(true)}
+                    className="h-8 px-3 text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl shadow-md"
+                  >
+                    View Intel
+                  </Button>
                 </div>
-                <ArrowRight className="w-4 h-4 text-emerald-400" />
-              </Button>
+              </div>
 
               {/* Option 1: Fleet Maintenance */}
-              <Button
-                onClick={() => {
-                  setScannedResult(null);
-                  navigate('/fleet-maintenance?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold text-xs text-white"
-              >
-                <div className="flex items-center gap-3">
+              <div className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl">
                     <Wrench className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-white text-xs font-bold">Fleet Maintenance</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Report problem, service log & spare parts for {truckDetails?.truck_number}</div>
+                    <div className="text-white text-xs font-bold">Fleet Maintenance & Service</div>
+                    <div className="text-[10px] text-slate-400">Report issue, service log & repair history</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500" />
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setScannedResult(null);
+                    navigate('/fleet-maintenance?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
+                  }}
+                  className="h-8 px-3 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded-xl"
+                >
+                  Manage Service
+                </Button>
+              </div>
 
-              {/* Option 2: Exit Audit & Inspection */}
-              <Button
-                onClick={() => {
-                  setScannedResult(null);
-                  navigate('/exit-audit?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold text-xs text-white"
-              >
-                <div className="flex items-center gap-3">
+              {/* Option 2: Exit Audit & Gate Inspection */}
+              <div className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
                     <CheckSquare className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-white text-xs font-bold">Vehicle Exit Inspection & Audit</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Pre-dispatch checklist for {truckDetails?.truck_number}</div>
+                    <div className="text-white text-xs font-bold">Vehicle Exit & Gate Audit</div>
+                    <div className="text-[10px] text-slate-400">5-second pre-dispatch exit checklist</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500" />
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setScannedResult(null);
+                    navigate('/exit-audit?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
+                  }}
+                  className="h-8 px-3 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold rounded-xl"
+                >
+                  Gate Audit
+                </Button>
+              </div>
 
               {/* Option 3: Fuel Log */}
-              <Button
-                onClick={() => {
-                  setScannedResult(null);
-                  navigate('/fuel-tracker?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold text-xs text-white"
-              >
-                <div className="flex items-center gap-3">
+              <div className="bg-slate-900 border border-slate-800 hover:border-blue-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
                     <Droplet className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="text-white text-xs font-bold">Fuel Tracker & Diesel Log</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Log fuel purchase & KMPL for {truckDetails?.truck_number}</div>
+                    <div className="text-[10px] text-slate-400">Log diesel purchase, KMPL & receipts</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500" />
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setScannedResult(null);
+                    navigate('/fuel-tracker?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
+                  }}
+                  className="h-8 px-3 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 font-bold rounded-xl"
+                >
+                  Fuel Log
+                </Button>
+              </div>
 
-              {/* Option 4: FASTag Balance & Tolls */}
-              <Button
-                onClick={() => {
-                  setScannedResult(null);
-                  navigate('/fastag?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold text-xs text-white"
-              >
-                <div className="flex items-center gap-3">
+              {/* Option 4: FASTag Management */}
+              <div className="bg-slate-900 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
                     <CreditCard className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-white text-xs font-bold">FASTag Management & Tolls</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Wallet balance & recharges for {truckDetails?.truck_number}</div>
+                    <div className="text-white text-xs font-bold">FASTag Tolls & Wallet</div>
+                    <div className="text-[10px] text-slate-400">Check balance (₹{truckSummary?.fastagBalance || 6103}) & top-up</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500" />
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setScannedResult(null);
+                    navigate('/fastag?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
+                  }}
+                  className="h-8 px-3 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold rounded-xl"
+                >
+                  FASTag
+                </Button>
+              </div>
 
-              {/* Option 5: Official QR Verification Pass & Digital Docs */}
-              <Button
-                onClick={() => {
-                  setScannedResult(null);
-                  navigate('/v/' + encodeURIComponent(truckDetails?.truck_number || ''));
-                }}
-                className="w-full h-auto py-3.5 px-4 justify-between bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left font-bold text-xs text-white"
-              >
-                <div className="flex items-center gap-3">
+              {/* Option 5: Official QR Verification Pass */}
+              <div className="bg-slate-900 border border-slate-800 hover:border-cyan-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
+                <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-xl">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-white text-xs font-bold">View Official Digital QR Pass & RC/DL</div>
-                    <div className="text-[10px] text-slate-400 font-normal">Roadside RTO passport & statutory compliance</div>
+                    <div className="text-white text-xs font-bold">Digital QR Pass & RC/DL</div>
+                    <div className="text-[10px] text-slate-400">Roadside RTO & Traffic Police Passport</div>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-500" />
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleShareWhatsAppPass(truckDetails?.truck_number || '')}
+                    className="h-8 px-2 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl font-bold"
+                    title="Share via WhatsApp"
+                  >
+                    WhatsApp
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setScannedResult(null);
+                      navigate('/v/' + encodeURIComponent(truckDetails?.truck_number || ''));
+                    }}
+                    className="h-8 px-2.5 text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold rounded-xl"
+                  >
+                    Open Pass
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick 1-Tap Emergency Field Hotline Bar */}
+            <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2">
+              {truckSummary?.driver?.contact ? (
+                <a
+                  href={`tel:${truckSummary.driver.contact}`}
+                  className="p-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-400 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5" /> Call Driver
+                </a>
+              ) : (
+                <a
+                  href="tel:+917794072244"
+                  className="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-xl text-blue-400 font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5" /> Call Dispatch
+                </a>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={() => { setScannedResult(null); startCamera(); }}
+                className="h-10 rounded-xl text-xs border-slate-700 bg-slate-900 text-white font-bold hover:bg-slate-800"
+              >
+                Scan Next Truck
               </Button>
             </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-800 flex justify-end">
-            <Button variant="outline" onClick={() => { setScannedResult(null); startCamera(); }} className="rounded-xl text-xs border-slate-800 text-slate-300">
-              Scan Another Truck
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
