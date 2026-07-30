@@ -52,8 +52,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   }, []);
 
   const operationsItems = [
-    { icon: MapPin,        label: 'Live Fleet Map',       path: '/admin/fleet-map',   roles: ['super_admin','admin','dispatcher','manager'] },
-    { icon: Truck,         label: 'Driver Portal',        path: '/driver/dashboard',  roles: ['super_admin','admin','dispatcher','driver','user'] },
     { icon: Navigation,    label: 'Track Shipment',       path: '/tracking',          roles: ['super_admin','admin','dispatcher','manager','user'] },
     { icon: ClipboardList, label: 'Trip Logs',           path: '/trip-logs',        roles: ['super_admin','admin','manager','dispatcher'] },
     { icon: MapPin,        label: 'Route Master',         path: '/routes-master',    roles: ['super_admin','admin','dispatcher'] },
