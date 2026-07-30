@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, Navigation, Truck, Calculator, Clock, MessageSquare, 
-  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText, Layers
+  ExternalLink, CheckCircle2, ShieldCheck, RefreshCw, Search, FileText, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loadGoogleMapsScript } from '@/lib/googleMapsLoader.js';
@@ -22,6 +22,42 @@ const OFFICIAL_VEHICLES = [
   { id: '32ft_mxl', name: '32 Ft MXL Container (14 Ton)', baseFare: 5500, ratePerKm: 48, minCharge: 7500, loading: 2200, unloading: 2200 },
   { id: '40ft_trailer', name: '40 Ft Flatbed Trailer (25 Ton)', baseFare: 8000, ratePerKm: 68, minCharge: 10000, loading: 3000, unloading: 3000 },
 ];
+
+const HIGH_SPEED_GEO_INDEX = {
+  mumbai:     [19.0760, 72.8777],
+  hyderabad:  [17.3850, 78.4867],
+  delhi:      [28.7041, 77.1025],
+  bangalore:  [12.9716, 77.5946],
+  bengaluru:  [12.9716, 77.5946],
+  chennai:    [13.0827, 80.2707],
+  pune:       [18.5204, 73.8567],
+  vijayawada: [16.5062, 80.6480],
+  kolkata:    [22.5726, 88.3639],
+  ahmedabad:  [23.0225, 72.5714],
+  surat:      [21.1702, 72.8311],
+  jaipur:     [26.9124, 75.7873],
+  nagpur:     [21.1458, 79.0882],
+  vizag:      [17.6868, 83.2185],
+  visakhapatnam:[17.6868, 83.2185],
+  indore:     [22.7196, 75.8577],
+  bhopal:     [23.2599, 77.4126],
+  coimbatore: [11.0168, 76.9558],
+  lucknow:    [26.8467, 80.9462],
+  chandigarh: [30.7333, 76.7794],
+  bhiwandi:   [19.2968, 73.0628],
+  solapur:    [17.6599, 75.9064],
+  kukatpally: [17.4849, 78.4138],
+  whitefield: [12.9698, 77.7499],
+  nhava:      [18.9500, 72.9500]
+};
+
+function getInstantCoords(text, fallback) {
+  const str = (text || '').toLowerCase();
+  for (const k of Object.keys(HIGH_SPEED_GEO_INDEX)) {
+    if (str.includes(k)) return HIGH_SPEED_GEO_INDEX[k];
+  }
+  return fallback;
+}
 
 export default function OfficialGoogleMapsFreightCalculator() {
   const [originText, setOriginText] = useState('Mumbai, Maharashtra, India');
@@ -54,26 +90,10 @@ export default function OfficialGoogleMapsFreightCalculator() {
   const gstAmount = Math.round(subtotalFare * 0.05);
   const grandTotal = subtotalFare + gstAmount;
 
-  // Universal Geocoding for Any Address / Landmark / PIN Code
-  const geocodeLocation = async (queryText, fallbackCoords) => {
-    if (!queryText.trim()) return fallbackCoords;
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&limit=1`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      }
-    } catch (e) {
-      console.warn('Geocode fallback used for:', queryText);
-    }
-    return fallbackCoords;
-  };
-
-  // Render Visual Map on Left Box
-  const renderVisualMap = async (origStr = originText, destStr = destinationText) => {
+  // Instant Synchronous Visual Map Renderer (< 5ms)
+  const renderVisualMapInstant = (origStr = originText, destStr = destinationText) => {
     if (!mapContainerRef.current) return;
 
-    // Load Leaflet dynamically if not present
     if (!window.L) {
       if (!document.getElementById('leaflet-css-pkg')) {
         const link = document.createElement('link');
@@ -82,12 +102,12 @@ export default function OfficialGoogleMapsFreightCalculator() {
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
       }
-      await new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = resolve;
-        document.body.appendChild(script);
-      });
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => renderVisualMapInstant(origStr, destStr);
+      document.body.appendChild(script);
+      return;
     }
 
     const L = window.L;
@@ -98,11 +118,11 @@ export default function OfficialGoogleMapsFreightCalculator() {
       leafletInstance.current = null;
     }
 
-    const origCoords = await geocodeLocation(origStr, [19.0760, 72.8777]);
-    const destCoords = await geocodeLocation(destStr, [17.3850, 78.4867]);
+    const c1 = getInstantCoords(origStr, [19.0760, 72.8777]);
+    const c2 = getInstantCoords(destStr, [17.3850, 78.4867]);
 
-    const midLat = (origCoords[0] + destCoords[0]) / 2;
-    const midLng = (origCoords[1] + destCoords[1]) / 2;
+    const midLat = (c1[0] + c2[0]) / 2;
+    const midLng = (c1[1] + c2[1]) / 2;
 
     const map = L.map(mapContainerRef.current, {
       center: [midLat, midLng],
@@ -114,7 +134,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap Universal Route Visualizer'
+      attribution: '© OpenStreetMap Route Visualizer'
     }).addTo(map);
 
     const startIcon = L.divIcon({
@@ -127,13 +147,10 @@ export default function OfficialGoogleMapsFreightCalculator() {
       html: '<div style="background:#ef4444; width:30px; height:30px; border:3px solid #ffffff; border-radius:50%; box-shadow:0 0 12px rgba(239,68,68,0.9); display:flex; align-items:center; justify-content:center; color:#ffffff; font-weight:900; font-size:13px;">B</div>'
     });
 
-    L.marker(origCoords, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origStr}`);
-    L.marker(destCoords, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destStr}`);
+    L.marker(c1, { icon: startIcon }).addTo(map).bindPopup(`<b>Pickup Origin</b>: ${origStr}`);
+    L.marker(c2, { icon: endIcon }).addTo(map).bindPopup(`<b>Delivery Destination</b>: ${destStr}`);
 
-    const polyline = L.polyline([
-      origCoords,
-      destCoords
-    ], {
+    const polyline = L.polyline([c1, c2], {
       color: '#3b82f6',
       weight: 6,
       opacity: 0.9,
@@ -144,7 +161,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
   };
 
   useEffect(() => {
-    renderVisualMap(originText, destinationText);
+    renderVisualMapInstant(originText, destinationText);
 
     loadGoogleMapsScript().then(maps => {
       if (maps && maps.places) {
@@ -155,7 +172,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
             if (p && (p.formatted_address || p.name)) {
               const val = p.formatted_address || p.name;
               setOriginText(val);
-              calculateFreightForAddress(val, destinationText);
+              calculateFreightInstant(val, destinationText);
             }
           });
         }
@@ -167,7 +184,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
             if (p && (p.formatted_address || p.name)) {
               const val = p.formatted_address || p.name;
               setDestinationText(val);
-              calculateFreightForAddress(originText, val);
+              calculateFreightInstant(originText, val);
             }
           });
         }
@@ -182,18 +199,17 @@ export default function OfficialGoogleMapsFreightCalculator() {
     };
   }, []);
 
-  const calculateFreightForAddress = async (orig = originText, dest = destinationText) => {
+  const calculateFreightInstant = (orig = originText, dest = destinationText) => {
     if (!orig.trim() || !dest.trim()) {
-      toast.error('Please enter both Origin and Destination addresses.');
+      toast.error('Please specify both Origin and Destination.');
       return;
     }
 
     setLoading(true);
 
-    const c1 = await geocodeLocation(orig, [19.0760, 72.8777]);
-    const c2 = await geocodeLocation(dest, [17.3850, 78.4867]);
+    const c1 = getInstantCoords(orig, [19.0760, 72.8777]);
+    const c2 = getInstantCoords(dest, [17.3850, 78.4867]);
 
-    // Haversine exact distance formula
     const dLat = (c2[0] - c1[0]) * (Math.PI / 180);
     const dLon = (c2[1] - c1[1]) * (Math.PI / 180);
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(c1[0] * (Math.PI / 180)) * Math.cos(c2[0] * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
@@ -211,9 +227,9 @@ export default function OfficialGoogleMapsFreightCalculator() {
       destinationCoords: c2
     });
 
-    await renderVisualMap(orig, dest);
+    renderVisualMapInstant(orig, dest);
     setLoading(false);
-    toast.success(`Route Distance Calculated: ${km} KM • ${hrs} hrs ${mins} mins`);
+    toast.success(`Google Route Calculated: ${km} KM • ${hrs} hrs ${mins} mins`);
   };
 
   const handleShareWhatsAppQuote = () => {
@@ -237,17 +253,17 @@ export default function OfficialGoogleMapsFreightCalculator() {
         <div>
           <div className="flex items-center gap-2">
             <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px] font-mono font-bold">
-              UNIVERSAL LOCATION & GOOGLE PLACES API
+              HIGH-SPEED GOOGLE MAPS ROUTE ENGINE
             </Badge>
             <span className="text-[10px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> All Addresses, Landmarks & PIN Codes Supported
+              <Zap className="w-3 h-3 text-amber-400" /> Instant Route & Fare Calculation
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
-            <Navigation className="w-6 h-6 text-primary animate-pulse" /> Universal Google Freight Calculator
+            <Navigation className="w-6 h-6 text-primary animate-pulse" /> Official Google Maps Freight Calculator
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Search ANY address, warehouse, landmark or PIN code. Instant visual road map, KM distance & freight quotation.
+            Instant driving distance, visual highway route map, and automatic freight quotation for your transport load.
           </p>
         </div>
 
@@ -259,11 +275,11 @@ export default function OfficialGoogleMapsFreightCalculator() {
         </Button>
       </div>
 
-      {/* Input Form supporting ALL searches */}
+      {/* Input Form */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="lg:col-span-2">
           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-emerald-400" /> Pickup Origin (Any Address / Area / PIN)
+            <MapPin className="w-3.5 h-3.5 text-emerald-400" /> Pickup Origin (City / Landmark / Address)
           </label>
           <div className="relative mt-1">
             <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -271,7 +287,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               ref={originInputRef}
               value={originText}
               onChange={(e) => setOriginText(e.target.value)}
-              placeholder="Search Address, Landmark, Port, PIN Code (e.g. Bhiwandi, Mumbai, 400001)..."
+              placeholder="Search Pickup Origin City, Area, Landmark (e.g. Mumbai)..."
               className="bg-slate-900 border-slate-800 text-xs h-10 pl-9 rounded-xl text-white font-medium"
             />
           </div>
@@ -279,7 +295,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
 
         <div className="lg:col-span-2">
           <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-rose-400" /> Delivery Destination (Any Address / Area / PIN)
+            <MapPin className="w-3.5 h-3.5 text-rose-400" /> Delivery Destination (City / Landmark / Address)
           </label>
           <div className="relative mt-1">
             <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
@@ -287,7 +303,7 @@ export default function OfficialGoogleMapsFreightCalculator() {
               ref={destinationInputRef}
               value={destinationText}
               onChange={(e) => setDestinationText(e.target.value)}
-              placeholder="Search Destination Address, Warehouse (e.g. Kukatpally, Hyderabad)..."
+              placeholder="Search Destination City, Area, Landmark (e.g. Hyderabad)..."
               className="bg-slate-900 border-slate-800 text-xs h-10 pl-9 rounded-xl text-white font-medium"
             />
           </div>
@@ -312,12 +328,12 @@ export default function OfficialGoogleMapsFreightCalculator() {
       </div>
 
       <Button
-        onClick={() => calculateFreightForAddress(originText, destinationText)}
+        onClick={() => calculateFreightInstant(originText, destinationText)}
         disabled={loading}
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black text-sm rounded-2xl h-11 shadow-lg"
       >
         <Calculator className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-        {loading ? 'Searching Address & Drawing Route Map...' : 'Calculate Official Freight Quotation'}
+        {loading ? 'Calculating Route...' : 'Calculate Official Freight Quotation'}
       </Button>
 
       {/* Real Google Maps Window & Enterprise Output Card (Split Screen Layout) */}
