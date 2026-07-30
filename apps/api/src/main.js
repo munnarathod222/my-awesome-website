@@ -999,32 +999,27 @@ const runPocketBase = async () => {
   // Files are instead downloaded on-demand (lazily) as they are requested by users.
   logger.info(`📥 Lazy-download system active. Skipping boot-time storage download for light speed startup.`);
 
-  // Copy pre-populated SQLite data.db (1,305 records) & storage files to target dataDir if target DB is empty of records
+  // Copy pre-populated PocketBase SQLite databases (data.db & auxiliary.db with 1,305 records) & storage files to target dataDir
   try {
     const targetDb = path.join(dataDir, 'data.db');
+    const targetAux = path.join(dataDir, 'auxiliary.db');
     const srcDb = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+    const srcAux = path.resolve(__dirname, '../../pocketbase/pb_data/auxiliary.db');
     
-    let targetHasData = false;
-    if (fs.existsSync(targetDb)) {
-      try {
-        const testDb = new Database(targetDb, { readonly: true });
-        const row = testDb.prepare("SELECT count(*) as cnt FROM expenses").get();
-        if (row && row.cnt > 0) {
-          targetHasData = true;
-        }
-        testDb.close();
-      } catch (e) {
-        targetHasData = false;
-      }
-    }
-
-    if (!targetHasData && fs.existsSync(srcDb)) {
-      logger.info(`💾 OVERWRITING / SEEDING pre-populated SQLite database with 1,305 records to ${targetDb}...`);
+    if (fs.existsSync(srcDb)) {
+      logger.info(`💾 Copying pre-populated data.db (1.7MB) to ${targetDb}...`);
       fs.copyFileSync(srcDb, targetDb);
       if (fs.existsSync(srcDb + '-wal')) fs.copyFileSync(srcDb + '-wal', targetDb + '-wal');
       if (fs.existsSync(srcDb + '-shm')) fs.copyFileSync(srcDb + '-shm', targetDb + '-shm');
-      logger.info(`✅ Database file with 1,305 records successfully copied to persistent disk!`);
     }
+
+    if (fs.existsSync(srcAux)) {
+      logger.info(`💾 Copying pre-populated auxiliary.db (5.7MB) to ${targetAux}...`);
+      fs.copyFileSync(srcAux, targetAux);
+      if (fs.existsSync(srcAux + '-wal')) fs.copyFileSync(srcAux + '-wal', targetAux + '-wal');
+      if (fs.existsSync(srcAux + '-shm')) fs.copyFileSync(srcAux + '-shm', targetAux + '-shm');
+    }
+    logger.info(`✅ Both data.db and auxiliary.db successfully copied to persistent disk!`);
 
     const targetStorage = path.join(dataDir, 'storage');
     const srcStorage = path.resolve(__dirname, '../../pocketbase/pb_data/storage');
@@ -1033,7 +1028,7 @@ const runPocketBase = async () => {
       fs.cpSync(srcStorage, targetStorage, { recursive: true, force: false });
     }
   } catch (copyErr) {
-    logger.error(`⚠️ Failed to copy pre-populated data.db: ${copyErr.message}`);
+    logger.error(`⚠️ Failed to copy pre-populated databases: ${copyErr.message}`);
   }
 
   if (!isWin) {
