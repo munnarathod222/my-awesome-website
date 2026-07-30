@@ -131,14 +131,13 @@ router.get('/public-verification/:qrToken', async (req, res) => {
     // 3. Assigned driver lookup & Driver's License document inclusion
     const empList = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
     let matchedDriver = empList.find(e => {
-      const isTruckAssigned = e.assigned_truck === foundTruck.id || e.assigned_truck === foundTruck.truck_number;
+      const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
+      if (isInactive) return false;
+
+      const isTruckAssigned = Boolean(e.assigned_truck && (e.assigned_truck === foundTruck.id || e.assigned_truck === foundTruck.truck_number));
       const isNameMatched = Boolean(foundTruck.driver_name && e.name?.toLowerCase().includes(foundTruck.driver_name.toLowerCase()));
       return isTruckAssigned || isNameMatched;
-    });
-
-    if (!matchedDriver && empList.length > 0) {
-      matchedDriver = empList.find(e => e.employee_type === 'driver' || e.license_number) || empList[0];
-    }
+    }) || null;
 
     if (matchedDriver) {
       const driverDocs = await pb.collection('employee_documents').getFullList({

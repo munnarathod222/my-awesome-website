@@ -184,10 +184,12 @@ export default function QRScannerPage() {
       ]);
 
       const matchedDriver = empList.find(e => {
-        const isTruckAssigned = e.assigned_truck === found.id || e.assigned_truck === found.truck_number;
+        const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
+        if (isInactive) return false;
+        const isTruckAssigned = Boolean(e.assigned_truck && (e.assigned_truck === found.id || e.assigned_truck === found.truck_number));
         const isNameMatched = Boolean(found.driver_name && e.name?.toLowerCase().includes(found.driver_name.toLowerCase()));
         return isTruckAssigned || isNameMatched;
-      }) || empList.find(e => e.employee_type === 'driver') || null;
+      }) || null;
 
       const normTruckNum = (found.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
       const matchedDocs = allDocs.filter(d => {
@@ -518,15 +520,15 @@ export default function QRScannerPage() {
                 <span className="font-extrabold text-slate-300 flex items-center gap-1.5 uppercase text-[11px]">
                   <User className="w-3.5 h-3.5 text-blue-400" /> Realtime Assigned Driver
                 </span>
-                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">
-                  Active Driver
+                <Badge className={`text-[10px] ${truckSummary?.driver ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border-amber-500/30'}`}>
+                  {truckSummary?.driver ? 'Active Driver' : 'No Driver Assigned'}
                 </Badge>
               </div>
 
               <div className="flex justify-between items-center bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                 <div>
-                  <div className="font-extrabold text-white text-xs">{truckSummary?.driver?.name || 'Dayanand surwase'}</div>
-                  <div className="text-slate-400 font-mono text-[11px]">DL: <span className="text-amber-400 font-bold">{truckSummary?.driver?.license_number || 'MH03 20090057914'}</span></div>
+                  <div className="font-extrabold text-white text-xs">{truckSummary?.driver?.name || 'No Driver Currently Assigned'}</div>
+                  <div className="text-slate-400 font-mono text-[11px]">DL: <span className="text-amber-400 font-bold">{truckSummary?.driver?.license_number || 'N/A'}</span></div>
                 </div>
                 {truckSummary?.driver?.contact && (
                   <a href={`tel:${truckSummary.driver.contact}`} className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
