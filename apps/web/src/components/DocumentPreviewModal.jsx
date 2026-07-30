@@ -156,11 +156,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={handleOpenNewTab} className="rounded-xl text-xs flex items-center gap-1 border-slate-700 bg-slate-900 text-white hover:bg-slate-800">
-              <ExternalLink className="w-3.5 h-3.5" /> Full Tab View
-            </Button>
-          </div>
+          {!hideDownload && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleOpenNewTab} className="rounded-xl text-xs flex items-center gap-1 border-slate-700 bg-slate-900 text-white hover:bg-slate-800">
+                <ExternalLink className="w-3.5 h-3.5" /> Full Tab View
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
         {filesList.length > 1 && (
@@ -289,9 +291,11 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
             <div className="text-center p-8 flex flex-col items-center justify-center text-white">
               <FileQuestion className="w-16 h-16 text-slate-600 mb-4" />
               <p className="text-sm text-slate-300">Preview not available for this file type.</p>
-              <Button onClick={handleOpenNewTab} className="mt-4 rounded-xl">
-                <ExternalLink className="w-4 h-4 mr-2" /> Open File
-              </Button>
+              {!hideDownload && (
+                <Button onClick={handleOpenNewTab} className="mt-4 rounded-xl">
+                  <ExternalLink className="w-4 h-4 mr-2" /> Open File
+                </Button>
+              )}
             </div>
           )}
         </div>
