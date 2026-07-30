@@ -116,7 +116,17 @@ const TripRow = ({ trip }) => {
         </span>
         <div className="text-right">
           <p className="font-bold text-sm text-foreground">₹{(trip.revenue || 0).toLocaleString()}</p>
-          <p className="text-[10px] text-muted-foreground">{format(new Date(trip.date), 'dd MMM')}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {(() => {
+              if (!trip.date) return 'Today';
+              try {
+                const parsed = new Date(trip.date);
+                return isNaN(parsed.getTime()) ? 'Today' : format(parsed, 'dd MMM');
+              } catch (e) {
+                return 'Today';
+              }
+            })()}
+          </p>
         </div>
       </div>
     </div>
