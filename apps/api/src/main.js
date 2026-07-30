@@ -8,7 +8,6 @@ import fs from 'node:fs';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
-import Database from 'better-sqlite3';
 
 import routes from './routes/index.js';
 import { errorMiddleware } from './middleware/error.js';
