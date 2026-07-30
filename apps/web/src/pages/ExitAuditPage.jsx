@@ -11,7 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 
+import { useSearchParams } from 'react-router-dom';
+
 export default function ExitAuditPage() {
+  const [searchParams] = useSearchParams();
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -44,12 +47,22 @@ export default function ExitAuditPage() {
           })
         ]);
         setTrucks(trucksRes);
-        // If no drivers found with the type filter, fall back to all employees
         if (employeesRes.length === 0) {
           const allEmployees = await pb.collection('employees').getFullList({ sort: 'name', $autoCancel: false });
           setDrivers(allEmployees);
         } else {
           setDrivers(employeesRes);
+        }
+
+        // Auto-select truck from URL search parameter
+        const qParam = searchParams.get('truck') || searchParams.get('truck_number') || searchParams.get('truckId');
+        if (qParam && trucksRes.length > 0) {
+          const normQ = qParam.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+          const matched = trucksRes.find(t => t.id === qParam || (t.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normQ);
+          if (matched) {
+            setFormData(prev => ({ ...prev, truck_id: matched.id }));
+            setSelectedTruckDetails(matched);
+          }
         }
       } catch (err) {
         console.error('Error fetching baseline audit data:', err);
@@ -59,7 +72,7 @@ export default function ExitAuditPage() {
       }
     };
     loadInitialData();
-  }, []);
+  }, [searchParams]);
 
   const handleTruckChange = async (truckId) => {
     setFormData(prev => ({ ...prev, truck_id: truckId }));

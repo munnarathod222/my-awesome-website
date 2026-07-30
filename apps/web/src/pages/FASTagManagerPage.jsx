@@ -21,7 +21,10 @@ import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 import RecordTollDeductionModal from '@/components/RecordTollDeductionModal.jsx';
 import { fetchAllFASTagDeductions } from '@/lib/fastagDeductionUtils.js';
 
+import { useSearchParams } from 'react-router-dom';
+
 export default function FASTagManagerPage() {
+  const [searchParams] = useSearchParams();
   const [trucks, setTrucks] = useState([]);
   const [deductions, setDeductions] = useState([]);
   const [recharges, setRecharges] = useState([]);
@@ -29,7 +32,14 @@ export default function FASTagManagerPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [truckFilter, setTruckFilter] = useState('all'); // 'all' | 'low' | 'healthy'
-  
+
+  useEffect(() => {
+    const qParam = searchParams.get('truck') || searchParams.get('truck_number') || searchParams.get('truckId');
+    if (qParam) {
+      setSearchQuery(qParam);
+    }
+  }, [searchParams]);
+
   const [selectedTruckForRecharge, setSelectedTruckForRecharge] = useState(null);
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
@@ -37,7 +47,6 @@ export default function FASTagManagerPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch trucks, fastag deductions (remote + local store), and fastag recharges in parallel
       const [trucksData, txData, rechargesData] = await Promise.all([
         pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }),
         fetchAllFASTagDeductions(),

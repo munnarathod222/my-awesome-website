@@ -236,14 +236,20 @@ export default function MaintenancePage() {
 
   // Handle deep link truck ID parameter
   useEffect(() => {
-    if (truckIdParam && trucks.length > 0) {
-      const found = trucks.find(t => t.id === truckIdParam);
+    const qParam = searchParams.get('truckId') || searchParams.get('truck') || searchParams.get('truck_number');
+    if (qParam && trucks.length > 0) {
+      const normQ = qParam.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const found = trucks.find(t => t.id === qParam || (t.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normQ);
       if (found) {
         setSelectedTruck(found);
         setActiveTab('vehicles');
+        setServiceLogSearch(found.truck_number);
+        setInspectionSearch(found.truck_number);
+        setServiceLogTruckFilter(found.id);
+        setInspectionTruckFilter(found.id);
       }
     }
-  }, [truckIdParam, trucks]);
+  }, [searchParams, trucks]);
 
   // Dynamic Odometer Aggregation logic
   const getLiveOdometer = (truck) => {

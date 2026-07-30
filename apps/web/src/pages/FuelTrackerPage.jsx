@@ -26,10 +26,13 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell, Legend, PieChart, Pie, ComposedChart 
 } from 'recharts';
 
+import { useSearchParams } from 'react-router-dom';
+
 const PIE_COLORS = ['#10B981', '#6366F1', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const FuelTrackerPage = () => {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
   
   // Data State
   const [fuelLogs, setFuelLogs] = useState([]);
@@ -50,6 +53,13 @@ const FuelTrackerPage = () => {
 
   // Tab 1 Filters (Refills)
   const [vehicleFilter, setVehicleFilter] = useState('all');
+
+  useEffect(() => {
+    const qParam = searchParams.get('truck') || searchParams.get('truck_number') || searchParams.get('truckId');
+    if (qParam) {
+      setVehicleFilter(qParam);
+    }
+  }, [searchParams]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [minCost, setMinCost] = useState('');
