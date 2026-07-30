@@ -284,23 +284,10 @@ export default function VehicleQRVerificationPage() {
                       <Button
                         size="sm"
                         onClick={() => setPreviewDoc(doc)}
-                        className="h-8 px-2.5 text-xs rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
+                        className="h-8 px-3 text-xs rounded-xl bg-primary text-primary-foreground font-bold shadow-sm"
                       >
                         <Eye className="w-3.5 h-3.5 mr-1" /> View Doc
                       </Button>
-                      
-                      {fileUrl && (
-                        <a 
-                          href={fileUrl}
-                          download
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700"
-                          title="Download Copy"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </a>
-                      )}
                     </div>
                   </div>
                 );
@@ -446,6 +433,7 @@ export default function VehicleQRVerificationPage() {
         isOpen={!!previewDoc} 
         onClose={() => setPreviewDoc(null)} 
         document={previewDoc} 
+        hideDownload={true}
       />
     </div>
   );

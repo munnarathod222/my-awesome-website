@@ -5,7 +5,7 @@ import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2, Che
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
-export default function DocumentPreviewModal({ isOpen, onClose, document, collectionName = 'truck_documents' }) {
+export default function DocumentPreviewModal({ isOpen, onClose, document, collectionName = 'truck_documents', hideDownload = false }) {
   const [activeFile, setActiveFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [numPages, setNumPages] = useState(1);
@@ -285,9 +285,11 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
             <Button variant="outline" size="sm" onClick={onClose} className="rounded-xl border-slate-700 bg-slate-900 text-white hover:bg-slate-800">
               Close
             </Button>
-            <Button size="sm" onClick={handleDownload} className="rounded-xl font-bold flex items-center gap-1 bg-primary text-primary-foreground">
-              <Download className="w-3.5 h-3.5" /> Download PDF / File
-            </Button>
+            {!hideDownload && (
+              <Button size="sm" onClick={handleDownload} className="rounded-xl font-bold flex items-center gap-1 bg-primary text-primary-foreground">
+                <Download className="w-3.5 h-3.5" /> Download PDF / File
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
