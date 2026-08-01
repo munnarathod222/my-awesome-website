@@ -49,6 +49,7 @@ const ExpensesPage = () => {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [selectedAdvanceIds, setSelectedAdvanceIds] = useState(new Set());
+  const [isBulkProcessingAdvances, setIsBulkProcessingAdvances] = useState(false);
   const [selectedSummaryPeriod, setSelectedSummaryPeriod] = useState('auto');
 
   const [filters, setFilters] = useState({
