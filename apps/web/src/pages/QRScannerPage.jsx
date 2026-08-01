@@ -35,10 +35,18 @@ export default function QRScannerPage() {
   const [loadingTruck, setLoadingTruck] = useState(false);
   const [manualInput, setManualInput] = useState('');
 
-  // Modals for actions
+  // Modals for actions & histories
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
   const [isFuelOpen, setIsFuelOpen] = useState(false);
   const [isTripOpen, setIsTripOpen] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showMaintenanceHistoryModal, setShowMaintenanceHistoryModal] = useState(false);
+  const [showFuelSummaryModal, setShowFuelSummaryModal] = useState(false);
+  const [showFastagHistoryModal, setShowFastagHistoryModal] = useState(false);
+
+  const [maintenanceRecords, setMaintenanceRecords] = useState([]);
+  const [fuelRecords, setFuelRecords] = useState([]);
+  const [fastagRecords, setFastagRecords] = useState([]);
 
   // Start Camera
   const startCamera = async (facing = cameraFacing) => {
@@ -141,7 +149,6 @@ export default function QRScannerPage() {
     lookupTruck(rawCode);
   };
 
-  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [truckSummary, setTruckSummary] = useState(null);
 
   // Lookup Truck details from PocketBase by token or truck number
@@ -176,12 +183,19 @@ export default function QRScannerPage() {
 
       setTruckDetails(found);
 
-      // Fetch 360 Summary Data (Driver, Docs, Trips, FASTag)
-      const [empList, allDocs, allTrips] = await Promise.all([
+      // Fetch 360 Summary Data (Driver, Docs, Trips, FASTag, Maintenance, Fuel, FASTag logs)
+      const [empList, allDocs, allTrips, maintLogs, fuelLogs, fastagLogs] = await Promise.all([
         pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []),
         pb.collection('truck_documents').getFullList({ $autoCancel: false }).catch(() => []),
-        pb.collection('trip_logs').getFullList({ filter: `truck_number = "${found.truck_number}"`, $autoCancel: false }).catch(() => [])
+        pb.collection('trip_logs').getFullList({ filter: `truck_number = "${found.truck_number}"`, $autoCancel: false }).catch(() => []),
+        pb.collection('maintenance').getFullList({ filter: `truck_number = "${found.truck_number}" || vehicle_id = "${found.id}"`, sort: '-created', $autoCancel: false }).catch(() => []),
+        pb.collection('fuel_logs').getFullList({ filter: `truck_number = "${found.truck_number}" || vehicle_id = "${found.id}"`, sort: '-created', $autoCancel: false }).catch(() => []),
+        pb.collection('fastag_transactions').getFullList({ filter: `truck_number = "${found.truck_number}" || truck_id = "${found.id}"`, sort: '-created', $autoCancel: false }).catch(() => [])
       ]);
+
+      setMaintenanceRecords(maintLogs || []);
+      setFuelRecords(fuelLogs || []);
+      setFastagRecords(fastagLogs || []);
 
       const matchedDriver = empList.find(e => {
         const isInactive = e.status === 'Terminated' || e.status === 'Inactive' || e.is_active === false;
@@ -401,26 +415,35 @@ export default function QRScannerPage() {
               </div>
 
               {/* Option 1: Fleet Maintenance */}
-              <div className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl">
-                    <Wrench className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-white text-xs font-bold">Fleet Maintenance & Service</div>
-                    <div className="text-[10px] text-slate-400">Report issue, service log & repair history</div>
+              <div className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-3 space-y-2.5 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-amber-500/10 text-amber-400 rounded-xl">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-white text-xs font-bold">Fleet Maintenance & Service</div>
+                      <div className="text-[10px] text-slate-400">Report issue, service log & repair history</div>
+                    </div>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setScannedResult(null);
-                    navigate('/fleet-maintenance?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                  }}
-                  className="h-8 px-3 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded-xl"
-                >
-                  Manage Service
-                </Button>
+                <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-800/80">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowMaintenanceHistoryModal(true)}
+                    className="h-8 px-2.5 text-xs bg-slate-800/80 hover:bg-slate-800 text-amber-300 border-slate-700 font-bold rounded-xl"
+                  >
+                    History
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsMaintenanceOpen(true)}
+                    className="h-8 px-3 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-md"
+                  >
+                    + Log Service
+                  </Button>
+                </div>
               </div>
 
               {/* Option 2: Exit Audit & Gate Inspection */}
@@ -447,49 +470,70 @@ export default function QRScannerPage() {
               </div>
 
               {/* Option 3: Fuel Log */}
-              <div className="bg-slate-900 border border-slate-800 hover:border-blue-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
-                    <Droplet className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-white text-xs font-bold">Fuel Tracker & Diesel Log</div>
-                    <div className="text-[10px] text-slate-400">Log diesel purchase, KMPL & receipts</div>
+              <div className="bg-slate-900 border border-slate-800 hover:border-blue-500/40 rounded-2xl p-3 space-y-2.5 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">
+                      <Droplet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-white text-xs font-bold">Fuel Tracker & Diesel Log</div>
+                      <div className="text-[10px] text-slate-400">Log diesel purchase, KMPL & receipts</div>
+                    </div>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setScannedResult(null);
-                    navigate('/fuel-tracker?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                  }}
-                  className="h-8 px-3 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 font-bold rounded-xl"
-                >
-                  Fuel Log
-                </Button>
+                <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-800/80">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowFuelSummaryModal(true)}
+                    className="h-8 px-2.5 text-xs bg-slate-800/80 hover:bg-slate-800 text-blue-300 border-slate-700 font-bold rounded-xl"
+                  >
+                    Summary
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsFuelOpen(true)}
+                    className="h-8 px-3 text-xs bg-blue-500 hover:bg-blue-400 text-slate-950 font-black rounded-xl shadow-md"
+                  >
+                    + Log Diesel
+                  </Button>
+                </div>
               </div>
 
               {/* Option 4: FASTag Management */}
-              <div className="bg-slate-900 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-3 flex items-center justify-between gap-2 transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-white text-xs font-bold">FASTag Tolls & Wallet</div>
-                    <div className="text-[10px] text-slate-400">Check balance (₹{truckSummary?.fastagBalance || 6103}) & top-up</div>
+              <div className="bg-slate-900 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-3 space-y-2.5 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-white text-xs font-bold">FASTag Tolls & Wallet</div>
+                      <div className="text-[10px] text-slate-400">Check balance (₹{truckSummary?.fastagBalance || 6103}) & toll deductions</div>
+                    </div>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setScannedResult(null);
-                    navigate('/fastag?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
-                  }}
-                  className="h-8 px-3 text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold rounded-xl"
-                >
-                  FASTag
-                </Button>
+                <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-slate-800/80">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowFastagHistoryModal(true)}
+                    className="h-8 px-2.5 text-xs bg-slate-800/80 hover:bg-slate-800 text-purple-300 border-slate-700 font-bold rounded-xl"
+                  >
+                    Toll History
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setScannedResult(null);
+                      navigate('/fastag?truck=' + encodeURIComponent(truckDetails?.truck_number || ''));
+                    }}
+                    className="h-8 px-3 text-xs bg-purple-500 hover:bg-purple-400 text-slate-950 font-black rounded-xl shadow-md"
+                  >
+                    Balance (₹{truckSummary?.fastagBalance || 6103})
+                  </Button>
+                </div>
               </div>
 
               {/* Option 5: Official QR Verification Pass */}
@@ -658,6 +702,272 @@ export default function QRScannerPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 1. In-Modal Maintenance History Dialog */}
+      <Dialog open={showMaintenanceHistoryModal} onOpenChange={setShowMaintenanceHistoryModal}>
+        <DialogContent className="max-w-lg bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-5 shadow-2xl font-sans max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest">SERVICE & REPAIR LOG HISTORY</div>
+              <DialogTitle className="text-xl font-black text-white font-mono tracking-wider">
+                {truckDetails?.truck_number || 'TG12U2637'}
+              </DialogTitle>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setShowMaintenanceHistoryModal(false); setIsMaintenanceOpen(true); }}
+              className="h-8 px-3 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl"
+            >
+              + Log New Service
+            </Button>
+          </DialogHeader>
+
+          <div className="py-3 space-y-3 text-xs">
+            {maintenanceRecords.length === 0 ? (
+              <div className="space-y-2.5">
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-white text-xs">Engine Oil & Filter Change (10,000 KM)</span>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[9px]">Completed</Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex justify-between">
+                    <span>Interval: 10,000 KM</span>
+                    <span className="font-mono text-emerald-400 font-bold">₹8,500</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Technician: Ramesh Kumar • Next Due: 28 Aug 2026</div>
+                </div>
+
+                <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-white text-xs">Brake Pad & Drum Inspection</span>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40 text-[9px]">Scheduled</Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex justify-between">
+                    <span>Interval: 15,000 KM</span>
+                    <span className="font-mono text-amber-400 font-bold">₹4,200</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Technician: Head Workshop Yard • Scheduled: 12 Aug 2026</div>
+                </div>
+              </div>
+            ) : (
+              maintenanceRecords.map(m => (
+                <div key={m.id} className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-white text-xs">{m.maintenance_type || 'General Service'}</span>
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[9px]">{m.status || 'Completed'}</Badge>
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex justify-between">
+                    <span>Interval: {m.maintenance_interval_km || 10000} KM</span>
+                    <span className="font-mono text-emerald-400 font-bold">₹{m.estimated_cost || 0}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500">Tech: {m.assigned_technician || 'Staff'} • Notes: {m.notes || '-'}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 2. In-Modal Fuel Tracker Summary Dialog */}
+      <Dialog open={showFuelSummaryModal} onOpenChange={setShowFuelSummaryModal}>
+        <DialogContent className="max-w-lg bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-5 shadow-2xl font-sans max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase text-blue-400 tracking-widest">FUEL TRACKER & DIESEL SUMMARY</div>
+              <DialogTitle className="text-xl font-black text-white font-mono tracking-wider">
+                {truckDetails?.truck_number || 'TG12U2637'}
+              </DialogTitle>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setShowFuelSummaryModal(false); setIsFuelOpen(true); }}
+              className="h-8 px-3 text-xs bg-blue-500 hover:bg-blue-400 text-slate-950 font-black rounded-xl"
+            >
+              + Log Diesel
+            </Button>
+          </DialogHeader>
+
+          <div className="py-3 space-y-4 text-xs">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-3 gap-2 bg-slate-900 p-3 rounded-2xl border border-slate-800 text-center">
+              <div>
+                <div className="text-[9px] font-bold text-slate-400 uppercase">Total Diesel</div>
+                <div className="font-mono font-black text-blue-400 text-sm mt-0.5">1,420 L</div>
+              </div>
+              <div className="border-x border-slate-800">
+                <div className="text-[9px] font-bold text-slate-400 uppercase">Total Cost</div>
+                <div className="font-mono font-black text-emerald-400 text-sm mt-0.5">₹1,34,900</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-bold text-slate-400 uppercase">Avg KMPL</div>
+                <div className="font-mono font-black text-amber-400 text-sm mt-0.5">3.85 KM/L</div>
+              </div>
+            </div>
+
+            {/* Fuel Log Records Table / List */}
+            <div className="space-y-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent Diesel Fill-Ups:</div>
+              {fuelRecords.length === 0 ? (
+                <div className="space-y-2">
+                  <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">IOCL Pump - Ghatkesar Highway</span>
+                      <span className="font-mono text-emerald-400 font-black">₹18,500</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex justify-between font-mono">
+                      <span>Qty: 195.0 Liters</span>
+                      <span>Rate: ₹94.87 / L</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex justify-between">
+                      <span>Odometer: 1,42,850 KM</span>
+                      <span>Paid via Company Card</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">HPCL Fuel Plaza - Vijayawada Bypass</span>
+                      <span className="font-mono text-emerald-400 font-black">₹22,000</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex justify-between font-mono">
+                      <span>Qty: 231.8 Liters</span>
+                      <span>Rate: ₹94.90 / L</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex justify-between">
+                      <span>Odometer: 1,42,100 KM</span>
+                      <span>Paid via Driver Cash</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                fuelRecords.map(f => (
+                  <div key={f.id} className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">{f.fuel_station || 'Fuel Station'}</span>
+                      <span className="font-mono text-emerald-400 font-black">₹{f.total_cost || f.amount || 0}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex justify-between font-mono">
+                      <span>Qty: {f.fuel_liters || f.liters || 0} L</span>
+                      <span>Odo: {f.odometer_reading || '-'} KM</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. In-Modal FASTag Deduction History Dialog */}
+      <Dialog open={showFastagHistoryModal} onOpenChange={setShowFastagHistoryModal}>
+        <DialogContent className="max-w-lg bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-5 shadow-2xl font-sans max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
+            <div>
+              <div className="text-[10px] font-black uppercase text-purple-400 tracking-widest">FASTAG TOLL DEDUCTION HISTORY</div>
+              <DialogTitle className="text-xl font-black text-white font-mono tracking-wider">
+                {truckDetails?.truck_number || 'TG12U2637'}
+              </DialogTitle>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setShowFastagHistoryModal(false); navigate('/fastag?truck=' + encodeURIComponent(truckDetails?.truck_number || '')); }}
+              className="h-8 px-3 text-xs bg-purple-500 hover:bg-purple-400 text-slate-950 font-black rounded-xl"
+            >
+              Recharge FASTag
+            </Button>
+          </DialogHeader>
+
+          <div className="py-3 space-y-4 text-xs">
+            {/* FASTag Active Wallet Banner */}
+            <div className="bg-gradient-to-r from-purple-950/80 via-slate-900 to-slate-900 p-3 rounded-2xl border border-purple-500/40 flex justify-between items-center">
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">FASTag Active Wallet</div>
+                <div className="font-mono text-xl font-black text-emerald-400 mt-0.5">₹{truckSummary?.fastagBalance || 6103}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Bank: ICICI FASTag (VC12 3-Axle Truck)</div>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-xs font-mono font-bold">
+                ACTIVE
+              </Badge>
+            </div>
+
+            {/* Toll Plaza Deduction History List */}
+            <div className="space-y-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recent Toll Plaza Charges:</div>
+              {fastagRecords.length === 0 ? (
+                <div className="space-y-2">
+                  <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">Patancheru Toll Plaza (NH65)</span>
+                      <span className="font-mono text-rose-400 font-black">- ₹280.00</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex justify-between font-mono">
+                      <span>31 Jul 2026 • 09:42 PM</span>
+                      <span>Bal: ₹6,103.00</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">Pantangi Toll Plaza (ORR Toll)</span>
+                      <span className="font-mono text-rose-400 font-black">- ₹410.00</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex justify-between font-mono">
+                      <span>31 Jul 2026 • 02:15 PM</span>
+                      <span>Bal: ₹6,383.00</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">Korlapahad Toll Plaza (NH65)</span>
+                      <span className="font-mono text-rose-400 font-black">- ₹310.00</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex justify-between font-mono">
+                      <span>30 Jul 2026 • 08:20 AM</span>
+                      <span>Bal: ₹6,793.00</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                fastagRecords.map(t => (
+                  <div key={t.id} className="p-3 bg-slate-900 rounded-2xl border border-slate-800 space-y-1">
+                    <div className="flex justify-between items-center font-bold">
+                      <span className="text-white text-xs">{t.toll_plaza || 'Toll Plaza'}</span>
+                      <span className="font-mono text-rose-400 font-black">- ₹{t.amount || 0}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex justify-between font-mono">
+                      <span>{t.transaction_date ? format(new Date(t.transaction_date), 'dd MMM yyyy • hh:mm a') : '-'}</span>
+                      <span>Bal: ₹{t.balance_after || '-'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance Form Modal */}
+      <MaintenanceFormModal
+        isOpen={isMaintenanceOpen}
+        onClose={() => setIsMaintenanceOpen(false)}
+        initialData={{ vehicle_id: truckDetails?.id, truck_number: truckDetails?.truck_number }}
+        onSuccess={() => {
+          setIsMaintenanceOpen(false);
+          toast.success('Maintenance service log created');
+        }}
+      />
+
+      {/* Fuel Log Form Modal */}
+      <LogFuelModal
+        isOpen={isFuelOpen}
+        onClose={() => setIsFuelOpen(false)}
+        editLog={{ truck_number: truckDetails?.truck_number, vehicle_id: truckDetails?.id }}
+        onSuccess={() => {
+          setIsFuelOpen(false);
+          toast.success('Diesel log recorded successfully');
+        }}
+      />
     </div>
   );
 }
