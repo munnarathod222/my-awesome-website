@@ -539,75 +539,76 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 12mm;
+    margin: 6mm 10mm;
   }
 
+  /* Preserve exact colors, background fills, table headers, and borders */
   *, *::before, *::after {
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
     text-shadow: none !important;
     box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    filter: none !important;
   }
 
-  html, body, #root, main, div, section, article, table, tr, td, th, h1, h2, h3, h4, p, span, strong {
+  html, body {
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
-  /* Hide navigation, dialog backdrops, dark overlays, buttons and UI controls */
-  .no-print, nav, header, sidebar, aside, button, [role="dialog"] > button, .border-b.bg-muted\/20,
-  [data-radix-focus-guard], [data-state="open"] > button {
+  /* Hide app navigation bars, header, sidebar, action buttons, dialog close buttons, toasts, and backdrops */
+  .no-print, nav, header, sidebar, aside, button, [role="dialog"] > button, .print-hidden, [data-radix-focus-guard], .sonner-toast, div.fixed.inset-0, div[data-state="open"] > div.fixed {
     display: none !important;
   }
 
-  /* Force printable container to full page width */
+  /* Unconstrain dialog container when printing inside modals */
+  [role="dialog"], [data-state="open"] {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+
+  /* Force printable container to full page width matching screen preview 100% */
   .payslip-container, #payslip-preview-content, .print-content {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 20px !important;
-    border: none !important;
+    padding: 16px 20px !important;
+    border: 1px solid #cbd5e1 !important;
     box-shadow: none !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #000000 !important;
+    border-radius: 8px !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  /* Table styling for crisp print readability */
-  #payslip-preview-content table,
-  .payslip-container table {
+  /* Ensure tables retain exact styling, headers, and borders */
+  table {
     width: 100% !important;
     border-collapse: collapse !important;
-    border: 1px solid #000000 !important;
-    margin-bottom: 1rem !important;
+    page-break-inside: avoid !important;
   }
 
-  #payslip-preview-content th,
-  #payslip-preview-content td,
-  .payslip-container th,
-  .payslip-container td {
-    border: 1px solid #94a3b8 !important;
-    padding: 6px 10px !important;
-    color: #000000 !important;
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-  }
-
-  #payslip-preview-content h1,
-  .payslip-container h1,
-  #payslip-preview-content h2,
-  .payslip-container h2,
-  #payslip-preview-content p,
-  .payslip-container p,
-  #payslip-preview-content span,
-  .payslip-container span,
-  #payslip-preview-content td,
-  .payslip-container td {
-    color: #000000 !important;
+  th, td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
