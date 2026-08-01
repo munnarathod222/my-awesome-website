@@ -136,7 +136,7 @@ const EmployeeDatabasePage = () => {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
-    employee_number: 'EMP-001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '',
+    employee_number: 'D001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '',
     payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10'
   });
 
@@ -419,8 +419,11 @@ const EmployeeDatabasePage = () => {
 
   const resetForm = () => {
     setEditingId(null);
-    const nextNum = employees.length + 1;
-    setFormData({ employee_number: `EMP-${String(nextNum).padStart(3, '0')}`, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
+    const driverCount = employees.filter(e => e.employee_type === 'driver').length + 1;
+    const staffCount = employees.filter(e => e.employee_type !== 'driver').length + 1;
+    const isDriver = formData.employee_type === 'driver';
+    const nextCode = isDriver ? `D${String(driverCount).padStart(3, '0')}` : `E${String(staffCount).padStart(3, '0')}`;
+    setFormData({ employee_number: nextCode, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
     clearPhoto();
     setUploadedDocs([]);
   };
@@ -1138,7 +1141,10 @@ const EmployeeDatabasePage = () => {
                           {employees.length === 0 ? (
                             <TableRow><TableCell colSpan={9} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
                           ) : employees.map((emp, idx) => {
-                            const empCode = emp.employee_number || emp.emp_number || emp.employee_code || `EMP-${String(idx + 1).padStart(3, '0')}`;
+                            const isDriver = emp.employee_type === 'driver';
+                            const empCode = /^[DE]\d{3}$/i.test(emp.employee_number || '') 
+                              ? emp.employee_number 
+                              : (isDriver ? `D${String(idx + 1).padStart(3, '0')}` : `E${String(idx + 1).padStart(3, '0')}`);
                             return (
                               <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors border-b border-border/40">
                                 <TableCell className="pl-4 py-3">
@@ -1413,7 +1419,9 @@ const EmployeeDatabasePage = () => {
                           </TableRow>
                         ) : (
                           filteredStaffList.map((emp, idx) => {
-                            const empCode = emp.employee_number || emp.emp_number || emp.employee_code || `EMP-${String(idx + 1).padStart(3, '0')}`;
+                            const empCode = /^[DE]\d{3}$/i.test(emp.employee_number || '') 
+                              ? emp.employee_number 
+                              : `E${String(idx + 1).padStart(3, '0')}`;
                             return (
                               <TableRow key={emp.id} className="hover:bg-muted/30">
                                 <TableCell>
