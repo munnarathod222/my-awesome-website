@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
-import { Truck, Upload, User, Phone, Mail, MapPin, FileText, Star, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Truck, Upload, User, Phone, Mail, MapPin, FileText, Star, CheckCircle2, AlertCircle, ChevronRight, ChevronLeft, Camera, CreditCard, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,19 +10,28 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { submitApplication, VEHICLE_TYPES } from '@/lib/recruitmentClient.js';
 
-const STEPS = ['Personal Info', 'License & Experience', 'References', 'Review & Submit'];
+const STEPS = ['Personal Info', 'License & Identity', 'References', 'Review & Submit'];
 
 export default function DriverApplicationPage() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
   const [licenseFile, setLicenseFile] = useState(null);
   const [licensePreview, setLicensePreview] = useState(null);
+
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  const [panFile, setPanFile] = useState(null);
+  const [panPreview, setPanPreview] = useState(null);
+
   const [selectedVehicles, setSelectedVehicles] = useState([]);
 
   const [form, setForm] = useState({
     full_name: '', phone: '', email: '', dob: '',
     address: '', city: '', state: '',
+    pan_number: '',
     license_number: '', license_type: '', license_expiry: '',
     experience_years: '', previous_employer: '', previous_designation: '',
     reference1_name: '', reference1_phone: '', reference1_relation: '',
@@ -31,10 +40,10 @@ export default function DriverApplicationPage() {
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleFileChange = (e) => {
+  const handleLicenseChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { toast.error('File must be under 10 MB'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('License file must be under 10 MB'); return; }
     setLicenseFile(file);
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -45,6 +54,30 @@ export default function DriverApplicationPage() {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error('Photo must be under 10 MB'); return; }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handlePanChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error('PAN card document must be under 10 MB'); return; }
+    setPanFile(file);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPanPreview(ev.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPanPreview('pdf');
+    }
+  };
+
   const toggleVehicle = (v) => {
     setSelectedVehicles(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v]);
   };
@@ -52,15 +85,21 @@ export default function DriverApplicationPage() {
   const validateStep = () => {
     if (step === 0) {
       if (!form.full_name || !form.phone || !form.city || !form.state) {
-        toast.error('Please fill in all required fields'); return false;
+        toast.error('Please fill in all required personal information fields'); return false;
+      }
+      if (!photoFile) {
+        toast.error('Please upload your Passport Size Photograph'); return false;
       }
     }
     if (step === 1) {
       if (!form.license_number || !form.license_type || !form.license_expiry) {
-        toast.error('Please fill in license details'); return false;
+        toast.error('Please fill in driving license details'); return false;
       }
       if (!licenseFile) {
-        toast.error('Please upload your driving license'); return false;
+        toast.error('Please upload your driving license document'); return false;
+      }
+      if (form.pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan_number.toUpperCase())) {
+        toast.error('Invalid PAN number format (e.g. ABCDE1234F)'); return false;
       }
       if (selectedVehicles.length === 0) {
         toast.error('Please select at least one vehicle type'); return false;
@@ -80,7 +119,15 @@ export default function DriverApplicationPage() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await submitApplication({ ...form, vehicle_types: selectedVehicles.join(', '), experience_years: Number(form.experience_years || 0) }, licenseFile);
+      await submitApplication(
+        { 
+          ...form, 
+          pan_number: form.pan_number ? form.pan_number.toUpperCase() : '',
+          vehicle_types: selectedVehicles.join(', '), 
+          experience_years: Number(form.experience_years || 0) 
+        }, 
+        { licenseFile, photoFile, panFile }
+      );
       setSubmitted(true);
       toast.success('Application submitted successfully!');
     } catch (err) {
@@ -100,7 +147,7 @@ export default function DriverApplicationPage() {
           </div>
           <h2 className="text-2xl font-black text-white mb-2">Application Submitted!</h2>
           <p className="text-slate-400 text-sm mb-1">Thank you, <strong className="text-white">{form.full_name}</strong>!</p>
-          <p className="text-slate-400 text-sm mb-6">Our HR team will review your application and contact you within <strong className="text-amber-400">3–5 working days</strong>.</p>
+          <p className="text-slate-400 text-sm mb-6">Our HR team will review your application, photo, PAN card, &amp; license details and contact you within <strong className="text-amber-400">3–5 working days</strong>.</p>
           <div className="bg-slate-800/60 rounded-2xl p-4 text-xs text-slate-300 space-y-1 border border-slate-700">
             <p>📞 For queries, call: <strong className="text-white">+91 7794072244</strong></p>
             <p>📧 Email: <strong className="text-white">hr@jaibhavanicargo.com</strong></p>
@@ -113,8 +160,8 @@ export default function DriverApplicationPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 py-8 px-4 font-sans">
       <Helmet>
-        <title>Driver Job Application | Jai Bhavani Cargo</title>
-        <meta name="description" content="Apply for a driver position at Jai Bhavani Cargo. Upload your driving license and join our fleet team." />
+        <title>Driver &amp; Employee Job Application | Jai Bhavani Cargo</title>
+        <meta name="description" content="Apply for driver or staff positions at Jai Bhavani Cargo. Upload passport photo, driving license, and PAN card." />
       </Helmet>
 
       <div className="max-w-2xl mx-auto">
@@ -126,10 +173,10 @@ export default function DriverApplicationPage() {
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-black text-white">Jai Bhavani Cargo</h1>
-              <p className="text-xs text-blue-400 font-bold tracking-wider uppercase">Driver Recruitment Portal</p>
+              <p className="text-xs text-blue-400 font-bold tracking-wider uppercase">Driver &amp; Employee Recruitment Portal</p>
             </div>
           </div>
-          <p className="text-slate-400 text-sm">Join our fleet of 100+ professional truck drivers across India</p>
+          <p className="text-slate-400 text-sm">Join our fleet &amp; logistics team across India</p>
         </motion.div>
 
         {/* Step Indicator */}
@@ -152,10 +199,34 @@ export default function DriverApplicationPage() {
         {/* Card */}
         <motion.div key={step} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }} className="bg-slate-900/80 backdrop-blur border border-slate-700/60 rounded-3xl p-6 sm:p-8 shadow-2xl">
 
-          {/* STEP 0: Personal Info */}
+          {/* STEP 0: Personal Info & Passport Photo */}
           {step === 0 && (
             <div className="space-y-5">
-              <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><User className="w-5 h-5 text-blue-400" /> Personal Information</h2>
+              <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><User className="w-5 h-5 text-blue-400" /> Personal Information &amp; Photo</h2>
+
+              {/* Passport Photo Box */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                <div className="relative w-24 h-28 rounded-2xl overflow-hidden bg-slate-950 border-2 border-dashed border-slate-600 flex items-center justify-center shrink-0 shadow-inner">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Passport Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center p-2">
+                      <Camera className="w-6 h-6 text-slate-500 mx-auto mb-1" />
+                      <span className="text-[10px] text-slate-400 font-bold block">Photo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5 flex-1 text-center sm:text-left">
+                  <Label className="text-xs font-bold text-slate-200">Upload Passport Size Photograph *</Label>
+                  <p className="text-[11px] text-slate-400">Recent front-facing passport photo (JPG or PNG, max 10 MB)</p>
+                  <label className="inline-flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs font-bold text-white cursor-pointer transition-colors mt-1">
+                    <Upload className="w-3.5 h-3.5 text-blue-400" />
+                    {photoFile ? photoFile.name : 'Choose Passport Photo'}
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-300">Full Name *</Label>
@@ -196,10 +267,10 @@ export default function DriverApplicationPage() {
             </div>
           )}
 
-          {/* STEP 1: License & Experience */}
+          {/* STEP 1: License, PAN Card & Experience */}
           {step === 1 && (
             <div className="space-y-5">
-              <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400" /> Driving License & Experience</h2>
+              <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400" /> License, PAN Card &amp; Experience</h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -227,6 +298,16 @@ export default function DriverApplicationPage() {
                   <Label className="text-xs font-bold text-slate-300">Total Driving Experience (Years)</Label>
                   <Input type="number" min="0" max="50" value={form.experience_years} onChange={e => set('experience_years', e.target.value)} placeholder="e.g. 5" className="rounded-xl h-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
                 </div>
+
+                {/* PAN Card Details */}
+                <div className="space-y-1.5 sm:col-span-2 pt-2 border-t border-slate-800">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CreditCard className="w-4 h-4 text-emerald-400" />
+                    <Label className="text-xs font-extrabold text-slate-200">PAN Card Details</Label>
+                  </div>
+                  <Input value={form.pan_number} onChange={e => set('pan_number', e.target.value.toUpperCase())} maxLength={10} placeholder="PAN Card Number (e.g. ABCDE1234F)" className="rounded-xl h-10 bg-slate-800 border-slate-700 text-white font-mono uppercase placeholder:text-slate-500" />
+                </div>
+
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-slate-300">Previous Employer</Label>
                   <Input value={form.previous_employer} onChange={e => set('previous_employer', e.target.value)} placeholder="Company or Transport name" className="rounded-xl h-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
@@ -250,22 +331,43 @@ export default function DriverApplicationPage() {
                 </div>
               </div>
 
-              {/* License Upload */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-slate-300">Upload Driving License * (JPG, PNG or PDF, max 10 MB)</Label>
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-all group">
-                  {licensePreview ? (
-                    licensePreview === 'pdf'
-                      ? <div className="flex flex-col items-center gap-1 text-emerald-400"><FileText className="w-10 h-10" /><span className="text-xs font-bold">{licenseFile?.name}</span></div>
-                      : <img src={licensePreview} alt="License Preview" className="h-28 object-contain rounded-xl p-1" />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-500 group-hover:text-blue-400">
-                      <Upload className="w-8 h-8" />
-                      <span className="text-xs font-bold">Click to upload license</span>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleFileChange} />
-                </label>
+              {/* Document Uploads: License & PAN Card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* License Upload */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-300">Upload Driving License * (JPG, PNG or PDF)</Label>
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 hover:border-blue-500 rounded-2xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-all group">
+                    {licensePreview ? (
+                      licensePreview === 'pdf'
+                        ? <div className="flex flex-col items-center gap-1 text-emerald-400"><FileText className="w-8 h-8" /><span className="text-xs font-bold truncate max-w-[150px]">{licenseFile?.name}</span></div>
+                        : <img src={licensePreview} alt="License Preview" className="h-28 object-contain rounded-xl p-1" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-slate-500 group-hover:text-blue-400">
+                        <Upload className="w-7 h-7" />
+                        <span className="text-xs font-bold">Click to upload license</span>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleLicenseChange} />
+                  </label>
+                </div>
+
+                {/* PAN Card Document Upload */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-300">Upload PAN Card Document (JPG, PNG or PDF)</Label>
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600 hover:border-emerald-500 rounded-2xl cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-all group">
+                    {panPreview ? (
+                      panPreview === 'pdf'
+                        ? <div className="flex flex-col items-center gap-1 text-emerald-400"><CreditCard className="w-8 h-8" /><span className="text-xs font-bold truncate max-w-[150px]">{panFile?.name}</span></div>
+                        : <img src={panPreview} alt="PAN Preview" className="h-28 object-contain rounded-xl p-1" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-slate-500 group-hover:text-emerald-400">
+                        <CreditCard className="w-7 h-7" />
+                        <span className="text-xs font-bold">Click to upload PAN card</span>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handlePanChange} />
+                  </label>
+                </div>
               </div>
             </div>
           )}
@@ -320,22 +422,27 @@ export default function DriverApplicationPage() {
               <h2 className="text-lg font-extrabold text-white flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-400" /> Review Your Application</h2>
 
               <div className="space-y-3 text-xs text-slate-300">
-                <div className="bg-slate-800/60 rounded-2xl p-4 space-y-1.5 border border-slate-700">
-                  <h3 className="font-extrabold text-white text-sm mb-2 flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-blue-400" /> Personal Details</h3>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <span className="text-slate-500">Name:</span><span className="font-bold text-white">{form.full_name}</span>
-                    <span className="text-slate-500">Mobile:</span><span className="font-mono font-bold text-white">{form.phone}</span>
-                    <span className="text-slate-500">City:</span><span className="text-white">{form.city}, {form.state}</span>
-                    <span className="text-slate-500">Email:</span><span className="text-white">{form.email || '—'}</span>
+                <div className="bg-slate-800/60 rounded-2xl p-4 space-y-3 border border-slate-700">
+                  <h3 className="font-extrabold text-white text-sm flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-blue-400" /> Personal Details &amp; Photo</h3>
+                  <div className="flex items-center gap-4">
+                    {photoPreview && (
+                      <img src={photoPreview} alt="Passport Photo Preview" className="w-16 h-20 object-cover rounded-xl border border-slate-600 shrink-0" />
+                    )}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 flex-1">
+                      <span className="text-slate-500">Name:</span><span className="font-bold text-white">{form.full_name}</span>
+                      <span className="text-slate-500">Mobile:</span><span className="font-mono font-bold text-white">{form.phone}</span>
+                      <span className="text-slate-500">City:</span><span className="text-white">{form.city}, {form.state}</span>
+                      <span className="text-slate-500">Email:</span><span className="text-white">{form.email || '—'}</span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="bg-slate-800/60 rounded-2xl p-4 space-y-1.5 border border-slate-700">
-                  <h3 className="font-extrabold text-white text-sm mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-400" /> License & Experience</h3>
+                  <h3 className="font-extrabold text-white text-sm mb-2 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-400" /> Documents &amp; Identity</h3>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                     <span className="text-slate-500">License No:</span><span className="font-mono font-bold text-white">{form.license_number}</span>
                     <span className="text-slate-500">Class:</span><span className="text-white">{form.license_type}</span>
-                    <span className="text-slate-500">Expiry:</span><span className="text-white">{form.license_expiry}</span>
+                    <span className="text-slate-500">PAN Number:</span><span className="font-mono font-bold text-emerald-400">{form.pan_number || '—'}</span>
                     <span className="text-slate-500">Experience:</span><span className="text-white">{form.experience_years || '0'} Years</span>
                   </div>
                   <div className="mt-2">
@@ -344,11 +451,18 @@ export default function DriverApplicationPage() {
                       {selectedVehicles.map(v => <Badge key={v} variant="outline" className="text-[10px] font-bold text-blue-400 border-blue-500/30">{v}</Badge>)}
                     </div>
                   </div>
-                  {licenseFile && (
-                    <div className="mt-2 flex items-center gap-2 text-emerald-400">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> <span className="font-bold">License uploaded: {licenseFile.name}</span>
-                    </div>
-                  )}
+                  <div className="mt-3 pt-2 border-t border-slate-700 flex flex-col gap-1.5">
+                    {licenseFile && (
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> License Uploaded ({licenseFile.name})
+                      </div>
+                    )}
+                    {panFile && (
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> PAN Card Uploaded ({panFile.name})
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="bg-slate-800/60 rounded-2xl p-4 space-y-1.5 border border-slate-700">
@@ -362,7 +476,7 @@ export default function DriverApplicationPage() {
 
               <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <p>By submitting, you confirm all information is accurate. False details may disqualify your application.</p>
+                <p>By submitting, you confirm all information and uploaded documents are authentic. False details will result in disqualification.</p>
               </div>
             </div>
           )}
