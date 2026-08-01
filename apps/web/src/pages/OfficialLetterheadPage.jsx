@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { 
   Printer, Download, FileText, Sparkles, Building2, Copy, Send, 
   Check, RefreshCw, Layers, ShieldCheck, Mail, Phone, Globe, User,
-  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders
+  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders, Save, Bookmark, Trash2, Plus
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -84,19 +85,95 @@ export default function OfficialLetterheadPage() {
   const [bottomPadding, setBottomPadding] = useState(80);
   const [sidePadding, setSidePadding] = useState(45);
 
+  // Saved Templates States
+  const [savedTemplates, setSavedTemplates] = useState([]);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [templateTitleInput, setTemplateTitleInput] = useState('');
+
   const fileInputRef = useRef(null);
   const letterRef = useRef(null);
 
-  // Load stored letterhead background if available
+  // Load stored letterhead background & saved templates on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('jbc_custom_letterhead_bg');
-      if (saved) {
-        setCustomLetterheadUrl(saved);
+      const savedBg = localStorage.getItem('jbc_custom_letterhead_bg');
+      if (savedBg) {
+        setCustomLetterheadUrl(savedBg);
         setUseCustomLetterhead(true);
+      }
+      const savedTpls = localStorage.getItem('jbc_saved_letterhead_templates');
+      if (savedTpls) {
+        setSavedTemplates(JSON.parse(savedTpls));
       }
     } catch (e) {}
   }, []);
+
+  const handleSaveTemplate = () => {
+    if (!templateTitleInput.trim()) {
+      toast.error('Please enter a template title!');
+      return;
+    }
+
+    const newTpl = {
+      id: `tpl_${Date.now()}`,
+      title: templateTitleInput.trim(),
+      dateCreated: new Date().toISOString(),
+      recipientName,
+      recipientAddress,
+      subject,
+      salutation,
+      bodyText,
+      signatoryName,
+      signatoryTitle,
+      includeStamp,
+      includeWatermark,
+      useCustomLetterhead,
+      customLetterheadUrl,
+      imageFitMode,
+      topPadding,
+      bottomPadding,
+      sidePadding,
+    };
+
+    const updated = [newTpl, ...savedTemplates];
+    setSavedTemplates(updated);
+    try {
+      localStorage.setItem('jbc_saved_letterhead_templates', JSON.stringify(updated));
+    } catch (e) {}
+
+    toast.success(`Template "${newTpl.title}" saved successfully!`);
+    setIsSaveModalOpen(false);
+    setTemplateTitleInput('');
+  };
+
+  const handleLoadSavedTemplate = (tpl) => {
+    if (tpl.recipientName !== undefined) setRecipientName(tpl.recipientName);
+    if (tpl.recipientAddress !== undefined) setRecipientAddress(tpl.recipientAddress);
+    if (tpl.subject !== undefined) setSubject(tpl.subject);
+    if (tpl.salutation !== undefined) setSalutation(tpl.salutation);
+    if (tpl.bodyText !== undefined) setBodyText(tpl.bodyText);
+    if (tpl.signatoryName !== undefined) setSignatoryName(tpl.signatoryName);
+    if (tpl.signatoryTitle !== undefined) setSignatoryTitle(tpl.signatoryTitle);
+    if (tpl.includeStamp !== undefined) setIncludeStamp(tpl.includeStamp);
+    if (tpl.includeWatermark !== undefined) setIncludeWatermark(tpl.includeWatermark);
+    if (tpl.useCustomLetterhead !== undefined) setUseCustomLetterhead(tpl.useCustomLetterhead);
+    if (tpl.customLetterheadUrl !== undefined) setCustomLetterheadUrl(tpl.customLetterheadUrl);
+    if (tpl.imageFitMode !== undefined) setImageFitMode(tpl.imageFitMode);
+    if (tpl.topPadding !== undefined) setTopPadding(tpl.topPadding);
+    if (tpl.bottomPadding !== undefined) setBottomPadding(tpl.bottomPadding);
+    if (tpl.sidePadding !== undefined) setSidePadding(tpl.sidePadding);
+
+    toast.success(`Loaded template: "${tpl.title}"`);
+  };
+
+  const handleDeleteSavedTemplate = (tplId, title) => {
+    const updated = savedTemplates.filter(t => t.id !== tplId);
+    setSavedTemplates(updated);
+    try {
+      localStorage.setItem('jbc_saved_letterhead_templates', JSON.stringify(updated));
+    } catch (e) {}
+    toast.success(`Deleted template "${title}"`);
+  };
 
   const convertPdfToDataUrl = async (file) => {
     try {
@@ -251,6 +328,14 @@ export default function OfficialLetterheadPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Button
+              onClick={() => setIsSaveModalOpen(true)}
+              variant="outline"
+              className="rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold text-xs h-10 px-4 hover:bg-amber-500/20"
+            >
+              <Save className="w-4 h-4 mr-2 text-amber-400" /> Save Template
+            </Button>
+
+            <Button
               onClick={handleCopyText}
               variant="outline"
               className="rounded-2xl border-slate-700 bg-slate-900 text-slate-200 font-bold text-xs h-10 px-4"
@@ -272,6 +357,56 @@ export default function OfficialLetterheadPage() {
           
           {/* ── LEFT COLUMN: CONTROL PANEL & FORM EDITING ──────────────────────── */}
           <div className="no-print lg:col-span-5 space-y-6">
+
+            {/* ── MY SAVED TEMPLATES CARD ────────────────────────────────────── */}
+            {savedTemplates.length > 0 && (
+              <Card className="bg-slate-900/90 border-emerald-500/40 rounded-3xl shadow-xl">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                      <Bookmark className="w-4 h-4 text-emerald-400" /> My Saved Templates ({savedTemplates.length})
+                    </CardTitle>
+                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
+                      Quick Load
+                    </Badge>
+                  </div>
+                  <CardDescription className="text-xs text-slate-400">
+                    Click any saved template to load text, recipient, and background settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-xs">
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1 scrollbar-none">
+                    {savedTemplates.map((tpl) => (
+                      <div
+                        key={tpl.id}
+                        className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition-all group"
+                      >
+                        <button
+                          onClick={() => handleLoadSavedTemplate(tpl)}
+                          className="flex-1 text-left"
+                        >
+                          <div className="font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                            {tpl.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {tpl.subject ? tpl.subject.substring(0, 45) + '...' : 'No subject'}
+                          </div>
+                        </button>
+
+                        <Button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSavedTemplate(tpl.id, tpl.title); }}
+                          variant="ghost"
+                          size="icon"
+                          className="w-7 h-7 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* ── CUSTOM LETTERHEAD FILE UPLOAD CARD ──────────────────────────── */}
             <Card className="bg-slate-900/90 border-amber-500/40 rounded-3xl shadow-xl">
@@ -691,13 +826,65 @@ export default function OfficialLetterheadPage() {
 
               </div>
 
-            </div>
-
           </div>
 
         </div>
 
       </div>
+
+      {/* Save Letterhead Template Modal */}
+      <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+        <DialogContent className="max-w-md bg-slate-950 text-slate-100 border-amber-500/40 rounded-3xl p-6 shadow-2xl font-sans">
+          <DialogHeader className="pb-3 border-b border-slate-800">
+            <DialogTitle className="text-xl font-black text-amber-400 flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-amber-400" /> Save Letterhead Template
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Save your current document text, recipient details, margins, and custom background image settings for 1-click loading anytime.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3 text-xs">
+            <div className="space-y-1.5">
+              <Label className="text-slate-300 font-bold">Template Title *</Label>
+              <Input
+                required
+                value={templateTitleInput}
+                onChange={e => setTemplateTitleInput(e.target.value)}
+                placeholder="e.g. Reliance Contract Offer Letter"
+                className="bg-slate-900 border-slate-800 text-white rounded-xl font-bold"
+              />
+            </div>
+
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-1 text-[11px] text-slate-400">
+              <p className="font-bold text-slate-300">Template Snapshot Preview:</p>
+              <p>• Subject: <span className="text-amber-300 font-semibold">{subject || 'None'}</span></p>
+              <p>• Recipient: <span className="text-white font-semibold">{recipientName || 'None'}</span></p>
+              <p>• Custom Letterhead: <span className="text-emerald-400 font-semibold">{useCustomLetterhead ? 'Active' : 'Built-in Template'}</span></p>
+              <p>• Top Margin: <span className="text-blue-300 font-semibold">{topPadding}px</span></p>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsSaveModalOpen(false)}
+              className="rounded-xl border-slate-700 text-slate-300 text-xs font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveTemplate}
+              className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black"
+            >
+              Save Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  </div>
   );
 }
