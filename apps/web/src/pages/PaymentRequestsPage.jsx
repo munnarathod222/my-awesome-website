@@ -414,22 +414,27 @@ const PaymentRequestsPage = () => {
     const clientName = r.expand?.client_id?.client_name || 'Client';
     const contactPerson = r.expand?.client_id?.contact_person || '';
     const phone = r.expand?.client_id?.phone || '';
-    const tripId = r.expand?.trip_id?.trip_id || r.trip_id || '';
+    
+    const tripObj = r.expand?.trip_id || r.linkedTrip;
+    const tripId = tripObj?.trip_id || r.trip_id || '';
+    const actualTripDateVal = tripObj?.date || r.actualTripDate || r.request_date;
+    const displayTripDate = actualTripDateVal && parseDateSafe(actualTripDateVal) ? format(parseDateSafe(actualTripDateVal), 'dd MMM yyyy') : '';
+    
+    const calcDueDateObj = parseDateSafe(r.due_date) || (actualTripDateVal ? new Date(parseDateSafe(actualTripDateVal).getTime() + 7 * 24 * 60 * 60 * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const dueDateStr = parseDateSafe(calcDueDateObj) ? format(parseDateSafe(calcDueDateObj), 'dd MMM yyyy') : '';
     const amount = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
-    const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : '';
-    const dueDate = r.due_date && parseDateSafe(r.due_date) ? format(parseDateSafe(r.due_date), 'dd MMM yyyy') : '';
 
-    const tripObj = r.expand?.trip_id;
     const routeStr = tripObj?.origin && tripObj?.destination ? `${tripObj.origin} ➡️ ${tripObj.destination}` : (tripObj?.route || '-');
     const tripDetails = tripObj ? `
 *Trip Details:*
 • *Trip ID:* ${tripObj.trip_id || tripId}
-• *Date:* ${tripObj.date && parseDateSafe(tripObj.date) ? format(parseDateSafe(tripObj.date), 'dd MMM yyyy') : ''}
+• *Trip Date:* ${displayTripDate || 'N/A'}
 • *Pickup ➔ Drop:* ${routeStr}
 • *Vehicle:* ${tripObj.truck_number || '-'}
 • *Driver:* ${tripObj.driver_name || '-'}` : `
 *Trip Details:*
-• *Trip:* ${tripId}`;
+• *Trip ID:* ${tripId}
+• *Trip Date:* ${displayTripDate || 'N/A'}`;
 
     const greeting = contactPerson ? `Hello ${contactPerson},` : `Hello,`;
     const message = `${greeting}
@@ -439,8 +444,8 @@ This is an official payment request from *Jai Bhavani Cargo*.
 *Payment Request Details:*
 • *Client:* ${clientName}
 • *Amount:* ${amount}
-• *Request Date:* ${reqDate}
-• *Due Date:* ${dueDate}
+• *Trip Date:* ${displayTripDate}
+• *Payment Due Date:* ${dueDateStr}
 ${tripDetails}
 
 _Note: We have generated and downloaded the Invoice PDF [Invoice_${tripId}.pdf] for your records. Please attach it to this chat._
@@ -493,14 +498,15 @@ Best Regards,
     
     let tripBreakdown = '';
     selectedReqs.forEach((r, idx) => {
-      const tripObj = r.expand?.trip_id || {};
+      const tripObj = r.expand?.trip_id || r.linkedTrip || {};
       const tripId = tripObj.trip_id || r.trip_id || `TRIP-${idx + 1}`;
-      const reqDate = r.request_date && parseDateSafe(r.request_date) ? format(parseDateSafe(r.request_date), 'dd MMM yyyy') : '';
+      const actualTripDateVal = tripObj.date || r.actualTripDate || r.expand?.trip_id?.date || r.request_date;
+      const tripDateStr = actualTripDateVal && parseDateSafe(actualTripDateVal) ? format(parseDateSafe(actualTripDateVal), 'dd MMM yyyy') : 'N/A';
       const routeStr = tripObj.origin && tripObj.destination ? `${tripObj.origin} ➡️ ${tripObj.destination}` : (tripObj.route || '');
       const vehicleStr = tripObj.truck_number ? ` | 🚛 ${tripObj.truck_number}` : '';
       const amt = r.amount ? `₹${Number(r.amount).toLocaleString('en-IN')}` : '₹0';
       
-      tripBreakdown += `${idx + 1}️⃣ *Trip:* ${tripId} (${reqDate})\n   📍 *Route:* ${routeStr || 'Freight Service'}${vehicleStr}\n   💵 *Freight Amount:* ${amt}\n\n`;
+      tripBreakdown += `${idx + 1}️⃣ *Trip ID:* ${tripId} (Date: ${tripDateStr})\n   📍 *Route:* ${routeStr || 'Freight Service'}${vehicleStr}\n   💵 *Freight Amount:* ${amt}\n\n`;
     });
 
     const message = `${greeting}
