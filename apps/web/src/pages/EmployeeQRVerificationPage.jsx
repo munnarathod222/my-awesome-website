@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { 
   ShieldCheck, ShieldAlert, CheckCircle2, User, Phone, MapPin, 
-  Truck, Building2, ExternalLink, Calendar, AlertTriangle, Globe, Mail, Clock, IdCard
+  Truck, Building2, ExternalLink, Calendar, AlertTriangle, Globe, Mail, Clock, IdCard,
+  Crown, Award, Sparkles, Star, Zap
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -198,11 +199,16 @@ export default function EmployeeQRVerificationPage() {
 
   const isDriver = employee?.employee_type === 'driver';
   const statusStr = (employee?.active_status || employee?.status || 'active').toLowerCase().replace('-', '_');
+  const isSuperUser = (employee?.id || '').includes('super') || 
+                      (employee?.designation || '').toLowerCase().includes('super') || 
+                      (employee?.designation || '').toLowerCase().includes('managing director') || 
+                      (employee?.designation || '').toLowerCase().includes('system administrator') ||
+                      (empId || '').toLowerCase().includes('super');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-slate-100 p-4 sm:p-6 font-sans flex flex-col items-center justify-center">
       <Helmet>
-        <title>Official Employee Verification | Jai Bhavani Cargo</title>
+        <title>{isSuperUser ? '👑 Executive VIP Verification | Jai Bhavani Cargo' : 'Official Employee Verification | Jai Bhavani Cargo'}</title>
         <meta name="description" content="Public security identity verification for drivers and personnel of Jai Bhavani Cargo." />
       </Helmet>
 
@@ -210,28 +216,57 @@ export default function EmployeeQRVerificationPage() {
         
         {/* Header Branding */}
         <div className="text-center space-y-1">
-          <div className="inline-flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500/30 px-3.5 py-1.5 rounded-full text-blue-400 font-black text-xs uppercase tracking-wider mb-1">
-            <Building2 className="w-4 h-4" /> Jai Bhavani Cargo Ltd
+          <div className={`inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-wider mb-1 ${
+            isSuperUser ? 'bg-amber-500/20 border-2 border-amber-400/60 text-amber-300 shadow-lg shadow-amber-500/20' : 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
+          }`}>
+            {isSuperUser ? <Crown className="w-4 h-4 text-amber-400" /> : <Building2 className="w-4 h-4" />}
+            {isSuperUser ? 'EXECUTIVE BOARD OF DIRECTORS' : 'Jai Bhavani Cargo Ltd'}
           </div>
-          <h1 className="text-2xl font-black text-white">Public Security Verification</h1>
-          <p className="text-xs text-slate-400">Real-time QR identity validation for fleet drivers &amp; staff</p>
+          <h1 className="text-2xl font-black text-white flex items-center justify-center gap-2">
+            {isSuperUser && <Sparkles className="w-6 h-6 text-amber-400" />}
+            {isSuperUser ? 'Executive Command Verification' : 'Public Security Verification'}
+          </h1>
+          <p className="text-xs text-slate-400">
+            {isSuperUser ? 'Highest security privilege pass for Jai Bhavani Cargo executive leadership' : 'Real-time QR identity validation for fleet drivers & staff'}
+          </p>
         </div>
 
         {/* Verification Card */}
-        <Card className={`bg-slate-900/90 border-2 rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
-          statusStr === 'terminated' ? 'border-rose-500/80' :
-          statusStr === 'absconded' ? 'border-amber-500/80' :
-          statusStr === 'on_leave' || statusStr === 'leave' ? 'border-purple-500/80' : 'border-emerald-500/60'
+        <Card className={`rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
+          isSuperUser ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-2 border-amber-400/90 shadow-[0_0_70px_rgba(245,158,11,0.4)]' :
+          statusStr === 'terminated' ? 'bg-slate-900/90 border-2 border-rose-500/80' :
+          statusStr === 'absconded' ? 'bg-slate-900/90 border-2 border-amber-500/80' :
+          statusStr === 'on_leave' || statusStr === 'leave' ? 'bg-slate-900/90 border-2 border-purple-500/80' : 'bg-slate-900/90 border-2 border-emerald-500/60'
         }`}>
           
-          <div className={`absolute top-0 inset-x-0 h-2 bg-gradient-to-r ${
+          <div className={`absolute top-0 inset-x-0 h-2.5 bg-gradient-to-r ${
+            isSuperUser ? 'from-amber-500 via-yellow-200 to-amber-500' :
             statusStr === 'terminated' ? 'from-rose-600 to-red-800' :
             statusStr === 'absconded' ? 'from-amber-500 to-orange-600' :
             statusStr === 'on_leave' || statusStr === 'leave' ? 'from-purple-500 to-indigo-600' : 'from-emerald-500 via-teal-400 to-emerald-600'
           }`} />
 
           {/* Status Badge Banner */}
-          {statusStr === 'terminated' ? (
+          {isSuperUser ? (
+            <div className="bg-gradient-to-r from-amber-500/25 via-yellow-500/15 to-amber-500/25 border-2 border-amber-400/60 rounded-2xl p-4 mb-5 flex items-center justify-between text-amber-200 shadow-xl relative overflow-hidden">
+              <div className="flex items-center gap-3 z-10">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-lg shadow-amber-500/40 ring-2 ring-amber-300 animate-pulse">
+                  <Crown className="w-7 h-7" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-amber-300 uppercase tracking-tight flex items-center gap-1">
+                    VERIFIED EXECUTIVE DIRECTOR IDENTITY
+                  </div>
+                  <div className="text-[10.5px] text-amber-200 font-extrabold mt-0.5">
+                    👑 LEVEL 1 UNRESTRICTED SYSTEM ACCESS • ROOT EXECUTIVE
+                  </div>
+                </div>
+              </div>
+              <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-[10px] uppercase px-3 py-1.5 shadow-md shrink-0">
+                SUPER USER
+              </Badge>
+            </div>
+          ) : statusStr === 'terminated' ? (
             <div className="bg-rose-500/20 border border-rose-500/50 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-rose-200">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg shadow-rose-600/20">
@@ -295,7 +330,9 @@ export default function EmployeeQRVerificationPage() {
 
           {/* Employee Profile Header */}
           <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left mb-5 pb-5 border-b border-slate-800">
-            <div className="w-24 h-28 rounded-2xl border-2 border-amber-400 overflow-hidden bg-slate-950 shrink-0 shadow-xl relative">
+            <div className={`w-24 h-28 rounded-2xl overflow-hidden bg-slate-950 shrink-0 shadow-xl relative ${
+              isSuperUser ? 'border-4 border-amber-400 ring-4 ring-amber-400/30' : 'border-2 border-amber-400'
+            }`}>
               {employee?.photoUrl ? (
                 <img src={employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
               ) : (
@@ -307,14 +344,24 @@ export default function EmployeeQRVerificationPage() {
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-xl font-black text-white uppercase tracking-tight">{employee?.name}</h2>
-              <div className="text-xs font-extrabold text-amber-400 uppercase">{employee?.designation}</div>
+              <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center justify-center sm:justify-start gap-2">
+                {employee?.name} {isSuperUser && <Crown className="w-5 h-5 text-amber-400 inline" />}
+              </h2>
+              <div className={`text-xs font-extrabold uppercase ${isSuperUser ? 'text-amber-300' : 'text-amber-400'}`}>
+                {employee?.designation}
+              </div>
               
               <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 font-mono text-xs font-bold">
+                <Badge variant="outline" className={`font-mono text-xs font-bold ${
+                  isSuperUser ? 'bg-amber-400/20 text-amber-300 border-amber-400/50' : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                }`}>
                   ID: {employee?.employee_number}
                 </Badge>
-                {isDriver && (
+                {isSuperUser ? (
+                  <Badge className="bg-amber-400 text-slate-950 text-xs font-black">
+                    ⭐ SUPER USER AUTHORIZED
+                  </Badge>
+                ) : isDriver && (
                   <Badge variant="outline" className="bg-amber-500/10 text-amber-300 border-amber-500/30 text-xs font-bold">
                     <Truck className="w-3 h-3 mr-1 inline" /> Commercial Driver
                   </Badge>
@@ -325,23 +372,48 @@ export default function EmployeeQRVerificationPage() {
 
           {/* Key Credentials Table */}
           <div className="space-y-2.5 text-xs">
-            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 space-y-2 font-mono">
-              <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400 font-bold">Driving License:</span>
-                <span className="text-white font-extrabold">{employee?.license_number || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400 font-bold">Joining Date:</span>
-                <span className="text-slate-200">{employee?.joining_date}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
-                <span className="text-slate-400 font-bold">ID Expiry Date:</span>
-                <span className="text-amber-400 font-extrabold">{employee?.expiry_date}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-bold">Primary Contact:</span>
-                <span className="text-blue-400 font-extrabold">{employee?.contact}</span>
-              </div>
+            <div className={`border rounded-2xl p-3.5 space-y-2 font-mono ${
+              isSuperUser ? 'bg-slate-950 border-amber-400/50 text-amber-100' : 'bg-slate-950/80 border-slate-800'
+            }`}>
+              {isSuperUser ? (
+                <>
+                  <div className="flex justify-between items-center border-b border-amber-400/30 pb-1.5">
+                    <span className="text-amber-300/80 font-bold">System Privilege:</span>
+                    <span className="text-yellow-300 font-extrabold">SUPER ADMIN (LEVEL 1)</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-amber-400/30 pb-1.5">
+                    <span className="text-amber-300/80 font-bold">Security Clearance:</span>
+                    <span className="text-amber-400 font-extrabold">UNRESTRICTED ALL DEPOTS</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-amber-400/30 pb-1.5">
+                    <span className="text-amber-300/80 font-bold">Corporate Title:</span>
+                    <span className="text-white font-bold">Managing Director &amp; CEO</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-300/80 font-bold">Direct Emergency Line:</span>
+                    <span className="text-amber-300 font-extrabold">{employee?.contact}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+                    <span className="text-slate-400 font-bold">Driving License:</span>
+                    <span className="text-white font-extrabold">{employee?.license_number || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+                    <span className="text-slate-400 font-bold">Joining Date:</span>
+                    <span className="text-slate-200">{employee?.joining_date}</span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-800/80 pb-1.5">
+                    <span className="text-slate-400 font-bold">ID Expiry Date:</span>
+                    <span className="text-amber-400 font-extrabold">{employee?.expiry_date}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold">Primary Contact:</span>
+                    <span className="text-blue-400 font-extrabold">{employee?.contact}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Official Address */}
