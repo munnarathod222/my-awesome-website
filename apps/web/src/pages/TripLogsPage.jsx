@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { formatMapUrl } from '@/lib/locationUtils.js';
 import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor } from '@/lib/tripStatusUtils.js';
+import { filterActiveDrivers } from '@/lib/driverUtils.js';
 import { motion } from 'framer-motion';
 
 const InlineKmInput = ({ log, className, onUpdate }) => {
@@ -170,7 +171,7 @@ const TripLogsPage = () => {
         }
       });
 
-      setEmployees(employeesData);
+      setEmployees(filterActiveDrivers(employeesData));
       setTrucks(trucksData);
       setTripLogs(logsData);
       setRouteMap(rMap);
