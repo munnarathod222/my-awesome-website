@@ -384,7 +384,14 @@ const EmployeeDatabasePage = () => {
 
   const handleEdit = (employee, index = 0) => {
     setEditingId(employee.id);
-    const empNum = employee.employee_number || employee.emp_number || employee.employee_code || `EMP-${String(index + 1).padStart(3, '0')}`;
+    const isDriver = employee.employee_type === 'driver';
+    const rawNum = (employee.employee_number || employee.emp_number || employee.employee_code || '').trim();
+    let empNum = rawNum;
+    if (!/^[DE]\d{3,}$/i.test(rawNum)) {
+      const match = rawNum.match(/\d+/);
+      const numVal = match ? parseInt(match[0], 10) : (index + 1);
+      empNum = `${isDriver ? 'D' : 'E'}${String(numVal).padStart(3, '0')}`;
+    }
     let parsedRoutes = [];
     if (Array.isArray(employee.assigned_routes)) {
       parsedRoutes = employee.assigned_routes;
