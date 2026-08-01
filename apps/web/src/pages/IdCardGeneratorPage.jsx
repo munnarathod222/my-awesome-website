@@ -651,85 +651,92 @@ export default function IdCardGeneratorPage() {
                 
                 {/* FRONT SIDE */}
                 {(cardSide === 'both' || cardSide === 'front') && (
-                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#a3c4f3] via-[#cfe0f9] to-[#edf4fe] border-2 border-blue-200 shadow-2xl relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-3">
+                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-3.5">
                     
-                    {/* Top Curved Soft Blue Waves */}
-                    <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-blue-600/30 to-blue-400/20 rounded-full blur-sm -mr-10 -mt-10 pointer-events-none" />
-                    
-                    {/* Header: Company Name or Logo */}
-                    <div className="flex items-center justify-between z-10 pt-1 px-1">
+                    {/* Metallic Gloss Reflection */}
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-600/30 via-indigo-400/15 to-transparent rounded-full blur-md -mr-12 -mt-12 pointer-events-none" />
+                    <div className="w-10 h-1.5 bg-slate-300/80 border border-white/60 rounded-full mx-auto mb-1 shrink-0 relative z-10" />
+
+                    {/* Header: Company Logo & Name */}
+                    <div className="flex items-center justify-between z-10 pt-0.5 px-0.5">
                       <div className="flex items-center gap-2">
                         {cardForm.company_logo_url ? (
-                          <img src={cardForm.company_logo_url} alt="Logo" className="h-7 max-w-[120px] object-contain drop-shadow" />
+                          <img src={cardForm.company_logo_url} alt="Logo" className="h-8 max-w-[125px] object-contain filter drop-shadow-md" />
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <div className="w-6 h-6 rounded-lg bg-blue-700 text-white font-black text-[10px] flex items-center justify-center shadow">JB</div>
-                            <span className="text-[11px] font-black tracking-tight text-blue-950 uppercase">{cardForm.company_name}</span>
+                            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 text-white font-black text-xs flex items-center justify-center shadow-md shadow-blue-900/30">JB</div>
+                            <div>
+                              <span className="text-[11px] font-black tracking-tight text-blue-950 uppercase block leading-none">{cardForm.company_name}</span>
+                              <span className="text-[7.5px] text-blue-800 font-bold uppercase tracking-wider block mt-0.5">{cardForm.company_tagline}</span>
+                            </div>
                           </div>
                         )}
                       </div>
+                      <Badge className="bg-blue-900 text-white font-black text-[8.5px] px-2 py-0.5 rounded-lg shadow-sm">
+                        {cardForm.employee_number?.startsWith('D') ? 'DRIVER' : 'STAFF'}
+                      </Badge>
                     </div>
 
                     {/* Middle Section: Circular Photo Frame on Left & Name Pill on Right */}
                     <div className="relative z-10 flex items-center gap-2.5 my-2">
-                      {/* Large Arch Photo Frame */}
-                      <div className="w-28 h-32 rounded-full border-4 border-white overflow-hidden bg-slate-900 shadow-xl shrink-0 relative">
+                      {/* Large Arch Photo Frame with Glow Ring */}
+                      <div className="w-28 h-32 rounded-[32px] border-4 border-white overflow-hidden bg-slate-950 shadow-xl shrink-0 relative ring-2 ring-blue-400/40">
                         {cardForm.photo_url ? (
                           <img src={cardForm.photo_url} alt={cardForm.name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-400"><User className="w-10 h-10" /></div>
+                          <div className="w-full h-full flex items-center justify-center text-slate-500"><User className="w-10 h-10" /></div>
                         )}
                       </div>
 
                       {/* Name & Designation Badges on Right */}
                       <div className="space-y-1.5 min-w-0 flex-1">
-                        <div className="bg-white/90 backdrop-blur border border-blue-100 p-2 rounded-2xl shadow-sm">
+                        <div className="bg-white/95 backdrop-blur-md border border-blue-100 p-2 rounded-2xl shadow-md">
                           <div className="text-xs font-black text-slate-950 uppercase leading-tight truncate">{cardForm.name || 'EMPLOYEE NAME'}</div>
                         </div>
-                        <div className="bg-blue-900/10 backdrop-blur px-2.5 py-1 rounded-xl">
-                          <div className="text-[10px] font-extrabold italic text-blue-900 truncate">{cardForm.designation}</div>
+                        <div className="bg-blue-950/10 backdrop-blur-md px-2.5 py-1 rounded-xl border border-blue-900/10">
+                          <div className="text-[10px] font-extrabold italic text-blue-950 truncate">{cardForm.designation}</div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Details Block */}
-                    <div className="bg-white/70 backdrop-blur rounded-2xl p-2.5 border border-white/80 space-y-1 text-[9.5px] font-sans text-slate-800 z-10 text-right font-medium">
-                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
-                        <span className="text-slate-500 font-bold">Employee ID:</span>
-                        <span className="font-mono font-extrabold text-blue-950">{cardForm.employee_number}</span>
+                    {/* Details Block Grid */}
+                    <div className="bg-white/80 backdrop-blur-md rounded-2xl p-2.5 border border-white/90 space-y-1 text-[9.5px] font-sans text-slate-800 z-10 font-semibold shadow-sm">
+                      <div className="flex justify-between border-b border-blue-100/80 pb-0.5">
+                        <span className="text-slate-500 font-bold">ID Code:</span>
+                        <span className="font-mono font-extrabold text-blue-950 text-xs">{cardForm.employee_number}</span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                      <div className="flex justify-between border-b border-blue-100/80 pb-0.5">
                         <span className="text-slate-500 font-bold">Department:</span>
-                        <span className="font-extrabold text-slate-900">{cardForm.department || 'Operations'}</span>
+                        <span className="font-extrabold text-slate-900">{cardForm.department || (cardForm.employee_number?.startsWith('D') ? 'Fleet Transit' : 'Operations')}</span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                      <div className="flex justify-between border-b border-blue-100/80 pb-0.5">
                         <span className="text-slate-500 font-bold">Phone:</span>
                         <span className="font-mono font-bold text-blue-900">{cardForm.contact}</span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                      <div className="flex justify-between border-b border-blue-100/80 pb-0.5">
                         <span className="text-slate-500 font-bold">Blood Group:</span>
                         <span className="font-mono font-extrabold text-rose-600">{cardForm.blood_group}</span>
                       </div>
                       <div className="flex justify-between pt-0.5">
-                        <span className="text-slate-500 font-bold">Access Level:</span>
-                        <span className="font-bold text-emerald-700">Authorized Pass</span>
+                        <span className="text-slate-500 font-bold">Access Pass:</span>
+                        <span className="font-extrabold text-emerald-700">Official Personnel</span>
                       </div>
                     </div>
 
                     {/* Bottom Barcode & QR Code Footer */}
-                    <div className="bg-white rounded-2xl p-1.5 flex items-center justify-between border border-blue-100 shadow-sm z-10">
-                      {/* Barcode Stripes */}
+                    <div className="bg-white rounded-2xl p-2 flex items-center justify-between border border-blue-100 shadow-md z-10">
+                      {/* Vector Barcode */}
                       <div className="flex flex-col items-center flex-1 pr-2">
-                        <div className="flex gap-0.5 h-6 items-center w-full justify-center opacity-85">
+                        <div className="flex gap-0.5 h-6 items-center w-full justify-center opacity-90">
                           {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,3,1,2].map((w, i) => (
-                            <div key={i} className={`h-full bg-slate-900 rounded-sm`} style={{ width: `${w}px` }} />
+                            <div key={i} className="h-full bg-slate-950 rounded-sm" style={{ width: `${w}px` }} />
                           ))}
                         </div>
-                        <div className="text-[7.5px] font-mono text-slate-500 tracking-widest mt-0.5 font-bold">{cardForm.employee_number}</div>
+                        <div className="text-[8px] font-mono text-slate-600 tracking-widest mt-0.5 font-extrabold">{cardForm.employee_number}</div>
                       </div>
 
                       {/* QR Code */}
-                      <div className="w-9 h-9 shrink-0">
+                      <div className="w-10 h-10 shrink-0 bg-slate-50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
                         <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
                       </div>
                     </div>
@@ -738,30 +745,32 @@ export default function IdCardGeneratorPage() {
 
                 {/* BACK SIDE */}
                 {(cardSide === 'both' || cardSide === 'back') && (
-                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#a3c4f3] via-[#cfe0f9] to-[#edf4fe] border-2 border-blue-200 shadow-2xl relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-4 text-center">
-                    <div className="text-[10px] font-black text-blue-950 uppercase tracking-widest border-b border-blue-300/60 pb-1">
+                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-4 text-center">
+                    <div className="w-10 h-1.5 bg-slate-300/80 border border-white/60 rounded-full mx-auto mb-1 shrink-0" />
+                    
+                    <div className="text-[10.5px] font-black text-blue-950 uppercase tracking-widest border-b border-blue-300/80 pb-1">
                       SECURITY ACCESS &amp; RETURN
                     </div>
 
-                    <div className="text-[8.5px] text-slate-700 text-left space-y-2 my-auto leading-relaxed bg-white/70 backdrop-blur p-3 rounded-2xl border border-white">
+                    <div className="text-[8.5px] text-slate-700 text-left space-y-2 my-auto leading-relaxed bg-white/80 backdrop-blur-md p-3.5 rounded-2xl border border-white shadow-sm">
                       <p>• Official Identity Badge of <strong>{cardForm.company_name}</strong>.</p>
-                      <p>• Unauthorized duplication or transfer is strictly prohibited.</p>
-                      <p>• If lost, please return to: <span className="font-bold text-slate-900">{cardForm.company_address}</span></p>
-                      <p>• Website: <span className="font-bold text-blue-900">www.jaibhavanicargo.com</span></p>
+                      <p>• Must be worn at all times on duty. Strictly non-transferable.</p>
+                      <p>• If lost or found, please return to: <span className="font-bold text-slate-950">{cardForm.company_address}</span></p>
+                      <p>• Portal: <span className="font-bold text-blue-900">www.jaibhavanicargo.com</span></p>
                     </div>
 
-                    <div className="bg-white/80 p-2 rounded-2xl text-left border border-white">
+                    <div className="bg-white/90 p-2.5 rounded-2xl text-left border border-white shadow-sm">
                       <div className="text-[8px] font-bold text-slate-500 uppercase">24x7 Emergency Claim Helpline</div>
                       <div className="text-xs font-mono font-black text-blue-950">{cardForm.emergency_contact || cardForm.company_phone}</div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-blue-300/60">
-                      <div className="w-11 h-11 bg-white p-0.5 rounded-xl border border-blue-100 shadow-sm">
+                    <div className="flex items-center justify-between pt-2 border-t border-blue-300/80">
+                      <div className="w-12 h-12 bg-white p-0.5 rounded-xl border border-blue-100 shadow-md">
                         <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
                       </div>
-                      <div className="text-right text-[8px] text-slate-600">
+                      <div className="text-right text-[8.5px] text-slate-700">
                         <div className="font-bold text-slate-950 uppercase">{cardForm.auth_sign_title}</div>
-                        <div>Jai Bhavani Cargo Ltd</div>
+                        <div className="text-[8px] font-medium text-slate-600">Jai Bhavani Cargo Ltd</div>
                       </div>
                     </div>
                   </div>
