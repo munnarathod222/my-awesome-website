@@ -8,7 +8,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
-import { TRIP_STATUS_OPTIONS } from '@/lib/tripStatusUtils.js';
+import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
 const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], trucks = [] }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -161,7 +161,7 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                     <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
                       ⚡ Temporary Driver
                     </SelectItem>
-                    {employees.map(emp => (
+                    {filterActiveDrivers(employees, formData.driver_name).map(emp => (
                       <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>
                     ))}
                   </SelectContent>
