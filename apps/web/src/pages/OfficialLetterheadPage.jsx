@@ -97,11 +97,43 @@ export default function OfficialLetterheadPage() {
     } catch (e) {}
   }, []);
 
-  const handleFileUpload = (e) => {
+  const convertPdfToDataUrl = async (file) => {
+    try {
+      if (!window.pdfjsLib) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          script.onload = () => {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            resolve();
+          };
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(1);
+      
+      const viewport = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      return canvas.toDataURL('image/png');
+    } catch (err) {
+      console.error('PDF conversion error:', err);
+      return null;
+    }
+  };
+
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if image or PDF
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -113,10 +145,16 @@ export default function OfficialLetterheadPage() {
       };
       reader.readAsDataURL(file);
     } else if (file.type === 'application/pdf') {
-      const url = URL.createObjectURL(file);
-      setCustomLetterheadUrl(url);
-      setUseCustomLetterhead(true);
-      toast.success(`Uploaded PDF letterhead ${file.name}!`);
+      toast.info('Converting PDF page to high-res letterhead background image...');
+      const dataUrl = await convertPdfToDataUrl(file);
+      if (dataUrl) {
+        setCustomLetterheadUrl(dataUrl);
+        setUseCustomLetterhead(true);
+        try { localStorage.setItem('jbc_custom_letterhead_bg', dataUrl); } catch (e) {}
+        toast.success(`PDF letterhead converted & set as background!`);
+      } else {
+        toast.error('Failed to parse PDF. Please upload a PNG or JPG image of your letterhead.');
+      }
     } else {
       toast.error('Please upload an image file (PNG, JPG) or PDF');
     }
