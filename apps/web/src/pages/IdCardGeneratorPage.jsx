@@ -70,6 +70,15 @@ const SAMPLE_EMPLOYEES = [
 
 const TEMPLATES = [
   {
+    id: 'curved_wave_v',
+    name: 'Curved Wave Executive',
+    orientation: 'vertical',
+    tag: 'Corporate & Executive (Featured)',
+    color: 'from-blue-400 via-indigo-300 to-blue-200',
+    border: 'border-blue-300',
+    accent: 'blue',
+  },
+  {
     id: 'royal_gold_v',
     name: 'Royal Dark Gold',
     orientation: 'vertical',
@@ -132,7 +141,7 @@ export default function IdCardGeneratorPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   
   const [selectedEmp, setSelectedEmp] = useState(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState('royal_gold_v');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('curved_wave_v');
   const [cardSide, setCardSide] = useState('both'); // 'both' | 'front' | 'back'
   const [isEditing, setIsEditing] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
@@ -144,10 +153,12 @@ export default function IdCardGeneratorPage() {
     company_tagline: 'Logistics & Heavy Transport Fleet',
     company_phone: '+91 7794072244',
     company_email: 'support@jaibhavanicargo.com',
-    company_address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
+    company_address: 'Plot 42, Transport Nagar, Secunderabad, TG - 500003',
+    company_logo_url: '',
     name: '',
     employee_number: '',
     designation: '',
+    department: 'Operations',
     contact: '',
     emergency_contact: '',
     blood_group: 'O+',
@@ -163,6 +174,22 @@ export default function IdCardGeneratorPage() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
+      // Fetch company logo from company_settings
+      try {
+        const companyRecs = await pb.collection('company_settings').getFullList({ $autoCancel: false }).catch(() => []);
+        if (companyRecs && companyRecs.length > 0) {
+          const setting = companyRecs[0];
+          if (setting.company_logo) {
+            const logoUrl = pb.files.getUrl(setting, setting.company_logo);
+            setCardForm(prev => ({
+              ...prev,
+              company_logo_url: logoUrl,
+              company_name: setting.company_name || prev.company_name
+            }));
+          }
+        }
+      } catch (e) {}
+
       let pbRecords = await pb.collection('employees').getFullList({
         sort: '-created',
         $autoCancel: false,
@@ -596,7 +623,129 @@ export default function IdCardGeneratorPage() {
           {/* MAIN PRINTABLE CARD STAGE */}
           <div id="printable-card-area" className="flex flex-col items-center justify-center gap-8 py-4">
             
-            {/* 1. ROYAL DARK GOLD VERTICAL TEMPLATE */}
+            {/* 0. CURVED WAVE EXECUTIVE TEMPLATE (FEATURED USER REQUESTED TEMPLATE) */}
+            {selectedTemplateId === 'curved_wave_v' && (
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                
+                {/* FRONT SIDE */}
+                {(cardSide === 'both' || cardSide === 'front') && (
+                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#a3c4f3] via-[#cfe0f9] to-[#edf4fe] border-2 border-blue-200 shadow-2xl relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-3">
+                    
+                    {/* Top Curved Soft Blue Waves */}
+                    <div className="absolute top-0 right-0 w-36 h-36 bg-gradient-to-bl from-blue-600/30 to-blue-400/20 rounded-full blur-sm -mr-10 -mt-10 pointer-events-none" />
+                    
+                    {/* Header: Company Name or Logo */}
+                    <div className="flex items-center justify-between z-10 pt-1 px-1">
+                      <div className="flex items-center gap-2">
+                        {cardForm.company_logo_url ? (
+                          <img src={cardForm.company_logo_url} alt="Logo" className="h-7 max-w-[120px] object-contain drop-shadow" />
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-6 h-6 rounded-lg bg-blue-700 text-white font-black text-[10px] flex items-center justify-center shadow">JB</div>
+                            <span className="text-[11px] font-black tracking-tight text-blue-950 uppercase">{cardForm.company_name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Section: Circular Photo Frame on Left & Name Pill on Right */}
+                    <div className="relative z-10 flex items-center gap-2.5 my-2">
+                      {/* Large Arch Photo Frame */}
+                      <div className="w-28 h-32 rounded-full border-4 border-white overflow-hidden bg-slate-900 shadow-xl shrink-0 relative">
+                        {cardForm.photo_url ? (
+                          <img src={cardForm.photo_url} alt={cardForm.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400"><User className="w-10 h-10" /></div>
+                        )}
+                      </div>
+
+                      {/* Name & Designation Badges on Right */}
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="bg-white/90 backdrop-blur border border-blue-100 p-2 rounded-2xl shadow-sm">
+                          <div className="text-xs font-black text-slate-950 uppercase leading-tight truncate">{cardForm.name || 'EMPLOYEE NAME'}</div>
+                        </div>
+                        <div className="bg-blue-900/10 backdrop-blur px-2.5 py-1 rounded-xl">
+                          <div className="text-[10px] font-extrabold italic text-blue-900 truncate">{cardForm.designation}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Details Block */}
+                    <div className="bg-white/70 backdrop-blur rounded-2xl p-2.5 border border-white/80 space-y-1 text-[9.5px] font-sans text-slate-800 z-10 text-right font-medium">
+                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                        <span className="text-slate-500 font-bold">Employee ID:</span>
+                        <span className="font-mono font-extrabold text-blue-950">{cardForm.employee_number}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                        <span className="text-slate-500 font-bold">Department:</span>
+                        <span className="font-extrabold text-slate-900">{cardForm.department || 'Operations'}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                        <span className="text-slate-500 font-bold">Phone:</span>
+                        <span className="font-mono font-bold text-blue-900">{cardForm.contact}</span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/60 pb-0.5">
+                        <span className="text-slate-500 font-bold">Blood Group:</span>
+                        <span className="font-mono font-extrabold text-rose-600">{cardForm.blood_group}</span>
+                      </div>
+                      <div className="flex justify-between pt-0.5">
+                        <span className="text-slate-500 font-bold">Access Level:</span>
+                        <span className="font-bold text-emerald-700">Authorized Pass</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom Barcode & QR Code Footer */}
+                    <div className="bg-white rounded-2xl p-1.5 flex items-center justify-between border border-blue-100 shadow-sm z-10">
+                      {/* Barcode Stripes */}
+                      <div className="flex flex-col items-center flex-1 pr-2">
+                        <div className="flex gap-0.5 h-6 items-center w-full justify-center opacity-85">
+                          {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,3,1,2].map((w, i) => (
+                            <div key={i} className={`h-full bg-slate-900 rounded-sm`} style={{ width: `${w}px` }} />
+                          ))}
+                        </div>
+                        <div className="text-[7.5px] font-mono text-slate-500 tracking-widest mt-0.5 font-bold">{cardForm.employee_number}</div>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="w-9 h-9 shrink-0">
+                        <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* BACK SIDE */}
+                {(cardSide === 'both' || cardSide === 'back') && (
+                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#a3c4f3] via-[#cfe0f9] to-[#edf4fe] border-2 border-blue-200 shadow-2xl relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-4 text-center">
+                    <div className="text-[10px] font-black text-blue-950 uppercase tracking-widest border-b border-blue-300/60 pb-1">
+                      SECURITY ACCESS &amp; RETURN
+                    </div>
+
+                    <div className="text-[8.5px] text-slate-700 text-left space-y-2 my-auto leading-relaxed bg-white/70 backdrop-blur p-3 rounded-2xl border border-white">
+                      <p>• Official Identity Badge of <strong>{cardForm.company_name}</strong>.</p>
+                      <p>• Unauthorized duplication or transfer is strictly prohibited.</p>
+                      <p>• If lost, please return to: <span className="font-bold text-slate-900">{cardForm.company_address}</span></p>
+                      <p>• Website: <span className="font-bold text-blue-900">www.jaibhavanicargo.com</span></p>
+                    </div>
+
+                    <div className="bg-white/80 p-2 rounded-2xl text-left border border-white">
+                      <div className="text-[8px] font-bold text-slate-500 uppercase">24x7 Emergency Claim Helpline</div>
+                      <div className="text-xs font-mono font-black text-blue-950">{cardForm.emergency_contact || cardForm.company_phone}</div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-blue-300/60">
+                      <div className="w-11 h-11 bg-white p-0.5 rounded-xl border border-blue-100 shadow-sm">
+                        <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
+                      </div>
+                      <div className="text-right text-[8px] text-slate-600">
+                        <div className="font-bold text-slate-950 uppercase">{cardForm.auth_sign_title}</div>
+                        <div>Jai Bhavani Cargo Ltd</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {selectedTemplateId === 'royal_gold_v' && (
               <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                 
