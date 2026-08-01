@@ -28,37 +28,45 @@ import { openMapLocation }  from '@/lib/locationUtils.js';
 
 /* ─── Contact type taxonomy ─────────────────────────────────────────────────── */
 export const MAIN_GROUPS = [
-  { key: 'All',         label: 'All Contacts',        icon: Users,    types: null   },
-  { key: 'Client',      label: 'Corporate Clients',   icon: Building2,types: ['Client','Corporate'] },
-  { key: 'Warehouse',   label: 'Warehouse Contacts',  icon: Landmark, types: ['Warehouse'] },
-  { key: 'Employee',    label: 'Drivers & Employees', icon: Truck,    types: ['Driver','Employee','Supervisor','Manager'] },
-  { key: 'Maintenance', label: 'Maintenance Network', icon: Wrench,   types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent'] },
-  { key: 'Finance',     label: 'Finance & Banking',   icon: Banknote, types: ['Banking','Loan Agent'] },
-  { key: 'Other',       label: 'Other Contacts',      icon: UserCog,  types: ['Other','Vendor'] },
+  { key: 'All',         label: 'All Contacts',                  icon: Users,     types: null   },
+  { key: 'TruckOwner',  label: 'Truck Owners & Transporters',   icon: Truck,     types: ['Truck Owner', 'Transporter'] },
+  { key: 'Client',      label: 'Corporate Clients',             icon: Building2, types: ['Client', 'Corporate'] },
+  { key: 'Warehouse',   label: 'Warehouse Contacts',            icon: Landmark,  types: ['Warehouse'] },
+  { key: 'Employee',    label: 'Drivers & Employees',           icon: Users,     types: ['Driver', 'Employee', 'Supervisor', 'Manager'] },
+  { key: 'Maintenance', label: 'Maintenance Network',           icon: Wrench,    types: ['Mechanic', 'Showroom', 'Spare Parts', 'Electrician', 'Puncture Shop', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Washing Centre', 'RTO Agent'] },
+  { key: 'Finance',     label: 'Finance & Banking',             icon: Banknote,  types: ['Banking', 'Loan Agent'] },
+  { key: 'Other',       label: 'Other Contacts & Vendors',      icon: UserCog,   types: ['Other', 'Vendor'] },
+];
+
+export const TRUCK_OWNER_SUBS = [
+  { key: 'all_truck',  label: 'All Owners & Transporters', icon: Truck,     types: ['Truck Owner', 'Transporter'] },
+  { key: 'Truck Owner',label: 'Truck Owners',              icon: Truck,     types: ['Truck Owner'] },
+  { key: 'Transporter',label: 'Transporters / Agencies',   icon: Building2, types: ['Transporter'] },
 ];
 
 export const FINANCE_SUBS = [
-  { key: 'all_fin',    label: 'All Banking & Loans', icon: Banknote,  types: ['Banking','Loan Agent'] },
-  { key: 'Banking',    label: 'Bank Employees',     icon: CreditCard,types: ['Banking'] },
-  { key: 'Loan Agent', label: 'Loan Agents',        icon: HandCoins, types: ['Loan Agent'] },
+  { key: 'all_fin',    label: 'All Banking & Loans', icon: Banknote,   types: ['Banking', 'Loan Agent'] },
+  { key: 'Banking',    label: 'Bank Managers',      icon: CreditCard, types: ['Banking'] },
+  { key: 'Loan Agent', label: 'Loan Agents / DSAs', icon: HandCoins,  types: ['Loan Agent'] },
 ];
 
 export const MAINTENANCE_SUBS = [
-  { key: 'all_maint',          label: 'All',                 icon: Network,    types: ['Mechanic','Showroom','Spare Parts','Electrician','Puncture Shop','Bodywork / Welding','Crane / Tow Truck','Hydraulics','Plastics','Washing Centre','RTO Agent','Other'] },
-  { key: 'Mechanic',           label: 'Mechanics',           icon: Wrench,     types: ['Mechanic'] },
-  { key: 'Electrician',        label: 'Electricians',        icon: Zap,        types: ['Electrician'] },
-  { key: 'Puncture Shop',      label: 'Puncture Shops',    icon: Disc,       types: ['Puncture Shop'] },
-  { key: 'Showroom',           label: 'Showrooms / Centres', icon: Landmark,   types: ['Showroom'] },
-  { key: 'Spare Parts',        label: 'Spare Parts Shops',   icon: ShoppingBag,types: ['Spare Parts'] },
-  { key: 'Bodywork / Welding', label: 'Bodywork & Welding',  icon: Wrench,     types: ['Bodywork / Welding'] },
-  { key: 'Crane / Tow Truck',  label: 'Crane & Towing',      icon: Truck,      types: ['Crane / Tow Truck'] },
-  { key: 'Hydraulics',         label: 'Hydraulics & Plastics', icon: Zap,      types: ['Hydraulics','Plastics'] },
-  { key: 'Washing Centre',     label: 'Washing Centres',     icon: Network,    types: ['Washing Centre'] },
-  { key: 'RTO Agent',          label: 'RTO Agents',          icon: Landmark,   types: ['RTO Agent'] },
-  { key: 'Other',              label: 'Other Services',      icon: UserCog,    types: ['Other'] },
+  { key: 'all_maint',          label: 'All Maintenance Network', icon: Network,    types: ['Mechanic', 'Showroom', 'Spare Parts', 'Electrician', 'Puncture Shop', 'Bodywork / Welding', 'Crane / Tow Truck', 'Hydraulics', 'Plastics', 'Washing Centre', 'RTO Agent', 'Other'] },
+  { key: 'Mechanic',           label: 'Mechanics',               icon: Wrench,     types: ['Mechanic'] },
+  { key: 'Electrician',        label: 'Electricians',            icon: Zap,        types: ['Electrician'] },
+  { key: 'Puncture Shop',      label: 'Puncture Shops',        icon: Disc,       types: ['Puncture Shop'] },
+  { key: 'Showroom',           label: 'Showrooms & Services',    icon: Landmark,   types: ['Showroom'] },
+  { key: 'Spare Parts',        label: 'Spare Parts Shops',       icon: ShoppingBag,types: ['Spare Parts'] },
+  { key: 'Bodywork / Welding', label: 'Bodywork & Welding',      icon: Wrench,     types: ['Bodywork / Welding'] },
+  { key: 'Crane / Tow Truck',  label: 'Crane & Towing',          icon: Truck,      types: ['Crane / Tow Truck'] },
+  { key: 'Hydraulics',         label: 'Hydraulics & Plastics',   icon: Zap,        types: ['Hydraulics', 'Plastics'] },
+  { key: 'Washing Centre',     label: 'Washing Centres',         icon: Network,    types: ['Washing Centre'] },
+  { key: 'RTO Agent',          label: 'RTO Agents',              icon: Landmark,   types: ['RTO Agent'] },
 ];
 
 const TYPE_BADGE = {
+  'Truck Owner':        'bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold',
+  'Transporter':        'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 font-bold',
   'Client':             'bg-primary/10 text-primary border-primary/25',
   'Corporate':          'bg-primary/10 text-primary border-primary/25',
   'Warehouse':          'bg-amber-500/10 text-amber-400 border-amber-500/25',
@@ -91,7 +99,7 @@ function Pill({ active, onClick, icon: Icon, label, count, accent }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap
+      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap
         ${active
           ? 'bg-primary text-primary-foreground shadow-md'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60 bg-background border border-border/50'
@@ -118,6 +126,7 @@ export default function ContactsPage() {
 
   const [searchTerm,        setSearchTerm]       = useState('');
   const [activeGroup,       setActiveGroup]      = useState('All');
+  const [truckSub,          setTruckSub]         = useState('all_truck');
   const [maintSub,          setMaintSub]         = useState('all_maint');
   const [warehouseSub,      setWarehouseSub]     = useState('all_wh');
   const [financeSub,        setFinanceSub]       = useState('all_fin');
@@ -161,6 +170,10 @@ export default function ContactsPage() {
 
   const activeTypesAllowed = useMemo(() => {
     if (activeGroup === 'All') return null;
+    if (activeGroup === 'TruckOwner') {
+      const sub = TRUCK_OWNER_SUBS.find(s => s.key === truckSub);
+      return sub?.types ?? TRUCK_OWNER_SUBS[0].types;
+    }
     if (activeGroup === 'Maintenance') {
       const sub = MAINTENANCE_SUBS.find(s => s.key === maintSub);
       return sub?.types ?? MAINTENANCE_SUBS[0].types;
@@ -170,7 +183,7 @@ export default function ContactsPage() {
       return sub?.types ?? FINANCE_SUBS[0].types;
     }
     return MAIN_GROUPS.find(g => g.key === activeGroup)?.types ?? null;
-  }, [activeGroup, maintSub, financeSub]);
+  }, [activeGroup, truckSub, maintSub, financeSub]);
 
   const filteredContacts = useMemo(() => {
     return contacts.filter(c => {
@@ -235,6 +248,9 @@ export default function ContactsPage() {
         counts[g.key] = contacts.filter(c => g.types.includes(c.contact_type)).length;
       }
     });
+    TRUCK_OWNER_SUBS.forEach(s => {
+      counts[s.key] = contacts.filter(c => s.types.includes(c.contact_type)).length;
+    });
     MAINTENANCE_SUBS.forEach(s => {
       counts[s.key] = contacts.filter(c => s.types.includes(c.contact_type)).length;
     });
@@ -263,7 +279,7 @@ export default function ContactsPage() {
             Contacts Directory
           </h1>
           <p className="text-sm text-muted-foreground mt-1 font-medium">
-            Manage clients, drivers, maintenance vendors, bank agents & warehouse contacts.
+            Organized directory for Truck Owners, Transporters, Corporate Clients, Drivers, Maintenance Network, Bank Agents &amp; Warehouses.
           </p>
         </div>
 
@@ -333,6 +349,55 @@ export default function ContactsPage() {
               />
             </div>
           </div>
+
+          {/* Sub-Group Navigation Tabs */}
+          {activeGroup === 'TruckOwner' && (
+            <div className="flex gap-2 overflow-x-auto pt-3 border-t border-border/40 scrollbar-none">
+              {TRUCK_OWNER_SUBS.map(sub => (
+                <Pill
+                  key={sub.key}
+                  active={truckSub === sub.key}
+                  onClick={() => setTruckSub(sub.key)}
+                  icon={sub.icon}
+                  label={sub.label}
+                  count={groupCounts[sub.key]}
+                  accent="text-amber-400"
+                />
+              ))}
+            </div>
+          )}
+
+          {activeGroup === 'Maintenance' && (
+            <div className="flex gap-2 overflow-x-auto pt-3 border-t border-border/40 scrollbar-none">
+              {MAINTENANCE_SUBS.map(sub => (
+                <Pill
+                  key={sub.key}
+                  active={maintSub === sub.key}
+                  onClick={() => setMaintSub(sub.key)}
+                  icon={sub.icon}
+                  label={sub.label}
+                  count={groupCounts[sub.key]}
+                  accent="text-amber-400"
+                />
+              ))}
+            </div>
+          )}
+
+          {activeGroup === 'Finance' && (
+            <div className="flex gap-2 overflow-x-auto pt-3 border-t border-border/40 scrollbar-none">
+              {FINANCE_SUBS.map(sub => (
+                <Pill
+                  key={sub.key}
+                  active={financeSub === sub.key}
+                  onClick={() => setFinanceSub(sub.key)}
+                  icon={sub.icon}
+                  label={sub.label}
+                  count={groupCounts[sub.key]}
+                  accent="text-emerald-400"
+                />
+              ))}
+            </div>
+          )}
         </CardHeader>
 
         {/* Desktop Table View */}
@@ -368,7 +433,7 @@ export default function ContactsPage() {
                   <TableRow>
                     <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
                       <Users className="w-8 h-8 opacity-40 mx-auto mb-2" />
-                      <p className="text-sm font-medium">No contacts found in Directory.</p>
+                      <p className="text-sm font-medium">No contacts found in this category.</p>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -399,26 +464,29 @@ export default function ContactsPage() {
                           {contact.email && <p className="text-xs text-muted-foreground">{contact.email}</p>}
                         </TableCell>
 
-                        <TableCell className="py-4">
-                          <span className="font-mono text-xs font-medium bg-secondary/40 px-2 py-1 rounded-md border border-border/50">
-                            {contact.gstin || 'N/A'}
-                          </span>
+                        <TableCell className="py-4 font-mono text-xs text-muted-foreground">
+                          {contact.gstin || '—'}
                         </TableCell>
 
                         <TableCell className="py-4">
                           {getTypeBadge(contact.contact_type)}
+                          {contact.designation && (
+                            <span className="text-[11px] text-muted-foreground block mt-0.5">
+                              {contact.designation}
+                            </span>
+                          )}
                         </TableCell>
 
-                        <TableCell className="text-xs font-medium text-muted-foreground py-4 font-mono">
-                          {format(new Date(contact.created), 'MMM dd, yyyy')}
+                        <TableCell className="py-4 text-xs text-muted-foreground">
+                          {contact.created ? format(new Date(contact.created), 'dd MMM yyyy') : '—'}
                         </TableCell>
 
                         <TableCell className="text-right pr-6 py-4">
                           <ContactActionsMenu
                             contact={contact}
-                            onView={(c) => { setSelectedContact(c); setIsDetailsOpen(true); }}
-                            onEdit={(c) => { setSelectedContact(c); setIsFormOpen(true); }}
-                            onDelete={handleDelete}
+                            onView={() => { setSelectedContact(contact); setIsDetailsOpen(true); }}
+                            onEdit={() => { setSelectedContact(contact); setIsFormOpen(true); }}
+                            onDelete={() => handleDelete(contact)}
                           />
                         </TableCell>
                       </TableRow>
@@ -429,67 +497,63 @@ export default function ContactsPage() {
             </Table>
           </div>
 
-          {/* Mobile View */}
-          <div className="block md:hidden divide-y divide-border/30">
-            {filteredContacts.map(contact => {
-              const isSelected = selectedContactIds.includes(contact.id);
-              return (
-                <div key={contact.id} className={`p-4 space-y-2 ${isSelected ? 'bg-primary/10' : ''}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+          {/* Mobile Card List View */}
+          <div className="md:hidden divide-y divide-border/40">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              ))
+            ) : filteredContacts.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                <Users className="w-8 h-8 opacity-40 mx-auto mb-2" />
+                <p className="text-xs font-medium">No contacts found in this category.</p>
+              </div>
+            ) : (
+              filteredContacts.map(contact => {
+                const isSelected = selectedContactIds.includes(contact.id);
+                return (
+                  <div key={contact.id} className={`p-4 flex items-start justify-between gap-3 ${isSelected ? 'bg-primary/10' : ''}`}>
+                    <div className="flex items-start gap-3">
                       <input 
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelectContact(contact.id)}
-                        className="rounded border-slate-700 accent-primary cursor-pointer w-4 h-4"
+                        className="rounded border-slate-700 accent-primary cursor-pointer w-4 h-4 mt-1"
                       />
-                      <span className="font-bold text-sm text-foreground">{contact.company_name}</span>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-foreground">{contact.company_name}</span>
+                          {getTypeBadge(contact.contact_type)}
+                        </div>
+                        <p className="text-xs font-semibold text-primary">{contact.phone_number}</p>
+                        {contact.physical_address && (
+                          <p className="text-[11px] text-muted-foreground">{contact.physical_address}</p>
+                        )}
+                      </div>
                     </div>
-                    {getTypeBadge(contact.contact_type)}
+                    <ContactActionsMenu
+                      contact={contact}
+                      onView={() => { setSelectedContact(contact); setIsDetailsOpen(true); }}
+                      onEdit={() => { setSelectedContact(contact); setIsFormOpen(true); }}
+                      onDelete={() => handleDelete(contact)}
+                    />
                   </div>
-                  <p className="text-xs font-semibold text-foreground pl-6">{contact.phone_number}</p>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Floating Multi-Select Toolbar */}
-      {selectedContactIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white rounded-2xl px-5 py-3 shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom duration-300">
-          <div className="flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-extrabold">{selectedContactIds.length} Contacts Selected</span>
-          </div>
-
-          <div className="h-4 w-[1px] bg-slate-700" />
-
-          <Button 
-            size="sm" 
-            onClick={() => setIsWhatsAppModalOpen(true)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg"
-          >
-            <MessageSquare className="w-4 h-4 mr-1.5" /> Share via WhatsApp
-          </Button>
-
-          <Button 
-            size="sm" 
-            variant="ghost"
-            onClick={() => setSelectedContactIds([])}
-            className="text-xs text-slate-400 hover:text-white rounded-xl p-1"
-          >
-            Clear
-          </Button>
-        </div>
-      )}
 
       {/* Modals */}
       <ContactFormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         contact={selectedContact}
-        onSaved={fetchContacts}
+        onSuccess={fetchContacts}
       />
 
       <ContactDetailsModal
@@ -501,19 +565,19 @@ export default function ContactsPage() {
       <ContactExportModal
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
-        contacts={selectedContactIds.length > 0 ? selectedContactsList : filteredContacts}
+        contacts={filteredContacts}
       />
 
       <BusinessCardUploadModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
-        onSaved={fetchContacts}
+        onSuccess={fetchContacts}
       />
 
       <TransportCrmWhatsAppShareModal
         isOpen={isWhatsAppModalOpen}
         onClose={() => setIsWhatsAppModalOpen(false)}
-        selectedCustomers={selectedContactsList}
+        selectedContacts={selectedContactsList}
       />
     </motion.div>
   );
