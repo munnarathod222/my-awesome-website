@@ -7,7 +7,7 @@ import {
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
   TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
-  Navigation, QrCode, Receipt
+  Navigation, QrCode, Receipt, IdCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -105,6 +105,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
         { icon: Users,        label: 'Employees',         path: '/employees',            roles: ['super_admin','admin','manager','supervisor'] },
         { icon: FileBox,      label: 'Employee Docs',     path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
+        { icon: IdCard,       label: 'ID Card Generator', path: '/id-card-generator',    roles: ['super_admin','admin','manager','supervisor'] },
         { icon: CalendarDays, label: 'Attendance',        path: '/dashboard/attendance', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: UserPlus,     label: 'Recruitment Portal',path: '/recruitment',          roles: ['super_admin','admin','manager'] },
       ]
