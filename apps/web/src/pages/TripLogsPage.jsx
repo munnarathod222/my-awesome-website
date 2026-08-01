@@ -13,7 +13,7 @@ import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -22,6 +22,8 @@ import AddTripModal from '@/components/AddTripModal.jsx';
 import AddRecurringTripModal from '@/components/AddRecurringTripModal.jsx';
 import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
+import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { formatMapUrl } from '@/lib/locationUtils.js';
@@ -114,6 +116,7 @@ const TripLogsPage = () => {
   const [newTripStatus, setNewTripStatus] = useState('');
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
+  const [whatsappConfig, setWhatsappConfig] = useState({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' });
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -975,7 +978,40 @@ const TripLogsPage = () => {
                               </TableCell>
                             )}
                             <TableCell className="text-right pr-6">
-                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 rounded-lg text-xs font-bold text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 flex items-center gap-1 bg-background px-2"
+                                      title="Share on WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3.5 h-3.5 text-emerald-500" /> Share ▾
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-64 bg-card border-border shadow-xl z-50">
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-emerald-500 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'payment_confirmation' })}
+                                    >
+                                      ✅ Payment Received Confirmation
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-blue-500 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'eta_delivery' })}
+                                    >
+                                      🚚 Share Delivery ETA & GPS Tracking
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-amber-500 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'payment_reminder' })}
+                                    >
+                                      💰 Payment Reminder Notice
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+
                                 <Button 
                                   variant="outline" 
                                   size="icon" 
@@ -1404,6 +1440,15 @@ const TripLogsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {whatsappConfig.isOpen && (
+        <WhatsAppShareModal
+          isOpen={whatsappConfig.isOpen}
+          onClose={() => setWhatsappConfig({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' })}
+          trip={whatsappConfig.trip}
+          defaultTemplate={whatsappConfig.defaultTemplate}
+        />
+      )}
     </>
   );
 };
