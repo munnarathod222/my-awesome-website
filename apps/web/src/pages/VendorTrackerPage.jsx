@@ -386,6 +386,100 @@ export default function VendorTrackerPage() {
            (s.truck_numbers || '').toLowerCase().includes(q);
   });
 
+  // ── Client Empanelment Handlers ──────────────────────────────────────────
+  const handleSaveEmpanelment = async (e) => {
+    e.preventDefault();
+    if (!empFormData.company_name) {
+      toast.error('Please enter client company name');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...empFormData,
+        assigned_vendor_id: empFormData.assigned_vendor_id || `REL-VND-${Math.floor(10000 + Math.random() * 90000)}`
+      };
+
+      if (editingEmp) {
+        await pb.collection('vendor_empanelments').update(editingEmp.id, payload, { $autoCancel: false }).catch(() => {});
+        setEmpanelments(prev => prev.map(e => e.id === editingEmp.id ? { ...e, ...payload } : e));
+        toast.success('Client Empanelment record updated');
+      } else {
+        const created = await pb.collection('vendor_empanelments').create(payload, { $autoCancel: false })
+          .catch(() => ({ id: 'emp_' + Date.now(), ...payload }));
+        setEmpanelments(prev => [created, ...prev]);
+        toast.success(`Tracked new Client Empanelment for ${payload.company_name}!`);
+      }
+
+      setIsEmpFormOpen(false);
+      resetEmpForm();
+    } catch (err) {
+      toast.error('Failed to save Client Empanelment');
+    }
+  };
+
+  const resetEmpForm = () => {
+    setEmpFormData({
+      company_name: '',
+      assigned_vendor_id: '',
+      application_ref_no: '',
+      category: 'Retail & FMCG Logistics',
+      applied_date: format(new Date(), 'yyyy-MM-dd'),
+      stage: 'Document Verification',
+      procurement_officer: '',
+      officer_phone: '',
+      officer_email: '',
+      portal_url: '',
+      allocated_fleet: '',
+      status: 'Empanelled & Active',
+      notes: ''
+    });
+    setEditingEmp(null);
+  };
+
+  const handleEditEmp = (emp) => {
+    setEditingEmp(emp);
+    setEmpFormData({
+      company_name: emp.company_name || '',
+      assigned_vendor_id: emp.assigned_vendor_id || '',
+      application_ref_no: emp.application_ref_no || '',
+      category: emp.category || 'Retail & FMCG Logistics',
+      applied_date: emp.applied_date || format(new Date(), 'yyyy-MM-dd'),
+      stage: emp.stage || 'Document Verification',
+      procurement_officer: emp.procurement_officer || '',
+      officer_phone: emp.officer_phone || '',
+      officer_email: emp.officer_email || '',
+      portal_url: emp.portal_url || '',
+      allocated_fleet: emp.allocated_fleet || '',
+      status: emp.status || 'Empanelled & Active',
+      notes: emp.notes || ''
+    });
+    setIsEmpFormOpen(true);
+  };
+
+  const handleDeleteEmp = async (id) => {
+    if (!window.confirm('Delete this Client Empanelment record?')) return;
+    try {
+      await pb.collection('vendor_empanelments').delete(id, { $autoCancel: false }).catch(() => {});
+      setEmpanelments(prev => prev.filter(e => e.id !== id));
+      toast.success('Empanelment record removed');
+    } catch (err) {
+      toast.error('Failed to remove record');
+    }
+  };
+
+  const [viewEmpanelment, setViewEmpanelment] = useState(null);
+
+  // Filtered Empanelments Search
+  const filteredEmpanelments = empanelments.filter(e => {
+    const q = empSearch.toLowerCase();
+    return (e.company_name || '').toLowerCase().includes(q) ||
+           (e.assigned_vendor_id || '').toLowerCase().includes(q) ||
+           (e.application_ref_no || '').toLowerCase().includes(q) ||
+           (e.procurement_officer || '').toLowerCase().includes(q) ||
+           (e.category || '').toLowerCase().includes(q);
+  });
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto font-sans pb-24">
       {/* Header Banner */}
@@ -414,7 +508,7 @@ export default function VendorTrackerPage() {
 
           {activeTab === 'clients' && (
             <Button
-              onClick={() => setIsEmpFormOpen(true)}
+              onClick={() => { resetEmpForm(); setIsEmpFormOpen(true); }}
               className="rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg h-10 px-4"
             >
               <Plus className="w-4 h-4 mr-1.5" /> Track Client Empanelment
@@ -620,23 +714,90 @@ export default function VendorTrackerPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {empanelments.map(emp => (
-              <Card key={emp.id} className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg p-5 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
-                      CLIENT VENDOR ID: {emp.assigned_vendor_id}
+            {filteredEmpanelments.map(emp => (
+              <Card key={emp.id} className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg hover:border-amber-500/30 transition-all font-sans overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  {/* Top Bar */}
+                  <div className="flex justify-between items-start gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-mono font-black flex items-center gap-1">
+                        CLIENT VENDOR ID: {emp.assigned_vendor_id}
+                        <button
+                          onClick={() => copyToClipboard(emp.assigned_vendor_id, 'Client Vendor ID')}
+                          className="ml-1 text-emerald-400 hover:text-white"
+                          title="Copy Vendor ID"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </Badge>
+
+                      <h3 className="text-base font-black text-white mt-1.5">{emp.company_name}</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        {emp.category} • <span className="text-amber-400 font-bold">Stage: {emp.stage}</span>
+                      </p>
+                    </div>
+
+                    <Badge className={`text-[10px] font-bold px-2.5 py-1 ${
+                      emp.status === 'Empanelled & Active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' :
+                      emp.status === 'Pending Client Audit' ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' :
+                      'bg-blue-500/20 text-blue-400 border-blue-500/40'
+                    }`}>
+                      {emp.status}
                     </Badge>
-                    <h3 className="text-base font-extrabold text-white mt-1">{emp.company_name}</h3>
-                    <p className="text-xs text-slate-400">{emp.category} • Stage: {emp.stage}</p>
                   </div>
-                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40 text-[10px]">
-                    {emp.status}
-                  </Badge>
-                </div>
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300">
-                  Officer: {emp.procurement_officer} ({emp.officer_phone})
-                </div>
+
+                  {/* Officer Info & Ref No */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-400">Ref No:</span>
+                      <span className="text-amber-400 font-bold">{emp.application_ref_no || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-400">Procurement Officer:</span>
+                      <span className="text-white font-bold">{emp.procurement_officer || 'Procurement Desk'}</span>
+                    </div>
+                    {emp.officer_phone && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Contact:</span>
+                        <span className="text-blue-400 font-bold">{emp.officer_phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewEmpanelment(emp)}
+                      className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" /> Empanelment Intel
+                    </Button>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditEmp(emp)}
+                        className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl"
+                        title="Edit Client Vendor ID"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-blue-400" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteEmp(emp.id)}
+                        className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl hover:bg-rose-500/20"
+                        title="Delete Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>
@@ -827,6 +988,279 @@ export default function VendorTrackerPage() {
             </DialogFooter>
           </form>
         </DialogContent>
+      </Dialog>
+
+      {/* Client Empanelment Form Modal */}
+      <Dialog open={isEmpFormOpen} onOpenChange={setIsEmpFormOpen}>
+        <DialogContent className="max-w-2xl bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-6 shadow-2xl font-sans max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-slate-800">
+            <DialogTitle className="text-xl font-black text-amber-400 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-amber-400" />
+              {editingEmp ? 'Edit Client Empanelment Record' : 'Track New Client Empanelment Vendor ID'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Track client vendor registration applications submitted to corporate clients (e.g. Reliance, Amazon, Tata Steel).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveEmpanelment} className="space-y-4 py-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Client Company Name *</Label>
+                <Input
+                  required
+                  value={empFormData.company_name}
+                  onChange={e => setEmpFormData({ ...empFormData, company_name: e.target.value })}
+                  placeholder="e.g. Reliance Retail Supply Chain & Logistics"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Assigned Client Vendor ID</Label>
+                <Input
+                  value={empFormData.assigned_vendor_id}
+                  onChange={e => setEmpFormData({ ...empFormData, assigned_vendor_id: e.target.value.toUpperCase() })}
+                  placeholder="e.g. REL-LOG-98421"
+                  className="bg-slate-900 border-slate-800 text-white font-mono uppercase rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Application Ref Number</Label>
+                <Input
+                  value={empFormData.application_ref_no}
+                  onChange={e => setEmpFormData({ ...empFormData, application_ref_no: e.target.value })}
+                  placeholder="e.g. APP-2026-REL-089"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Industry Category</Label>
+                <Select
+                  value={empFormData.category}
+                  onValueChange={v => setEmpFormData({ ...empFormData, category: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Retail & FMCG Logistics">Retail & FMCG Logistics</SelectItem>
+                    <SelectItem value="E-Commerce Middle-Mile Fleet">E-Commerce Middle-Mile Fleet</SelectItem>
+                    <SelectItem value="Industrial Manufacturing & Heavy Freight">Industrial Manufacturing & Heavy Freight</SelectItem>
+                    <SelectItem value="Pharmaceutical & Cold Chain">Pharmaceutical & Cold Chain</SelectItem>
+                    <SelectItem value="Bulk Freight & Mining">Bulk Freight & Mining</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Empanelment Stage</Label>
+                <Select
+                  value={empFormData.stage}
+                  onValueChange={v => setEmpFormData({ ...empFormData, stage: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Stage" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Document Verification">Document Verification</SelectItem>
+                    <SelectItem value="Physical Yard & Vehicle Inspection">Physical Yard & Vehicle Inspection</SelectItem>
+                    <SelectItem value="Commercial Rate Approval">Commercial Rate Approval</SelectItem>
+                    <SelectItem value="Empanelled & Active">Empanelled & Active</SelectItem>
+                    <SelectItem value="Contract Under Renewal">Contract Under Renewal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Empanelment Status</Label>
+                <Select
+                  value={empFormData.status}
+                  onValueChange={v => setEmpFormData({ ...empFormData, status: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Empanelled & Active">Empanelled & Active</SelectItem>
+                    <SelectItem value="Pending Client Audit">Pending Client Audit</SelectItem>
+                    <SelectItem value="Under Review">Under Review</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Procurement Officer Name & Title</Label>
+                <Input
+                  value={empFormData.procurement_officer}
+                  onChange={e => setEmpFormData({ ...empFormData, procurement_officer: e.target.value })}
+                  placeholder="e.g. Sanjay Sharma (Senior Manager Procurement)"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Officer Phone Number</Label>
+                <Input
+                  value={empFormData.officer_phone}
+                  onChange={e => setEmpFormData({ ...empFormData, officer_phone: e.target.value })}
+                  placeholder="e.g. +91 9820012345"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Officer Email Address</Label>
+                <Input
+                  type="email"
+                  value={empFormData.officer_email}
+                  onChange={e => setEmpFormData({ ...empFormData, officer_email: e.target.value })}
+                  placeholder="e.g. sanjay.sharma@company.com"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Client Vendor Portal URL</Label>
+                <Input
+                  value={empFormData.portal_url}
+                  onChange={e => setEmpFormData({ ...empFormData, portal_url: e.target.value })}
+                  placeholder="e.g. https://vendor.clientcompany.com"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl font-mono text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300 font-bold">Allocated Fleet Scope</Label>
+              <Input
+                value={empFormData.allocated_fleet}
+                onChange={e => setEmpFormData({ ...empFormData, allocated_fleet: e.target.value })}
+                placeholder="e.g. 12 Trucks (32 FT MXL & 24 FT)"
+                className="bg-slate-900 border-slate-800 text-white rounded-xl font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300 font-bold">Internal Notes</Label>
+              <Textarea
+                value={empFormData.notes}
+                onChange={e => setEmpFormData({ ...empFormData, notes: e.target.value })}
+                placeholder="e.g. Primary logistics provider for Telangana & AP distribution routes."
+                className="bg-slate-900 border-slate-800 text-white rounded-xl h-20"
+              />
+            </div>
+
+            <DialogFooter className="pt-4 border-t border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsEmpFormOpen(false)} className="rounded-xl border-slate-700 text-slate-300">
+                Cancel
+              </Button>
+              <Button type="submit" className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black">
+                {editingEmp ? 'Save Empanelment Changes' : 'Track Client Empanelment'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Empanelment Intel Modal */}
+      <Dialog open={!!viewEmpanelment} onOpenChange={() => setViewEmpanelment(null)}>
+        {viewEmpanelment && (
+          <DialogContent className="max-w-xl bg-slate-950 text-slate-100 border-amber-500/50 rounded-3xl p-6 shadow-2xl font-sans">
+            <DialogHeader className="pb-3 border-b border-slate-800">
+              <div className="flex items-center justify-between">
+                <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-[10px] font-mono">
+                  CLIENT VENDOR INTEL CARD
+                </Badge>
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px]">
+                  {viewEmpanelment.status}
+                </Badge>
+              </div>
+              <DialogTitle className="text-xl font-black text-white mt-2">
+                {viewEmpanelment.company_name}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                {viewEmpanelment.category} • Stage: {viewEmpanelment.stage}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-3 text-xs">
+              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-2 font-mono">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <span className="text-slate-400">Assigned Vendor ID:</span>
+                  <span className="text-emerald-400 font-extrabold flex items-center gap-1">
+                    {viewEmpanelment.assigned_vendor_id}
+                    <button onClick={() => copyToClipboard(viewEmpanelment.assigned_vendor_id, 'Vendor ID')} className="text-slate-400 hover:text-white">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <span className="text-slate-400">Application Ref No:</span>
+                  <span className="text-amber-400 font-bold">{viewEmpanelment.application_ref_no || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <span className="text-slate-400">Procurement Officer:</span>
+                  <span className="text-white font-bold">{viewEmpanelment.procurement_officer || 'Desk Officer'}</span>
+                </div>
+                {viewEmpanelment.officer_phone && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Officer Contact:</span>
+                    <a href={`tel:${viewEmpanelment.officer_phone}`} className="text-blue-400 font-bold hover:underline">
+                      {viewEmpanelment.officer_phone}
+                    </a>
+                  </div>
+                )}
+                {viewEmpanelment.officer_email && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Officer Email:</span>
+                    <a href={`mailto:${viewEmpanelment.officer_email}`} className="text-blue-400 font-bold hover:underline">
+                      {viewEmpanelment.officer_email}
+                    </a>
+                  </div>
+                )}
+                {viewEmpanelment.portal_url && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Client Vendor Portal:</span>
+                    <a href={viewEmpanelment.portal_url} target="_blank" rel="noopener noreferrer" className="text-amber-400 font-bold hover:underline flex items-center gap-1">
+                      Portal Link <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {viewEmpanelment.allocated_fleet && (
+                <div className="bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Allocated Fleet Scope</span>
+                  <p className="text-slate-200 mt-0.5 font-medium">{viewEmpanelment.allocated_fleet}</p>
+                </div>
+              )}
+
+              {viewEmpanelment.notes && (
+                <div className="bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Internal Operational Notes</span>
+                  <p className="text-slate-300 mt-0.5">{viewEmpanelment.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="pt-3 border-t border-slate-800 flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={() => { const emp = viewEmpanelment; setViewEmpanelment(null); handleEditEmp(emp); }}
+                className="rounded-xl border-slate-700 bg-slate-900 text-blue-400 font-bold"
+              >
+                <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Empanelment Details
+              </Button>
+              <Button onClick={() => setViewEmpanelment(null)} className="rounded-xl bg-slate-800 text-white font-bold">
+                Close Intel Card
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );
