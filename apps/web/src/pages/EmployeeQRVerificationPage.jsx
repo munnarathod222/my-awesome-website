@@ -124,6 +124,7 @@ export default function EmployeeQRVerificationPage() {
       const queryPhone = queryParams.get('p') || queryParams.get('phone');
       const queryLicense = queryParams.get('l') || queryParams.get('license');
       const queryBg = queryParams.get('bg');
+      const queryStatus = queryParams.get('st') || queryParams.get('status');
       const queryExpiry = queryParams.get('exp') || queryParams.get('expiry');
       const queryEmergency = queryParams.get('em') || queryParams.get('emergency');
 
@@ -140,7 +141,7 @@ export default function EmployeeQRVerificationPage() {
           joining_date: '2022-01-01',
           expiry_date: queryExpiry || '2029-12-31',
           address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
-          active_status: 'active',
+          active_status: queryStatus || 'active',
           designation: queryRole || (cleanId.includes('DRV') ? 'Heavy Fleet Driver' : 'Logistics Staff'),
           photoUrl: found?.photoUrl || null
         };
@@ -170,7 +171,7 @@ export default function EmployeeQRVerificationPage() {
           joining_date: '2024-01-01',
           expiry_date: '2029-12-31',
           address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
-          active_status: 'active',
+          active_status: queryStatus || 'active',
           designation: cleanId.includes('DRV') ? 'Commercial Fleet Driver' : 'Logistics Operations Staff',
         };
       }
@@ -192,6 +193,7 @@ export default function EmployeeQRVerificationPage() {
   }
 
   const isDriver = employee?.employee_type === 'driver';
+  const statusStr = (employee?.active_status || employee?.status || 'active').toLowerCase().replace('-', '_');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 text-slate-100 p-4 sm:p-6 font-sans flex flex-col items-center justify-center">
@@ -212,25 +214,80 @@ export default function EmployeeQRVerificationPage() {
         </div>
 
         {/* Verification Card */}
-        <Card className="bg-slate-900/90 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+        <Card className={`bg-slate-900/90 border-2 rounded-3xl p-6 shadow-2xl relative overflow-hidden ${
+          statusStr === 'terminated' ? 'border-rose-500/80' :
+          statusStr === 'absconded' ? 'border-amber-500/80' :
+          statusStr === 'on_leave' || statusStr === 'leave' ? 'border-purple-500/80' : 'border-emerald-500/60'
+        }`}>
           
-          <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
+          <div className={`absolute top-0 inset-x-0 h-2 bg-gradient-to-r ${
+            statusStr === 'terminated' ? 'from-rose-600 to-red-800' :
+            statusStr === 'absconded' ? 'from-amber-500 to-orange-600' :
+            statusStr === 'on_leave' || statusStr === 'leave' ? 'from-purple-500 to-indigo-600' : 'from-emerald-500 via-teal-400 to-emerald-600'
+          }`} />
 
           {/* Status Badge Banner */}
-          <div className="bg-emerald-500/15 border border-emerald-500/40 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-emerald-300">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-lg shadow-emerald-500/20">
-                <ShieldCheck className="w-6 h-6" />
+          {statusStr === 'terminated' ? (
+            <div className="bg-rose-500/20 border border-rose-500/50 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-rose-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg shadow-rose-600/20">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-white uppercase tracking-tight">TERMINATED - ACCESS REVOKED</div>
+                  <div className="text-[10.5px] text-rose-300 font-bold">Employment Closed • Do Not Grant Security Access</div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-black text-white uppercase tracking-tight">VERIFIED ACTIVE IDENTITY</div>
-                <div className="text-[10.5px] text-emerald-400 font-bold">Official Personnel • Authorized Duty</div>
-              </div>
+              <Badge className="bg-rose-600 text-white font-black text-[9px] uppercase px-2.5 py-1">
+                TERMINATED
+              </Badge>
             </div>
-            <Badge className="bg-emerald-500 text-slate-950 font-black text-[9px] uppercase px-2.5 py-1">
-              ACTIVE
-            </Badge>
-          </div>
+          ) : statusStr === 'absconded' ? (
+            <div className="bg-amber-500/20 border border-amber-500/50 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-amber-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-600 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-lg shadow-amber-600/20">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-white uppercase tracking-tight">ABSCONDED - REPORT TO SECURITY</div>
+                  <div className="text-[10.5px] text-amber-300 font-bold">Unreported Absence • Contact Management Immediately</div>
+                </div>
+              </div>
+              <Badge className="bg-amber-500 text-slate-950 font-black text-[9px] uppercase px-2.5 py-1">
+                ABSCONDED
+              </Badge>
+            </div>
+          ) : statusStr === 'on_leave' || statusStr === 'leave' ? (
+            <div className="bg-purple-500/20 border border-purple-500/50 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-purple-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-black shrink-0 shadow-lg shadow-purple-600/20">
+                  <Clock className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-white uppercase tracking-tight">ON LEAVE - TEMPORARY SUSPENSION</div>
+                  <div className="text-[10.5px] text-purple-300 font-bold">Approved Leave Period • Active Employee Record</div>
+                </div>
+              </div>
+              <Badge className="bg-purple-600 text-white font-black text-[9px] uppercase px-2.5 py-1">
+                ON LEAVE
+              </Badge>
+            </div>
+          ) : (
+            <div className="bg-emerald-500/15 border border-emerald-500/40 rounded-2xl p-3.5 mb-5 flex items-center justify-between text-emerald-300">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-lg shadow-emerald-500/20">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-sm font-black text-white uppercase tracking-tight">VERIFIED ACTIVE IDENTITY</div>
+                  <div className="text-[10.5px] text-emerald-400 font-bold">Official Personnel • Authorized Duty</div>
+                </div>
+              </div>
+              <Badge className="bg-emerald-500 text-slate-950 font-black text-[9px] uppercase px-2.5 py-1">
+                ACTIVE
+              </Badge>
+            </div>
+          )}
 
           {/* Employee Profile Header */}
           <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left mb-5 pb-5 border-b border-slate-800">
