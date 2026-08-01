@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { 
   Printer, Download, FileText, Sparkles, Building2, Copy, Send, 
   Check, RefreshCw, Layers, ShieldCheck, Mail, Phone, Globe, User,
-  FileCheck, Edit3
+  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -75,7 +76,51 @@ export default function OfficialLetterheadPage() {
   const [includeStamp, setIncludeStamp] = useState(true);
   const [includeWatermark, setIncludeWatermark] = useState(true);
 
+  // Custom Letterhead Background States
+  const [customLetterheadUrl, setCustomLetterheadUrl] = useState(null);
+  const [useCustomLetterhead, setUseCustomLetterhead] = useState(false);
+  const [topPadding, setTopPadding] = useState(140);
+  const [bottomPadding, setBottomPadding] = useState(80);
+  const [sidePadding, setSidePadding] = useState(45);
+
+  const fileInputRef = useRef(null);
   const letterRef = useRef(null);
+
+  // Load stored letterhead background if available
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('jbc_custom_letterhead_bg');
+      if (saved) {
+        setCustomLetterheadUrl(saved);
+        setUseCustomLetterhead(true);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if image or PDF
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        setCustomLetterheadUrl(result);
+        setUseCustomLetterhead(true);
+        try { localStorage.setItem('jbc_custom_letterhead_bg', result); } catch (e) {}
+        toast.success(`Uploaded ${file.name} as custom letterhead background!`);
+      };
+      reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf') {
+      const url = URL.createObjectURL(file);
+      setCustomLetterheadUrl(url);
+      setUseCustomLetterhead(true);
+      toast.success(`Uploaded PDF letterhead ${file.name}!`);
+    } else {
+      toast.error('Please upload an image file (PNG, JPG) or PDF');
+    }
+  };
 
   const handleSelectPreset = (presetId) => {
     setSelectedPreset(presetId);
@@ -178,6 +223,115 @@ export default function OfficialLetterheadPage() {
           {/* ── LEFT COLUMN: CONTROL PANEL & FORM EDITING ──────────────────────── */}
           <div className="no-print lg:col-span-5 space-y-6">
             
+            {/* ── CUSTOM LETTERHEAD FILE UPLOAD CARD ──────────────────────────── */}
+            <Card className="bg-slate-900/90 border-amber-500/40 rounded-3xl shadow-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <Upload className="w-4 h-4 text-amber-400" /> Custom Letterhead (PDF / Image)
+                  </CardTitle>
+                  <Badge className={useCustomLetterhead ? "bg-amber-500 text-slate-950 font-black text-[10px]" : "bg-slate-800 text-slate-400 text-[10px]"}>
+                    {useCustomLetterhead ? 'Active Background' : 'Disabled'}
+                  </Badge>
+                </div>
+                <CardDescription className="text-xs text-slate-400">
+                  Upload your pre-designed letterhead image (PNG/JPG) or PDF to print text over your exact design.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-xs">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                />
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs shadow-md h-10"
+                  >
+                    <Upload className="w-4 h-4 mr-2" /> Upload Letterhead File (PDF/Image)
+                  </Button>
+
+                  {customLetterheadUrl && (
+                    <Button
+                      onClick={() => { setCustomLetterheadUrl(null); setUseCustomLetterhead(false); try { localStorage.removeItem('jbc_custom_letterhead_bg'); } catch(e){} }}
+                      variant="outline"
+                      className="rounded-xl border-slate-700 text-rose-400 hover:bg-rose-500/10 h-10 px-3"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+
+                {/* Mode Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                  <span className="text-xs text-slate-300 font-bold">Use Uploaded Design Background</span>
+                  <Switch
+                    disabled={!customLetterheadUrl}
+                    checked={useCustomLetterhead}
+                    onCheckedChange={setUseCustomLetterhead}
+                  />
+                </div>
+
+                {/* Margin Adjustments */}
+                {useCustomLetterhead && (
+                  <div className="space-y-3 pt-3 border-t border-slate-800 bg-slate-950/60 p-3 rounded-2xl border">
+                    <div className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                      <Sliders className="w-3.5 h-3.5" /> Text Margin Adjuster
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                        <span>Top Header Clear Margin:</span>
+                        <span className="text-amber-400 font-bold">{topPadding}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="20"
+                        max="300"
+                        value={topPadding}
+                        onChange={e => setTopPadding(Number(e.target.value))}
+                        className="w-full accent-amber-400 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                        <span>Side Margins:</span>
+                        <span className="text-blue-400 font-bold">{sidePadding}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="10"
+                        max="120"
+                        value={sidePadding}
+                        onChange={e => setSidePadding(Number(e.target.value))}
+                        className="w-full accent-blue-400 cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                        <span>Bottom Footer Margin:</span>
+                        <span className="text-emerald-400 font-bold">{bottomPadding}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="20"
+                        max="200"
+                        value={bottomPadding}
+                        onChange={e => setBottomPadding(Number(e.target.value))}
+                        className="w-full accent-emerald-400 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Template Selector */}
             <Card className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg">
               <CardHeader className="pb-3">
@@ -307,10 +461,12 @@ export default function OfficialLetterheadPage() {
                     <span className="text-xs text-slate-300 font-semibold">Include Official Digital Stamp & Signature</span>
                     <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300 font-semibold">Include Trident Background Watermark</span>
-                    <Switch checked={includeWatermark} onCheckedChange={setIncludeWatermark} />
-                  </div>
+                  {!useCustomLetterhead && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-300 font-semibold">Include Trident Background Watermark</span>
+                      <Switch checked={includeWatermark} onCheckedChange={setIncludeWatermark} />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -327,121 +483,145 @@ export default function OfficialLetterheadPage() {
             {/* A4 Sheet Container */}
             <div 
               ref={letterRef}
-              className="print-area letterhead-sheet bg-white text-slate-900 w-full max-w-[210mm] min-h-[297mm] p-8 md:p-12 shadow-2xl rounded-sm relative flex flex-col justify-between font-sans border border-slate-200"
-              style={{ minHeight: '297mm' }}
+              className="print-area letterhead-sheet bg-white text-slate-900 w-full max-w-[210mm] min-h-[297mm] shadow-2xl rounded-sm relative flex flex-col justify-between font-sans border border-slate-200 overflow-hidden"
+              style={{
+                minHeight: '297mm',
+                paddingTop: useCustomLetterhead ? `${topPadding}px` : '32px',
+                paddingBottom: useCustomLetterhead ? `${bottomPadding}px` : '32px',
+                paddingLeft: useCustomLetterhead ? `${sidePadding}px` : '32px',
+                paddingRight: useCustomLetterhead ? `${sidePadding}px` : '32px',
+              }}
             >
               
-              {/* Trident Watermark in Center */}
-              {includeWatermark && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] overflow-hidden">
+              {/* Custom Uploaded Letterhead Background Layer */}
+              {useCustomLetterhead && customLetterheadUrl && (
+                <div className="absolute inset-0 pointer-events-none z-0">
+                  <img
+                    src={customLetterheadUrl}
+                    alt="Custom Letterhead Background"
+                    className="w-full h-full object-fill"
+                  />
+                </div>
+              )}
+
+              {/* Trident Watermark in Center (Built-in Mode) */}
+              {!useCustomLetterhead && includeWatermark && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.06] overflow-hidden z-0">
                   <svg className="w-[450px] h-[450px] text-slate-800" viewBox="0 0 100 100" fill="currentColor">
                     <path d="M50 5 L60 30 L80 15 L70 45 L95 45 L70 60 L85 85 L50 70 L15 85 L30 60 L5 45 L30 45 L20 15 L40 30 Z" />
                   </svg>
                 </div>
               )}
 
-              {/* ── LETTERHEAD HEADER (MATCHING UPLOADED ORIGINAL EXACTLY) ──────── */}
-              <div>
-                <div className="flex justify-between items-start border-b-4 border-[#0b3c5d] pb-4">
-                  {/* Top Left: Logo & Company Name */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-md font-black shrink-0">
-                      <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-black text-[#0b3c5d] tracking-tight uppercase leading-none font-heading">
-                        JAI BHAVANI
-                      </h1>
-                      <div className="text-sm font-black text-amber-600 tracking-[0.25em] uppercase mt-1">
-                        CARGO
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Top Right: Registered Office Info */}
-                  <div className="text-right text-[11px] leading-snug font-sans text-slate-700">
-                    <p className="font-extrabold text-slate-900">Regd. Office:</p>
-                    <p>Plot no 3, Patel Nagar</p>
-                    <p>Ghatkesar, 501301</p>
-                    <p className="text-blue-700 font-semibold">vinod.jbcargo@gmail.com</p>
-                    <p className="font-bold">+91 7794072244</p>
-                    <p className="text-blue-700">www.jaibhavanicargo.com</p>
-                    <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: 36DPXPR9171A1Z8</p>
-                  </div>
-                </div>
-
-                {/* Ref No & Date Row */}
-                <div className="flex justify-between items-center mt-6 text-xs font-mono text-slate-700 font-bold border-b border-slate-100 pb-3">
-                  <div>
-                    Ref: <span className="text-slate-900 font-black">{refNo}</span>
-                  </div>
-                  <div>
-                    Date: <span className="text-slate-900 font-black">{format(new Date(dateStr), 'dd MMMM yyyy')}</span>
-                  </div>
-                </div>
-
-                {/* Recipient Block */}
-                <div className="mt-6 text-xs text-slate-800 leading-relaxed font-sans">
-                  <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">To,</p>
-                  <p className="font-black text-sm text-slate-900">{recipientName}</p>
-                  <p className="text-slate-700 max-w-md">{recipientAddress}</p>
-                </div>
-
-                {/* Subject Block */}
-                {subject && (
-                  <div className="mt-5 text-xs font-bold text-slate-900 bg-slate-50 border-l-4 border-[#0b3c5d] p-2.5">
-                    <span className="uppercase text-slate-500 text-[10px] block">Subject:</span>
-                    {subject}
-                  </div>
-                )}
-
-                {/* Salutation */}
-                <div className="mt-5 text-xs font-semibold text-slate-800">
-                  {salutation}
-                </div>
-
-                {/* Letter Body Text */}
-                <div className="mt-4 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
-                  {bodyText}
-                </div>
-              </div>
-
-              {/* ── LETTERHEAD FOOTER & SIGNATORY STAMP ──────────────────────────── */}
-              <div className="mt-12 pt-6 border-t border-slate-200">
-                <div className="flex justify-between items-end">
-                  {/* Left: Security Authentication Hash */}
-                  <div className="text-[9.5px] font-mono text-slate-400 space-y-0.5">
-                    <p className="font-bold text-slate-600">OFFICIAL CORPORATE DOCUMENT</p>
-                    <p>Verified Authorization Token: {refNo.replace(/\//g, '-')}</p>
-                    <p>Jai Bhavani Cargo Ltd • Logistics &amp; Fleet Operations</p>
-                  </div>
-
-                  {/* Right: Signature Block */}
-                  <div className="text-right space-y-1">
-                    <p className="text-xs font-black text-slate-900 uppercase">For JAI BHAVANI CARGO</p>
-
-                    {includeStamp && (
-                      <div className="py-2 flex justify-end">
-                        <div className="w-32 h-16 border-2 border-blue-800 rounded-xl p-1 bg-blue-50/50 flex flex-col items-center justify-center text-center shadow-inner relative transform -rotate-2">
-                          <div className="text-[9px] font-black text-blue-900 uppercase tracking-tighter">
-                            JAI BHAVANI CARGO LTD
-                          </div>
-                          <div className="text-[7.5px] text-blue-700 font-extrabold">★ SECUNDERABAD ★</div>
-                          <div className="text-[8px] font-mono font-bold text-blue-900 border-t border-blue-300 mt-0.5 pt-0.5">
-                            AUTHORIZED SIGNATORY
+              {/* ── LETTERHEAD CONTENT CONTAINER (OVERLAY Z-10) ───────────────── */}
+              <div className="relative z-10 flex flex-col justify-between h-full min-h-full flex-1">
+                
+                <div>
+                  {/* Built-in Header (Rendered ONLY if Custom Letterhead is NOT used) */}
+                  {!useCustomLetterhead && (
+                    <div className="flex justify-between items-start border-b-4 border-[#0b3c5d] pb-4 mb-6">
+                      {/* Top Left: Logo & Company Name */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-md font-black shrink-0">
+                          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h1 className="text-2xl font-black text-[#0b3c5d] tracking-tight uppercase leading-none font-heading">
+                            JAI BHAVANI
+                          </h1>
+                          <div className="text-sm font-black text-amber-600 tracking-[0.25em] uppercase mt-1">
+                            CARGO
                           </div>
                         </div>
                       </div>
-                    )}
 
-                    <div className="pt-2">
-                      <p className="text-xs font-black text-slate-900">{signatoryName}</p>
-                      <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
+                      {/* Top Right: Registered Office Info */}
+                      <div className="text-right text-[11px] leading-snug font-sans text-slate-700">
+                        <p className="font-extrabold text-slate-900">Regd. Office:</p>
+                        <p>Plot no 3, Patel Nagar</p>
+                        <p>Ghatkesar, 501301</p>
+                        <p className="text-blue-700 font-semibold">vinod.jbcargo@gmail.com</p>
+                        <p className="font-bold">+91 7794072244</p>
+                        <p className="text-blue-700">www.jaibhavanicargo.com</p>
+                        <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: 36DPXPR9171A1Z8</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Ref No & Date Row */}
+                  <div className="flex justify-between items-center text-xs font-mono text-slate-700 font-bold border-b border-slate-200/60 pb-2 mb-4">
+                    <div>
+                      Ref: <span className="text-slate-900 font-black">{refNo}</span>
+                    </div>
+                    <div>
+                      Date: <span className="text-slate-900 font-black">{format(new Date(dateStr), 'dd MMMM yyyy')}</span>
+                    </div>
+                  </div>
+
+                  {/* Recipient Block */}
+                  <div className="mt-4 text-xs text-slate-800 leading-relaxed font-sans">
+                    <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">To,</p>
+                    <p className="font-black text-sm text-slate-900">{recipientName}</p>
+                    <p className="text-slate-700 max-w-md">{recipientAddress}</p>
+                  </div>
+
+                  {/* Subject Block */}
+                  {subject && (
+                    <div className="mt-4 text-xs font-bold text-slate-900 bg-slate-50/90 border-l-4 border-[#0b3c5d] p-2.5">
+                      <span className="uppercase text-slate-500 text-[10px] block">Subject:</span>
+                      {subject}
+                    </div>
+                  )}
+
+                  {/* Salutation */}
+                  <div className="mt-4 text-xs font-semibold text-slate-800">
+                    {salutation}
+                  </div>
+
+                  {/* Letter Body Text */}
+                  <div className="mt-4 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
+                    {bodyText}
+                  </div>
+                </div>
+
+                {/* ── LETTERHEAD FOOTER & SIGNATORY STAMP ──────────────────────────── */}
+                <div className="mt-10 pt-4 border-t border-slate-200/80">
+                  <div className="flex justify-between items-end">
+                    {/* Left: Security Authentication Hash */}
+                    <div className="text-[9.5px] font-mono text-slate-500 space-y-0.5">
+                      <p className="font-bold text-slate-700">OFFICIAL CORPORATE DOCUMENT</p>
+                      <p>Verified Token: {refNo.replace(/\//g, '-')}</p>
+                      <p>Jai Bhavani Cargo Ltd • Logistics Fleet</p>
+                    </div>
+
+                    {/* Right: Signature Block */}
+                    <div className="text-right space-y-1">
+                      <p className="text-xs font-black text-slate-900 uppercase">For JAI BHAVANI CARGO</p>
+
+                      {includeStamp && (
+                        <div className="py-2 flex justify-end">
+                          <div className="w-32 h-16 border-2 border-blue-800 rounded-xl p-1 bg-blue-50/80 flex flex-col items-center justify-center text-center shadow-inner relative transform -rotate-2">
+                            <div className="text-[9px] font-black text-blue-900 uppercase tracking-tighter">
+                              JAI BHAVANI CARGO LTD
+                            </div>
+                            <div className="text-[7.5px] text-blue-700 font-extrabold">★ SECUNDERABAD ★</div>
+                            <div className="text-[8px] font-mono font-bold text-blue-900 border-t border-blue-300 mt-0.5 pt-0.5">
+                              AUTHORIZED SIGNATORY
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-1">
+                        <p className="text-xs font-black text-slate-900">{signatoryName}</p>
+                        <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+
               </div>
 
             </div>
