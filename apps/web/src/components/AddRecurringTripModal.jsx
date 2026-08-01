@@ -10,6 +10,7 @@ import { Loader2, Calendar, MapPin, Route as RouteIcon, Info, HelpCircle } from 
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format, addDays, differenceInDays } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
