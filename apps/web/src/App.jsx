@@ -42,6 +42,7 @@ import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
 import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
 import InsuranceManagerPage from './pages/InsuranceManagerPage.jsx';
 import VehicleQRVerificationPage from './pages/VehicleQRVerificationPage.jsx';
+import EmployeeQRVerificationPage from './pages/EmployeeQRVerificationPage.jsx';
 import QRScannerPage from './pages/QRScannerPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
@@ -196,6 +197,8 @@ function App() {
                   <Route path="/marketplace/*" element={<MarketplaceHub />} />
                   <Route path="/v/:qrToken" element={<VehicleQRVerificationPage />} />
                   <Route path="/verify-vehicle/:qrToken" element={<VehicleQRVerificationPage />} />
+                  <Route path="/verify-employee/:empId" element={<EmployeeQRVerificationPage />} />
+                  <Route path="/v/emp/:empId" element={<EmployeeQRVerificationPage />} />
                   <Route path="/services" element={<ServicesPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
