@@ -117,7 +117,36 @@ export default function EmployeeQRVerificationPage() {
         } catch (e) {}
       }
 
-      // 3. Try Sample Fallback Records
+      // 3. Try URL Query Parameters (embedded in QR code URL)
+      const queryParams = new URLSearchParams(window.location.search);
+      const queryName = queryParams.get('name');
+      const queryRole = queryParams.get('role');
+      const queryPhone = queryParams.get('phone');
+      const queryLicense = queryParams.get('license');
+      const queryBg = queryParams.get('bg');
+      const queryExpiry = queryParams.get('expiry');
+      const queryEmergency = queryParams.get('emergency');
+
+      if (queryName) {
+        found = {
+          id: rawId,
+          employee_number: cleanId || 'JBC-EMP',
+          name: queryName,
+          employee_type: (queryRole || '').toLowerCase().includes('driver') ? 'driver' : 'staff',
+          contact: queryPhone || '+91 7794072244',
+          emergency_contact: queryEmergency || queryPhone || '+91 7794072244',
+          blood_group: queryBg || 'O+',
+          license_number: queryLicense || 'N/A',
+          joining_date: '2022-01-01',
+          expiry_date: queryExpiry || '2029-12-31',
+          address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
+          active_status: 'active',
+          designation: queryRole || (cleanId.includes('DRV') ? 'Heavy Fleet Driver' : 'Logistics Staff'),
+          photoUrl: found?.photoUrl || null
+        };
+      }
+
+      // 4. Try Sample Fallback Records
       if (!found) {
         found = SAMPLE_FALLBACK_EMPLOYEES.find(e => 
           e.id === rawId || 
@@ -127,22 +156,22 @@ export default function EmployeeQRVerificationPage() {
         );
       }
 
-      // 4. Fallback Generic Record if ID string provided
+      // 5. Dynamic Fallback using cleanId
       if (!found && cleanId) {
         found = {
           id: rawId,
           employee_number: cleanId,
-          name: 'Ramesh Kumar Rathod',
+          name: `Employee (${cleanId})`,
           employee_type: cleanId.includes('DRV') ? 'driver' : 'staff',
           contact: '+91 7794072244',
           emergency_contact: '+91 7794072244',
           blood_group: 'O+',
-          license_number: 'TS09-2018-0098231',
-          joining_date: '2022-04-15',
+          license_number: 'N/A',
+          joining_date: '2024-01-01',
           expiry_date: '2029-12-31',
           address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
           active_status: 'active',
-          designation: cleanId.includes('DRV') ? 'Heavy Fleet Driver' : 'Logistics Staff',
+          designation: cleanId.includes('DRV') ? 'Commercial Fleet Driver' : 'Logistics Operations Staff',
         };
       }
 
