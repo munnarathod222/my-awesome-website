@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import pb from '@/lib/pocketbaseClient.js';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
+import { getCanonicalEmployeeCode } from '@/lib/employeeCodeUtils.js';
 
 const SAMPLE_FALLBACK_EMPLOYEES = [
   {
@@ -176,6 +177,9 @@ export default function EmployeeQRVerificationPage() {
         };
       }
 
+      if (found) {
+        found.employee_number = getCanonicalEmployeeCode(found);
+      }
       setEmployee(found);
       setLoading(false);
     };
