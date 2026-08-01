@@ -4,7 +4,7 @@ import {
   Plus, Search, Download, Users, Building2, Truck, AlertCircle,
   Camera, Contact2, Wrench, ShoppingBag, Landmark, ChevronDown,
   Network, UserCog, Phone, MapPin, Zap, Disc, Banknote, HandCoins, CreditCard,
-  MessageSquare, CheckSquare, Square
+  MessageSquare, CheckSquare, Square, Copy
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button }    from '@/components/ui/button';
@@ -547,6 +547,59 @@ export default function ContactsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sticky Floating Multi-Select Action Bar */}
+      <AnimatePresence>
+        {selectedContactIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-950 border border-slate-700 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 flex-wrap max-w-2xl w-[92vw] sm:w-auto"
+          >
+            <div className="flex items-center gap-2 font-bold text-xs">
+              <span className="w-6 h-6 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center font-black text-xs">
+                {selectedContactIds.length}
+              </span>
+              <span>Contacts Selected</span>
+            </div>
+
+            <div className="h-4 w-px bg-slate-800 hidden sm:block" />
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                onClick={() => setIsWhatsAppModalOpen(true)}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-1.5 h-8"
+              >
+                <MessageSquare className="w-3.5 h-3.5" /> Share via WhatsApp
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const text = selectedContactsList.map(c => `📇 *${c.company_name}*\n📞 Phone: ${c.phone}\n👤 Role: ${c.primary_contact}`).join('\n\n---\n\n');
+                  navigator.clipboard.writeText(text);
+                  toast.success(`Copied contact details for ${selectedContactsList.length} contacts to clipboard!`);
+                }}
+                className="border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl h-8 flex items-center gap-1.5"
+              >
+                <Copy className="w-3.5 h-3.5" /> Copy Details
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedContactIds([])}
+                className="text-slate-400 hover:text-white text-xs h-8 px-2"
+              >
+                Deselect
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <ContactFormModal
