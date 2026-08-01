@@ -21,6 +21,7 @@ import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
 import AttendanceHub from '@/components/AttendanceHub.jsx';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { getCanonicalEmployeeCode } from '@/lib/employeeCodeUtils.js';
 
 const formatDateSafe = (dateVal, formatStr = 'MMM d, yyyy') => {
   if (!dateVal) return '';
@@ -1147,11 +1148,8 @@ const EmployeeDatabasePage = () => {
                         <TableBody>
                           {employees.length === 0 ? (
                             <TableRow><TableCell colSpan={9} className="h-48 text-center text-muted-foreground">No employees found.</TableCell></TableRow>
-                          ) : employees.map((emp, idx) => {
-                            const isDriver = emp.employee_type === 'driver';
-                            const empCode = /^[DE]\d{3}$/i.test(emp.employee_number || '') 
-                              ? emp.employee_number 
-                              : (isDriver ? `D${String(idx + 1).padStart(3, '0')}` : `E${String(idx + 1).padStart(3, '0')}`);
+                          ) : employees.map((emp) => {
+                            const empCode = getCanonicalEmployeeCode(emp, employees);
                             return (
                               <TableRow key={emp.id} className="hover:bg-muted/30 transition-colors border-b border-border/40">
                                 <TableCell className="pl-4 py-3">
@@ -1425,10 +1423,8 @@ const EmployeeDatabasePage = () => {
                             </TableCell>
                           </TableRow>
                         ) : (
-                          filteredStaffList.map((emp, idx) => {
-                            const empCode = /^[DE]\d{3}$/i.test(emp.employee_number || '') 
-                              ? emp.employee_number 
-                              : `E${String(idx + 1).padStart(3, '0')}`;
+                          filteredStaffList.map((emp) => {
+                            const empCode = getCanonicalEmployeeCode(emp, employees);
                             return (
                               <TableRow key={emp.id} className="hover:bg-muted/30">
                                 <TableCell>
