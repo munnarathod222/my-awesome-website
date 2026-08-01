@@ -101,9 +101,16 @@ export const generatePDF = (data, filename, options = {}) => {
 
     const parseDateSafe = (dStr) => {
       if (!dStr) return null;
-      const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
-      const dObj = new Date(normalized);
-      return isNaN(dObj.getTime()) ? null : dObj;
+      if (dStr instanceof Date) return isNaN(dStr.getTime()) ? null : dStr;
+      if (typeof dStr === 'number') return new Date(dStr);
+      if (typeof dStr === 'string') {
+        const trimmed = dStr.trim();
+        if (!trimmed) return null;
+        const normalized = trimmed.includes(' ') && !trimmed.includes('T') ? trimmed.replace(' ', 'T') : trimmed;
+        const dObj = new Date(normalized);
+        return isNaN(dObj.getTime()) ? null : dObj;
+      }
+      return null;
     };
 
     // ---------------------------------------------------------
@@ -171,10 +178,10 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...secondaryGray);
       doc.text(`${isPaymentReq ? 'Req No' : 'Invoice No'}: ${inv.invoice_number || inv.request_number || 'INV-001'}`, doc.internal.pageSize.width - 14, 26, { align: 'right' });
 
-      const invDateObj = parseDateSafe(inv.invoice_date || inv.request_date);
-      const dueDateObj = parseDateSafe(inv.due_date);
-      const invDate = invDateObj ? invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN');
-      const dueDate = dueDateObj ? dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'On Receipt';
+      const invDateObj = parseDateSafe(inv.invoice_date || inv.request_date || inv.date) || new Date();
+      const dueDateObj = parseDateSafe(inv.due_date) || new Date(invDateObj.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const invDate = invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const dueDate = dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
       
       doc.text(`Date: ${invDate}`, doc.internal.pageSize.width - 14, 31, { align: 'right' });
       doc.text(`Due Date: ${dueDate}`, doc.internal.pageSize.width - 14, 36, { align: 'right' });
