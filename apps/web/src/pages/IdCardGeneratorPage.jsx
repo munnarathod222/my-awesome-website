@@ -240,28 +240,32 @@ export default function IdCardGeneratorPage() {
         });
       });
 
-      const rawList = Array.from(mergedMap.values());
-      let driverIdx = 1;
-      let staffIdx = 1;
-
-      const formattedList = rawList.map(emp => {
+      const normalizeEmpCode = (emp, fallbackIdx = 1) => {
+        if (!emp) return 'E001';
         const isDriver = emp.employee_type === 'driver' || 
-                         (emp.designation || '').toLowerCase().includes('driver');
-        let code = emp.employee_number || '';
-        
-        if (!/^[DE]\d{3}$/i.test(code.trim())) {
-          if (isDriver) {
-            code = `D${String(driverIdx++).padStart(3, '0')}`;
-          } else {
-            code = `E${String(staffIdx++).padStart(3, '0')}`;
-          }
-        } else if (isDriver && code.startsWith('D')) {
-          driverIdx++;
-        } else if (!isDriver && code.startsWith('E')) {
-          staffIdx++;
+                         (emp.designation || '').toLowerCase().includes('driver') ||
+                         (emp.applicant_role || '').toLowerCase().includes('driver');
+        const prefix = isDriver ? 'D' : 'E';
+        const raw = (emp.employee_number || emp.emp_number || emp.employee_code || '').trim();
+
+        if (/^[DE]\d{3,}$/i.test(raw)) {
+          return raw.toUpperCase();
         }
-        return { ...emp, employee_number: code };
-      });
+
+        const match = raw.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          return `${prefix}${String(num).padStart(3, '0')}`;
+        }
+
+        return `${prefix}${String(fallbackIdx).padStart(3, '0')}`;
+      };
+
+      const rawList = Array.from(mergedMap.values());
+      const formattedList = rawList.map((emp, idx) => ({
+        ...emp,
+        employee_number: normalizeEmpCode(emp, idx + 1)
+      }));
 
       setEmployees(formattedList);
 
