@@ -79,6 +79,7 @@ export default function OfficialLetterheadPage() {
   // Custom Letterhead Background States
   const [customLetterheadUrl, setCustomLetterheadUrl] = useState(null);
   const [useCustomLetterhead, setUseCustomLetterhead] = useState(false);
+  const [imageFitMode, setImageFitMode] = useState('contain'); // 'contain' | 'cover' | 'fill'
   const [topPadding, setTopPadding] = useState(140);
   const [bottomPadding, setBottomPadding] = useState(80);
   const [sidePadding, setSidePadding] = useState(45);
@@ -191,32 +192,43 @@ export default function OfficialLetterheadPage() {
       {/* Print Specific CSS to ensure clean A4 sheet output */}
       <style>{`
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
           body {
             background-color: white !important;
             color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
-          /* Hide all UI controls, sidebars, headers, footers */
-          header, footer, nav, sidebar, .no-print {
+          /* Hide all UI controls, sidebars, headers, mobile bars, footers */
+          header, footer, nav, sidebar, aside, .no-print, [role="navigation"], div[class*="fixed"] {
             display: none !important;
           }
           .print-area {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
-            width: 100% !important;
+            width: 210mm !important;
+            height: 297mm !important;
             margin: 0 !important;
-            padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
             background: white !important;
+            overflow: hidden !important;
           }
           .letterhead-sheet {
             width: 210mm !important;
+            height: 297mm !important;
             min-height: 297mm !important;
-            padding: 15mm 20mm !important;
+            max-height: 297mm !important;
             box-shadow: none !important;
             border: none !important;
-            page-break-after: always;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
@@ -314,14 +326,28 @@ export default function OfficialLetterheadPage() {
                   />
                 </div>
 
-                {/* Margin Adjustments */}
+                {/* Margin & Fit Adjustments */}
                 {useCustomLetterhead && (
                   <div className="space-y-3 pt-3 border-t border-slate-800 bg-slate-950/60 p-3 rounded-2xl border">
                     <div className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
-                      <Sliders className="w-3.5 h-3.5" /> Text Margin Adjuster
+                      <Sliders className="w-3.5 h-3.5" /> Background Image Fit &amp; Margins
                     </div>
                     
                     <div className="space-y-1">
+                      <Label className="text-slate-300 text-[11px] font-bold">Image Fit Mode</Label>
+                      <Select value={imageFitMode} onValueChange={setImageFitMode}>
+                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl text-xs h-8">
+                          <SelectValue placeholder="Select Fit Mode" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                          <SelectItem value="contain" className="text-xs font-semibold">Aspect Ratio Safe (No Stretch)</SelectItem>
+                          <SelectItem value="cover" className="text-xs font-semibold">Full Bleed Cover</SelectItem>
+                          <SelectItem value="fill" className="text-xs font-semibold">Stretch Fill</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1 pt-1">
                       <div className="flex justify-between text-[11px] font-mono text-slate-300">
                         <span>Top Header Clear Margin:</span>
                         <span className="text-amber-400 font-bold">{topPadding}px</span>
@@ -537,7 +563,10 @@ export default function OfficialLetterheadPage() {
                   <img
                     src={customLetterheadUrl}
                     alt="Custom Letterhead Background"
-                    className="w-full h-full object-fill"
+                    className={`w-full h-full pointer-events-none z-0 absolute inset-0 ${
+                      imageFitMode === 'contain' ? 'object-contain object-top' :
+                      imageFitMode === 'cover' ? 'object-cover object-top' : 'object-fill'
+                    }`}
                   />
                 </div>
               )}
