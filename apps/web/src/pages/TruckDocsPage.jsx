@@ -177,9 +177,21 @@ const TruckDocsPage = () => {
           }
         }
       });
-      if (frontFile) data.append('file', frontFile);
-      if (backFile) data.append('files', backFile);
-      if (!frontFile && selectedFile) data.append('file', selectedFile);
+      if (frontFile && backFile) {
+        data.append('files', frontFile);
+        data.append('files', backFile);
+        data.append('file', frontFile);
+        data.append('back_file', backFile);
+      } else if (frontFile) {
+        data.append('files', frontFile);
+        data.append('file', frontFile);
+      } else if (backFile) {
+        data.append('files', backFile);
+        data.append('back_file', backFile);
+      } else if (selectedFile) {
+        data.append('files', selectedFile);
+        data.append('file', selectedFile);
+      }
 
       if (editingDoc) {
         await pb.collection('truck_documents').update(editingDoc.id, data, { $autoCancel: false });
@@ -340,7 +352,7 @@ const TruckDocsPage = () => {
   // Document File Card Component (Sub-view files grid)
   const DocumentFileCard = ({ doc }) => {
     const stat = getStatusInfo(doc.expiry_date);
-    const hasFile = !!doc.file;
+    const hasFile = Boolean(doc.file || doc.files || doc.back_file || doc.back_page);
 
     return (
       <Card className="overflow-hidden border border-border/50 bg-card rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col p-5 space-y-4">
