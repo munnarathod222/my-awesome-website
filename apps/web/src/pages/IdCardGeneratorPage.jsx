@@ -23,7 +23,7 @@ import {
 const SAMPLE_EMPLOYEES = [
   {
     id: 'emp-101',
-    employee_number: 'JBC-DRV-401',
+    employee_number: 'D001',
     name: 'Ramesh Kumar Rathod',
     employee_type: 'driver',
     contact: '+91 98765 43210',
@@ -38,7 +38,7 @@ const SAMPLE_EMPLOYEES = [
   },
   {
     id: 'emp-102',
-    employee_number: 'JBC-STF-102',
+    employee_number: 'E001',
     name: 'Sunita Sharma',
     employee_type: 'manager',
     contact: '+91 94401 12233',
@@ -53,7 +53,7 @@ const SAMPLE_EMPLOYEES = [
   },
   {
     id: 'emp-103',
-    employee_number: 'JBC-DRV-408',
+    employee_number: 'D002',
     name: 'Vikram Singh Chauhan',
     employee_type: 'driver',
     contact: '+91 97000 88776',
@@ -240,11 +240,33 @@ export default function IdCardGeneratorPage() {
         });
       });
 
-      const list = Array.from(mergedMap.values());
-      setEmployees(list);
+      const rawList = Array.from(mergedMap.values());
+      let driverIdx = 1;
+      let staffIdx = 1;
 
-      if (list.length > 0) {
-        selectEmployeeForCard(list[0]);
+      const formattedList = rawList.map(emp => {
+        const isDriver = emp.employee_type === 'driver' || 
+                         (emp.designation || '').toLowerCase().includes('driver');
+        let code = emp.employee_number || '';
+        
+        if (!/^[DE]\d{3}$/i.test(code.trim())) {
+          if (isDriver) {
+            code = `D${String(driverIdx++).padStart(3, '0')}`;
+          } else {
+            code = `E${String(staffIdx++).padStart(3, '0')}`;
+          }
+        } else if (isDriver && code.startsWith('D')) {
+          driverIdx++;
+        } else if (!isDriver && code.startsWith('E')) {
+          staffIdx++;
+        }
+        return { ...emp, employee_number: code };
+      });
+
+      setEmployees(formattedList);
+
+      if (formattedList.length > 0) {
+        selectEmployeeForCard(formattedList[0]);
       }
     } catch (err) {
       toast.error('Failed to load employee directory');
