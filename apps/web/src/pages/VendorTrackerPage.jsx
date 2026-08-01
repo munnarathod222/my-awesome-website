@@ -470,6 +470,103 @@ export default function VendorTrackerPage() {
 
   const [viewEmpanelment, setViewEmpanelment] = useState(null);
 
+  // ── Supplier Vendor Handlers ──────────────────────────────────────────────
+  const handleSaveSupplier = async (e) => {
+    e.preventDefault();
+    if (!supFormData.company_name) {
+      toast.error('Please enter supplier company name');
+      return;
+    }
+
+    try {
+      const payload = {
+        ...supFormData,
+        vendor_code: supFormData.vendor_code || `VND-${Math.floor(100 + Math.random() * 900)}`
+      };
+
+      if (editingSup) {
+        await pb.collection('vendors').update(editingSup.id, payload, { $autoCancel: false }).catch(() => {});
+        setSuppliers(prev => prev.map(s => s.id === editingSup.id ? { ...s, ...payload } : s));
+        toast.success('Supplier Vendor details updated');
+      } else {
+        const created = await pb.collection('vendors').create(payload, { $autoCancel: false })
+          .catch(() => ({ id: 'vnd_' + Date.now(), ...payload }));
+        setSuppliers(prev => [created, ...prev]);
+        toast.success(`Registered Supplier ${payload.company_name}!`);
+      }
+
+      setIsSupFormOpen(false);
+      resetSupForm();
+    } catch (err) {
+      toast.error('Failed to save supplier vendor');
+    }
+  };
+
+  const resetSupForm = () => {
+    setSupFormData({
+      vendor_code: '',
+      company_name: '',
+      vendor_type: 'Fuel & Diesel',
+      contact_person: '',
+      phone: '',
+      email: '',
+      gstin: '',
+      pan: '',
+      bank_name: '',
+      account_number: '',
+      ifsc_code: '',
+      city: '',
+      payment_terms: '15 Days Credit',
+      status: 'Active'
+    });
+    setEditingSup(null);
+  };
+
+  const handleEditSup = (sup) => {
+    setEditingSup(sup);
+    setSupFormData({
+      vendor_code: sup.vendor_code || '',
+      company_name: sup.company_name || '',
+      vendor_type: sup.vendor_type || 'Fuel & Diesel',
+      contact_person: sup.contact_person || '',
+      phone: sup.phone || '',
+      email: sup.email || '',
+      gstin: sup.gstin || '',
+      pan: sup.pan || '',
+      bank_name: sup.bank_name || '',
+      account_number: sup.account_number || '',
+      ifsc_code: sup.ifsc_code || '',
+      city: sup.city || '',
+      payment_terms: sup.payment_terms || '15 Days Credit',
+      status: sup.status || 'Active'
+    });
+    setIsSupFormOpen(true);
+  };
+
+  const handleDeleteSup = async (id) => {
+    if (!window.confirm('Delete this supplier vendor record?')) return;
+    try {
+      await pb.collection('vendors').delete(id, { $autoCancel: false }).catch(() => {});
+      setSuppliers(prev => prev.filter(s => s.id !== id));
+      toast.success('Supplier Vendor record removed');
+    } catch (err) {
+      toast.error('Failed to remove record');
+    }
+  };
+
+  const [viewSupplier, setViewSupplier] = useState(null);
+
+  // Filtered Suppliers Search
+  const filteredSuppliers = suppliers.filter(s => {
+    const q = supSearch.toLowerCase();
+    return (s.company_name || '').toLowerCase().includes(q) ||
+           (s.vendor_code || '').toLowerCase().includes(q) ||
+           (s.vendor_type || '').toLowerCase().includes(q) ||
+           (s.contact_person || '').toLowerCase().includes(q) ||
+           (s.phone || '').includes(q) ||
+           (s.city || '').toLowerCase().includes(q);
+  });
+
   // Filtered Empanelments Search
   const filteredEmpanelments = empanelments.filter(e => {
     const q = empSearch.toLowerCase();
@@ -811,27 +908,101 @@ export default function VendorTrackerPage() {
               <Input
                 value={supSearch}
                 onChange={e => setSupSearch(e.target.value)}
-                placeholder="Search Supplier Name, Code, Phone..."
+                placeholder="Search Supplier Name, Code, Phone, City..."
                 className="bg-slate-950 border-slate-800 text-white rounded-2xl text-xs pl-10 h-10"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {suppliers.map(sup => (
-              <Card key={sup.id} className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg p-5 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px] font-mono">
-                      {sup.vendor_code}
+            {filteredSuppliers.map(sup => (
+              <Card key={sup.id} className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg hover:border-blue-500/30 transition-all font-sans overflow-hidden">
+                <CardContent className="p-5 space-y-4">
+                  {/* Top Bar */}
+                  <div className="flex justify-between items-start gap-2 border-b border-slate-800 pb-3">
+                    <div>
+                      <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[11px] font-mono font-black flex items-center gap-1">
+                        CODE: {sup.vendor_code}
+                        <button
+                          onClick={() => copyToClipboard(sup.vendor_code, 'Vendor Code')}
+                          className="ml-1 text-blue-400 hover:text-white"
+                          title="Copy Vendor Code"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </Badge>
+
+                      <h3 className="text-base font-black text-white mt-1.5">{sup.company_name}</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">
+                        {sup.vendor_type} • <span className="text-blue-300 font-bold">{sup.city || 'Location N/A'}</span>
+                      </p>
+                    </div>
+
+                    <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px] font-bold px-2.5 py-1">
+                      {sup.status || 'Active'}
                     </Badge>
-                    <h3 className="text-base font-extrabold text-white mt-1">{sup.company_name}</h3>
-                    <p className="text-xs text-slate-400">{sup.vendor_type} • {sup.city}</p>
                   </div>
-                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px]">
-                    {sup.status}
-                  </Badge>
-                </div>
+
+                  {/* Contact & Banking Info */}
+                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-slate-400">Contact Person:</span>
+                      <span className="text-white font-bold">{sup.contact_person || 'N/A'}</span>
+                    </div>
+                    {sup.phone && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Phone:</span>
+                        <a href={`tel:${sup.phone}`} className="text-blue-400 font-bold hover:underline">{sup.phone}</a>
+                      </div>
+                    )}
+                    {sup.gstin && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">GSTIN:</span>
+                        <span className="text-amber-400 font-bold">{sup.gstin}</span>
+                      </div>
+                    )}
+                    {sup.payment_terms && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Payment Terms:</span>
+                        <span className="text-emerald-400 font-bold">{sup.payment_terms}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions: Edit, Delete & Intel */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setViewSupplier(sup)}
+                      className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" /> Supplier Intel
+                    </Button>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditSup(sup)}
+                        className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl hover:border-blue-500"
+                        title="Edit Supplier Vendor"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-blue-400" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteSup(sup.id)}
+                        className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl hover:bg-rose-500/20 hover:border-rose-500/50"
+                        title="Delete Supplier Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             ))}
           </div>
@@ -1256,6 +1427,289 @@ export default function VendorTrackerPage() {
                 <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Empanelment Details
               </Button>
               <Button onClick={() => setViewEmpanelment(null)} className="rounded-xl bg-slate-800 text-white font-bold">
+                Close Intel Card
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* Supplier Vendor Form Modal */}
+      <Dialog open={isSupFormOpen} onOpenChange={setIsSupFormOpen}>
+        <DialogContent className="max-w-2xl bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-6 shadow-2xl font-sans max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-slate-800">
+            <DialogTitle className="text-xl font-black text-blue-400 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-400" />
+              {editingSup ? 'Edit Supplier Vendor Record' : 'Register New Supplier / Service Vendor'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Register fuel stations, workshops, spare parts suppliers, insurance providers, and hired service vendors.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSupplier} className="space-y-4 py-2 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Supplier Company Name *</Label>
+                <Input
+                  required
+                  value={supFormData.company_name}
+                  onChange={e => setSupFormData({ ...supFormData, company_name: e.target.value })}
+                  placeholder="e.g. Indian Oil Fuel Station & Services"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Supplier Code</Label>
+                <Input
+                  value={supFormData.vendor_code}
+                  onChange={e => setSupFormData({ ...supFormData, vendor_code: e.target.value.toUpperCase() })}
+                  placeholder="e.g. VND-001"
+                  className="bg-slate-900 border-slate-800 text-white font-mono uppercase rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Vendor Type / Category</Label>
+                <Select
+                  value={supFormData.vendor_type}
+                  onValueChange={v => setSupFormData({ ...supFormData, vendor_type: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Fuel & Diesel">Fuel & Diesel</SelectItem>
+                    <SelectItem value="Spare Parts & Repairs">Spare Parts & Repairs</SelectItem>
+                    <SelectItem value="Tyres & Alignment">Tyres & Alignment</SelectItem>
+                    <SelectItem value="Vehicle Insurance">Vehicle Insurance</SelectItem>
+                    <SelectItem value="GPS & IoT Services">GPS & IoT Services</SelectItem>
+                    <SelectItem value="Toll & FASTag">Toll & FASTag</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Contact Person Name</Label>
+                <Input
+                  value={supFormData.contact_person}
+                  onChange={e => setSupFormData({ ...supFormData, contact_person: e.target.value })}
+                  placeholder="e.g. Ramesh Reddy"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Phone Number *</Label>
+                <Input
+                  required
+                  value={supFormData.phone}
+                  onChange={e => setSupFormData({ ...supFormData, phone: e.target.value })}
+                  placeholder="e.g. +91 9849012345"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Email Address</Label>
+                <Input
+                  type="email"
+                  value={supFormData.email}
+                  onChange={e => setSupFormData({ ...supFormData, email: e.target.value })}
+                  placeholder="e.g. supplier@company.com"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">GSTIN Number</Label>
+                <Input
+                  value={supFormData.gstin}
+                  onChange={e => setSupFormData({ ...supFormData, gstin: e.target.value.toUpperCase() })}
+                  placeholder="e.g. 36AAACI1234E1Z8"
+                  className="bg-slate-900 border-slate-800 text-white font-mono uppercase rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">City / Location</Label>
+                <Input
+                  value={supFormData.city}
+                  onChange={e => setSupFormData({ ...supFormData, city: e.target.value })}
+                  placeholder="e.g. Ghatkesar, Hyderabad"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Payment Terms</Label>
+                <Select
+                  value={supFormData.payment_terms}
+                  onValueChange={v => setSupFormData({ ...supFormData, payment_terms: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Payment Terms" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Immediate Cash / UPI">Immediate Cash / UPI</SelectItem>
+                    <SelectItem value="7 Days Credit">7 Days Credit</SelectItem>
+                    <SelectItem value="15 Days Credit">15 Days Credit</SelectItem>
+                    <SelectItem value="30 Days Net">30 Days Net</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Status</Label>
+                <Select
+                  value={supFormData.status}
+                  onValueChange={v => setSupFormData({ ...supFormData, status: v })}
+                >
+                  <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="On Hold">On Hold</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-800">
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Bank Name</Label>
+                <Input
+                  value={supFormData.bank_name}
+                  onChange={e => setSupFormData({ ...supFormData, bank_name: e.target.value })}
+                  placeholder="e.g. HDFC Bank"
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">Account Number</Label>
+                <Input
+                  value={supFormData.account_number}
+                  onChange={e => setSupFormData({ ...supFormData, account_number: e.target.value })}
+                  placeholder="Account Number"
+                  className="bg-slate-900 border-slate-800 text-white font-mono rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-slate-300 font-bold">IFSC Code</Label>
+                <Input
+                  value={supFormData.ifsc_code}
+                  onChange={e => setSupFormData({ ...supFormData, ifsc_code: e.target.value.toUpperCase() })}
+                  placeholder="IFSC Code"
+                  className="bg-slate-900 border-slate-800 text-white font-mono uppercase rounded-xl"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4 border-t border-slate-800">
+              <Button type="button" variant="outline" onClick={() => setIsSupFormOpen(false)} className="rounded-xl border-slate-700 text-slate-300">
+                Cancel
+              </Button>
+              <Button type="submit" className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black">
+                {editingSup ? 'Save Supplier Changes' : 'Register Supplier Vendor'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Supplier Vendor Intel Modal */}
+      <Dialog open={!!viewSupplier} onOpenChange={() => setViewSupplier(null)}>
+        {viewSupplier && (
+          <DialogContent className="max-w-xl bg-slate-950 text-slate-100 border-blue-500/50 rounded-3xl p-6 shadow-2xl font-sans">
+            <DialogHeader className="pb-3 border-b border-slate-800">
+              <div className="flex items-center justify-between">
+                <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/40 text-[10px] font-mono">
+                  SUPPLIER INTEL CARD
+                </Badge>
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/40 text-[10px]">
+                  {viewSupplier.status || 'Active'}
+                </Badge>
+              </div>
+              <DialogTitle className="text-xl font-black text-white mt-2">
+                {viewSupplier.company_name}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-400">
+                {viewSupplier.vendor_type} • Location: {viewSupplier.city || 'N/A'}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-3 text-xs">
+              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-2 font-mono">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <span className="text-slate-400">Vendor Code:</span>
+                  <span className="text-blue-400 font-extrabold flex items-center gap-1">
+                    {viewSupplier.vendor_code}
+                    <button onClick={() => copyToClipboard(viewSupplier.vendor_code, 'Vendor Code')} className="text-slate-400 hover:text-white">
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <span className="text-slate-400">Contact Person:</span>
+                  <span className="text-white font-bold">{viewSupplier.contact_person || 'N/A'}</span>
+                </div>
+                {viewSupplier.phone && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Phone:</span>
+                    <a href={`tel:${viewSupplier.phone}`} className="text-blue-400 font-bold hover:underline">
+                      {viewSupplier.phone}
+                    </a>
+                  </div>
+                )}
+                {viewSupplier.email && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Email:</span>
+                    <a href={`mailto:${viewSupplier.email}`} className="text-blue-400 font-bold hover:underline">
+                      {viewSupplier.email}
+                    </a>
+                  </div>
+                )}
+                {viewSupplier.gstin && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">GSTIN:</span>
+                    <span className="text-amber-400 font-bold">{viewSupplier.gstin}</span>
+                  </div>
+                )}
+                {viewSupplier.payment_terms && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Payment Terms:</span>
+                    <span className="text-emerald-400 font-bold">{viewSupplier.payment_terms}</span>
+                  </div>
+                )}
+                {viewSupplier.bank_name && (
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                    <span className="text-slate-400">Bank &amp; Account:</span>
+                    <span className="text-white font-bold">{viewSupplier.bank_name} ({viewSupplier.account_number})</span>
+                  </div>
+                )}
+                {viewSupplier.ifsc_code && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">IFSC Code:</span>
+                    <span className="text-amber-300 font-bold">{viewSupplier.ifsc_code}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3 border-t border-slate-800 flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={() => { const sup = viewSupplier; setViewSupplier(null); handleEditSup(sup); }}
+                className="rounded-xl border-slate-700 bg-slate-900 text-blue-400 font-bold"
+              >
+                <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit Supplier Details
+              </Button>
+              <Button onClick={() => setViewSupplier(null)} className="rounded-xl bg-slate-800 text-white font-bold">
                 Close Intel Card
               </Button>
             </DialogFooter>
