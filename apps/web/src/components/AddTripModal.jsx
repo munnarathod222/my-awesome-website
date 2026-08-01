@@ -12,8 +12,8 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { calculateClientMetrics } from '@/lib/clientPaymentUtils.js';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { TRIP_STATUS_OPTIONS } from '@/lib/tripStatusUtils.js';
-import { Switch } from '@/components/ui/switch';
 import apiServerClient from '@/lib/apiServerClient.js';
+import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
 
 const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
@@ -70,7 +70,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         pb.collection('trip_logs').getList(1, 1, { sort: '-created', $autoCancel: false }) // Fallback approach for ID gen
       ]);
       setClients(clientsRes);
-      setEmployees(empsRes);
+      setEmployees(filterActiveDrivers(empsRes));
       setTrucks(trucksRes);
       setRoutes(routesRes);
 
