@@ -90,6 +90,7 @@ import ExitAuditPage from './pages/ExitAuditPage.jsx';
 import BusinessMailPage from './pages/BusinessMailPage.jsx';
 import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
+import GstITCManagerPage from './pages/GstITCManagerPage.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
@@ -219,7 +220,8 @@ function App() {
                   <Route path="/admin/fleet-map" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><AdminFleetMapPage /></ProtectedRoute>} />
                   <Route path="/admin/maps-settings" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminMapsSettingsPage /></ProtectedRoute>} />
                   
-                  {/* Analytics */}
+                  {/* Analytics & Finance */}
+                  <Route path="/gst-itc" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><GstITCManagerPage /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><AnalyticsHub /></ProtectedRoute>} />
                   <Route path="/vehicle-tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/vehicle-roi" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
