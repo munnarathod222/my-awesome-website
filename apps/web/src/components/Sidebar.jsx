@@ -86,6 +86,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Finance',
       items: [
+        { icon: Receipt,              label: 'GST Input Tax Credit (ITC)', path: '/gst-itc', roles: ['super_admin','admin','manager'] },
         { icon: ShieldAlert,          label: 'Insurance Manager', path: '/insurance-manager', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: ShieldCheck,          label: 'Company Vault',     path: '/company-vault',    roles: ['super_admin','admin','manager'] },
         { icon: FileText,             label: 'Cashbook',          path: '/cashbook',         roles: ['super_admin','admin','manager'] },
