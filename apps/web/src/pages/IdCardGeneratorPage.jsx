@@ -293,12 +293,13 @@ export default function IdCardGeneratorPage() {
       company_email: 'support@jaibhavanicargo.com',
       company_address: emp.address || 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
       name: emp.name || '',
-      employee_number: emp.employee_number || 'JBC-001',
+      employee_number: emp.employee_number || 'D001',
       designation: emp.designation || (emp.employee_type === 'driver' ? 'Senior Heavy Fleet Driver' : 'Logistics Operations Staff'),
       contact: emp.contact || '',
       emergency_contact: emp.emergency_contact || emp.contact || '',
       blood_group: emp.blood_group || 'O+',
       license_number: emp.license_number || 'N/A',
+      active_status: emp.active_status || emp.status || 'active',
       issue_date: emp.joining_date || '2024-01-01',
       expiry_date: emp.expiry_date || '2029-12-31',
       photo_url: emp.photoUrl || getEmployeePhotoUrl(emp),
@@ -351,6 +352,7 @@ export default function IdCardGeneratorPage() {
     if (form.contact) params.set('p', form.contact);
     if (form.license_number && form.license_number !== 'N/A') params.set('l', form.license_number);
     if (form.blood_group) params.set('bg', form.blood_group);
+    if (form.active_status) params.set('st', form.active_status);
     return `${baseUrl}?${params.toString()}`;
   };
 
@@ -719,9 +721,17 @@ export default function IdCardGeneratorPage() {
                         <span className="text-slate-500 font-bold">Blood Group:</span>
                         <span className="font-mono font-extrabold text-rose-600">{cardForm.blood_group}</span>
                       </div>
-                      <div className="flex justify-between pt-0.5">
-                        <span className="text-slate-500 font-bold">Access Pass:</span>
-                        <span className="font-extrabold text-emerald-700">Official Personnel</span>
+                      <div className="flex justify-between pt-0.5 items-center">
+                        <span className="text-slate-500 font-bold">Status:</span>
+                        {cardForm.active_status === 'terminated' ? (
+                          <span className="font-extrabold text-rose-700 uppercase bg-rose-100 px-1.5 py-0.5 rounded border border-rose-300 text-[8.5px]">TERMINATED</span>
+                        ) : cardForm.active_status === 'absconded' ? (
+                          <span className="font-extrabold text-amber-700 uppercase bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300 text-[8.5px]">ABSCONDED</span>
+                        ) : cardForm.active_status === 'on_leave' || cardForm.active_status === 'leave' ? (
+                          <span className="font-extrabold text-purple-700 uppercase bg-purple-100 px-1.5 py-0.5 rounded border border-purple-300 text-[8.5px]">ON LEAVE</span>
+                        ) : (
+                          <span className="font-extrabold text-emerald-800 uppercase bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 text-[8.5px]">ACTIVE</span>
+                        )}
                       </div>
                     </div>
 
