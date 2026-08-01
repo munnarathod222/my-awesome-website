@@ -38,16 +38,27 @@ export async function getApplications(filters = {}) {
   }
 }
 
-export async function submitApplication(formData, licenseFile) {
+export async function submitApplication(formData, files = {}) {
   const data = new FormData();
   Object.entries(formData).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') data.append(k, v);
   });
   data.append('status', 'Applied');
   data.append('applied_date', new Date().toISOString());
-  if (licenseFile) {
-    data.append('license_file', licenseFile);
+
+  // Handle license file parameter passed directly or inside files object
+  const license = files instanceof File ? files : files.licenseFile;
+  if (license) {
+    data.append('license_file', license);
   }
+
+  if (files.photoFile) {
+    data.append('photo_file', files.photoFile);
+  }
+  if (files.panFile) {
+    data.append('pan_file', files.panFile);
+  }
+
   return await pb.collection('driver_applications').create(data);
 }
 
@@ -62,6 +73,20 @@ export async function deleteApplication(id) {
 export function getLicenseFileUrl(record) {
   if (!record || !record.license_file) return null;
   return pb.files.getURL(record, record.license_file);
+}
+
+export function getPhotoFileUrl(record) {
+  if (!record) return null;
+  const file = record.photo_file || record.passport_photo || record.photo;
+  if (!file) return null;
+  return pb.files.getURL(record, file);
+}
+
+export function getPanFileUrl(record) {
+  if (!record) return null;
+  const file = record.pan_file || record.pan_card_file || record.pan_doc;
+  if (!file) return null;
+  return pb.files.getURL(record, file);
 }
 
 export function getStatusConfig(status) {
