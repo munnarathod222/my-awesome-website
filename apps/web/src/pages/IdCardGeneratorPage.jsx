@@ -290,7 +290,20 @@ export default function IdCardGeneratorPage() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}&color=000000&bgcolor=ffffff`;
   };
 
-  const verificationUrl = `${window.location.origin}/verify-employee/${cardForm.employee_number || 'JBC-EMP'}`;
+  const buildVerificationUrl = (form) => {
+    const baseUrl = `${window.location.origin}/verify-employee/${form.employee_number || 'JBC-EMP'}`;
+    const params = new URLSearchParams();
+    if (form.name) params.set('name', form.name);
+    if (form.designation) params.set('role', form.designation);
+    if (form.contact) params.set('phone', form.contact);
+    if (form.license_number) params.set('license', form.license_number);
+    if (form.blood_group) params.set('bg', form.blood_group);
+    if (form.expiry_date) params.set('expiry', form.expiry_date);
+    if (form.emergency_contact) params.set('emergency', form.emergency_contact);
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+  const verificationUrl = buildVerificationUrl(cardForm);
   const activeTemplate = TEMPLATES.find(t => t.id === selectedTemplateId) || TEMPLATES[0];
 
   return (
