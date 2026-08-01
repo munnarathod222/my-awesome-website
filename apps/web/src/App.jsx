@@ -46,6 +46,7 @@ import QRScannerPage from './pages/QRScannerPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
+import IdCardGeneratorPage from './pages/IdCardGeneratorPage.jsx';
 import TruckManagerPage from './pages/TruckManagerPage.jsx';
 import TripManagerPage from './pages/TripManagerPage.jsx';
 import AttendanceManagerPage from './pages/AttendanceManagerPage.jsx';
@@ -295,6 +296,8 @@ function App() {
                   {/* HR & Payroll */}
                   <Route path="/employees" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><EmployeeDatabasePage /></ProtectedRoute>} />
                   <Route path="/employee-docs" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'supervisor']}><EmployeeDocsPage /></ProtectedRoute>} />
+                  <Route path="/id-card-generator" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
+                  <Route path="/id-cards" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
                   <Route path="/dashboard/attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><AttendanceManagerPage /></ProtectedRoute>} />
                   
                   {/* Features */}
