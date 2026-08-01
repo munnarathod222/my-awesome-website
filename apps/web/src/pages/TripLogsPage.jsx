@@ -992,22 +992,34 @@ const TripLogsPage = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-64 bg-card border-border shadow-xl z-50">
                                     <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-emerald-400 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'booking_confirmation' })}
+                                    >
+                                      🚛 Booking Confirmation (Driver & Vehicle)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-blue-400 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'trip_status' })}
+                                    >
+                                      🚚 Live Trip Status & ETA Tracking
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-purple-400 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'pod_proof' })}
+                                    >
+                                      📑 POD (Proof of Delivery) Copy
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
                                       className="font-bold text-xs py-2 text-emerald-500 cursor-pointer flex items-center gap-2"
                                       onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'payment_confirmation' })}
                                     >
                                       ✅ Payment Received Confirmation
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      className="font-bold text-xs py-2 text-blue-500 cursor-pointer flex items-center gap-2"
-                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'eta_delivery' })}
-                                    >
-                                      🚚 Share Delivery ETA & GPS Tracking
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
                                       className="font-bold text-xs py-2 text-amber-500 cursor-pointer flex items-center gap-2"
-                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'payment_reminder' })}
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'quote' })}
                                     >
-                                      💰 Payment Reminder Notice
+                                      🏷️ Share Freight Rate Quote
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
