@@ -10,8 +10,8 @@ import { Loader2, Calendar, MapPin, Route as RouteIcon, Info, HelpCircle } from 
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format, addDays, differenceInDays } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext.jsx';
 import apiServerClient from '@/lib/apiServerClient.js';
+import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
 
 const DAYS_OF_WEEK = [
@@ -77,7 +77,7 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         pb.collection('routes').getFullList({ sort: 'route_name', $autoCancel: false })
       ]);
       setClients(clientsRes);
-      setEmployees(empsRes);
+      setEmployees(filterActiveDrivers(empsRes));
       setTrucks(trucksRes);
       setRoutes(routesRes);
     } catch (err) {
