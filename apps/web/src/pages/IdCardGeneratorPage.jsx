@@ -13,6 +13,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
+import { getCanonicalEmployeeCode } from '@/lib/employeeCodeUtils.js';
 import { 
   IdCard, Printer, Download, Search, RefreshCw, Sparkles, Truck, Users, 
   ShieldCheck, Phone, MapPin, Calendar, Upload, Eye, CheckCircle2, User, 
@@ -240,31 +241,10 @@ export default function IdCardGeneratorPage() {
         });
       });
 
-      const normalizeEmpCode = (emp, fallbackIdx = 1) => {
-        if (!emp) return 'E001';
-        const isDriver = emp.employee_type === 'driver' || 
-                         (emp.designation || '').toLowerCase().includes('driver') ||
-                         (emp.applicant_role || '').toLowerCase().includes('driver');
-        const prefix = isDriver ? 'D' : 'E';
-        const raw = (emp.employee_number || emp.emp_number || emp.employee_code || '').trim();
-
-        if (/^[DE]\d{3,}$/i.test(raw)) {
-          return raw.toUpperCase();
-        }
-
-        const match = raw.match(/\d+/);
-        if (match) {
-          const num = parseInt(match[0], 10);
-          return `${prefix}${String(num).padStart(3, '0')}`;
-        }
-
-        return `${prefix}${String(fallbackIdx).padStart(3, '0')}`;
-      };
-
       const rawList = Array.from(mergedMap.values());
-      const formattedList = rawList.map((emp, idx) => ({
+      const formattedList = rawList.map(emp => ({
         ...emp,
-        employee_number: normalizeEmpCode(emp, idx + 1)
+        employee_number: getCanonicalEmployeeCode(emp, rawList)
       }));
 
       setEmployees(formattedList);
