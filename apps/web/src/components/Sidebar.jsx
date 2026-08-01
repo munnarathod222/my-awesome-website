@@ -117,6 +117,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Directory',
       items: [
+        { icon: Building2, label: 'Vendor Registration Tracker', path: '/vendor-tracker', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Building2, label: 'Transport CRM',     path: '/transport-crm', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Contact2,  label: 'Contacts Directory',path: '/contacts',      roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Users,     label: 'Clients List',      path: '/clients',       roles: ['super_admin','admin','manager'] },

@@ -44,6 +44,7 @@ const ROUTE_LABELS = {
   '/reminders':              'Reminders',
   '/todo':                   'To-Do List',
   '/contacts':               'Contacts Directory',
+  '/vendor-tracker':         'Vendor Registration Tracker',
   '/clients':                'Clients List',
   '/transport-crm':          'Transport CRM',
   '/insurance-manager':      'Insurance Manager',
@@ -183,6 +184,7 @@ export default function Header() {
     {
       title: 'Directory',
       items: [
+        { label: 'Vendor Registration Tracker', path: '/vendor-tracker', icon: Building2, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { label: 'Transport CRM', path: '/transport-crm', icon: Building2, roles: ['super_admin','admin','manager','dispatcher'] },
         { label: 'Contacts Directory', path: '/contacts', icon: Contact2, roles: ['super_admin','admin','manager','dispatcher'] },
         { label: 'Clients List', path: '/clients', icon: Users, roles: ['super_admin','admin','manager'] },

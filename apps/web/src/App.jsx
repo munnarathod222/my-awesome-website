@@ -61,6 +61,7 @@ import ClientPaymentAnalysisPage from './pages/ClientPaymentAnalysisPage.jsx';
 import TransportCrmPage from './pages/TransportCrmPage.jsx';
 import DriverApplicationPage from './pages/DriverApplicationPage.jsx';
 import RecruitmentDashboardPage from './pages/RecruitmentDashboardPage.jsx';
+import VendorTrackerPage from './pages/VendorTrackerPage.jsx';
 
 // Features
 import ClientPortalPage from './pages/ClientPortalPage.jsx';
@@ -256,7 +257,10 @@ function App() {
                   <Route path="/inventory/deductions" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><DeductionHistoryPage /></ProtectedRoute>} />
                   <Route path="/inventory/reports" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><InventoryReportsPage /></ProtectedRoute>} />
                   
-                  {/* Client Management & Transport CRM */}
+                  {/* Client Management, Transport CRM & Vendor Tracker */}
+                  <Route path="/vendor-tracker" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><VendorTrackerPage /></ProtectedRoute>} />
+                  <Route path="/vendor-registration" element={<Navigate to="/vendor-tracker" replace />} />
+                  <Route path="/vendors" element={<Navigate to="/vendor-tracker" replace />} />
                   <Route path="/transport-crm" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><TransportCrmPage /></ProtectedRoute>} />
                   <Route path="/crm" element={<Navigate to="/transport-crm" replace />} />
                   <Route path="/recruitment" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><RecruitmentDashboardPage /></ProtectedRoute>} />
