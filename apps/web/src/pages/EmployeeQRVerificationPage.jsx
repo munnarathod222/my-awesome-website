@@ -119,13 +119,13 @@ export default function EmployeeQRVerificationPage() {
 
       // 3. Try URL Query Parameters (embedded in QR code URL)
       const queryParams = new URLSearchParams(window.location.search);
-      const queryName = queryParams.get('name');
-      const queryRole = queryParams.get('role');
-      const queryPhone = queryParams.get('phone');
-      const queryLicense = queryParams.get('license');
+      const queryName = queryParams.get('n') || queryParams.get('name');
+      const queryRole = queryParams.get('r') || queryParams.get('role');
+      const queryPhone = queryParams.get('p') || queryParams.get('phone');
+      const queryLicense = queryParams.get('l') || queryParams.get('license');
       const queryBg = queryParams.get('bg');
-      const queryExpiry = queryParams.get('expiry');
-      const queryEmergency = queryParams.get('emergency');
+      const queryExpiry = queryParams.get('exp') || queryParams.get('expiry');
+      const queryEmergency = queryParams.get('em') || queryParams.get('emergency');
 
       if (queryName) {
         found = {
