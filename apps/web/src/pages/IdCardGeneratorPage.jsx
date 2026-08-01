@@ -336,19 +336,17 @@ export default function IdCardGeneratorPage() {
   };
 
   const generateQrUrl = (text) => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}&color=000000&bgcolor=ffffff`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(text)}&color=000000&bgcolor=ffffff&margin=2`;
   };
 
   const buildVerificationUrl = (form) => {
-    const baseUrl = `${window.location.origin}/verify-employee/${form.employee_number || 'JBC-EMP'}`;
+    const baseUrl = `${window.location.origin}/verify-employee/${form.employee_number || 'D001'}`;
     const params = new URLSearchParams();
-    if (form.name) params.set('name', form.name);
-    if (form.designation) params.set('role', form.designation);
-    if (form.contact) params.set('phone', form.contact);
-    if (form.license_number) params.set('license', form.license_number);
+    if (form.name) params.set('n', form.name);
+    if (form.designation) params.set('r', form.designation);
+    if (form.contact) params.set('p', form.contact);
+    if (form.license_number && form.license_number !== 'N/A') params.set('l', form.license_number);
     if (form.blood_group) params.set('bg', form.blood_group);
-    if (form.expiry_date) params.set('expiry', form.expiry_date);
-    if (form.emergency_contact) params.set('emergency', form.emergency_contact);
     return `${baseUrl}?${params.toString()}`;
   };
 
@@ -651,7 +649,7 @@ export default function IdCardGeneratorPage() {
                 
                 {/* FRONT SIDE */}
                 {(cardSide === 'both' || cardSide === 'front') && (
-                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-3.5">
+                  <div className="w-[285px] h-[435px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-3.5">
                     
                     {/* Metallic Gloss Reflection */}
                     <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-600/30 via-indigo-400/15 to-transparent rounded-full blur-md -mr-12 -mt-12 pointer-events-none" />
@@ -661,7 +659,7 @@ export default function IdCardGeneratorPage() {
                     <div className="flex items-center justify-between z-10 pt-0.5 px-0.5">
                       <div className="flex items-center gap-2">
                         {cardForm.company_logo_url ? (
-                          <img src={cardForm.company_logo_url} alt="Logo" className="h-8 max-w-[125px] object-contain filter drop-shadow-md" />
+                          <img src={cardForm.company_logo_url} alt="Logo" className="h-8 max-w-[130px] object-contain filter drop-shadow-md" />
                         ) : (
                           <div className="flex items-center gap-1.5">
                             <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 text-white font-black text-xs flex items-center justify-center shadow-md shadow-blue-900/30">JB</div>
@@ -688,13 +686,13 @@ export default function IdCardGeneratorPage() {
                         )}
                       </div>
 
-                      {/* Name & Designation Badges on Right */}
+                      {/* Name & Designation Badges on Right (NO TRUNCATION, FULL NAME VISIBLE) */}
                       <div className="space-y-1.5 min-w-0 flex-1">
                         <div className="bg-white/95 backdrop-blur-md border border-blue-100 p-2 rounded-2xl shadow-md">
-                          <div className="text-xs font-black text-slate-950 uppercase leading-tight truncate">{cardForm.name || 'EMPLOYEE NAME'}</div>
+                          <div className="text-[11px] font-black text-slate-950 uppercase leading-snug break-words text-wrap">{cardForm.name || 'EMPLOYEE NAME'}</div>
                         </div>
                         <div className="bg-blue-950/10 backdrop-blur-md px-2.5 py-1 rounded-xl border border-blue-900/10">
-                          <div className="text-[10px] font-extrabold italic text-blue-950 truncate">{cardForm.designation}</div>
+                          <div className="text-[9.5px] font-extrabold italic text-blue-950 leading-tight break-words text-wrap">{cardForm.designation}</div>
                         </div>
                       </div>
                     </div>
@@ -723,10 +721,10 @@ export default function IdCardGeneratorPage() {
                       </div>
                     </div>
 
-                    {/* Bottom Barcode & QR Code Footer */}
-                    <div className="bg-white rounded-2xl p-2 flex items-center justify-between border border-blue-100 shadow-md z-10">
+                    {/* Bottom Barcode & Enlarged Scannable QR Code Footer */}
+                    <div className="bg-white rounded-2xl p-2 flex items-center justify-between border border-blue-100 shadow-md z-10 gap-2">
                       {/* Vector Barcode */}
-                      <div className="flex flex-col items-center flex-1 pr-2">
+                      <div className="flex flex-col items-center flex-1 pr-1">
                         <div className="flex gap-0.5 h-6 items-center w-full justify-center opacity-90">
                           {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2,3,1,2].map((w, i) => (
                             <div key={i} className="h-full bg-slate-950 rounded-sm" style={{ width: `${w}px` }} />
@@ -735,8 +733,8 @@ export default function IdCardGeneratorPage() {
                         <div className="text-[8px] font-mono text-slate-600 tracking-widest mt-0.5 font-extrabold">{cardForm.employee_number}</div>
                       </div>
 
-                      {/* QR Code */}
-                      <div className="w-10 h-10 shrink-0 bg-slate-50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
+                      {/* Scannable High-Definition QR Code */}
+                      <div className="w-14 h-14 shrink-0 bg-white p-1 rounded-xl border-2 border-slate-300 shadow-md">
                         <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
                       </div>
                     </div>
@@ -745,7 +743,7 @@ export default function IdCardGeneratorPage() {
 
                 {/* BACK SIDE */}
                 {(cardSide === 'both' || cardSide === 'back') && (
-                  <div className="w-[270px] h-[430px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-4 text-center">
+                  <div className="w-[285px] h-[435px] rounded-3xl bg-gradient-to-b from-[#94b9ee] via-[#d4e4fa] to-[#f4f8fe] border-2 border-blue-200/80 shadow-[0_20px_50px_rgba(37,99,235,0.25)] relative overflow-hidden flex flex-col justify-between text-slate-900 font-sans p-4 text-center">
                     <div className="w-10 h-1.5 bg-slate-300/80 border border-white/60 rounded-full mx-auto mb-1 shrink-0" />
                     
                     <div className="text-[10.5px] font-black text-blue-950 uppercase tracking-widest border-b border-blue-300/80 pb-1">
@@ -765,7 +763,7 @@ export default function IdCardGeneratorPage() {
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-blue-300/80">
-                      <div className="w-12 h-12 bg-white p-0.5 rounded-xl border border-blue-100 shadow-md">
+                      <div className="w-16 h-16 bg-white p-1 rounded-xl border-2 border-slate-300 shadow-md">
                         <img src={generateQrUrl(verificationUrl)} alt="QR Code" className="w-full h-full object-contain" />
                       </div>
                       <div className="text-right text-[8.5px] text-slate-700">
