@@ -417,17 +417,20 @@ const ExpensesPage = () => {
   // Current active month expense summary grid calculations for all 8 categories
   const { fuelTotal, fastagTotal, driverAdvanceTotal, salaryTotal, maintenanceTotal, miscTotal, fixedEmiTotal, allOtherTotal } = useMemo(() => {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    // Use UTC year/month to match PocketBase date storage (dates are in UTC)
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
 
     const currentMonthExpenses = expenses.filter(exp => {
+      if (!exp.date) return false;
       const expDate = new Date(exp.date);
-      return expDate.getFullYear() === currentYear && expDate.getMonth() === currentMonth;
+      return expDate.getUTCFullYear() === currentYear && expDate.getUTCMonth() === currentMonth;
     });
 
     const currentMonthAdvances = advances.filter(adv => {
+      if (!adv.date) return false;
       const advDate = new Date(adv.date);
-      return advDate.getFullYear() === currentYear && advDate.getMonth() === currentMonth;
+      return advDate.getUTCFullYear() === currentYear && advDate.getUTCMonth() === currentMonth;
     });
 
     // 1. Fuel
@@ -497,6 +500,7 @@ const ExpensesPage = () => {
       allOtherTotal: Number(allOther)
     };
   }, [expenses, advances]);
+
 
   const getPaymentMethodBadge = (method) => {
     switch (method) {
