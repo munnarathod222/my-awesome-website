@@ -250,6 +250,20 @@ export default function VehicleQRVerificationPage() {
     return documents.find(d => (d.document_type || '').toLowerCase().includes('license'));
   }, [documents]);
 
+  // Find insurance document & helpline number
+  const insuranceDoc = useMemo(() => {
+    return documents.find(d => (d.document_type || '').toLowerCase().includes('insurance'));
+  }, [documents]);
+
+  const insuranceHelpline = useMemo(() => {
+    if (insuranceDoc?.helpline_number) return insuranceDoc.helpline_number;
+    if (insuranceDoc?.insurance_helpline) return insuranceDoc.insurance_helpline;
+    if (insuranceDoc?.helpline) return insuranceDoc.helpline;
+    const docWithHelpline = documents.find(d => d.helpline_number || d.insurance_helpline);
+    if (docWithHelpline) return docWithHelpline.helpline_number || docWithHelpline.insurance_helpline;
+    return truck?.insurance_helpline || companyInfo?.company_phone || '+91 7794072244';
+  }, [insuranceDoc, documents, truck, companyInfo]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 space-y-4 select-none">
@@ -359,6 +373,45 @@ export default function VehicleQRVerificationPage() {
           </div>
         </Card>
 
+        {/* Emergency Insurance & Claim Helpline Card */}
+        <Card className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-950 border-emerald-500/40 p-4.5 rounded-3xl shadow-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-emerald-400">
+                <Phone className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-wider text-emerald-400">Insurance &amp; Emergency Claim Support</h2>
+                <p className="text-[11px] text-slate-300 font-mono">
+                  {insuranceDoc?.document_number ? `Policy: ${insuranceDoc.document_number}` : 'Roadside Claim Assistance'}
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/40 font-mono text-[10px] font-bold">
+              24x7 HELPLINE
+            </Badge>
+          </div>
+
+          <div className="bg-slate-950/90 p-3.5 rounded-2xl border border-emerald-500/30 flex items-center justify-between gap-3 shadow-inner">
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Helpline / Claim Support Contact</span>
+              <a 
+                href={`tel:${(insuranceHelpline || '').replace(/[^0-9+]/g, '')}`} 
+                className="text-base font-black font-mono text-emerald-400 hover:underline flex items-center gap-1.5"
+              >
+                <Phone className="w-4 h-4 text-emerald-400" />
+                {insuranceHelpline}
+              </a>
+            </div>
+            <a 
+              href={`tel:${(insuranceHelpline || '').replace(/[^0-9+]/g, '')}`}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-extrabold text-xs shadow-md shadow-emerald-600/30 flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
+            >
+              <Phone className="w-3.5 h-3.5" /> Call Helpline
+            </a>
+          </div>
+        </Card>
+
         {/* Official Truck Docs Folder (For Police & RTO Inspection) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -378,6 +431,7 @@ export default function VehicleQRVerificationPage() {
             <div className="space-y-2.5">
               {documents.map((doc) => {
                 const fileUrl = doc.file_url || (doc.file ? pb.files.getURL(doc, doc.file) : null);
+                const docHelpline = doc.helpline_number || doc.insurance_helpline;
                 return (
                   <div 
                     key={doc.id}
@@ -390,6 +444,11 @@ export default function VehicleQRVerificationPage() {
                       <div className="text-[11px] font-mono text-slate-400">
                         No: {doc.document_number || 'N/A'} {doc.expiry_date ? `• Exp: ${doc.expiry_date.split('T')[0]}` : ''}
                       </div>
+                      {docHelpline && (
+                        <div className="text-[11px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-emerald-400" /> Helpline: {docHelpline}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
