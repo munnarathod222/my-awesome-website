@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
 import { getCanonicalEmployeeCode } from '@/lib/employeeCodeUtils.js';
+import { useAuth } from '@/contexts/AuthContext.jsx';
 import { 
   IdCard, Printer, Download, Search, RefreshCw, Sparkles, Truck, Users, 
   ShieldCheck, Phone, MapPin, Calendar, Upload, Eye, CheckCircle2, User, 
@@ -21,53 +22,7 @@ import {
   Sliders, LayoutGrid, CheckSquare, ShieldAlert, Award, Star, Zap, Cpu
 } from 'lucide-react';
 
-const SAMPLE_EMPLOYEES = [
-  {
-    id: 'emp-101',
-    employee_number: 'D001',
-    name: 'Ramesh Kumar Rathod',
-    employee_type: 'driver',
-    contact: '+91 98765 43210',
-    emergency_contact: '+91 98765 43299',
-    blood_group: 'O+',
-    license_number: 'TS09-2018-0098231',
-    joining_date: '2022-04-15',
-    expiry_date: '2028-04-14',
-    address: 'Plot 42, Transport Nagar, Secunderabad, Telangana - 500003',
-    active_status: 'active',
-    designation: 'Senior Heavy Fleet Driver',
-  },
-  {
-    id: 'emp-102',
-    employee_number: 'E001',
-    name: 'Sunita Sharma',
-    employee_type: 'manager',
-    contact: '+91 94401 12233',
-    emergency_contact: '+91 94401 12200',
-    blood_group: 'B+',
-    license_number: 'TS08-2020-0012345',
-    joining_date: '2021-08-01',
-    expiry_date: '2027-07-31',
-    address: 'H.No 12-5-88, Banjara Hills, Hyderabad, Telangana - 500034',
-    active_status: 'active',
-    designation: 'Logistics Operations Manager',
-  },
-  {
-    id: 'emp-103',
-    employee_number: 'D002',
-    name: 'Vikram Singh Chauhan',
-    employee_type: 'driver',
-    contact: '+91 97000 88776',
-    emergency_contact: '+91 97000 88700',
-    blood_group: 'A+',
-    license_number: 'MH12-2019-0054321',
-    joining_date: '2023-01-10',
-    expiry_date: '2029-01-09',
-    address: 'Flat 302, Auto Nagar, Pune, Maharashtra - 411028',
-    active_status: 'active',
-    designation: 'Multi-Axle Container Driver',
-  }
-];
+const SAMPLE_EMPLOYEES = [];
 
 const TEMPLATES = [
   {
@@ -136,6 +91,7 @@ const TEMPLATES = [
 ];
 
 export default function IdCardGeneratorPage() {
+  const { currentUser } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -219,8 +175,25 @@ export default function IdCardGeneratorPage() {
         }
       } catch (e) {}
 
+      const superUserCard = {
+        id: currentUser?.id ? `super-${currentUser.id}` : 'super-admin-001',
+        employee_number: 'E001',
+        name: currentUser?.name || currentUser?.username || 'Munna Rathod (Super User)',
+        employee_type: 'staff',
+        contact: currentUser?.phone_number || currentUser?.email || '+91 7794072244',
+        emergency_contact: currentUser?.phone_number || '+91 7794072244',
+        blood_group: 'O+',
+        license_number: 'N/A',
+        joining_date: '2022-01-01',
+        expiry_date: '2030-12-31',
+        address: 'Headquarters, Jai Bhavani Cargo Ltd, Secunderabad, TG - 500003',
+        active_status: 'active',
+        designation: 'Super User / Managing Director',
+        photoUrl: currentUser?.avatar ? pb.files.getUrl(currentUser, currentUser.avatar) : null
+      };
+
       const mergedMap = new Map();
-      SAMPLE_EMPLOYEES.forEach(e => mergedMap.set(e.id, e));
+      mergedMap.set(superUserCard.id, superUserCard);
       localData.forEach(e => mergedMap.set(e.id, e));
       pbRecords.forEach(e => {
         mergedMap.set(e.id, {
@@ -254,7 +227,6 @@ export default function IdCardGeneratorPage() {
       }
     } catch (err) {
       toast.error('Failed to load employee directory');
-      selectEmployeeForCard(SAMPLE_EMPLOYEES[0]);
     } finally {
       setLoading(false);
     }
