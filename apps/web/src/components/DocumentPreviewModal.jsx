@@ -16,7 +16,32 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
 
   const canvasRef = useRef(null);
 
-  const filesList = document?.files || (document?.file ? [document.file] : []);
+  // Extract all document files (front page, back page, files array, file string/array, back_file)
+  const filesList = React.useMemo(() => {
+    if (!document) return [];
+    const list = [];
+    
+    if (Array.isArray(document.files)) {
+      list.push(...document.files);
+    } else if (typeof document.files === 'string' && document.files) {
+      list.push(document.files);
+    }
+
+    if (Array.isArray(document.file)) {
+      list.push(...document.file);
+    } else if (typeof document.file === 'string' && document.file) {
+      list.push(document.file);
+    }
+
+    if (typeof document.back_file === 'string' && document.back_file) {
+      list.push(document.back_file);
+    }
+    if (typeof document.back_page === 'string' && document.back_page) {
+      list.push(document.back_page);
+    }
+
+    return Array.from(new Set(list.filter(Boolean)));
+  }, [document]);
 
   useEffect(() => {
     if (filesList.length > 0) {
@@ -24,7 +49,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
     } else {
       setActiveFile(null);
     }
-  }, [document]);
+  }, [document, filesList]);
 
   const rawUrl = activeFile ? pb.files.getURL(document, activeFile) : '';
   const fileExt = activeFile ? activeFile.split('.').pop().toLowerCase() : '';
