@@ -94,6 +94,7 @@ import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
 import GstITCManagerPage from './pages/GstITCManagerPage.jsx';
 import OfficialLetterheadPage from './pages/OfficialLetterheadPage.jsx';
+import DataBackupPage from './pages/DataBackupPage.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
@@ -290,6 +291,8 @@ function App() {
                   
                   {/* Cashbook & Financials */}
                   <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><CompanyVaultPage /></ProtectedRoute>} />
+                  <Route path="/data-backup" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><DataBackupPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/backup" element={<Navigate to="/data-backup" replace />} />
                   <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
                   <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FASTagManagerPage /></ProtectedRoute>} />
