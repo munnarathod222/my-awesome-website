@@ -396,6 +396,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       <SelectValue placeholder="Select driver" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Dayanand Surwase">Dayanand Surwase</SelectItem>
                       <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
                         ⚡ Temporary Driver
                       </SelectItem>
