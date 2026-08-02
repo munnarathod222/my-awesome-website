@@ -77,8 +77,34 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         pb.collection('trucks').getFullList({ $autoCancel: false }),
         pb.collection('routes').getFullList({ sort: 'route_name', $autoCancel: false })
       ]);
+      let localDrivers = [];
+      try {
+        const raw = localStorage.getItem('jbc_driver_applications');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          localDrivers = parsed.map(a => ({
+            id: a.id,
+            name: a.full_name || a.name,
+            status: a.status,
+            active_status: a.active_status,
+            employment_status: a.employment_status,
+            employee_type: 'driver'
+          }));
+        }
+      } catch (e) {}
+
+      const merged = [...empsRes, ...localDrivers];
+      const activeDrivers = filterActiveDrivers(merged);
+
+      const uniqueDriversMap = new Map();
+      activeDrivers.forEach(d => {
+        if (d && d.name && !uniqueDriversMap.has(d.name.trim().toLowerCase())) {
+          uniqueDriversMap.set(d.name.trim().toLowerCase(), d);
+        }
+      });
+
       setClients(clientsRes);
-      setEmployees(filterActiveDrivers(empsRes));
+      setEmployees(Array.from(uniqueDriversMap.values()));
       setTrucks(trucksRes);
       setRoutes(routesRes);
     } catch (err) {
