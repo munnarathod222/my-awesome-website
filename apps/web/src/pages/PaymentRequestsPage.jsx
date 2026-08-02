@@ -344,10 +344,12 @@ const PaymentRequestsPage = () => {
       const email = clientReq.expand?.client_id?.email || '';
       const phone = clientReq.expand?.client_id?.phone || '';
 
+      const reqDueDate = selectedReqs.find(r => r.due_date)?.due_date || clientReq?.due_date;
+
       const invoiceObj = {
         invoice_number: `INV-B${Date.now().toString().substring(7)}`,
         invoice_date: new Date().toISOString(),
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        due_date: reqDueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         customer_name: clientName,
         customer_address: address,
         customer_email: email,
