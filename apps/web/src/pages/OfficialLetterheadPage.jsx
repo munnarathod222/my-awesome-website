@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { 
   Printer, Download, FileText, Sparkles, Building2, Copy, Send, 
   Check, RefreshCw, Layers, ShieldCheck, Mail, Phone, Globe, User,
-  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders, Save, Bookmark, Trash2, Plus
+  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders, Save, Bookmark, Trash2, Plus, Database
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -327,6 +328,16 @@ export default function OfficialLetterheadPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-2xl border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 font-bold text-xs h-10 px-4"
+            >
+              <Link to="/data-backup">
+                <Database className="w-4 h-4 mr-2 text-amber-400" /> Export / Backup Data
+              </Link>
+            </Button>
+
             <Button
               onClick={() => setIsSaveModalOpen(true)}
               variant="outline"
