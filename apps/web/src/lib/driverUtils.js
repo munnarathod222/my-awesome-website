@@ -14,20 +14,23 @@ export const isDriverActive = (emp) => {
 
   const inactiveKeywords = [
     'terminated', 
+    'absconded',
+    'absconding',
     'inactive', 
     'left', 
     'resigned', 
     'suspended', 
     'fired', 
     'disabled',
-    'terminated / left'
+    'terminated / left',
+    'absconded / left'
   ];
 
   if (inactiveKeywords.some(kw => status.includes(kw))) {
     return false;
   }
 
-  if (emp.is_active === false || emp.active === false) {
+  if (emp.is_active === false || emp.active === false || emp.status === 'inactive') {
     return false;
   }
 
@@ -39,7 +42,7 @@ export const isDriverActive = (emp) => {
  */
 export const filterActiveDrivers = (employees = [], currentDriverName = '') => {
   return (employees || []).filter(emp => {
-    // If this is the driver currently assigned to a historical record, keep them visible for context
+    // If this is the driver currently assigned to a historical record, keep them visible in the edit dropdown for context
     if (currentDriverName && emp.name === currentDriverName) {
       return true;
     }
