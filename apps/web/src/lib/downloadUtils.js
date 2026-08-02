@@ -240,8 +240,7 @@ export const generatePDF = (data, filename, options = {}) => {
 
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...secondaryGray);
-      doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 63);
-      doc.text('Currency: Indian Rupee (INR ₹)', doc.internal.pageSize.width / 2 + 8, 69);
+      doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 65);
 
       // Line Items Table
       const tableData = data.map(row => columns.map(col => {
@@ -273,7 +272,7 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...secondaryGray);
-      doc.text('Subtotal Amount:', doc.internal.pageSize.width - 65, finalY, { align: 'right' });
+      doc.text('Subtotal Amount:', doc.internal.pageSize.width - 70, finalY, { align: 'right' });
       doc.setTextColor(0, 0, 0);
       doc.text(`₹${Number(inv.subtotal || inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
 
@@ -281,26 +280,30 @@ export const generatePDF = (data, filename, options = {}) => {
         finalY += 5;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...secondaryGray);
-        doc.text(`GST / Tax (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 65, finalY, { align: 'right' });
+        doc.text(`GST / Tax (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 70, finalY, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         doc.text(`₹${Number(inv.tax_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       }
 
       finalY += 7;
-      doc.setFillColor(...primaryNavy);
-      doc.roundedRect(doc.internal.pageSize.width - 72, finalY - 5, 58, 9, 1.5, 1.5, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9.5);
-      doc.setTextColor(255, 255, 255);
-      doc.text('TOTAL AMOUNT DUE:', doc.internal.pageSize.width - 64, finalY, { align: 'left' });
-      doc.text(`₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 16, finalY, { align: 'right' });
+      const amountStr = `₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`;
+      const boxWidth = 82;
+      const boxX = doc.internal.pageSize.width - 14 - boxWidth;
 
-      // Remittance Bank Details (From Company Settings) - Bottom Left
+      doc.setFillColor(...primaryNavy);
+      doc.roundedRect(boxX, finalY - 5, boxWidth, 9, 1.5, 1.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOTAL AMOUNT DUE:', boxX + 4, finalY + 1, { align: 'left' });
+      doc.text(amountStr, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
+
+      // Bank Details (From Company Settings) - Bottom Left
       let bankY = finalY - (inv.tax_amount && inv.tax_amount > 0 ? 12 : 5);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(...primaryNavy);
-      doc.text('REMITTANCE BANK DETAILS (COMPANY SETTINGS):', 14, bankY);
+      doc.text('BANK DETAILS:', 14, bankY);
 
       const bName = companySettingsCache?.bank_name || 'HDFC BANK';
       const bAccName = (companySettingsCache?.account_name || companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase();
