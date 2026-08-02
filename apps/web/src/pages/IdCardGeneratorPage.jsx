@@ -109,8 +109,8 @@ export default function IdCardGeneratorPage() {
     company_name: 'JAI BHAVANI CARGO',
     company_tagline: 'Logistics & Heavy Transport Fleet',
     company_phone: '+91 7794072244',
-    company_email: 'support@jaibhavanicargo.com',
-    company_address: 'Plot 42, Transport Nagar, Secunderabad, TG - 500003',
+    company_email: 'vinod.jbcargo@gmail.com',
+    company_address: 'Plot No 3, Patel Nagar, Ghatkesar, TG - 501301',
     company_logo_url: '',
     name: '',
     employee_number: '',
@@ -131,21 +131,56 @@ export default function IdCardGeneratorPage() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      // Fetch company logo from company_settings
+      // Fetch company details from company_settings (or fallback to official company settings)
+      let companyAddress = 'Plot No 3, Patel Nagar, Ghatkesar, TG - 501301';
+      let companyPhone = '+91 7794072244';
+      let companyEmail = 'vinod.jbcargo@gmail.com';
+      let companyName = 'JAI BHAVANI CARGO';
+      let companyTagline = 'Logistics & Heavy Transport Fleet';
+      let companyLogoUrl = '';
+
       try {
         const companyRecs = await pb.collection('company_settings').getFullList({ $autoCancel: false }).catch(() => []);
         if (companyRecs && companyRecs.length > 0) {
           const setting = companyRecs[0];
+          if (setting.company_name) companyName = setting.company_name;
+          if (setting.company_tagline || setting.tagline) companyTagline = setting.company_tagline || setting.tagline;
+          if (setting.phone || setting.company_phone) companyPhone = setting.phone || setting.company_phone;
+          if (setting.email || setting.company_email) companyEmail = setting.email || setting.company_email;
+          if (setting.address || setting.company_address) {
+            let addr = setting.address || setting.company_address;
+            if (setting.city && !addr.includes(setting.city)) addr += `, ${setting.city}`;
+            if (setting.state && !addr.includes(setting.state)) addr += `, ${setting.state}`;
+            if (setting.pincode && !addr.includes(setting.pincode)) addr += ` - ${setting.pincode}`;
+            companyAddress = addr;
+          }
           if (setting.company_logo) {
-            const logoUrl = pb.files.getUrl(setting, setting.company_logo);
-            setCardForm(prev => ({
-              ...prev,
-              company_logo_url: logoUrl,
-              company_name: setting.company_name || prev.company_name
-            }));
+            companyLogoUrl = pb.files.getUrl(setting, setting.company_logo);
           }
         }
       } catch (e) {}
+
+      // Also check localStorage jbc_company_settings if available
+      try {
+        const localSettings = localStorage.getItem('jbc_company_settings');
+        if (localSettings) {
+          const s = JSON.parse(localSettings);
+          if (s.address) companyAddress = s.address;
+          if (s.phone) companyPhone = s.phone;
+          if (s.email) companyEmail = s.email;
+          if (s.company_name) companyName = s.company_name;
+        }
+      } catch (e) {}
+
+      setCardForm(prev => ({
+        ...prev,
+        company_name: companyName,
+        company_tagline: companyTagline,
+        company_phone: companyPhone,
+        company_email: companyEmail,
+        company_address: companyAddress,
+        company_logo_url: companyLogoUrl || prev.company_logo_url,
+      }));
 
       let pbRecords = await pb.collection('employees').getFullList({
         sort: '-created',
@@ -186,7 +221,7 @@ export default function IdCardGeneratorPage() {
         license_number: 'N/A',
         joining_date: '2022-01-01',
         expiry_date: '2030-12-31',
-        address: 'Headquarters, Jai Bhavani Cargo Ltd, Secunderabad, TG - 500003',
+        address: 'Headquarters, Jai Bhavani Cargo Ltd, Plot No 3, Patel Nagar, Ghatkesar, TG - 501301',
         active_status: 'active',
         designation: 'Super User / Managing Director',
         photoUrl: currentUser?.avatar ? pb.files.getUrl(currentUser, currentUser.avatar) : null
