@@ -3,35 +3,70 @@
  */
 export const isDriverActive = (emp) => {
   if (!emp) return false;
-  
-  const status = (
-    emp.status || 
-    emp.active_status || 
-    emp.employment_status || 
-    emp.work_status || 
-    ''
-  ).toLowerCase().trim();
+  if (typeof emp === 'string') return true;
+
+  // 1. Explicit boolean checks
+  if (emp.is_active === false || emp.active === false || emp.is_active === 0 || emp.active === 0) {
+    return false;
+  }
+
+  // 2. Gather all status fields from the object
+  const statusValues = [
+    emp.status,
+    emp.active_status,
+    emp.employment_status,
+    emp.work_status,
+    emp.applicant_status,
+    emp.state,
+    emp.current_status
+  ]
+    .filter(Boolean)
+    .map(v => String(v).toLowerCase().trim());
 
   const inactiveKeywords = [
     'terminated', 
+    'terminate',
+    'abscond',
     'absconded',
     'absconding',
     'inactive', 
     'left', 
     'resigned', 
+    'resign',
     'suspended', 
+    'suspend',
     'fired', 
+    'fire',
     'disabled',
-    'terminated / left',
-    'absconded / left'
+    'rejected',
+    'reject',
+    'leave',
+    'on leave',
+    'on_leave',
+    'applied',
+    'shortlisted',
+    'interview',
+    'on hold',
+    'pending'
   ];
 
-  if (inactiveKeywords.some(kw => status.includes(kw))) {
-    return false;
+  // If ANY status field contains an inactive keyword, reject driver immediately
+  for (const st of statusValues) {
+    if (inactiveKeywords.some(kw => st.includes(kw))) {
+      return false;
+    }
   }
 
-  if (emp.is_active === false || emp.active === false || emp.status === 'inactive') {
-    return false;
+  // 3. Object-wide text search safeguard
+  const allTextValues = Object.values(emp)
+    .filter(val => typeof val === 'string' && val.length < 100)
+    .join(' ')
+    .toLowerCase();
+
+  for (const kw of ['terminated', 'abscond', 'resigned', 'fired']) {
+    if (allTextValues.includes(kw)) {
+      return false;
+    }
   }
 
   return true;
@@ -42,10 +77,12 @@ export const isDriverActive = (emp) => {
  */
 export const filterActiveDrivers = (employees = [], currentDriverName = '') => {
   return (employees || []).filter(emp => {
-    // If this is the driver currently assigned to a historical record, keep them visible in the edit dropdown for context
-    if (currentDriverName && emp.name === currentDriverName) {
+    const empName = typeof emp === 'string' ? emp : (emp?.name || emp?.full_name);
+    // If this is the driver currently assigned to a historical record being EDITED, keep them visible for context
+    if (currentDriverName && empName && empName === currentDriverName) {
       return true;
     }
     return isDriverActive(emp);
   });
 };
+
