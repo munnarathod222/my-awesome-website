@@ -64,14 +64,42 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     setDataLoading(true);
     try {
       const [clientsRes, empsRes, trucksRes, routesRes, latestTrip] = await Promise.all([
-        pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }),
-        pb.collection('employees').getFullList({ filter: 'employee_type="driver"', $autoCancel: false }),
-        pb.collection('trucks').getFullList({ $autoCancel: false }),
-        pb.collection('routes').getFullList({ sort: 'route_name', $autoCancel: false }),
-        pb.collection('trip_logs').getList(1, 1, { sort: '-created', $autoCancel: false }) // Fallback approach for ID gen
+        pb.collection('clients').getFullList({ sort: 'client_name', $autoCancel: false }).catch(() => []),
+        pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []),
+        pb.collection('trucks').getFullList({ $autoCancel: false }).catch(() => []),
+        pb.collection('routes').getFullList({ sort: 'route_name', $autoCancel: false }).catch(() => []),
+        pb.collection('trip_logs').getList(1, 1, { sort: '-created', $autoCancel: false }).catch(() => ({ totalItems: 0 }))
       ]);
+
+      let localDrivers = [];
+      try {
+        const raw = localStorage.getItem('jbc_driver_applications');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          localDrivers = parsed
+            .map(a => ({
+              id: a.id,
+              name: a.full_name || a.name,
+              status: a.status || a.active_status || 'active',
+              active_status: a.active_status || 'active',
+              employee_type: 'driver'
+            }));
+        }
+      } catch (e) {}
+
+      const merged = [...empsRes, ...localDrivers];
+      const activeDrivers = filterActiveDrivers(merged);
+
+      // Deduplicate drivers by name
+      const uniqueDriversMap = new Map();
+      activeDrivers.forEach(d => {
+        if (d && d.name && !uniqueDriversMap.has(d.name.trim().toLowerCase())) {
+          uniqueDriversMap.set(d.name.trim().toLowerCase(), d);
+        }
+      });
+
       setClients(clientsRes);
-      setEmployees(filterActiveDrivers(empsRes));
+      setEmployees(Array.from(uniqueDriversMap.values()));
       setTrucks(trucksRes);
       setRoutes(routesRes);
 
