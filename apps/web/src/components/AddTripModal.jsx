@@ -80,8 +80,9 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
             .map(a => ({
               id: a.id,
               name: a.full_name || a.name,
-              status: a.status || a.active_status || 'active',
-              active_status: a.active_status || 'active',
+              status: a.status,
+              active_status: a.active_status,
+              employment_status: a.employment_status,
               employee_type: 'driver'
             }));
         }
