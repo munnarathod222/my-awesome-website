@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Building2, Plus, Search, Filter, Download, ShieldCheck, Clock, 
   CheckCircle2, XCircle, AlertTriangle, FileText, Phone, Mail, MapPin, 
   CreditCard, Eye, Edit, Trash2, ExternalLink, RefreshCw, FileCheck,
   Copy, ExternalLink as LinkIcon, Briefcase, Award, CheckSquare,
-  Truck, UserCheck, Shield, FileSpreadsheet, IdCard
+  Truck, UserCheck, Shield, FileSpreadsheet, IdCard, Database
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -594,6 +595,16 @@ export default function VendorTrackerPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-2xl border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 font-bold text-xs h-10 px-4"
+          >
+            <Link to="/data-backup">
+              <Database className="w-4 h-4 mr-1.5 text-amber-400" /> Export / Backup Data
+            </Link>
+          </Button>
+
           {activeTab === 'subcontractors' && (
             <Button
               onClick={() => { resetSubForm(); setIsSubFormOpen(true); }}
