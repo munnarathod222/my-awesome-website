@@ -346,6 +346,44 @@ router.post('/share-folder', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/driver/backup-now
+ * Trigger instant cloud database backup sync to Supabase.
+ */
+router.post('/backup-now', async (req, res) => {
+  try {
+    if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
+      return res.status(404).json({ success: false, error: 'Database file not found' });
+    }
+    const ok = await global.uploadDatabaseToSupabase(global.dbFilePath);
+    return res.json({
+      success: true,
+      message: ok ? 'Production database successfully backed up to Supabase Cloud!' : 'Backup processed.'
+    });
+  } catch (err) {
+    logger.error('Failed to execute instant cloud backup:', err.message);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/driver/download-db
+ * Direct download of SQLite production master data.db file.
+ */
+router.get('/download-db', async (req, res) => {
+  try {
+    if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {
+      return res.status(404).send('Database file not found');
+    }
+    const dateStr = new Date().toISOString().split('T')[0];
+    res.download(global.dbFilePath, `JBC_Production_Master_Database_${dateStr}.db`);
+  } catch (err) {
+    logger.error('Failed to download master database file:', err.message);
+    res.status(500).send(err.message);
+  }
+});
+
+
 
 
 

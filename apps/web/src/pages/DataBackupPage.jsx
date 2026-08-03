@@ -14,8 +14,11 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
 
+import apiServerClient from '@/lib/apiServerClient.js';
+
 export default function DataBackupPage() {
   const [loading, setLoading] = useState(false);
+  const [cloudSyncing, setCloudSyncing] = useState(false);
   const [stats, setStats] = useState({
     letterheadTemplates: 0,
     clientEmpanelments: 0,
@@ -34,14 +37,12 @@ export default function DataBackupPage() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // 1. LocalStorage counts
       let tplCount = 0;
       try {
         const savedTpls = localStorage.getItem('jbc_saved_letterhead_templates');
         if (savedTpls) tplCount = JSON.parse(savedTpls).length;
       } catch (e) {}
 
-      // 2. PocketBase counts
       const [empRecs, subRecs, supRecs, employeeRecs, driverApps, vaultDocs, tripRecs] = await Promise.all([
         pb.collection('vendor_empanelments').getFullList({ $autoCancel: false }).catch(() => []),
         pb.collection('subcontractor_vendors').getFullList({ $autoCancel: false }).catch(() => []),
@@ -114,56 +115,92 @@ export default function DataBackupPage() {
     URL.revokeObjectURL(url);
   };
 
-  // 1-CLICK FULL SYSTEM BACKUP
+  // Trigger Instant Production Cloud Backup to Supabase
+  const handleCloudSync = async () => {
+    setCloudSyncing(true);
+    toast.info('Initiating instant production database backup sync to Supabase Cloud...');
+    try {
+      const res = await apiServerClient.fetch('/driver/backup-now', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Production database synced to Supabase Cloud!');
+      } else {
+        toast.error(`Cloud backup warning: ${data.error || 'Check server logs'}`);
+      }
+    } catch (err) {
+      toast.error(`Failed to trigger cloud backup: ${err.message}`);
+    } finally {
+      setCloudSyncing(false);
+    }
+  };
+
+  // Download Production Master SQLite Database (.db)
+  const handleDownloadMasterDb = () => {
+    toast.info('Preparing production SQLite master database download...');
+    const downloadUrl = '/hcgi/api/driver/download-db';
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `JBC_Master_Production_Database_${format(new Date(), 'yyyy-MM-dd')}.db`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 1-CLICK FULL SYSTEM BACKUP (ALL 43 MODULES)
   const handleFullBackup = async () => {
     setLoading(true);
-    toast.info('Gathering all system data for full backup...');
+    toast.info('Gathering data across all 43 modules for complete system backup...');
     try {
       // Collect LocalStorage Data
       const localStorageBackup = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('jbc_') || key.startsWith('letterhead_') || key.startsWith('vendor_'))) {
+        if (key && (key.startsWith('jbc_') || key.startsWith('letterhead_') || key.startsWith('vendor_') || key.startsWith('app_'))) {
           localStorageBackup[key] = localStorage.getItem(key);
         }
       }
 
-      // Collect PocketBase Collections
+      // Collect PocketBase Collections — ALL 43 System Modules
       const collections = [
-        'vendor_empanelments',
-        'subcontractor_vendors',
-        'vendors',
-        'employees',
-        'driver_applications',
-        'company_vault',
-        'trips',
-        'trucks',
-        'cashbook',
-        'expenses'
+        'users', 'clients', 'trucks', 'routes', 'trip_logs', 'trips',
+        'expenses', 'fuel_logs', 'maintenance_problems', 'maintenance_logs',
+        'tyre_logs', 'attendance', 'attendance_records', 'advances', 'payroll',
+        'salary_payments', 'fastag_logs', 'credit_card_transactions', 'cashbook',
+        'inventory', 'pod_documents', 'exit_audits', 'gst_input_credit',
+        'insurance_policies', 'emi_schedules', 'employees', 'employee_documents',
+        'driver_accident_reports', 'recruitment_applications', 'driver_applications',
+        'vendor_registrations', 'vendor_empanelments', 'subcontractor_vendors',
+        'vendors', 'company_vault', 'crm_leads', 'contacts', 'audit_logs',
+        'reminders', 'todos', 'quotes_invoices', 'company_settings', 'shared_folders'
       ];
 
       const pbBackup = {};
+      let totalRecords = 0;
       for (const col of collections) {
         try {
           const records = await pb.collection(col).getFullList({ $autoCancel: false });
           pbBackup[col] = records;
+          totalRecords += records.length;
         } catch (e) {
           pbBackup[col] = [];
         }
       }
 
       const fullBackupPayload = {
-        app: 'Jai Bhavani Cargo (JBC) ERP & Management System',
-        backupVersion: '2.0.0',
+        app: 'Jai Bhavani Cargo (JBC) Enterprise ERP & Fleet System',
+        backupVersion: '3.0.0',
         timestamp: new Date().toISOString(),
         formattedDate: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        totalModulesIncluded: collections.length,
+        totalRecordsExtracted: totalRecords,
+        modulesList: collections,
         localStorage: localStorageBackup,
         database: pbBackup,
       };
 
-      const filename = `JBC_FULL_SYSTEM_BACKUP_${format(new Date(), 'yyyy-MM-dd_HHmm')}.json`;
+      const filename = `JBC_FULL_SYSTEM_BACKUP_ALL_MODULES_${format(new Date(), 'yyyy-MM-dd_HHmm')}.json`;
       downloadJson(fullBackupPayload, filename);
-      toast.success('Full system backup downloaded successfully!');
+      toast.success(`Full system backup downloaded! (${totalRecords} records across 43 modules)`);
     } catch (err) {
       toast.error('Failed to create full system backup');
       console.error(err);
@@ -289,6 +326,24 @@ export default function DataBackupPage() {
             className="rounded-2xl border-slate-700 bg-slate-950 text-slate-300 font-bold text-xs h-10 px-4"
           >
             <RefreshCw className={`w-4 h-4 mr-2 text-blue-400 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+
+          <Button
+            onClick={handleCloudSync}
+            disabled={cloudSyncing}
+            variant="outline"
+            className="rounded-2xl border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 font-bold text-xs h-10 px-4"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 text-emerald-400 ${cloudSyncing ? 'animate-spin' : ''}`} />
+            {cloudSyncing ? 'Syncing...' : 'Sync Cloud Backup (Supabase)'}
+          </Button>
+
+          <Button
+            onClick={handleDownloadMasterDb}
+            variant="outline"
+            className="rounded-2xl border-purple-500/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 font-bold text-xs h-10 px-4"
+          >
+            <HardDrive className="w-4 h-4 mr-2 text-purple-400" /> Download Master SQLite DB (.db)
           </Button>
 
           <Button
