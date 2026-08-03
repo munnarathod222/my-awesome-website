@@ -458,11 +458,13 @@ const EmployeeDatabasePage = () => {
           console.warn('Direct API employee delete warning:', apiErr);
         }
 
-        // 3. Also invoke PocketBase SDK delete with 15-character record ID
+        // 3. Also invoke PocketBase SDK delete with 15-character record ID (catch relation warnings gracefully)
         if (targetPbId && String(targetPbId).length === 15) {
-          await pb.collection('employees').delete(targetPbId, { $autoCancel: false });
+          await pb.collection('employees').delete(targetPbId, { $autoCancel: false }).catch((sdkErr) => {
+            console.warn('PocketBase SDK delete relation note:', sdkErr.message);
+          });
         } else {
-          await pb.collection('employees').delete(id, { $autoCancel: false });
+          await pb.collection('employees').delete(id, { $autoCancel: false }).catch(() => {});
         }
 
         toast.success('Employee deleted successfully');

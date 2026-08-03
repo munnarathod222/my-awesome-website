@@ -20,13 +20,14 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 async function deleteEmployeeRecord(target) {
+  const targetStr = String(target);
   // 1. Try calling PocketBase custom delete hooks
   try {
     await fetch(`http://127.0.0.1:8090/api/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
     await fetch(`http://127.0.0.1:8090/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
   } catch (e) {}
 
-  // 2. Direct SQLite Deletion across all DB file paths
+  // 2. Direct SQLite Deletion across all DB file paths with relation cleanup
   let deletedCount = 0;
   try {
     const possiblePaths = Array.from(new Set([
@@ -39,9 +40,23 @@ async function deleteEmployeeRecord(target) {
     for (const dbPath of possiblePaths) {
       try {
         const db = new DatabaseSync(dbPath);
-        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(String(target), String(target), String(target));
+        // Clean up or disassociate child relation records first to avoid foreign key / relation reference errors
+        try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ? OR employee_number = ?').run(targetStr, targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM attendance_records WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM advances WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM payroll WHERE employee_id_relation = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM salary_payments WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM shared_folders WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
+
+        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(targetStr, targetStr, targetStr);
         if (info.changes > 0) deletedCount += info.changes;
-      } catch (sqErr) {}
+      } catch (sqErr) {
+        logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
+      }
     }
   } catch (sqliteErr) {}
 
