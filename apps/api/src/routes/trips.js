@@ -167,6 +167,8 @@ router.patch('/:id', async (req, res) => {
       success: false,
       error: err.message || 'Database validation/constraint failed',
       details: err.data
+    });
+  }
 });
 
 /**
