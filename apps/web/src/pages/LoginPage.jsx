@@ -29,11 +29,11 @@ const LoginPage = () => {
   const pinInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && currentUser) {
       const path = (currentUser?.role === 'Client' || currentUser?.role === 'client') ? '/client-portal' : '/dashboard';
-      navigate(path, { replace: true });
+      window.location.href = path;
     }
-  }, [isAuthenticated, currentUser, navigate]);
+  }, [isAuthenticated, currentUser]);
 
   useEffect(() => {
     // Check if this device has a saved quick sign-in profile
@@ -102,7 +102,7 @@ const LoginPage = () => {
 
         toast.success(`Welcome back, ${user?.name || 'Munna Rathod'}! PIN Verified.`);
         const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
-        navigate(redirectPath, { replace: true });
+        window.location.href = redirectPath;
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
         setPinDigits(['', '', '', '']);
@@ -143,7 +143,7 @@ const LoginPage = () => {
 
       toast.success('Logged in & Device PIN configured (Default PIN: 2525)');
       const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
-      navigate(redirectPath, { replace: true });
+      window.location.href = redirectPath;
     } catch (err) {
       console.error(err);
       const msg = err?.message || err?.response?.message || '';
