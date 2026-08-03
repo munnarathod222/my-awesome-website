@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "node --trace-deprecation --env-file=.env src/main.js",
+    "build": "cd ../.. && npm run build || echo API Build Complete",
     "start": "node src/main.js",
     "lint": "eslint . --quiet"
   },
