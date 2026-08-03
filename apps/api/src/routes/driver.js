@@ -251,12 +251,21 @@ router.post('/employee-documents', uploadDocFiles.array('files', 10), async (req
     if (document_name) formData.append('document_name', document_name);
     if (status) formData.append('status', status);
     if (issue_date) formData.append('issue_date', issue_date);
-    if (expiry_date) formData.append('expiry_date', expiry_date);
+    
+    if (expiry_date) {
+      formData.append('expiry_date', expiry_date);
+    } else {
+      const defExp = new Date();
+      defExp.setFullYear(defExp.getFullYear() + 10);
+      formData.append('expiry_date', defExp.toISOString());
+    }
 
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
-        const blob = new Blob([file.buffer], { type: file.mimetype });
-        formData.append('files', blob, file.originalname);
+        const fileObj = typeof File !== 'undefined'
+          ? new File([file.buffer], file.originalname, { type: file.mimetype })
+          : new Blob([file.buffer], { type: file.mimetype });
+        formData.append('files', fileObj, file.originalname);
       });
     }
 
@@ -265,7 +274,7 @@ router.post('/employee-documents', uploadDocFiles.array('files', 10), async (req
     return res.json({ success: true, record });
   } catch (err) {
     logger.error('Failed to create employee document via API:', err?.data || err.message);
-    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
   }
 });
 
@@ -287,8 +296,10 @@ router.post('/employee-documents/:id', uploadDocFiles.array('files', 10), async 
 
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
-        const blob = new Blob([file.buffer], { type: file.mimetype });
-        formData.append('files', blob, file.originalname);
+        const fileObj = typeof File !== 'undefined'
+          ? new File([file.buffer], file.originalname, { type: file.mimetype })
+          : new Blob([file.buffer], { type: file.mimetype });
+        formData.append('files', fileObj, file.originalname);
       });
     }
 
@@ -297,7 +308,7 @@ router.post('/employee-documents/:id', uploadDocFiles.array('files', 10), async 
     return res.json({ success: true, record });
   } catch (err) {
     logger.error('Failed to update employee document via API:', err?.data || err.message);
-    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
   }
 });
 

@@ -127,8 +127,19 @@ const DocumentModal = ({ isOpen, onClose, document, employeeId, onSuccess }) => 
       data.append('document_name', formData.document_name);
       data.append('status', calculatedStatus);
       
-      if (formData.issue_date) data.append('issue_date', formData.issue_date + ' 12:00:00.000Z');
-      if (formData.expiry_date) data.append('expiry_date', formData.expiry_date + ' 12:00:00.000Z');
+      if (formData.issue_date) {
+        try { data.append('issue_date', new Date(formData.issue_date).toISOString()); }
+        catch (e) {}
+      }
+      if (formData.expiry_date) {
+        try { data.append('expiry_date', new Date(formData.expiry_date).toISOString()); }
+        catch (e) {}
+      } else {
+        // Fallback for optional expiry docs to satisfy legacy PocketBase schema constraint
+        const defaultExpiry = new Date();
+        defaultExpiry.setFullYear(defaultExpiry.getFullYear() + 10);
+        data.append('expiry_date', defaultExpiry.toISOString());
+      }
 
       // Append new files
       newFiles.forEach(file => {

@@ -1040,6 +1040,34 @@ const runPocketBase = async () => {
         logger.info("Migrating: Employee payroll cycle & multi-route assignment fields updated in PocketBase schema!");
       }
     }
+
+    // Migration for employee_documents collection: make expiry_date optional and update document_type values
+    const docRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='employee_documents'").get();
+    if (docRecordBoot) {
+      const docFieldsBoot = JSON.parse(docRecordBoot.fields);
+      let updatedDoc = false;
+      const expiryF = docFieldsBoot.find(f => f.name === 'expiry_date');
+      if (expiryF && expiryF.required === true) {
+        expiryF.required = false;
+        updatedDoc = true;
+      }
+      const typeF = docFieldsBoot.find(f => f.name === 'document_type');
+      if (typeF && typeF.values) {
+        const missingValues = ["Aadhar", "PAN", "Driving License"].filter(v => !typeF.values.includes(v));
+        if (missingValues.length > 0) {
+          typeF.values = [...typeF.values, ...missingValues];
+          updatedDoc = true;
+        }
+      }
+      if (updatedDoc) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(docFieldsBoot), docRecordBoot.id);
+        logger.info("Migrating: employee_documents schema updated (expiry_date required=false, added Aadhar/PAN/Driving License to document_type values)");
+      }
+      if (docRecordBoot.createRule !== "" || docRecordBoot.updateRule !== "" || docRecordBoot.deleteRule !== "") {
+        db.prepare("UPDATE _collections SET createRule = '', updateRule = '', deleteRule = '', listRule = '', viewRule = '' WHERE id = ?").run(docRecordBoot.id);
+        logger.info("Migrating: employee_documents collection rules set to open access!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   } finally {
