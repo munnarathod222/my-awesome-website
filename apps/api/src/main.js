@@ -159,6 +159,10 @@ const pruneOldSupabaseBackups = async () => {
 
 const downloadDatabaseFromSupabase = async (dbFilePath) => {
   try {
+    if (global.preventSupabaseOverwriting || (fs.existsSync(dbFilePath) && fs.statSync(dbFilePath).size > 500000)) {
+      logger.info(`🛡️ Local database exists (${fs.statSync(dbFilePath).size} bytes). Skipping Supabase cloud download to preserve local changes.`);
+      return true;
+    }
     logger.info(`📥 Downloading database backup from Supabase Storage...`);
     let downloadRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/data.db`, {
       method: 'GET',

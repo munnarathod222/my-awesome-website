@@ -45,7 +45,8 @@ async function deleteEmployeeRecord(target) {
     }
   } catch (sqliteErr) {}
 
-  // 3. Immediately push modified data.db to Supabase Storage so cloud backup stays in sync
+  // 3. Prevent Supabase download from overwriting local deletion & sync modified DB
+  global.preventSupabaseOverwriting = true;
   if (global.dbFilePath && global.uploadDatabaseToSupabase) {
     try {
       await global.uploadDatabaseToSupabase(global.dbFilePath);
