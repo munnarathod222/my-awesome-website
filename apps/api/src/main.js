@@ -1084,7 +1084,16 @@ const runPocketBase = async () => {
     logger.error(`❌ Failed to upsert superuser: ${err.message}`);
   }
 
-  logger.info(`🚀 Spawning PocketBase: ${pbPath} --dir=${dataDir}`);
+  const possibleHooksDirs = [
+    path.resolve(__dirname, '../pocketbase/pb_hooks'),
+    path.resolve(__dirname, '../../apps/pocketbase/pb_hooks'),
+    path.resolve(__dirname, '../../pocketbase/pb_hooks'),
+    path.resolve(process.cwd(), 'apps/pocketbase/pb_hooks'),
+    path.resolve(process.cwd(), 'pb_hooks')
+  ];
+  const hooksDir = possibleHooksDirs.find(d => fs.existsSync(d)) || path.resolve(process.cwd(), 'apps/pocketbase/pb_hooks');
+
+  logger.info(`🚀 Spawning PocketBase: ${pbPath} --dir=${dataDir} --hooksDir=${hooksDir}`);
 
   const pbArgs = [
     'serve',
@@ -1092,7 +1101,7 @@ const runPocketBase = async () => {
     `--dir=${dataDir}`,
     '--hooksWatch=false',
     `--migrationsDir=${path.resolve(__dirname, '../../pocketbase/pb_migrations')}`,
-    `--hooksDir=${path.resolve(__dirname, '../../pocketbase/pb_hooks')}`
+    `--hooksDir=${hooksDir}`
   ];
   if (process.env.NODE_ENV !== 'production') {
     pbArgs.push('--dev');
