@@ -7,6 +7,8 @@ import { Share2, Copy, Check, Mail, MessageSquare, ExternalLink, ShieldCheck, Lo
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 
+import apiServerClient from '@/lib/apiServerClient.js';
+
 export default function ShareFolderDialog({ isOpen, onClose, truckId, employeeId, entityName }) {
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -24,7 +26,33 @@ export default function ShareFolderDialog({ isOpen, onClose, truckId, employeeId
   const getOrCreateShareLink = async () => {
     setLoading(true);
     try {
-      // 1. Check if a link already exists for this truck/employee
+      // Step 1: Try backend API (superuser access)
+      let linkSuccess = false;
+      try {
+        const res = await apiServerClient.fetch('/driver/share-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            truckId,
+            employeeId,
+            created_by: pb.authStore.model?.id || ''
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.record?.id) {
+            const url = `${window.location.origin}/shared/${data.record.id}`;
+            setShareUrl(url);
+            linkSuccess = true;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Backend share-folder API failed, trying PocketBase SDK directly:', apiErr);
+      }
+
+      if (linkSuccess) return;
+
+      // Step 2: Fallback to direct PocketBase SDK
       let filter = '';
       if (truckId) {
         filter = `truck_id = "${truckId}"`;
@@ -42,7 +70,6 @@ export default function ShareFolderDialog({ isOpen, onClose, truckId, employeeId
         const url = `${window.location.origin}/shared/${record.id}`;
         setShareUrl(url);
       } else {
-        // 2. Create a new link record
         const payload = {};
         if (truckId) payload.truck_id = truckId;
         if (employeeId) payload.employee_id = employeeId;

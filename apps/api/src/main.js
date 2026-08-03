@@ -1068,6 +1068,15 @@ const runPocketBase = async () => {
         logger.info("Migrating: employee_documents collection rules set to open access!");
       }
     }
+
+    // Migration for shared_folders collection: set open rules for share link generation
+    const sfRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='shared_folders'").get();
+    if (sfRecordBoot) {
+      if (sfRecordBoot.createRule !== "" || sfRecordBoot.updateRule !== "" || sfRecordBoot.listRule !== "" || sfRecordBoot.viewRule !== "") {
+        db.prepare("UPDATE _collections SET createRule = '', updateRule = '', listRule = '', viewRule = '' WHERE id = ?").run(sfRecordBoot.id);
+        logger.info("Migrating: shared_folders collection rules set to open access!");
+      }
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   } finally {

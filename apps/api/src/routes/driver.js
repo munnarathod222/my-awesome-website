@@ -312,6 +312,41 @@ router.post('/employee-documents/:id', uploadDocFiles.array('files', 10), async 
   }
 });
 
+/**
+ * POST /api/driver/share-folder
+ * Get or create a shared_folders record for truckId or employeeId via superuser PocketBase client.
+ */
+router.post('/share-folder', async (req, res) => {
+  try {
+    const { truckId, employeeId, created_by } = req.body || {};
+    let filter = '';
+    if (truckId) filter = `truck_id = "${sanitize(truckId)}"`;
+    else if (employeeId) filter = `employee_id = "${sanitize(employeeId)}"`;
+
+    if (!filter) {
+      return res.status(400).json({ success: false, error: 'Either truckId or employeeId must be provided' });
+    }
+
+    const existing = await pb.collection('shared_folders').getFullList({ filter, $autoCancel: false }).catch(() => []);
+    if (existing.length > 0) {
+      return res.json({ success: true, record: existing[0] });
+    }
+
+    const payload = {};
+    if (truckId) payload.truck_id = truckId;
+    if (employeeId) payload.employee_id = employeeId;
+    if (created_by) payload.created_by = created_by;
+
+    const record = await pb.collection('shared_folders').create(payload, { $autoCancel: false });
+    logger.info(`Shared folder record created via API: ${record.id}`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to get/create share folder record via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+  }
+});
+
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────
