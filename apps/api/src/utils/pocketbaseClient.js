@@ -43,8 +43,12 @@ pocketbaseClient.beforeSend = async function (url, options) {
                 await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
             } catch (e1) {
                 try {
-                    await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
-                } catch (e2) {}
+                    await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                } catch (e1_alt) {
+                    try {
+                        await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                    } catch (e2) {}
+                }
             }
         })().finally(() => {
             authPromise = null;
@@ -70,8 +74,12 @@ pocketbaseClient.beforeSend = async function (url, options) {
                     await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
                 } catch (e1) {
                     try {
-                        await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
-                    } catch (e2) {}
+                        await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                    } catch (e1_alt) {
+                        try {
+                            await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                        } catch (e2) {}
+                    }
                 }
             })().finally(() => {
                 authPromise = null;

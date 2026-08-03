@@ -780,6 +780,78 @@ const runPocketBase = async () => {
   try {
     const { DatabaseSync } = await import('node:sqlite');
     db = new DatabaseSync(dbFilePath);
+
+    // 🛡️ Ensure token keys are fully populated in settings to prevent CLI superuser upsert failures
+    try {
+      const rSettings = db.prepare("SELECT value FROM _params WHERE id='settings'").get();
+      if (rSettings && rSettings.value) {
+        const settings = JSON.parse(Buffer.from(rSettings.value).toString('utf8'));
+        let updatedSettings = false;
+        const randKey = () => require('node:crypto').randomBytes(32).toString('hex').slice(0, 32);
+
+        if (!settings.recordTokens) {
+          settings.recordTokens = {};
+        }
+        if (!settings.recordTokens.tokenKey) {
+          settings.recordTokens.tokenKey = randKey();
+          updatedSettings = true;
+        }
+
+        if (!settings.superuserTokens) {
+          settings.superuserTokens = {};
+        }
+        if (!settings.superuserTokens.tokenKey) {
+          settings.superuserTokens.tokenKey = randKey();
+          updatedSettings = true;
+        }
+
+        if (!settings.adminTokens) {
+          settings.adminTokens = {};
+        }
+        if (!settings.adminTokens.tokenKey) {
+          settings.adminTokens.tokenKey = randKey();
+          updatedSettings = true;
+        }
+
+        if (updatedSettings) {
+          logger.info("Migrating: Populating blank token keys in PocketBase settings...");
+          db.prepare("UPDATE _params SET value = ? WHERE id = 'settings'").run(JSON.stringify(settings));
+        }
+      }
+    } catch (settingsErr) {
+      logger.error(`Failed to migrate settings token keys: ${settingsErr.message}`);
+    }
+
+    // 🛡️ Ensure no duplicate superuser ID exists that blocks CLI superuser creation/upsert
+    try {
+      db.prepare("DELETE FROM _superusers WHERE id = 'usr_munna_superadmin'").run();
+    } catch (delErr) {
+      // Table might not exist yet or be empty
+    }
+
+    // 🛡️ Ensure all records in auth tables have non-empty tokenKey values to prevent validation crashes
+    try {
+      const authTables = ['_superusers', 'users'];
+      const randKey = () => require('node:crypto').randomBytes(30).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 50);
+
+      for (const table of authTables) {
+        try {
+          const records = db.prepare(`SELECT id, tokenKey FROM ${table}`).all();
+          for (const r of records) {
+            if (!r.tokenKey) {
+              const newKey = randKey();
+              logger.info(`Migrating: Setting blank tokenKey for record ${r.id} in ${table}...`);
+              db.prepare(`UPDATE ${table} SET tokenKey = ? WHERE id = ?`).run(newKey, r.id);
+            }
+          }
+        } catch (tableErr) {
+          // Table might not exist yet
+        }
+      }
+    } catch (authErr) {
+      logger.error(`Failed to migrate auth token keys: ${authErr.message}`);
+    }
+    
     
     // 1. Add toll_deduction column to trip_logs table if not exists
     const cols = db.prepare("PRAGMA table_info(trip_logs)").all().map(c => c.name);
@@ -826,6 +898,37 @@ const runPocketBase = async () => {
       if (record.listRule !== "") {
         logger.info("Migrating: Updating 'trip_logs' listRule and viewRule to open access...");
         db.prepare("UPDATE _collections SET listRule = '', viewRule = '' WHERE id = ?").run(record.id);
+      }
+    }
+
+    // 2.5 Ensure employee_id field exists in expenses table and schema definition
+    const expCols = db.prepare("PRAGMA table_info(expenses)").all().map(c => c.name);
+    if (!expCols.includes('employee_id')) {
+      logger.info("Migrating: Adding column 'employee_id' to 'expenses' table...");
+      db.prepare("ALTER TABLE expenses ADD COLUMN employee_id TEXT DEFAULT ''").run();
+    }
+
+    const expRecord = db.prepare("SELECT * FROM _collections WHERE name='expenses'").get();
+    if (expRecord) {
+      const fields = JSON.parse(expRecord.fields);
+      const hasField = fields.some(f => f.name === 'employee_id');
+      if (!hasField) {
+        logger.info("Migrating: Appending 'employee_id' field to PocketBase 'expenses' schema...");
+        fields.push({
+          cascadeDelete: false,
+          collectionId: "pbc_9297853740",
+          help: "Associated employee for this expense",
+          hidden: false,
+          id: "rel_employee_id",
+          maxSelect: 1,
+          minSelect: 0,
+          name: "employee_id",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "relation"
+        });
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), expRecord.id);
       }
     }
 
