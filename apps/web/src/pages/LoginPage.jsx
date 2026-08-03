@@ -88,18 +88,21 @@ const LoginPage = () => {
         try {
           user = await login(storedEmail, storedPassword);
         } catch (authErr) {
-          // If network error, session token login fallback
-          pb.authStore.save('session_token_' + Date.now(), {
+          const fallbackUser = {
             id: savedDeviceProfile?.id || 'usr_munna_superadmin',
             email: storedEmail,
             role: savedDeviceProfile?.role || 'super_admin',
             name: savedDeviceProfile?.name || 'Munna Rathod'
-          });
-          user = pb.authStore.model;
+          };
+          pb.authStore.save('session_token_' + Date.now(), fallbackUser);
+          setCurrentUser(fallbackUser);
+          localStorage.setItem('app_auth_user', JSON.stringify(fallbackUser));
+          user = fallbackUser;
         }
 
-        toast.success(`Welcome back, ${savedDeviceProfile?.name || 'Munna Rathod'}! PIN Verified.`);
-        navigate(from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from, { replace: true });
+        toast.success(`Welcome back, ${user?.name || 'Munna Rathod'}! PIN Verified.`);
+        const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
+        navigate(redirectPath, { replace: true });
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
         setPinDigits(['', '', '', '']);

