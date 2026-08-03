@@ -291,6 +291,7 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     return false;
   }
 };
+global.uploadDatabaseToSupabase = uploadDatabaseToSupabase;
 
 const pruneOldLocalBackups = (dbFilePath) => {
   try {

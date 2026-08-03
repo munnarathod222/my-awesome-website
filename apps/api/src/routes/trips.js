@@ -34,7 +34,14 @@ async function deleteTripLogRecord(target) {
     }
   } catch (sqliteErr) {}
 
-  // 3. Restart PocketBase process if active so in-memory statement cache is refreshed
+  // 3. Immediately push modified data.db to Supabase Storage so cloud backup stays in sync
+  if (global.dbFilePath && global.uploadDatabaseToSupabase) {
+    try {
+      await global.uploadDatabaseToSupabase(global.dbFilePath);
+    } catch (uErr) {}
+  }
+
+  // 4. Restart PocketBase process if active so in-memory statement cache is refreshed
   if (global.pbProcess) {
     try {
       logger.info('Restarting PocketBase process to reflect trip deletion...');
