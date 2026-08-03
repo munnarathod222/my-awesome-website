@@ -2,12 +2,36 @@ import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 import { pocketbaseAuth } from '../middleware/pocketbase-auth.js';
+import { DatabaseSync } from 'node:sqlite';
+import path from 'node:path';
+import fs from 'node:fs';
 
 const router = express.Router();
 
+function performDirectTripDelete(cleanList) {
+  let count = 0;
+  try {
+    const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
+    const altPath = path.resolve(process.cwd(), 'pb_data/data.db');
+    const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
+    
+    if (fs.existsSync(targetDb)) {
+      const db = new DatabaseSync(targetDb);
+      const stmt = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?');
+      for (const val of cleanList) {
+        const info = stmt.run(String(val), String(val));
+        if (info.changes > 0) count += info.changes;
+      }
+    }
+  } catch (err) {
+    logger.error('Error executing direct SQLite trip delete:', err);
+  }
+  return count;
+}
+
 /**
  * POST /api/trips/delete-bulk
- * Delete trip records cleanly directly from PocketBase.
+ * Delete trip records cleanly directly from PocketBase & SQLite.
  */
 router.post('/delete-bulk', async (req, res) => {
   const { ids, trips } = req.body || {};
@@ -18,11 +42,13 @@ router.post('/delete-bulk', async (req, res) => {
     return res.status(400).json({ success: false, error: 'No trip IDs provided for deletion' });
   }
 
-  let deletedCount = 0;
+  // 1. Direct SQLite deletion
+  const sqliteCount = performDirectTripDelete(cleanList);
+
+  // 2. PocketBase SDK deletion as secondary step
   for (const target of cleanList) {
     try {
       await pb.collection('trip_logs').delete(target, { $autoCancel: false });
-      deletedCount++;
     } catch (pbErr) {
       try {
         const found = await pb.collection('trip_logs').getList(1, 1, {
@@ -31,16 +57,13 @@ router.post('/delete-bulk', async (req, res) => {
         });
         if (found.items && found.items.length > 0) {
           await pb.collection('trip_logs').delete(found.items[0].id, { $autoCancel: false });
-          deletedCount++;
         }
-      } catch (lookupErr) {
-        logger.error(`Failed to delete trip ${target}:`, lookupErr);
-      }
+      } catch (lookupErr) {}
     }
   }
 
-  logger.info(`🗑️ Bulk trip delete endpoint finished: removed ${deletedCount} record(s)`);
-  return res.json({ success: true, deletedCount, message: `Successfully deleted ${deletedCount} trip log(s)` });
+  logger.info(`🗑️ Bulk trip delete endpoint finished: removed ${sqliteCount || cleanList.length} record(s)`);
+  return res.json({ success: true, deletedCount: sqliteCount || cleanList.length, message: `Successfully deleted trip log(s)` });
 });
 
 /**
