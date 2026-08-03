@@ -1,0 +1,69 @@
+[
+  {
+    "amount_per_trip": 7100,
+    "collectionId": "pbc_8159984106",
+    "collectionName": "routes",
+    "created": "2026-07-01 07:10:21.335Z",
+    "created_date": "2026-07-01 07:10:21.335Z",
+    "description": "Up Leg of Round-Trip",
+    "distance": 205,
+    "distance_km": 205,
+    "down_end_location": "",
+    "down_route_code": "",
+    "down_start_location": "",
+    "end_location": "WARANGAL ",
+    "end_location_map_link": "https://maps.app.goo.gl/aHezLW1SUawMCcfX8",
+    "estimated_time": 0,
+    "fastag_charge": 930,
+    "google_map_link": "https://maps.app.goo.gl/AxvtsoCRiFdTWoMZA",
+    "id": "iw25oskdbiqbpln",
+    "is_round_trip": false,
+    "is_round_trip_rate": false,
+    "route_code": "MHYD->WARK->WARG",
+    "route_name": "TUKKUGUDA - WARANGAL ",
+    "route_status": "",
+    "start_location": "TUKKUGUDA",
+    "start_location_map_link": "https://maps.app.goo.gl/EtVrVLq73urBXPzJA",
+    "stops": [
+      {
+        "map_link": "https://maps.app.goo.gl/aHezLW1SUawMCcfX8",
+        "sequence": 1,
+        "stop_name": "WARK"
+      },
+      {
+        "map_link": "https://maps.app.goo.gl/HN3D3DwGZgvPVq8C7",
+        "sequence": 2,
+        "stop_name": "WARG"
+      }
+    ],
+    "updated": "2026-07-20 21:45:24.795Z"
+  },
+  {
+    "amount_per_trip": 7100,
+    "collectionId": "pbc_8159984106",
+    "collectionName": "routes",
+    "created": "2026-07-01 07:10:21.607Z",
+    "created_date": "2026-07-01 07:10:21.607Z",
+    "description": "Down Leg of Round-Trip",
+    "distance": 205,
+    "distance_km": 205,
+    "down_end_location": "",
+    "down_route_code": "",
+    "down_start_location": "",
+    "end_location": "HUZURABAD",
+    "end_location_map_link": "https://maps.app.goo.gl/EtVrVLq73urBXPzJA",
+    "estimated_time": 0,
+    "fastag_charge": 930,
+    "google_map_link": "https://maps.app.goo.gl/aAWsBEXk3zxiVXU77",
+    "id": "v9hlf30qr91vsw8",
+    "is_round_trip": false,
+    "is_round_trip_rate": false,
+    "route_code": "WARK->WARG->MHYD",
+    "route_name": "WARANGAL - HUZURABAD - HUZURABAD - TUKKUGUDA",
+    "route_status": "",
+    "start_location": "WARANGAL",
+    "start_location_map_link": "https://maps.app.goo.gl/HN3D3DwGZgvPVq8C7",
+    "stops": [],
+    "updated": "2026-07-20 21:47:50.622Z"
+  }
+]

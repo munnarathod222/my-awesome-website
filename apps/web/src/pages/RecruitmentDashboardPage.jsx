@@ -39,18 +39,14 @@ export default function RecruitmentDashboardPage() {
 
   useEffect(() => { fetchApplications(); }, []);
 
-  const [roleFilter, setRoleFilter] = useState('all');
-
   const filtered = useMemo(() => {
     return applications.filter(a => {
       if (statusFilter !== 'all' && a.status !== statusFilter) return false;
-      if (roleFilter !== 'all' && (a.applicant_role || 'Driver') !== roleFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
           a.full_name?.toLowerCase().includes(q) ||
           a.phone?.includes(q) ||
-          a.applicant_role?.toLowerCase().includes(q) ||
           a.city?.toLowerCase().includes(q) ||
           a.license_number?.toLowerCase().includes(q) ||
           a.vehicle_types?.toLowerCase().includes(q)
@@ -58,7 +54,7 @@ export default function RecruitmentDashboardPage() {
       }
       return true;
     });
-  }, [applications, statusFilter, roleFilter, search]);
+  }, [applications, statusFilter, search]);
 
   const metrics = useMemo(() => ({
     total: applications.length,
@@ -192,27 +188,12 @@ export default function RecruitmentDashboardPage() {
               className="pl-9 rounded-xl h-9 text-xs w-full"
             />
           </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-44 h-9 text-xs rounded-xl">
-              <SelectValue placeholder="Filter by Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Positions</SelectItem>
-              <SelectItem value="Driver">Heavy Driver</SelectItem>
-              <SelectItem value="Office Staff">Office Staff</SelectItem>
-              <SelectItem value="Operations">Operations Executive</SelectItem>
-              <SelectItem value="Mechanic">Fleet Mechanic</SelectItem>
-              <SelectItem value="Manager">Manager</SelectItem>
-              <SelectItem value="Accounts">Accounts &amp; Billing</SelectItem>
-            </SelectContent>
-          </Select>
-
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-44 h-9 text-xs rounded-xl">
               <SelectValue placeholder="Filter by Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="all">All Applications</SelectItem>
               {APPLICATION_STATUSES.map(s => (
                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
               ))}
@@ -228,9 +209,9 @@ export default function RecruitmentDashboardPage() {
             <TableRow>
               <TableHead className="text-xs font-bold py-3.5 pl-5">Candidate</TableHead>
               <TableHead className="text-xs font-bold">Location</TableHead>
-              <TableHead className="text-xs font-bold">License / ID</TableHead>
+              <TableHead className="text-xs font-bold">License</TableHead>
               <TableHead className="text-xs font-bold">Experience</TableHead>
-              <TableHead className="text-xs font-bold">Vehicle / Position</TableHead>
+              <TableHead className="text-xs font-bold">Vehicle Types</TableHead>
               <TableHead className="text-xs font-bold">Applied On</TableHead>
               <TableHead className="text-xs font-bold text-center">Status</TableHead>
               <TableHead className="text-xs font-bold text-right pr-5">Actions</TableHead>
@@ -246,7 +227,7 @@ export default function RecruitmentDashboardPage() {
                 <TableCell colSpan={8} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <Truck className="w-10 h-10 opacity-20" />
-                    <p className="text-sm font-semibold">No applications found</p>
+                    <p className="text-sm font-semibold">No applications yet</p>
                     <p className="text-xs">Share the public apply link with candidates to get started</p>
                     <a href="/apply/driver" target="_blank" rel="noreferrer">
                       <Button size="sm" className="rounded-xl text-xs font-bold mt-1 bg-primary text-primary-foreground">
@@ -260,7 +241,6 @@ export default function RecruitmentDashboardPage() {
               filtered.map(app => {
                 const cfg = getStatusConfig(app.status);
                 const vehicles = app.vehicle_types ? (app?.vehicle_types || '').split(',').slice(0, 2).map(v => v.trim()) : [];
-                const roleBadge = app.applicant_role || 'Driver';
                 return (
                   <TableRow key={app.id} className="hover:bg-muted/20 text-xs">
                     <TableCell className="pl-5 py-3">
@@ -269,12 +249,7 @@ export default function RecruitmentDashboardPage() {
                           {app.full_name?.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-extrabold text-foreground flex items-center gap-1.5">
-                            {app.full_name}
-                            <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[9px] font-bold">
-                              {roleBadge}
-                            </Badge>
-                          </div>
+                          <div className="font-extrabold text-foreground">{app.full_name}</div>
                           <a href={`tel:${app.phone}`} className="text-[10px] text-primary font-mono font-bold hover:underline">{app.phone}</a>
                         </div>
                       </div>

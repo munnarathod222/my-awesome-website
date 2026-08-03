@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
 export default function AssignTripModal({ isOpen, onClose, vehicleId, vehicleName }) {
   const { currentUser } = useAuth();
@@ -58,7 +57,7 @@ export default function AssignTripModal({ isOpen, onClose, vehicleId, vehicleNam
         pb.collection('trip_logs').getList(1, 100, { sort: '-created', $autoCancel: false })
       ]);
       setRoutes(routesRes);
-      setDrivers(filterActiveDrivers(driversRes));
+      setDrivers(driversRes);
       setClients(clientsRes);
 
       // Generate next Trip ID by scanning recent records for the maximum numerical ID

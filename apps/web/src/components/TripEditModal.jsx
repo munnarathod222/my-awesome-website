@@ -158,12 +158,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                     <SelectValue placeholder="Select driver" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Dayanand Surwase">Dayanand Surwase</SelectItem>
                     <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
                       ⚡ Temporary Driver
                     </SelectItem>
                     {formData.driver_name && 
-                     formData.driver_name !== 'Dayanand Surwase' && 
                      formData.driver_name !== 'Temporary Driver' && 
                      !employees.some(e => e.name === formData.driver_name) && (
                       <SelectItem value={formData.driver_name}>{formData.driver_name}</SelectItem>

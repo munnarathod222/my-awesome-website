@@ -1,0 +1,13 @@
+[
+  {
+    "collectionId": "pbc_service_intervals_001",
+    "collectionName": "service_intervals",
+    "component_name": "ENGINE OIL",
+    "created": "2026-07-01 09:22:49.434Z",
+    "id": "xv4y164gfgwt7ur",
+    "last_serviced_odometer": 10,
+    "target_interval_kms": 60000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 09:22:49.434Z"
+  }
+]

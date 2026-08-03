@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Phone } from 'lucide-react';
+import { Download, FileText, FileImage, FileQuestion, ExternalLink, Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
@@ -15,8 +15,6 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
   const [renderError, setRenderError] = useState(false);
 
   const canvasRef = useRef(null);
-
-  const helplineNum = document?.helpline_number || document?.insurance_helpline || document?.helpline || '';
 
   // Extract all document files (front page, back page, files array, file string/array, back_file)
   const filesList = React.useMemo(() => {
@@ -191,20 +189,6 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
             </div>
           )}
         </DialogHeader>
-
-        {helplineNum && (
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 flex items-center justify-between text-xs my-1 shrink-0">
-            <span className="text-emerald-300 font-extrabold flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-emerald-400 animate-pulse" /> Emergency &amp; Claim Helpline:
-            </span>
-            <a 
-              href={`tel:${helplineNum.replace(/[^0-9+]/g, '')}`}
-              className="font-mono font-black text-emerald-400 hover:underline bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1"
-            >
-              <Phone className="w-3 h-3 text-emerald-400" /> {helplineNum}
-            </a>
-          </div>
-        )}
 
         {filesList.length > 1 && (
           <div className="flex gap-2 overflow-x-auto py-2 flex-shrink-0">

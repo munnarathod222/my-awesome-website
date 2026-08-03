@@ -1,0 +1,146 @@
+[
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 460,
+    "created": "2026-07-01 08:47:21.588Z",
+    "id": "8moreh4xlhhmdjh",
+    "invoice_file": "whats_app_image_2026_07_01_at_14_16_lrqujmfef6.35.jpeg",
+    "maintenance_date": "2026-06-12 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "viper blades"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:47:21.588Z",
+    "work_description_text": "change of viper blades"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 850,
+    "created": "2026-07-01 08:48:37.602Z",
+    "id": "9wj4xcwmdsxdwrz",
+    "invoice_file": "whats_app_image_2026_07_01_at_14_16_z8qer943zs.35.jpeg",
+    "maintenance_date": "2026-06-12 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "halogen bulbs"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:48:37.602Z",
+    "work_description_text": "-"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 4000,
+    "created": "2026-07-01 08:50:43.207Z",
+    "id": "izb7tpksjk7vcy6",
+    "invoice_file": "whats_app_image_2026_07_01_at_14_20_evjblfjvto.27.jpeg",
+    "maintenance_date": "2026-06-12 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "KIRAN 100 AH BATTERY"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:50:43.207Z",
+    "work_description_text": "BATTERY CHANGE"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 900,
+    "created": "2026-07-01 08:53:15.132Z",
+    "id": "51zucdnm83qdjxb",
+    "invoice_file": "whats_app_image_2026_07_01_at_14_22_pwjrzarlav.57.jpeg",
+    "maintenance_date": "2026-06-15 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "REGULATOR ASSEMBLY"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:53:15.132Z",
+    "work_description_text": "DIANAMO REPAIR"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 1650,
+    "created": "2026-07-01 08:54:03.268Z",
+    "id": "tpzn62otyl6w3d7",
+    "invoice_file": "",
+    "maintenance_date": "2026-06-15 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "RECTIFIER ASSEMBLY"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:54:03.268Z",
+    "work_description_text": "ATLERNATOR REPAIR"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 2220,
+    "created": "2026-07-01 08:55:02.234Z",
+    "id": "344j8k5f6p0pg2r",
+    "invoice_file": "",
+    "maintenance_date": "2026-06-15 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "STATOR WDG FINAL ASSEMBLY"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:55:02.234Z",
+    "work_description_text": "ALTERNATOR REPAIR"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 550,
+    "created": "2026-07-01 08:55:40.053Z",
+    "id": "k5kpv5yudl2dnie",
+    "invoice_file": "",
+    "maintenance_date": "2026-06-15 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "CABIN LIGHT"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:55:40.053Z",
+    "work_description_text": "CABIN LIGHT"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 500,
+    "created": "2026-07-01 08:56:33.429Z",
+    "id": "4jxec6mwsns2y79",
+    "invoice_file": "",
+    "maintenance_date": "2026-06-15 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "BATTERY JOINTER"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:56:33.429Z",
+    "work_description_text": "BATTERY JOINTER"
+  },
+  {
+    "collectionId": "pbc_service_logs_001",
+    "collectionName": "service_logs",
+    "cost_amount": 1300,
+    "created": "2026-07-01 08:57:38.548Z",
+    "id": "touh166dspip6ld",
+    "invoice_file": "",
+    "maintenance_date": "2026-06-20 00:00:00.000Z",
+    "odometer_at_service": 30000,
+    "parts_replaced_array": [
+      "PAIR OF LED HIGHBEAM LIGHTS"
+    ],
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-01 08:57:38.548Z",
+    "work_description_text": "PAIR OF LED HIGHBEAM LIGHTS"
+  }
+]

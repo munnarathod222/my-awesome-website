@@ -1,0 +1,38 @@
+[
+  {
+    "collectionId": "pbc_5654350664",
+    "collectionName": "employee_documents",
+    "created": "2026-07-01 09:26:13.684Z",
+    "document_number": "MH03 20090057914",
+    "document_type": "License",
+    "employee_id": "k7jaz5lqellbxtb",
+    "expiry_date": "2030-07-17 00:00:00.000Z",
+    "files": [
+      "dayanand_license_74pkf53oos.jpeg"
+    ],
+    "id": "s8zbbybfdvlvwrk",
+    "issue_date": "1993-08-21 00:00:00.000Z",
+    "notes": "",
+    "status": "Active",
+    "updated": "2026-07-01 09:26:13.684Z",
+    "upload_date": "2026-07-01 09:26:13.684Z"
+  },
+  {
+    "collectionId": "pbc_5654350664",
+    "collectionName": "employee_documents",
+    "created": "2026-07-01 09:27:22.027Z",
+    "document_number": "9710 6339 8707",
+    "document_type": "ID Proof",
+    "employee_id": "k7jaz5lqellbxtb",
+    "expiry_date": "2030-09-30 00:00:00.000Z",
+    "files": [
+      "dayanand_adhaar_front_qr97loazzy.jpg"
+    ],
+    "id": "melxx4vg4126qh9",
+    "issue_date": "1975-08-12 00:00:00.000Z",
+    "notes": "",
+    "status": "Active",
+    "updated": "2026-07-01 09:27:51.994Z",
+    "upload_date": "2026-07-01 09:27:22.027Z"
+  }
+]

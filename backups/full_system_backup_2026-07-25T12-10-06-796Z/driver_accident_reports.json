@@ -1,0 +1,41 @@
+[
+  {
+    "accident_date": "2026-05-27 00:00:00.000Z",
+    "collectionId": "pbc_accident_reports_01",
+    "collectionName": "driver_accident_reports",
+    "created": "2026-07-17 02:24:48.075Z",
+    "damage_cost": 2500,
+    "description": "Swift car damage at gudur toll plaza",
+    "employee_id": "k7jaz5lqellbxtb",
+    "id": "eues3hu28nbijin",
+    "image_urls": [
+      "2870_asgdw80cma.jpg",
+      "2872_r1zxv0ykym.jpg",
+      "2877_n07zykhvq2.jpg",
+      "2879_u81lila90g.jpg",
+      "2875_j3u4zndhnd.jpg"
+    ],
+    "trip_id": "",
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-17 02:24:48.075Z"
+  },
+  {
+    "accident_date": "2026-07-24 00:00:00.000Z",
+    "collectionId": "pbc_accident_reports_01",
+    "collectionName": "driver_accident_reports",
+    "created": "2026-07-25 07:19:08.999Z",
+    "damage_cost": 1500,
+    "description": "accident near huzurabad",
+    "employee_id": "k7jaz5lqellbxtb",
+    "id": "o18s4czrtogcjn2",
+    "image_urls": [
+      "whats_app_image_2026_07_25_at_11_12_ecnsftl4ua.29.jpeg",
+      "whats_app_image_2026_07_25_at_11_12_cq1npdoa29.291.jpeg",
+      "whats_app_image_2026_07_25_at_11_12_ptidh9qcxw.30.jpeg",
+      "whats_app_image_2026_07_25_at_11_12_xw3ocr4xe2.301.jpeg"
+    ],
+    "trip_id": "",
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-25 07:19:08.999Z"
+  }
+]

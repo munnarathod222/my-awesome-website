@@ -301,16 +301,6 @@ export default function TruckManagerPage() {
                       <Badge variant="outline" className="border-border bg-background px-2.5 py-0.5 rounded-lg text-xs font-medium">
                         {truck.tyre_count} Tyres
                       </Badge>
-                      {truck.payload_capacity && (
-                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                          🏋️ {truck.payload_capacity}
-                        </Badge>
-                      )}
-                      {(truck.body_length || truck.body_width || truck.body_height) && (
-                        <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400">
-                          📐 {truck.body_length || '—'}×{truck.body_width || '—'}×{truck.body_height || '—'} ft
-                        </Badge>
-                      )}
                       {truck.expand?.manager_id && (
                         <Badge variant="outline" className="border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-primary">
                           Mgr: {truck.expand.manager_id.full_name || truck.expand.manager_id.name}

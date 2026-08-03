@@ -1,0 +1,32 @@
+[
+  {
+    "collectionId": "pbc_6352485997",
+    "collectionName": "maintenance_reminders",
+    "created": "2026-07-16 14:18:33.121Z",
+    "created_at": "2026-07-16 14:18:33.121Z",
+    "id": "y77lcgkmo9cn6ho",
+    "maintenance_type": "Air Filter Cleaning",
+    "month_label": "2026-07",
+    "notes": "Clean and inspect air filter element. Replace if heavily clogged or damaged.",
+    "reminder_date": "2026-07-01 07:00:00.000Z",
+    "status": "Completed",
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-16 14:24:57.147Z",
+    "updated_at": "2026-07-16 14:24:57.147Z"
+  },
+  {
+    "collectionId": "pbc_6352485997",
+    "collectionName": "maintenance_reminders",
+    "created": "2026-07-16 14:18:33.122Z",
+    "created_at": "2026-07-16 14:18:33.122Z",
+    "id": "my5nj1jjge5699q",
+    "maintenance_type": "Chassis Greasing",
+    "month_label": "2026-07",
+    "notes": "Grease all chassis nipple points: leaf springs, kingpins, propeller shaft, and 5th wheel plate.",
+    "reminder_date": "2026-07-01 07:00:00.000Z",
+    "status": "Completed",
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-07-16 14:24:59.728Z",
+    "updated_at": "2026-07-16 14:24:59.728Z"
+  }
+]

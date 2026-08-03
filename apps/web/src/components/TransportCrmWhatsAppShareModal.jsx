@@ -23,9 +23,7 @@ export default function TransportCrmWhatsAppShareModal({ isOpen, onClose, select
     const outstanding = (cust.outstanding_amount || 0).toLocaleString('en-IN');
     const creditLimit = (cust.credit_limit || 0).toLocaleString('en-IN');
 
-    if (templateType === 'share_contacts') {
-      return `📇 *JAI BHAVANI CARGO - DIRECTORY CONTACT SHARE*\n\n• *Name:* ${company}\n• *Role / Designation:* ${name}\n• *Phone:* ${cust.phone || 'N/A'}\n• *Email:* ${cust.email || 'N/A'}`;
-    } else if (templateType === 'payment_reminder') {
+    if (templateType === 'payment_reminder') {
       return `🚚 *JAI BHAVANI CARGO - OUTSTANDING FREIGHT REMINDER*\n\nDear *${name}* (${company}),\n\nThis is a friendly reminder regarding your outstanding freight invoice balance of *₹${outstanding}*.\n\n• Credit Limit: ₹${creditLimit}\n• Current Outstanding: ₹${outstanding}\n\nKindly arrange for invoice settlement at your earliest convenience.\n\nThank you,\n*Jai Bhavani Cargo Accounts Desk*`;
     } else if (templateType === 'rate_offer') {
       return `🚚 *JAI BHAVANI CARGO - EXCLUSIVE FREIGHT RATE QUOTE*\n\nDear *${name}* (${company}),\n\nWe are pleased to offer dedicated container & truck rates for your logistics routes with instant GPS tracking & zero-delay dispatch.\n\nContact us for contract bookings.\n\n*Jai Bhavani Cargo Operations*`;
@@ -88,11 +86,10 @@ export default function TransportCrmWhatsAppShareModal({ isOpen, onClose, select
                 <SelectValue placeholder="Choose Template" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
-                <SelectItem value="share_contacts">📇 Share Selected Contact Cards / Directory Text</SelectItem>
                 <SelectItem value="payment_reminder">💰 Outstanding Freight Payment Reminder</SelectItem>
                 <SelectItem value="rate_offer">🚚 Dedicated Route Rate Offer / Quote</SelectItem>
                 <SelectItem value="company_dossier">🏢 Corporate Profile & GST/Bank Details</SelectItem>
-                <SelectItem value="custom">✏️ Custom Message</SelectItem>
+                <SelectItem value="custom">✏️ Custom Custom Message</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -190,7 +190,7 @@ export default function ClientPortalPage() {
           route: 'Ahmedabad → Secunderabad Depot',
           start_location: 'Ahmedabad, GJ',
           end_location: 'Secunderabad, TS',
-          driver_name: 'Dayanand Surwase (D003)',
+          driver_name: 'Assigned Driver',
           trip_status: 'Delivered',
           revenue: 46000,
           freight_amount: 46000,

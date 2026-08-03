@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-07-25T12:09:33.084Z",
+  "host": "https://www.jaibhavanicargo.com/hcgi/platform",
+  "totalCollections": 17,
+  "totalRecords": 793,
+  "collections": {
+    "trucks": 1,
+    "employees": 1,
+    "clients": 2,
+    "contacts": 20,
+    "expenses": 274,
+    "cashbook": 281,
+    "fastag_transactions": 0,
+    "fastag_recharges": 0,
+    "routes": 2,
+    "advances": 83,
+    "payment_requests": 101,
+    "quotes": 0,
+    "reminders": 12,
+    "maintenance_logs": 0,
+    "users": 7,
+    "invitations": 0,
+    "credit_cards": 9
+  }
+}

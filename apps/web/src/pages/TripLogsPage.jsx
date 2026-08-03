@@ -749,7 +749,7 @@ const TripLogsPage = () => {
                                 </Select>
 
                                 <Select
-                                  value={log.driver_name || log.driver || 'Dayanand Surwase'}
+                                  value={log.driver_name || log.driver || ''}
                                   onValueChange={async (newDriver) => {
                                     if (!newDriver || newDriver === (log.driver_name || log.driver)) return;
                                     await updateTripField(log.id, 'driver_name', newDriver);
@@ -757,22 +757,21 @@ const TripLogsPage = () => {
                                 >
                                   <SelectTrigger className="h-6 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 text-xs text-muted-foreground font-medium focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors -mt-1">
                                     <SelectValue placeholder="Select Driver">
-                                      {log.driver_name || log.driver || 'Dayanand Surwase'}
+                                      {log.driver_name || log.driver || 'Select Driver'}
                                     </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="Dayanand Surwase">Dayanand Surwase</SelectItem>
                                     <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
                                       ⚡ Temporary Driver
                                     </SelectItem>
                                     {(log.driver_name || log.driver) && 
-                                     (log.driver_name || log.driver) !== 'Dayanand Surwase' &&
+                                     (log.driver_name || log.driver) !== 'Temporary Driver' &&
                                      !employees.some(e => e.name === (log.driver_name || log.driver)) && (
                                       <SelectItem value={log.driver_name || log.driver}>
                                         {log.driver_name || log.driver}
                                       </SelectItem>
                                     )}
-                                    {employees.map(e => (
+                                    {filterActiveDrivers(employees, log.driver_name || log.driver).map(e => (
                                       <SelectItem key={e.id} value={e.name}>
                                         {e.name}
                                       </SelectItem>
@@ -1173,7 +1172,7 @@ const TripLogsPage = () => {
                         </div>
                         <div>
                           <span className="text-slate-400 block mb-0.5">Driver: </span>
-                          <strong className="text-white truncate block">{log.driver_name || log.driver || 'Dayanand Surwase'}</strong>
+                          <strong className="text-white truncate block">{log.driver_name || log.driver || 'Unassigned'}</strong>
                         </div>
                         <div className="flex flex-col items-center">
                           <span className="text-slate-400 block mb-0.5">KMs: </span>

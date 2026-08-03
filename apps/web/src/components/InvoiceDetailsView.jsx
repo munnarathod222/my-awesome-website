@@ -187,20 +187,7 @@ const InvoiceDetailsView = ({ isOpen, onClose, invoice, onUpdate }) => {
                 </Badge>
               </DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Issued: {(() => {
-                  if (!invoice.invoice_date) return '—';
-                  try {
-                    const d = new Date(typeof invoice.invoice_date === 'string' ? invoice.invoice_date.replace(' ', 'T') : invoice.invoice_date);
-                    return isNaN(d.getTime()) ? '—' : format(d, 'MMM dd, yyyy');
-                  } catch (e) { return '—'; }
-                })()} • Due: {(() => {
-                  const dueVal = invoice.due_date || (invoice.invoice_date ? new Date(new Date(invoice.invoice_date).getTime() + 14 * 24 * 60 * 60 * 1000) : null);
-                  if (!dueVal) return '—';
-                  try {
-                    const d = new Date(typeof dueVal === 'string' ? dueVal.replace(' ', 'T') : dueVal);
-                    return isNaN(d.getTime()) ? '—' : format(d, 'MMM dd, yyyy');
-                  } catch (e) { return '—'; }
-                })()}
+                Issued: {format(new Date(invoice.invoice_date), 'MMM dd, yyyy')} • Due: {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
               </p>
             </div>
           </div>

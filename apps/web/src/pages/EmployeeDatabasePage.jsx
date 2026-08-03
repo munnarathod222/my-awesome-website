@@ -348,6 +348,19 @@ const EmployeeDatabasePage = () => {
         toast.success('Employee added successfully');
       }
 
+      if (formData.active_status === 'terminated' || formData.active_status === 'abscond') {
+        try {
+          const nameToTerm = (formData.name || '').trim().toLowerCase();
+          if (nameToTerm) {
+            const currentList = JSON.parse(localStorage.getItem('jbc_terminated_driver_names') || '[]');
+            if (!currentList.includes(nameToTerm)) {
+              currentList.push(nameToTerm);
+              localStorage.setItem('jbc_terminated_driver_names', JSON.stringify(currentList));
+            }
+          }
+        } catch (e) {}
+      }
+
       // Add attached employee documents if present
       if (uploadedDocs.length > 0) {
         const empId = editingId || savedEmployee.id;

@@ -91,7 +91,7 @@ export default function VehicleQRVerificationPage() {
           current_fastag_balance: 6103,
           chassis_number: 'MAT628100K5841',
           engine_number: 'B593849109201',
-          driver_name: 'Dayanand surwase',
+          driver_name: 'Assigned Driver',
           driver_phone: realCompany.company_phone
         };
       }

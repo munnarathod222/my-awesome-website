@@ -17,32 +17,6 @@ const AXLE_TYRE_MAP = {
   '5XL': 16
 };
 
-const TRUCK_SIZES = [
-  { value: '14 FT', label: '14 FT' },
-  { value: '17 FT', label: '17 FT' },
-  { value: '20 FT', label: '20 FT' },
-  { value: '24 FT', label: '24 FT' },
-  { value: '32 FT', label: '32 FT' },
-];
-
-const PAYLOAD_OPTIONS = [
-  { value: '1 Ton',   label: '1 Ton' },
-  { value: '2 Ton',   label: '2 Ton' },
-  { value: '3 Ton',   label: '3 Ton' },
-  { value: '5 Ton',   label: '5 Ton' },
-  { value: '7 Ton',   label: '7 Ton' },
-  { value: '9 Ton',   label: '9 Ton' },
-  { value: '10 Ton',  label: '10 Ton' },
-  { value: '12 Ton',  label: '12 Ton' },
-  { value: '15 Ton',  label: '15 Ton' },
-  { value: '18 Ton',  label: '18 Ton' },
-  { value: '20 Ton',  label: '20 Ton' },
-  { value: '21 Ton',  label: '21 Ton' },
-  { value: '22 Ton',  label: '22 Ton' },
-  { value: '24 Ton',  label: '24 Ton' },
-  { value: '25 Ton',  label: '25 Ton' },
-];
-
 export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState([]);
@@ -57,11 +31,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     ownership_type: 'Owned',
     manager_id: 'none',
     fastag_id: '',
-    current_fastag_balance: '',
-    payload_capacity: '',
-    body_length: '',
-    body_width: '',
-    body_height: ''
+    current_fastag_balance: ''
   });
 
   const [bodyImagesList, setBodyImagesList] = useState([]);
@@ -92,11 +62,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           ownership_type: truck.ownership_type || 'Owned',
           manager_id: truck.manager_id || 'none',
           fastag_id: truck.fastag_id || '',
-          current_fastag_balance: truck.current_fastag_balance?.toString() || '',
-          payload_capacity: truck.payload_capacity || '',
-          body_length: truck.body_length?.toString() || '',
-          body_width: truck.body_width?.toString() || '',
-          body_height: truck.body_height?.toString() || ''
+          current_fastag_balance: truck.current_fastag_balance?.toString() || ''
         });
         const existing = (truck.body_images || []).map((img, idx) => ({
           key: `existing-${idx}-${img}`,
@@ -117,11 +83,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           ownership_type: 'Owned',
           manager_id: 'none',
           fastag_id: '',
-          current_fastag_balance: '',
-          payload_capacity: '',
-          body_length: '',
-          body_width: '',
-          body_height: ''
+          current_fastag_balance: ''
         });
         setBodyImagesList([]);
         setDeletedFiles([]);
@@ -218,10 +180,6 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       formDataToSend.append('manager_id', formData.manager_id === 'none' ? '' : formData.manager_id);
       formDataToSend.append('fastag_id', formData.fastag_id || '');
       formDataToSend.append('current_fastag_balance', String(parseFloat(formData.current_fastag_balance) || 0));
-      formDataToSend.append('payload_capacity', formData.payload_capacity || '');
-      if (formData.body_length) formDataToSend.append('body_length', String(parseFloat(formData.body_length) || 0));
-      if (formData.body_width)  formDataToSend.append('body_width',  String(parseFloat(formData.body_width)  || 0));
-      if (formData.body_height) formDataToSend.append('body_height', String(parseFloat(formData.body_height) || 0));
 
       // Keep existing files that are not deleted
       const existingItems = bodyImagesList.filter(item => !item.isNew);
@@ -306,20 +264,14 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
               </SelectContent>
             </Select>
           </div>
-          {/* ── Truck Configuration Section ── */}
-          <div className="pt-2 pb-1">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">Truck Configuration</p>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Truck Size <span className="text-destructive">*</span></Label>
               <Select value={formData.truck_size} onValueChange={v => setFormData({...formData, truck_size: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {TRUCK_SIZES.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
+                  <SelectItem value="24 FT">24 FT</SelectItem>
+                  <SelectItem value="32 FT">32 FT</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -335,60 +287,6 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
               </Select>
             </div>
           </div>
-
-          {/* Payload Capacity */}
-          <div className="space-y-2">
-            <Label>Payload Capacity</Label>
-            <Select value={formData.payload_capacity || 'none'} onValueChange={v => setFormData({...formData, payload_capacity: v === 'none' ? '' : v})}>
-              <SelectTrigger><SelectValue placeholder="Select payload capacity" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Not specified</SelectItem>
-                {PAYLOAD_OPTIONS.map(p => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Body Dimensions L×W×H */}
-          <div className="space-y-2">
-            <Label>Body Dimensions (feet)</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wide">Length</p>
-                <Input
-                  type="number" step="0.1" min="0"
-                  value={formData.body_length}
-                  onChange={e => setFormData({...formData, body_length: e.target.value})}
-                  placeholder="e.g. 24"
-                />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wide">Width</p>
-                <Input
-                  type="number" step="0.1" min="0"
-                  value={formData.body_width}
-                  onChange={e => setFormData({...formData, body_width: e.target.value})}
-                  placeholder="e.g. 7.5"
-                />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground font-semibold mb-1 uppercase tracking-wide">Height</p>
-                <Input
-                  type="number" step="0.1" min="0"
-                  value={formData.body_height}
-                  onChange={e => setFormData({...formData, body_height: e.target.value})}
-                  placeholder="e.g. 7"
-                />
-              </div>
-            </div>
-            {(formData.body_length || formData.body_width || formData.body_height) && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                📐 {formData.body_length || '—'} × {formData.body_width || '—'} × {formData.body_height || '—'} ft
-              </p>
-            )}
-          </div>
-
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tyre Count</Label>

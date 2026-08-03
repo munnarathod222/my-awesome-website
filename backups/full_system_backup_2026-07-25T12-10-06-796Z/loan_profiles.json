@@ -1,0 +1,42 @@
+[
+  {
+    "bank_name": "IFFCO KISAAN",
+    "collectionId": "pbc_1179039622",
+    "collectionName": "loan_profiles",
+    "created": "2026-07-01 08:30:55.283Z",
+    "createdAt": "2026-07-01 08:30:55.283Z",
+    "disbursal_date": "2025-12-16 00:00:00.000Z",
+    "first_emi_date": "2026-02-05 00:00:00.000Z",
+    "id": "lslv2sjz5vhkw4m",
+    "interestRate": 17.1,
+    "isDefault": true,
+    "loanAmount": 936714,
+    "loanTerm": 36,
+    "loan_document": "welcome_letter1323122513103760294626713_pw9a8oin8w.pdf",
+    "profileName": "TG12U2637",
+    "truck_id": "",
+    "updated": "2026-07-01 08:33:19.505Z",
+    "updatedAt": "2026-07-01 08:33:19.505Z",
+    "userId": "vomu7tmaa889wv8"
+  },
+  {
+    "bank_name": "IFFCO KISAN ",
+    "collectionId": "pbc_1179039622",
+    "collectionName": "loan_profiles",
+    "created": "2026-07-16 14:21:46.781Z",
+    "createdAt": "2026-07-16 14:21:46.781Z",
+    "disbursal_date": "2025-12-15 00:00:00.000Z",
+    "first_emi_date": "2026-02-05 00:00:00.000Z",
+    "id": "bp9rb0ndu9oto2u",
+    "interestRate": 17.1,
+    "isDefault": true,
+    "loanAmount": 936000,
+    "loanTerm": 36,
+    "loan_document": "welcome_letter1323122513103760294626713_f10jxalob0.pdf",
+    "profileName": "TG12U2637 (Ashoke Leyland)",
+    "truck_id": "",
+    "updated": "2026-07-25 08:08:48.377Z",
+    "updatedAt": "2026-07-25 08:08:48.377Z",
+    "userId": "w83c6b562wsr1hb"
+  }
+]

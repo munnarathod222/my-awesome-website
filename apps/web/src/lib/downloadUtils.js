@@ -101,16 +101,9 @@ export const generatePDF = (data, filename, options = {}) => {
 
     const parseDateSafe = (dStr) => {
       if (!dStr) return null;
-      if (dStr instanceof Date) return isNaN(dStr.getTime()) ? null : dStr;
-      if (typeof dStr === 'number') return new Date(dStr);
-      if (typeof dStr === 'string') {
-        const trimmed = dStr.trim();
-        if (!trimmed) return null;
-        const normalized = trimmed.includes(' ') && !trimmed.includes('T') ? trimmed.replace(' ', 'T') : trimmed;
-        const dObj = new Date(normalized);
-        return isNaN(dObj.getTime()) ? null : dObj;
-      }
-      return null;
+      const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T') ? dStr.replace(' ', 'T') : dStr;
+      const dObj = new Date(normalized);
+      return isNaN(dObj.getTime()) ? null : dObj;
     };
 
     // ---------------------------------------------------------
@@ -178,10 +171,10 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...secondaryGray);
       doc.text(`${isPaymentReq ? 'Req No' : 'Invoice No'}: ${inv.invoice_number || inv.request_number || 'INV-001'}`, doc.internal.pageSize.width - 14, 26, { align: 'right' });
 
-      const invDateObj = parseDateSafe(inv.invoice_date || inv.request_date || inv.date) || new Date();
-      const dueDateObj = parseDateSafe(inv.due_date) || new Date(invDateObj.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const invDate = invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-      const dueDate = dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const invDateObj = parseDateSafe(inv.invoice_date || inv.request_date);
+      const dueDateObj = parseDateSafe(inv.due_date);
+      const invDate = invDateObj ? invDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN');
+      const dueDate = dueDateObj ? dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'On Receipt';
       
       doc.text(`Date: ${invDate}`, doc.internal.pageSize.width - 14, 31, { align: 'right' });
       doc.text(`Due Date: ${dueDate}`, doc.internal.pageSize.width - 14, 36, { align: 'right' });
@@ -240,7 +233,8 @@ export const generatePDF = (data, filename, options = {}) => {
 
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...secondaryGray);
-      doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 65);
+      doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 63);
+      doc.text('Currency: Indian Rupee (INR ₹)', doc.internal.pageSize.width / 2 + 8, 69);
 
       // Line Items Table
       const tableData = data.map(row => columns.map(col => {
@@ -272,7 +266,7 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...secondaryGray);
-      doc.text('Subtotal Amount:', doc.internal.pageSize.width - 70, finalY, { align: 'right' });
+      doc.text('Subtotal Amount:', doc.internal.pageSize.width - 65, finalY, { align: 'right' });
       doc.setTextColor(0, 0, 0);
       doc.text(`₹${Number(inv.subtotal || inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
 
@@ -280,30 +274,26 @@ export const generatePDF = (data, filename, options = {}) => {
         finalY += 5;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...secondaryGray);
-        doc.text(`GST / Tax (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 70, finalY, { align: 'right' });
+        doc.text(`GST / Tax (${inv.tax_rate || 18}%):`, doc.internal.pageSize.width - 65, finalY, { align: 'right' });
         doc.setTextColor(0, 0, 0);
         doc.text(`₹${Number(inv.tax_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
       }
 
       finalY += 7;
-      const amountStr = `₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`;
-      const boxWidth = 82;
-      const boxX = doc.internal.pageSize.width - 14 - boxWidth;
-
       doc.setFillColor(...primaryNavy);
-      doc.roundedRect(boxX, finalY - 5, boxWidth, 9, 1.5, 1.5, 'F');
+      doc.roundedRect(doc.internal.pageSize.width - 72, finalY - 5, 58, 9, 1.5, 1.5, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(9.5);
       doc.setTextColor(255, 255, 255);
-      doc.text('TOTAL AMOUNT DUE:', boxX + 4, finalY + 1, { align: 'left' });
-      doc.text(amountStr, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
+      doc.text('TOTAL AMOUNT DUE:', doc.internal.pageSize.width - 64, finalY, { align: 'left' });
+      doc.text(`₹${Number(inv.total_amount || 0).toLocaleString('en-IN')}`, doc.internal.pageSize.width - 16, finalY, { align: 'right' });
 
-      // Bank Details (From Company Settings) - Bottom Left
+      // Remittance Bank Details (From Company Settings) - Bottom Left
       let bankY = finalY - (inv.tax_amount && inv.tax_amount > 0 ? 12 : 5);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(...primaryNavy);
-      doc.text('BANK DETAILS:', 14, bankY);
+      doc.text('REMITTANCE BANK DETAILS (COMPANY SETTINGS):', 14, bankY);
 
       const bName = companySettingsCache?.bank_name || 'HDFC BANK';
       const bAccName = (companySettingsCache?.account_name || companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase();

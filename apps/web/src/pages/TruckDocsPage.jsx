@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck, Phone } from 'lucide-react';
+import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,7 +49,6 @@ const TruckDocsPage = () => {
     truck_id: '',
     document_type: '',
     document_number: '',
-    helpline_number: '',
     issue_date: '',
     expiry_date: '',
     notes: '',
@@ -129,7 +128,6 @@ const TruckDocsPage = () => {
         truck_id: doc.truck_id || '',
         document_type: doc.document_type || '',
         document_number: doc.document_number || '',
-        helpline_number: doc.helpline_number || doc.insurance_helpline || doc.helpline || '',
         issue_date: doc.issue_date ? doc.issue_date.split('T')[0] : '',
         expiry_date: doc.expiry_date ? doc.expiry_date.split('T')[0] : '',
         notes: doc.notes || '',
@@ -141,7 +139,6 @@ const TruckDocsPage = () => {
         truck_id: '',
         document_type: '',
         document_number: '',
-        helpline_number: '',
         issue_date: '',
         expiry_date: '',
         notes: '',
@@ -673,22 +670,6 @@ const TruckDocsPage = () => {
                 onChange={(e) => setFormData(p => ({...p, document_number: e.target.value}))} 
                 placeholder="e.g. MH12AB1234"
               />
-            </div>
-
-            <div className="space-y-1.5 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
-              <Label className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                <Phone className="w-3.5 h-3.5" />
-                {formData.document_type === 'Insurance' ? 'Insurance Claim Helpline / Support Contact *' : 'Helpline / Emergency Contact (Optional)'}
-              </Label>
-              <Input 
-                value={formData.helpline_number} 
-                onChange={(e) => setFormData(p => ({...p, helpline_number: e.target.value}))} 
-                placeholder="e.g. 1800-102-3456 / +91 9876543210 (Claim Support)"
-                className="font-mono text-xs bg-slate-950 border-emerald-500/30 text-emerald-300 placeholder:text-slate-500"
-              />
-              <p className="text-[10px] text-emerald-400/80">
-                ⚡ This Helpline Number will be displayed on the public QR scanned page for roadside inspection &amp; emergency claim assistance.
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

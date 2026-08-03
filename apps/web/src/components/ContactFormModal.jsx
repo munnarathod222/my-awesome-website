@@ -51,10 +51,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
       let mainCat = 'Client';
       let subCat = '';
 
-      if (type === 'Truck Owner' || type === 'Transporter') {
-        mainCat = 'TruckOwner';
-        subCat = type;
-      } else if (type === 'Warehouse') {
+      if (type === 'Warehouse') {
         mainCat = 'Warehouse';
         subCat = 'Warehouse';
       } else if (type === 'Corporate') {
@@ -160,10 +157,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
 
   const handleMainCategoryChange = (val) => {
     setMainCategory(val);
-    if (val === 'TruckOwner') {
-      setSubCategory('Truck Owner');
-      setFormData(prev => ({ ...prev, contact_type: 'Truck Owner' }));
-    } else if (val === 'Client') {
+    if (val === 'Client') {
       setSubCategory('Corporate');
       setFormData(prev => ({ ...prev, contact_type: 'Client' }));
     } else if (val === 'Warehouse') {
@@ -346,10 +340,9 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="TruckOwner">Truck Owners &amp; Transporters</SelectItem>
                   <SelectItem value="Client">Client Corporate Contact</SelectItem>
                   <SelectItem value="Warehouse">Warehouse Contact</SelectItem>
-                  <SelectItem value="Employee">Drivers &amp; Employees</SelectItem>
+                  <SelectItem value="Employee">Drivers & Employees</SelectItem>
                   <SelectItem value="Maintenance">Maintenance Network</SelectItem>
                   <SelectItem value="Finance">Finance, Banking &amp; Loan Agents</SelectItem>
                   <SelectItem value="Vendor">Vendor</SelectItem>
@@ -396,7 +389,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
             )}
 
             {/* Conditionally show Sub-category */}
-            {(mainCategory === 'TruckOwner' || mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Finance' || mainCategory === 'Other') && (
+            {(mainCategory === 'Employee' || mainCategory === 'Maintenance' || mainCategory === 'Finance' || mainCategory === 'Other') && (
               <div className="space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200">
                 <Label>Sub-Category *</Label>
                 <Select value={subCategory} onValueChange={handleSubCategoryChange}>
@@ -404,12 +397,7 @@ export default function ContactFormModal({ isOpen, onClose, contact, onSuccess }
                     <SelectValue placeholder="Select sub-category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mainCategory === 'TruckOwner' ? (
-                      <>
-                        <SelectItem value="Truck Owner">Truck Owner (Fleet / Vehicle Owner)</SelectItem>
-                        <SelectItem value="Transporter">Transporter (Subcontractor / Agency)</SelectItem>
-                      </>
-                    ) : mainCategory === 'Employee' ? (
+                    {mainCategory === 'Employee' ? (
                       <>
                         <SelectItem value="Driver">Driver</SelectItem>
                         <SelectItem value="Supervisor">Supervisor</SelectItem>

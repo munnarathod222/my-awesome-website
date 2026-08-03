@@ -1,0 +1,110 @@
+[
+  {
+    "card_id": "zqtgl036331nucs",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-08 10:39:08.250Z",
+    "full_payment_amount": 0,
+    "id": "zgxs0jm2m77bc30",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 21,
+    "updated": "2026-07-08 10:39:08.250Z",
+    "user_id": "vomu7tmaa889wv8"
+  },
+  {
+    "card_id": "r38odv9c2gppdxa",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 20:58:03.830Z",
+    "full_payment_amount": 0,
+    "id": "ou2woc8nkt65qjj",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 28,
+    "updated": "2026-07-20 20:58:03.830Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "3lqg51umpaquub3",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:03:18.035Z",
+    "full_payment_amount": 0,
+    "id": "piwifim57zfumc1",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 9,
+    "updated": "2026-07-20 21:03:18.035Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "zurfba6p2sjh19v",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:04:12.472Z",
+    "full_payment_amount": 0,
+    "id": "xjo0tnrwwwhwfv5",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 9,
+    "updated": "2026-07-21 04:04:25.389Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "5wg9ec7xd44cxng",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:07:06.912Z",
+    "full_payment_amount": 0,
+    "id": "lslk8fwz3kbuejq",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 26,
+    "updated": "2026-07-20 21:07:06.912Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "vxke7cdkvlcc802",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:09:32.662Z",
+    "full_payment_amount": 0,
+    "id": "oecm6on3uj2homr",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 11,
+    "updated": "2026-07-20 21:09:32.662Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "if11foqfagql1n3",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:10:57.457Z",
+    "full_payment_amount": 0,
+    "id": "3o8eovunhtrk2nv",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 8,
+    "updated": "2026-07-21 04:04:06.183Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "wlwdlcc0yksvy3v",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:18:16.535Z",
+    "full_payment_amount": 0,
+    "id": "x5qvjtj4in9k11d",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 13,
+    "updated": "2026-07-21 04:03:41.944Z",
+    "user_id": "w83c6b562wsr1hb"
+  },
+  {
+    "card_id": "1y2yx6j5y892yqz",
+    "collectionId": "pbc_8068410022",
+    "collectionName": "payment_due_dates",
+    "created": "2026-07-20 21:18:46.083Z",
+    "full_payment_amount": 0,
+    "id": "tqw1mxs7d1m0hjp",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 15,
+    "updated": "2026-07-20 21:18:46.083Z",
+    "user_id": "w83c6b562wsr1hb"
+  }
+]
