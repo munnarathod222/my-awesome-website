@@ -7,11 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { 
   User, Phone, Mail, MapPin, FileText, Star, Truck, Calendar, 
-  ExternalLink, Download, CheckCircle2, Clock, AlertTriangle 
+  ExternalLink, Download, CheckCircle2, Clock, AlertTriangle, CreditCard, Camera 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { APPLICATION_STATUSES, updateApplicationStatus, getLicenseFileUrl, getStatusConfig } from '@/lib/recruitmentClient.js';
+import { 
+  APPLICATION_STATUSES, updateApplicationStatus, getLicenseFileUrl, 
+  getPhotoFileUrl, getPanFileUrl, getStatusConfig 
+} from '@/lib/recruitmentClient.js';
 
 export default function DriverApplicationDetailModal({ isOpen, onClose, application, onUpdated }) {
   const [status, setStatus] = useState(application?.status || 'Applied');
@@ -21,9 +24,15 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
   if (!application) return null;
 
   const licenseUrl = getLicenseFileUrl(application);
-  const statusCfg = getStatusConfig(application.status);
-  const isImage = licenseUrl && /\.(jpg|jpeg|png|webp)$/i.test(application.license_file || '');
-  const isPdf   = licenseUrl && /\.pdf$/i.test(application.license_file || '');
+  const photoUrl   = getPhotoFileUrl(application);
+  const panUrl     = getPanFileUrl(application);
+  const statusCfg  = getStatusConfig(application.status);
+
+  const isLicenseImage = licenseUrl && /\.(jpg|jpeg|png|webp)$/i.test(application.license_file || '');
+  const isLicensePdf   = licenseUrl && /\.pdf$/i.test(application.license_file || '');
+
+  const isPanImage = panUrl && /\.(jpg|jpeg|png|webp)$/i.test(application.pan_file || application.pan_card_file || '');
+  const isPanPdf   = panUrl && /\.pdf$/i.test(application.pan_file || application.pan_card_file || '');
 
   const handleSaveStatus = async () => {
     setSaving(true);
@@ -47,9 +56,17 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
         <DialogHeader className="pb-3 border-b border-border/40">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-black text-lg flex items-center justify-center flex-shrink-0">
-                {application.full_name?.slice(0, 2).toUpperCase()}
-              </div>
+              {photoUrl ? (
+                <img 
+                  src={photoUrl} 
+                  alt="Passport Photo" 
+                  className="w-14 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md shrink-0" 
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary font-black text-lg flex items-center justify-center flex-shrink-0">
+                  {application.full_name?.slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div>
                 <DialogTitle className="text-lg font-extrabold text-foreground">{application.full_name}</DialogTitle>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5 flex items-center gap-2">
@@ -87,6 +104,55 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
             </div>
           </div>
 
+          {/* Identity & PAN Card Details */}
+          <div className="bg-muted/20 rounded-2xl p-4 border border-border/50 space-y-3">
+            <h3 className="font-extrabold text-foreground text-sm flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-emerald-500" /> PAN Card &amp; Identity Details
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="text-muted-foreground block mb-0.5">PAN Card Number</span>
+                <strong className="font-mono text-foreground text-sm uppercase bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  {application.pan_number || 'Not Provided'}
+                </strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground block mb-0.5">Passport Photo</span>
+                {photoUrl ? (
+                  <a href={photoUrl} target="_blank" rel="noreferrer" className="text-primary font-bold hover:underline flex items-center gap-1">
+                    <Camera className="w-3.5 h-3.5" /> View Photo
+                  </a>
+                ) : <span className="text-muted-foreground">—</span>}
+              </div>
+            </div>
+
+            {panUrl && (
+              <div className="space-y-2 pt-2 border-t border-border/40">
+                <span className="text-xs font-bold text-muted-foreground">PAN Card Document</span>
+                {isPanImage ? (
+                  <img src={panUrl} alt="PAN Card" className="max-h-48 rounded-xl border border-border object-contain bg-white p-1" />
+                ) : isPanPdf ? (
+                  <div className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
+                    <FileText className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground flex-1 truncate">PAN Document (PDF)</span>
+                  </div>
+                ) : null}
+                <div className="flex gap-2">
+                  <a href={panUrl} target="_blank" rel="noreferrer">
+                    <Button size="sm" variant="outline" className="rounded-xl text-xs font-bold">
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" /> View PAN Doc
+                    </Button>
+                  </a>
+                  <a href={panUrl} download>
+                    <Button size="sm" variant="outline" className="rounded-xl text-xs font-bold">
+                      <Download className="w-3.5 h-3.5 mr-1" /> Download
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* License Details */}
           <div className="bg-muted/20 rounded-2xl p-4 border border-border/50 space-y-3">
             <h3 className="font-extrabold text-foreground text-sm flex items-center gap-1.5"><FileText className="w-4 h-4 text-primary" /> Driving License</h3>
@@ -98,11 +164,11 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
 
             {/* License File Preview */}
             {licenseUrl && (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2 border-t border-border/40">
                 <span className="text-xs font-bold text-muted-foreground">License Document</span>
-                {isImage ? (
+                {isLicenseImage ? (
                   <img src={licenseUrl} alt="Driving License" className="max-h-48 rounded-xl border border-border object-contain bg-white p-1" />
-                ) : isPdf ? (
+                ) : isLicensePdf ? (
                   <div className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border">
                     <FileText className="w-8 h-8 text-red-400 flex-shrink-0" />
                     <span className="text-xs text-muted-foreground flex-1 truncate">{application.license_file}</span>
@@ -111,7 +177,7 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
                 <div className="flex gap-2">
                   <a href={licenseUrl} target="_blank" rel="noreferrer">
                     <Button size="sm" variant="outline" className="rounded-xl text-xs font-bold">
-                      <ExternalLink className="w-3.5 h-3.5 mr-1" /> View
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" /> View License
                     </Button>
                   </a>
                   <a href={licenseUrl} download>
@@ -126,11 +192,13 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
 
           {/* Vehicle Types */}
           {vehicles.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-extrabold text-foreground text-sm flex items-center gap-1.5"><Truck className="w-4 h-4 text-primary" /> Can Drive</h3>
+            <div className="bg-muted/20 rounded-2xl p-4 border border-border/50 space-y-2">
+              <h3 className="font-extrabold text-foreground text-sm flex items-center gap-1.5"><Truck className="w-4 h-4 text-blue-400" /> Vehicle Types</h3>
               <div className="flex flex-wrap gap-1.5">
                 {vehicles.map(v => (
-                  <Badge key={v} variant="outline" className="text-[11px] font-bold text-primary border-primary/30">{v}</Badge>
+                  <Badge key={v} variant="secondary" className="text-xs font-bold rounded-lg px-2.5 py-1">
+                    {v}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -142,58 +210,63 @@ export default function DriverApplicationDetailModal({ isOpen, onClose, applicat
               <h3 className="font-extrabold text-foreground text-sm flex items-center gap-1.5"><Star className="w-4 h-4 text-amber-400" /> References</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {application.reference1_name && (
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-foreground">{application.reference1_name}</p>
-                    <a href={`tel:${application.reference1_phone}`} className="text-primary font-mono hover:underline">{application.reference1_phone}</a>
-                    <p className="text-muted-foreground">{application.reference1_relation}</p>
+                  <div className="p-3 bg-card rounded-xl border border-border/50 space-y-0.5">
+                    <p className="font-extrabold text-foreground">{application.reference1_name}</p>
+                    <p className="font-mono text-muted-foreground">{application.reference1_phone}</p>
+                    {application.reference1_relation && <p className="text-[11px] text-muted-foreground">{application.reference1_relation}</p>}
                   </div>
                 )}
                 {application.reference2_name && (
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-foreground">{application.reference2_name}</p>
-                    <a href={`tel:${application.reference2_phone}`} className="text-primary font-mono hover:underline">{application.reference2_phone}</a>
-                    <p className="text-muted-foreground">{application.reference2_relation}</p>
+                  <div className="p-3 bg-card rounded-xl border border-border/50 space-y-0.5">
+                    <p className="font-extrabold text-foreground">{application.reference2_name}</p>
+                    <p className="font-mono text-muted-foreground">{application.reference2_phone}</p>
+                    {application.reference2_relation && <p className="text-[11px] text-muted-foreground">{application.reference2_relation}</p>}
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Status Update */}
-          <div className="bg-muted/20 rounded-2xl p-4 border border-border/50 space-y-3">
-            <h3 className="font-extrabold text-foreground text-sm">Update Application Status</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">Status</Label>
+          {/* Status Update & Notes */}
+          <div className="bg-muted/30 rounded-2xl p-4 border border-border space-y-3">
+            <h3 className="font-extrabold text-foreground text-sm">Update Application Status &amp; HR Notes</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1 sm:col-span-1">
+                <Label className="text-xs font-bold text-muted-foreground">Application Status</Label>
                 <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="rounded-xl h-9 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 rounded-xl bg-card">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {APPLICATION_STATUSES.map(s => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      <SelectItem key={s.value} value={s.value} className="font-bold text-xs">
+                        {s.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-bold">HR Notes (Optional)</Label>
-                <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Interview notes, remarks..." className="rounded-xl text-xs resize-none" />
+
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs font-bold text-muted-foreground">HR Internal Notes</Label>
+                <Textarea 
+                  value={notes} 
+                  onChange={e => setNotes(e.target.value)} 
+                  placeholder="Notes from candidate interview, document check, background verification..." 
+                  className="rounded-xl bg-card text-xs min-h-[70px]" 
+                />
               </div>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-4 border-t border-border/40 flex items-center justify-between gap-2">
-          <Button variant="outline" onClick={onClose} className="rounded-xl text-xs">Close</Button>
-          <div className="flex gap-2">
-            <a href={`tel:${application.phone}`}>
-              <Button variant="outline" className="rounded-xl text-xs font-bold border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10">
-                <Phone className="w-3.5 h-3.5 mr-1" /> Call Candidate
-              </Button>
-            </a>
-            <Button onClick={handleSaveStatus} disabled={saving} className="rounded-xl text-xs font-bold bg-primary text-primary-foreground">
-              {saving ? 'Saving...' : '✓ Save Status'}
-            </Button>
-          </div>
+        <DialogFooter className="mt-5 gap-2 border-t border-border/40 pt-3">
+          <Button variant="outline" onClick={onClose} className="rounded-xl text-xs font-bold">
+            Close
+          </Button>
+          <Button onClick={handleSaveStatus} disabled={saving} className="rounded-xl text-xs font-bold bg-primary text-primary-foreground">
+            {saving ? 'Saving...' : 'Save Status & Notes'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

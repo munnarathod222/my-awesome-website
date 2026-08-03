@@ -42,10 +42,12 @@ import PaymentRequestsPage from './pages/PaymentRequestsPage.jsx';
 import CompanyVaultPage from './pages/CompanyVaultPage.jsx';
 import InsuranceManagerPage from './pages/InsuranceManagerPage.jsx';
 import VehicleQRVerificationPage from './pages/VehicleQRVerificationPage.jsx';
+import EmployeeQRVerificationPage from './pages/EmployeeQRVerificationPage.jsx';
 import QRScannerPage from './pages/QRScannerPage.jsx';
 import DeliveryProofUploadPage from './pages/DeliveryProofUploadPage.jsx';
 import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
+import IdCardGeneratorPage from './pages/IdCardGeneratorPage.jsx';
 import TruckManagerPage from './pages/TruckManagerPage.jsx';
 import TripManagerPage from './pages/TripManagerPage.jsx';
 import AttendanceManagerPage from './pages/AttendanceManagerPage.jsx';
@@ -90,6 +92,9 @@ import ExitAuditPage from './pages/ExitAuditPage.jsx';
 import BusinessMailPage from './pages/BusinessMailPage.jsx';
 import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
+import GstITCManagerPage from './pages/GstITCManagerPage.jsx';
+import OfficialLetterheadPage from './pages/OfficialLetterheadPage.jsx';
+import DataBackupPage from './pages/DataBackupPage.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
@@ -194,6 +199,8 @@ function App() {
                   <Route path="/marketplace/*" element={<MarketplaceHub />} />
                   <Route path="/v/:qrToken" element={<VehicleQRVerificationPage />} />
                   <Route path="/verify-vehicle/:qrToken" element={<VehicleQRVerificationPage />} />
+                  <Route path="/verify-employee/:empId" element={<EmployeeQRVerificationPage />} />
+                  <Route path="/v/emp/:empId" element={<EmployeeQRVerificationPage />} />
                   <Route path="/services" element={<ServicesPage />} />
                   <Route path="/about" element={<AboutPage />} />
                   <Route path="/contact" element={<ContactPage />} />
@@ -219,7 +226,8 @@ function App() {
                   <Route path="/admin/fleet-map" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager']}><AdminFleetMapPage /></ProtectedRoute>} />
                   <Route path="/admin/maps-settings" element={<ProtectedRoute allowedRoles={['super_admin', 'admin']}><AdminMapsSettingsPage /></ProtectedRoute>} />
                   
-                  {/* Analytics */}
+                  {/* Analytics & Finance */}
+                  <Route path="/gst-itc" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><GstITCManagerPage /></ProtectedRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><AnalyticsHub /></ProtectedRoute>} />
                   <Route path="/vehicle-tco" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
                   <Route path="/vehicle-roi" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><VehicleTCOPage /></ProtectedRoute>} />
@@ -277,11 +285,14 @@ function App() {
                   <Route path="/dashboard/shipments" element={<Navigate to="/trip-logs" replace />} />
                   <Route path="/dashboard/delivery-proof" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><DeliveryProofUploadPage /></ProtectedRoute>} />
                   <Route path="/pod-management" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PODManagementPage /></ProtectedRoute>} />
-                  <Route path="/exit-audit" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExitAuditPage /></ProtectedRoute>} />
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
+                  <Route path="/letterhead" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><OfficialLetterheadPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/letterhead" element={<Navigate to="/letterhead" replace />} />
                   
                   {/* Cashbook & Financials */}
                   <Route path="/company-vault" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><CompanyVaultPage /></ProtectedRoute>} />
+                  <Route path="/data-backup" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><DataBackupPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/backup" element={<Navigate to="/data-backup" replace />} />
                   <Route path="/cashbook" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><CashbookPage /></ProtectedRoute>} />
                   <Route path="/expenses" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><ExpensesPage /></ProtectedRoute>} />
                   <Route path="/fastag" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><FASTagManagerPage /></ProtectedRoute>} />
@@ -293,6 +304,8 @@ function App() {
                   {/* HR & Payroll */}
                   <Route path="/employees" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><EmployeeDatabasePage /></ProtectedRoute>} />
                   <Route path="/employee-docs" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'supervisor']}><EmployeeDocsPage /></ProtectedRoute>} />
+                  <Route path="/id-card-generator" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
+                  <Route path="/id-cards" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
                   <Route path="/dashboard/attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><AttendanceManagerPage /></ProtectedRoute>} />
                   
                   {/* Features */}

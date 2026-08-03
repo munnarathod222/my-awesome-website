@@ -48,7 +48,23 @@ const MarkPaymentPaidModal = ({ isOpen, onClose, request, onSuccess }) => {
         }, { $autoCancel: false });
       }
 
-      toast.success('Payment marked as received');
+      const clientName = request?.expand?.client_id?.client_name || request?.client_name || 'Valued Client';
+      const phone = request?.expand?.client_id?.phone || request?.phone || '';
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const targetPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+      const tripId = request?.trip_id || request?.id || 'N/A';
+      const amountStr = Number(formData.amount || request?.amount || 0).toLocaleString('en-IN');
+      const method = formData.payment_method || 'Bank Transfer';
+      const msg = `✅ *JAI BHAVANI CARGO - PAYMENT RECEIVED CONFIRMATION*\n\nDear *${clientName}*,\n\nWe have successfully received payment for your freight shipment.\n\n📌 *Payment Details:*\n• Trip / LR No: *${tripId}*\n• Amount Received: *₹${amountStr}*\n• Payment Date: *${formData.date}*\n• Payment Method: *${method}*\n\nThank you for your business!\n*Jai Bhavani Cargo & Logistics*\n📞 Support: +91 9876543210`;
+
+      toast.success('Payment marked as received!', {
+        action: targetPhone ? {
+          label: '💬 Share Receipt',
+          onClick: () => {
+            window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+          }
+        } : undefined
+      });
       onSuccess?.();
       onClose();
     } catch (err) {

@@ -3,6 +3,7 @@ const path = require('path');
 
 function copyDirSync(src, dest) {
   if (!fs.existsSync(src)) return;
+  fs.rmSync(dest, { recursive: true, force: true });
   fs.mkdirSync(dest, { recursive: true });
   const entries = fs.readdirSync(src, { withFileTypes: true });
 

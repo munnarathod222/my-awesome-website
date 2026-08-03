@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import { logAuditEvent } from '@/lib/auditLogger.js';
@@ -49,6 +50,7 @@ const ExpensesPage = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [selectedAdvanceIds, setSelectedAdvanceIds] = useState(new Set());
   const [isBulkProcessingAdvances, setIsBulkProcessingAdvances] = useState(false);
+  const [selectedSummaryPeriod, setSelectedSummaryPeriod] = useState('auto');
 
   const [filters, setFilters] = useState({
     search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'
@@ -414,64 +416,125 @@ const ExpensesPage = () => {
     return result;
   }, [advances, advFilters]);
 
-  // Current active month expense summary grid calculations for all 8 categories
-  const { fuelTotal, fastagTotal, driverAdvanceTotal, salaryTotal, maintenanceTotal, miscTotal, fixedEmiTotal, allOtherTotal } = useMemo(() => {
+  // Available YYYY-MM list from database
+  const availableMonths = useMemo(() => {
+    const setMap = new Set();
+    expenses.forEach(e => {
+      if (e.date) {
+        const d = new Date(e.date);
+        setMap.add(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+      }
+    });
+    advances.forEach(a => {
+      if (a.date) {
+        const d = new Date(a.date);
+        setMap.add(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+      }
+    });
+    return Array.from(setMap).sort().reverse();
+  }, [expenses, advances]);
+
+  // Compute 8 category totals based on selected period or active filters
+  const { activeSummaryLabel, summaryTotals } = useMemo(() => {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    const currentYM = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 
-    const currentMonthExpenses = expenses.filter(exp => {
-      const expDate = new Date(exp.date);
-      return expDate.getFullYear() === currentYear && expDate.getMonth() === currentMonth;
-    });
+    let targetExpenses = [];
+    let targetAdvances = [];
+    let label = '';
 
-    const currentMonthAdvances = advances.filter(adv => {
-      const advDate = new Date(adv.date);
-      return advDate.getFullYear() === currentYear && advDate.getMonth() === currentMonth;
-    });
+    // If date filters applied, calculate for filtered range
+    if (filters.dateFrom || filters.dateTo) {
+      targetExpenses = filteredExpenses;
+      targetAdvances = filteredAdvances;
+      label = 'Filtered Period';
+    } else if (selectedSummaryPeriod === 'all') {
+      targetExpenses = expenses;
+      targetAdvances = advances;
+      label = 'All-Time Totals';
+    } else {
+      let targetYM = selectedSummaryPeriod;
+      if (selectedSummaryPeriod === 'auto') {
+        const hasCurrentMonthData = expenses.some(e => {
+          if (!e.date) return false;
+          const d = new Date(e.date);
+          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` === currentYM;
+        }) || advances.some(a => {
+          if (!a.date) return false;
+          const d = new Date(a.date);
+          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` === currentYM;
+        });
+
+        targetYM = hasCurrentMonthData ? currentYM : (availableMonths[0] || currentYM);
+      } else if (selectedSummaryPeriod === 'current') {
+        targetYM = currentYM;
+      }
+
+      const [yearStr, monthStr] = targetYM.split('-');
+      const targetYear = Number(yearStr);
+      const targetMonth = Number(monthStr) - 1;
+
+      targetExpenses = expenses.filter(exp => {
+        if (!exp.date) return false;
+        const d = new Date(exp.date);
+        return d.getUTCFullYear() === targetYear && d.getUTCMonth() === targetMonth;
+      });
+
+      targetAdvances = advances.filter(adv => {
+        if (!adv.date) return false;
+        const d = new Date(adv.date);
+        return d.getUTCFullYear() === targetYear && d.getUTCMonth() === targetMonth;
+      });
+
+      const monthDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+      label = targetYM === currentYM ? `${format(monthDate, 'MMM yyyy')} (Current)` : `${format(monthDate, 'MMM yyyy')}`;
+      if (selectedSummaryPeriod === 'auto' && targetYM !== currentYM) {
+        label = `${format(monthDate, 'MMM yyyy')} (Latest Data)`;
+      }
+    }
 
     // 1. Fuel
-    const fuel = currentMonthExpenses
+    const fuel = targetExpenses
       .filter(e => e.subcategory === 'Fuel' || e.category === 'Fuel' || /fuel/i.test(e.subcategory || '') || /fuel/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     // 2. FASTag - Toll
-    const fastag = currentMonthExpenses
+    const fastag = targetExpenses
       .filter(e => e.subcategory === 'Toll' || e.subcategory === 'FASTag' || e.subcategory === 'FASTag - Toll' || e.category === 'Toll' || /toll|fastag/i.test(e.subcategory || '') || /toll|fastag/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     // 3. Driver Advance
-    const unlinkedExpAdvance = currentMonthExpenses
+    const unlinkedExpAdvance = targetExpenses
       .filter(e => e.category === 'Employee Advance' || e.subcategory === 'Driver Advance' || e.subcategory === 'Employee Advance' || (e.category === 'Employee' && e.subcategory === 'Employee Advance'))
-      .filter(e => !currentMonthAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
+      .filter(e => !targetAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
-    const driverAdvance = currentMonthAdvances
+    const driverAdvance = targetAdvances
       .reduce((sum, a) => Number(sum) + Number(a.amount || 0), 0) + unlinkedExpAdvance;
 
     // 4. Salary
-    const salary = currentMonthExpenses
+    const salary = targetExpenses
       .filter(e => e.category === 'Salary' || e.subcategory === 'Salary' || /salary/i.test(e.category || '') || /salary/i.test(e.subcategory || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     // 5. Maintenance
-    const maintenance = currentMonthExpenses
+    const maintenance = targetExpenses
       .filter(e => e.subcategory === 'Maintenance' || e.category === 'Maintenance' || /maintenance/i.test(e.subcategory || '') || /maintenance/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     // 6. Miscellaneous
-    const misc = currentMonthExpenses
+    const misc = targetExpenses
       .filter(e => e.subcategory === 'Miscellaneous' || e.category === 'Miscellaneous' || /misc/i.test(e.subcategory || '') || /misc/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     // 7. EMI
-    const emiRecorded = currentMonthExpenses
+    const emiRecorded = targetExpenses
       .filter(e => e.category === 'EMI' || e.subcategory === 'EMI' || /emi/i.test(e.category || '') || /emi/i.test(e.subcategory || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
-    const emi = emiRecorded > 0 ? emiRecorded : 33410;
+    const emi = emiRecorded > 0 ? emiRecorded : (targetExpenses.length > 0 || targetAdvances.length > 0 ? 33410 : 0);
 
     // 8. All Other Expenses
-    const allOther = currentMonthExpenses
+    const allOther = targetExpenses
       .filter(e => {
         const cat = (e.category || '').toLowerCase();
         const sub = (e.subcategory || '').toLowerCase();
@@ -487,16 +550,20 @@ const ExpensesPage = () => {
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     return {
-      fuelTotal: Number(fuel),
-      fastagTotal: Number(fastag),
-      driverAdvanceTotal: Number(driverAdvance),
-      salaryTotal: Number(salary),
-      maintenanceTotal: Number(maintenance),
-      miscTotal: Number(misc),
-      fixedEmiTotal: Number(emi),
-      allOtherTotal: Number(allOther)
+      activeSummaryLabel: label,
+      summaryTotals: {
+        fuelTotal: Number(fuel),
+        fastagTotal: Number(fastag),
+        driverAdvanceTotal: Number(driverAdvance),
+        salaryTotal: Number(salary),
+        maintenanceTotal: Number(maintenance),
+        miscTotal: Number(misc),
+        fixedEmiTotal: Number(emi),
+        allOtherTotal: Number(allOther)
+      }
     };
-  }, [expenses, advances]);
+  }, [expenses, advances, filteredExpenses, filteredAdvances, selectedSummaryPeriod, availableMonths, filters.dateFrom, filters.dateTo]);
+
 
   const getPaymentMethodBadge = (method) => {
     switch (method) {
@@ -545,17 +612,45 @@ const ExpensesPage = () => {
           </TabsList>
 
           <TabsContent value="expenses" className="space-y-4 m-0">
-            {/* Real-time current month expense category summary grid (8 Categories) */}
+            {/* Period Selector Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 bg-card/40 border border-border/40 p-3 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Calculating For:</span>
+                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-bold text-xs px-2.5 py-1 rounded-xl">
+                  {activeSummaryLabel}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-xs w-full sm:w-auto">
+                <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">Switch Period:</span>
+                <Select value={selectedSummaryPeriod} onValueChange={setSelectedSummaryPeriod}>
+                  <SelectTrigger className="h-8 text-xs bg-card border-border rounded-xl font-semibold w-full sm:w-[210px]">
+                    <SelectValue placeholder="Select Period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">⚡ Auto (Latest Data)</SelectItem>
+                    <SelectItem value="current">📅 Current Month ({format(new Date(), 'MMM yyyy')})</SelectItem>
+                    {availableMonths.map(ym => {
+                      const [y, m] = ym.split('-');
+                      const labelName = format(new Date(Date.UTC(Number(y), Number(m) - 1, 1)), 'MMMM yyyy');
+                      return <SelectItem key={ym} value={ym}>📅 {labelName}</SelectItem>;
+                    })}
+                    <SelectItem value="all">♾️ All-Time Totals</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Real-time expense category summary grid (8 Categories) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
               {[
-                { title: 'Fuel Expense', amount: fuelTotal, color: 'text-orange-500' },
-                { title: 'FASTag - Toll', amount: fastagTotal, color: 'text-blue-500' },
-                { title: 'Driver Advance', amount: driverAdvanceTotal, color: 'text-emerald-500' },
-                { title: 'Salary', amount: salaryTotal, color: 'text-teal-500' },
-                { title: 'Maintenance', amount: maintenanceTotal, color: 'text-purple-500' },
-                { title: 'Miscellaneous', amount: miscTotal, color: 'text-pink-500' },
-                { title: 'EMI', amount: fixedEmiTotal, color: 'text-amber-500' },
-                { title: 'All Other Expenses', amount: allOtherTotal, color: 'text-indigo-500' }
+                { title: 'Fuel Expense', amount: summaryTotals.fuelTotal, color: 'text-orange-500' },
+                { title: 'FASTag - Toll', amount: summaryTotals.fastagTotal, color: 'text-blue-500' },
+                { title: 'Driver Advance', amount: summaryTotals.driverAdvanceTotal, color: 'text-emerald-500' },
+                { title: 'Salary', amount: summaryTotals.salaryTotal, color: 'text-teal-500' },
+                { title: 'Maintenance', amount: summaryTotals.maintenanceTotal, color: 'text-purple-500' },
+                { title: 'Miscellaneous', amount: summaryTotals.miscTotal, color: 'text-pink-500' },
+                { title: 'EMI', amount: summaryTotals.fixedEmiTotal, color: 'text-amber-500' },
+                { title: 'All Other Expenses', amount: summaryTotals.allOtherTotal, color: 'text-indigo-500' }
               ].map((card, idx) => (
                 <Card key={idx} className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden">
                   <CardContent className="p-3 sm:p-4 flex flex-col justify-between h-full">
@@ -569,10 +664,10 @@ const ExpensesPage = () => {
                       </p>
                     </div>
                     <div className="mt-2.5 flex items-center justify-between">
-                      <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold">
-                        {card.title === 'EMI' ? 'Monthly' : format(new Date(), 'MMM yyyy')}
+                      <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold truncate">
+                        {card.title === 'EMI' ? 'Monthly' : activeSummaryLabel}
                       </span>
-                      <div className={`w-2 h-2 rounded-full ${card.color.replace('text', 'bg')} animate-pulse`} />
+                      <div className={`w-2 h-2 rounded-full ${card.color.replace('text', 'bg')} animate-pulse shrink-0`} />
                     </div>
                   </CardContent>
                 </Card>

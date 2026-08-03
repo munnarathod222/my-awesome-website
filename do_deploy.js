@@ -1,49 +1,85 @@
-const git = require('isomorphic-git');
-const http = require('isomorphic-git/http/node');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const dir = path.resolve(__dirname);
 const GH_TOKEN = process.env.GH_TOKEN;
+const OWNER = 'munnarathod222';
+const REPO = 'my-awesome-website';
+const BRANCH = 'main';
 
-if (!GH_TOKEN) {
-  console.error('Set GH_TOKEN env var');
-  process.exit(1);
+function ghRequest(method, apiPath, body) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : null;
+    const req = https.request({
+      hostname: 'api.github.com',
+      path: apiPath,
+      method,
+      headers: {
+        'Authorization': `Bearer ${GH_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'JBC-Deploy/1.0',
+        'Content-Type': 'application/json',
+        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', d => body += d);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); }
+        catch { resolve({ status: res.statusCode, data: body }); }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
 }
 
-async function main() {
-  try {
-    const status = await git.statusMatrix({ fs, dir });
-    
-    for (const [filepath, head, workdir, stage] of status) {
-      if (workdir === 0) {
-        await git.remove({ fs, dir, filepath });
-        console.log('Removed:', filepath);
-      } else if (workdir !== 1 || stage !== 1) {
-        await git.add({ fs, dir, filepath });
-      }
-    }
+async function updateFile(repoPath, localPath, message) {
+  // Get current file SHA from GitHub
+  const getRes = await ghRequest('GET', `/repos/${OWNER}/${REPO}/contents/${repoPath}?ref=${BRANCH}`);
+  if (getRes.status !== 200) {
+    console.error(`Failed to get ${repoPath}:`, getRes.status, getRes.data?.message);
+    return;
+  }
+  const currentSha = getRes.data.sha;
+  console.log(`Got SHA for ${repoPath}: ${currentSha.substring(0, 8)}`);
 
-    const sha = await git.commit({
-      fs, dir,
-      message: 'fix: show front and back page in document preview modal',
-      author: { name: 'Munna Rathod', email: 'munnarathod222@gmail.com' }
-    });
-    console.log('Committed:', sha);
+  // Read local file and base64 encode
+  const localContent = fs.readFileSync(path.join(__dirname, localPath), 'utf8');
+  const encoded = Buffer.from(localContent).toString('base64');
 
-    console.log('Pushing...');
-    const result = await git.push({
-      fs, dir, http,
-      remote: 'origin',
-      ref: 'main',
-      onAuth: () => ({ username: 'oauth2', password: GH_TOKEN }),
-      onProgress: (p) => process.stdout.write(`\r${p.phase} ${p.loaded || ''}/${p.total || ''}   `)
-    });
-    console.log('\nResult:', JSON.stringify(result?.refs));
-    console.log('✅ Deployed!');
-  } catch (err) {
-    console.error('\nError:', err.message || err);
+  // Update file
+  const putRes = await ghRequest('PUT', `/repos/${OWNER}/${REPO}/contents/${repoPath}`, {
+    message,
+    content: encoded,
+    sha: currentSha,
+    branch: BRANCH
+  });
+
+  if (putRes.status === 200 || putRes.status === 201) {
+    console.log(`✅ Updated ${repoPath} — commit: ${putRes.data.commit?.sha?.substring(0, 8)}`);
+  } else {
+    console.error(`❌ Failed to update ${repoPath}:`, putRes.status, JSON.stringify(putRes.data));
   }
 }
 
-main();
+async function main() {
+  console.log('Updating files via GitHub API...\n');
+
+  await updateFile(
+    'apps/web/src/components/DocumentPreviewModal.jsx',
+    'apps/web/src/components/DocumentPreviewModal.jsx',
+    'fix: show both front and back page in document preview modal'
+  );
+
+  await updateFile(
+    'apps/web/src/pages/TruckDocsPage.jsx',
+    'apps/web/src/pages/TruckDocsPage.jsx',
+    'fix: check all file fields (file, files, back_file) in truck docs'
+  );
+
+  console.log('\nDone! Render will auto-deploy from these commits.');
+}
+
+main().catch(console.error);
