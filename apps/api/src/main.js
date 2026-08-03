@@ -743,9 +743,9 @@ const runPocketBase = async () => {
         });
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }
-      if (record.listRule !== "@request.auth.id != ''") {
-        logger.info("Migrating: Updating 'trip_logs' listRule to allow Client users to list trips...");
-        db.prepare("UPDATE _collections SET listRule = ? WHERE id = ?").run("@request.auth.id != ''", record.id);
+      if (record.listRule !== "") {
+        logger.info("Migrating: Updating 'trip_logs' listRule and viewRule to open access...");
+        db.prepare("UPDATE _collections SET listRule = '', viewRule = '' WHERE id = ?").run(record.id);
       }
     }
 
