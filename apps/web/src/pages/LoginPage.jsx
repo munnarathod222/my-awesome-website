@@ -111,7 +111,7 @@ const LoginPage = () => {
         }
 
         toast.success(`Welcome back, ${user?.name || 'Vinod kumar Rathod'}! PIN Verified.`);
-        window.location.href = getRedirectPath(user);
+        window.location.replace('/dashboard');
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
         setPinDigits(['', '', '', '']);
@@ -151,7 +151,7 @@ const LoginPage = () => {
       setSavedDeviceProfile(deviceProfile);
 
       toast.success('Logged in & Device PIN configured (Default PIN: 2525)');
-      window.location.href = getRedirectPath(user);
+      window.location.replace('/dashboard');
     } catch (err) {
       console.error(err);
       const msg = err?.message || err?.response?.message || '';
