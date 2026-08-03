@@ -129,7 +129,13 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           formDataToSend.append(key, String(payload[key]));
         });
 
-        // Append ONLY actual new File objects
+        // Separate existing files that are not deleted (for form data compatibility)
+        const existingItems = bodyImagesList.filter(item => !item.isNew);
+        existingItems.forEach((item) => {
+          formDataToSend.append('body_images', item.file);
+        });
+
+        // Append actual new File objects
         newItems.forEach((item) => {
           if (item.file instanceof File) {
             formDataToSend.append('body_images', item.file);
@@ -140,9 +146,35 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           deletedFiles.forEach((filename) => {
             formDataToSend.append('body_images.' + filename, '');
           });
-          await withTimeout(pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false }), 20000);
+        }
+
+        let updatedRecord;
+        if (truck?.id) {
+          updatedRecord = await withTimeout(pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false }), 20000);
         } else {
-          await withTimeout(pb.collection('trucks').create(formDataToSend, { $autoCancel: false }), 20000);
+          updatedRecord = await withTimeout(pb.collection('trucks').create(formDataToSend, { $autoCancel: false }), 20000);
+        }
+
+        // Reorder filenames according to bodyImagesList order
+        const startingExistingNames = truck?.body_images || [];
+        const returnedNames = updatedRecord.body_images || [];
+        const newFilenamesInReturned = returnedNames.filter(name => !startingExistingNames.includes(name));
+
+        let newFileIdx = 0;
+        const finalOrderedFilenames = bodyImagesList.map(item => {
+          if (item.isNew) {
+            const name = newFilenamesInReturned[newFileIdx];
+            newFileIdx++;
+            return name;
+          } else {
+            return item.file;
+          }
+        }).filter(Boolean);
+
+        if (finalOrderedFilenames.length > 0) {
+          await pb.collection('trucks').update(updatedRecord.id, {
+            body_images: finalOrderedFilenames
+          }, { $autoCancel: false });
         }
       }
 
@@ -290,84 +322,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('truck_name', formData.truck_name);
-      formDataToSend.append('truck_number', formData.truck_number);
-      formDataToSend.append('truck_size', formData.truck_size);
-      formDataToSend.append('truck_axle', formData.truck_axle);
-      formDataToSend.append('tyre_count', String(formData.tyre_count));
-      formDataToSend.append('status', formData.status);
-      formDataToSend.append('base_odometer', String(formData.base_odometer || 0));
-      formDataToSend.append('ownership_type', formData.ownership_type);
-      formDataToSend.append('manager_id', formData.manager_id === 'none' ? '' : formData.manager_id);
-      formDataToSend.append('fastag_id', formData.fastag_id || '');
-      formDataToSend.append('current_fastag_balance', String(parseFloat(formData.current_fastag_balance) || 0));
-      formDataToSend.append('payload_capacity', formData.payload_capacity || '');
-      if (formData.body_length) formDataToSend.append('body_length', String(parseFloat(formData.body_length) || 0));
-      if (formData.body_width)  formDataToSend.append('body_width',  String(parseFloat(formData.body_width)  || 0));
-      if (formData.body_height) formDataToSend.append('body_height', String(parseFloat(formData.body_height) || 0));
-
-      // Keep existing files that are not deleted
-      const existingItems = bodyImagesList.filter(item => !item.isNew);
-      existingItems.forEach((item) => {
-        formDataToSend.append('body_images', item.file);
-      });
-
-      // Separate new files
-      const newItems = bodyImagesList.filter(item => item.isNew);
-      newItems.forEach((item) => {
-        formDataToSend.append('body_images', item.file);
-      });
-
-      if (truck?.id) {
-        deletedFiles.forEach((filename) => {
-          formDataToSend.append('body_images.' + filename, '');
-        });
-      }
-
-      let updatedRecord;
-      if (truck?.id) {
-        updatedRecord = await pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false });
-      } else {
-        updatedRecord = await pb.collection('trucks').create(formDataToSend, { $autoCancel: false });
-      }
-
-      // Reorder filenames according to bodyImagesList order
-      const startingExistingNames = truck?.body_images || [];
-      const returnedNames = updatedRecord.body_images || [];
-      const newFilenamesInReturned = returnedNames.filter(name => !startingExistingNames.includes(name));
-
-      let newFileIdx = 0;
-      const finalOrderedFilenames = bodyImagesList.map(item => {
-        if (item.isNew) {
-          const name = newFilenamesInReturned[newFileIdx];
-          newFileIdx++;
-          return name;
-        } else {
-          return item.file;
-        }
-      }).filter(Boolean);
-
-      if (finalOrderedFilenames.length > 0) {
-        await pb.collection('trucks').update(updatedRecord.id, {
-          body_images: finalOrderedFilenames
-        }, { $autoCancel: false });
-      }
-
-      toast.success(truck ? 'Truck updated successfully' : 'Truck created successfully');
-      onSuccess();
-      onClose();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || 'Failed to save truck');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Combined into main handleSubmit above
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && !loading && onClose()}>

@@ -92,10 +92,10 @@ const ProfilePage = () => {
       } catch (e) {}
     } else if (currentUser) {
       setDeviceProfile({
-        id: currentUser.id,
-        email: currentUser.email,
-        name: currentUser.full_name || currentUser.name || 'User',
-        role: currentUser.role || 'user',
+        id: currentUser?.id,
+        email: currentUser?.email,
+        name: currentUser?.full_name || currentUser?.name || 'User',
+        role: currentUser?.role || 'user',
         pin: '2525'
       });
     }

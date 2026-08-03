@@ -4,7 +4,7 @@ import {
   CreditCard, Upload, Share2, Printer, Download, Copy, Check, RefreshCw, 
   Sparkles, Building2, Phone, Mail, Globe, MapPin, User, Image as ImageIcon,
   Sliders, ShieldCheck, QrCode, Trash2, CheckCircle2, MessageSquare, ExternalLink,
-  Users, Truck, Award, Palette, Layers, FileText
+  Users, Truck, Award, Palette, Layers, FileText, Eye
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

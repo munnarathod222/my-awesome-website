@@ -1126,14 +1126,14 @@ const runPocketBase = async () => {
     const srcDb = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
     const srcAux = path.resolve(__dirname, '../../pocketbase/pb_data/auxiliary.db');
     
-    if (fs.existsSync(srcDb)) {
+    if (fs.existsSync(srcDb) && !fs.existsSync(targetDb)) {
       logger.info(`💾 Copying pre-populated data.db (1.7MB) to ${targetDb}...`);
       fs.copyFileSync(srcDb, targetDb);
       if (fs.existsSync(srcDb + '-wal')) fs.copyFileSync(srcDb + '-wal', targetDb + '-wal');
       if (fs.existsSync(srcDb + '-shm')) fs.copyFileSync(srcDb + '-shm', targetDb + '-shm');
     }
 
-    if (fs.existsSync(srcAux)) {
+    if (fs.existsSync(srcAux) && !fs.existsSync(targetAux)) {
       logger.info(`💾 Copying pre-populated auxiliary.db (5.7MB) to ${targetAux}...`);
       fs.copyFileSync(srcAux, targetAux);
       if (fs.existsSync(srcAux + '-wal')) fs.copyFileSync(srcAux + '-wal', targetAux + '-wal');

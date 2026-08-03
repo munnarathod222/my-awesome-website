@@ -324,7 +324,10 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
             await pb.collection('cashbook').create(cashPayload, { $autoCancel: false });
           }
         } catch (syncErr) {
-          payload.subcategory === 'Toll / FASTag' ||
+          console.error('Failed to sync cashbook entry:', syncErr);
+        }
+
+        const isTollExpense = payload.subcategory === 'Toll / FASTag' ||
           payload.payment_method === 'FASTag' ||
           /toll|fastag/i.test(payload.category || '') ||
           /toll|fastag/i.test(payload.subcategory || '') ||
