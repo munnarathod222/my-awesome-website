@@ -40,21 +40,25 @@ onRecordDelete((e) => {
     const totalFreight = Number(e.record.get("revenue")) || 0;
     const advanceReceived = Number(e.record.get("advance_received_from_client")) || 0;
     if (clientId) {
-      const client = $app.findRecordById("clients", clientId);
-      if (client) {
-        const billingType = client.getString("billing_type") || "Spot";
-        if (billingType === "Spot") {
-          const remainingDue = totalFreight - advanceReceived;
-          const currentDue = Number(client.get("client_balance_due")) || 0;
-          client.set("client_balance_due", Math.max(0, currentDue - remainingDue));
-          $app.save(client);
-          console.log(`Reverted spot client balance due for client ${clientId}`);
-        } else if (billingType === "Contract") {
-          const currentBucket = Number(client.get("unbilled_cycle_bucket")) || 0;
-          client.set("unbilled_cycle_bucket", Math.max(0, currentBucket - totalFreight));
-          $app.save(client);
-          console.log(`Reverted contract client bucket for client ${clientId}`);
+      try {
+        const client = $app.findRecordById("clients", clientId);
+        if (client) {
+          const billingType = client.getString("billing_type") || "Spot";
+          if (billingType === "Spot") {
+            const remainingDue = totalFreight - advanceReceived;
+            const currentDue = Number(client.get("client_balance_due")) || 0;
+            client.set("client_balance_due", Math.max(0, currentDue - remainingDue));
+            $app.save(client);
+            console.log(`Reverted spot client balance due for client ${clientId}`);
+          } else if (billingType === "Contract") {
+            const currentBucket = Number(client.get("unbilled_cycle_bucket")) || 0;
+            client.set("unbilled_cycle_bucket", Math.max(0, currentBucket - totalFreight));
+            $app.save(client);
+            console.log(`Reverted contract client bucket for client ${clientId}`);
+          }
         }
+      } catch (clientErr) {
+        console.log(`Client ${clientId} not found or error reverting balance: ${clientErr.message}`);
       }
     }
   } catch (err) {
