@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
 import { recordTollDeduction } from '@/lib/fastagDeductionUtils.js';
 import DocumentFilePreview from './DocumentFilePreview.jsx';
+import apiServerClient from '@/lib/apiServerClient.js';
 
 
 export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, trucks: propTrucks }) {
@@ -388,7 +389,8 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
       onClose();
     } catch (err) {
       console.error('Expense save error:', err);
-      toast.error('Failed to save expense. Please check your inputs.');
+      const errMsg = err?.data?.message || err?.response?.data?.message || err?.message || 'Unknown error';
+      toast.error(`Failed to save expense: ${errMsg}`);
     } finally {
       setIsLoading(false);
     }
