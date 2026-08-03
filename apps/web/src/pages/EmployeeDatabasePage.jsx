@@ -373,12 +373,24 @@ const EmployeeDatabasePage = () => {
       if (photoFile) submitData.append('photo', photoFile);
       else if (removePhoto && editingId) submitData.append('photo', ''); 
 
+      // Race against a 15-second timeout so save button never freezes permanently
+      const withTimeout = (promise, ms) => Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))
+      ]);
+
       let savedEmployee;
       if (editingId) {
-        savedEmployee = await pb.collection('employees').update(editingId, submitData, { $autoCancel: false });
+        savedEmployee = await withTimeout(
+          pb.collection('employees').update(editingId, submitData, { $autoCancel: false }),
+          15000
+        );
         toast.success('Employee updated successfully');
       } else {
-        savedEmployee = await pb.collection('employees').create(submitData, { $autoCancel: false });
+        savedEmployee = await withTimeout(
+          pb.collection('employees').create(submitData, { $autoCancel: false }),
+          15000
+        );
         toast.success('Employee added successfully');
       }
 
@@ -473,71 +485,62 @@ const EmployeeDatabasePage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to permanently delete this employee?')) {
-      try {
-        let targetPbId = id;
-        const targetEmp = employees.find(e => e.id === id || e.contact === id || e.name === id);
+    if (!window.confirm('Are you sure you want to permanently delete this employee?')) return;
 
-        // PocketBase record IDs are exactly 15 characters
-        if (!targetPbId || String(targetPbId).length !== 15) {
-          const queryVal = targetEmp?.id || id;
-          const found = await pb.collection('employees').getList(1, 1, {
-            filter: `id = "${queryVal}" || name = "${queryVal}" || contact = "${queryVal}"`,
-            $autoCancel: false
-          }).catch(() => ({ items: [] }));
-          if (found.items && found.items.length > 0) {
-            targetPbId = found.items[0].id;
+    // Immediately remove from UI so user sees it's gone
+    setEmployees(prev => prev.filter(e => e.id !== id));
+
+    try {
+      const pid = String(id).trim();
+
+      // 1. Delete child relation records first via PocketBase SDK
+      const cleanRel = async (colName, filterExpr) => {
+        try {
+          const rels = await pb.collection(colName).getFullList({ filter: filterExpr, $autoCancel: false }).catch(() => []);
+          for (const r of rels) {
+            await pb.collection(colName).delete(r.id, { $autoCancel: false }).catch(() => {});
           }
-        }
+        } catch (e) {}
+      };
 
-        // 1. Remove from local React state immediately
-        setEmployees(prev => prev.filter(e => e.id !== id && e.id !== targetPbId));
+      await cleanRel('employee_documents', `employee_id = "${pid}"`);
+      await cleanRel('driver_accident_reports', `employee_id = "${pid}"`);
+      await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
+      await cleanRel('attendance_records', `employee_id = "${pid}"`);
+      await cleanRel('advances', `employee_id = "${pid}"`);
+      await cleanRel('payroll', `employee_id = "${pid}" || employee_id_relation = "${pid}"`);
+      await cleanRel('shared_folders', `employee_id = "${pid}"`);
 
-        // 2. Invoke direct Express API backend delete with superuser privileges
+      // 2. Delete the employee via PocketBase SDK (primary method)
+      let pbDeleted = false;
+      try {
+        await pb.collection('employees').delete(pid, { $autoCancel: false });
+        pbDeleted = true;
+      } catch (sdkErr) {
+        console.warn('PocketBase SDK delete failed, trying backend API:', sdkErr.message);
+      }
+
+      // 3. If PocketBase SDK failed, use backend API as fallback
+      if (!pbDeleted) {
         try {
           await apiServerClient.fetch('/driver/delete-employee-by-id', {
             method: 'POST',
-            body: JSON.stringify({ id: targetPbId || id })
+            body: JSON.stringify({ id: pid })
           });
         } catch (apiErr) {
-          console.warn('Direct API employee delete warning:', apiErr);
+          console.warn('Backend API delete also failed:', apiErr);
         }
-
-        // 3. Clean up PocketBase child relation records via SDK
-        const pid = targetPbId && String(targetPbId).length === 15 ? targetPbId : id;
-        if (pid) {
-          const cleanRel = async (colName, filterExpr) => {
-            try {
-              const rels = await pb.collection(colName).getFullList({ filter: filterExpr, $autoCancel: false }).catch(() => []);
-              for (const r of rels) {
-                await pb.collection(colName).delete(r.id, { $autoCancel: false }).catch(() => {});
-              }
-            } catch (e) {}
-          };
-
-          await cleanRel('employee_documents', `employee_id = "${pid}"`);
-          await cleanRel('driver_accident_reports', `employee_id = "${pid}"`);
-          await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
-          await cleanRel('attendance_records', `employee_id = "${pid}"`);
-          await cleanRel('advances', `employee_id = "${pid}"`);
-          await cleanRel('payroll', `employee_id = "${pid}" || employee_id_relation = "${pid}"`);
-          await cleanRel('shared_folders', `employee_id = "${pid}"`);
-
-          // Finally delete the employee record natively from PocketBase
-          await pb.collection('employees').delete(pid, { $autoCancel: false }).catch((sdkErr) => {
-            console.warn('PocketBase SDK employee delete warning:', sdkErr.message);
-          });
-        }
-
-        toast.success('Employee deleted successfully');
-
-        // 4. Background refresh
-        setTimeout(() => { fetchData(); }, 600);
-      } catch (err) {
-        console.error('Failed to delete employee:', err);
-        toast.error(`Failed to delete employee: ${err.message || 'Database error'}`);
-        fetchData();
       }
+
+      toast.success('Employee deleted successfully');
+
+      // 4. Refresh after 5 seconds — enough time for PocketBase to be back up
+      setTimeout(() => { fetchData(); }, 5000);
+
+    } catch (err) {
+      console.error('Failed to delete employee:', err);
+      toast.error(`Failed to delete employee: ${err.message || 'Database error'}`);
+      fetchData();
     }
   };
 
