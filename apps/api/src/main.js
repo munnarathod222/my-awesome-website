@@ -1521,18 +1521,18 @@ app.use('/hcgi/platform', async (req, res) => {
     }
   });
 
-  if (req.body && (typeof req.body === 'object' && Object.keys(req.body).length > 0)) {
+  if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
     const bodyData = JSON.stringify(req.body);
     proxyReq.setHeader('content-type', 'application/json');
     proxyReq.setHeader('content-length', Buffer.byteLength(bodyData));
     proxyReq.write(bodyData);
     proxyReq.end();
-  } else if (typeof req.body === 'string' && req.body.length > 0) {
+  } else if (['POST', 'PUT', 'PATCH'].includes(req.method) && typeof req.body === 'string' && req.body.length > 0) {
     proxyReq.setHeader('content-length', Buffer.byteLength(req.body));
     proxyReq.write(req.body);
     proxyReq.end();
   } else {
-    req.pipe(proxyReq, { end: true });
+    proxyReq.end();
   }
 });
 
