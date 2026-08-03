@@ -167,7 +167,64 @@ router.patch('/:id', async (req, res) => {
       success: false,
       error: err.message || 'Database validation/constraint failed',
       details: err.data
-    });
+});
+
+/**
+ * POST /api/trips/delete-bulk
+ * DELETE /api/trips/:id
+ * Delete trip records cleanly directly from PocketBase.
+ */
+router.post('/delete-bulk', async (req, res) => {
+  const { ids, trips } = req.body || {};
+  const rawList = Array.isArray(ids) ? ids : (Array.isArray(trips) ? trips : [ids || req.params?.id]);
+  const cleanList = rawList.map(item => typeof item === 'object' ? (item.id || item.trip_id) : item).filter(Boolean);
+
+  if (cleanList.length === 0) {
+    return res.status(400).json({ success: false, error: 'No trip IDs provided for deletion' });
+  }
+
+  let deletedCount = 0;
+  for (const target of cleanList) {
+    try {
+      await pb.collection('trip_logs').delete(target, { $autoCancel: false });
+      deletedCount++;
+    } catch (pbErr) {
+      try {
+        const found = await pb.collection('trip_logs').getList(1, 1, {
+          filter: `trip_id = "${target}" || id = "${target}"`,
+          $autoCancel: false
+        });
+        if (found.items && found.items.length > 0) {
+          await pb.collection('trip_logs').delete(found.items[0].id, { $autoCancel: false });
+          deletedCount++;
+        }
+      } catch (lookupErr) {
+        logger.error(`Failed to delete trip ${target}:`, lookupErr);
+      }
+    }
+  }
+
+  logger.info(`🗑️ Bulk trip delete endpoint finished: removed ${deletedCount} record(s)`);
+  return res.json({ success: true, deletedCount, message: `Successfully deleted ${deletedCount} trip log(s)` });
+});
+
+router.delete('/:id', async (req, res) => {
+  const target = req.params.id;
+  try {
+    await pb.collection('trip_logs').delete(target, { $autoCancel: false });
+    return res.json({ success: true, message: 'Trip deleted successfully' });
+  } catch (err) {
+    try {
+      const found = await pb.collection('trip_logs').getList(1, 1, {
+        filter: `trip_id = "${target}" || id = "${target}"`,
+        $autoCancel: false
+      });
+      if (found.items && found.items.length > 0) {
+        await pb.collection('trip_logs').delete(found.items[0].id, { $autoCancel: false });
+        return res.json({ success: true, message: 'Trip deleted successfully' });
+      }
+    } catch (e) {}
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
