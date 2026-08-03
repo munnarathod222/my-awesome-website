@@ -1370,7 +1370,7 @@ const EmployeeDatabasePage = () => {
                                       size="icon" 
                                       variant="outline" 
                                       className="h-8 w-8 rounded-lg hover:border-primary hover:text-primary" 
-                                      onClick={() => handleEdit(emp, idx)}
+                                      onClick={() => handleEdit(emp)}
                                     >
                                       <Pencil className="w-3.5 h-3.5" />
                                     </Button>

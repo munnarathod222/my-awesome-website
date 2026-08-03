@@ -88,8 +88,9 @@ async function deleteEmployeeRecord(target) {
     ])).filter(p => p && fs.existsSync(p));
 
     for (const dbPath of possiblePaths) {
+      let db;
       try {
-        const db = new DatabaseSync(dbPath);
+        db = new DatabaseSync(dbPath);
         try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
@@ -107,6 +108,10 @@ async function deleteEmployeeRecord(target) {
         try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (e) {}
       } catch (sqErr) {
         logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
+      } finally {
+        if (db) {
+          try { db.close(); } catch (cErr) {}
+        }
       }
     }
   } catch (sqliteErr) {}

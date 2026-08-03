@@ -26,11 +26,17 @@ async function deleteTripLogRecord(target) {
     ])).filter(p => p && fs.existsSync(p));
 
     for (const dbPath of possiblePaths) {
+      let db;
       try {
-        const db = new DatabaseSync(dbPath);
+        db = new DatabaseSync(dbPath);
         const info = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?').run(String(target), String(target));
         if (info.changes > 0) deletedCount += info.changes;
       } catch (sqErr) {}
+      finally {
+        if (db) {
+          try { db.close(); } catch (cErr) {}
+        }
+      }
     }
   } catch (sqliteErr) {}
 

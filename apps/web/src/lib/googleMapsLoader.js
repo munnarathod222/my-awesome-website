@@ -15,3 +15,5 @@ export function getIndianRouteDistance(origin, destination) {
     exact: false
   };
 }
+
+export const calculateGoogleRoute = getIndianRouteDistance;

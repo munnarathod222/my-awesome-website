@@ -181,7 +181,13 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
     // 🛡️ Anti-Wipeout Guard: If root data.db is < 500KB, search for daily history snapshots!
     if (!buffer || buffer.byteLength < 500000) {
       logger.warn(`⚠️ Root data.db in Supabase is small/invalid (${buffer ? buffer.byteLength : 0} bytes). Searching history snapshots...`);
-      const snapshots = ['2026-08-03', '2026-07-25', '2026-07-23'];
+      // Dynamically generate candidate date strings for the past 14 days
+      const snapshots = [];
+      const now = new Date();
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(now.getTime() - i * 86400000);
+        snapshots.push(d.toISOString().slice(0, 10));
+      }
       for (const dStr of snapshots) {
         const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${dStr}.db`, {
           method: 'GET',
@@ -249,21 +255,26 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     }
 
     // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 2: Record count integrity check
+    let testDb;
     try {
       const { DatabaseSync } = await import('node:sqlite');
-      const testDb = new DatabaseSync(tempPath);
+      testDb = new DatabaseSync(tempPath);
       const tripCount = testDb.prepare("SELECT COUNT(*) as c FROM trip_logs").get()?.c || 0;
       const expenseCount = testDb.prepare("SELECT COUNT(*) as c FROM expenses").get()?.c || 0;
       
       if (tripCount < 10 || expenseCount < 10) {
         logger.error(`🛑 CRITICAL ANTI-WIPEOUT GUARD: Local DB has missing records (trips: ${tripCount}, expenses: ${expenseCount}). ABORTING UPLOAD TO PRESERVE CLOUD BACKUP!`);
+        try { testDb.close(); } catch (e) {}
         try { fs.unlinkSync(tempPath); } catch (e) {}
         return false;
       }
     } catch (dbCheckErr) {
       logger.error(`⚠️ Database integrity check failed: ${dbCheckErr.message}. Aborting upload as safety precaution.`);
+      if (testDb) { try { testDb.close(); } catch (e) {} }
       try { fs.unlinkSync(tempPath); } catch (e) {}
       return false;
+    } finally {
+      if (testDb) { try { testDb.close(); } catch (e) {} }
     }
 
     try { fs.unlinkSync(tempPath); } catch (e) {}
@@ -727,9 +738,10 @@ const runPocketBase = async () => {
   }
 
   // Run SQLite schema migration on boot
+  let db;
   try {
     const { DatabaseSync } = await import('node:sqlite');
-    const db = new DatabaseSync(dbFilePath);
+    db = new DatabaseSync(dbFilePath);
     
     // 1. Add toll_deduction column to trip_logs table if not exists
     const cols = db.prepare("PRAGMA table_info(trip_logs)").all().map(c => c.name);
@@ -1022,6 +1034,10 @@ const runPocketBase = async () => {
     }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
+  } finally {
+    if (db) {
+      try { db.close(); } catch (cErr) {}
+    }
   }
 
   // Sync latest storage files from Supabase Storage — Skipped on boot for instant startup speed!
@@ -1573,13 +1589,14 @@ const directDeleteTripLogs = (req, res) => {
     return res.status(400).json({ success: false, error: 'No trip IDs provided for deletion' });
   }
 
+  let db;
   try {
     const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
     const altPath = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
     const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
     
     const { DatabaseSync } = require('node:sqlite');
-    const db = new DatabaseSync(targetDb);
+    db = new DatabaseSync(targetDb);
 
     let deletedCount = 0;
     const stmt = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?');
@@ -1594,6 +1611,10 @@ const directDeleteTripLogs = (req, res) => {
   } catch (err) {
     logger.error('Error executing direct trip delete:', err);
     return res.status(500).json({ success: false, error: err.message });
+  } finally {
+    if (db) {
+      try { db.close(); } catch (cErr) {}
+    }
   }
 };
 

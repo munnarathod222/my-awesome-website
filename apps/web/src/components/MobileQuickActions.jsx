@@ -8,7 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MobileQuickActions() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
   const { isAdmin, isManager, isDispatcher } = useRoleBasedAccess();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -55,7 +55,6 @@ export default function MobileQuickActions() {
   ];
 
   // Filter actions based on role access
-  const { currentUser } = useAuth();
   const role = currentUser?.role || 'user';
   const visibleActions = actions.filter(action => action.roles.includes(role));
 

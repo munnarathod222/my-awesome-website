@@ -10,6 +10,8 @@ import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 
+const TRIP_STATUS_OPTIONS = ['Upcoming', 'In Transit', 'Completed', 'Cancelled'];
+
 const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], trucks = [] }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetching, setIsFetching] = useState(false);

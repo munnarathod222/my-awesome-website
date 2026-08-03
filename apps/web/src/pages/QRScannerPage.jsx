@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import jsQR from 'jsqr';
 import pb from '@/lib/pocketbaseClient.js';
+import { format } from 'date-fns';
 import MaintenanceFormModal from '@/components/MaintenanceFormModal.jsx';
 import AddTripModal from '@/components/AddTripModal.jsx';
 import LogFuelModal from '@/components/LogFuelModal.jsx';

@@ -105,7 +105,6 @@ const LoginPage = () => {
             name: savedDeviceProfile?.name || 'Vinod kumar Rathod'
           };
           pb.authStore.save('session_token_' + Date.now(), fallbackUser);
-          setCurrentUser(fallbackUser);
           localStorage.setItem('app_auth_user', JSON.stringify(fallbackUser));
           user = fallbackUser;
         }
