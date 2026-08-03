@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import pb from '@/lib/pocketbaseClient.js';
+import apiServerClient from '@/lib/apiServerClient.js';
 import { logAuditEvent } from '@/lib/auditLogger.js';
 import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
