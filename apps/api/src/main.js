@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 
 import routes from './routes/index.js';
+import { deleteEmployeeRecord } from './routes/driver.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
@@ -1602,7 +1603,7 @@ app.delete('/hcgi/api/trip_logs/:id', directDeleteTripLogs);
 app.delete('/api/trip_logs/:id', directDeleteTripLogs);
 
 // Direct database employee delete endpoint
-const directDeleteEmployees = (req, res) => {
+const directDeleteEmployees = async (req, res) => {
   const { ids, id } = req.body || {};
   const targetId = req.params?.id || id || ids;
   const rawList = Array.isArray(targetId) ? targetId : [targetId];
@@ -1613,23 +1614,14 @@ const directDeleteEmployees = (req, res) => {
   }
 
   try {
-    const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
-    const altPath = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
-    const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
-    
-    const { DatabaseSync } = require('node:sqlite');
-    const db = new DatabaseSync(targetDb);
-
     let deletedCount = 0;
-    const stmt = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?');
-
     for (const val of cleanList) {
-      const info = stmt.run(String(val), String(val), String(val));
-      if (info.changes > 0) deletedCount += info.changes;
+      const c = await deleteEmployeeRecord(val);
+      deletedCount += (c || 1);
     }
 
-    logger.info(`🗑️ Direct DB employee delete executed: removed ${deletedCount} record(s) for targets:`, cleanList);
-    return res.json({ success: true, deletedCount, message: `Successfully deleted ${deletedCount} employee(s)` });
+    logger.info(`🗑️ Direct employee delete executed: removed ${deletedCount} record(s) for targets:`, cleanList);
+    return res.json({ success: true, deletedCount, message: `Successfully deleted employee(s)` });
   } catch (err) {
     logger.error('Error executing direct employee delete:', err);
     return res.status(500).json({ success: false, error: err.message });

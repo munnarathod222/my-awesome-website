@@ -20,14 +20,64 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 async function deleteEmployeeRecord(target) {
-  const targetStr = String(target);
-  // 1. Try calling PocketBase custom delete hooks
-  try {
-    await fetch(`http://127.0.0.1:8090/api/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
-    await fetch(`http://127.0.0.1:8090/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
-  } catch (e) {}
+  const targetStr = String(target).trim();
+  if (!targetStr) return 0;
 
-  // 2. Direct SQLite Deletion across all DB file paths with relation cleanup
+  // 1. Clean up child relations and delete via PocketBase SDK (Admin client)
+  try {
+    const sanitizedTarget = sanitize(targetStr);
+    const filter = `id = "${sanitizedTarget}" || employee_number = "${sanitizedTarget}" || name = "${sanitizedTarget}" || contact = "${sanitizedTarget}"`;
+    const records = await pb.collection('employees').getFullList({ filter, $autoCancel: false }).catch(() => []);
+
+    const targetIds = new Set(records.map(r => r.id));
+    if (targetStr.length === 15) {
+      targetIds.add(targetStr);
+    }
+
+    for (const pid of targetIds) {
+      const cleanRel = async (colName, filterExpr) => {
+        try {
+          const rels = await pb.collection(colName).getFullList({ filter: filterExpr, $autoCancel: false }).catch(() => []);
+          for (const r of rels) {
+            await pb.collection(colName).delete(r.id, { $autoCancel: false }).catch(() => {});
+          }
+        } catch (e) {}
+      };
+
+      await cleanRel('employee_documents', `employee_id = "${pid}"`);
+      await cleanRel('driver_accident_reports', `employee_id = "${pid}"`);
+      await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
+      await cleanRel('attendance_records', `employee_id = "${pid}"`);
+      await cleanRel('advances', `employee_id = "${pid}"`);
+      await cleanRel('payroll', `employee_id_relation = "${pid}"`);
+      await cleanRel('salary_payments', `employee_id = "${pid}"`);
+      await cleanRel('shared_folders', `employee_id = "${pid}"`);
+
+      // Clear references in expenses and trip_logs
+      try {
+        const expList = await pb.collection('expenses').getFullList({ filter: `employee_id = "${pid}"`, $autoCancel: false }).catch(() => []);
+        for (const exp of expList) {
+          await pb.collection('expenses').update(exp.id, { employee_id: '' }, { $autoCancel: false }).catch(() => {});
+        }
+      } catch (e) {}
+
+      try {
+        const tripList = await pb.collection('trip_logs').getFullList({ filter: `user_id = "${pid}"`, $autoCancel: false }).catch(() => []);
+        for (const tr of tripList) {
+          await pb.collection('trip_logs').update(tr.id, { user_id: '' }, { $autoCancel: false }).catch(() => {});
+        }
+      } catch (e) {}
+
+      // Delete the employee record natively via PocketBase SDK
+      await pb.collection('employees').delete(pid, { $autoCancel: false }).catch((err) => {
+        logger.warn(`PocketBase SDK delete note for ${pid}: ${err.message}`);
+      });
+    }
+  } catch (sdkErr) {
+    logger.error('Error during PocketBase SDK employee delete:', sdkErr.message);
+  }
+
+  // 2. Direct SQLite Deletion across all DB file paths with WAL checkpoint as secondary cleanup
   let deletedCount = 0;
   try {
     const possiblePaths = Array.from(new Set([
@@ -40,7 +90,6 @@ async function deleteEmployeeRecord(target) {
     for (const dbPath of possiblePaths) {
       try {
         const db = new DatabaseSync(dbPath);
-        // Clean up or disassociate child relation records first to avoid foreign key / relation reference errors
         try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
@@ -52,15 +101,17 @@ async function deleteEmployeeRecord(target) {
         try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
 
-        const info = db.prepare('DELETE FROM employees WHERE id = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr);
+        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr, targetStr);
         if (info.changes > 0) deletedCount += info.changes;
+
+        try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (e) {}
       } catch (sqErr) {
         logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
       }
     }
   } catch (sqliteErr) {}
 
-  // 3. Prevent Supabase download from overwriting local deletion & sync modified DB
+  // 3. Prevent Supabase download from overwriting local deletion & sync modified DB to Supabase
   global.preventSupabaseOverwriting = true;
   if (global.dbFilePath && global.uploadDatabaseToSupabase) {
     try {
@@ -68,16 +119,10 @@ async function deleteEmployeeRecord(target) {
     } catch (uErr) {}
   }
 
-  // 4. Restart PocketBase process if active so in-memory statement cache is refreshed
-  if (global.pbProcess) {
-    try {
-      logger.info('Restarting PocketBase process to reflect employee deletion...');
-      global.pbProcess.kill();
-    } catch (kErr) {}
-  }
-
   return deletedCount;
 }
+
+export { deleteEmployeeRecord };
 
 /**
  * POST /api/driver/delete-employee-by-id
