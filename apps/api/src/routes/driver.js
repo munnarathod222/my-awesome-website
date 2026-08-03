@@ -20,42 +20,14 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 async function deleteEmployeeRecord(target) {
-  // 1. Invoke PocketBase God-Mode Custom Delete Hook
+  // 1. Try calling PocketBase custom delete hooks
   try {
-    const res = await fetch(`http://127.0.0.1:8090/api/custom-delete/employees/${encodeURIComponent(target)}`, {
-      method: 'POST'
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.deletedCount > 0) return true;
-    }
-  } catch (pbErr) {
-    logger.error(`Error calling /api/custom-delete for employee ${target}:`, pbErr);
-  }
+    await fetch(`http://127.0.0.1:8090/api/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
+    await fetch(`http://127.0.0.1:8090/custom-delete/employees/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
+  } catch (e) {}
 
-  // 2. Fallback: PocketBase SDK deletion as superadmin
-  try {
-    if (!pb.authStore.isValid || !pb.authStore.isSuperuser) {
-      const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
-      const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
-      await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false }).catch(() => {});
-    }
-    await pb.collection('employees').delete(target, { $autoCancel: false });
-    return true;
-  } catch (sdkErr) {
-    try {
-      const found = await pb.collection('employees').getList(1, 1, {
-        filter: `employee_number = "${target}" || id = "${target}" || contact = "${target}"`,
-        $autoCancel: false
-      });
-      if (found.items && found.items.length > 0) {
-        await pb.collection('employees').delete(found.items[0].id, { $autoCancel: false });
-        return true;
-      }
-    } catch (e2) {}
-  }
-
-  // 3. Fallback: Direct SQLite Deletion across all DB file paths
+  // 2. Direct SQLite Deletion across all DB file paths
+  let deletedCount = 0;
   try {
     const possiblePaths = Array.from(new Set([
       global.dbFilePath,
@@ -67,12 +39,21 @@ async function deleteEmployeeRecord(target) {
     for (const dbPath of possiblePaths) {
       try {
         const db = new DatabaseSync(dbPath);
-        db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(String(target), String(target), String(target));
+        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(String(target), String(target), String(target));
+        if (info.changes > 0) deletedCount += info.changes;
       } catch (sqErr) {}
     }
   } catch (sqliteErr) {}
 
-  return true;
+  // 3. Restart PocketBase process if active so in-memory statement cache is refreshed
+  if (global.pbProcess) {
+    try {
+      logger.info('Restarting PocketBase process to reflect employee deletion...');
+      global.pbProcess.kill();
+    } catch (kErr) {}
+  }
+
+  return deletedCount;
 }
 
 /**
