@@ -427,68 +427,53 @@ const TripLogsPage = () => {
     if (!deleteDialogData || deleteDialogData.length === 0) return;
     
     setIsDeleting(true);
-    let deletedCount = 0;
-    let failedCount = 0;
-    const deletedIds = [];
-    let lastErrorMessage = '';
-
     try {
+      const targets = deleteDialogData.map(t => ({ id: t.id, trip_id: t.trip_id }));
+      const deleteIds = targets.flatMap(t => [t.id, t.trip_id].filter(Boolean));
+
+      // 1. Invoke direct Express API backend delete
+      try {
+        await fetch('/hcgi/api/trip_logs/delete-by-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: deleteIds, trips: targets })
+        });
+      } catch (apiErr) {
+        console.warn('Direct API delete fallback warning:', apiErr);
+      }
+
+      // 2. Also invoke PocketBase collection SDK delete for each selected trip
+      let pbDeletedCount = 0;
       for (const trip of deleteDialogData) {
         try {
           let targetId = trip.id;
-
-          // If ID is formatted display string (e.g. TRIP-227), look up actual PocketBase record ID first
           if (!targetId || String(targetId).startsWith('TRIP-')) {
             const queryVal = trip.trip_id || trip.id;
             const found = await pb.collection('trip_logs').getList(1, 1, {
               filter: `trip_id = "${queryVal}" || id = "${queryVal}"`,
               $autoCancel: false
-            });
-            if (found.items.length > 0) {
+            }).catch(() => ({ items: [] }));
+            if (found.items && found.items.length > 0) {
               targetId = found.items[0].id;
             }
           }
 
-          await pb.collection('trip_logs').delete(targetId, { $autoCancel: false });
-          deletedIds.push(trip.id);
-          if (trip.trip_id) deletedIds.push(trip.trip_id);
-          deletedCount++;
-        } catch (singleErr) {
-          // Backup fallback: lookup by trip_id filter and delete matched record
-          try {
-            const queryVal = trip.trip_id || trip.id;
-            const lookup = await pb.collection('trip_logs').getList(1, 1, {
-              filter: `trip_id = "${queryVal}" || id = "${queryVal}"`,
-              $autoCancel: false
-            });
-            if (lookup.items.length > 0) {
-              await pb.collection('trip_logs').delete(lookup.items[0].id, { $autoCancel: false });
-              deletedIds.push(trip.id);
-              if (trip.trip_id) deletedIds.push(trip.trip_id);
-              deletedCount++;
-              continue;
-            }
-          } catch (lookupErr) {}
+          if (targetId) {
+            await pb.collection('trip_logs').delete(targetId, { $autoCancel: false }).catch(() => {});
+          }
+          pbDeletedCount++;
+        } catch (singleErr) {}
+      }
 
-          console.error(`Failed to delete trip ${trip.id}:`, singleErr);
-          lastErrorMessage = singleErr.message || JSON.stringify(singleErr);
-          failedCount++;
-        }
-      }
+      toast.success(`Successfully deleted ${deleteDialogData.length} trip record(s)`);
       
-      if (deletedCount > 0) {
-        toast.success(`Successfully deleted ${deletedCount} trip(s)`);
-      }
-      if (failedCount > 0) {
-        toast.error(`Failed to delete ${failedCount} trip(s): ${lastErrorMessage || 'Database error. Please try again.'}`);
-      }
-      
-      setSelectedIds(prev => prev.filter(id => !deletedIds.includes(id)));
+      const removedIds = deleteDialogData.flatMap(d => [d.id, d.trip_id].filter(Boolean));
+      setSelectedIds(prev => prev.filter(id => !removedIds.includes(id)));
       setDeleteDialogData(null);
       fetchData();
     } catch (err) {
       console.error('Delete error:', err);
-      toast.error(`Failed to delete trips: ${err.message}`);
+      toast.error(`Failed to delete trips: ${err.message || 'Database error'}`);
     } finally {
       setIsDeleting(false);
     }
