@@ -15,13 +15,20 @@ function Router() {
   return express.Router();
 }
 
-import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
 
 async function deleteEmployeeRecord(target) {
   const targetStr = String(target).trim();
   if (!targetStr) return 0;
+
+  let DatabaseSyncMod = null;
+  try {
+    const mod = await import('node:sqlite');
+    DatabaseSyncMod = mod.DatabaseSync;
+  } catch (e) {
+    logger.warn('Notice: node:sqlite dynamic import not available on this Node runtime.');
+  }
 
   // 1. Clean up child relations and delete via PocketBase SDK (Admin client)
   try {
@@ -79,18 +86,19 @@ async function deleteEmployeeRecord(target) {
 
   // 2. Direct SQLite Deletion across all DB file paths with WAL checkpoint as secondary cleanup
   let deletedCount = 0;
-  try {
-    const possiblePaths = Array.from(new Set([
-      global.dbFilePath,
-      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-      path.resolve(process.cwd(), 'pb_data/data.db'),
-      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
-    ])).filter(p => p && fs.existsSync(p));
+  if (DatabaseSyncMod) {
+    try {
+      const possiblePaths = Array.from(new Set([
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ])).filter(p => p && fs.existsSync(p));
 
-    for (const dbPath of possiblePaths) {
-      let db;
-      try {
-        db = new DatabaseSync(dbPath);
+      for (const dbPath of possiblePaths) {
+        let db;
+        try {
+          db = new DatabaseSyncMod(dbPath);
         try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
