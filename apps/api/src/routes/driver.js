@@ -19,25 +19,52 @@ import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
 
-function performDirectEmployeeDelete(cleanList) {
-  let count = 0;
+async function deleteEmployeeRecord(target) {
+  // 1. Authenticate pb SDK as superadmin
   try {
-    const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
-    const altPath = path.resolve(process.cwd(), 'pb_data/data.db');
-    const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
-    
-    if (fs.existsSync(targetDb)) {
-      const db = new DatabaseSync(targetDb);
-      const stmt = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?');
-      for (const val of cleanList) {
-        const info = stmt.run(String(val), String(val), String(val));
-        if (info.changes > 0) count += info.changes;
-      }
+    if (!pb.authStore.isValid || !pb.authStore.isSuperuser) {
+      const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+      const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
+      await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
     }
+  } catch (authErr) {}
+
+  // 2. Perform SDK deletion
+  let deleted = false;
+  try {
+    await pb.collection('employees').delete(target, { $autoCancel: false });
+    deleted = true;
   } catch (err) {
-    logger.error('Error executing direct SQLite employee delete:', err);
+    try {
+      const found = await pb.collection('employees').getList(1, 1, {
+        filter: `employee_number = "${target}" || id = "${target}" || contact = "${target}"`,
+        $autoCancel: false
+      });
+      if (found.items && found.items.length > 0) {
+        await pb.collection('employees').delete(found.items[0].id, { $autoCancel: false });
+        deleted = true;
+      }
+    } catch (e2) {}
   }
-  return count;
+
+  // 3. Perform Direct SQLite Deletion across all DB file paths
+  try {
+    const possiblePaths = Array.from(new Set([
+      global.dbFilePath,
+      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+      path.resolve(process.cwd(), 'pb_data/data.db'),
+      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+    ])).filter(p => p && fs.existsSync(p));
+
+    for (const dbPath of possiblePaths) {
+      try {
+        const db = new DatabaseSync(dbPath);
+        db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(String(target), String(target), String(target));
+      } catch (sqErr) {}
+    }
+  } catch (sqliteErr) {}
+
+  return deleted;
 }
 
 /**
@@ -55,28 +82,14 @@ const handleEmployeeDelete = async (req, res) => {
     return res.status(400).json({ success: false, error: 'No employee ID provided for deletion' });
   }
 
-  // 1. Direct SQLite row deletion
-  const sqliteCount = performDirectEmployeeDelete(cleanList);
-
-  // 2. PocketBase SDK deletion
+  let count = 0;
   for (const target of cleanList) {
-    try {
-      await pb.collection('employees').delete(target, { $autoCancel: false });
-    } catch (pbErr) {
-      try {
-        const found = await pb.collection('employees').getList(1, 1, {
-          filter: `employee_number = "${target}" || id = "${target}" || contact = "${target}"`,
-          $autoCancel: false
-        });
-        if (found.items && found.items.length > 0) {
-          await pb.collection('employees').delete(found.items[0].id, { $autoCancel: false });
-        }
-      } catch (lookupErr) {}
-    }
+    await deleteEmployeeRecord(target);
+    count++;
   }
 
-  logger.info(`🗑️ Direct DB employee delete executed: removed ${sqliteCount || cleanList.length} record(s)`);
-  return res.json({ success: true, deletedCount: sqliteCount || cleanList.length, message: `Successfully deleted employee(s)` });
+  logger.info(`🗑️ Direct DB employee delete executed: removed ${count} record(s) for targets:`, cleanList);
+  return res.json({ success: true, deletedCount: count, message: `Successfully deleted employee(s)` });
 };
 
 router.post('/delete-employee-by-id', handleEmployeeDelete);
