@@ -48,17 +48,7 @@ export const isDriverActive = (emp) => {
     'suspend',
     'fired', 
     'fire',
-    'disabled',
-    'rejected',
-    'reject',
-    'leave',
-    'on leave',
-    'on_leave',
-    'applied',
-    'shortlisted',
-    'interview',
-    'on hold',
-    'pending'
+    'disabled'
   ];
 
   // If ANY status field contains an inactive keyword, reject driver immediately

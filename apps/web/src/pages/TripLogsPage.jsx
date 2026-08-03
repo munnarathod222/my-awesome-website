@@ -442,11 +442,12 @@ const TripLogsPage = () => {
         console.warn('apiServerClient bulk delete warning:', apiErr);
       }
 
-      // 2. Also invoke PocketBase collection SDK delete for each selected trip
+      // 2. Invoke PocketBase collection SDK delete for each selected trip
       for (const trip of deleteDialogData) {
         try {
           let targetId = trip.id;
-          if (!targetId || String(targetId).startsWith('TRIP-')) {
+          // PocketBase record IDs are exactly 15 characters
+          if (!targetId || String(targetId).startsWith('TRIP-') || String(targetId).length !== 15) {
             const queryVal = trip.trip_id || trip.id;
             const found = await pb.collection('trip_logs').getList(1, 1, {
               filter: `trip_id = "${queryVal}" || id = "${queryVal}"`,
@@ -457,10 +458,14 @@ const TripLogsPage = () => {
             }
           }
 
-          if (targetId) {
-            await pb.collection('trip_logs').delete(targetId, { $autoCancel: false }).catch(() => {});
+          if (targetId && String(targetId).length === 15) {
+            await pb.collection('trip_logs').delete(targetId, { $autoCancel: false });
+          } else if (trip.id) {
+            await pb.collection('trip_logs').delete(trip.id, { $autoCancel: false }).catch(() => {});
           }
-        } catch (singleErr) {}
+        } catch (singleErr) {
+          console.error('Single trip delete error:', singleErr);
+        }
       }
 
       // 3. Update local state immediately so deleted trips disappear from table instantly
@@ -471,7 +476,7 @@ const TripLogsPage = () => {
       toast.success(`Successfully deleted ${deleteDialogData.length} trip record(s)`);
 
       // 4. Background refresh
-      setTimeout(() => { fetchData(); }, 500);
+      setTimeout(() => { fetchData(); }, 600);
     } catch (err) {
       console.error('Delete error:', err);
       toast.error(`Failed to delete trips: ${err.message || 'Database error'}`);
