@@ -158,13 +158,14 @@ const pruneOldSupabaseBackups = async () => {
 };
 
 
-const downloadDatabaseFromSupabase = async (dbFilePath) => {
+const downloadDatabaseFromSupabase = async (dbFilePath, options = {}) => {
   try {
-    if (global.preventSupabaseOverwriting || (fs.existsSync(dbFilePath) && fs.statSync(dbFilePath).size > 500000)) {
+    const isForce = options.force === true;
+    if (!isForce && (global.preventSupabaseOverwriting || (fs.existsSync(dbFilePath) && fs.statSync(dbFilePath).size > 500000))) {
       logger.info(`🛡️ Local database exists (${fs.statSync(dbFilePath).size} bytes). Skipping Supabase cloud download to preserve local changes.`);
       return true;
     }
-    logger.info(`📥 Downloading database backup from Supabase Storage...`);
+    logger.info(`📥 Downloading latest production database backup from Supabase Storage...`);
     let downloadRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/data.db`, {
       method: 'GET',
       headers: {
@@ -222,10 +223,10 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       }
 
       fs.writeFileSync(dbFilePath, Buffer.from(buffer));
-      logger.info(`✅ Successfully restored database from Supabase Storage (${buffer.byteLength} bytes)!`);
+      logger.info(`✅ Successfully restored latest database from Supabase Storage (${buffer.byteLength} bytes)!`);
       return true;
     } else {
-      logger.warn(`⚠️ No valid pre-existing database backup found in Supabase Storage. Keeping local database.`);
+      logger.warn(`⚠️ No valid pre-existing database backup found in Supabase Storage (${buffer ? buffer.byteLength : 0} bytes). Keeping local database.`);
       return false;
     }
   } catch (err) {
@@ -367,6 +368,21 @@ const watchAndSyncDatabase = (dbFilePath) => {
   if (periodicSyncInterval.unref) periodicSyncInterval.unref();
 
   logger.info(`⏰ Periodic sync: active (every 5 minutes)`);
+
+  // ── Strategy 2.2: Anti-Sleep Self-Ping Heartbeat (Every 8 Minutes) ──
+  // Keeps Render web service active so it never spins down due to inactivity!
+  const KEEP_ALIVE_INTERVAL_MS = 8 * 60 * 1000; // 8 minutes
+  setInterval(async () => {
+    try {
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
+      if (isProduction) {
+        const domain = process.env.WEBSITE_DOMAIN || 'srv-d91t98m7r5hc738tjdag.onrender.com';
+        const url = domain.startsWith('http') ? domain : `https://${domain}`;
+        await fetch(`${url}/api/health`, { method: 'HEAD' }).catch(() => {});
+        logger.info('💓 Anti-Sleep Keep-Alive heartbeat sent to keep Render awake.');
+      }
+    } catch (e) {}
+  }, KEEP_ALIVE_INTERVAL_MS);
 
   // ── Strategy 2.5: Local Rolling Auto-Backups every 12 hours ──
   const runRollingBackup = () => {
@@ -738,7 +754,7 @@ const runPocketBase = async () => {
 
   if (isFirstBoot && (isProd || !fs.existsSync(dbFilePath))) {
     logger.info(`💾 Cold boot: Hydrating latest database from Supabase Storage to ${dbFilePath}...`);
-    await downloadDatabaseFromSupabase(dbFilePath);
+    await downloadDatabaseFromSupabase(dbFilePath, { force: true });
   } else if (!isFirstBoot) {
     logger.info(`🔄 PocketBase restart #${global._pbStartCount - 1}: Skipping Supabase download to preserve local changes.`);
   } else {
