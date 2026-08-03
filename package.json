@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --raw \"npm run dev --prefix apps/web\" \"npm run dev --prefix apps/api\" \"npm run dev --prefix apps/pocketbase\"",
-    "build:client": "cd apps/web && npx vite build --outDir ../../dist/apps/web && node ../../sync_dist_fallbacks.js",
-    "build": "cd apps/web && npx vite build --outDir ../../dist/apps/web && node ../../sync_dist_fallbacks.js",
+    "build:client": "npm --prefix apps/web run build && node sync_dist_fallbacks.js",
+    "build": "npm --prefix apps/web run build && node sync_dist_fallbacks.js",
     "start": "npm run start --prefix apps/api",
     "lint": "concurrently --raw \"npm run lint --prefix apps/web\" \"npm run lint --prefix apps/api\""
   },
