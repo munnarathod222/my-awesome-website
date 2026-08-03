@@ -43,11 +43,14 @@ const BulkUploadEmployees = () => {
 
         await pb.collection('employees').create({
           name: row['Employee Name'],
-          contact: row['Phone'] || '0000000000',
+          contact: row['Phone'] || 'N/A',
           employee_type: empType,
+          employment_type: row['Employment Type'] || 'Permanent',
+          joining_date: hireDate || new Date().toISOString(),
           active_status: row['Status']?.toLowerCase() || 'active',
           position: row['Position'] || '',
           base_salary: Number(row['Salary']) || 0,
+          salary_amount: Number(row['Salary']) || 0,
           hire_date: hireDate,
           address: row['Address'] || '',
         }, { $autoCancel: false });

@@ -300,26 +300,53 @@ const EmployeeDatabasePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.name.trim()) return toast.error('Employee Name is required');
     if (!formData.joining_date) return toast.error('Joining Date is required');
     setIsSubmitting(true);
 
     try {
       const submitData = new FormData();
       Object.keys(formData).forEach(key => {
-        if (key === 'salary_amount') {
+        if (key === 'employee_number') {
+          // Skip non-schema employee_number field
+          return;
+        } else if (key === 'salary_amount') {
           submitData.append(key, parseFloat(formData[key]) || 0);
         } else if (key === 'payroll_cycle_start_day' || key === 'payroll_cycle_end_day' || key === 'salary_disbursement_day') {
           const defaultVal = key === 'payroll_cycle_start_day' ? 1 : key === 'payroll_cycle_end_day' ? 30 : 10;
           const parsedVal = parseInt(formData[key], 10);
           submitData.append(key, isNaN(parsedVal) ? defaultVal : Math.max(1, Math.min(31, parsedVal)));
         } else if (key === 'joining_date') {
-          submitData.append(key, new Date(formData[key]).toISOString());
+          let isoDate;
+          try {
+            isoDate = new Date(formData[key]).toISOString();
+          } catch (de) {
+            isoDate = new Date().toISOString();
+          }
+          submitData.append(key, isoDate);
         } else if (key === 'assigned_truck' || key === 'assigned_routes') {
           submitData.append(key, formData[key] === 'none' ? '' : (formData[key] || ''));
         } else {
           submitData.append(key, formData[key] || '');
         }
       });
+
+      // Ensure PocketBase required schema fields are properly set
+      if (!formData.contact || !formData.contact.trim()) {
+        submitData.set('contact', 'N/A');
+      }
+
+      const validEmpTypes = ['driver', 'supervisor', 'manager'];
+      const rawEmpType = (formData.employee_type || 'driver').toLowerCase();
+      submitData.set('employee_type', validEmpTypes.includes(rawEmpType) ? rawEmpType : 'driver');
+
+      const validEmploymentTypes = ['Permanent', 'Market / Leased'];
+      const rawEmploymentType = formData.employment_type || 'Permanent';
+      submitData.set('employment_type', validEmploymentTypes.includes(rawEmploymentType) ? rawEmploymentType : 'Permanent');
+
+      const validStatuses = ['active', 'leave', 'abscond', 'terminated'];
+      const rawStatus = (formData.active_status || 'active').toLowerCase();
+      submitData.set('active_status', validStatuses.includes(rawStatus) ? rawStatus : 'active');
 
       const pStart = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_start_day, 10) || 1));
       const pEnd = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_end_day, 10) || 30));
@@ -366,14 +393,19 @@ const EmployeeDatabasePage = () => {
       if (uploadedDocs.length > 0) {
         const empId = editingId || savedEmployee.id;
         for (const doc of uploadedDocs) {
-          if (doc.files.length === 0) continue;
+          if (!doc.files || doc.files.length === 0) continue;
           
           const docFormData = new FormData();
           docFormData.append('employee_id', empId);
-          docFormData.append('document_type', doc.document_type);
+          docFormData.append('document_type', doc.document_type || 'ID Proof');
           docFormData.append('document_number', doc.document_number || '');
           
-          const expiry = doc.expiry_date ? new Date(doc.expiry_date).toISOString() : new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+          let expiry;
+          try {
+            expiry = doc.expiry_date ? new Date(doc.expiry_date).toISOString() : new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+          } catch (e) {
+            expiry = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
+          }
           docFormData.append('expiry_date', expiry);
           
           doc.files.forEach(file => {
@@ -382,7 +414,9 @@ const EmployeeDatabasePage = () => {
           
           docFormData.append('status', 'Active');
           
-          await pb.collection('employee_documents').create(docFormData, { $autoCancel: false });
+          await pb.collection('employee_documents').create(docFormData, { $autoCancel: false }).catch(err => {
+            console.warn('Document attachment creation notice:', err);
+          });
         }
       }
 
@@ -390,8 +424,13 @@ const EmployeeDatabasePage = () => {
       fetchData();
       setActiveTab('directory');
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to save employee data.');
+      console.error('Save employee error:', err);
+      const pbMsg = err?.data?.message || err?.message || String(err);
+      const fieldErrors = err?.data?.data
+        ? Object.entries(err.data.data).map(([k, v]) => `${k}: ${v?.message || v}`).join('; ')
+        : '';
+      const fullMsg = fieldErrors ? `${pbMsg} — ${fieldErrors}` : pbMsg;
+      toast.error(`Failed to save employee: ${fullMsg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -431,13 +470,13 @@ const EmployeeDatabasePage = () => {
     if (window.confirm('Are you sure you want to permanently delete this employee?')) {
       try {
         let targetPbId = id;
-        const targetEmp = employees.find(e => e.id === id || e.employee_number === id);
+        const targetEmp = employees.find(e => e.id === id || e.contact === id || e.name === id);
 
         // PocketBase record IDs are exactly 15 characters
         if (!targetPbId || String(targetPbId).length !== 15) {
-          const queryVal = targetEmp?.employee_number || targetEmp?.id || id;
+          const queryVal = targetEmp?.id || id;
           const found = await pb.collection('employees').getList(1, 1, {
-            filter: `id = "${queryVal}" || employee_number = "${queryVal}"`,
+            filter: `id = "${queryVal}" || name = "${queryVal}" || contact = "${queryVal}"`,
             $autoCancel: false
           }).catch(() => ({ items: [] }));
           if (found.items && found.items.length > 0) {
@@ -446,19 +485,19 @@ const EmployeeDatabasePage = () => {
         }
 
         // 1. Remove from local React state immediately
-        setEmployees(prev => prev.filter(e => e.id !== id && e.id !== targetPbId && e.employee_number !== id));
+        setEmployees(prev => prev.filter(e => e.id !== id && e.id !== targetPbId));
 
-        // 2. Invoke direct Express API backend delete
+        // 2. Invoke direct Express API backend delete with superuser privileges
         try {
           await apiServerClient.fetch('/driver/delete-employee-by-id', {
             method: 'POST',
-            body: JSON.stringify({ id: targetPbId || id, employee_number: targetEmp?.employee_number || id })
+            body: JSON.stringify({ id: targetPbId || id })
           });
         } catch (apiErr) {
           console.warn('Direct API employee delete warning:', apiErr);
         }
 
-        // 3. Clean up PocketBase child relation records via SDK before deleting employee record
+        // 3. Clean up PocketBase child relation records via SDK
         const pid = targetPbId && String(targetPbId).length === 15 ? targetPbId : id;
         if (pid) {
           const cleanRel = async (colName, filterExpr) => {
@@ -475,7 +514,7 @@ const EmployeeDatabasePage = () => {
           await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
           await cleanRel('attendance_records', `employee_id = "${pid}"`);
           await cleanRel('advances', `employee_id = "${pid}"`);
-          await cleanRel('payroll', `employee_id_relation = "${pid}"`);
+          await cleanRel('payroll', `employee_id = "${pid}" || employee_id_relation = "${pid}"`);
           await cleanRel('shared_folders', `employee_id = "${pid}"`);
 
           // Finally delete the employee record natively from PocketBase

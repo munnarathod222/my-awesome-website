@@ -26,7 +26,7 @@ async function deleteEmployeeRecord(target) {
   // 1. Clean up child relations and delete via PocketBase SDK (Admin client)
   try {
     const sanitizedTarget = sanitize(targetStr);
-    const filter = `id = "${sanitizedTarget}" || employee_number = "${sanitizedTarget}" || name = "${sanitizedTarget}" || contact = "${sanitizedTarget}"`;
+    const filter = `id = "${sanitizedTarget}" || name = "${sanitizedTarget}" || contact = "${sanitizedTarget}"`;
     const records = await pb.collection('employees').getFullList({ filter, $autoCancel: false }).catch(() => []);
 
     const targetIds = new Set(records.map(r => r.id));
@@ -49,7 +49,7 @@ async function deleteEmployeeRecord(target) {
       await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
       await cleanRel('attendance_records', `employee_id = "${pid}"`);
       await cleanRel('advances', `employee_id = "${pid}"`);
-      await cleanRel('payroll', `employee_id_relation = "${pid}"`);
+      await cleanRel('payroll', `employee_id = "${pid}" || employee_id_relation = "${pid}"`);
       await cleanRel('salary_payments', `employee_id = "${pid}"`);
       await cleanRel('shared_folders', `employee_id = "${pid}"`);
 
@@ -95,13 +95,13 @@ async function deleteEmployeeRecord(target) {
         try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance_records WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM advances WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM payroll WHERE employee_id_relation = ?').run(targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM payroll WHERE employee_id = ? OR employee_id_relation = ?').run(targetStr, targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM salary_payments WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM shared_folders WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
 
-        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr, targetStr);
+        const info = db.prepare('DELETE FROM employees WHERE id = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr);
         if (info.changes > 0) deletedCount += info.changes;
 
         try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (e) {}
