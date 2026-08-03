@@ -115,6 +115,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       title: 'Communication & Printing',
       items: [
         { icon: FileText, label: 'Official Letterhead Studio', path: '/letterhead', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { icon: CreditCard, label: 'Visiting Card Studio', path: '/visiting-card', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { icon: Mail, label: 'Business Mail', path: '/business-mail', roles: ['super_admin','admin','manager','dispatcher'] },
       ]
     },
