@@ -218,10 +218,16 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
     e.preventDefault();
     setIsLoading(true);
 
+    // 90s timeout — Render free tier can take 30-50s on cold start
     const withTimeout = (promise, ms) => Promise.race([
       promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timed out — please try again')), ms))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out. The server may be starting up — please try again in a moment.')), ms))
     ]);
+
+    // Warn user after 5s that server may be waking up
+    const slowTimer = setTimeout(() => {
+      toast.loading('Server is waking up, please wait...', { id: 'expense-saving', duration: 90000 });
+    }, 5000);
 
     try {
       if (formData.category === 'Employee' && (!formData.employee_id || formData.employee_id === 'none')) {
@@ -258,7 +264,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...payload, date: dateISO })
-          }), 15000);
+          }), 90000);
 
           if (apiRes.ok) {
             const apiData = await apiRes.json();
@@ -292,10 +298,10 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         if (expense) {
           deletedFiles.forEach((filename) => formDataToSend.append('documents.' + filename, ''));
           deletedReceiptFiles.forEach((filename) => formDataToSend.append('image_urls.' + filename, ''));
-          record = await withTimeout(pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false }), 20000);
+          record = await withTimeout(pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false }), 90000);
         } else {
           if (currentUser?.id) formDataToSend.append('created_by', currentUser.id);
-          record = await withTimeout(pb.collection('expenses').create(formDataToSend, { $autoCancel: false }), 20000);
+          record = await withTimeout(pb.collection('expenses').create(formDataToSend, { $autoCancel: false }), 90000);
         }
       }
 
@@ -385,9 +391,13 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         }
       }
       
+      clearTimeout(slowTimer);
+      toast.dismiss('expense-saving');
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
+      clearTimeout(slowTimer);
+      toast.dismiss('expense-saving');
       console.error('Expense save error:', err);
       const errMsg = err?.data?.message || err?.response?.data?.message || err?.message || 'Unknown error';
       toast.error(`Failed to save expense: ${errMsg}`);
