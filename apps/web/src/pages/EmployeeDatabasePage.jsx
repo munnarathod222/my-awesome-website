@@ -430,27 +430,49 @@ const EmployeeDatabasePage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to permanently delete this employee?')) {
       try {
-        // 1. Update local state immediately so deleted employee disappears instantly
-        setEmployees(prev => prev.filter(e => e.id !== id && e.employee_number !== id));
-        toast.success('Employee deleted');
+        let targetPbId = id;
+        const targetEmp = employees.find(e => e.id === id || e.employee_number === id);
+
+        // PocketBase record IDs are exactly 15 characters
+        if (!targetPbId || String(targetPbId).length !== 15) {
+          const queryVal = targetEmp?.employee_number || targetEmp?.id || id;
+          const found = await pb.collection('employees').getList(1, 1, {
+            filter: `id = "${queryVal}" || employee_number = "${queryVal}"`,
+            $autoCancel: false
+          }).catch(() => ({ items: [] }));
+          if (found.items && found.items.length > 0) {
+            targetPbId = found.items[0].id;
+          }
+        }
+
+        // 1. Remove from local React state immediately
+        setEmployees(prev => prev.filter(e => e.id !== id && e.id !== targetPbId && e.employee_number !== id));
 
         // 2. Invoke direct Express API backend delete
         try {
           await apiServerClient.fetch('/driver/delete-employee-by-id', {
             method: 'POST',
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ id: targetPbId || id, employee_number: targetEmp?.employee_number || id })
           });
         } catch (apiErr) {
           console.warn('Direct API employee delete warning:', apiErr);
         }
 
-        // 3. Also invoke PocketBase SDK delete
-        await pb.collection('employees').delete(id, { $autoCancel: false }).catch(() => {});
+        // 3. Also invoke PocketBase SDK delete with 15-character record ID
+        if (targetPbId && String(targetPbId).length === 15) {
+          await pb.collection('employees').delete(targetPbId, { $autoCancel: false });
+        } else {
+          await pb.collection('employees').delete(id, { $autoCancel: false });
+        }
+
+        toast.success('Employee deleted successfully');
 
         // 4. Background refresh
-        setTimeout(() => { fetchData(); }, 500);
+        setTimeout(() => { fetchData(); }, 600);
       } catch (err) {
-        toast.error('Failed to delete employee.');
+        console.error('Failed to delete employee:', err);
+        toast.error(`Failed to delete employee: ${err.message || 'Database error'}`);
+        fetchData();
       }
     }
   };
