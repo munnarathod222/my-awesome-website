@@ -74,6 +74,16 @@ const LoginPage = () => {
     }
   };
 
+  const getRedirectPath = (userObj) => {
+    if (userObj?.role === 'Client' || userObj?.role === 'client') {
+      return '/client-portal';
+    }
+    if (!from || from === '/login' || from === '/client-login' || from === '/') {
+      return '/dashboard';
+    }
+    return from;
+  };
+
   const verifyPinAndLogin = async (enteredPin) => {
     setLoading(true);
     setPinError('');
@@ -92,7 +102,7 @@ const LoginPage = () => {
             id: savedDeviceProfile?.id || 'usr_munna_superadmin',
             email: storedEmail,
             role: savedDeviceProfile?.role || 'super_admin',
-            name: savedDeviceProfile?.name || 'Munna Rathod'
+            name: savedDeviceProfile?.name || 'Vinod kumar Rathod'
           };
           pb.authStore.save('session_token_' + Date.now(), fallbackUser);
           setCurrentUser(fallbackUser);
@@ -100,9 +110,8 @@ const LoginPage = () => {
           user = fallbackUser;
         }
 
-        toast.success(`Welcome back, ${user?.name || 'Munna Rathod'}! PIN Verified.`);
-        const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
-        window.location.href = redirectPath;
+        toast.success(`Welcome back, ${user?.name || 'Vinod kumar Rathod'}! PIN Verified.`);
+        window.location.href = getRedirectPath(user);
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
         setPinDigits(['', '', '', '']);
@@ -133,8 +142,8 @@ const LoginPage = () => {
       const deviceProfile = {
         id: user?.id || 'usr_' + Date.now(),
         email: email.trim(),
-        name: user?.name || user?.full_name || 'Fleet Admin',
-        role: user?.role || 'admin',
+        name: user?.name || user?.full_name || 'Vinod kumar Rathod',
+        role: user?.role || 'super_admin',
         password: password,
         pin: '2525' // Default quick PIN
       };
@@ -142,8 +151,7 @@ const LoginPage = () => {
       setSavedDeviceProfile(deviceProfile);
 
       toast.success('Logged in & Device PIN configured (Default PIN: 2525)');
-      const redirectPath = from === '/dashboard' && (user?.role === 'Client' || user?.role === 'client') ? '/client-portal' : from;
-      window.location.href = redirectPath;
+      window.location.href = getRedirectPath(user);
     } catch (err) {
       console.error(err);
       const msg = err?.message || err?.response?.message || '';
