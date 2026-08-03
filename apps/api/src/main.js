@@ -1557,10 +1557,13 @@ app.use('/api', apiRouter);
 // 3. Static Client Hosting (Serve compiled Vite bundle)
 // ----------------------------------------------------
 const possibleWebDirs = [
-  path.resolve(__dirname, '../../../../dist/apps/web'),
-  path.resolve(__dirname, '../../../dist/apps/web'),
+  path.resolve(__dirname, '../../dist/apps/web'),
+  path.resolve(__dirname, '../dist'),
+  path.resolve(__dirname, '../public'),
+  path.resolve(process.cwd(), '../dist/apps/web'),
+  path.resolve(process.cwd(), '../web/dist'),
   path.resolve(process.cwd(), 'dist/apps/web'),
-  path.resolve(process.cwd(), 'apps/web/dist')
+  path.resolve(process.cwd(), 'dist')
 ];
 
 let staticPath = '';
