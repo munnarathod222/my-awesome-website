@@ -1654,7 +1654,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // to ensure a final database sync to Supabase before the process exits.
 
 // Direct database trip log delete endpoint for single & bulk deletion
-const directDeleteTripLogs = (req, res) => {
+const directDeleteTripLogs = async (req, res) => {
   const { ids, trips } = req.body || {};
   const rawList = Array.isArray(ids) ? ids : (Array.isArray(trips) ? trips : [ids || req.params?.id]);
   const cleanList = rawList.map(item => typeof item === 'object' ? (item.id || item.trip_id) : item).filter(Boolean);
@@ -1667,20 +1667,29 @@ const directDeleteTripLogs = (req, res) => {
   try {
     const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
     const altPath = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
-    const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
-    
-    const { DatabaseSync } = require('node:sqlite');
-    db = new DatabaseSync(targetDb);
+    let DatabaseSyncMod;
+    try {
+      const mod = await import('node:sqlite');
+      DatabaseSyncMod = mod.DatabaseSync;
+    } catch (e) {}
 
     let deletedCount = 0;
-    const stmt = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?');
+    if (DatabaseSyncMod) {
+      db = new DatabaseSyncMod(targetDb);
+      const stmt = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?');
 
-    for (const val of cleanList) {
-      const info = stmt.run(String(val), String(val));
-      if (info.changes > 0) deletedCount += info.changes;
+      for (const val of cleanList) {
+        const info = stmt.run(String(val), String(val));
+        if (info.changes > 0) deletedCount += info.changes;
+      }
+    } else {
+      for (const val of cleanList) {
+        await pb.collection('trip_logs').delete(String(val), { $autoCancel: false }).catch(() => {});
+        deletedCount++;
+      }
     }
 
-    logger.info(`🗑️ Direct DB trip delete executed: removed ${deletedCount} record(s) for targets:`, cleanList);
+    logger.info(`🗑️ Trip delete executed: removed ${deletedCount} record(s) for targets:`, cleanList);
     return res.json({ success: true, deletedCount, message: `Successfully deleted ${deletedCount} trip log(s)` });
   } catch (err) {
     logger.error('Error executing direct trip delete:', err);

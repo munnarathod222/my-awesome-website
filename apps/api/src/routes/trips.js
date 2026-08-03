@@ -2,13 +2,18 @@ import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 import { pocketbaseAuth } from '../middleware/pocketbase-auth.js';
-import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
 
 const router = express.Router();
 
 async function deleteTripLogRecord(target) {
+  let DatabaseSyncMod = null;
+  try {
+    const mod = await import('node:sqlite');
+    DatabaseSyncMod = mod.DatabaseSync;
+  } catch (e) {}
+
   // 1. Try calling PocketBase custom delete hooks
   try {
     await fetch(`http://127.0.0.1:8090/api/custom-delete/trip_logs/${encodeURIComponent(target)}`, { method: 'POST' }).catch(() => {});
@@ -17,18 +22,19 @@ async function deleteTripLogRecord(target) {
 
   // 2. Direct SQLite Deletion across all DB file paths
   let deletedCount = 0;
-  try {
-    const possiblePaths = Array.from(new Set([
-      global.dbFilePath,
-      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-      path.resolve(process.cwd(), 'pb_data/data.db'),
-      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
-    ])).filter(p => p && fs.existsSync(p));
+  if (DatabaseSyncMod) {
+    try {
+      const possiblePaths = Array.from(new Set([
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ])).filter(p => p && fs.existsSync(p));
 
-    for (const dbPath of possiblePaths) {
-      let db;
-      try {
-        db = new DatabaseSync(dbPath);
+      for (const dbPath of possiblePaths) {
+        let db;
+        try {
+          db = new DatabaseSyncMod(dbPath);
         const info = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?').run(String(target), String(target));
         if (info.changes > 0) deletedCount += info.changes;
       } catch (sqErr) {}
