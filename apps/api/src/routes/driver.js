@@ -159,6 +159,9 @@ const handleEmployeeDelete = async (req, res) => {
   return res.json({ success: true, deletedCount: count, message: `Successfully deleted employee(s)` });
 };
 
+import multer from 'multer';
+const uploadDocFiles = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
 router.post('/delete-employee-by-id', handleEmployeeDelete);
 router.post('/delete-by-id', handleEmployeeDelete);
 router.delete('/employee/:id', handleEmployeeDelete);
@@ -234,6 +237,70 @@ router.post('/update-employee/:id', async (req, res) => {
     return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
   }
 });
+
+/**
+ * POST /api/driver/employee-documents
+ * Create an employee document record with file uploads via superuser PocketBase client.
+ */
+router.post('/employee-documents', uploadDocFiles.array('files', 10), async (req, res) => {
+  try {
+    const { employee_id, document_type, document_name, issue_date, expiry_date, status } = req.body || {};
+    const formData = new FormData();
+    if (employee_id) formData.append('employee_id', employee_id);
+    if (document_type) formData.append('document_type', document_type);
+    if (document_name) formData.append('document_name', document_name);
+    if (status) formData.append('status', status);
+    if (issue_date) formData.append('issue_date', issue_date);
+    if (expiry_date) formData.append('expiry_date', expiry_date);
+
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        const blob = new Blob([file.buffer], { type: file.mimetype });
+        formData.append('files', blob, file.originalname);
+      });
+    }
+
+    const record = await pb.collection('employee_documents').create(formData, { $autoCancel: false });
+    logger.info(`Employee document created via backend API: ${record.id}`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to create employee document via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+  }
+});
+
+/**
+ * POST /api/driver/employee-documents/:id
+ * Update an employee document record with file uploads via superuser PocketBase client.
+ */
+router.post('/employee-documents/:id', uploadDocFiles.array('files', 10), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { employee_id, document_type, document_name, issue_date, expiry_date, status } = req.body || {};
+    const formData = new FormData();
+    if (employee_id) formData.append('employee_id', employee_id);
+    if (document_type) formData.append('document_type', document_type);
+    if (document_name !== undefined) formData.append('document_name', document_name);
+    if (status) formData.append('status', status);
+    if (issue_date) formData.append('issue_date', issue_date);
+    if (expiry_date) formData.append('expiry_date', expiry_date);
+
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        const blob = new Blob([file.buffer], { type: file.mimetype });
+        formData.append('files', blob, file.originalname);
+      });
+    }
+
+    const record = await pb.collection('employee_documents').update(id, formData, { $autoCancel: false });
+    logger.info(`Employee document updated via backend API: ${record.id}`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to update employee document via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+  }
+});
+
 
 
 // ─────────────────────────────────────────────────────────────────────────────

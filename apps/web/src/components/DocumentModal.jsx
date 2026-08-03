@@ -11,6 +11,8 @@ import pb from '@/lib/pocketbaseClient.js';
 import { useDocumentStatus } from '@/hooks/useDocumentStatus.js';
 import DocumentFilePreview from './DocumentFilePreview.jsx';
 
+import apiServerClient from '@/lib/apiServerClient.js';
+
 const DocumentModal = ({ isOpen, onClose, document, employeeId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -113,6 +115,11 @@ const DocumentModal = ({ isOpen, onClose, document, employeeId, onSuccess }) => 
     e.preventDefault();
     setLoading(true);
 
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Upload timed out — please try again')), ms))
+    ]);
+
     try {
       const data = new FormData();
       data.append('employee_id', employeeId);
@@ -135,19 +142,52 @@ const DocumentModal = ({ isOpen, onClose, document, employeeId, onSuccess }) => 
         });
       }
 
-      if (document) {
-        await pb.collection('employee_documents').update(document.id, data, { $autoCancel: false });
-        toast.success('Document updated successfully');
-      } else {
-        await pb.collection('employee_documents').create(data, { $autoCancel: false });
-        toast.success('Document added successfully');
+      let saved = false;
+      // Step 1: Try backend API (superuser access)
+      try {
+        const endpoint = document
+          ? `/driver/employee-documents/${document.id}`
+          : '/driver/employee-documents';
+        
+        const apiRes = await withTimeout(apiServerClient.fetch(endpoint, {
+          method: 'POST',
+          body: data
+        }), 25000);
+
+        if (apiRes.ok) {
+          const resData = await apiRes.json();
+          if (resData.success) {
+            saved = true;
+            toast.success(document ? 'Document updated successfully' : 'Document added successfully');
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Backend API document upload warning, trying SDK direct:', apiErr.message);
+      }
+
+      // Step 2: Fallback to PocketBase SDK directly if API wasn't used/failed
+      if (!saved) {
+        if (document) {
+          await withTimeout(
+            pb.collection('employee_documents').update(document.id, data, { $autoCancel: false }),
+            25000
+          );
+          toast.success('Document updated successfully');
+        } else {
+          await withTimeout(
+            pb.collection('employee_documents').create(data, { $autoCancel: false }),
+            25000
+          );
+          toast.success('Document added successfully');
+        }
       }
       
       onSuccess();
       onClose();
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to save document. Please check the inputs.');
+      console.error('Document save error:', error);
+      const msg = error?.data?.message || error?.message || 'Unknown error';
+      toast.error(`Failed to save document: ${msg}`);
     } finally {
       setLoading(false);
     }
