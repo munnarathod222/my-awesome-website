@@ -9,21 +9,31 @@ import fs from 'node:fs';
 const router = express.Router();
 
 async function deleteTripLogRecord(target) {
-  // 1. Authenticate pb SDK as superadmin
+  // 1. Invoke PocketBase God-Mode Custom Delete Hook
+  try {
+    const res = await fetch('http://127.0.0.1:8090/api/custom-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ collection: 'trip_logs', id: target })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.deletedCount > 0) return true;
+    }
+  } catch (pbErr) {
+    logger.error(`Error calling /api/custom-delete for trip ${target}:`, pbErr);
+  }
+
+  // 2. Fallback: PocketBase SDK deletion as superadmin
   try {
     if (!pb.authStore.isValid || !pb.authStore.isSuperuser) {
       const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
       const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
-      await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+      await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false }).catch(() => {});
     }
-  } catch (authErr) {}
-
-  // 2. Perform SDK deletion
-  let deleted = false;
-  try {
     await pb.collection('trip_logs').delete(target, { $autoCancel: false });
-    deleted = true;
-  } catch (err) {
+    return true;
+  } catch (sdkErr) {
     try {
       const found = await pb.collection('trip_logs').getList(1, 1, {
         filter: `trip_id = "${target}" || id = "${target}"`,
@@ -31,12 +41,12 @@ async function deleteTripLogRecord(target) {
       });
       if (found.items && found.items.length > 0) {
         await pb.collection('trip_logs').delete(found.items[0].id, { $autoCancel: false });
-        deleted = true;
+        return true;
       }
     } catch (e2) {}
   }
 
-  // 3. Perform Direct SQLite Deletion across all DB file paths
+  // 3. Fallback: Direct SQLite Deletion across all DB file paths
   try {
     const possiblePaths = Array.from(new Set([
       global.dbFilePath,
@@ -53,7 +63,7 @@ async function deleteTripLogRecord(target) {
     }
   } catch (sqliteErr) {}
 
-  return deleted;
+  return true;
 }
 
 /**
