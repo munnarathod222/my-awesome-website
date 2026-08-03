@@ -22,10 +22,8 @@ import fs from 'node:fs';
 async function deleteEmployeeRecord(target) {
   // 1. Invoke PocketBase God-Mode Custom Delete Hook
   try {
-    const res = await fetch('http://127.0.0.1:8090/api/custom-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collection: 'employees', id: target })
+    const res = await fetch(`http://127.0.0.1:8090/api/custom-delete/employees/${encodeURIComponent(target)}`, {
+      method: 'POST'
     });
     if (res.ok) {
       const data = await res.json();

@@ -2,18 +2,11 @@
 
 /**
  * Custom PocketBase Admin Endpoint for Unrestricted Record Deletion
- * Route: POST /api/custom-delete
- * Body: { collection: "trip_logs", id: "barqevja6tlje9p" }
+ * Route: POST /api/custom-delete/:collection/:id
  */
-routerAdd("POST", "/api/custom-delete", (c) => {
-  let collectionName = "";
-  let targetId = "";
-
-  try {
-    const data = $apis.requestInfo(c).data;
-    collectionName = data.collection || "";
-    targetId = data.id || "";
-  } catch (err) {}
+routerAdd("POST", "/api/custom-delete/:collection/:id", (c) => {
+  const collectionName = c.pathParam("collection") || "";
+  const targetId = c.pathParam("id") || "";
 
   if (!collectionName || !targetId) {
     return c.json(400, { success: false, error: "Both 'collection' and 'id' parameters are required." });

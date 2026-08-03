@@ -11,10 +11,8 @@ const router = express.Router();
 async function deleteTripLogRecord(target) {
   // 1. Invoke PocketBase God-Mode Custom Delete Hook
   try {
-    const res = await fetch('http://127.0.0.1:8090/api/custom-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collection: 'trip_logs', id: target })
+    const res = await fetch(`http://127.0.0.1:8090/api/custom-delete/trip_logs/${encodeURIComponent(target)}`, {
+      method: 'POST'
     });
     if (res.ok) {
       const data = await res.json();
