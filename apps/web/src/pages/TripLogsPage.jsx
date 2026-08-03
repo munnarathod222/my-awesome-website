@@ -434,17 +434,15 @@ const TripLogsPage = () => {
 
       // 1. Invoke direct Express API backend delete
       try {
-        await fetch('/hcgi/api/trip_logs/delete-by-id', {
+        await apiServerClient.fetch('/trips/delete-bulk', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ids: deleteIds, trips: targets })
         });
       } catch (apiErr) {
-        console.warn('Direct API delete fallback warning:', apiErr);
+        console.warn('apiServerClient bulk delete warning:', apiErr);
       }
 
       // 2. Also invoke PocketBase collection SDK delete for each selected trip
-      let pbDeletedCount = 0;
       for (const trip of deleteDialogData) {
         try {
           let targetId = trip.id;
@@ -462,16 +460,18 @@ const TripLogsPage = () => {
           if (targetId) {
             await pb.collection('trip_logs').delete(targetId, { $autoCancel: false }).catch(() => {});
           }
-          pbDeletedCount++;
         } catch (singleErr) {}
       }
 
-      toast.success(`Successfully deleted ${deleteDialogData.length} trip record(s)`);
-      
+      // 3. Update local state immediately so deleted trips disappear from table instantly
       const removedIds = deleteDialogData.flatMap(d => [d.id, d.trip_id].filter(Boolean));
+      setTripLogs(prev => prev.filter(item => !removedIds.includes(item.id) && !removedIds.includes(item.trip_id)));
       setSelectedIds(prev => prev.filter(id => !removedIds.includes(id)));
       setDeleteDialogData(null);
-      fetchData();
+      toast.success(`Successfully deleted ${deleteDialogData.length} trip record(s)`);
+
+      // 4. Background refresh
+      setTimeout(() => { fetchData(); }, 500);
     } catch (err) {
       console.error('Delete error:', err);
       toast.error(`Failed to delete trips: ${err.message || 'Database error'}`);

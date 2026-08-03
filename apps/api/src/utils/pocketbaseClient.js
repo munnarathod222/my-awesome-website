@@ -30,24 +30,29 @@ pocketbaseClient.autoCancellation(false);
 let authPromise = null;
 
 pocketbaseClient.beforeSend = async function (url, options) {
-    if (url.includes('/api/collections/_superusers/auth-with-password')) {
+    if (url.includes('/api/collections/') && url.includes('/auth-with-password')) {
         return { url, options };
     }
 
     if (!pocketbaseClient.authStore.isValid && !authPromise) {
-        const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+        const email = process.env.PB_SUPERUSER_EMAIL || 'admin@jbcargo.com';
         const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
         
-        authPromise = pocketbaseClient.collection('_superusers').authWithPassword(
-            email,
-            password,
-        ).finally(() => {
+        authPromise = (async () => {
+            try {
+                await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+            } catch (e1) {
+                try {
+                    await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                } catch (e2) {}
+            }
+        })().finally(() => {
             authPromise = null;
         });
     }
 
     if (authPromise) {
-        await authPromise;
+        await authPromise.catch(() => {});
     }
 
     return { url, options };
@@ -56,21 +61,25 @@ pocketbaseClient.beforeSend = async function (url, options) {
 (async () => {
     try {
         await waitForHealth();
-
         if (!pocketbaseClient.authStore.isValid && !authPromise) {
-            const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+            const email = process.env.PB_SUPERUSER_EMAIL || 'admin@jbcargo.com';
             const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
             
-            authPromise = pocketbaseClient.collection('_superusers').authWithPassword(
-                email,
-                password,
-            ).finally(() => {
+            authPromise = (async () => {
+                try {
+                    await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+                } catch (e1) {
+                    try {
+                        await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                    } catch (e2) {}
+                }
+            })().finally(() => {
                 authPromise = null;
             });
         }
         
         if (authPromise) {
-            await authPromise;
+            await authPromise.catch(() => {});
         }
         
         logger.info('PocketBase client initialized successfully');

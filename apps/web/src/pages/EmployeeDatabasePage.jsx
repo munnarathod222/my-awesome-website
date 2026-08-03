@@ -430,7 +430,11 @@ const EmployeeDatabasePage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to permanently delete this employee?')) {
       try {
-        // 1. Invoke direct Express API backend delete
+        // 1. Update local state immediately so deleted employee disappears instantly
+        setEmployees(prev => prev.filter(e => e.id !== id && e.employee_number !== id));
+        toast.success('Employee deleted');
+
+        // 2. Invoke direct Express API backend delete
         try {
           await apiServerClient.fetch('/driver/delete-employee-by-id', {
             method: 'POST',
@@ -440,11 +444,11 @@ const EmployeeDatabasePage = () => {
           console.warn('Direct API employee delete warning:', apiErr);
         }
 
-        // 2. Also invoke PocketBase SDK delete
+        // 3. Also invoke PocketBase SDK delete
         await pb.collection('employees').delete(id, { $autoCancel: false }).catch(() => {});
 
-        toast.success('Employee deleted');
-        fetchData();
+        // 4. Background refresh
+        setTimeout(() => { fetchData(); }, 500);
       } catch (err) {
         toast.error('Failed to delete employee.');
       }
