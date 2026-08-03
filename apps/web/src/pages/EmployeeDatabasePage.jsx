@@ -458,13 +458,30 @@ const EmployeeDatabasePage = () => {
           console.warn('Direct API employee delete warning:', apiErr);
         }
 
-        // 3. Also invoke PocketBase SDK delete with 15-character record ID (catch relation warnings gracefully)
-        if (targetPbId && String(targetPbId).length === 15) {
-          await pb.collection('employees').delete(targetPbId, { $autoCancel: false }).catch((sdkErr) => {
-            console.warn('PocketBase SDK delete relation note:', sdkErr.message);
+        // 3. Clean up PocketBase child relation records via SDK before deleting employee record
+        const pid = targetPbId && String(targetPbId).length === 15 ? targetPbId : id;
+        if (pid) {
+          const cleanRel = async (colName, filterExpr) => {
+            try {
+              const rels = await pb.collection(colName).getFullList({ filter: filterExpr, $autoCancel: false }).catch(() => []);
+              for (const r of rels) {
+                await pb.collection(colName).delete(r.id, { $autoCancel: false }).catch(() => {});
+              }
+            } catch (e) {}
+          };
+
+          await cleanRel('employee_documents', `employee_id = "${pid}"`);
+          await cleanRel('driver_accident_reports', `employee_id = "${pid}"`);
+          await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
+          await cleanRel('attendance_records', `employee_id = "${pid}"`);
+          await cleanRel('advances', `employee_id = "${pid}"`);
+          await cleanRel('payroll', `employee_id_relation = "${pid}"`);
+          await cleanRel('shared_folders', `employee_id = "${pid}"`);
+
+          // Finally delete the employee record natively from PocketBase
+          await pb.collection('employees').delete(pid, { $autoCancel: false }).catch((sdkErr) => {
+            console.warn('PocketBase SDK employee delete warning:', sdkErr.message);
           });
-        } else {
-          await pb.collection('employees').delete(id, { $autoCancel: false }).catch(() => {});
         }
 
         toast.success('Employee deleted successfully');

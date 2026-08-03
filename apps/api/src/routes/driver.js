@@ -41,7 +41,7 @@ async function deleteEmployeeRecord(target) {
       try {
         const db = new DatabaseSync(dbPath);
         // Clean up or disassociate child relation records first to avoid foreign key / relation reference errors
-        try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ? OR employee_number = ?').run(targetStr, targetStr); } catch (e) {}
+        try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
         try { db.prepare('DELETE FROM attendance_records WHERE employee_id = ?').run(targetStr); } catch (e) {}
@@ -52,7 +52,7 @@ async function deleteEmployeeRecord(target) {
         try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
         try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
 
-        const info = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?').run(targetStr, targetStr, targetStr);
+        const info = db.prepare('DELETE FROM employees WHERE id = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr);
         if (info.changes > 0) deletedCount += info.changes;
       } catch (sqErr) {
         logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
