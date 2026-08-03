@@ -124,6 +124,14 @@ async function deleteEmployeeRecord(target) {
     } catch (uErr) {}
   }
 
+  // 4. Restart PocketBase process if active so in-memory statement cache is refreshed
+  if (global.pbProcess) {
+    try {
+      logger.info('Restarting PocketBase process to reflect employee deletion...');
+      global.pbProcess.kill();
+    } catch (kErr) {}
+  }
+
   return deletedCount;
 }
 

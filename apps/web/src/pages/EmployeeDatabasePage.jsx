@@ -324,8 +324,14 @@ const EmployeeDatabasePage = () => {
             isoDate = new Date().toISOString();
           }
           submitData.append(key, isoDate);
-        } else if (key === 'assigned_truck' || key === 'assigned_routes') {
-          submitData.append(key, formData[key] === 'none' ? '' : (formData[key] || ''));
+        } else if (key === 'assigned_truck') {
+          if (formData[key] && formData[key] !== 'none' && formData[key] !== '') {
+            submitData.append(key, formData[key]);
+          } else if (editingId) {
+            submitData.append(key, '');
+          }
+        } else if (key === 'assigned_routes') {
+          // Handled below dynamically
         } else {
           submitData.append(key, formData[key] || '');
         }
