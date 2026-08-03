@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import pb from '@/lib/pocketbaseClient.js';
+import apiServerClient from '@/lib/apiServerClient.js';
 import { toast } from 'sonner';
 import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -431,9 +432,8 @@ const EmployeeDatabasePage = () => {
       try {
         // 1. Invoke direct Express API backend delete
         try {
-          await fetch('/hcgi/api/employees/delete-by-id', {
+          await apiServerClient.fetch('/driver/delete-employee-by-id', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id })
           });
         } catch (apiErr) {

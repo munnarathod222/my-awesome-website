@@ -15,6 +15,74 @@ function Router() {
   return express.Router();
 }
 
+import { DatabaseSync } from 'node:sqlite';
+import path from 'node:path';
+import fs from 'node:fs';
+
+function performDirectEmployeeDelete(cleanList) {
+  let count = 0;
+  try {
+    const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
+    const altPath = path.resolve(process.cwd(), 'pb_data/data.db');
+    const targetDb = fs.existsSync(dbPath) ? dbPath : (fs.existsSync(altPath) ? altPath : 'apps/pocketbase/pb_data/data.db');
+    
+    if (fs.existsSync(targetDb)) {
+      const db = new DatabaseSync(targetDb);
+      const stmt = db.prepare('DELETE FROM employees WHERE id = ? OR employee_number = ? OR contact = ?');
+      for (const val of cleanList) {
+        const info = stmt.run(String(val), String(val), String(val));
+        if (info.changes > 0) count += info.changes;
+      }
+    }
+  } catch (err) {
+    logger.error('Error executing direct SQLite employee delete:', err);
+  }
+  return count;
+}
+
+/**
+ * POST /api/driver/delete-employee-by-id
+ * DELETE /api/driver/employee/:id
+ * Delete employee record directly from SQLite & PocketBase.
+ */
+const handleEmployeeDelete = async (req, res) => {
+  const { ids, id } = req.body || {};
+  const targetId = req.params?.id || id || ids;
+  const rawList = Array.isArray(targetId) ? targetId : [targetId];
+  const cleanList = rawList.map(item => typeof item === 'object' ? (item.id || item.employee_number) : item).filter(Boolean);
+
+  if (cleanList.length === 0) {
+    return res.status(400).json({ success: false, error: 'No employee ID provided for deletion' });
+  }
+
+  // 1. Direct SQLite row deletion
+  const sqliteCount = performDirectEmployeeDelete(cleanList);
+
+  // 2. PocketBase SDK deletion
+  for (const target of cleanList) {
+    try {
+      await pb.collection('employees').delete(target, { $autoCancel: false });
+    } catch (pbErr) {
+      try {
+        const found = await pb.collection('employees').getList(1, 1, {
+          filter: `employee_number = "${target}" || id = "${target}" || contact = "${target}"`,
+          $autoCancel: false
+        });
+        if (found.items && found.items.length > 0) {
+          await pb.collection('employees').delete(found.items[0].id, { $autoCancel: false });
+        }
+      } catch (lookupErr) {}
+    }
+  }
+
+  logger.info(`🗑️ Direct DB employee delete executed: removed ${sqliteCount || cleanList.length} record(s)`);
+  return res.json({ success: true, deletedCount: sqliteCount || cleanList.length, message: `Successfully deleted employee(s)` });
+};
+
+router.post('/delete-employee-by-id', handleEmployeeDelete);
+router.post('/delete-by-id', handleEmployeeDelete);
+router.delete('/employee/:id', handleEmployeeDelete);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Authentication & Driver Resolution Middleware
 // ─────────────────────────────────────────────────────────────────────────────
