@@ -728,11 +728,19 @@ const runPocketBase = async () => {
   global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
 
-  // Sync latest database from Supabase Storage before boot
+  // IMPORTANT: Only download on first cold boot (global._pbStartCount === 0).
+  // On restarts (after kill for cache-clear), skip download — the local SQLite
+  // already has the correct data (e.g. deleted employees). Downloading again would
+  // restore stale Supabase data and undo local changes like employee deletions.
   const isProd = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
-  if (isProd || !fs.existsSync(dbFilePath)) {
-    logger.info(`💾 Hydrating latest database from Supabase Storage to ${dbFilePath}...`);
+  const isFirstBoot = !global._pbStartCount;
+  global._pbStartCount = (global._pbStartCount || 0) + 1;
+
+  if (isFirstBoot && (isProd || !fs.existsSync(dbFilePath))) {
+    logger.info(`💾 Cold boot: Hydrating latest database from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath);
+  } else if (!isFirstBoot) {
+    logger.info(`🔄 PocketBase restart #${global._pbStartCount - 1}: Skipping Supabase download to preserve local changes.`);
   } else {
     logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download in local dev.`);
   }
