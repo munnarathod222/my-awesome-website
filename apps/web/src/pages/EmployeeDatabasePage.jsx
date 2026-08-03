@@ -55,6 +55,7 @@ const EmployeeDatabasePage = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
+  const deletedIdsRef = useRef(new Set()); // tracks deleted IDs so fetchData never brings them back
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState(null);
   
@@ -255,7 +256,7 @@ const EmployeeDatabasePage = () => {
         $autoCancel: false 
       });
       
-      const items = employeesData.items || [];
+      const items = (employeesData.items || []).filter(e => !deletedIdsRef.current.has(e.id));
       setEmployees(items);
       
       if (currentUser && !selectedEmployeeId && items.length > 0) {
@@ -487,7 +488,8 @@ const EmployeeDatabasePage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this employee?')) return;
 
-    // Immediately remove from UI so user sees it's gone
+    // Immediately remove from UI and mark as deleted so fetchData never brings it back
+    deletedIdsRef.current.add(String(id).trim());
     setEmployees(prev => prev.filter(e => e.id !== id));
 
     try {
@@ -533,9 +535,8 @@ const EmployeeDatabasePage = () => {
       }
 
       toast.success('Employee deleted successfully');
-
-      // 4. Refresh after 5 seconds — enough time for PocketBase to be back up
-      setTimeout(() => { fetchData(); }, 5000);
+      // Do NOT call fetchData() here — PocketBase cache still has the record
+      // and would bring the deleted employee back. Local state removal above is enough.
 
     } catch (err) {
       console.error('Failed to delete employee:', err);
