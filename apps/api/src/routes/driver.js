@@ -163,6 +163,79 @@ router.post('/delete-employee-by-id', handleEmployeeDelete);
 router.post('/delete-by-id', handleEmployeeDelete);
 router.delete('/employee/:id', handleEmployeeDelete);
 
+/**
+ * POST /api/driver/create-employee
+ * Create a new employee record via superuser PocketBase client.
+ * Accepts JSON body with all employee fields.
+ */
+router.post('/create-employee', async (req, res) => {
+  try {
+    const data = req.body || {};
+    // Build a plain object — PocketBase SDK accepts plain objects for non-file fields
+    const payload = {};
+    const allowedFields = [
+      'name', 'employee_type', 'employment_type', 'contact', 'emergency_contact',
+      'address', 'joining_date', 'license_number', 'aadhaar_number', 'pan_card',
+      'salary_amount', 'salary_billing_cycle', 'active_status', 'assigned_truck',
+      'assigned_routes', 'education', 'payroll_cycle_start_day', 'payroll_cycle_end_day',
+      'salary_disbursement_day'
+    ];
+    for (const key of allowedFields) {
+      if (data[key] !== undefined && data[key] !== null) {
+        payload[key] = data[key];
+      }
+    }
+    // Ensure required defaults
+    if (!payload.contact) payload.contact = 'N/A';
+    if (!payload.salary_billing_cycle) payload.salary_billing_cycle = 'Monthly';
+    if (!payload.employee_type) payload.employee_type = 'driver';
+    if (!payload.active_status) payload.active_status = 'active';
+    // Remove empty assigned_truck to avoid relation validation error
+    if (!payload.assigned_truck || payload.assigned_truck === 'none' || payload.assigned_truck === '') {
+      delete payload.assigned_truck;
+    }
+
+    const record = await pb.collection('employees').create(payload, { $autoCancel: false });
+    logger.info(`Employee created via backend API: ${record.id} (${record.name})`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to create employee:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+/**
+ * POST /api/driver/update-employee/:id
+ * Update an existing employee record via superuser PocketBase client.
+ */
+router.post('/update-employee/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body || {};
+    const payload = {};
+    const allowedFields = [
+      'name', 'employee_type', 'employment_type', 'contact', 'emergency_contact',
+      'address', 'joining_date', 'license_number', 'aadhaar_number', 'pan_card',
+      'salary_amount', 'salary_billing_cycle', 'active_status', 'assigned_truck',
+      'assigned_routes', 'education', 'payroll_cycle_start_day', 'payroll_cycle_end_day',
+      'salary_disbursement_day'
+    ];
+    for (const key of allowedFields) {
+      if (data[key] !== undefined && data[key] !== null) {
+        payload[key] = data[key];
+      }
+    }
+
+    const record = await pb.collection('employees').update(id, payload, { $autoCancel: false });
+    logger.info(`Employee updated via backend API: ${record.id} (${record.name})`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to update employee:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Authentication & Driver Resolution Middleware
 // ─────────────────────────────────────────────────────────────────────────────

@@ -306,95 +306,90 @@ const EmployeeDatabasePage = () => {
     setIsSubmitting(true);
 
     try {
-      const submitData = new FormData();
-      Object.keys(formData).forEach(key => {
-        if (key === 'employee_number') {
-          // Skip non-schema employee_number field
-          return;
-        } else if (key === 'salary_amount') {
-          submitData.append(key, parseFloat(formData[key]) || 0);
-        } else if (key === 'payroll_cycle_start_day' || key === 'payroll_cycle_end_day' || key === 'salary_disbursement_day') {
-          const defaultVal = key === 'payroll_cycle_start_day' ? 1 : key === 'payroll_cycle_end_day' ? 30 : 10;
-          const parsedVal = parseInt(formData[key], 10);
-          submitData.append(key, isNaN(parsedVal) ? defaultVal : Math.max(1, Math.min(31, parsedVal)));
-        } else if (key === 'joining_date') {
-          let isoDate;
-          try {
-            isoDate = new Date(formData[key]).toISOString();
-          } catch (de) {
-            isoDate = new Date().toISOString();
-          }
-          submitData.append(key, isoDate);
-        } else if (key === 'assigned_truck') {
-          if (formData[key] && formData[key] !== 'none' && formData[key] !== '') {
-            submitData.append(key, formData[key]);
-          } else if (editingId) {
-            submitData.append(key, '');
-          }
-        } else if (key === 'assigned_routes') {
-          // Handled below dynamically
-        } else {
-          submitData.append(key, formData[key] || '');
-        }
-      });
-
-      // Ensure PocketBase required schema fields are properly set
-      if (!formData.contact || !formData.contact.trim()) {
-        submitData.set('contact', 'N/A');
-      }
-
+      // Build plain JSON payload for backend API (superuser)
       const validEmpTypes = ['driver', 'supervisor', 'manager'];
       const rawEmpType = (formData.employee_type || 'driver').toLowerCase();
-      submitData.set('employee_type', validEmpTypes.includes(rawEmpType) ? rawEmpType : 'driver');
-
       const validEmploymentTypes = ['Permanent', 'Market / Leased'];
-      const rawEmploymentType = formData.employment_type || 'Permanent';
-      submitData.set('employment_type', validEmploymentTypes.includes(rawEmploymentType) ? rawEmploymentType : 'Permanent');
-
       const validStatuses = ['active', 'leave', 'abscond', 'terminated'];
       const rawStatus = (formData.active_status || 'active').toLowerCase();
-      submitData.set('active_status', validStatuses.includes(rawStatus) ? rawStatus : 'active');
 
-      const pStart = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_start_day, 10) || 1));
-      const pEnd = Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_end_day, 10) || 30));
-      const pDisb = Math.max(1, Math.min(31, parseInt(formData.salary_disbursement_day, 10) || 10));
-      submitData.set('salary_billing_cycle', 'Monthly');
-      submitData.set('payroll_cycle_start_day', pStart);
-      submitData.set('payroll_cycle_end_day', pEnd);
-      submitData.set('salary_disbursement_day', pDisb);
+      let joiningDateISO;
+      try { joiningDateISO = new Date(formData.joining_date).toISOString(); }
+      catch (e) { joiningDateISO = new Date().toISOString(); }
 
-      submitData.delete('assigned_routes');
       const routesList = Array.isArray(formData.assigned_routes)
         ? formData.assigned_routes
         : (formData.assigned_routes && formData.assigned_routes !== 'none' ? [formData.assigned_routes] : []);
-      routesList.forEach(rId => {
-        submitData.append('assigned_routes', rId);
-      });
 
-      if (photoFile) submitData.append('photo', photoFile);
-      else if (removePhoto && editingId) submitData.append('photo', ''); 
+      const payload = {
+        name: formData.name?.trim() || '',
+        employee_type: validEmpTypes.includes(rawEmpType) ? rawEmpType : 'driver',
+        employment_type: validEmploymentTypes.includes(formData.employment_type) ? formData.employment_type : 'Permanent',
+        contact: formData.contact?.trim() || 'N/A',
+        emergency_contact: formData.emergency_contact || '',
+        address: formData.address || '',
+        joining_date: joiningDateISO,
+        license_number: formData.license_number || '',
+        aadhaar_number: formData.aadhaar_number || '',
+        pan_card: formData.pan_card || '',
+        salary_amount: parseFloat(formData.salary_amount) || 0,
+        salary_billing_cycle: 'Monthly',
+        active_status: validStatuses.includes(rawStatus) ? rawStatus : 'active',
+        assigned_routes: routesList,
+        education: formData.education || '',
+        payroll_cycle_start_day: Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_start_day, 10) || 1)),
+        payroll_cycle_end_day: Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_end_day, 10) || 30)),
+        salary_disbursement_day: Math.max(1, Math.min(31, parseInt(formData.salary_disbursement_day, 10) || 10)),
+      };
 
-      // Race against a 15-second timeout so save button never freezes permanently
-      const withTimeout = (promise, ms) => Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))
-      ]);
+      // Only include assigned_truck if it has a real value
+      if (formData.assigned_truck && formData.assigned_truck !== 'none' && formData.assigned_truck !== '') {
+        payload.assigned_truck = formData.assigned_truck;
+      } else if (editingId) {
+        payload.assigned_truck = ''; // unset on update
+      }
 
       let savedEmployee;
       if (editingId) {
-        savedEmployee = await withTimeout(
-          pb.collection('employees').update(editingId, submitData, { $autoCancel: false }),
-          15000
-        );
+        // Update via backend API (superuser)
+        const res = await apiServerClient.fetch(`/driver/update-employee/${editingId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update employee');
+        savedEmployee = data.record;
         toast.success('Employee updated successfully');
       } else {
-        savedEmployee = await withTimeout(
-          pb.collection('employees').create(submitData, { $autoCancel: false }),
-          15000
-        );
+        // Create via backend API (superuser)
+        const res = await apiServerClient.fetch('/driver/create-employee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create employee');
+        savedEmployee = data.record;
         toast.success('Employee added successfully');
       }
 
+      // Upload photo separately via PocketBase SDK (backend doesn't handle file uploads)
+      if (photoFile && savedEmployee?.id) {
+        try {
+          const photoData = new FormData();
+          photoData.append('photo', photoFile);
+          await pb.collection('employees').update(savedEmployee.id, photoData, { $autoCancel: false });
+        } catch (photoErr) {
+          console.warn('Photo upload failed (non-critical):', photoErr.message);
+        }
+      } else if (removePhoto && editingId) {
+        try {
+          await pb.collection('employees').update(editingId, { photo: null }, { $autoCancel: false });
+        } catch (e) {}
+      }
+
+      // Track terminated/absconded employees locally
       if (formData.active_status === 'terminated' || formData.active_status === 'abscond') {
         try {
           const nameToTerm = (formData.name || '').trim().toLowerCase();
@@ -408,17 +403,15 @@ const EmployeeDatabasePage = () => {
         } catch (e) {}
       }
 
-      // Add attached employee documents if present
-      if (uploadedDocs.length > 0) {
+      // Upload any attached documents via PocketBase SDK
+      if (uploadedDocs.length > 0 && savedEmployee?.id) {
         const empId = editingId || savedEmployee.id;
         for (const doc of uploadedDocs) {
           if (!doc.files || doc.files.length === 0) continue;
-          
           const docFormData = new FormData();
           docFormData.append('employee_id', empId);
           docFormData.append('document_type', doc.document_type || 'ID Proof');
           docFormData.append('document_number', doc.document_number || '');
-          
           let expiry;
           try {
             expiry = doc.expiry_date ? new Date(doc.expiry_date).toISOString() : new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
@@ -426,15 +419,10 @@ const EmployeeDatabasePage = () => {
             expiry = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000).toISOString();
           }
           docFormData.append('expiry_date', expiry);
-          
-          doc.files.forEach(file => {
-            docFormData.append('files', file);
-          });
-          
+          doc.files.forEach(file => { docFormData.append('files', file); });
           docFormData.append('status', 'Active');
-          
           await pb.collection('employee_documents').create(docFormData, { $autoCancel: false }).catch(err => {
-            console.warn('Document attachment creation notice:', err);
+            console.warn('Document attachment notice:', err);
           });
         }
       }
@@ -444,12 +432,7 @@ const EmployeeDatabasePage = () => {
       setActiveTab('directory');
     } catch (err) {
       console.error('Save employee error:', err);
-      const pbMsg = err?.data?.message || err?.message || String(err);
-      const fieldErrors = err?.data?.data
-        ? Object.entries(err.data.data).map(([k, v]) => `${k}: ${v?.message || v}`).join('; ')
-        : '';
-      const fullMsg = fieldErrors ? `${pbMsg} — ${fieldErrors}` : pbMsg;
-      toast.error(`Failed to save employee: ${fullMsg}`);
+      toast.error(`Failed to save employee: ${err?.message || String(err)}`);
     } finally {
       setIsSubmitting(false);
     }
