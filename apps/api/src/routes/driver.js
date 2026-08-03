@@ -383,6 +383,167 @@ router.get('/download-db', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/driver/create-expense
+ * Create an expense record via superuser PocketBase client.
+ */
+router.post('/create-expense', async (req, res) => {
+  try {
+    const data = req.body || {};
+    const payload = {
+      date: data.date || new Date().toISOString(),
+      amount: Number(data.amount) || 0,
+      category: data.category || 'Regular',
+      subcategory: data.subcategory || '',
+      description: data.description || '',
+      payment_method: data.payment_method || 'Cash',
+      status: data.status || 'Approved',
+      notes: data.notes || '',
+    };
+    if (data.truck_id && data.truck_id !== 'none') payload.truck_id = data.truck_id;
+    if (data.credit_card_id && data.credit_card_id !== 'none') payload.credit_card_id = data.credit_card_id;
+    if (data.employee_id && data.employee_id !== 'none') payload.employee_id = data.employee_id;
+
+    const record = await pb.collection('expenses').create(payload, { $autoCancel: false });
+    logger.info(`Expense created via API: ${record.id} (${record.amount})`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to create expense via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+/**
+ * POST /api/driver/update-expense/:id
+ * Update an expense record via superuser PocketBase client.
+ */
+router.post('/update-expense/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body || {};
+    const payload = {};
+    if (data.date) payload.date = data.date;
+    if (data.amount !== undefined) payload.amount = Number(data.amount) || 0;
+    if (data.category) payload.category = data.category;
+    if (data.subcategory !== undefined) payload.subcategory = data.subcategory;
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.payment_method) payload.payment_method = data.payment_method;
+    if (data.status) payload.status = data.status;
+    if (data.notes !== undefined) payload.notes = data.notes;
+    
+    payload.truck_id = (data.truck_id && data.truck_id !== 'none') ? data.truck_id : '';
+    payload.credit_card_id = (data.credit_card_id && data.credit_card_id !== 'none') ? data.credit_card_id : '';
+    payload.employee_id = (data.employee_id && data.employee_id !== 'none') ? data.employee_id : '';
+
+    const record = await pb.collection('expenses').update(id, payload, { $autoCancel: false });
+    logger.info(`Expense updated via API: ${record.id}`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to update expense via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+/**
+ * POST /api/driver/update-truck/:id
+ * Update a truck record (including FASTag balance & details) via superuser PocketBase client.
+ */
+router.post('/update-truck/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body || {};
+    const payload = {};
+    const allowedFields = [
+      'truck_name', 'truck_number', 'truck_size', 'truck_axle', 'tyre_count',
+      'status', 'base_odometer', 'ownership_type', 'manager_id', 'fastag_id',
+      'current_fastag_balance', 'payload_capacity', 'body_length', 'body_width', 'body_height',
+      'last_recharge_date', 'last_recharge_amount'
+    ];
+    for (const key of allowedFields) {
+      if (data[key] !== undefined && data[key] !== null) {
+        if (key === 'current_fastag_balance' || key === 'base_odometer' || key === 'tyre_count' || key === 'last_recharge_amount' || key === 'body_length' || key === 'body_width' || key === 'body_height') {
+          payload[key] = Number(data[key]) || 0;
+        } else if (key === 'manager_id' && (data[key] === 'none' || data[key] === '')) {
+          payload[key] = '';
+        } else {
+          payload[key] = data[key];
+        }
+      }
+    }
+
+    const record = await pb.collection('trucks').update(id, payload, { $autoCancel: false });
+    logger.info(`Truck updated via API: ${record.id} (${record.truck_number})`);
+    return res.json({ success: true, record });
+  } catch (err) {
+    logger.error('Failed to update truck via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+/**
+ * POST /api/driver/recharge-fastag
+ * Perform FASTag recharge and update truck balance & create expense record atomically via superuser.
+ */
+router.post('/recharge-fastag', async (req, res) => {
+  try {
+    const { truck_id, recharge_date, recharge_amount, payment_method, reference_number, notes } = req.body || {};
+    if (!truck_id || !recharge_amount) {
+      return res.status(400).json({ success: false, error: 'truck_id and recharge_amount are required' });
+    }
+
+    const amount = Number(recharge_amount) || 0;
+    const dateISO = recharge_date ? (recharge_date.includes('T') ? recharge_date : `${recharge_date} 12:00:00.000Z`) : new Date().toISOString();
+
+    // 1. Fetch current truck
+    const truck = await pb.collection('trucks').getOne(truck_id, { $autoCancel: false });
+    const newBalance = (Number(truck.current_fastag_balance) || 0) + amount;
+
+    // 2. Update truck balance
+    const updatedTruck = await pb.collection('trucks').update(truck_id, {
+      current_fastag_balance: newBalance,
+      last_recharge_date: dateISO,
+      last_recharge_amount: amount
+    }, { $autoCancel: false });
+
+    // 3. Create fastag_recharges record if collection exists
+    try {
+      await pb.collection('fastag_recharges').create({
+        truck_id,
+        recharge_date: dateISO,
+        recharge_amount: amount,
+        payment_method: payment_method || 'UPI',
+        reference_number: reference_number || '',
+        notes: notes || ''
+      }, { $autoCancel: false });
+    } catch (rechargeColErr) {
+      logger.warn(`Notice: fastag_recharges collection create warning: ${rechargeColErr.message}`);
+    }
+
+    // 4. Create matching expense record
+    try {
+      await pb.collection('expenses').create({
+        date: dateISO,
+        category: 'FASTag Recharge',
+        description: `FASTag Recharge for truck ${truck.truck_number || truck_id}`,
+        amount: amount,
+        payment_method: payment_method || 'UPI',
+        truck_id: truck_id, // valid 15-char record ID
+        status: 'Approved',
+        notes: notes || ''
+      }, { $autoCancel: false });
+    } catch (expErr) {
+      logger.warn(`Notice: expense record for FASTag recharge warning: ${expErr.message}`);
+    }
+
+    logger.info(`FASTag recharged via API: Truck ${truck.truck_number} +₹${amount} (New Balance: ₹${newBalance})`);
+    return res.json({ success: true, truck: updatedTruck, newBalance });
+  } catch (err) {
+    logger.error('Failed to execute FASTag recharge via API:', err?.data || err.message);
+    return res.status(400).json({ success: false, error: err?.data?.message || err.message });
+  }
+});
+
+
 
 
 

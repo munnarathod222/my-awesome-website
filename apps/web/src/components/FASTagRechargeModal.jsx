@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 
+import apiServerClient from '@/lib/apiServerClient.js';
+
 const FASTagRechargeModal = ({ isOpen, onClose, truck, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,50 +41,83 @@ const FASTagRechargeModal = ({ isOpen, onClose, truck, onSuccess }) => {
     }
 
     setLoading(true);
+
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Recharge timed out — please try again')), ms))
+    ]);
+
     try {
       const amount = parseFloat(formData.recharge_amount);
-      
-      // 1. Create recharge record
-      await pb.collection('fastag_recharges').create({
-        truck_id: truck.id,
-        recharge_date: `${formData.recharge_date} 12:00:00.000Z`,
-        recharge_amount: amount,
-        payment_method: formData.payment_method,
-        reference_number: formData.reference_number,
-        notes: formData.notes
-      }, { $autoCancel: false });
+      let saved = false;
 
-      // 2. Update truck balance and last recharge info
-      const currentBalance = truck.current_fastag_balance || 0;
-      await pb.collection('trucks').update(truck.id, {
-        current_fastag_balance: currentBalance + amount,
-        last_recharge_date: `${formData.recharge_date} 12:00:00.000Z`,
-        last_recharge_amount: amount
-      }, { $autoCancel: false });
-
-      // 3. Create expense record
+      // Step 1: Try superuser backend API
       try {
-        await pb.collection('expenses').create({
-          date: `${formData.recharge_date} 12:00:00.000Z`,
-          category: 'FASTag Recharge',
-          description: `FASTag Recharge for truck ${truck.truck_number}`,
-          amount: amount,
-          payment_method: formData.payment_method,
-          truck_id: truck.truck_number,
-          status: 'Approved',
-          notes: formData.notes || '',
-          created_by: pb.authStore.model?.id || ''
-        }, { $autoCancel: false });
-      } catch (expErr) {
-        console.error('Failed to create matching expense for FASTag recharge:', expErr);
+        const apiRes = await withTimeout(apiServerClient.fetch('/driver/recharge-fastag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            truck_id: truck.id,
+            recharge_date: `${formData.recharge_date} 12:00:00.000Z`,
+            recharge_amount: amount,
+            payment_method: formData.payment_method,
+            reference_number: formData.reference_number,
+            notes: formData.notes
+          })
+        }), 15000);
+
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.success) {
+            saved = true;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('Backend FASTag recharge API notice, trying SDK direct:', apiErr.message);
       }
 
-      toast.success('Recharge recorded successfully');
+      // Step 2: Fallback to PocketBase SDK directly
+      if (!saved) {
+        // 1. Create recharge record
+        await withTimeout(pb.collection('fastag_recharges').create({
+          truck_id: truck.id,
+          recharge_date: `${formData.recharge_date} 12:00:00.000Z`,
+          recharge_amount: amount,
+          payment_method: formData.payment_method,
+          reference_number: formData.reference_number,
+          notes: formData.notes
+        }, { $autoCancel: false }), 15000).catch(() => {});
+
+        // 2. Update truck balance
+        const currentBalance = truck.current_fastag_balance || 0;
+        await withTimeout(pb.collection('trucks').update(truck.id, {
+          current_fastag_balance: currentBalance + amount,
+          last_recharge_date: `${formData.recharge_date} 12:00:00.000Z`,
+          last_recharge_amount: amount
+        }, { $autoCancel: false }), 15000);
+
+        // 3. Create expense record (pass truck.id, NOT truck_number!)
+        try {
+          await pb.collection('expenses').create({
+            date: `${formData.recharge_date} 12:00:00.000Z`,
+            category: 'FASTag Recharge',
+            description: `FASTag Recharge for truck ${truck.truck_number}`,
+            amount: amount,
+            payment_method: formData.payment_method,
+            truck_id: truck.id,
+            status: 'Approved',
+            notes: formData.notes || '',
+            created_by: pb.authStore.model?.id || ''
+          }, { $autoCancel: false });
+        } catch (expErr) {}
+      }
+
+      toast.success('FASTag balance recharged successfully!');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to record recharge');
+      console.error('FASTag recharge error:', error);
+      toast.error(`Failed to record recharge: ${error?.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

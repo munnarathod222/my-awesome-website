@@ -280,7 +280,7 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
 
     try { fs.unlinkSync(tempPath); } catch (e) {}
 
-    const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
+    let uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
       method: 'POST',
       headers: {
         'apikey': supabaseKey,
@@ -290,6 +290,19 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
       },
       body: fileBuffer
     });
+
+    if (!uploadRes.ok) {
+      // Fallback to PUT method (standard Supabase object update endpoint)
+      uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
+        method: 'PUT',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/octet-stream'
+        },
+        body: fileBuffer
+      });
+    }
 
     if (uploadRes.ok) {
       logger.info(`✅ Verified Database backup (${fileBuffer.byteLength} bytes) synced to Supabase Storage!`);

@@ -216,7 +216,12 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Operation timed out — please try again')), ms))
+    ]);
+
     try {
       if (formData.category === 'Employee' && (!formData.employee_id || formData.employee_id === 'none')) {
         toast.error('Please select an employee for this expense.');
@@ -241,45 +246,61 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         ? `Regular - ${payload.subcategory}` 
         : payload.category;
 
-      const formDataToSend = new FormData();
-      formDataToSend.append('date', dateISO);
-      formDataToSend.append('amount', String(payload.amount));
-      formDataToSend.append('category', payload.category);
-      formDataToSend.append('subcategory', payload.subcategory);
-      formDataToSend.append('description', payload.description || '');
-      formDataToSend.append('payment_method', payload.payment_method);
-      formDataToSend.append('status', payload.status);
-      formDataToSend.append('truck_id', payload.truck_id);
-      formDataToSend.append('credit_card_id', payload.credit_card_id);
-      formDataToSend.append('employee_id', payload.employee_id);
+      let record = null;
+      let saved = false;
 
-      newFiles.forEach((file) => {
-        formDataToSend.append('documents', file);
-      });
-
-      newReceiptFiles.forEach((file) => {
-        formDataToSend.append('image_urls', file);
-      });
-
-      let record;
-
-      if (expense) {
-        deletedFiles.forEach((filename) => {
-          formDataToSend.append('documents.' + filename, '');
-        });
-
-        deletedReceiptFiles.forEach((filename) => {
-          formDataToSend.append('image_urls.' + filename, '');
-        });
-        
-        record = await pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false });
-        
-        // Direct cashbook entry sync
+      // Step 1: Try backend API (superuser) if no binary files attached
+      if (newFiles.length === 0 && newReceiptFiles.length === 0) {
         try {
-          const cashbookEntries = await pb.collection('cashbook').getFullList({
-            filter: `reference_id="${expense.id}"`,
-            $autoCancel: false
-          });
+          const endpoint = expense ? `/driver/update-expense/${expense.id}` : '/driver/create-expense';
+          const apiRes = await withTimeout(apiServerClient.fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, date: dateISO })
+          }), 15000);
+
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData.success && apiData.record) {
+              record = apiData.record;
+              saved = true;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Backend expense API notice, trying SDK direct:', apiErr.message);
+        }
+      }
+
+      // Step 2: Fallback to PocketBase SDK directly
+      if (!saved) {
+        const formDataToSend = new FormData();
+        formDataToSend.append('date', dateISO);
+        formDataToSend.append('amount', String(payload.amount));
+        formDataToSend.append('category', payload.category);
+        formDataToSend.append('subcategory', payload.subcategory);
+        formDataToSend.append('description', payload.description || '');
+        formDataToSend.append('payment_method', payload.payment_method);
+        formDataToSend.append('status', payload.status);
+        formDataToSend.append('truck_id', payload.truck_id);
+        formDataToSend.append('credit_card_id', payload.credit_card_id);
+        formDataToSend.append('employee_id', payload.employee_id);
+
+        newFiles.forEach((file) => formDataToSend.append('documents', file));
+        newReceiptFiles.forEach((file) => formDataToSend.append('image_urls', file));
+
+        if (expense) {
+          deletedFiles.forEach((filename) => formDataToSend.append('documents.' + filename, ''));
+          deletedReceiptFiles.forEach((filename) => formDataToSend.append('image_urls.' + filename, ''));
+          record = await withTimeout(pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false }), 20000);
+        } else {
+          if (currentUser?.id) formDataToSend.append('created_by', currentUser.id);
+          record = await withTimeout(pb.collection('expenses').create(formDataToSend, { $autoCancel: false }), 20000);
+        }
+      }
+
+      // Sync matching Cashbook Entry
+      if (record) {
+        try {
           const cashPayload = {
             date: dateISO,
             description: payload.description || `Expense (${cashCategory})`,
@@ -289,8 +310,13 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
             reference_id: record.id,
             reference_type: 'expense',
             status: 'Completed',
-            added_by: currentUser.id
+            added_by: currentUser?.id || ''
           };
+
+          const cashbookEntries = await pb.collection('cashbook').getFullList({
+            filter: `reference_id="${record.id}"`,
+            $autoCancel: false
+          }).catch(() => []);
 
           if (cashbookEntries && cashbookEntries.length > 0) {
             await pb.collection('cashbook').update(cashbookEntries[0].id, cashPayload, { $autoCancel: false });
@@ -298,39 +324,6 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
             await pb.collection('cashbook').create(cashPayload, { $autoCancel: false });
           }
         } catch (syncErr) {
-          console.error('Failed to update cashbook entry for expense:', syncErr);
-        }
-
-        toast.success('Expense updated successfully');
-      } else {
-        formDataToSend.append('created_by', currentUser.id);
-        
-        record = await pb.collection('expenses').create(formDataToSend, { $autoCancel: false });
-        
-        // Direct cashbook entry sync
-        try {
-          const cashPayload = {
-            date: dateISO,
-            description: payload.description || `Expense (${cashCategory})`,
-            amount: Number(payload.amount),
-            transaction_type: 'Expense',
-            category: cashCategory,
-            reference_id: record.id,
-            reference_type: 'expense',
-            status: 'Completed',
-            added_by: currentUser.id
-          };
-          await pb.collection('cashbook').create(cashPayload, { $autoCancel: false });
-        } catch (syncErr) {
-          console.error('Failed to create cashbook entry for expense:', syncErr);
-        }
-
-        const isTollExpense = 
-          payload.category === 'Toll' ||
-          payload.category === 'Toll Tax' ||
-          payload.category === 'FASTag Recharge' ||
-          payload.subcategory === 'Toll' ||
-          payload.subcategory === 'FASTag' ||
           payload.subcategory === 'Toll / FASTag' ||
           payload.payment_method === 'FASTag' ||
           /toll|fastag/i.test(payload.category || '') ||

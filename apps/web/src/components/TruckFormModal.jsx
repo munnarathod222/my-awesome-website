@@ -43,6 +43,8 @@ const PAYLOAD_OPTIONS = [
   { value: '25 Ton',  label: '25 Ton' },
 ];
 
+import apiServerClient from '@/lib/apiServerClient.js';
+
 export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState([]);
@@ -68,6 +70,92 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [deletedFiles, setDeletedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const withTimeout = (promise, ms) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Truck save timed out — please try again')), ms))
+    ]);
+
+    try {
+      const payload = {
+        truck_name: formData.truck_name,
+        truck_number: formData.truck_number,
+        truck_size: formData.truck_size,
+        truck_axle: formData.truck_axle,
+        tyre_count: Number(formData.tyre_count) || 6,
+        status: formData.status,
+        base_odometer: Number(formData.base_odometer) || 0,
+        ownership_type: formData.ownership_type,
+        manager_id: formData.manager_id === 'none' ? '' : formData.manager_id,
+        fastag_id: formData.fastag_id || '',
+        current_fastag_balance: parseFloat(formData.current_fastag_balance) || 0,
+        payload_capacity: formData.payload_capacity || '',
+        body_length: parseFloat(formData.body_length) || 0,
+        body_width: parseFloat(formData.body_width) || 0,
+        body_height: parseFloat(formData.body_height) || 0,
+      };
+
+      const newItems = bodyImagesList.filter(item => item.isNew);
+      let saved = false;
+
+      // Step 1: Try backend API (superuser) if modifying existing truck without new files
+      if (truck?.id && newItems.length === 0 && deletedFiles.length === 0) {
+        try {
+          const apiRes = await withTimeout(apiServerClient.fetch(`/driver/update-truck/${truck.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }), 15000);
+
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData.success) {
+              saved = true;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Backend truck update API notice, trying SDK direct:', apiErr.message);
+        }
+      }
+
+      // Step 2: Fallback to PocketBase SDK directly
+      if (!saved) {
+        const formDataToSend = new FormData();
+        Object.keys(payload).forEach(key => {
+          formDataToSend.append(key, String(payload[key]));
+        });
+
+        // Append ONLY actual new File objects
+        newItems.forEach((item) => {
+          if (item.file instanceof File) {
+            formDataToSend.append('body_images', item.file);
+          }
+        });
+
+        if (truck?.id) {
+          deletedFiles.forEach((filename) => {
+            formDataToSend.append('body_images.' + filename, '');
+          });
+          await withTimeout(pb.collection('trucks').update(truck.id, formDataToSend, { $autoCancel: false }), 20000);
+        } else {
+          await withTimeout(pb.collection('trucks').create(formDataToSend, { $autoCancel: false }), 20000);
+        }
+      }
+
+      toast.success(truck ? 'Truck updated successfully' : 'Truck created successfully');
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Truck save error:', error);
+      toast.error(`Failed to save truck: ${error?.message || 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
