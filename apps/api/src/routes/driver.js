@@ -124,13 +124,10 @@ async function deleteEmployeeRecord(target) {
     } catch (uErr) {}
   }
 
-  // 4. Restart PocketBase process if active so in-memory statement cache is refreshed
-  if (global.pbProcess) {
-    try {
-      logger.info('Restarting PocketBase process to reflect employee deletion...');
-      global.pbProcess.kill();
-    } catch (kErr) {}
-  }
+  // NOTE: Do NOT kill/restart PocketBase here. The SDK delete above already
+  // removes the record from PocketBase's database and cache immediately.
+  // Killing PocketBase causes a restart race where it re-downloads the old
+  // database from Supabase before the upload finishes, restoring deleted employees.
 
   return deletedCount;
 }

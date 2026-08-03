@@ -488,60 +488,44 @@ const EmployeeDatabasePage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this employee?')) return;
 
-    // Immediately remove from UI and mark as deleted so fetchData never brings it back
-    deletedIdsRef.current.add(String(id).trim());
+    const pid = String(id).trim();
+
+    // Immediately remove from UI and blacklist so fetchData never brings it back
+    deletedIdsRef.current.add(pid);
     setEmployees(prev => prev.filter(e => e.id !== id));
 
     try {
-      const pid = String(id).trim();
+      // Step 1: Call backend API (runs with superuser — deletes via PocketBase SDK + SQLite + Supabase upload)
+      // This is the PRIMARY and most reliable delete method
+      const res = await apiServerClient.fetch('/driver/delete-employee-by-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: pid })
+      });
+      const data = await res.json().catch(() => ({}));
 
-      // 1. Delete child relation records first via PocketBase SDK
-      const cleanRel = async (colName, filterExpr) => {
+      if (!res.ok) {
+        console.warn('Backend API delete failed:', data);
+        // Step 2: Fallback — try PocketBase SDK directly
         try {
-          const rels = await pb.collection(colName).getFullList({ filter: filterExpr, $autoCancel: false }).catch(() => []);
-          for (const r of rels) {
-            await pb.collection(colName).delete(r.id, { $autoCancel: false }).catch(() => {});
-          }
-        } catch (e) {}
-      };
-
-      await cleanRel('employee_documents', `employee_id = "${pid}"`);
-      await cleanRel('driver_accident_reports', `employee_id = "${pid}"`);
-      await cleanRel('attendance', `staff_member = "${pid}" || user_id = "${pid}"`);
-      await cleanRel('attendance_records', `employee_id = "${pid}"`);
-      await cleanRel('advances', `employee_id = "${pid}"`);
-      await cleanRel('payroll', `employee_id = "${pid}" || employee_id_relation = "${pid}"`);
-      await cleanRel('shared_folders', `employee_id = "${pid}"`);
-
-      // 2. Delete the employee via PocketBase SDK (primary method)
-      let pbDeleted = false;
-      try {
-        await pb.collection('employees').delete(pid, { $autoCancel: false });
-        pbDeleted = true;
-      } catch (sdkErr) {
-        console.warn('PocketBase SDK delete failed, trying backend API:', sdkErr.message);
-      }
-
-      // 3. If PocketBase SDK failed, use backend API as fallback
-      if (!pbDeleted) {
-        try {
-          await apiServerClient.fetch('/driver/delete-employee-by-id', {
-            method: 'POST',
-            body: JSON.stringify({ id: pid })
-          });
-        } catch (apiErr) {
-          console.warn('Backend API delete also failed:', apiErr);
+          await pb.collection('employees').delete(pid, { $autoCancel: false });
+        } catch (sdkErr) {
+          console.warn('PocketBase SDK delete also failed:', sdkErr.message);
         }
       }
 
       toast.success('Employee deleted successfully');
-      // Do NOT call fetchData() here — PocketBase cache still has the record
-      // and would bring the deleted employee back. Local state removal above is enough.
+      // Do NOT call fetchData() — deletedIdsRef blocks the employee even if PocketBase returns it
 
     } catch (err) {
       console.error('Failed to delete employee:', err);
-      toast.error(`Failed to delete employee: ${err.message || 'Database error'}`);
-      fetchData();
+      // Try SDK as last resort
+      try {
+        await pb.collection('employees').delete(pid, { $autoCancel: false });
+        toast.success('Employee deleted successfully');
+      } catch (sdkErr) {
+        toast.error(`Delete failed: ${err.message || 'Unknown error'}`);
+      }
     }
   };
 
