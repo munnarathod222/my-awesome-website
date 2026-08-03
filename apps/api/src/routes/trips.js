@@ -35,16 +35,17 @@ async function deleteTripLogRecord(target) {
         let db;
         try {
           db = new DatabaseSyncMod(dbPath);
-        const info = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?').run(String(target), String(target));
-        if (info.changes > 0) deletedCount += info.changes;
-      } catch (sqErr) {}
-      finally {
-        if (db) {
-          try { db.close(); } catch (cErr) {}
+          const info = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?').run(String(target), String(target));
+          if (info.changes > 0) deletedCount += info.changes;
+        } catch (sqErr) {}
+        finally {
+          if (db) {
+            try { db.close(); } catch (cErr) {}
+          }
         }
       }
-    }
-  } catch (sqliteErr) {}
+    } catch (sqliteErr) {}
+  }
 
   // 3. Prevent Supabase download from overwriting local deletion & sync modified DB
   global.preventSupabaseOverwriting = true;

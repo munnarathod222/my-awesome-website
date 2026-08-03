@@ -99,30 +99,31 @@ async function deleteEmployeeRecord(target) {
         let db;
         try {
           db = new DatabaseSyncMod(dbPath);
-        try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM attendance_records WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM advances WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM payroll WHERE employee_id = ? OR employee_id_relation = ?').run(targetStr, targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM salary_payments WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('DELETE FROM shared_folders WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
-        try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM employee_documents WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM driver_accident_reports WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM attendance WHERE staff_member = ? OR user_id = ?').run(targetStr, targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM attendance_records WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM advances WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM payroll WHERE employee_id = ? OR employee_id_relation = ?').run(targetStr, targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM salary_payments WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('DELETE FROM shared_folders WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('UPDATE expenses SET employee_id = "" WHERE employee_id = ?').run(targetStr); } catch (e) {}
+          try { db.prepare('UPDATE trip_logs SET user_id = "" WHERE user_id = ?').run(targetStr); } catch (e) {}
 
-        const info = db.prepare('DELETE FROM employees WHERE id = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr);
-        if (info.changes > 0) deletedCount += info.changes;
+          const info = db.prepare('DELETE FROM employees WHERE id = ? OR contact = ? OR name = ?').run(targetStr, targetStr, targetStr);
+          if (info.changes > 0) deletedCount += info.changes;
 
-        try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (e) {}
-      } catch (sqErr) {
-        logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
-      } finally {
-        if (db) {
-          try { db.close(); } catch (cErr) {}
+          try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (e) {}
+        } catch (sqErr) {
+          logger.error(`SQLite delete error for ${targetStr}:`, sqErr.message);
+        } finally {
+          if (db) {
+            try { db.close(); } catch (cErr) {}
+          }
         }
       }
-    }
-  } catch (sqliteErr) {}
+    } catch (sqliteErr) {}
+  }
 
   // 3. Prevent Supabase download from overwriting local deletion & sync modified DB to Supabase
   global.preventSupabaseOverwriting = true;

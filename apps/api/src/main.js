@@ -14,6 +14,7 @@ import { deleteEmployeeRecord } from './routes/driver.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
+import pb from './utils/pocketbaseClient.js';
 import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
 
@@ -1667,6 +1668,7 @@ const directDeleteTripLogs = async (req, res) => {
   try {
     const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
     const altPath = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+    const targetDb = global.dbFilePath || (fs.existsSync(dbPath) ? dbPath : altPath);
     let DatabaseSyncMod;
     try {
       const mod = await import('node:sqlite');
@@ -1674,7 +1676,7 @@ const directDeleteTripLogs = async (req, res) => {
     } catch (e) {}
 
     let deletedCount = 0;
-    if (DatabaseSyncMod) {
+    if (DatabaseSyncMod && fs.existsSync(targetDb)) {
       db = new DatabaseSyncMod(targetDb);
       const stmt = db.prepare('DELETE FROM trip_logs WHERE id = ? OR trip_id = ?');
 
