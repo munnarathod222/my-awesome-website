@@ -43,7 +43,7 @@ const LoginPage = () => {
         const parsed = JSON.parse(stored);
         if (parsed && parsed.email) {
           setSavedDeviceProfile(parsed);
-          setLoginMode('pin');
+          setEmail(parsed.email);
         }
       } catch (e) {}
     }

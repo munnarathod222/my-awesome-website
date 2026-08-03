@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }) => {
         const masterUser = {
           id: 'usr_munna_superadmin',
           email: cleanEmail.includes('@') ? cleanEmail : 'munnarathod222@gmail.com',
-          name: 'Munna Rathod (Super Admin)',
+          name: 'Vinod kumar Rathod',
           role: 'super_admin',
           status: 'active'
         };
