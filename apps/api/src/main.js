@@ -173,29 +173,30 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
       buffer = await downloadRes.arrayBuffer();
     }
 
-    // Check if the downloaded database is smaller than 100KB (indicating a blank/wiped database)
-    // If so, attempt to load the latest history snapshot!
-    if (!buffer || buffer.byteLength < 100000) {
-      logger.warn(`⚠️ Root data.db in Supabase is small/blank (${buffer ? buffer.byteLength : 0} bytes). Searching for latest history snapshot...`);
-      const todayStr = new Date().toISOString().split('T')[0];
-      const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${todayStr}.db`, {
-        method: 'GET',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`
+    // 🛡️ Anti-Wipeout Guard: If root data.db is < 500KB, search for daily history snapshots!
+    if (!buffer || buffer.byteLength < 500000) {
+      logger.warn(`⚠️ Root data.db in Supabase is small/invalid (${buffer ? buffer.byteLength : 0} bytes). Searching history snapshots...`);
+      const snapshots = ['2026-08-03', '2026-07-25', '2026-07-23'];
+      for (const dStr of snapshots) {
+        const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${dStr}.db`, {
+          method: 'GET',
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+        });
+        if (fallbackRes.ok) {
+          const snapshotBuf = await fallbackRes.arrayBuffer();
+          if (snapshotBuf.byteLength > 500000) {
+            buffer = snapshotBuf;
+            logger.info(`✅ Successfully loaded historical snapshot from ${dStr} (${buffer.byteLength} bytes)!`);
+            break;
+          }
         }
-      });
-      if (fallbackRes.ok) {
-        buffer = await fallbackRes.arrayBuffer();
-        logger.info(`✅ Successfully loaded today's database snapshot (${buffer.byteLength} bytes)!`);
       }
     }
 
-    if (buffer && buffer.byteLength > 100000) {
-      // Ensure target directory exists
+    if (buffer && buffer.byteLength > 500000) {
       fs.mkdirSync(path.dirname(dbFilePath), { recursive: true });
 
-      // Create an automatic backup of the existing database before overwriting it
+      // Create timestamped safety backup of local DB before overwriting
       if (fs.existsSync(dbFilePath)) {
         try {
           const backupsDir = path.join(path.dirname(dbFilePath), 'backups');
@@ -203,9 +204,9 @@ const downloadDatabaseFromSupabase = async (dbFilePath) => {
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
           const backupCopyPath = path.join(backupsDir, `data.db.auto_before_boot_${timestamp}.db`);
           fs.copyFileSync(dbFilePath, backupCopyPath);
-          logger.info(`💾 Created automatic database backup copy before boot overwrite: ${path.basename(backupCopyPath)}`);
+          logger.info(`💾 Created automatic local pre-boot backup: ${path.basename(backupCopyPath)}`);
         } catch (backupErr) {
-          logger.warn(`⚠️ Failed to create automatic backup copy: ${backupErr.message}`);
+          logger.warn(`⚠️ Failed to create pre-boot backup copy: ${backupErr.message}`);
         }
       }
 
@@ -232,22 +233,35 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   try {
     if (!fs.existsSync(dbFilePath)) return false;
 
-    // Copy database file to a temp path to avoid reading a locked file or one that is being actively written to
     fs.copyFileSync(dbFilePath, tempPath);
     const fileBuffer = fs.readFileSync(tempPath);
 
-    // Clean up temp file immediately
-    try {
-      fs.unlinkSync(tempPath);
-    } catch (e) {
-      // Ignore cleanup error
-    }
-
-    // 🛡️ ANTI-WIPEOUT SAFETY GUARD: Never upload blank or small DB files (< 100 KB)
-    if (fileBuffer.byteLength < 100000) {
-      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local database file is too small (${fileBuffer.byteLength} bytes). Aborting upload to Supabase.`);
+    // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 1: File size minimum (500 KB)
+    if (fileBuffer.byteLength < 500000) {
+      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local database file size is too small (${fileBuffer.byteLength} bytes). Aborting cloud upload.`);
+      try { fs.unlinkSync(tempPath); } catch (e) {}
       return false;
     }
+
+    // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 2: Record count integrity check
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const testDb = new DatabaseSync(tempPath);
+      const tripCount = testDb.prepare("SELECT COUNT(*) as c FROM trip_logs").get()?.c || 0;
+      const expenseCount = testDb.prepare("SELECT COUNT(*) as c FROM expenses").get()?.c || 0;
+      
+      if (tripCount < 10 || expenseCount < 10) {
+        logger.error(`🛑 CRITICAL ANTI-WIPEOUT GUARD: Local DB has missing records (trips: ${tripCount}, expenses: ${expenseCount}). ABORTING UPLOAD TO PRESERVE CLOUD BACKUP!`);
+        try { fs.unlinkSync(tempPath); } catch (e) {}
+        return false;
+      }
+    } catch (dbCheckErr) {
+      logger.error(`⚠️ Database integrity check failed: ${dbCheckErr.message}. Aborting upload as safety precaution.`);
+      try { fs.unlinkSync(tempPath); } catch (e) {}
+      return false;
+    }
+
+    try { fs.unlinkSync(tempPath); } catch (e) {}
 
     const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db`, {
       method: 'POST',
@@ -261,15 +275,12 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     });
 
     if (uploadRes.ok) {
-      logger.info(`✅ Database backup (${fileBuffer.byteLength} bytes) successfully synced to Supabase Storage!`);
-      
-      // Attempt to save a daily timestamped backup
+      logger.info(`✅ Verified Database backup (${fileBuffer.byteLength} bytes) synced to Supabase Storage!`);
       try {
         await uploadDailyHistoryBackup(fileBuffer);
       } catch (historyErr) {
         logger.error(`⚠️ Failed to sync daily history backup: ${historyErr.message}`);
       }
-      
       return true;
     } else {
       logger.error(`❌ Failed to sync database backup to Supabase: ${uploadRes.statusText}`);
@@ -719,6 +730,19 @@ const runPocketBase = async () => {
     if (!cols.includes('toll_deduction')) {
       logger.info("Migrating: Adding column 'toll_deduction' to 'trip_logs' table...");
       db.prepare("ALTER TABLE trip_logs ADD COLUMN toll_deduction REAL DEFAULT 0").run();
+    }
+
+    // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
+    const allColDefs = db.prepare('SELECT id, name FROM _collections').all();
+    for (const cDef of allColDefs) {
+      try {
+        const tInfo = db.prepare('PRAGMA table_info(' + cDef.name + ')').all();
+        const hasCol = tInfo.some(col => col.name === 'collectionId');
+        if (!hasCol) {
+          db.prepare('ALTER TABLE ' + cDef.name + ' ADD COLUMN collectionId TEXT NOT NULL DEFAULT ?').run(cDef.id);
+          db.prepare('UPDATE ' + cDef.name + ' SET collectionId = ?').run(cDef.id);
+        }
+      } catch(e) {}
     }
 
     // 2. Add toll_deduction field to trip_logs schema in _collections table if not exists
