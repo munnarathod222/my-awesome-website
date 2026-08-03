@@ -6,12 +6,15 @@ const AuthContext = createContext(null);
 
 const getStoredUser = () => {
   try {
-    if (pb.authStore.isValid && pb.authStore.model) {
+    if (pb.authStore.model) {
       return pb.authStore.model;
     }
     const saved = localStorage.getItem('app_auth_user');
     if (saved) {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (parsed && (parsed.id || parsed.email)) {
+        return parsed;
+      }
     }
   } catch (e) {}
   return null;
@@ -45,19 +48,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (pb.authStore.isValid && pb.authStore.model) {
-          setCurrentUser(pb.authStore.model);
-          localStorage.setItem('app_auth_user', JSON.stringify(pb.authStore.model));
+        const storedUser = getStoredUser();
+        if (storedUser) {
+          setCurrentUser(storedUser);
+          localStorage.setItem('app_auth_user', JSON.stringify(storedUser));
         } else {
-          pb.authStore.clear();
-          localStorage.removeItem('app_auth_user');
           setCurrentUser(null);
         }
       } catch (err) {
         console.error('[AuthContext] checkAuth error:', err);
-        pb.authStore.clear();
-        localStorage.removeItem('app_auth_user');
-        setCurrentUser(null);
       } finally {
         setInitialLoading(false);
       }
