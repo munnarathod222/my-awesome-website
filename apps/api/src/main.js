@@ -1450,6 +1450,8 @@ startMonthEndCron();
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
+  });
+
   // Temporary diagnostic route to test live JSVM cashbook sync hooks
   app.get('/api/test-fuel-sync', requireBackupAuth, async (req, res) => {
     try {
