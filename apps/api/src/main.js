@@ -1450,6 +1450,51 @@ startMonthEndCron();
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
+  // Temporary diagnostic route to test live JSVM cashbook sync hooks
+  app.get('/api/test-fuel-sync', requireBackupAuth, async (req, res) => {
+    try {
+      const expensePayload = {
+        date: new Date().toISOString(),
+        category: 'Regular',
+        subcategory: 'Fuel',
+        amount: 99,
+        liters: 1,
+        truck_id: 'TG12U2637',
+        description: 'TEST DIAGNOSTIC FUEL LOG',
+        payment_method: 'Cash',
+        status: 'Approved',
+        created_by: 'usr_munna_superadmin'
+      };
+
+      const record = await pb.collection('expenses').create(expensePayload, { $autoCancel: false });
+      
+      // Wait 3 seconds for JSVM hooks to run
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const filter = `reference_id = "${record.id}"`;
+      const cbRecords = await pb.collection('cashbook').getFullList({ filter, $autoCancel: false });
+
+      let synced = false;
+      let cbId = null;
+      if (cbRecords.length > 0) {
+        synced = true;
+        cbId = cbRecords[0].id;
+        // Clean up cashbook record
+        await pb.collection('cashbook').delete(cbId, { $autoCancel: false });
+      }
+
+      // Clean up expense record
+      await pb.collection('expenses').delete(record.id, { $autoCancel: false });
+
+      res.json({
+        success: true,
+        synced,
+        cbId,
+        message: synced ? 'Success: Expense synced to Cashbook!' : 'Failure: Expense did not sync to Cashbook.'
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   });
 
   // Diagnostic endpoint — inspects any file or directory on the server
