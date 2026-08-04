@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
   ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
-  QrCode, Navigation
+  QrCode, Navigation, HardDrive, RefreshCw
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext.jsx';
 import pb from '@/lib/pocketbaseClient.js';
+import { toast } from 'sonner';
+import apiServerClient from '@/lib/apiServerClient.js';
 
 // ── Breadcrumb resolver ───────────────────────────────────────────────────────
 const ROUTE_LABELS = {
@@ -98,6 +100,26 @@ export default function Header() {
   const pageLabel = useBreadcrumbs(location.pathname);
   const [pendingCount, setPendingCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [backingUp, setBackingUp] = useState(false);
+
+  const handleBackup = async () => {
+    setBackingUp(true);
+    const toastId = toast.loading('Syncing database backup to Supabase Cloud...');
+    try {
+      const res = await apiServerClient.fetch('/driver/backup-now', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Backup synced successfully!', { id: toastId });
+      } else {
+        toast.error(data.error || 'Backup failed. Check server logs.', { id: toastId, duration: 6000 });
+      }
+    } catch (err) {
+      toast.error(`Backup failed: ${err.message}`, { id: toastId, duration: 6000 });
+    } finally {
+      setBackingUp(false);
+    }
+  };
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -269,6 +291,19 @@ export default function Header() {
                   </Link>
                 </Button>
 
+                {(isAdmin || isSuperAdmin) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleBackup}
+                    disabled={backingUp}
+                    className="rounded-xl text-[12px] h-8 px-3 border-sky-500/30 text-sky-400 hover:bg-sky-500/10 font-bold gap-1.5 transition-all hover:scale-[1.02]"
+                  >
+                    {backingUp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
+                    <span>Backup Data</span>
+                  </Button>
+                )}
+
                 <LangSelector compact={false} language={language} setLanguage={setLanguage} />
 
                 {(isAdmin || isSuperAdmin) && (
@@ -399,6 +434,18 @@ export default function Header() {
                   Dashboard
                 </Link>
               </Button>
+              {(isAdmin || isSuperAdmin) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleBackup}
+                  disabled={backingUp}
+                  className="h-7 px-2 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 font-extrabold text-[11px] gap-1 shadow-sm"
+                >
+                  {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3 h-3" />}
+                  <span>Backup</span>
+                </Button>
+              )}
             </>
           )}
           <LangSelector compact={true} language={language} setLanguage={setLanguage} />

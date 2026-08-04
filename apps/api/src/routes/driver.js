@@ -365,10 +365,17 @@ router.post('/backup-now', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Database file not found' });
     }
     const ok = await global.uploadDatabaseToSupabase(global.dbFilePath);
-    return res.json({
-      success: true,
-      message: ok ? 'Production database successfully backed up to Supabase Cloud!' : 'Backup processed.'
-    });
+    if (ok) {
+      return res.json({
+        success: true,
+        message: 'Production database successfully backed up to Supabase Cloud!'
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Cloud backup failed or was skipped by database security checks (e.g. database file size limit or minimum record count safeguard violated). Check server logs for details.'
+      });
+    }
   } catch (err) {
     logger.error('Failed to execute instant cloud backup:', err.message);
     return res.status(500).json({ success: false, error: err.message });
