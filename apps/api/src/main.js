@@ -1411,6 +1411,28 @@ startMonthEndCron();
         superusersList = ['Failed to fetch: ' + pbErr.message];
       }
 
+      let uploadTestResult = null;
+      try {
+        const testRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/test_api_upload.txt`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'x-upsert': 'true',
+            'Content-Type': 'text/plain'
+          },
+          body: 'Hello from Render diagnostic upload test!'
+        });
+        const testBodyText = await testRes.text().catch(() => '');
+        uploadTestResult = {
+          status: testRes.status,
+          statusText: testRes.statusText,
+          body: testBodyText
+        };
+      } catch (uploadErr) {
+        uploadTestResult = { error: uploadErr.message };
+      }
+
       res.json({
         success: true,
         dbPath,
@@ -1420,6 +1442,7 @@ startMonthEndCron();
         sqliteSupported,
         superusersList,
         lastBackupError: global.lastBackupError || null,
+        uploadTestResult,
         envKeys: Object.keys(process.env),
         NODE_ENV: process.env.NODE_ENV,
         ENABLE_SUPABASE_SYNC: process.env.ENABLE_SUPABASE_SYNC
