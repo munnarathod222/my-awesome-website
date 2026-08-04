@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
-import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2, Send, Plus, DollarSign, Clock, ShieldCheck, TrendingUp, Users, ArrowUpRight, CheckSquare, Square, Share2, Eye, Filter, RefreshCw, Layers } from 'lucide-react';
+import { Download, Search, AlertCircle, FileText, CheckCircle, Bell, XCircle, Table as TableIcon, Loader2, Send, Plus, DollarSign, Clock, ShieldCheck, TrendingUp, Users, ArrowUpRight, CheckSquare, Square, Share2, Eye, Filter, RefreshCw, Layers, ChevronRight, ChevronDown } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { downloadFile, generatePDF, generateExcel } from '@/lib/downloadUtils.js';
@@ -53,6 +53,13 @@ const PaymentRequestsPage = () => {
   const [reminderModalReq, setReminderModalReq] = useState(null);
   const [cancelModalReq, setCancelModalReq] = useState(null);
   const [selectedLedgerClient, setSelectedLedgerClient] = useState('all');
+  const [expandedClientIds, setExpandedClientIds] = useState([]);
+
+  const toggleClientExpansion = (cId) => {
+    setExpandedClientIds(prev =>
+      prev.includes(cId) ? prev.filter(id => id !== cId) : [...prev, cId]
+    );
+  };
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -1254,7 +1261,7 @@ Best Regards,
                                 type="date" 
                                 className="w-6 h-6 p-0 border-0 bg-muted/40 hover:bg-primary/20 cursor-pointer rounded text-transparent font-mono text-xs opacity-60 hover:opacity-100 transition-opacity" 
                                 title="Change Due Date"
-                                value={r.due_date ? new Date(r.due_date).toISOString().split('T')[0] : ''}
+                                value={r.due_date && parseDateSafe(r.due_date) ? parseDateSafe(r.due_date).toISOString().split('T')[0] : ''}
                                 onChange={(e) => handleUpdateSingleDueDate(r.id, e.target.value)}
                               />
                             </div>
@@ -1532,47 +1539,128 @@ Best Regards,
                   {clientLedgerData.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No client ledgers found.</TableCell></TableRow>
                   ) : (
-                    clientLedgerData.map(c => (
-                      <TableRow key={c.client_id} className="hover:bg-muted/30">
-                        <TableCell className="font-bold text-sm">
-                          {c.client_name}
-                          {c.client_obj?.phone && <span className="block text-xs font-normal text-muted-foreground mt-0.5">📞 {c.client_obj.phone}</span>}
-                        </TableCell>
-                        <TableCell className="font-semibold text-sm">₹{c.totalInvoiced.toLocaleString('en-IN')}</TableCell>
-                        <TableCell className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">₹{c.totalPaid.toLocaleString('en-IN')}</TableCell>
-                        <TableCell className="font-extrabold text-sm text-amber-600 dark:text-amber-400">₹{c.totalOutstanding.toLocaleString('en-IN')}</TableCell>
-                        <TableCell>
-                          {c.overdueCount > 0 ? (
-                            <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-bold">
-                              {c.overdueCount} Overdue
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                              Clean Record
-                            </Badge>
+                    clientLedgerData.map(c => {
+                      const isExpanded = expandedClientIds.includes(c.client_id);
+                      return (
+                        <React.Fragment key={c.client_id}>
+                          <TableRow className="hover:bg-muted/30 cursor-pointer" onClick={() => toggleClientExpansion(c.client_id)}>
+                            <TableCell className="font-bold text-sm">
+                              <div className="flex items-center gap-2">
+                                {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                                <div>
+                                  {c.client_name}
+                                  {c.client_obj?.phone && <span className="block text-xs font-normal text-muted-foreground mt-0.5">📞 {c.client_obj.phone}</span>}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-semibold text-sm">₹{c.totalInvoiced.toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">₹{c.totalPaid.toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="font-extrabold text-sm text-amber-600 dark:text-amber-400">₹{c.totalOutstanding.toLocaleString('en-IN')}</TableCell>
+                            <TableCell>
+                              {c.overdueCount > 0 ? (
+                                <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-bold">
+                                  {c.overdueCount} Overdue
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                  Clean Record
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-8 border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold"
+                                onClick={() => {
+                                  const clientUnpaid = c.requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue');
+                                  if (clientUnpaid.length > 0) {
+                                    setSelectedIds(clientUnpaid.map(r => r.id));
+                                    toast.success(`Selected ${clientUnpaid.length} unpaid trips for ${c.client_name}`);
+                                    handleBulkWhatsApp();
+                                  } else {
+                                    toast.info(`No unpaid dues for ${c.client_name}`);
+                                  }
+                                }}
+                              >
+                                <Send className="w-3.5 h-3.5 mr-1" /> Share Statement
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {isExpanded && (
+                            <TableRow className="bg-muted/10 hover:bg-muted/10 border-b border-border/60">
+                              <TableCell colSpan={6} className="p-4 pl-10" onClick={(e) => e.stopPropagation()}>
+                                <div className="rounded-xl border border-border/40 bg-card p-4 space-y-3 shadow-inner">
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mb-2">
+                                    📋 Detailed Statement Breakdown
+                                  </h4>
+                                  <div className="overflow-x-auto rounded-lg border border-border/40">
+                                    <Table>
+                                      <TableHeader className="bg-muted/30">
+                                        <TableRow className="hover:bg-transparent">
+                                          <TableHead className="text-[11px] font-bold h-8 py-1">Trip Date</TableHead>
+                                          <TableHead className="text-[11px] font-bold h-8 py-1">Trip ID / LR</TableHead>
+                                          <TableHead className="text-[11px] font-bold h-8 py-1">Route / Description</TableHead>
+                                          <TableHead className="text-[11px] font-bold h-8 py-1">Amount</TableHead>
+                                          <TableHead className="text-[11px] font-bold h-8 py-1">Status</TableHead>
+                                          <TableHead className="text-[11px] font-bold h-8 py-1 text-right">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {c.requests.map(r => {
+                                          const tripObj = r.expand?.trip_id || r.linkedTrip || {};
+                                          const tripDateVal = r.actualTripDate || tripObj.date || r.request_date;
+                                          const tripDateFormatted = tripDateVal && parseDateSafe(tripDateVal) ? format(parseDateSafe(tripDateVal), 'dd MMM yyyy') : '-';
+                                          const routeStr = tripObj.origin && tripObj.destination 
+                                            ? `${tripObj.origin} ➔ ${tripObj.destination}` 
+                                            : (r.description || 'Freight Service');
+                                          
+                                          return (
+                                            <TableRow key={r.id} className="hover:bg-muted/40 text-xs">
+                                              <TableCell className="py-2">{tripDateFormatted}</TableCell>
+                                              <TableCell className="font-mono text-[11px] py-2">{tripObj.trip_id || r.trip_id || '-'}</TableCell>
+                                              <TableCell className="py-2">{routeStr}</TableCell>
+                                              <TableCell className="font-bold py-2">₹{Number(r.amount || 0).toLocaleString('en-IN')}</TableCell>
+                                              <TableCell className="py-2">
+                                                <Badge variant="outline" className={cn(
+                                                  "border uppercase tracking-wider text-[9px] px-1 py-0",
+                                                  r.calculatedStatus === 'Paid' ? "bg-success/10 text-success border-success/20" :
+                                                  r.calculatedStatus === 'Overdue' ? "bg-destructive/10 text-destructive border-destructive/20" :
+                                                  r.calculatedStatus === 'Pending' ? "bg-warning/10 text-warning border-warning/20" :
+                                                  "bg-muted text-muted-foreground border-border"
+                                                )}>
+                                                  {r.calculatedStatus}
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell className="text-right space-x-1.5 py-2">
+                                                {(r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') && (
+                                                  <>
+                                                    <Button variant="ghost" size="sm" className="h-7 text-[10px] text-emerald-600 px-2" onClick={(e) => { e.stopPropagation(); setPaidModalReq(r); }}>
+                                                      Mark Paid
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" className="h-7 text-[10px] text-primary px-2" onClick={(e) => { e.stopPropagation(); handleGenerateInvoicePDF(r); }}>
+                                                      Invoice
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" className="h-7 text-[10px] text-emerald-600 px-2" onClick={(e) => { e.stopPropagation(); handleShareWhatsApp(r); }}>
+                                                      WhatsApp
+                                                    </Button>
+                                                  </>
+                                                )}
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-8 border-emerald-600/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 font-bold"
-                            onClick={() => {
-                              const clientUnpaid = c.requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue');
-                              if (clientUnpaid.length > 0) {
-                                setSelectedIds(clientUnpaid.map(r => r.id));
-                                toast.success(`Selected ${clientUnpaid.length} unpaid trips for ${c.client_name}`);
-                                handleBulkWhatsApp();
-                              } else {
-                                toast.info(`No unpaid dues for ${c.client_name}`);
-                              }
-                            }}
-                          >
-                            <Send className="w-3.5 h-3.5 mr-1" /> Share Statement
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                        </React.Fragment>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
