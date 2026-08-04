@@ -408,6 +408,7 @@ router.post('/create-expense', async (req, res) => {
       payment_method: data.payment_method || 'Cash',
       status: data.status || 'Approved',
       notes: data.notes || '',
+      created_by: data.created_by || 'system',
     };
     if (data.truck_id && data.truck_id !== 'none') payload.truck_id = data.truck_id;
     if (data.credit_card_id && data.credit_card_id !== 'none') payload.credit_card_id = data.credit_card_id;

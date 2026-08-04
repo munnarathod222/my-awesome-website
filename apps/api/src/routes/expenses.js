@@ -32,6 +32,7 @@ router.post('/', async (req, res) => {
       date: date || new Date().toISOString(),
       userId,
       status: status || 'pending',
+      created_by: userId || 'system',
     });
 
     logger.info(`Expense ${expense.id} created`);

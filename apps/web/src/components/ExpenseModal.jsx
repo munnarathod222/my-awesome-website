@@ -49,6 +49,11 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
 
   useEffect(() => {
     if (isOpen) {
+      // Silently wake up the backend server as soon as the modal opens.
+      // Render free tier spins down after inactivity — this ping gives it
+      // 30-60s to warm up while the user fills the form, so Save is instant.
+      fetch('/hcgi/api/health').catch(() => {});
+
       if (!propTrucks || propTrucks.length === 0) {
         pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false })
           .then(setTrucks)
@@ -242,6 +247,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         truck_id: formData.truck_id === 'none' ? '' : formData.truck_id,
         credit_card_id: formData.credit_card_id === 'none' ? '' : formData.credit_card_id,
         employee_id: formData.employee_id === 'none' ? '' : formData.employee_id,
+        created_by: currentUser?.id || '',
       };
 
       if (payload.category !== 'Regular' && payload.category !== 'Employee') {
