@@ -1415,10 +1415,9 @@ startMonthEndCron();
         expenseCount,
         sqliteSupported,
         superusersList,
+        envKeys: Object.keys(process.env),
         NODE_ENV: process.env.NODE_ENV,
-        ENABLE_SUPABASE_SYNC: process.env.ENABLE_SUPABASE_SYNC,
-        SUPABASE_KEY: process.env.SUPABASE_KEY ? (process.env.SUPABASE_KEY.substring(0, 15) + '...') : null,
-        SUPABASE_SECRET: process.env.SUPABASE_SECRET ? (process.env.SUPABASE_SECRET.substring(0, 15) + '...') : null
+        ENABLE_SUPABASE_SYNC: process.env.ENABLE_SUPABASE_SYNC
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
