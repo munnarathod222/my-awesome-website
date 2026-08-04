@@ -42,14 +42,27 @@ globalThis.uploadFileToSupabase = function(localPath, remoteRelPath) {
 
 // Build the local path for a PocketBase file
 globalThis.buildLocalPath = function(collectionId, recordId, filename) {
-  // PocketBase stores files at: pb_data/storage/{collectionId}/{recordId}/{filename}
-  const isLinux = $os.getenv('HOME') !== '';
-  const baseDir = isLinux && $os.exists('/data') ? '/data' : '';
-  if (baseDir) {
-    return `${baseDir}/storage/${collectionId}/${recordId}/${filename}`;
+  let baseDir = '';
+  try {
+    if (typeof $app !== 'undefined' && typeof $app.dataDir === 'function') {
+      baseDir = $app.dataDir();
+    }
+  } catch (e) {}
+
+  if (!baseDir) {
+    const isLinux = $os.getenv('HOME') !== '';
+    const isRender = $os.getenv('RENDER') !== '' || $os.getenv('PORT') !== '';
+    if (isLinux && (isRender || $os.exists('/opt/render/project/src/apps/pocketbase/pb_data'))) {
+      baseDir = '/opt/render/project/src/apps/pocketbase/pb_data';
+    } else if (isLinux && $os.exists('/data')) {
+      baseDir = '/data';
+    } else if ($os.exists('./apps/pocketbase/pb_data')) {
+      baseDir = './apps/pocketbase/pb_data';
+    } else {
+      baseDir = './pb_data';
+    }
   }
-  // Fallback: relative to cwd
-  return `./pb_data/storage/${collectionId}/${recordId}/${filename}`;
+  return `${baseDir}/storage/${collectionId}/${recordId}/${filename}`;
 };
 
 // Collections that store files (documents, images, bills, etc.)

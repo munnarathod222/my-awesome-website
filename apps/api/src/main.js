@@ -647,6 +647,7 @@ const uploadAllStorageToSupabase = async (storageDir) => {
   }
   logger.info(`✅ Graceful shutdown: synced ${synced}/${filePaths.length} storage files to Supabase.`);
 };
+global.uploadAllStorageToSupabase = uploadAllStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
   let knownFiles = {};
@@ -759,6 +760,7 @@ const runPocketBase = async () => {
   const dbFilePath = path.join(dataDir, 'data.db');
   global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
+  global.storageDir = storageDir;
 
   // IMPORTANT: Only download on first cold boot (global._pbStartCount === 0).
   // On restarts (after kill for cache-clear), skip download — the local SQLite
