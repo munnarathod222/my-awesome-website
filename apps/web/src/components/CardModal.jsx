@@ -167,7 +167,11 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
         status: formData.status,
         user_id: currentUser.id,
         is_addon: isAddon,
-        primary_card_id: isAddon ? formData.primary_card_id : ''
+        primary_card_id: isAddon ? formData.primary_card_id : '',
+        // Include required waiver fields with standard defaults (5000 per-transaction limit, 20000 monthly limit)
+        max_waiver_per_transaction: card ? (Number(card.max_waiver_per_transaction) || 5000) : 5000,
+        monthly_waiver_limit: card ? (Number(card.monthly_waiver_limit) || 20000) : 20000,
+        current_month_waiver_used: card ? (Number(card.current_month_waiver_used) || 0) : 0
       };
 
       let savedCard;
@@ -178,8 +182,7 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           savedCard = await pb.collection('credit_cards').create(cardPayload, { $autoCancel: false });
         }
       } catch (err) {
-        console.warn('Initial card save failed, executing fallback without custom schema fields:', err);
-        // Fallback payload without custom schema columns if PocketBase rejects unmapped fields
+        console.warn('Initial card save failed, executing fallback:', err);
         const fallbackPayload = {
           card_name: storedCardName,
           card_number_last4: formData.card_number_last4,
@@ -189,7 +192,10 @@ const CardModal = ({ isOpen, onClose, card, onSuccess }) => {
           billing_cycle_end: Number(formData.billing_cycle_end) || 30,
           credit_limit: Number(formData.credit_limit) || 0,
           status: formData.status,
-          user_id: currentUser.id
+          user_id: currentUser.id,
+          max_waiver_per_transaction: card ? (Number(card.max_waiver_per_transaction) || 5000) : 5000,
+          monthly_waiver_limit: card ? (Number(card.monthly_waiver_limit) || 20000) : 20000,
+          current_month_waiver_used: card ? (Number(card.current_month_waiver_used) || 0) : 0
         };
         if (card) {
           savedCard = await pb.collection('credit_cards').update(card.id, fallbackPayload, { $autoCancel: false });
