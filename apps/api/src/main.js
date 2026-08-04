@@ -1363,6 +1363,34 @@ startMonthEndCron();
     res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
   });
 
+  // Diagnostic endpoint — inspects the production database status
+  app.get('/api/inspect-db-status', requireBackupAuth, async (req, res) => {
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const dbPath = global.dbFilePath;
+      if (!dbPath || !fs.existsSync(dbPath)) {
+        return res.json({ success: false, error: 'Database file does not exist or path not set' });
+      }
+      const stat = fs.statSync(dbPath);
+      const db = new DatabaseSync(dbPath);
+      const tripCount = db.prepare("SELECT COUNT(*) as c FROM trip_logs").get()?.c || 0;
+      const expenseCount = db.prepare("SELECT COUNT(*) as c FROM expenses").get()?.c || 0;
+      db.close();
+
+      res.json({
+        success: true,
+        dbPath,
+        sizeBytes: stat.size,
+        tripCount,
+        expenseCount,
+        NODE_ENV: process.env.NODE_ENV,
+        ENABLE_SUPABASE_SYNC: process.env.ENABLE_SUPABASE_SYNC
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Diagnostic endpoint — inspects any file or directory on the server
   app.get('/api/inspect-file', requireBackupAuth, (req, res) => {
     const filePath = req.query.path || '/opt/render/project/src/apps/api/pb.js';
