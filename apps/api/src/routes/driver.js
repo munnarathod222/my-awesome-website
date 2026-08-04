@@ -368,13 +368,11 @@ router.post('/backup-now', async (req, res) => {
     // 1. Sync SQLite Database
     const dbOk = await global.uploadDatabaseToSupabase(global.dbFilePath);
     
-    // 2. Sync Uploaded Storage Files (best effort)
+    // 2. Sync Uploaded Storage Files (best effort in background so that response is instant)
     if (global.storageDir && global.uploadAllStorageToSupabase) {
-      try {
-        await global.uploadAllStorageToSupabase(global.storageDir);
-      } catch (storageErr) {
+      global.uploadAllStorageToSupabase(global.storageDir).catch(storageErr => {
         logger.error('Failed to sync storage attachments to Supabase:', storageErr.message);
-      }
+      });
     }
 
     if (dbOk) {

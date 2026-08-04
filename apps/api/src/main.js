@@ -628,28 +628,42 @@ const uploadAllStorageToSupabase = async (storageDir) => {
   if (!fs.existsSync(storageDir)) return;
   const localFiles = getLocalFilesRecursive(storageDir, storageDir);
   const filePaths = Object.keys(localFiles);
-  logger.info(`🔄 Graceful shutdown: syncing ${filePaths.length} storage files to Supabase...`);
+  logger.info(`🔄 Storage sync: syncing ${filePaths.length} storage files to Supabase (Parallel concurrency of 15)...`);
+  
   let synced = 0;
-  for (const relPath of filePaths) {
-    const localFilePath = path.join(storageDir, relPath);
-    const remotePath = `storage/${relPath}`;
-    try {
-      const fileBuffer = fs.readFileSync(localFilePath);
-      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
-        method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'x-upsert': 'true'
-        },
-        body: fileBuffer
-      });
-      if (uploadRes.ok) synced++;
-    } catch (e) {
-      // best-effort, ignore errors
+  const concurrency = 15;
+  const filePathsCopy = [...filePaths];
+  
+  const uploadWorker = async () => {
+    while (filePathsCopy.length > 0) {
+      const relPath = filePathsCopy.shift();
+      if (!relPath) continue;
+      const localFilePath = path.join(storageDir, relPath);
+      const remotePath = `storage/${relPath}`;
+      try {
+        const fileBuffer = fs.readFileSync(localFilePath);
+        const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'x-upsert': 'true'
+          },
+          body: fileBuffer
+        });
+        if (uploadRes.ok) synced++;
+      } catch (e) {
+        // best-effort, ignore
+      }
     }
+  };
+
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, filePaths.length); i++) {
+    workers.push(uploadWorker());
   }
-  logger.info(`✅ Graceful shutdown: synced ${synced}/${filePaths.length} storage files to Supabase.`);
+  await Promise.all(workers);
+  logger.info(`✅ Storage sync: successfully synced ${synced}/${filePaths.length} files to Supabase.`);
 };
 global.uploadAllStorageToSupabase = uploadAllStorageToSupabase;
 
