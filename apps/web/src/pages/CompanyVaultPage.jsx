@@ -201,6 +201,8 @@ export default function CompanyVaultPage() {
         fileData.append('document_type', 'Other');
         fileData.append('document_name', uploadFormData.title.trim());
         fileData.append('notes', `Company Vault: ${uploadFormData.title} (${uploadFormData.category})`);
+        fileData.append('status', 'Active');
+        fileData.append('expiry_date', '2099-12-31T00:00:00.000Z');
 
         // Upload to PocketBase truck_documents storage bucket for permanent file hosting
         const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
