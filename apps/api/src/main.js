@@ -1377,6 +1377,7 @@ startMonthEndCron();
       let tripCount = -1;
       let expenseCount = -1;
       let sqliteSupported = false;
+      let superusersList = [];
 
       try {
         const { DatabaseSync } = await import('node:sqlite');
@@ -1397,6 +1398,13 @@ startMonthEndCron();
         }
       }
 
+      try {
+        const list = await pb.collection('_superusers').getFullList({ $autoCancel: false });
+        superusersList = list.map(u => u.email);
+      } catch (pbErr) {
+        superusersList = ['Failed to fetch: ' + pbErr.message];
+      }
+
       res.json({
         success: true,
         dbPath,
@@ -1404,6 +1412,7 @@ startMonthEndCron();
         tripCount,
         expenseCount,
         sqliteSupported,
+        superusersList,
         NODE_ENV: process.env.NODE_ENV,
         ENABLE_SUPABASE_SYNC: process.env.ENABLE_SUPABASE_SYNC
       });
