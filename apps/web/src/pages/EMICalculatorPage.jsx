@@ -16,7 +16,8 @@ import {
   FileText,
   UploadCloud,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Download
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ import ProfileManager from '@/components/ProfileManager.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend as RechartsLegend } from 'recharts';
 
 export default function EMICalculatorPage() {
   const { 
@@ -114,6 +116,9 @@ export default function EMICalculatorPage() {
   const [tenureType, setTenureType] = useState('years');
   const [loanDate, setLoanDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [firstEmiDate, setFirstEmiDate] = useState(format(addMonths(new Date(), 1), 'yyyy-MM-dd'));
+  const [extraMonthlyPayment, setExtraMonthlyPayment] = useState('0');
+  const [lumpSumAmount, setLumpSumAmount] = useState('0');
+  const [lumpSumMonth, setLumpSumMonth] = useState('12');
 
   const activeProfile = useMemo(() => {
     return profiles.find(p => p.id === activeProfileId);
@@ -276,7 +281,7 @@ export default function EMICalculatorPage() {
   };
 
   // Derived calculations
-  const { schedule, summary } = useMemo(() => {
+  const { schedule, summary, prepaidSchedule, prepaidSummary } = useMemo(() => {
     const p = parseFloat(amount) || 0;
     const rAnnual = parseFloat(rate) || 0;
     const t = parseFloat(tenure) || 0;
@@ -284,12 +289,12 @@ export default function EMICalculatorPage() {
     
     // Safety check for empty or invalid dates preventing crashes
     if (p <= 0 || n <= 0 || !firstEmiDate) {
-      return { schedule: [], summary: null };
+      return { schedule: [], summary: null, prepaidSchedule: [], prepaidSummary: null };
     }
 
     const startDate = parseISO(firstEmiDate);
     if (!isValid(startDate)) {
-      return { schedule: [], summary: null };
+      return { schedule: [], summary: null, prepaidSchedule: [], prepaidSummary: null };
     }
 
     const rMonthly = (rAnnual / 12) / 100;
@@ -342,6 +347,73 @@ export default function EMICalculatorPage() {
     }
 
     const totalAmount = p + totalInterest;
+
+    // Calculate prepaid schedule if extra payments are defined
+    let prepSched = [];
+    let prepSumm = null;
+    const extraMonthly = parseFloat(extraMonthlyPayment) || 0;
+    const lumpSum = parseFloat(lumpSumAmount) || 0;
+    const lumpMonth = parseInt(lumpSumMonth) || 0;
+
+    if (extraMonthly > 0 || (lumpSum > 0 && lumpMonth > 0)) {
+      let currentBal = p;
+      let totalInt = 0;
+      let monthsCount = 0;
+      let paidPrinc = 0;
+      let paidInt = 0;
+      
+      for (let i = 1; i <= n * 2; i++) {
+        if (currentBal <= 0.01) break;
+        monthsCount++;
+        
+        const interestForMonth = currentBal * rMonthly;
+        let basePrincipal = emi - interestForMonth;
+        
+        if (currentBal < basePrincipal) {
+          basePrincipal = currentBal;
+        }
+        
+        let extraThisMonth = extraMonthly;
+        if (i === lumpMonth) {
+          extraThisMonth += lumpSum;
+        }
+        
+        let totalPrincipalPaid = basePrincipal + extraThisMonth;
+        if (currentBal < totalPrincipalPaid) {
+          totalPrincipalPaid = currentBal;
+        }
+        
+        currentBal -= totalPrincipalPaid;
+        totalInt += interestForMonth;
+        
+        const emiDateObj = addMonths(startDate, i - 1);
+        const isPaid = isBefore(emiDateObj, today) || isSameDay(emiDateObj, today);
+        
+        if (isPaid) {
+          paidPrinc += totalPrincipalPaid;
+          paidInt += interestForMonth;
+        }
+        
+        prepSched.push({
+          number: i,
+          date: emiDateObj,
+          emiAmount: basePrincipal + interestForMonth + (totalPrincipalPaid - basePrincipal),
+          principal: totalPrincipalPaid,
+          interest: interestForMonth,
+          balance: Math.max(0, currentBal),
+          isPaid
+        });
+      }
+      
+      prepSumm = {
+        totalInterest: totalInt,
+        totalAmount: p + totalInt,
+        monthsCount,
+        interestSaved: Math.max(0, totalInterest - totalInt),
+        monthsSaved: Math.max(0, n - monthsCount),
+        lastEmiDate: prepSched.length > 0 ? prepSched[prepSched.length - 1].date : null
+      };
+    }
     
     return {
       schedule: scheduleData,
@@ -357,9 +429,11 @@ export default function EMICalculatorPage() {
         outstandingInterest: totalInterest - paidInterest,
         outstandingTotal: totalAmount - (paidPrincipal + paidInterest),
         lastEmiDate: scheduleData.length > 0 ? scheduleData[scheduleData.length - 1].date : null
-      }
+      },
+      prepaidSchedule: prepSched,
+      prepaidSummary: prepSumm
     };
-  }, [amount, rate, tenure, tenureType, firstEmiDate]);
+  }, [amount, rate, tenure, tenureType, firstEmiDate, extraMonthlyPayment, lumpSumAmount, lumpSumMonth]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -367,6 +441,72 @@ export default function EMICalculatorPage() {
       currency: 'INR',
       maximumFractionDigits: 0
     }).format(val || 0);
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const data = schedule.map(row => ({
+        'Installment': String(row.number),
+        'Due Date': format(row.date, 'dd MMM yyyy'),
+        'EMI Amount (Rs.)': Math.round(row.emiAmount),
+        'Principal (Rs.)': Math.round(row.principal),
+        'Interest (Rs.)': Math.round(row.interest),
+        'Remaining Balance (Rs.)': Math.round(row.balance),
+        'Status': row.isPaid ? 'Paid' : 'Pending'
+      }));
+
+      const columns = [
+        { header: 'Installment', key: 'Installment' },
+        { header: 'Due Date', key: 'Due Date' },
+        { header: 'EMI Amount (Rs.)', key: 'EMI Amount (Rs.)' },
+        { header: 'Principal (Rs.)', key: 'Principal (Rs.)' },
+        { header: 'Interest (Rs.)', key: 'Interest (Rs.)' },
+        { header: 'Remaining Balance (Rs.)', key: 'Remaining Balance (Rs.)' },
+        { header: 'Status', key: 'Status' }
+      ];
+
+      const totals = {
+        'Installment': 'TOTALS',
+        'Due Date': '',
+        'EMI Amount (Rs.)': Math.round(summary.totalAmount),
+        'Principal (Rs.)': Math.round(summary.totalPrincipal),
+        'Interest (Rs.)': Math.round(summary.totalInterest),
+        'Remaining Balance (Rs.)': '',
+        'Status': ''
+      };
+
+      const filename = `Amortization_Schedule_${bankName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
+      const blob = generatePDF(data, filename, {
+        title: `${bankName} Loan Amortization Schedule`,
+        columns,
+        totals
+      });
+      downloadFile(blob, `${filename}.pdf`);
+      toast.success('PDF Amortization Schedule downloaded!');
+    } catch (err) {
+      toast.error('Failed to export PDF: ' + err.message);
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const data = schedule.map(row => ({
+        'Installment': row.number,
+        'Due Date': format(row.date, 'yyyy-MM-dd'),
+        'EMI Amount': Math.round(row.emiAmount),
+        'Principal Paid': Math.round(row.principal),
+        'Interest Paid': Math.round(row.interest),
+        'Remaining Balance': Math.round(row.balance),
+        'Status': row.isPaid ? 'Paid' : 'Pending'
+      }));
+
+      const filename = `Amortization_Schedule_${bankName.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}`;
+      const blob = generateExcel(data, 'Loan_Schedule', 'Amortization');
+      downloadFile(blob, `${filename}.xlsx`);
+      toast.success('Excel Amortization Schedule downloaded!');
+    } catch (err) {
+      toast.error('Failed to export Excel: ' + err.message);
+    }
   };
 
   // Safely find the active profile using optional chaining
@@ -631,6 +771,61 @@ export default function EMICalculatorPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Prepayment Simulator Card */}
+          <Card className="border-border shadow-sm">
+            <CardHeader className="bg-muted/20 border-b border-border pb-4">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-primary" />
+                Prepayment Simulator
+              </CardTitle>
+              <CardDescription>Accelerate your repayment and save interest</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="extraMonthly">Extra Monthly Payment (₹)</Label>
+                <div className="relative">
+                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input 
+                    id="extraMonthly"
+                    type="number"
+                    min="0"
+                    value={extraMonthlyPayment === '0' ? '' : extraMonthlyPayment}
+                    onChange={(e) => setExtraMonthlyPayment(e.target.value || '0')}
+                    className="pl-9 bg-background font-semibold text-xs rounded-xl"
+                    placeholder="e.g. 5000"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="lumpSum">Lump-Sum (₹)</Label>
+                  <Input 
+                    id="lumpSum"
+                    type="number"
+                    min="0"
+                    value={lumpSumAmount === '0' ? '' : lumpSumAmount}
+                    onChange={(e) => setLumpSumAmount(e.target.value || '0')}
+                    className="bg-background font-semibold text-xs rounded-xl"
+                    placeholder="e.g. 100000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lumpMonth">Month Number</Label>
+                  <Input 
+                    id="lumpMonth"
+                    type="number"
+                    min="1"
+                    value={lumpSumMonth}
+                    onChange={(e) => setLumpSumMonth(e.target.value)}
+                    className="bg-background text-xs rounded-xl"
+                    placeholder="e.g. 12"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Status & Summary Section */}
@@ -662,56 +857,133 @@ export default function EMICalculatorPage() {
                 </Card>
               </div>
 
-              {/* Current Status As of Today */}
-              <Card className="border-border shadow-sm overflow-hidden rounded-2xl">
-                <CardHeader className="bg-muted/20 border-b border-border pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-primary" />
-                      Current Status 
+              {/* Prepayment Savings Analyst Card */}
+              {prepaidSummary && prepaidSummary.interestSaved > 0 && (
+                <Card className="border-emerald-500/30 bg-emerald-500/5 shadow-sm rounded-2xl overflow-hidden animate-in zoom-in duration-300">
+                  <CardHeader className="bg-emerald-500/10 border-b border-emerald-500/10 pb-4">
+                    <CardTitle className="text-lg text-emerald-500 flex items-center gap-2 font-extrabold">
+                      <TrendingDown className="w-5 h-5" />
+                      Prepayment Savings Analyst
                     </CardTitle>
-                    <Badge variant="outline" className="bg-background text-muted-foreground">
-                      As of Today
-                    </Badge>
+                    <CardDescription className="text-emerald-500/70 font-semibold">
+                      Your extra payments will significantly reduce your loan cost and tenure!
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                      <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Total Interest Saved</p>
+                      <p className="text-2xl font-extrabold text-emerald-500 tabular-nums">
+                        {formatCurrency(prepaidSummary.interestSaved)}
+                      </p>
+                      <p className="text-emerald-500/70 text-[10px] mt-1 font-semibold">Saved from bank interest charges</p>
+                    </div>
+
+                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                      <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Tenure Reduced By</p>
+                      <p className="text-2xl font-extrabold text-emerald-500 tabular-nums">
+                        {prepaidSummary.monthsSaved} Months
+                      </p>
+                      <p className="text-emerald-500/70 text-[10px] mt-1 font-semibold">
+                        Loan closed in {prepaidSummary.monthsCount} months instead of {tenureType === 'years' ? tenure * 12 : tenure}
+                      </p>
+                    </div>
+
+                    <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
+                      <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">New Close Date</p>
+                      <p className="text-2xl font-extrabold text-emerald-500">
+                        {prepaidSummary.lastEmiDate ? format(prepaidSummary.lastEmiDate, 'MMM yyyy') : '-'}
+                      </p>
+                      <p className="text-emerald-500/70 text-[10px] mt-1 font-semibold">
+                        Original close date: {summary.lastEmiDate ? format(summary.lastEmiDate, 'MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Status and Visualization Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Current Status As of Today */}
+                <Card className="border-border shadow-sm overflow-hidden rounded-2xl flex flex-col justify-between">
+                  <CardHeader className="bg-muted/20 border-b border-border pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary" />
+                        Current Status (As of Today)
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 divide-y divide-border">
+                    <div className="grid grid-cols-2 divide-x divide-border">
+                      <div className="p-4">
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Paid Principal</span>
+                        <p className="text-lg font-bold tabular-nums text-foreground mt-1">{formatCurrency(summary.paidPrincipal)}</p>
+                      </div>
+                      <div className="p-4">
+                        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Paid Interest</span>
+                        <p className="text-lg font-bold tabular-nums text-foreground mt-1">{formatCurrency(summary.paidInterest)}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 divide-x divide-border bg-muted/5">
+                      <div className="p-4">
+                        <span className="text-[10px] text-warning font-semibold uppercase tracking-wider">Out. Principal</span>
+                        <p className="text-lg font-bold tabular-nums text-foreground mt-1">{formatCurrency(summary.outstandingPrincipal)}</p>
+                      </div>
+                      <div className="p-4">
+                        <span className="text-[10px] text-destructive font-semibold uppercase tracking-wider">Out. Interest</span>
+                        <p className="text-lg font-bold tabular-nums text-foreground mt-1">{formatCurrency(summary.outstandingInterest)}</p>
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 p-4 space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Original close:</span>
+                        <span className="font-semibold">{summary.lastEmiDate ? format(summary.lastEmiDate, 'dd MMM yyyy') : '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total remaining cost:</span>
+                        <span className="font-bold text-foreground">{formatCurrency(summary.outstandingTotal)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Interest vs Principal Pie Chart */}
+                <Card className="border-border shadow-sm overflow-hidden rounded-2xl flex flex-col justify-between">
+                  <CardHeader className="bg-muted/20 border-b border-border pb-4">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <PieChart className="w-4 h-4 text-primary" />
+                      Interest & Principal composition
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 h-[200px] flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={[
+                            { name: 'Principal (Loan)', value: summary.totalPrincipal },
+                            { name: 'Total Interest', value: summary.totalInterest }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={45}
+                          outerRadius={70}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          <Cell fill="hsl(var(--primary))" />
+                          <Cell fill="hsl(var(--destructive))" />
+                        </Pie>
+                        <RechartsTooltip formatter={(v) => formatCurrency(v)} />
+                        <RechartsLegend verticalAlign="bottom" height={36} iconType="circle" />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                  <div className="bg-muted/30 px-4 py-2 border-t border-border flex justify-between items-center text-[11px] text-muted-foreground">
+                    <span>Principal: {Math.round((summary.totalPrincipal / summary.totalAmount) * 100)}%</span>
+                    <span>Interest: {Math.round((summary.totalInterest / summary.totalAmount) * 100)}%</span>
                   </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                        <ArrowDownToLine className="w-4 h-4" />
-                        <span className="text-xs font-medium uppercase tracking-wider">Paid Principal</span>
-                      </div>
-                      <p className="text-xl font-semibold tabular-nums text-foreground">{formatCurrency(summary.paidPrincipal)}</p>
-                    </div>
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                        <TrendingDown className="w-4 h-4" />
-                        <span className="text-xs font-medium uppercase tracking-wider">Paid Interest</span>
-                      </div>
-                      <p className="text-xl font-semibold tabular-nums text-foreground">{formatCurrency(summary.paidInterest)}</p>
-                    </div>
-                    <div className="p-5 bg-muted/5">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                        <Landmark className="w-4 h-4 text-warning" />
-                        <span className="text-xs font-medium uppercase tracking-wider text-warning">Out. Principal</span>
-                      </div>
-                      <p className="text-xl font-semibold tabular-nums text-foreground">{formatCurrency(summary.outstandingPrincipal)}</p>
-                    </div>
-                    <div className="p-5 bg-muted/5">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                        <PieChart className="w-4 h-4 text-destructive" />
-                        <span className="text-xs font-medium uppercase tracking-wider text-destructive">Out. Interest</span>
-                      </div>
-                      <p className="text-xl font-semibold tabular-nums text-foreground">{formatCurrency(summary.outstandingInterest)}</p>
-                    </div>
-                  </div>
-                  <div className="bg-muted/30 px-5 py-3 border-t border-border flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Last EMI Date: <span className="font-medium text-foreground">{summary.lastEmiDate ? format(summary.lastEmiDate, 'MMM dd, yyyy') : '-'}</span></span>
-                    <span className="text-muted-foreground">Total Outstanding: <span className="font-bold text-foreground tabular-nums">{formatCurrency(summary.outstandingTotal)}</span></span>
-                  </div>
-                </CardContent>
-              </Card>
+                </Card>
+              </div>
             </>
           ) : (
             <div className="h-full flex items-center justify-center border-2 border-dashed border-border rounded-2xl bg-muted/10 p-12 text-center">
@@ -729,11 +1001,23 @@ export default function EMICalculatorPage() {
       {schedule.length > 0 && (
         <Card className="border-border shadow-sm rounded-2xl overflow-hidden">
           <CardHeader className="bg-muted/20 border-b border-border">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CalendarRange className="w-5 h-5 text-primary" />
-              Amortization Schedule
-            </CardTitle>
-            <CardDescription>Month-by-month breakdown of your repayment</CardDescription>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarRange className="w-5 h-5 text-primary" />
+                  Amortization Schedule
+                </CardTitle>
+                <CardDescription>Month-by-month breakdown of your repayment</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleExportPDF} className="rounded-lg h-8 text-xs font-semibold">
+                  <Download className="w-3.5 h-3.5 mr-1 text-destructive" /> Export PDF
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportExcel} className="rounded-lg h-8 text-xs font-semibold">
+                  <Download className="w-3.5 h-3.5 mr-1 text-success" /> Export Excel
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <div className="overflow-x-auto">
             {/* Desktop Table View (Hidden on mobile) */}
