@@ -1499,6 +1499,50 @@ startMonthEndCron();
     }
   });
 
+  // Temporary route to retroactively sync any missing cashbook transactions for past expenses
+  app.get('/api/retro-sync', requireBackupAuth, async (req, res) => {
+    try {
+      const expenses = await pb.collection('expenses').getFullList({ $autoCancel: false });
+      let syncedCount = 0;
+      const results = [];
+
+      for (const record of expenses) {
+        const filter = `reference_id = "${record.id}"`;
+        const existing = await pb.collection('cashbook').getFullList({ filter, $autoCancel: false });
+
+        if (existing.length === 0) {
+          const addedBy = record.created_by || "vomu7tmaa889wv8";
+          const payload = {
+            date: record.date,
+            description: record.description || "Expense",
+            amount: record.amount,
+            transaction_type: "Expense",
+            category: record.category === "Regular" && record.subcategory 
+              ? `Regular - ${record.subcategory}` 
+              : (record.category || "Expenses"),
+            reference_id: record.id,
+            reference_type: "expense",
+            status: "Completed",
+            added_by: addedBy
+          };
+
+          const newCb = await pb.collection('cashbook').create(payload, { $autoCancel: false });
+          results.push({ expenseId: record.id, cbId: newCb.id, description: payload.description });
+          syncedCount++;
+        }
+      }
+
+      res.json({
+        success: true,
+        syncedCount,
+        syncedRecords: results,
+        message: `Successfully synchronized ${syncedCount} missing cashbook transactions!`
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Diagnostic endpoint — inspects any file or directory on the server
   app.get('/api/inspect-file', requireBackupAuth, (req, res) => {
     const filePath = req.query.path || '/opt/render/project/src/apps/api/pb.js';
