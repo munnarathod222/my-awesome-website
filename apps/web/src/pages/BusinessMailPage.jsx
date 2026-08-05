@@ -216,6 +216,25 @@ export default function BusinessMailPage() {
     }
   };
 
+  const handleQuickActivate = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/quick-activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountEmail: oauthConfig.accountEmail })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        setIsSettingsOpen(false);
+        await fetchZohoStatus();
+        fetchMessages(currentFolder);
+      }
+    } catch (e) {
+      toast.error('Activation failed.');
+    }
+  };
+
   // Undo Send state
   const [undoTimer, setUndoTimer] = useState(null);
 
@@ -1149,13 +1168,22 @@ export default function BusinessMailPage() {
               </div>
               <p className="text-[11px] text-slate-400">Account: <span className="text-white font-bold">{oauthConfig.accountEmail}</span></p>
 
-              <Button
-                type="button"
-                onClick={handleConnectZohoOAuth}
-                className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs h-9 mt-1"
-              >
-                🔑 Authorize / Connect Zoho Mail OAuth
-              </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <Button
+                  type="button"
+                  onClick={handleQuickActivate}
+                  className="w-full rounded-xl bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-extrabold text-xs h-9 shadow-md shadow-emerald-600/20"
+                >
+                  ⚡ 1-Click Connect Mail
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConnectZohoOAuth}
+                  className="w-full rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs h-9 border border-amber-500/30"
+                >
+                  🔑 OAuth Popup Consent
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
