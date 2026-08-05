@@ -4,7 +4,8 @@ import { Helmet } from 'react-helmet';
 import { 
   Printer, Download, FileText, Sparkles, Building2, Copy, Send, 
   Check, RefreshCw, Layers, ShieldCheck, Mail, Phone, Globe, User,
-  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders, Save, Bookmark, Trash2, Plus, Database
+  FileCheck, Edit3, Upload, Image as ImageIcon, Sliders, Save, Bookmark, Trash2, Plus, Database,
+  Users, ClipboardList, ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import pb from '@/lib/pocketbaseClient.js';
 
 // Preset Letter Templates
 const PRESETS = [
@@ -59,6 +61,53 @@ const PRESETS = [
   }
 ];
 
+// Employee Agreement default template
+const DEFAULT_AGREEMENT_TEMPLATE = `EMPLOYMENT AGREEMENT
+
+This Employment Agreement ("Agreement") is entered into on {{CURRENT_DATE}}, between:
+
+  EMPLOYER: {{COMPANY_NAME}}
+  Address: {{COMPANY_ADDRESS}}
+
+  EMPLOYEE: {{full_name}}
+  Designation: {{ROLE}}
+  Employment Type: {{EMPLOYMENT_TYPE}}
+  Contact: {{CONTACT}}
+  Address: {{ADDRESS}}
+  Aadhaar No.: {{AADHAAR}}
+  PAN No.: {{PAN}}
+
+1. COMMENCEMENT OF EMPLOYMENT
+   The Employee shall commence duties effective from {{JOINING_DATE}} as {{ROLE}}.
+
+2. REMUNERATION
+   The Employee shall be entitled to a gross salary of Rs. {{SALARY}}/- per month, subject to applicable deductions as per law.
+
+3. DUTIES AND RESPONSIBILITIES
+   The Employee shall diligently perform all duties assigned by the Management, comply with company policies, and maintain strict confidentiality of all proprietary and client information.
+
+4. HOURS OF WORK
+   The Employee shall work as per the company's operational requirements. For field roles, duty hours may extend beyond standard timings.
+
+5. LEAVE POLICY
+   The Employee is entitled to leaves as per the company's HR policy communicated separately.
+
+6. TERMINATION
+   Either party may terminate this agreement by providing 30 (thirty) days written notice. The company reserves the right to terminate immediately in case of gross misconduct, dishonesty, or breach of trust.
+
+7. CONFIDENTIALITY
+   The Employee shall not disclose any trade secrets, client data, freight rates, or operational information during or after employment.
+
+8. GOVERNING LAW
+   This agreement shall be governed by the laws of India and any disputes shall be subject to the jurisdiction of courts in Hyderabad, Telangana.
+
+IN WITNESS WHEREOF, both parties have agreed and signed this agreement on the date mentioned above.
+
+
+___________________________          ___________________________
+{{full_name}}                        Authorized Signatory
+Employee Signature                   {{COMPANY_NAME}}`;
+
 export default function OfficialLetterheadPage() {
   const { currentUser } = useAuth();
   
@@ -77,6 +126,15 @@ export default function OfficialLetterheadPage() {
   
   const [includeStamp, setIncludeStamp] = useState(true);
   const [includeWatermark, setIncludeWatermark] = useState(true);
+
+  // Document mode: 'letter' | 'agreement'
+  const [docMode, setDocMode] = useState('letter');
+
+  // Employee Agreement States
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmpId, setSelectedEmpId] = useState('');
+  const [agreementTemplate, setAgreementTemplate] = useState(DEFAULT_AGREEMENT_TEMPLATE);
+  const [companySettings, setCompanySettings] = useState(null);
 
   // Custom Letterhead Background States
   const [customLetterheadUrl, setCustomLetterheadUrl] = useState(null);
@@ -108,6 +166,38 @@ export default function OfficialLetterheadPage() {
       }
     } catch (e) {}
   }, []);
+
+  // Fetch employees and company settings for agreement mode
+  useEffect(() => {
+    pb.collection('employees').getFullList({ sort: 'name', $autoCancel: false })
+      .then(setEmployees).catch(() => {});
+    pb.collection('company_settings').getFirstListItem('', { $autoCancel: false })
+      .then(setCompanySettings).catch(() => {});
+  }, []);
+
+  // Compile agreement body by substituting employee variables
+  const compileAgreement = () => {
+    const emp = employees.find(e => e.id === selectedEmpId);
+    if (!emp) return agreementTemplate;
+    const co = companySettings;
+    let text = agreementTemplate;
+    text = text.replace(/{{full_name}}/g, emp.name || 'N/A');
+    text = text.replace(/{{AADHAAR}}/g, emp.aadhaar_number || 'N/A');
+    text = text.replace(/{{PAN}}/g, emp.pan_card || 'N/A');
+    text = text.replace(/{{CONTACT}}/g, emp.contact || 'N/A');
+    text = text.replace(/{{ADDRESS}}/g, emp.address || 'N/A');
+    text = text.replace(/{{ROLE}}/g, emp.employee_type || 'N/A');
+    text = text.replace(/{{EMPLOYMENT_TYPE}}/g, emp.employment_type || 'N/A');
+    try {
+      text = text.replace(/{{JOINING_DATE}}/g, emp.joining_date ? format(new Date(emp.joining_date), 'dd MMMM yyyy') : 'N/A');
+      text = text.replace(/{{CURRENT_DATE}}/g, format(new Date(), 'dd MMMM yyyy'));
+    } catch { text = text.replace(/{{JOINING_DATE}}/g, emp.joining_date || 'N/A').replace(/{{CURRENT_DATE}}/g, new Date().toLocaleDateString()); }
+    text = text.replace(/{{SALARY}}/g, emp.salary_amount ? Number(emp.salary_amount).toLocaleString('en-IN') : '0');
+    text = text.replace(/{{COMPANY_NAME}}/g, co?.company_name || 'Jai Bhavani Cargo');
+    text = text.replace(/{{COMPANY_ADDRESS}}/g, co?.company_address || '');
+    return text;
+  };
+
 
   const handleSaveTemplate = () => {
     if (!templateTitleInput.trim()) {
@@ -369,8 +459,137 @@ export default function OfficialLetterheadPage() {
           {/* ── LEFT COLUMN: CONTROL PANEL & FORM EDITING ──────────────────────── */}
           <div className="no-print lg:col-span-5 space-y-6">
 
+            {/* ── DOCUMENT MODE SWITCHER ──────────────────────────────────────── */}
+            <Card className="bg-slate-900/90 border-slate-700 rounded-3xl shadow-xl overflow-hidden">
+              <CardContent className="p-1.5">
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => setDocMode('letter')}
+                    className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black transition-all ${
+                      docMode === 'letter'
+                        ? 'bg-amber-500 text-slate-950 shadow-lg'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Official Letter / Certificate
+                  </button>
+                  <button
+                    onClick={() => setDocMode('agreement')}
+                    className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-xs font-black transition-all ${
+                      docMode === 'agreement'
+                        ? 'bg-blue-500 text-white shadow-lg'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" />
+                    Employee Agreement
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ── EMPLOYEE AGREEMENT CONTROL PANEL ───────────────────────────── */}
+            {docMode === 'agreement' && (
+              <Card className="bg-slate-900/90 border-blue-500/40 rounded-3xl shadow-xl">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-blue-400" /> Employee Agreement Generator
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-400">
+                    Select an employee — their data will auto-fill the agreement on your letterhead.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  {/* Employee Selector */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-300">Select Employee</Label>
+                    <Select value={selectedEmpId} onValueChange={setSelectedEmpId}>
+                      <SelectTrigger className="rounded-xl bg-slate-800 border-slate-700 text-slate-100 h-10">
+                        <SelectValue placeholder="Choose employee..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.length === 0 && (
+                          <SelectItem value="__none" disabled>No employees found</SelectItem>
+                        )}
+                        {employees.map(emp => (
+                          <SelectItem key={emp.id} value={emp.id}>
+                            {emp.name} · {emp.employee_type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selected Employee Info Card */}
+                  {selectedEmpId && (() => {
+                    const emp = employees.find(e => e.id === selectedEmpId);
+                    if (!emp) return null;
+                    return (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-2 text-xs">
+                        <p className="font-black text-blue-300 uppercase tracking-wider text-[10px]">Employee Data Preview</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-slate-300">
+                          <span className="text-slate-500 font-semibold">Name</span><span className="font-bold">{emp.name || '—'}</span>
+                          <span className="text-slate-500 font-semibold">Role</span><span>{emp.employee_type || '—'}</span>
+                          <span className="text-slate-500 font-semibold">Type</span><span>{emp.employment_type || '—'}</span>
+                          <span className="text-slate-500 font-semibold">Joining</span><span>{emp.joining_date ? format(new Date(emp.joining_date), 'dd MMM yyyy') : '—'}</span>
+                          <span className="text-slate-500 font-semibold">Salary</span><span className="text-emerald-400 font-bold">₹{emp.salary_amount ? Number(emp.salary_amount).toLocaleString('en-IN') : '—'}</span>
+                          <span className="text-slate-500 font-semibold">Contact</span><span>{emp.contact || '—'}</span>
+                          <span className="text-slate-500 font-semibold">Aadhaar</span><span className="font-mono">{emp.aadhaar_number || '—'}</span>
+                          <span className="text-slate-500 font-semibold">PAN</span><span className="font-mono">{emp.pan_card || '—'}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Agreement Template Editor */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs font-bold text-slate-300">Agreement Template</Label>
+                      <button
+                        onClick={() => setAgreementTemplate(DEFAULT_AGREEMENT_TEMPLATE)}
+                        className="text-[10px] text-amber-400 font-bold hover:underline"
+                      >
+                        ↺ Reset to Default
+                      </button>
+                    </div>
+                    <textarea
+                      className="w-full h-[320px] p-3 text-[11px] bg-slate-800 border border-slate-700 rounded-xl font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-200 leading-relaxed resize-none"
+                      value={agreementTemplate}
+                      onChange={e => setAgreementTemplate(e.target.value)}
+                      spellCheck={false}
+                    />
+                  </div>
+
+                  {/* Variables Guide */}
+                  <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700 space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Available Variables</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
+                      {[
+                        ['{{full_name}}','Employee full name'],
+                        ['{{AADHAAR}}','Aadhaar number'],
+                        ['{{PAN}}','PAN card number'],
+                        ['{{CONTACT}}','Phone number'],
+                        ['{{ADDRESS}}','Home address'],
+                        ['{{ROLE}}','Designation / type'],
+                        ['{{EMPLOYMENT_TYPE}}','Employment type'],
+                        ['{{JOINING_DATE}}','Date of joining'],
+                        ['{{SALARY}}','Monthly salary'],
+                        ['{{CURRENT_DATE}}','Today\'s date'],
+                        ['{{COMPANY_NAME}}','Company name'],
+                        ['{{COMPANY_ADDRESS}}','Company address'],
+                      ].map(([v, desc]) => (
+                        <span key={v} className="text-blue-400" title={desc}>{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* ── MY SAVED TEMPLATES CARD ────────────────────────────────────── */}
-            {savedTemplates.length > 0 && (
+            {docMode === 'letter' && savedTemplates.length > 0 && (
+
               <Card className="bg-slate-900/90 border-emerald-500/40 rounded-3xl shadow-xl">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -773,31 +992,40 @@ export default function OfficialLetterheadPage() {
                     </div>
                   </div>
 
-                  {/* Recipient Block */}
-                  <div className="mt-4 text-xs text-slate-800 leading-relaxed font-sans">
-                    <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">To,</p>
-                    <p className="font-black text-sm text-slate-900">{recipientName}</p>
-                    <p className="text-slate-700 max-w-md">{recipientAddress}</p>
-                  </div>
-
-                  {/* Subject Block */}
-                  {subject && (
-                    <div className="mt-4 text-xs font-bold text-slate-900 bg-slate-50/90 border-l-4 border-[#0b3c5d] p-2.5">
-                      <span className="uppercase text-slate-500 text-[10px] block">Subject:</span>
-                      {subject}
+                  {docMode === 'agreement' ? (
+                    /* ── EMPLOYEE AGREEMENT BODY ── */
+                    <div className="mt-4 text-[11px] text-slate-800 leading-relaxed whitespace-pre-wrap font-mono">
+                      {compileAgreement()}
                     </div>
+                  ) : (
+                    <>
+                      {/* Recipient Block */}
+                      <div className="mt-4 text-xs text-slate-800 leading-relaxed font-sans">
+                        <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">To,</p>
+                        <p className="font-black text-sm text-slate-900">{recipientName}</p>
+                        <p className="text-slate-700 max-w-md">{recipientAddress}</p>
+                      </div>
+
+                      {/* Subject Block */}
+                      {subject && (
+                        <div className="mt-4 text-xs font-bold text-slate-900 bg-slate-50/90 border-l-4 border-[#0b3c5d] p-2.5">
+                          <span className="uppercase text-slate-500 text-[10px] block">Subject:</span>
+                          {subject}
+                        </div>
+                      )}
+
+                      {/* Salutation */}
+                      <div className="mt-4 text-xs font-semibold text-slate-800">
+                        {salutation}
+                      </div>
+
+                      {/* Letter Body Text */}
+                      <div className="mt-4 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
+                        {bodyText}
+                      </div>
+                    </>
                   )}
 
-                  {/* Salutation */}
-                  <div className="mt-4 text-xs font-semibold text-slate-800">
-                    {salutation}
-                  </div>
-
-                  {/* Letter Body Text */}
-                  <div className="mt-4 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
-                    {bodyText}
-                  </div>
-                </div>
 
                 {/* ── LETTERHEAD FOOTER & SIGNATORY STAMP ──────────────────────────── */}
                 <div className="mt-10 pt-4 border-t border-slate-200/80">

@@ -787,9 +787,6 @@ const EmployeeDatabasePage = () => {
             <TabsTrigger value="attendance" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
               <CalendarCheck className="w-4 h-4 mr-2" /> Attendance Hub
             </TabsTrigger>
-            <TabsTrigger value="agreements" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
-              <FileText className="w-4 h-4 mr-2" /> Agreement Templates
-            </TabsTrigger>
             <TabsTrigger value="accidents" className="rounded-lg h-full px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">
               <AlertCircle className="w-4 h-4 mr-2" /> Accident History
             </TabsTrigger>
@@ -1581,115 +1578,6 @@ const EmployeeDatabasePage = () => {
             </Card>
 
             <AttendanceHub employeeId={selectedEmployeeId} />
-          </TabsContent>
-
-          {/* Agreement Templates Tab */}
-          <TabsContent value="agreements" className="mt-0 outline-none space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Left Settings Panel */}
-              <Card className="lg:col-span-1 border border-border/50 rounded-3xl p-6 bg-card space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold font-heading text-foreground">Agreement Template Settings</h3>
-                  <p className="text-xs text-muted-foreground">Customize default templates with fields</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Select Employee to Generate</Label>
-                    <Select value={selectedEmployeeForAgreement} onValueChange={setSelectedEmployeeForAgreement}>
-                      <SelectTrigger className="rounded-xl bg-background">
-                        <SelectValue placeholder="Choose staff member" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.employee_type})</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label>Template Body</Label>
-                      <span className="text-[10px] text-primary font-bold">Use rich text bracket variables</span>
-                    </div>
-                    <textarea 
-                      className="w-full h-[320px] p-3 text-xs bg-background border border-border/50 rounded-xl font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                      value={agreementTemplate}
-                      onChange={e => setAgreementTemplate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="p-3 bg-muted/40 rounded-xl border border-border/50 space-y-2 text-[10px] text-muted-foreground">
-                    <p className="font-bold">Available variables:</p>
-                    <div className="grid grid-cols-2 gap-1 font-mono">
-                      <span>{"{{full_name}}"}</span>
-                      <span>{"{{AADHAAR}}"}</span>
-                      <span>{"{{PAN}}"}</span>
-                      <span>{"{{CONTACT}}"}</span>
-                      <span>{"{{ADDRESS}}"}</span>
-                      <span>{"{{ROLE}}"}</span>
-                      <span>{"{{EMPLOYMENT_TYPE}}"}</span>
-                      <span>{"{{JOINING_DATE}}"}</span>
-                      <span>{"{{SALARY}}"}</span>
-                      <span>{"{{CURRENT_DATE}}"}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Right Preview Panel */}
-              <Card className="lg:col-span-2 border border-border/50 rounded-3xl p-6 bg-card space-y-6 flex flex-col">
-                <div className="flex justify-between items-center border-b border-border/50 pb-4">
-                  <div>
-                    <h3 className="text-lg font-bold font-heading text-foreground">Document Print Preview</h3>
-                    <p className="text-xs text-muted-foreground">Verify final document before printing</p>
-                  </div>
-                  <Button onClick={handlePrint} className="rounded-xl shadow-sm flex items-center gap-2">
-                    <Printer className="w-4 h-4" /> Print Form
-                  </Button>
-                </div>
-
-                <div className="flex-1 flex items-center justify-center bg-muted/10 rounded-2xl p-4 overflow-y-auto min-h-[450px]">
-                  <div 
-                    id="print-agreement-area" 
-                    className="p-8 bg-background border border-gray-300 rounded-2xl shadow-sm max-w-2xl w-full font-mono whitespace-pre-wrap leading-relaxed text-xs min-h-[550px]"
-                  >
-                    {/* Visual corporate header for agreement print */}
-                    {companySettings && (
-                      <div className="border-b border-gray-300 pb-6 mb-6 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          {companySettings.company_logo && (
-                            <img 
-                              src={pb.files.getUrl(companySettings, companySettings.company_logo)} 
-                              alt="Logo" 
-                              className="h-10 w-auto object-contain"
-                            />
-                          )}
-                          <div>
-                            <h2 className="text-sm font-bold uppercase tracking-wide text-black">
-                              {companySettings.company_name}
-                            </h2>
-                            <p className="text-[9px] text-gray-500 mt-0.5 max-w-sm leading-tight">
-                              {companySettings.company_address}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right text-[9px] text-gray-500">
-                          {companySettings.company_phone && <p>Phone: {companySettings.company_phone}</p>}
-                          {companySettings.company_email && <p>Email: {companySettings.company_email}</p>}
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-black">
-                      {compileAgreement() || 'Select an employee and draft your agreement to preview it here.'}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-            </div>
           </TabsContent>
 
           {/* Accident History Tab */}
