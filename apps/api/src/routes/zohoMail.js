@@ -45,17 +45,26 @@ router.get('/status', (req, res) => {
   });
 });
 
+// Helper to sanitize Client IDs (auto inserts missing dot after 1000 if omitted)
+const formatClientId = (id = '') => {
+  let clean = (id || '').trim();
+  if (clean.startsWith('1000') && !clean.startsWith('1000.')) {
+    clean = '1000.' + clean.slice(4);
+  }
+  return clean;
+};
+
 /**
  * POST /api/zoho/config
  * Update OAuth credentials & setup
  */
 router.post('/config', (req, res) => {
   const { clientId, clientSecret, redirectUri, region, accountEmail } = req.body;
-  if (clientId) zohoConfig.clientId = clientId;
-  if (clientSecret) zohoConfig.clientSecret = clientSecret;
-  if (redirectUri) zohoConfig.redirectUri = redirectUri;
-  if (region) zohoConfig.region = region;
-  if (accountEmail) zohoConfig.accountEmail = accountEmail;
+  if (clientId) zohoConfig.clientId = formatClientId(clientId);
+  if (clientSecret) zohoConfig.clientSecret = clientSecret.trim();
+  if (redirectUri) zohoConfig.redirectUri = redirectUri.trim();
+  if (region) zohoConfig.region = region.trim();
+  if (accountEmail) zohoConfig.accountEmail = accountEmail.trim();
 
   logger.info(`Zoho Mail OAuth config updated for ${zohoConfig.accountEmail}`);
   return res.json({ success: true, message: 'Zoho Mail settings updated successfully', config: zohoConfig });
@@ -111,7 +120,8 @@ router.post('/oauth/exchange-code', async (req, res) => {
  * Generate OAuth 2.0 authorization URL for user consent
  */
 router.get('/auth-url', (req, res) => {
-  const { clientId, redirectUri, region } = zohoConfig;
+  const { redirectUri, region } = zohoConfig;
+  const clientId = formatClientId(zohoConfig.clientId);
   if (!clientId) {
     return res.status(400).json({ error: 'Zoho Client ID is missing. Please configure Client ID in Mail Settings.' });
   }
