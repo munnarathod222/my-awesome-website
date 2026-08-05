@@ -139,8 +139,23 @@ router.post('/oauth/exchange-code', async (req, res) => {
     params.append('grant_type', 'authorization_code');
     if (zohoConfig.redirectUri) params.append('redirect_uri', zohoConfig.redirectUri);
 
-    const response = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: params });
-    const data = await response.json();
+    let response = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: params });
+    let data = await response.json();
+
+    // Fallback: If invalid_redirect_uri error occurs, retry without redirect_uri (Self Client mode)
+    if (!data.access_token && (data.error === 'invalid_redirect_uri' || data.error === 'invalid_client')) {
+      const paramsNoRedirect = new URLSearchParams();
+      paramsNoRedirect.append('code', code);
+      paramsNoRedirect.append('client_id', cId);
+      paramsNoRedirect.append('client_secret', cSecret);
+      paramsNoRedirect.append('grant_type', 'authorization_code');
+
+      const response2 = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: paramsNoRedirect });
+      const data2 = await response2.json();
+      if (data2.access_token) {
+        data = data2;
+      }
+    }
 
     if (data.access_token) {
       zohoConfig.clientId = cId;
@@ -175,9 +190,10 @@ router.get('/auth-url', (req, res) => {
     return res.status(400).json({ error: 'Zoho Client ID is missing. Please configure Client ID in Mail Settings.' });
   }
 
+  const effectiveRedirect = req.query.redirectUri || redirectUri || 'https://www.jaibhavanicargo.com/api/zoho/oauth/callback';
   const accountsUrl = getZohoAccountsUrl(region);
   const scope = 'ZohoMail.messages.ALL,ZohoMail.accounts.READ,ZohoMail.partner.organization.READ';
-  const authUrl = `${accountsUrl}/oauth/v2/auth?response_type=code&client_id=${clientId}&scope=${scope}&redirect_uri=${encodeURIComponent(redirectUri)}&access_type=offline&prompt=consent`;
+  const authUrl = `${accountsUrl}/oauth/v2/auth?response_type=code&client_id=${clientId}&scope=${scope}&redirect_uri=${encodeURIComponent(effectiveRedirect)}&access_type=offline&prompt=consent`;
 
   return res.json({ success: true, authUrl });
 });
