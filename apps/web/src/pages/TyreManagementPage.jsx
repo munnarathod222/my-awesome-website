@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CircleDashed, Plus, ArrowLeft, RefreshCw, Battery, ShieldAlert, Calendar, Image, FileText, X, Receipt, Download, Eye } from 'lucide-react';
+import { CircleDashed, Plus, ArrowLeft, RefreshCw, Battery, ShieldAlert, Calendar, Image, FileText, X, Receipt, Download, Eye, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import pb from '@/lib/pocketbaseClient';
 import { toast } from 'sonner';
 import TyreFormModal, { TYRE_SLOTS } from '@/components/TyreFormModal.jsx';
@@ -18,16 +19,17 @@ import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 export default function TyreManagementPage() {
   const { truckId } = useParams();
   const navigate = useNavigate();
+  const [allTrucks, setAllTrucks] = useState([]);
   const [truck, setTruck] = useState(null);
   const [tyres, setTyres] = useState([]);
   const [rotations, setRotations] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Modals state
   const [formModal, setFormModal] = useState({ isOpen: false, tyre: null, initialPosition: null });
   const [detailsModal, setDetailsModal] = useState({ isOpen: false, tyre: null });
   const [previewDoc, setPreviewDoc] = useState(null);
-  
+
   // Battery state
   const [batteryEditOpen, setBatteryEditOpen] = useState(false);
   const [batteryForm, setBatteryForm] = useState({
@@ -54,20 +56,38 @@ export default function TyreManagementPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const truckRecord = await pb.collection('trucks').getOne(truckId, { $autoCancel: false });
+      // Fetch all trucks for fleet selector dropdown
+      const trucksList = await pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }).catch(() => []);
+      setAllTrucks(trucksList);
+
+      const targetId = truckId || (trucksList.length > 0 ? trucksList[0].id : null);
+      if (!targetId) {
+        setTruck(null);
+        setTyres([]);
+        setRotations([]);
+        return;
+      }
+
+      // If no truckId in URL but trucks exist, update URL seamlessly
+      if (!truckId && targetId) {
+        navigate(`/tyres/${targetId}`, { replace: true });
+        return;
+      }
+
+      const truckRecord = trucksList.find(t => t.id === targetId) || await pb.collection('trucks').getOne(targetId, { $autoCancel: false });
       setTruck(truckRecord);
 
       // Fetch Completed trip logs for this truck to calculate tyre mileage since installation
       const tripLogs = await pb.collection('trip_logs').getFullList({
         filter: `truck_number = "${truckRecord.truck_number}" && trip_status = "Completed"`,
         $autoCancel: false
-      });
+      }).catch(() => []);
 
       const tyreRecords = await pb.collection('tyres').getFullList({
-        filter: `truck_id="${truckId}"`,
+        filter: `truck_id="${targetId}"`,
         sort: '-created',
         $autoCancel: false
-      });
+      }).catch(() => []);
 
       // Recalculate each tyre's running mileage dynamically based on Completed trips from installation date
       const enrichedTyres = tyreRecords.map(tyre => {
@@ -92,23 +112,22 @@ export default function TyreManagementPage() {
 
       // Fetch tyre rotation history
       const rotationRecords = await pb.collection('tyre_rotations').getFullList({
-        filter: `truck_id="${truckId}"`,
+        filter: `truck_id="${targetId}"`,
         sort: '-swap_date',
         expand: 'tyre1_id,tyre2_id',
         $autoCancel: false
-      });
+      }).catch(() => []);
       setRotations(rotationRecords);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load truck and tyre data');
-      navigate('/truck-manager');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (truckId) fetchData();
+    fetchData();
   }, [truckId]);
 
   // Load battery fields on edit open
@@ -421,7 +440,7 @@ export default function TyreManagementPage() {
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Trucks
       </Button>
 
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-card p-6 sm:p-8 rounded-3xl border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-6 sm:p-8 rounded-3xl border border-border shadow-sm">
         <div>
           <h1 className="text-2xl sm:text-3xl font-heading font-bold flex items-center gap-3 tracking-tight">
             <div className="p-2.5 bg-primary/10 rounded-xl shadow-inner">
@@ -430,12 +449,37 @@ export default function TyreManagementPage() {
             Tyre & Battery Management
           </h1>
           <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground font-medium">
-            <Badge variant="secondary" className="px-3 py-1 shadow-sm font-bold text-foreground bg-background border">{truck?.truck_number}</Badge>
-            <span>{truck?.truck_name}</span>
+            <Badge variant="secondary" className="px-3 py-1 shadow-sm font-bold text-foreground bg-background border">{truck?.truck_number || 'Select Vehicle'}</Badge>
+            {truck?.truck_name && <span>{truck.truck_name}</span>}
             <span className="opacity-50">•</span>
             <span>{tyres.length} / 7 Positions Filled</span>
           </div>
         </div>
+
+        {/* Vehicle Selector Dropdown */}
+        {allTrucks.length > 0 && (
+          <div className="flex items-center gap-3 bg-secondary/30 p-2.5 rounded-2xl border border-border/50 w-full md:w-auto">
+            <Truck className="w-5 h-5 text-primary ml-2 shrink-0" />
+            <div className="w-full md:w-64">
+              <Select
+                value={truck?.id || ''}
+                onValueChange={(selectedId) => navigate(`/tyres/${selectedId}`)}
+              >
+                <SelectTrigger className="w-full bg-background rounded-xl font-bold h-10 border-border/60">
+                  <SelectValue placeholder="Select Vehicle..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTrucks.map(t => (
+                    <SelectItem key={t.id} value={t.id} className="font-medium">
+                      <span className="font-mono font-bold text-primary mr-2">{t.truck_number}</span>
+                      {t.truck_name ? `(${t.truck_name})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12">

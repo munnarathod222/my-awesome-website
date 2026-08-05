@@ -7,7 +7,7 @@ import {
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
   TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
-  Navigation, QrCode, Receipt, IdCard, Database
+  Navigation, QrCode, Receipt, IdCard, Database, CircleDashed
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -103,6 +103,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       title: 'Fleet & Staff',
       items: [
         { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
+        { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
         { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
         { icon: Users,        label: 'Employees',         path: '/employees',            roles: ['super_admin','admin','manager','supervisor'] },
         { icon: FileBox,      label: 'Employee Docs',     path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
