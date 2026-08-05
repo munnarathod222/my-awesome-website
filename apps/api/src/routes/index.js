@@ -21,12 +21,15 @@ import leaderboardRouter from './leaderboard.js';
 import userRouter from './user.js';
 import sharedRouter from './shared.js';
 import bandwidthRouter from './bandwidth.js';
+import zohoMailRouter from './zohoMail.js';
 
 
 const router = Router();
 
 export default () => {
     router.get('/health', healthCheck);
+    router.use('/zoho', zohoMailRouter);
+    router.use('/api/zoho', zohoMailRouter);
     router.use('/quotes', quotesRouter);
     router.use('/invoices', invoicesRouter);
     router.use('/invitations', invitationsRouter);
