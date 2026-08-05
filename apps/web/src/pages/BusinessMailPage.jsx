@@ -247,8 +247,11 @@ export default function BusinessMailPage() {
         setZohoStatus(data);
         setOauthConfig(prev => ({
           ...prev,
+          clientId: data.clientId || prev.clientId,
+          clientSecret: data.clientSecret || prev.clientSecret,
           redirectUri: data.redirectUri || prev.redirectUri,
-          accountEmail: data.accountEmail || prev.accountEmail
+          accountEmail: data.accountEmail || prev.accountEmail,
+          region: data.region || prev.region
         }));
       }
     } catch (e) {

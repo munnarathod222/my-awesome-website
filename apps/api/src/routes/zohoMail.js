@@ -2,10 +2,14 @@ import express from 'express';
 import logger from '../utils/logger.js';
 import nodemailer from 'nodemailer';
 
+import fs from 'fs';
+import path from 'path';
+
 const router = express.Router();
 
+const CONFIG_FILE_PATH = path.join(process.cwd(), 'zoho_config_store.json');
+
 // In-memory / environment store for Zoho OAuth configuration & tokens
-// Note: In production, tokens are also saved in PocketBase company_settings or system config
 let zohoConfig = {
   clientId: process.env.ZOHO_CLIENT_ID || '',
   clientSecret: process.env.ZOHO_CLIENT_SECRET || '',
@@ -17,6 +21,28 @@ let zohoConfig = {
   accountEmail: process.env.ZOHO_ACCOUNT_EMAIL || 'vinod.jbcargo@gmail.com',
   accountId: process.env.ZOHO_ACCOUNT_ID || '1000293881',
   isConnected: true // Default enabled for operational seamlessness
+};
+
+// Load persistent config from disk if available
+try {
+  if (fs.existsSync(CONFIG_FILE_PATH)) {
+    const raw = fs.readFileSync(CONFIG_FILE_PATH, 'utf8');
+    const saved = JSON.parse(raw);
+    if (saved && typeof saved === 'object') {
+      zohoConfig = { ...zohoConfig, ...saved };
+      logger.info(`Loaded persistent Zoho config for ${zohoConfig.accountEmail}`);
+    }
+  }
+} catch (e) {
+  logger.warn('Failed to load zoho_config_store.json:', e.message);
+}
+
+const saveZohoConfigToDisk = () => {
+  try {
+    fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(zohoConfig, null, 2), 'utf8');
+  } catch (e) {
+    logger.error('Failed to write zoho_config_store.json:', e.message);
+  }
 };
 
 // Base URLs by Region
@@ -33,6 +59,8 @@ router.get('/status', (req, res) => {
     success: true,
     isConnected: zohoConfig.isConnected,
     accountEmail: zohoConfig.accountEmail,
+    clientId: zohoConfig.clientId,
+    clientSecret: zohoConfig.clientSecret,
     region: zohoConfig.region,
     hasRefreshToken: Boolean(zohoConfig.refreshToken),
     hasClientId: Boolean(zohoConfig.clientId),
@@ -69,6 +97,8 @@ router.post('/config', (req, res) => {
   zohoConfig.isConnected = true;
   zohoConfig.tokenExpiresAt = Date.now() + 86400 * 365 * 1000; // 1 year active
 
+  saveZohoConfigToDisk();
+
   logger.info(`Zoho Mail OAuth config updated for ${zohoConfig.accountEmail}`);
   return res.json({ success: true, message: 'Zoho Mail account connected & activated successfully!', config: zohoConfig });
 });
@@ -82,6 +112,7 @@ router.post('/quick-activate', (req, res) => {
   if (accountEmail) zohoConfig.accountEmail = accountEmail;
   zohoConfig.isConnected = true;
   zohoConfig.tokenExpiresAt = Date.now() + 86400 * 365 * 1000;
+  saveZohoConfigToDisk();
   logger.info(`Zoho Mail quick activated for ${zohoConfig.accountEmail}`);
   return res.json({ success: true, message: `Zoho Mail (${zohoConfig.accountEmail}) is now 100% Connected & Active!` });
 });
@@ -118,6 +149,8 @@ router.post('/oauth/exchange-code', async (req, res) => {
       if (data.refresh_token) zohoConfig.refreshToken = data.refresh_token;
       zohoConfig.tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
       zohoConfig.isConnected = true;
+
+      saveZohoConfigToDisk();
 
       logger.info('Successfully exchanged Zoho Grant Code for tokens!');
       return res.json({ success: true, message: 'Successfully connected to Zoho Mail API!', accountEmail: zohoConfig.accountEmail });
