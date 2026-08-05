@@ -175,6 +175,7 @@ export default function BusinessMailPage() {
   // Modals & Panels
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [grantCodeInput, setGrantCodeInput] = useState('');
   const [oauthConfig, setOauthConfig] = useState({
     clientId: '',
     clientSecret: '',
@@ -182,6 +183,38 @@ export default function BusinessMailPage() {
     region: 'com',
     accountEmail: 'vinod.jbcargo@gmail.com'
   });
+
+  const handleExchangeGrantCode = async () => {
+    if (!grantCodeInput) {
+      toast.error('Please paste the Grant Code from Zoho API Console Self Client.');
+      return;
+    }
+    const toastId = toast.loading('Exchanging Grant Code with Zoho OAuth server...');
+    try {
+      const res = await fetch(`${API_BASE}/oauth/exchange-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: grantCodeInput.trim(),
+          clientId: oauthConfig.clientId,
+          clientSecret: oauthConfig.clientSecret,
+          region: oauthConfig.region
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || 'Zoho Mail Connected Successfully!', { id: toastId });
+        setIsSettingsOpen(false);
+        setGrantCodeInput('');
+        await fetchZohoStatus();
+        fetchMessages(currentFolder);
+      } else {
+        toast.error(data.error || 'Failed to exchange Grant Code with Zoho', { id: toastId });
+      }
+    } catch (e) {
+      toast.error('Network error during Grant Code exchange', { id: toastId });
+    }
+  };
 
   // Undo Send state
   const [undoTimer, setUndoTimer] = useState(null);
@@ -1163,6 +1196,29 @@ export default function BusinessMailPage() {
                 value={oauthConfig.redirectUri}
                 className="bg-slate-950 border-slate-800 text-slate-400 rounded-xl font-mono text-[11px]"
               />
+            </div>
+
+            {/* Direct Grant Code Exchange (Self Client Option) */}
+            <div className="pt-3 border-t border-slate-800 space-y-2">
+              <Label className="text-slate-300 font-bold flex items-center justify-between">
+                <span>Option 2: Direct Grant Code (Self Client)</span>
+                <span className="text-[10px] text-amber-400 font-mono font-bold">Self Client Instant</span>
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={grantCodeInput}
+                  onChange={e => setGrantCodeInput(e.target.value)}
+                  placeholder="Paste 1000.XXXX Grant Code from Zoho Console..."
+                  className="bg-slate-900 border-slate-800 text-white rounded-xl font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  onClick={handleExchangeGrantCode}
+                  className="rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shrink-0 px-4"
+                >
+                  Exchange
+                </Button>
+              </div>
             </div>
 
             <DialogFooter className="pt-3 border-t border-slate-800 flex justify-end gap-2">

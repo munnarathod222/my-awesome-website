@@ -62,6 +62,51 @@ router.post('/config', (req, res) => {
 });
 
 /**
+ * POST /api/zoho/oauth/exchange-code
+ * Exchange a Grant Code / Self Client token for access & refresh tokens
+ */
+router.post('/oauth/exchange-code', async (req, res) => {
+  const { code, clientId, clientSecret, region = 'com' } = req.body;
+  const cId = clientId || zohoConfig.clientId;
+  const cSecret = clientSecret || zohoConfig.clientSecret;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Grant token code is required' });
+  }
+
+  try {
+    const accountsUrl = getZohoAccountsUrl(region);
+    const params = new URLSearchParams();
+    params.append('code', code);
+    params.append('client_id', cId);
+    params.append('client_secret', cSecret);
+    params.append('grant_type', 'authorization_code');
+    if (zohoConfig.redirectUri) params.append('redirect_uri', zohoConfig.redirectUri);
+
+    const response = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: params });
+    const data = await response.json();
+
+    if (data.access_token) {
+      zohoConfig.clientId = cId;
+      zohoConfig.clientSecret = cSecret;
+      zohoConfig.accessToken = data.access_token;
+      if (data.refresh_token) zohoConfig.refreshToken = data.refresh_token;
+      zohoConfig.tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
+      zohoConfig.isConnected = true;
+
+      logger.info('Successfully exchanged Zoho Grant Code for tokens!');
+      return res.json({ success: true, message: 'Successfully connected to Zoho Mail API!', accountEmail: zohoConfig.accountEmail });
+    } else {
+      logger.error('Grant code exchange error from Zoho:', data);
+      return res.status(400).json({ error: data.error || 'Failed to exchange grant code with Zoho.', details: data });
+    }
+  } catch (err) {
+    logger.error('Grant code exchange exception:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/zoho/auth-url
  * Generate OAuth 2.0 authorization URL for user consent
  */
