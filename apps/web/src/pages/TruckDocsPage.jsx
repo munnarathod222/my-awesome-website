@@ -23,13 +23,23 @@ import VehicleScanAnalyticsModal from '@/components/VehicleScanAnalyticsModal.js
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
   const truckIdParam = searchParams.get('truckId');
+  const viewParam = searchParams.get('view');
 
   const [documents, setDocuments] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const [viewMode, setViewMode] = useState('folder'); // 'folder' or 'table'
+  const [viewMode, setViewMode] = useState(
+    viewParam === 'qr_pass' || viewParam === 'qr' || window.location.pathname === '/qr-pass' ? 'qr_pass' : 'folder'
+  );
+
+  useEffect(() => {
+    const v = searchParams.get('view');
+    if (v === 'qr_pass' || v === 'qr' || window.location.pathname === '/qr-pass') {
+      setViewMode('qr_pass');
+    }
+  }, [searchParams]);
   const [selectedTruckFolder, setSelectedTruckFolder] = useState(null);
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   

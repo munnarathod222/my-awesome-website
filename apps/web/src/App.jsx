@@ -255,6 +255,7 @@ function App() {
                   <Route path="/tyre-manager/:truckId" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><TyreManagementPage /></ProtectedRoute>} />
                   
                   <Route path="/truck-docs" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'supervisor']}><TruckDocsPage /></ProtectedRoute>} />
+                  <Route path="/qr-pass" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TruckDocsPage /></ProtectedRoute>} />
                   <Route path="/dashboard/routes" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><TripManagerPage /></ProtectedRoute>} />
                   <Route path="/routes-master" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><RoutesPage /></ProtectedRoute>} />
                   
