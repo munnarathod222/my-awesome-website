@@ -1025,7 +1025,7 @@ export default function OfficialLetterheadPage() {
                       </div>
                     </>
                   )}
-
+                </div>
 
                 {/* ── LETTERHEAD FOOTER & SIGNATORY STAMP ──────────────────────────── */}
                 <div className="mt-10 pt-4 border-t border-slate-200/80">
