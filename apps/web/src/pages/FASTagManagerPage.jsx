@@ -28,7 +28,9 @@ export default function FASTagManagerPage() {
   const [trucks, setTrucks] = useState([]);
   const [deductions, setDeductions] = useState([]);
   const [recharges, setRecharges] = useState([]);
+  const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [logSearch, setLogSearch] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [truckFilter, setTruckFilter] = useState('all'); // 'all' | 'low' | 'healthy'
@@ -47,15 +49,21 @@ export default function FASTagManagerPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [trucksData, txData, rechargesData] = await Promise.all([
+      const [trucksData, txData, rechargesData, tripsData] = await Promise.all([
         pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }),
         fetchAllFASTagDeductions(),
-        pb.collection('fastag_recharges').getFullList({ sort: '-recharge_date', expand: 'truck_id', $autoCancel: false }).catch(() => [])
+        pb.collection('fastag_recharges').getFullList({ sort: '-recharge_date', expand: 'truck_id', $autoCancel: false }).catch(() => []),
+        pb.collection('trip_logs').getFullList({ 
+          sort: '-date', 
+          fields: 'id,trip_id,truck_number,route,date,trip_status',
+          $autoCancel: false 
+        }).catch(() => [])
       ]);
 
       setTrucks(trucksData);
       setDeductions(txData);
       setRecharges(rechargesData);
+      setTrips(tripsData);
     } catch (err) {
       console.error('[FASTagManagerPage] Error fetching FASTag data:', err);
       toast.error('Failed to load FASTag data');
@@ -107,6 +115,56 @@ export default function FASTagManagerPage() {
     setSelectedTruckForRecharge(truck);
     setIsRechargeModalOpen(true);
   };
+
+  // Build trip lookup map keyed by trip_id and id for fast enrichment
+  const tripMap = useMemo(() => {
+    const map = {};
+    trips.forEach(t => {
+      if (t.trip_id) map[t.trip_id] = t;
+      if (t.id) map[t.id] = t;
+    });
+    return map;
+  }, [trips]);
+
+  // Build truck lookup map keyed by truck_number and id
+  const truckMap = useMemo(() => {
+    const map = {};
+    trucks.forEach(t => {
+      if (t.truck_number) map[t.truck_number.toUpperCase()] = t;
+      if (t.id) map[t.id] = t;
+    });
+    return map;
+  }, [trucks]);
+
+  const filteredDeductions = useMemo(() => {
+    const q = logSearch.toLowerCase().trim();
+    if (!q) return deductions;
+    return deductions.filter(d => {
+      const trip = d.trip_code ? (tripMap[d.trip_code] || {}) : {};
+      return (
+        (d.truck_number && d.truck_number.toLowerCase().includes(q)) ||
+        (d.trip_code && d.trip_code.toLowerCase().includes(q)) ||
+        (d.notes && d.notes.toLowerCase().includes(q)) ||
+        (d.toll_plaza && d.toll_plaza.toLowerCase().includes(q)) ||
+        (trip.route && trip.route.toLowerCase().includes(q))
+      );
+    });
+  }, [deductions, logSearch, tripMap]);
+
+  const filteredRecharges = useMemo(() => {
+    const q = logSearch.toLowerCase().trim();
+    if (!q) return recharges;
+    return recharges.filter(r => {
+      const truckNum = r.expand?.truck_id?.truck_number || r.truck_id || '';
+      return (
+        truckNum.toLowerCase().includes(q) ||
+        (r.reference_number && r.reference_number.toLowerCase().includes(q)) ||
+        (r.payment_method && r.payment_method.toLowerCase().includes(q)) ||
+        (r.notes && r.notes.toLowerCase().includes(q))
+      );
+    });
+  }, [recharges, logSearch]);
+
 
   if (loading) {
     return (
@@ -384,74 +442,159 @@ export default function FASTagManagerPage() {
                   <History className="w-5 h-5 text-primary" />
                   FASTag Transaction & Recharge Logs
                 </CardTitle>
-                <CardDescription>Complete audit records of toll debits and account recharges.</CardDescription>
+                <CardDescription>Complete audit records of trip toll debits and account recharges.</CardDescription>
               </div>
 
-              <TabsList className="bg-background border border-border/50 p-1 rounded-xl">
-                <TabsTrigger value="deductions" className="rounded-lg text-xs font-bold px-4 py-1.5">
-                  Toll Deduction Logs ({deductions.length})
-                </TabsTrigger>
-                <TabsTrigger value="recharges" className="rounded-lg text-xs font-bold px-4 py-1.5">
-                  Recharge Logs ({recharges.length})
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                {/* Search across logs */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search truck, trip, toll plaza..."
+                    value={logSearch}
+                    onChange={e => setLogSearch(e.target.value)}
+                    className="pl-8 h-9 text-xs rounded-xl bg-background w-full sm:w-56"
+                  />
+                </div>
+
+                <TabsList className="bg-background border border-border/50 p-1 rounded-xl">
+                  <TabsTrigger value="deductions" className="rounded-lg text-xs font-bold px-4 py-1.5">
+                    <ArrowDownRight className="w-3 h-3 mr-1 text-rose-500" />
+                    Toll Deductions ({filteredDeductions.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="recharges" className="rounded-lg text-xs font-bold px-4 py-1.5">
+                    <ArrowUpRight className="w-3 h-3 mr-1 text-emerald-500" />
+                    Recharge Logs ({filteredRecharges.length})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
           </CardHeader>
 
-          {/* Tab 1: Toll Deduction Logs */}
+          {/* Tab 1: Toll Deduction Logs — enriched with Trip details */}
           <TabsContent value="deductions" className="p-0 m-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead className="pl-6 font-semibold">Date</TableHead>
-                    <TableHead className="font-semibold">Truck Number</TableHead>
-                    <TableHead className="font-semibold">Trip ID / Details</TableHead>
-                    <TableHead className="font-semibold text-center">Type</TableHead>
-                    <TableHead className="text-right font-semibold">Toll Amount</TableHead>
-                    <TableHead className="pr-6 font-semibold">Notes / Description</TableHead>
+                    <TableHead className="pl-6 font-semibold">Date & Time</TableHead>
+                    <TableHead className="font-semibold">Truck No.</TableHead>
+                    <TableHead className="font-semibold">Trip ID</TableHead>
+                    <TableHead className="font-semibold">Route</TableHead>
+                    <TableHead className="font-semibold">Toll Plaza</TableHead>
+                    <TableHead className="font-semibold text-center">Source</TableHead>
+                    <TableHead className="text-right font-semibold">Deducted</TableHead>
+                    <TableHead className="pr-6 font-semibold">Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {deductions.length === 0 ? (
+                  {filteredDeductions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                        No FASTag toll deduction logs recorded yet.
+                      <TableCell colSpan={8} className="text-center py-16 text-muted-foreground">
+                        <RouteIcon className="w-10 h-10 opacity-25 mx-auto mb-3" />
+                        <p className="font-semibold text-sm">No toll deduction logs found.</p>
+                        <p className="text-xs mt-1 opacity-70">Deductions are auto-logged when a trip is marked Delivered or Completed.</p>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    deductions.map(item => (
-                      <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="pl-6 whitespace-nowrap font-medium text-sm">
-                          {item.date ? format(new Date(item.date), 'dd MMM yyyy, hh:mm a') : '—'}
-                        </TableCell>
-                        <TableCell className="font-mono font-bold text-sm text-primary">
-                          {item.truck_number || '—'}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.trip_code ? (
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold">
-                              {item.trip_code}
-                            </Badge>
-                          ) : '—'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-bold text-[10px]">
-                            {item.transaction_type || 'Debit'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-rose-500 text-sm">
-                          -{formatCurrency(item.amount)}
-                        </TableCell>
-                        <TableCell className="pr-6 text-xs text-muted-foreground max-w-xs truncate">
-                          {item.notes || 'Automated toll charge'}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredDeductions.map(item => {
+                      // Enrich with linked trip data
+                      const linkedTrip = item.trip_code ? (tripMap[item.trip_code] || null) : null;
+                      const isAutoTripDeduction = !!linkedTrip;
+                      const displayTripId = linkedTrip?.trip_id || item.trip_code || null;
+                      const displayRoute = linkedTrip?.route || item.route || null;
+                      const tollPlaza = item.toll_plaza || null;
+
+                      let dateStr = '—';
+                      try {
+                        if (item.date) {
+                          const d = new Date(item.date.replace(' ', 'T'));
+                          dateStr = format(d, 'dd MMM yyyy, hh:mm a');
+                        }
+                      } catch {}
+
+                      return (
+                        <TableRow key={item.id} className={`hover:bg-muted/20 transition-colors border-b border-border/30 ${isAutoTripDeduction ? 'bg-blue-500/2' : ''}`}>
+                          <TableCell className="pl-6 whitespace-nowrap font-medium text-sm">
+                            {dateStr}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-mono font-black text-sm text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/20">
+                              {item.truck_number || '—'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {displayTripId ? (
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-bold font-mono text-[11px] px-2 py-0.5">
+                                  {displayTripId}
+                                </Badge>
+                                {linkedTrip?.trip_status && (
+                                  <Badge variant="outline" className={`text-[9px] font-bold px-1.5 py-0 ${
+                                    linkedTrip.trip_status === 'Delivered' || linkedTrip.trip_status === 'Completed'
+                                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                  }`}>
+                                    {linkedTrip.trip_status}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">Manual Entry</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {displayRoute ? (
+                              <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                <RouteIcon className="w-3 h-3 text-muted-foreground shrink-0" />
+                                {displayRoute}
+                              </span>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>
+                            {tollPlaza ? (
+                              <span className="text-xs font-medium text-foreground">{tollPlaza}</span>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {isAutoTripDeduction ? (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold text-[9px] px-2">
+                                Auto Trip
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 font-bold text-[9px] px-2">
+                                Manual
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-black text-rose-500 text-sm tabular-nums">
+                              -{formatCurrency(item.amount)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="pr-6 text-xs text-muted-foreground max-w-[200px] truncate">
+                            {item.notes || 'Automated toll charge'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
             </div>
+            {/* Summary Footer */}
+            {filteredDeductions.length > 0 && (
+              <div className="bg-muted/30 border-t border-border/40 px-6 py-3 flex flex-wrap justify-between items-center gap-3 text-xs">
+                <span className="text-muted-foreground">
+                  {filteredDeductions.length} deduction{filteredDeductions.length !== 1 ? 's' : ''} shown
+                  {' · '}<strong>{filteredDeductions.filter(d => !!d.trip_code).length}</strong> linked to trips
+                  {' · '}<strong>{filteredDeductions.filter(d => !d.trip_code).length}</strong> manual entries
+                </span>
+                <span className="font-bold text-rose-500 tabular-nums text-sm">
+                  Total: -{formatCurrency(filteredDeductions.reduce((s, d) => s + (Number(d.amount) || 0), 0))}
+                </span>
+              </div>
+            )}
           </TabsContent>
 
           {/* Tab 2: Recharge Logs */}
@@ -461,44 +604,78 @@ export default function FASTagManagerPage() {
                 <TableHeader className="bg-muted/30">
                   <TableRow>
                     <TableHead className="pl-6 font-semibold">Recharge Date</TableHead>
-                    <TableHead className="font-semibold">Truck Number</TableHead>
+                    <TableHead className="font-semibold">Truck</TableHead>
                     <TableHead className="font-semibold text-center">Payment Method</TableHead>
-                    <TableHead className="font-semibold">Reference No.</TableHead>
-                    <TableHead className="text-right font-semibold">Recharge Amount</TableHead>
-                    <TableHead className="pr-6 font-semibold">Notes</TableHead>
+                    <TableHead className="font-semibold">Reference / UTR No.</TableHead>
+                    <TableHead className="text-right font-semibold">Amount Recharged</TableHead>
+                    <TableHead className="pr-6 font-semibold">Notes / Remarks</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recharges.length === 0 ? (
+                  {filteredRecharges.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                        No FASTag recharge logs recorded yet.
+                      <TableCell colSpan={6} className="text-center py-16 text-muted-foreground">
+                        <Wallet className="w-10 h-10 opacity-25 mx-auto mb-3" />
+                        <p className="font-semibold text-sm">No recharge logs found.</p>
+                        <p className="text-xs mt-1 opacity-70">Use the "Record FASTag Recharge" button to log a wallet top-up.</p>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    recharges.map(item => {
-                      const truckNum = item.expand?.truck_id?.truck_number || item.truck_id || '—';
+                    filteredRecharges.map(item => {
+                      const truckData = item.expand?.truck_id || truckMap[String(item.truck_id || '').toUpperCase()] || null;
+                      const truckNum = truckData?.truck_number || item.truck_id || '—';
+                      const truckName = truckData?.truck_name || truckData?.model || null;
+
+                      let dateStr = '—';
+                      try {
+                        if (item.recharge_date) dateStr = format(new Date(item.recharge_date), 'dd MMM yyyy');
+                      } catch {}
+
+                      const methodColorMap = {
+                        'UPI': 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                        'NEFT': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                        'IMPS': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                        'Cash': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                        'Cheque': 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                        'Credit Card': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                        'Debit Card': 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+                      };
+                      const methodClass = methodColorMap[item.payment_method] || 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+
                       return (
-                        <TableRow key={item.id} className="hover:bg-muted/30 transition-colors">
-                          <TableCell className="pl-6 whitespace-nowrap font-medium text-sm">
-                            {item.recharge_date ? format(new Date(item.recharge_date), 'dd MMM yyyy') : '—'}
+                        <TableRow key={item.id} className="hover:bg-muted/20 transition-colors border-b border-border/30">
+                          <TableCell className="pl-6 whitespace-nowrap font-semibold text-sm">
+                            {dateStr}
                           </TableCell>
-                          <TableCell className="font-mono font-bold text-sm text-primary">
-                            {truckNum}
+                          <TableCell>
+                            <div>
+                              <span className="font-mono font-black text-sm text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-lg border border-blue-500/20">
+                                {truckNum}
+                              </span>
+                              {truckName && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">{truckName}</div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-bold text-[10px]">
+                            <Badge variant="outline" className={`font-bold text-[10px] px-2 py-0.5 ${methodClass}`}>
                               {item.payment_method || 'UPI'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-muted-foreground">
-                            {item.reference_number || '—'}
+                          <TableCell>
+                            {item.reference_number ? (
+                              <span className="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded-lg border border-border/50 text-foreground font-semibold">
+                                {item.reference_number}
+                              </span>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
                           </TableCell>
-                          <TableCell className="text-right font-bold text-emerald-500 text-sm">
-                            +{formatCurrency(item.recharge_amount)}
+                          <TableCell className="text-right">
+                            <span className="font-black text-emerald-500 text-sm tabular-nums">
+                              +{formatCurrency(item.recharge_amount)}
+                            </span>
                           </TableCell>
-                          <TableCell className="pr-6 text-xs text-muted-foreground max-w-xs truncate">
-                            {item.notes || 'Recharge completed'}
+                          <TableCell className="pr-6 text-xs text-muted-foreground max-w-[200px] truncate">
+                            {item.notes || 'FASTag wallet recharge'}
                           </TableCell>
                         </TableRow>
                       );
@@ -507,9 +684,21 @@ export default function FASTagManagerPage() {
                 </TableBody>
               </Table>
             </div>
+            {/* Summary Footer */}
+            {filteredRecharges.length > 0 && (
+              <div className="bg-muted/30 border-t border-border/40 px-6 py-3 flex flex-wrap justify-between items-center gap-3 text-xs">
+                <span className="text-muted-foreground">
+                  {filteredRecharges.length} recharge{filteredRecharges.length !== 1 ? 's' : ''} shown
+                </span>
+                <span className="font-bold text-emerald-500 tabular-nums text-sm">
+                  Total: +{formatCurrency(filteredRecharges.reduce((s, r) => s + (Number(r.recharge_amount) || 0), 0))}
+                </span>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </Card>
+
 
       {/* ── FASTag Modals ───────────────────────────────────────── */}
       {selectedTruckForRecharge && (
