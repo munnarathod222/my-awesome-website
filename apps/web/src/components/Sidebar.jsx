@@ -15,23 +15,23 @@ import { useLanguage } from '@/contexts/LanguageContext.jsx';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const GROUP_ICON = {
-  Overview:       LayoutDashboard,
-  Operations:     ClipboardList,
-  Finance:        FileText,
-  'Fleet & Staff': Truck,
-  Communication:  Mail,
-  Directory:      Contact2,
+  'Main & Analytics': LayoutDashboard,
+  'Fleet & Operations': Truck,
+  'Finance & Accounts': CreditCard,
+  'Staff & HR': Users,
+  'CRM & Partners': Building2,
+  'Studio & Tools': FileText,
   Administration: Settings,
 };
 
 const GROUP_COLOR = {
-  Overview:        'text-blue-400',
-  Operations:      'text-emerald-400',
-  Finance:         'text-amber-400',
-  'Fleet & Staff': 'text-violet-400',
-  Communication:   'text-cyan-400',
-  Directory:       'text-rose-400',
-  Administration:  'text-slate-400',
+  'Main & Analytics': 'text-cyan-400',
+  'Fleet & Operations': 'text-emerald-400',
+  'Finance & Accounts': 'text-amber-400',
+  'Staff & HR': 'text-violet-400',
+  'CRM & Partners': 'text-rose-400',
+  'Studio & Tools': 'text-indigo-400',
+  Administration: 'text-slate-400',
 };
 
 export default function Sidebar({ isExpanded, setIsExpanded }) {
@@ -51,82 +51,82 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       .catch(() => {});
   }, []);
 
-  const operationsItems = [
-    { icon: QrCode,        label: 'QR Scanner Pass',      path: '/qr-scanner',       roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: Navigation,    label: 'Track Shipment',       path: '/tracking',          roles: ['super_admin','admin','dispatcher','manager','user'] },
-    { icon: ClipboardList, label: 'Trip Logs',           path: '/trip-logs',        roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: MapPin,        label: 'Route Master',         path: '/routes-master',    roles: ['super_admin','admin','dispatcher'] },
-    { icon: FileText,      label: 'Quotes',               path: '/quotes-manager',   roles: ['super_admin','admin','manager'] },
-    { icon: Droplet,       label: 'Fuel Tracker',         path: '/fuel-tracker',     roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: Wrench,        label: 'Fleet Maintenance',    path: '/fleet-maintenance',roles: ['super_admin','admin','dispatcher'] },
-    { icon: Package,       label: 'Inventory Management', path: '/inventory',        roles: ['super_admin','admin','manager','dispatcher'] },
+  const fleetOperationsItems = [
+    { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
+    { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
+    { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
+    { icon: Wrench,        label: 'Fleet Maintenance',path: '/fleet-maintenance',    roles: ['super_admin','admin','dispatcher'] },
+    { icon: Droplet,       label: 'Fuel Tracker',     path: '/fuel-tracker',         roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: ClipboardList, label: 'Trip Logs',       path: '/trip-logs',            roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: Navigation,    label: 'Track Shipment',   path: '/tracking',             roles: ['super_admin','admin','dispatcher','manager','user'] },
+    { icon: MapPin,        label: 'Route Master',     path: '/routes-master',        roles: ['super_admin','admin','dispatcher'] },
+    { icon: Package,       label: 'Inventory',        path: '/inventory',            roles: ['super_admin','admin','manager','dispatcher'] },
+    { icon: QrCode,        label: 'QR Scanner Pass',  path: '/qr-scanner',           roles: ['super_admin','admin','manager','dispatcher'] },
   ];
   if (showPodManagement) {
-    operationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
+    fleetOperationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
   }
-  operationsItems.push({ icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher'] });
+  fleetOperationsItems.push({ icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher'] });
 
   const menuGroups = [
     {
-      title: 'Overview',
+      title: 'Main & Analytics',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',             path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Sparkles,        label: 'AI Freight Marketplace',path: '/marketplace',     roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { icon: BarChart3,       label: 'Analytics',             path: '/analytics',               roles: ['super_admin','admin','manager'] },
-        { icon: Calculator,      label: 'Vehicle TCO & ROI',     path: '/vehicle-tco',             roles: ['super_admin','admin','manager'] },
-        { icon: CalendarDays,    label: 'Calendar',              path: '/calendar',                roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: Trophy,          label: 'Leaderboard',           path: '/leaderboard',             roles: ['super_admin','admin','manager'] },
-        { icon: PieChart,        label: 'Client Analysis',       path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
         { icon: TrendingUp,      label: 'Trip Overview',         path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager'] },
-        { icon: Bell,            label: 'Reminders',             path: '/reminders',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: CheckSquare,     label: 'To-Do List',            path: '/todo',                    roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Calculator,      label: 'Vehicle TCO & ROI',     path: '/vehicle-tco',             roles: ['super_admin','admin','manager'] },
+        { icon: PieChart,        label: 'Client Analysis',       path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
+        { icon: Trophy,          label: 'Leaderboard',           path: '/leaderboard',             roles: ['super_admin','admin','manager'] },
       ]
     },
-    { title: 'Operations', items: operationsItems },
+    { title: 'Fleet & Operations', items: fleetOperationsItems },
     {
-      title: 'Finance',
+      title: 'Finance & Accounts',
       items: [
-        { icon: Receipt,              label: 'GST Input Tax Credit (ITC)', path: '/gst-itc', roles: ['super_admin','admin','manager'] },
+        { icon: Receipt,              label: 'Cashbook',          path: '/cashbook',         roles: ['super_admin','admin','manager'] },
+        { icon: FileText,             label: 'Expenses',          path: '/expenses',         roles: ['super_admin','admin','manager'] },
+        { icon: MessageSquareWarning, label: 'Payment Requests',  path: '/payment-requests', roles: ['super_admin','admin','manager'] },
+        { icon: CreditCard,           label: 'FASTag Management', path: '/fastag',           roles: ['super_admin','admin','manager'] },
+        { icon: CreditCard,           label: 'Credit Cards',      path: '/credit-cards',     roles: ['super_admin','admin'] },
+        { icon: Receipt,              label: 'GST ITC Tax',       path: '/gst-itc',          roles: ['super_admin','admin','manager'] },
         { icon: ShieldAlert,          label: 'Insurance Manager', path: '/insurance-manager', roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: ShieldCheck,          label: 'Company Vault',     path: '/company-vault',    roles: ['super_admin','admin','manager'] },
-        { icon: Database,             label: 'Data Backup & Export', path: '/data-backup',   roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
-        { icon: FileText,             label: 'Cashbook',          path: '/cashbook',         roles: ['super_admin','admin','manager'] },
-        { icon: FileText,             label: 'Expenses',          path: '/expenses',         roles: ['super_admin','admin','manager'] },
-        { icon: CreditCard,           label: 'FASTag Management',  path: '/fastag',           roles: ['super_admin','admin','manager'] },
-        { icon: MessageSquareWarning, label: 'Payment Requests',  path: '/payment-requests', roles: ['super_admin','admin','manager'] },
-        { icon: CreditCard,           label: 'Credit Cards',      path: '/credit-cards',     roles: ['super_admin','admin'] },
-        { icon: FileText,             label: 'Payroll',           path: '/payroll',          roles: ['super_admin','admin'] },
         { icon: Calculator,           label: 'EMI Calculator',    path: '/emi-calculator',   roles: ['super_admin','admin','manager'] },
+        { icon: FileText,             label: 'Payroll',           path: '/payroll',          roles: ['super_admin','admin'] },
+        { icon: FileText,             label: 'Quotes Manager',    path: '/quotes-manager',   roles: ['super_admin','admin','manager'] },
       ]
     },
     {
-      title: 'Fleet & Staff',
+      title: 'Staff & HR',
       items: [
-        { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
-        { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
-        { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
         { icon: Users,        label: 'Employees',         path: '/employees',            roles: ['super_admin','admin','manager','supervisor'] },
         { icon: FileBox,      label: 'Employee Docs',     path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
-        { icon: IdCard,       label: 'ID Card Generator', path: '/id-card-generator',    roles: ['super_admin','admin','manager','supervisor'] },
-        { icon: CalendarDays, label: 'Attendance',        path: '/dashboard/attendance', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: CalendarDays, label: 'Attendance Hub',    path: '/dashboard/attendance', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: UserPlus,     label: 'Recruitment Portal',path: '/recruitment',          roles: ['super_admin','admin','manager'] },
+        { icon: IdCard,       label: 'ID Card Generator', path: '/id-card-generator',    roles: ['super_admin','admin','manager','supervisor'] },
       ]
     },
     {
-      title: 'Communication & Printing',
+      title: 'CRM & Partners',
       items: [
-        { icon: FileText, label: 'Official Letterhead Studio', path: '/letterhead', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
-        { icon: CreditCard, label: 'Visiting Card Studio', path: '/visiting-card', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
-        { icon: Mail, label: 'Business Mail', path: '/business-mail', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Users,     label: 'Clients List',               path: '/clients',       roles: ['super_admin','admin','manager'] },
+        { icon: Building2, label: 'Vendor Registration Tracker',path: '/vendor-tracker', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Building2, label: 'Transport CRM',              path: '/transport-crm', roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: Contact2,  label: 'Contacts Directory',         path: '/contacts',      roles: ['super_admin','admin','manager','dispatcher'] },
       ]
     },
     {
-      title: 'Directory',
+      title: 'Studio & Tools',
       items: [
-        { icon: Building2, label: 'Vendor Registration Tracker', path: '/vendor-tracker', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { icon: Building2, label: 'Transport CRM',     path: '/transport-crm', roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: Contact2,  label: 'Contacts Directory',path: '/contacts',      roles: ['super_admin','admin','manager','dispatcher'] },
-        { icon: Users,     label: 'Clients List',      path: '/clients',       roles: ['super_admin','admin','manager'] },
+        { icon: FileText,     label: 'Letterhead Studio',     path: '/letterhead',       roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { icon: CreditCard,   label: 'Visiting Card Studio',  path: '/visiting-card',    roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { icon: Mail,         label: 'Business Mail',         path: '/business-mail',    roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: CalendarDays, label: 'Calendar',              path: '/calendar',         roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Bell,         label: 'Reminders',             path: '/reminders',        roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: CheckSquare,  label: 'To-Do List',            path: '/todo',             roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Database,     label: 'Data Backup & Export',  path: '/data-backup',      roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
       ]
     },
     {
