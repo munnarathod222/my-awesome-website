@@ -277,8 +277,6 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         truck_number: formData.truck_number,
         created_by: currentUser?.id,
         user_id: currentUser?.id,
-        toll_deduction: parseFloat(formData.toll_deduction) || 0,
-        
         ownership_type: isAttached ? 'Attached' : 'Owned',
         payment_model: isAttached ? formData.payment_model : 'Model1',
         vendor_payout: isAttached 

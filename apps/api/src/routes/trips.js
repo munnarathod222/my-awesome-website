@@ -150,12 +150,13 @@ router.post('/bulk-create', pocketbaseAuth, async (req, res) => {
     if (trip.tds_deducted_receivable !== undefined) trip.tds_deducted_receivable = Number(trip.tds_deducted_receivable) || 0;
     if (trip.vendor_payout !== undefined) trip.vendor_payout = Number(trip.vendor_payout) || 0;
     if (trip.brokerage_margin !== undefined) trip.brokerage_margin = Number(trip.brokerage_margin) || 0;
-    if (trip.toll_deduction !== undefined) trip.toll_deduction = Number(trip.toll_deduction) || 0;
 
     // Sanitize relation fields — empty strings cause PocketBase silent 400 errors
     if (!trip.client_id) delete trip.client_id;
     if (!trip.route_id) delete trip.route_id;
     if (!trip.billing_cycle_id) delete trip.billing_cycle_id;
+    // Remove unknown fields not in trip_logs schema
+    delete trip.toll_deduction;
 
     logger.info(`Creating trip ${trip.trip_id} payload: ${JSON.stringify(trip)}`);
 
@@ -206,6 +207,8 @@ router.put('/:id', async (req, res) => {
   if (updateData.kms !== undefined) updateData.kms = Number(updateData.kms) || 0;
   if (updateData.revenue !== undefined) updateData.revenue = Number(updateData.revenue) || 0;
   if (updateData.mileage !== undefined) updateData.mileage = Number(updateData.mileage) || 0;
+  // Strip unknown fields not in trip_logs schema
+  delete updateData.toll_deduction;
 
   try {
     const updatedTrip = await pb.collection('trip_logs').update(id, updateData);
@@ -234,6 +237,7 @@ router.patch('/:id', async (req, res) => {
   if (updateData.kms !== undefined) updateData.kms = Number(updateData.kms) || 0;
   if (updateData.revenue !== undefined) updateData.revenue = Number(updateData.revenue) || 0;
   if (updateData.mileage !== undefined) updateData.mileage = Number(updateData.mileage) || 0;
+  delete updateData.toll_deduction;
 
   try {
     const updatedTrip = await pb.collection('trip_logs').update(id, updateData);
