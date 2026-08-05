@@ -291,6 +291,18 @@ export default function Header() {
                   </Link>
                 </Button>
 
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="rounded-xl text-[12px] h-8 px-3 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold gap-1.5 transition-all hover:scale-[1.02]"
+                >
+                  <Link to="/qr-scanner">
+                    <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>QR Pass Scanner</span>
+                  </Link>
+                </Button>
+
                 {(isAdmin || isSuperAdmin) && (
                   <Button
                     size="sm"

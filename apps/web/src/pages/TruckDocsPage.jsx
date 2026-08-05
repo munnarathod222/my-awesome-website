@@ -440,6 +440,15 @@ const TruckDocsPage = () => {
                 <List className="w-4 h-4 mr-1.5" />
                 Table View
               </Button>
+              <Button
+                variant={viewMode === 'qr_pass' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('qr_pass')}
+                className={`h-8 rounded-lg px-3 ${viewMode === 'qr_pass' ? 'text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30' : 'text-emerald-500/80 hover:text-emerald-400'}`}
+              >
+                <QrCode className="w-4 h-4 mr-1.5" />
+                QR Verification Pass
+              </Button>
             </div>
             <Button onClick={() => handleOpenForm()} className="shadow-sm">
               <Plus className="w-4 h-4 mr-2" /> Add Document
@@ -606,6 +615,97 @@ const TruckDocsPage = () => {
               </Table>
             </div>
           </Card>
+        ) : viewMode === 'qr_pass' ? (
+          /* QR Verification Pass Hub View Mode */
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-emerald-950/40 via-secondary/40 to-background border border-emerald-500/30 p-6 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="p-3.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl shrink-0">
+                  <QrCode className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground font-heading">Windshield QR Verification Pass Hub</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                    Print high-resolution QR stickers for your fleet windshields. Security officers and warehouse gatekeepers can scan the QR code to instantly verify live RC, Insurance, Permits, and Driver credentials without physical documents.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = '/qr-scanner'}
+                className="rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold shrink-0 text-xs h-10 px-4"
+              >
+                <QrCode className="w-4 h-4 mr-2" /> Open Scanner Camera
+              </Button>
+            </div>
+
+            {filteredTrucks.length === 0 ? (
+              <Card className="shadow-sm border-border p-12 text-center text-muted-foreground rounded-3xl">
+                No fleet vehicles found matching filters.
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredTrucks.map(truck => {
+                  const truckDocs = documents.filter(d => d.truck_id === truck.id);
+                  const activeDocs = truckDocs.filter(d => getStatusInfo(d.expiry_date).numericStatus === 'Active');
+                  const isFullyCompliant = truckDocs.length > 0 && activeDocs.length === truckDocs.length;
+
+                  return (
+                    <Card key={truck.id} className="border border-border/50 bg-card rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+                            <ShieldCheck className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-bold font-mono text-foreground">{truck.truck_number}</h4>
+                            <p className="text-xs text-muted-foreground">{truck.truck_name || 'Fleet Vehicle'}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={isFullyCompliant ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold text-[10px]" : "bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold text-[10px]"}>
+                          {isFullyCompliant ? '100% Compliant' : `${activeDocs.length}/${truckDocs.length} Active Docs`}
+                        </Badge>
+                      </div>
+
+                      <div className="bg-secondary/30 border border-border/40 p-3 rounded-2xl text-xs space-y-1.5 font-mono">
+                        <div className="flex justify-between text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                          <span>Pass Token:</span>
+                          <span className="text-emerald-400">VERIFIED PASS</span>
+                        </div>
+                        <p className="text-sm font-bold text-foreground truncate">{truck.truck_number}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedQRStickerTruck(truck);
+                            setIsQRStickerOpen(true);
+                          }}
+                          className="rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs h-9"
+                        >
+                          <QrCode className="w-3.5 h-3.5 mr-1.5" /> Print QR Sticker
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedScanAnalyticsTruck(truck);
+                            setIsScanAnalyticsOpen(true);
+                          }}
+                          className="rounded-xl border-border/60 text-foreground hover:bg-secondary font-bold text-xs h-9"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1.5" /> Scan Audit
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         ) : (
           /* Folder Gallery View Mode */
           selectedTruckFolder ? (

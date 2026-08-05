@@ -61,7 +61,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { icon: Navigation,    label: 'Track Shipment',   path: '/tracking',             roles: ['super_admin','admin','dispatcher','manager','user'] },
     { icon: MapPin,        label: 'Route Master',     path: '/routes-master',        roles: ['super_admin','admin','dispatcher'] },
     { icon: Package,       label: 'Inventory',        path: '/inventory',            roles: ['super_admin','admin','manager','dispatcher'] },
-    { icon: QrCode,        label: 'QR Scanner Pass',  path: '/qr-scanner',           roles: ['super_admin','admin','manager','dispatcher'] },
   ];
   if (showPodManagement) {
     fleetOperationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
