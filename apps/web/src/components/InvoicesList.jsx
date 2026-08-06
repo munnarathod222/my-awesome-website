@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Search, MoreHorizontal, Receipt, Plus, Download, FileText, Table as TableIcon, Loader2 } from 'lucide-react';
+import { Search, MoreHorizontal, Receipt, Plus, Download, FileText, Table as TableIcon, Loader2, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 import InvoiceDetailsView from './InvoiceDetailsView.jsx';
+import SendMailDialog from './SendMailDialog.jsx';
 import { downloadFile, generatePDF, generateExcel } from '@/lib/downloadUtils.js';
 
 const statusColors = {
@@ -32,6 +33,84 @@ const InvoicesList = ({ onCreateNew, onEditInvoice }) => {
 
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailInvoice = (inv) => {
+    const formattedDate = format(new Date(inv.invoice_date), 'dd MMM yyyy');
+    const formattedDueDate = format(new Date(inv.due_date), 'dd MMM yyyy');
+    const formattedAmount = inv.total_amount?.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+    
+    let itemsHtml = '';
+    if (inv.line_items && inv.line_items.length > 0) {
+      itemsHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px;">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+              <th style="padding: 8px; text-align: left; font-weight: bold; color: #475569;">Description</th>
+              <th style="padding: 8px; text-align: center; font-weight: bold; color: #475569;">Qty</th>
+              <th style="padding: 8px; text-align: right; font-weight: bold; color: #475569;">Rate</th>
+              <th style="padding: 8px; text-align: right; font-weight: bold; color: #475569;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${inv.line_items.map(item => `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px; color: #1e293b;">${item.description}</td>
+                <td style="padding: 8px; text-align: center; color: #1e293b;">${item.quantity}</td>
+                <td style="padding: 8px; text-align: right; color: #1e293b;">₹${item.unit_price?.toLocaleString('en-IN')}</td>
+                <td style="padding: 8px; text-align: right; color: #1e293b; font-weight: bold;">₹${item.amount?.toLocaleString('en-IN')}</td>
+              </tr>
+            `).join('')}
+            <tr style="border-top: 2px solid #e2e8f0; font-weight: bold;">
+              <td colspan="3" style="padding: 8px; text-align: right; color: #475569;">Total Amount Due:</td>
+              <td style="padding: 8px; text-align: right; color: #2563eb; font-size: 13px;">${formattedAmount}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    const htmlContent = `
+      <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background-color: #ffffff; max-width: 550px; font-family: sans-serif;">
+        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 12px;">
+          <h2 style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 800; text-transform: uppercase; tracking-wider: 1px;">JAI BHAVANI CARGO</h2>
+          <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Heavy Fleet Logistics & Container Transit</p>
+        </div>
+        
+        <table style="width: 100%; font-size: 11px; margin-bottom: 15px; color: #475569;">
+          <tr>
+            <td style="vertical-align: top; width: 50%;">
+              <strong>Billing To:</strong>
+              <div style="color: #0f172a; font-weight: bold; margin-top: 2px;">${inv.customer_name}</div>
+              ${inv.customer_email ? `<div>${inv.customer_email}</div>` : ''}
+            </td>
+            <td style="vertical-align: top; text-align: right; width: 50%;">
+              <div><strong>Invoice #:</strong> <span style="font-family: monospace; font-weight: bold; color: #0f172a;">${inv.invoice_number}</span></div>
+              <div><strong>Date:</strong> ${formattedDate}</div>
+              <div><strong>Due Date:</strong> <span style="color: #ef4444; font-weight: bold;">${formattedDueDate}</span></div>
+            </td>
+          </tr>
+        </table>
+
+        ${itemsHtml}
+
+        <div style="margin-top: 20px; font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+          This is an official document copy generated via JBC Portal.
+        </div>
+      </div>
+    `;
+
+    setMailData({
+      recipient: inv.customer_email || '',
+      subject: `Jai Bhavani Cargo - Invoice ${inv.invoice_number}`,
+      body: `Dear Partner,\n\nPlease find attached details for Invoice ${inv.invoice_number}.\n\nTotal Amount Due: ${formattedAmount}\nPayment Due Date: ${formattedDueDate}\n\nPlease process this at your earliest convenience. Thank you!\n\nRegards,\nVinod Kumar Rathod\nJai Bhavani Cargo Ltd`,
+      html: htmlContent,
+      label: `Invoice #${inv.invoice_number}`
+    });
+    setMailOpen(true);
+  };
 
   const fetchInvoices = async () => {
     setLoading(true);
@@ -242,6 +321,9 @@ const InvoicesList = ({ onCreateNew, onEditInvoice }) => {
                             <DropdownMenuItem onClick={() => { setSelectedInvoice(inv); setDetailsOpen(true); }}>
                               View Details
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => triggerEmailInvoice(inv)}>
+                              Email Invoice
+                            </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive" onClick={() => handleDelete(inv.id)}>
                               Delete
                             </DropdownMenuItem>
@@ -321,6 +403,9 @@ const InvoicesList = ({ onCreateNew, onEditInvoice }) => {
                           <DropdownMenuItem className="text-xs font-semibold rounded-lg" onClick={() => onEditInvoice?.(inv)}>
                             Edit Invoice
                           </DropdownMenuItem>
+                          <DropdownMenuItem className="text-xs font-semibold rounded-lg" onClick={() => triggerEmailInvoice(inv)}>
+                            Email Invoice
+                          </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive text-xs font-semibold rounded-lg" onClick={() => handleDelete(inv.id)}>
                             Delete
                           </DropdownMenuItem>
@@ -343,6 +428,16 @@ const InvoicesList = ({ onCreateNew, onEditInvoice }) => {
           setInvoices(prev => prev.map(i => i.id === updatedInv.id ? updatedInv : i));
           setSelectedInvoice(updatedInv);
         }}
+      />
+
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </div>
   );

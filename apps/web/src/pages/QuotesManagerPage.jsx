@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt } from 'lucide-react';
+import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import QuoteFormModal from '@/components/QuoteFormModal.jsx';
 import QuoteDetailsView from '@/components/QuoteDetailsView.jsx';
 import InvoiceMakerPage from '@/pages/InvoiceMakerPage.jsx';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 const statusColors = {
   'Draft': 'bg-muted text-muted-foreground',
@@ -40,6 +41,87 @@ const QuotesManagerPage = () => {
 
   const [activeMainTab, setActiveMainTab] = useState('quotes');
   const [quoteToConvert, setQuoteToConvert] = useState(null);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailQuote = (quote) => {
+    const formattedDate = format(new Date(quote.created), 'dd MMM yyyy');
+    const formattedPrice = quote.total_price?.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+    
+    let routeHtml = '';
+    if (quote.source && quote.destination) {
+      routeHtml = `
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 11px;">
+          <strong>Transit Route Details:</strong>
+          <table style="width: 100%; margin-top: 5px; font-size: 11px;">
+            <tr>
+              <td style="width: 40%; color: #64748b;">Pickup Origin:</td>
+              <td style="color: #0f172a; font-weight: bold;">${quote.source}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b;">Drop Destination:</td>
+              <td style="color: #0f172a; font-weight: bold;">${quote.destination}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b;">Container / Truck Type:</td>
+              <td style="color: #0f172a; font-weight: bold;">${quote.container_type || 'General Cargo'}</td>
+            </tr>
+            <tr>
+              <td style="color: #64748b;">Chargeable Weight:</td>
+              <td style="color: #0f172a; font-weight: bold;">${quote.chargeable_weight?.toLocaleString()} kg</td>
+            </tr>
+          </table>
+        </div>
+      `;
+    }
+
+    const htmlContent = `
+      <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background-color: #ffffff; max-width: 550px; font-family: sans-serif;">
+        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 12px;">
+          <h2 style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 800; text-transform: uppercase; tracking-wider: 1px;">JAI BHAVANI CARGO</h2>
+          <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Heavy Fleet Logistics & Container Transit</p>
+        </div>
+        
+        <table style="width: 100%; font-size: 11px; margin-bottom: 12px; color: #475569;">
+          <tr>
+            <td style="vertical-align: top; width: 55%;">
+              <strong>Quote Prepared For:</strong>
+              <div style="color: #0f172a; font-weight: bold; margin-top: 2px;">${quote.customer_name}</div>
+              ${quote.customer_email ? `<div>${quote.customer_email}</div>` : ''}
+            </td>
+            <td style="vertical-align: top; text-align: right; width: 45%;">
+              <div><strong>Quote Reference #:</strong> <span style="font-family: monospace; font-weight: bold; color: #0f172a;">${quote.quote_number}</span></div>
+              <div><strong>Issued Date:</strong> ${formattedDate}</div>
+              <div><strong>Status:</strong> <span style="color: #2563eb; font-weight: bold;">${quote.status || 'Active'}</span></div>
+            </td>
+          </tr>
+        </table>
+
+        ${routeHtml}
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; border-top: 2px solid #e2e8f0;">
+          <tr style="font-weight: bold;">
+            <td style="padding: 10px 8px; text-align: left; color: #475569;">Estimated Freight Value Charge:</td>
+            <td style="padding: 10px 8px; text-align: right; color: #2563eb; font-size: 14px;">${formattedPrice}</td>
+          </tr>
+        </table>
+
+        <div style="margin-top: 20px; font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+          This quote is valid for 15 days from the date of issue. Jai Bhavani Cargo.
+        </div>
+      </div>
+    `;
+
+    setMailData({
+      recipient: quote.customer_email || '',
+      subject: `Jai Bhavani Cargo - Quote Estimate ${quote.quote_number}`,
+      body: `Dear Partner,\n\nPlease find attached the freight quote estimate #${quote.quote_number} for container transit from ${quote.source || 'origin'} to ${quote.destination || 'destination'}.\n\nTotal Estimated Price: ${formattedPrice}\n\nKindly review and let us know if you approve this quote.\n\nRegards,\nVinod Kumar Rathod\nJai Bhavani Cargo Ltd`,
+      html: htmlContent,
+      label: `Quote #${quote.quote_number}`
+    });
+    setMailOpen(true);
+  };
 
   const fetchQuotes = async () => {
     setLoading(true);
@@ -236,6 +318,9 @@ const QuotesManagerPage = () => {
                                     Edit Quote
                                   </DropdownMenuItem>
                                 )}
+                                <DropdownMenuItem onClick={() => triggerEmailQuote(quote)}>
+                                  Email Quote
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)}>
                                   Convert to Invoice
                                 </DropdownMenuItem>
@@ -313,6 +398,9 @@ const QuotesManagerPage = () => {
                                   Edit Quote
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem onClick={() => triggerEmailQuote(quote)} className="text-xs font-semibold rounded-lg">
+                                Email Quote
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)} className="text-xs font-semibold rounded-lg">
                                 Convert to Invoice
                               </DropdownMenuItem>
@@ -351,6 +439,16 @@ const QuotesManagerPage = () => {
         onUpdate={handleQuoteUpdate}
         onEdit={(q) => { setIsDetailsOpen(false); handleEdit(q); }}
         onConvertToInvoice={handleConvertToInvoice}
+      />
+
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </div>
   );

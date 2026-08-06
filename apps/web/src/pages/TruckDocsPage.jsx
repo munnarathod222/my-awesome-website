@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck, Phone } from 'lucide-react';
+import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +19,7 @@ import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import PrintableQRStickerModal from '@/components/PrintableQRStickerModal.jsx';
 import VehicleScanAnalyticsModal from '@/components/VehicleScanAnalyticsModal.jsx';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
@@ -53,6 +54,103 @@ const TruckDocsPage = () => {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [editingDoc, setEditingDoc] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailDoc = (doc) => {
+    const formattedExpiry = doc.expiry_date ? format(new Date(doc.expiry_date), 'dd MMM yyyy') : 'No Expiry';
+    const formattedIssue = doc.issue_date ? format(new Date(doc.issue_date), 'dd MMM yyyy') : 'N/A';
+    
+    const tr = trucks.find(t => t.id === doc.truck_id);
+    const truckNo = tr ? tr.truck_number : 'Fleet Vehicle';
+
+    const htmlContent = `
+      <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background-color: #ffffff; max-width: 500px; font-family: sans-serif;">
+        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 12px;">
+          <h2 style="margin: 0; color: #0f172a; font-size: 15px; font-weight: 800;">JAI BHAVANI CARGO</h2>
+          <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Fleet Document Registry</p>
+        </div>
+        
+        <table style="width: 100%; font-size: 11px; margin-bottom: 15px; color: #475569;">
+          <tr>
+            <td style="width: 45%; color: #64748b;">Vehicle Number:</td>
+            <td style="color: #0f172a; font-weight: bold; font-family: monospace;">${truckNo}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b;">Document Type:</td>
+            <td style="color: #0f172a; font-weight: bold;">${doc.document_type}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b;">Document Number:</td>
+            <td style="color: #0f172a; font-weight: bold; font-family: monospace;">${doc.document_number || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b;">Issued Date:</td>
+            <td>${formattedIssue}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b;">Expiry Date:</td>
+            <td style="color: #ef4444; font-weight: bold;">${formattedExpiry}</td>
+          </tr>
+        </table>
+        
+        ${doc.notes ? `<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; font-size: 10px; color: #475569; margin-top: 10px;">
+          <strong>Notes:</strong><br/>${doc.notes}
+        </div>` : ''}
+      </div>
+    `;
+
+    setMailData({
+      recipient: '',
+      subject: `Jai Bhavani Cargo - Vehicle Document (${doc.document_type} - ${truckNo})`,
+      body: `Dear Team,\n\nPlease find compliance details for ${doc.document_type} regarding Vehicle ${truckNo}.\n\nDocument Number: ${doc.document_number || 'N/A'}\nExpiry Date: ${formattedExpiry}\n\nKindly review.\n\nRegards,\nJai Bhavani Cargo Ltd`,
+      html: htmlContent,
+      label: `${doc.document_type} doc for ${truckNo}`
+    });
+    setMailOpen(true);
+  };
+
+  const triggerEmailQR = (truck) => {
+    const verificationUrl = `${window.location.origin}/verify-vehicle/${truck.truck_number || truck.id}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verificationUrl)}`;
+
+    const htmlContent = `
+      <div style="border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; background-color: #ffffff; max-width: 480px; font-family: sans-serif; text-align: center;">
+        <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 15px; text-align: left;">
+          <h2 style="margin: 0; color: #0f172a; font-size: 15px; font-weight: 800;">JAI BHAVANI CARGO</h2>
+          <p style="margin: 2px 0 0 0; color: #64748b; font-size: 10px;">Official Fleet Verification Sticker</p>
+        </div>
+        
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; display: inline-block; margin-bottom: 15px;">
+          <img src="${qrCodeUrl}" alt="QR Pass" style="width: 140px; height: 140px; border: 4px solid #ffffff; border-radius: 8px;" />
+          <div style="font-size: 13px; font-weight: 900; font-family: monospace; color: #0f172a; margin-top: 10px; letter-spacing: 1px;">
+            ${truck.truck_number}
+          </div>
+          <div style="font-size: 9px; font-weight: bold; color: #10b981; text-transform: uppercase; margin-top: 3px; letter-spacing: 0.5px;">
+            ✓ Compliance Verified Pass
+          </div>
+        </div>
+
+        <p style="font-size: 11.5px; color: #475569; margin: 0 0 15px 0; line-height: 1.5; text-align: left;">
+          This QR Sticker is assigned to fleet container truck <strong>${truck.truck_number}</strong> (${truck.truck_name || 'Vehicle'}). Anyone scanning this code can instantly inspect active RC, Insurance, National Permits, and road fitness validity online.
+        </p>
+
+        <a href="${verificationUrl}" target="_blank" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 10px 20px; font-size: 11px; font-weight: bold; border-radius: 8px; text-decoration: none;">
+          Verify Compliance Status
+        </a>
+      </div>
+    `;
+
+    setMailData({
+      recipient: '',
+      subject: `Jai Bhavani Cargo - Fleet QR Sticker Pass (${truck.truck_number})`,
+      body: `Dear Partner,\n\nPlease find compliance QR Sticker Pass details for Vehicle ${truck.truck_number}.\n\nYou can scan or click the verification code online to verify compliance.\n\nRegards,\nJai Bhavani Cargo Ltd`,
+      html: htmlContent,
+      label: `QR Pass for ${truck.truck_number}`
+    });
+    setMailOpen(true);
+  };
   
   const [filters, setFilters] = useState({ search: '', type: 'all', status: 'all', truck: 'all' });
   const [formData, setFormData] = useState({
@@ -408,6 +506,9 @@ const TruckDocsPage = () => {
                 <Eye className="w-3.5 h-3.5 mr-1" /> View
               </Button>
             )}
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-secondary rounded-lg text-blue-400" onClick={() => triggerEmailDoc(doc)} title="Email Document">
+              <Mail className="w-3.5 h-3.5" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-secondary rounded-lg" onClick={() => handleOpenForm(doc)}>
               <Edit2 className="w-3.5 h-3.5" />
             </Button>
@@ -685,7 +786,7 @@ const TruckDocsPage = () => {
                         <p className="text-sm font-bold text-foreground truncate">{truck.truck_number}</p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/40">
+                      <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-border/40">
                         <Button
                           variant="outline"
                           size="sm"
@@ -693,9 +794,18 @@ const TruckDocsPage = () => {
                             setSelectedQRStickerTruck(truck);
                             setIsQRStickerOpen(true);
                           }}
-                          className="rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold text-xs h-9"
+                          className="rounded-xl border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold text-[10px] h-9 px-1 truncate"
                         >
-                          <QrCode className="w-3.5 h-3.5 mr-1.5" /> Print QR Sticker
+                          <QrCode className="w-3.5 h-3.5 mr-1" /> QR Sticker
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => triggerEmailQR(truck)}
+                          className="rounded-xl border-blue-500/40 text-blue-400 hover:bg-blue-500/10 font-bold text-[10px] h-9 px-1 truncate"
+                        >
+                          <Mail className="w-3.5 h-3.5 mr-1" /> Email QR
                         </Button>
 
                         <Button
@@ -705,9 +815,9 @@ const TruckDocsPage = () => {
                             setSelectedScanAnalyticsTruck(truck);
                             setIsScanAnalyticsOpen(true);
                           }}
-                          className="rounded-xl border-border/60 text-foreground hover:bg-secondary font-bold text-xs h-9"
+                          className="rounded-xl border-border/60 text-foreground hover:bg-secondary font-bold text-[10px] h-9 px-1 truncate"
                         >
-                          <Eye className="w-3.5 h-3.5 mr-1.5" /> Scan Audit
+                          <Eye className="w-3.5 h-3.5 mr-1" /> Scan Audit
                         </Button>
                       </div>
                     </Card>
@@ -903,6 +1013,16 @@ const TruckDocsPage = () => {
         isOpen={isScanAnalyticsOpen}
         onClose={() => setIsScanAnalyticsOpen(false)}
         truck={selectedScanAnalyticsTruck}
+      />
+
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </div>
   );

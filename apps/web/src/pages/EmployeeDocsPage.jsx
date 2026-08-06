@@ -5,7 +5,7 @@ import {
   AlertCircle, LayoutGrid, List, Hash, CalendarDays, Clock,
   Fingerprint, FolderOpen, Folder, ChevronLeft, Truck,
   UserCog, Briefcase, Users, ShieldCheck, ArrowLeft,
-  BadgeCheck, File, Share2
+  BadgeCheck, File, Share2, Mail
 } from 'lucide-react';
 import { Button }       from '@/components/ui/button';
 import { Input }        from '@/components/ui/input';
@@ -22,6 +22,7 @@ import pb               from '@/lib/pocketbaseClient.js';
 import LoadingSpinner   from '@/components/LoadingSpinner.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
+import SendMailDialog   from '@/components/SendMailDialog.jsx';
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const ROLE_TABS = [
@@ -195,7 +196,7 @@ function EmployeeFolderCard({ employee, docs, onClick, onShare }) {
 }
 
 /* ─── Document Card (inside folder) ─────────────────────────────────────────── */
-function DocCard({ doc, onView, onEdit, onDelete }) {
+function DocCard({ doc, onView, onEdit, onDelete, onEmail }) {
   const typeColor = getDocTypeColor(doc.document_type);
   const status    = getStatusInfo(doc.expiry_date);
   const hasFile   = doc.file || (doc.files && doc.files.length > 0);
@@ -289,6 +290,9 @@ function DocCard({ doc, onView, onEdit, onDelete }) {
               <Eye className="w-3.5 h-3.5" />
             </button>
           )}
+          <button onClick={() => onEmail(doc)} title="Email Document" className="p-1.5 rounded-lg text-white/35 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
+            <Mail className="w-3.5 h-3.5" />
+          </button>
           <button onClick={() => onEdit(doc)} title="Edit" className="p-1.5 rounded-lg text-white/35 hover:text-amber-400 hover:bg-amber-500/10 transition-all">
             <Edit2 className="w-3.5 h-3.5" />
           </button>
@@ -333,6 +337,35 @@ export default function EmployeeDocsPage() {
   const [deletedFiles,   setDeletedFiles]   = useState([]);
   const [previewDoc,     setPreviewDoc]     = useState(null);
   const [shareConfig,    setShareConfig]    = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
+  const [mailOpen,       setMailOpen]       = useState(false);
+  const [mailData,       setMailData]       = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailDoc = (doc) => {
+    const emp = employees.find(e => e.id === doc.employee_id);
+    const empName = emp?.name || 'Employee';
+    const empEmail = emp?.email || '';
+    const expiry = doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const issued = doc.issue_date  ? new Date(doc.issue_date).toLocaleDateString('en-IN',  { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+    const html = `
+      <div style="font-family:sans-serif;max-width:540px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px">
+          <p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p>
+          <h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Employee Document</h2>
+        </div>
+        <div style="padding:20px 24px;background:#f8fafc">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Employee</td><td style="padding:8px 0;font-weight:700;color:#1e293b">${empName}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Document Type</td><td style="padding:8px 0;font-weight:700;color:#1e293b">${doc.document_type || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Document No.</td><td style="padding:8px 0;font-family:monospace;font-weight:700;color:#1e293b">${doc.document_number || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Issue Date</td><td style="padding:8px 0;color:#1e293b">${issued}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Expiry Date</td><td style="padding:8px 0;color:#e11d48;font-weight:700">${expiry}</td></tr>
+          </table>
+          ${doc.notes ? `<p style="margin-top:12px;padding:10px 14px;background:#f1f5f9;border-left:3px solid #6366f1;border-radius:4px;font-size:12px;color:#475569">${doc.notes}</p>` : ''}
+        </div>
+      </div>`;
+    setMailData({ recipient: empEmail, subject: `Employee Document – ${doc.document_type} | ${empName}`, body: `Please find the ${doc.document_type} details for ${empName} below.`, html, label: `Employee Doc – ${empName}` });
+    setMailOpen(true);
+  };
 
   /* ── Fetch ────────────────────────────────────────────────────────────────── */
   const fetchData = async () => {
@@ -733,7 +766,7 @@ export default function EmployeeDocsPage() {
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {folderDocs.map(doc => (
-                  <DocCard key={doc.id} doc={doc} onView={handlePreview} onEdit={handleOpenForm} onDelete={handleDelete} />
+                  <DocCard key={doc.id} doc={doc} onView={handlePreview} onEdit={handleOpenForm} onDelete={handleDelete} onEmail={triggerEmailDoc} />
                 ))}
               </div>
             ) : (
@@ -797,6 +830,7 @@ export default function EmployeeDocsPage() {
                                 {hasFile && (
                                   <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10 hover:text-primary" onClick={() => handlePreview(doc)}><Eye className="w-4 h-4" /></Button>
                                 )}
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:bg-blue-500/10" title="Email Document" onClick={() => triggerEmailDoc(doc)}><Mail className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-amber-500/10 hover:text-amber-500" onClick={() => handleOpenForm(doc)}><Edit2 className="w-4 h-4" /></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(doc.id)}><Trash2 className="w-4 h-4" /></Button>
                               </div>
@@ -859,6 +893,9 @@ export default function EmployeeDocsPage() {
                               <Eye className="w-3.5 h-3.5" /> View
                             </Button>
                           )}
+                          <Button variant="outline" size="sm" className="h-8 text-xs flex items-center gap-1 text-blue-400 border-blue-500/30 hover:bg-blue-500/10" onClick={() => triggerEmailDoc(doc)}>
+                            <Mail className="w-3.5 h-3.5" /> Email
+                          </Button>
                           <Button variant="outline" size="sm" className="h-8 text-xs flex items-center gap-1 hover:text-amber-400 hover:bg-amber-500/10" onClick={() => handleOpenForm(doc)}>
                             <Edit2 className="w-3.5 h-3.5" /> Edit
                           </Button>
@@ -1008,6 +1045,16 @@ export default function EmployeeDocsPage() {
         truckId={shareConfig.truckId}
         employeeId={shareConfig.employeeId}
         entityName={shareConfig.entityName}
+      />
+
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </div>
   );
