@@ -23,7 +23,8 @@ let zohoConfig = {
   isConnected: true
 };
 
-import pocketbaseClient from '../utils/pocketbaseClient.js';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 
 // Load persistent config from disk if available (fallback)
 try {
@@ -45,68 +46,86 @@ const saveZohoConfigToDisk = () => {
   } catch (e) {
     logger.error('Failed to write zoho_config_store.json:', e.message);
   }
-  // Also save to PocketBase for cross-deploy persistence
-  saveZohoConfigToPocketBase().catch(() => {});
+  // Also save to Supabase Storage for cross-deploy persistence
+  saveZohoConfigToSupabase().catch(() => {});
 };
 
-// PocketBase persistent config storage using existing pocketbaseClient
-const saveZohoConfigToPocketBase = async () => {
+// Supabase Storage persistent config storage
+const saveZohoConfigToSupabase = async () => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    logger.warn('Supabase URL or Key missing. Skipping Supabase Zoho config sync.');
+    return;
+  }
+
   try {
-    const configValue = JSON.stringify({
-      clientId: zohoConfig.clientId,
-      clientSecret: zohoConfig.clientSecret,
-      refreshToken: zohoConfig.refreshToken,
-      accessToken: zohoConfig.accessToken,
-      tokenExpiresAt: zohoConfig.tokenExpiresAt,
-      region: zohoConfig.region,
-      accountEmail: zohoConfig.accountEmail,
-      accountId: zohoConfig.accountId,
-      isConnected: zohoConfig.isConnected,
-      redirectUri: zohoConfig.redirectUri
+    const url = `${SUPABASE_URL}/storage/v1/object/backups/zoho_config_store.json`;
+    const payload = JSON.stringify(zohoConfig);
+
+    // Try to overwrite/upload using POST with upsert header
+    let response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: payload
     });
 
-    const existing = await pocketbaseClient.collection('app_settings').getList(1, 1, {
-      filter: `key = "zoho_mail_config"`
-    }).catch(() => ({ items: [] }));
-
-    if (existing.items && existing.items.length > 0) {
-      await pocketbaseClient.collection('app_settings').update(existing.items[0].id, {
-        key: 'zoho_mail_config', value: configValue
-      });
-    } else {
-      await pocketbaseClient.collection('app_settings').create({
-        key: 'zoho_mail_config', value: configValue
+    // If it fails (some supabase settings require PUT for update), try PUT
+    if (!response.ok) {
+      response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: payload
       });
     }
-    logger.info('Zoho config saved to PocketBase successfully!');
+
+    if (response.ok) {
+      logger.info('Zoho config saved to Supabase Storage successfully!');
+    } else {
+      logger.warn('Failed to upload Zoho config to Supabase:', response.statusText);
+    }
   } catch (e) {
-    logger.warn('Failed to save Zoho config to PocketBase:', e.message);
+    logger.warn('Failed to save Zoho config to Supabase:', e.message);
   }
 };
 
-// Load Zoho config from PocketBase on startup
-const loadZohoConfigFromPocketBase = async () => {
-  try {
-    // Wait a moment for PocketBase to initialize
-    await new Promise(r => setTimeout(r, 3000));
-    const existing = await pocketbaseClient.collection('app_settings').getList(1, 1, {
-      filter: `key = "zoho_mail_config"`
-    }).catch(() => ({ items: [] }));
+// Load Zoho config from Supabase Storage on startup
+const loadZohoConfigFromSupabase = async () => {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
 
-    if (existing.items && existing.items.length > 0) {
-      const saved = JSON.parse(existing.items[0].value);
+  try {
+    const url = `${SUPABASE_URL}/storage/v1/object/authenticated/backups/zoho_config_store.json`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+
+    if (response.ok) {
+      const saved = await response.json();
       if (saved && saved.refreshToken) {
         zohoConfig = { ...zohoConfig, ...saved };
-        logger.info(`Loaded Zoho config from PocketBase for ${zohoConfig.accountEmail} (hasRefreshToken: true)`);
+        logger.info(`Loaded Zoho config from Supabase Storage for ${zohoConfig.accountEmail} (hasRefreshToken: true)`);
+        // Also save locally so disk is in sync
+        fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(zohoConfig, null, 2), 'utf8');
       }
     }
   } catch (e) {
-    logger.warn('Failed to load Zoho config from PocketBase:', e.message);
+    logger.warn('Failed to load Zoho config from Supabase Storage:', e.message);
   }
 };
 
-// Load from PocketBase on startup
-loadZohoConfigFromPocketBase().catch(() => {});
+// Load from Supabase Storage on startup
+loadZohoConfigFromSupabase().catch(() => {});
 
 // Base URLs by Region
 const getZohoAccountsUrl = (region = 'com') => `https://accounts.zoho.${region}`;
