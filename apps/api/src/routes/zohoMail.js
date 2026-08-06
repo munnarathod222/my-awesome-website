@@ -756,7 +756,7 @@ router.get('/messages', async (req, res) => {
       if (search) {
         url = `${apiUrl}/accounts/${accountId}/messages/search?searchKey=${encodeURIComponent(search)}&limit=30`;
       } else {
-        url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(resolvedFolderId)}&limit=50&sortBy=date&order=desc`;
+        url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(resolvedFolderId)}&limit=50`;
       }
 
       const response = await fetch(url, {
