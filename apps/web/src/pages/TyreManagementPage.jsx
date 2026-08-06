@@ -326,7 +326,7 @@ export default function TyreManagementPage() {
     const tyreImage = tyre?.tyre_image 
       ? (Array.isArray(tyre.tyre_image) ? tyre.tyre_image[0] : tyre.tyre_image) 
       : null;
-    const imageUrl = tyreImage ? pb.files.getUrl(tyre, tyreImage, { thumb: '300x200' }) : null;
+    const imageUrl = tyreImage ? pb.files.getUrl(tyre, tyreImage, { thumb: '150x150' }) : null;
 
     // Calculate wear bar metrics
     const lifecycleKms = tyre?.current_lifecycle_kms || 0;
@@ -335,22 +335,20 @@ export default function TyreManagementPage() {
 
     // Dynamic Alert Badge Logic
     let statusText = tyre?.status || 'active';
-    let badgeStyle = "capitalize shadow-sm";
+    let badgeStyle = "capitalize text-[9px] px-2 py-0.5 font-bold";
     
     if (tyre?.status === 'active') {
       if (lifecycleKms >= TYRE_LIFECYCLE_THRESHOLD) {
-        statusText = "Replacement Recommended";
-        badgeStyle = "capitalize shadow-sm text-destructive border-destructive/30 bg-destructive/5 text-[10px] py-0.5 leading-none";
+        statusText = "Replace Rec.";
+        badgeStyle = "capitalize text-[9px] px-2 py-0.5 font-bold text-destructive border-destructive/30 bg-destructive/10";
       } else if (lifecycleKms >= 60000) {
         statusText = "Rotation Due";
-        badgeStyle = "capitalize shadow-sm text-yellow-600 dark:text-yellow-500 border-yellow-500/30 bg-yellow-500/5 text-[10px] py-0.5 leading-none";
+        badgeStyle = "capitalize text-[9px] px-2 py-0.5 font-bold text-amber-500 border-amber-500/30 bg-amber-500/10";
       } else {
-        badgeStyle = "capitalize shadow-sm text-[hsl(var(--success))] border-[hsl(var(--success))/30] bg-[hsl(var(--success))/5] text-[10px] py-0.5 leading-none";
+        badgeStyle = "capitalize text-[9px] px-2 py-0.5 font-bold text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
       }
     } else if (tyre?.status === 'damaged') {
-      badgeStyle = "capitalize shadow-sm text-destructive border-destructive/30 bg-destructive/5 text-[10px] py-0.5 leading-none";
-    } else if (tyre?.status === 'worn') {
-      badgeStyle = "capitalize shadow-sm text-warning border-warning/30 bg-warning/5 text-[10px] py-0.5 leading-none";
+      badgeStyle = "capitalize text-[9px] px-2 py-0.5 font-bold text-destructive border-destructive/30 bg-destructive/10";
     }
 
     return (
@@ -359,72 +357,96 @@ export default function TyreManagementPage() {
         onDragStart={(e) => handleDragStart(e, slot.id)}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => handleDrop(e, slot.id)}
-        className="overflow-hidden border-border/50 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full rounded-2xl bg-card cursor-grab active:cursor-grabbing"
+        className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-all rounded-2xl bg-card cursor-grab active:cursor-grabbing p-3 sm:p-3.5"
       >
         {tyre ? (
-          <>
+          <div className="flex items-center gap-3">
+            {/* Thumbnail / Image preview */}
             <div 
-              className="h-40 w-full bg-secondary/50 relative cursor-pointer group"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-secondary/40 shrink-0 overflow-hidden relative cursor-pointer group border border-border/50"
               onClick={() => handleSlotClick(slot.id)}
             >
               {imageUrl ? (
                 <img src={imageUrl} alt={tyre.tyre_brand} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-secondary">
-                  <span className="text-muted-foreground text-sm font-medium">No Image Provided</span>
+                <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/30 text-center p-1">
+                  <CircleDashed className="w-5 h-5 text-primary opacity-60" />
+                  <span className="text-[9px] font-bold text-muted-foreground mt-0.5">{slot.label.split(' ')[0]}</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                <span className="text-white font-medium bg-black/50 px-4 py-2 rounded-full text-sm">View Details</span>
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                <Eye className="w-4 h-4 text-white" />
               </div>
             </div>
-            <div className="p-5 flex-1 flex flex-col">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="text-[10px] text-primary font-bold uppercase tracking-wider mb-1">{slot.label}</p>
-                  <h4 className="font-semibold text-lg leading-tight text-foreground">{tyre.tyre_brand}</h4>
-                  <p className="text-sm text-muted-foreground font-medium">{tyre.model_no}</p>
-                </div>
+
+            {/* Middle Details */}
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] font-black text-primary uppercase tracking-wider truncate">{slot.label}</span>
                 <Badge variant="outline" className={badgeStyle}>
                   {statusText}
                 </Badge>
               </div>
 
-              {/* Visual Wear Bar */}
-              <div className="my-3 p-3 bg-secondary/20 rounded-xl border border-border/50">
-                <div className="flex justify-between items-center mb-1 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                  <span>Wear Usage</span>
-                  <span>{usagePercentage.toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${lifecycleKms >= TYRE_LIFECYCLE_THRESHOLD ? 'bg-destructive' : lifecycleKms >= 60000 ? 'bg-yellow-500' : 'bg-primary'}`} 
-                    style={{ width: `${usagePercentage}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-1 text-[9px] text-muted-foreground font-medium">
-                  <span>Run: {lifecycleKms.toLocaleString()} KM</span>
-                  <span>Limit: 80K KM</span>
-                </div>
+              <div className="flex items-baseline justify-between gap-1">
+                <h4 className="font-bold text-sm text-foreground truncate">{tyre.tyre_brand} <span className="text-xs font-normal text-muted-foreground">({tyre.model_no || 'STD'})</span></h4>
+                <span className="font-extrabold text-foreground text-sm font-mono shrink-0">{tyre.tyre_depth_mm}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">mm</span></span>
               </div>
 
-              <div className="mt-auto pt-4 border-t border-border/50 flex justify-between items-center">
-                <span className="font-mono text-xs bg-muted px-2 py-1 rounded text-muted-foreground">{tyre.serial_number}</span>
-                <span className="font-bold text-foreground text-lg tracking-tight">{tyre.tyre_depth_mm}<span className="text-xs text-muted-foreground font-normal ml-0.5">mm</span></span>
+              <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+                <span className="truncate">SN: {tyre.serial_number}</span>
+                <span className="font-bold shrink-0">{lifecycleKms.toLocaleString()} KM</span>
+              </div>
+
+              {/* Progress Wear Line */}
+              <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden mt-1">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${lifecycleKms >= TYRE_LIFECYCLE_THRESHOLD ? 'bg-destructive' : lifecycleKms >= 60000 ? 'bg-amber-500' : 'bg-primary'}`} 
+                  style={{ width: `${usagePercentage}%` }}
+                />
               </div>
             </div>
-          </>
+
+            {/* Right Side Quick Action Buttons */}
+            <div className="flex flex-col gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEditTyre(tyre)}
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10"
+                title="Edit Tyre"
+              >
+                <FileText className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteTyre(tyre.id)}
+                className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
+                title="Delete Tyre"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
         ) : (
+          /* Empty Slot Compact Button */
           <div 
-            className="h-full min-h-[260px] flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-muted/30 transition-colors group"
+            className="flex items-center justify-between p-1.5 px-3 cursor-pointer hover:bg-muted/20 transition-colors group rounded-xl border border-dashed border-border/60"
             onClick={() => handleSlotClick(slot.id)}
           >
-            <div className="w-14 h-14 rounded-full bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center mb-4 transition-colors">
-              <Plus className="w-7 h-7 text-primary opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{slot.label}</p>
+                <p className="text-xs font-semibold text-muted-foreground">Empty Position</p>
+              </div>
             </div>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{slot.label}</p>
-            <p className="text-lg font-semibold text-foreground mb-4">Empty Position</p>
-            <Button variant="outline" size="sm" className="rounded-xl pointer-events-none">Add Tyre</Button>
+            <Button variant="outline" size="sm" className="rounded-xl text-[11px] font-bold h-7 px-2.5 pointer-events-none">
+              + Add Tyre
+            </Button>
           </div>
         )}
       </Card>
