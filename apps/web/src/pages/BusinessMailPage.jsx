@@ -180,8 +180,9 @@ export default function BusinessMailPage() {
     clientId: '',
     clientSecret: '',
     redirectUri: 'https://www.jaibhavanicargo.com/api/zoho/oauth/callback',
-    region: 'com',
-    accountEmail: 'vinod.jbcargo@gmail.com'
+    region: 'in',
+    accountEmail: 'vinod.jbcargo@gmail.com',
+    smtpPass: ''
   });
 
   const handleExchangeGrantCode = async () => {
@@ -1218,6 +1219,32 @@ export default function BusinessMailPage() {
                 placeholder="••••••••••••"
                 className="bg-slate-900 border-slate-800 text-white rounded-xl font-mono"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300 font-bold">Zoho Region</Label>
+              <Select value={oauthConfig.region || 'in'} onValueChange={val => setOauthConfig(p => ({ ...p, region: val }))}>
+                <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl font-bold">
+                  <SelectValue placeholder="Select Region" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                  <SelectItem value="in">🇮🇳 India (zoho.in)</SelectItem>
+                  <SelectItem value="com">🌐 Global / US (zoho.com)</SelectItem>
+                  <SelectItem value="eu">🇪🇺 Europe (zoho.eu)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300 font-bold">Zoho App Password / SMTP Password (Direct Mail Sending)</Label>
+              <Input
+                type="password"
+                value={oauthConfig.smtpPass || ''}
+                onChange={e => setOauthConfig(p => ({ ...p, smtpPass: e.target.value }))}
+                placeholder="Enter 16-character App Password from Zoho Accounts..."
+                className="bg-slate-900 border-slate-800 text-white rounded-xl font-mono"
+              />
+              <p className="text-[10px] text-slate-400">Generate App Password at: <a href="https://accounts.zoho.in/u/h#setting/security/app-password" target="_blank" rel="noreferrer" className="text-blue-400 underline">Zoho Security Settings &rarr; App Passwords</a></p>
             </div>
 
             <div className="space-y-1.5">

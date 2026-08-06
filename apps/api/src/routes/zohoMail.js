@@ -87,12 +87,15 @@ const formatClientId = (id = '') => {
  * Update OAuth credentials & setup
  */
 router.post('/config', (req, res) => {
-  const { clientId, clientSecret, redirectUri, region, accountEmail } = req.body;
+  const { clientId, clientSecret, redirectUri, region, accountEmail, smtpHost, smtpPort, smtpPass } = req.body;
   if (clientId) zohoConfig.clientId = formatClientId(clientId);
   if (clientSecret) zohoConfig.clientSecret = clientSecret.trim();
   if (redirectUri) zohoConfig.redirectUri = redirectUri.trim();
   if (region) zohoConfig.region = region.trim();
   if (accountEmail) zohoConfig.accountEmail = accountEmail.trim();
+  if (smtpHost) zohoConfig.smtpHost = smtpHost.trim();
+  if (smtpPort) zohoConfig.smtpPort = String(smtpPort).trim();
+  if (smtpPass) zohoConfig.smtpPass = smtpPass.trim();
 
   zohoConfig.isConnected = true;
   zohoConfig.tokenExpiresAt = Date.now() + 86400 * 365 * 1000; // 1 year active
@@ -623,12 +626,15 @@ router.post('/send', async (req, res) => {
     logger.warn('Zoho Mail API send failed, falling back to Nodemailer SMTP:', err.message);
   }
 
-  // Fallback SMTP Sender
+  // Fallback SMTP Sender (Supports Zoho SMTP smtppro.zoho.in / smtppro.zoho.com & Hostinger / Custom SMTP)
   try {
-    const smtpHost = process.env.MAIL_HOST || 'smtp.hostinger.com';
-    const smtpPort = parseInt(process.env.MAIL_PORT || '465');
-    const smtpUser = process.env.MAIL_USER || zohoConfig.accountEmail;
-    const smtpPass = process.env.MAIL_PASS || '';
+    const region = (zohoConfig.region || 'in').toLowerCase();
+    const defaultZohoHost = region === 'in' ? 'smtppro.zoho.in' : 'smtppro.zoho.com';
+
+    const smtpHost = process.env.MAIL_HOST || zohoConfig.smtpHost || defaultZohoHost;
+    const smtpPort = parseInt(process.env.MAIL_PORT || zohoConfig.smtpPort || '465');
+    const smtpUser = process.env.MAIL_USER || zohoConfig.accountEmail || 'vinod.jbcargo@gmail.com';
+    const smtpPass = process.env.MAIL_PASS || zohoConfig.smtpPass || zohoConfig.clientSecret || '';
 
     if (smtpUser && smtpPass) {
       const transporter = nodemailer.createTransport({
@@ -638,7 +644,7 @@ router.post('/send', async (req, res) => {
         auth: { user: smtpUser, pass: smtpPass }
       });
 
-      await transporter.sendMail({
+      const sendInfo = await transporter.sendMail({
         from: `"Jai Bhavani Cargo" <${smtpUser}>`,
         to,
         cc,
@@ -647,10 +653,11 @@ router.post('/send', async (req, res) => {
         html: body
       });
 
-      return res.json({ success: true, source: 'smtp_fallback', message: 'Email sent via SMTP server' });
+      logger.info(`Mail sent successfully via SMTP (${smtpHost}) to ${to}. MessageId: ${sendInfo.messageId}`);
+      return res.json({ success: true, source: 'smtp_live', message: `Email delivered successfully to ${to}` });
     }
   } catch (err) {
-    logger.error('SMTP send error:', err);
+    logger.error('SMTP send error:', err.message);
   }
 
   // Simulated successful send response
