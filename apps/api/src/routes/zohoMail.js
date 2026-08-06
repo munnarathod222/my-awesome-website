@@ -23,7 +23,9 @@ let zohoConfig = {
   isConnected: true
 };
 
-// Load persistent config from disk if available
+import pocketbaseClient from '../utils/pocketbaseClient.js';
+
+// Load persistent config from disk if available (fallback)
 try {
   if (fs.existsSync(CONFIG_FILE_PATH)) {
     const raw = fs.readFileSync(CONFIG_FILE_PATH, 'utf8');
@@ -43,7 +45,68 @@ const saveZohoConfigToDisk = () => {
   } catch (e) {
     logger.error('Failed to write zoho_config_store.json:', e.message);
   }
+  // Also save to PocketBase for cross-deploy persistence
+  saveZohoConfigToPocketBase().catch(() => {});
 };
+
+// PocketBase persistent config storage using existing pocketbaseClient
+const saveZohoConfigToPocketBase = async () => {
+  try {
+    const configValue = JSON.stringify({
+      clientId: zohoConfig.clientId,
+      clientSecret: zohoConfig.clientSecret,
+      refreshToken: zohoConfig.refreshToken,
+      accessToken: zohoConfig.accessToken,
+      tokenExpiresAt: zohoConfig.tokenExpiresAt,
+      region: zohoConfig.region,
+      accountEmail: zohoConfig.accountEmail,
+      accountId: zohoConfig.accountId,
+      isConnected: zohoConfig.isConnected,
+      redirectUri: zohoConfig.redirectUri
+    });
+
+    const existing = await pocketbaseClient.collection('app_settings').getList(1, 1, {
+      filter: `key = "zoho_mail_config"`
+    }).catch(() => ({ items: [] }));
+
+    if (existing.items && existing.items.length > 0) {
+      await pocketbaseClient.collection('app_settings').update(existing.items[0].id, {
+        key: 'zoho_mail_config', value: configValue
+      });
+    } else {
+      await pocketbaseClient.collection('app_settings').create({
+        key: 'zoho_mail_config', value: configValue
+      });
+    }
+    logger.info('Zoho config saved to PocketBase successfully!');
+  } catch (e) {
+    logger.warn('Failed to save Zoho config to PocketBase:', e.message);
+  }
+};
+
+// Load Zoho config from PocketBase on startup
+const loadZohoConfigFromPocketBase = async () => {
+  try {
+    // Wait a moment for PocketBase to initialize
+    await new Promise(r => setTimeout(r, 3000));
+    const existing = await pocketbaseClient.collection('app_settings').getList(1, 1, {
+      filter: `key = "zoho_mail_config"`
+    }).catch(() => ({ items: [] }));
+
+    if (existing.items && existing.items.length > 0) {
+      const saved = JSON.parse(existing.items[0].value);
+      if (saved && saved.refreshToken) {
+        zohoConfig = { ...zohoConfig, ...saved };
+        logger.info(`Loaded Zoho config from PocketBase for ${zohoConfig.accountEmail} (hasRefreshToken: true)`);
+      }
+    }
+  } catch (e) {
+    logger.warn('Failed to load Zoho config from PocketBase:', e.message);
+  }
+};
+
+// Load from PocketBase on startup
+loadZohoConfigFromPocketBase().catch(() => {});
 
 // Base URLs by Region
 const getZohoAccountsUrl = (region = 'com') => `https://accounts.zoho.${region}`;
