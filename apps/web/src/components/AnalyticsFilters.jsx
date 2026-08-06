@@ -37,111 +37,84 @@ const AnalyticsFilters = ({ filters, setFilters, onApply, onReset }) => {
   };
 
   return (
-    <div className="bg-card border border-border/50 rounded-2xl p-4 sm:p-5 shadow-lg mb-8 space-y-4">
-      {/* Top Quick Presets Bar */}
-      <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-border/30">
-        <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 mr-1">
-          <Sparkles className="w-3.5 h-3.5 text-primary" /> Quick Range:
-        </span>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handlePreset('this_month')}
-          className="rounded-xl text-xs h-7 px-3 font-semibold hover:border-primary"
-        >
-          This Month
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handlePreset('last_month')}
-          className="rounded-xl text-xs h-7 px-3 font-semibold hover:border-primary"
-        >
-          Last Month
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handlePreset('last_3_months')}
-          className="rounded-xl text-xs h-7 px-3 font-semibold hover:border-primary"
-        >
-          Last 3 Months
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handlePreset('fy_25_26')}
-          className="rounded-xl text-xs h-7 px-3 font-semibold hover:border-primary"
-        >
-          FY 2025-26
-        </Button>
-        <Button 
-          type="button" 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => handlePreset('all')}
-          className="rounded-xl text-xs h-7 px-3 font-bold text-primary hover:bg-primary/10"
-        >
-          All Time
-        </Button>
-      </div>
-
-      {/* Main Filter Inputs Row */}
-      <div className="flex flex-col md:flex-row gap-4 items-end">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 w-full">
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Start Date</label>
-            <Input 
-              type="date" 
-              value={filters.startDate} 
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="bg-background/80 rounded-xl h-10 text-xs font-medium"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">End Date</label>
-            <Input 
-              type="date" 
-              value={filters.endDate} 
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="bg-background/80 rounded-xl h-10 text-xs font-medium"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Aggregation</label>
-            <Select 
-              value={filters.period} 
-              onValueChange={(val) => setFilters({ ...filters, period: val })}
-            >
-              <SelectTrigger className="bg-background/80 rounded-xl h-10 text-xs font-bold">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly View</SelectItem>
-                <SelectItem value="quarterly">Quarterly Breakdown</SelectItem>
-                <SelectItem value="annual">Annual Financial Summary</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="bg-slate-900/65 backdrop-blur-md border border-slate-800/80 rounded-2xl p-2.5 px-4 shadow-md mb-5 flex flex-wrap items-center gap-4 text-xs font-sans">
+      <div className="flex flex-wrap items-center gap-3.5 flex-1 min-w-[280px]">
+        {/* Start Date */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">Start</span>
+          <Input 
+            type="date" 
+            value={filters.startDate} 
+            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+            className="bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-medium w-[125px] px-2.5 py-0 text-white"
+          />
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto shrink-0">
+        {/* End Date */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">End</span>
+          <Input 
+            type="date" 
+            value={filters.endDate} 
+            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+            className="bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-medium w-[125px] px-2.5 py-0 text-white"
+          />
+        </div>
+
+        {/* Aggregation */}
+        <div className="flex items-center gap-2 min-w-[130px] shrink-0">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">View</span>
+          <Select 
+            value={filters.period} 
+            onValueChange={(val) => setFilters({ ...filters, period: val })}
+          >
+            <SelectTrigger className="bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-bold py-0 text-slate-200">
+              <SelectValue placeholder="Period" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+              <SelectItem value="monthly">Monthly View</SelectItem>
+              <SelectItem value="quarterly">Quarterly Breakdown</SelectItem>
+              <SelectItem value="annual">Annual Summary</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+        {/* Quick Presets Dropdown */}
+        <div className="flex items-center gap-2 min-w-[140px] shrink-0">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-amber-400" /> Range
+          </span>
+          <Select 
+            onValueChange={handlePreset}
+          >
+            <SelectTrigger className="bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-black py-0 text-amber-300">
+              <SelectValue placeholder="Quick Range" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+              <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="last_month">Last Month</SelectItem>
+              <SelectItem value="last_3_months">Last 3 Months</SelectItem>
+              <SelectItem value="fy_25_26">FY 2025-26</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
           <Button 
             variant="outline" 
             onClick={onReset} 
-            className="flex-1 md:flex-none rounded-xl h-10 text-xs font-bold border-border/50 hover:bg-muted"
+            className="rounded-xl h-8 text-[11px] font-bold border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3"
           >
-            <RefreshCcw className="w-3.5 h-3.5 mr-1.5" /> Reset
+            <RefreshCcw className="w-3 h-3 mr-1 text-slate-400" /> Reset
           </Button>
           <Button 
             onClick={onApply} 
-            className="flex-1 md:flex-none rounded-xl h-10 text-xs font-extrabold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md gap-1.5"
+            className="rounded-xl h-8 text-[11px] font-extrabold bg-blue-600 hover:bg-blue-500 text-white shadow-sm gap-1 px-3.5"
           >
-            <Filter className="w-3.5 h-3.5" /> Apply Filters
+            <Filter className="w-3 h-3" /> Apply
           </Button>
         </div>
       </div>
