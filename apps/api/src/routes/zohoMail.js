@@ -125,54 +125,68 @@ router.post('/quick-activate', (req, res) => {
  * Exchange a Grant Code / Self Client token for access & refresh tokens
  */
 router.post('/oauth/exchange-code', async (req, res) => {
-  const { code, clientId, clientSecret, region = 'com' } = req.body;
-  const cId = clientId || zohoConfig.clientId;
-  const cSecret = clientSecret || zohoConfig.clientSecret;
+  const { code, clientId, clientSecret, region = 'in' } = req.body;
+  const cId = formatClientId(clientId || zohoConfig.clientId);
+  const cSecret = (clientSecret || zohoConfig.clientSecret || '').trim();
 
   if (!code) {
     return res.status(400).json({ error: 'Grant token code is required' });
   }
 
-  try {
-    const accountsUrl = getZohoAccountsUrl(region);
-    const params = new URLSearchParams();
-    params.append('code', code);
-    params.append('client_id', cId);
-    params.append('client_secret', cSecret);
-    params.append('grant_type', 'authorization_code');
-    if (zohoConfig.redirectUri) params.append('redirect_uri', zohoConfig.redirectUri);
+  const regionsToTry = Array.from(new Set([region, 'in', 'com', 'eu'])).filter(Boolean);
+  let lastErrorData = null;
 
-    let response = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: params });
-    let data = await response.json();
+  for (const reg of regionsToTry) {
+    try {
+      const accountsUrl = getZohoAccountsUrl(reg);
 
-    // Fallback: If invalid_redirect_uri error occurs, retry without redirect_uri (Self Client mode)
-    if (!data.access_token && (data.error === 'invalid_redirect_uri' || data.error === 'invalid_client')) {
-      const paramsNoRedirect = new URLSearchParams();
-      paramsNoRedirect.append('code', code);
-      paramsNoRedirect.append('client_id', cId);
-      paramsNoRedirect.append('client_secret', cSecret);
-      paramsNoRedirect.append('grant_type', 'authorization_code');
+      // Attempt 1: With redirect_uri
+      const params = new URLSearchParams();
+      params.append('code', code.trim());
+      params.append('client_id', cId);
+      params.append('client_secret', cSecret);
+      params.append('grant_type', 'authorization_code');
+      if (zohoConfig.redirectUri) params.append('redirect_uri', zohoConfig.redirectUri);
 
-      const response2 = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: paramsNoRedirect });
-      const data2 = await response2.json();
-      if (data2.access_token) {
-        data = data2;
+      let response = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: params });
+      let data = await response.json();
+
+      // Attempt 2: Without redirect_uri (Self Client mode)
+      if (!data.access_token) {
+        const paramsNoRedirect = new URLSearchParams();
+        paramsNoRedirect.append('code', code.trim());
+        paramsNoRedirect.append('client_id', cId);
+        paramsNoRedirect.append('client_secret', cSecret);
+        paramsNoRedirect.append('grant_type', 'authorization_code');
+
+        const response2 = await fetch(`${accountsUrl}/oauth/v2/token`, { method: 'POST', body: paramsNoRedirect });
+        const data2 = await response2.json();
+        if (data2.access_token) data = data2;
       }
+
+      if (data.access_token) {
+        zohoConfig.clientId = cId;
+        zohoConfig.clientSecret = cSecret;
+        zohoConfig.region = reg;
+        zohoConfig.accessToken = data.access_token;
+        if (data.refresh_token) zohoConfig.refreshToken = data.refresh_token;
+        zohoConfig.tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
+        zohoConfig.isConnected = true;
+
+        saveZohoConfigToDisk();
+
+        logger.info(`Successfully exchanged Zoho Grant Code for tokens in region ${reg}!`);
+        return res.json({ success: true, message: `Successfully connected to Zoho Mail API (${reg.toUpperCase()})!`, accountEmail: zohoConfig.accountEmail });
+      } else {
+        lastErrorData = data;
+      }
+    } catch (e) {
+      logger.warn(`Grant code exchange failed for region ${reg}:`, e.message);
     }
+  }
 
-    if (data.access_token) {
-      zohoConfig.clientId = cId;
-      zohoConfig.clientSecret = cSecret;
-      zohoConfig.accessToken = data.access_token;
-      if (data.refresh_token) zohoConfig.refreshToken = data.refresh_token;
-      zohoConfig.tokenExpiresAt = Date.now() + (data.expires_in || 3600) * 1000;
-      zohoConfig.isConnected = true;
-
-      saveZohoConfigToDisk();
-
-      logger.info('Successfully exchanged Zoho Grant Code for tokens!');
-      return res.json({ success: true, message: 'Successfully connected to Zoho Mail API!', accountEmail: zohoConfig.accountEmail });
-    } else {
+  return res.status(400).json({ error: lastErrorData?.error || 'Failed to exchange Grant Code with Zoho. Make sure Client ID, Secret, and Code are fresh.', details: lastErrorData });
+});
       logger.error('Grant code exchange error from Zoho:', data);
       return res.status(400).json({ error: data.error || 'Failed to exchange grant code with Zoho.', details: data });
     }
