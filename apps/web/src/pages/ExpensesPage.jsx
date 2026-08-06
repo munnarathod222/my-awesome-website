@@ -589,7 +589,12 @@ const ExpensesPage = () => {
 
     // 3. Driver Advance
     const unlinkedExpAdvance = targetExpenses
-      .filter(e => e.category === 'Employee Advance' || e.subcategory === 'Driver Advance' || e.subcategory === 'Employee Advance' || (e.category === 'Employee' && e.subcategory === 'Employee Advance'))
+      .filter(e => {
+        const cat = (e.category || '').toLowerCase();
+        const sub = (e.subcategory || '').toLowerCase();
+        const desc = (e.description || '').toLowerCase();
+        return cat.includes('advance') || sub.includes('advance') || (cat.includes('employee') && (sub.includes('advance') || desc.includes('advance')));
+      })
       .filter(e => !targetAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
