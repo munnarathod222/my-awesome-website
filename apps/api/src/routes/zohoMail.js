@@ -583,6 +583,43 @@ Phone: +91 7794072244`
 ];
 
 /**
+ * GET /api/zoho/debug-messages
+ * Debug messages fetch helper
+ */
+router.get('/debug-messages', async (req, res) => {
+  try {
+    const token = await ensureAccessToken();
+    const accountId = await getZohoAccountId(token);
+    const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+    
+    // Resolve folder
+    const resolvedFolderId = await resolveZohoFolderId(token, accountId, 'INBOX');
+    
+    const url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(resolvedFolderId)}&limit=5`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+    });
+    const data = await response.json();
+    
+    return res.json({
+      success: true,
+      token: token ? (token.substring(0, 15) + '...') : null,
+      accountId,
+      resolvedFolderId,
+      url,
+      status: response.status,
+      data
+    });
+  } catch (err) {
+    return res.json({
+      success: false,
+      error: err.message,
+      stack: err.stack
+    });
+  }
+});
+
+/**
  * GET /api/zoho/folders
  * Fetch mail folders from Zoho Mail API (or fall back to simulated structure)
  */
