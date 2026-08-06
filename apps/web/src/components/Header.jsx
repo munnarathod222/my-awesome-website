@@ -134,6 +134,30 @@ export default function Header() {
     }).then(r => setPendingCount(r.totalItems)).catch(() => {});
   }, [isAdmin, isSuperAdmin]);
 
+  const [unreadEmails, setUnreadEmails] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const res = await apiServerClient.fetch('/zoho/unread-count');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setUnreadEmails(Number(data.unreadCount) || 0);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch Zoho unread count:', err);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   const userRole = (currentUser?.role || 'user').toLowerCase();
   const hasRoleAccess = (roles) => {
     if (!roles || roles.length === 0) return true;
@@ -333,6 +357,21 @@ export default function Header() {
                   </button>
                 )}
 
+                {isAuthenticated && (
+                  <button
+                    onClick={() => navigate('/business-mail')}
+                    className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-foreground"
+                    title="Business Mail"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                    {unreadEmails > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
+                        {unreadEmails > 9 ? '9+' : unreadEmails}
+                      </span>
+                    )}
+                  </button>
+                )}
+
                 <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                   <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center text-primary text-[9px] font-black shrink-0">
                     {userInitials}
@@ -461,6 +500,20 @@ export default function Header() {
             </>
           )}
           <LangSelector compact={true} language={language} setLanguage={setLanguage} />
+          {isAuthenticated && (
+            <button
+              onClick={() => navigate('/business-mail')}
+              className="relative w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground"
+              title="Business Mail"
+            >
+              <Mail className="w-3.5 h-3.5 text-slate-400" />
+              {unreadEmails > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
+                  {unreadEmails > 9 ? '9+' : unreadEmails}
+                </span>
+              )}
+            </button>
+          )}
           {isAuthenticated && (
             <button
               onClick={handleLogout}

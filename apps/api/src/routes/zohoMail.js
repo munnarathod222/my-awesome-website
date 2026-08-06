@@ -156,6 +156,37 @@ router.get('/status', (req, res) => {
   });
 });
 
+/**
+ * GET /api/zoho/unread-count
+ * Get count of unread messages in Inbox
+ */
+router.get('/unread-count', async (req, res) => {
+  try {
+    const token = await ensureAccessToken();
+    if (token) {
+      const accountId = await getZohoAccountId(token);
+      const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+      
+      // Resolve inbox folder ID
+      const resolvedFolderId = await resolveZohoFolderId(token, accountId, 'INBOX');
+      if (resolvedFolderId) {
+        const url = `${apiUrl}/accounts/${accountId}/folders/${resolvedFolderId}`;
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+        });
+        const data = await response.json();
+        if (data.data) {
+          const count = Number(data.data.unreadCount || data.data.unread_count) || 0;
+          return res.json({ success: true, unreadCount: count });
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('Failed to fetch Zoho unread count:', err.message);
+  }
+  return res.json({ success: true, unreadCount: 0 });
+});
+
 // Helper to sanitize Client IDs (auto inserts missing dot after 1000 if omitted)
 const formatClientId = (id = '') => {
   let clean = (id || '').trim();
