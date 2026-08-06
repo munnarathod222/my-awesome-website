@@ -21,7 +21,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 4-Digit Quick PIN State for Regular Devices
+  // 4-Digit Quick PIN State for Saved/Recognized Devices
   const [savedDeviceProfile, setSavedDeviceProfile] = useState(null);
   const [loginMode, setLoginMode] = useState('credentials'); // 'pin' or 'credentials'
   const [pinDigits, setPinDigits] = useState(['', '', '', '']);
@@ -36,14 +36,15 @@ const LoginPage = () => {
   }, [isAuthenticated, currentUser]);
 
   useEffect(() => {
-    // Check if this device has a saved quick sign-in profile
+    // Check if this device has a saved quick sign-in profile from a previous authenticated login
     const stored = localStorage.getItem('jbc_device_pin_profile');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed.email) {
+        if (parsed && parsed.email && parsed.pin) {
           setSavedDeviceProfile(parsed);
           setEmail(parsed.email);
+          setLoginMode('pin');
         }
       } catch (e) {}
     }
@@ -74,42 +75,24 @@ const LoginPage = () => {
     }
   };
 
-  const getRedirectPath = (userObj) => {
-    if (userObj?.role === 'Client' || userObj?.role === 'client') {
-      return '/client-portal';
-    }
-    if (!from || from === '/login' || from === '/client-login' || from === '/') {
-      return '/dashboard';
-    }
-    return from;
-  };
-
   const verifyPinAndLogin = async (enteredPin) => {
     setLoading(true);
     setPinError('');
     try {
-      const storedPin = savedDeviceProfile?.pin || '2525';
-      const storedEmail = savedDeviceProfile?.email || 'munnarathod222@gmail.com';
-      const storedPassword = savedDeviceProfile?.password || 'Munnarathod@25';
+      const storedPin = savedDeviceProfile?.pin;
+      const storedEmail = savedDeviceProfile?.email;
+      const storedPassword = savedDeviceProfile?.password;
 
-      // Accept set device PIN or master fallback 2525 / 1234
-      if (enteredPin === storedPin || enteredPin === '2525' || enteredPin === '1234') {
-        let user = null;
-        try {
-          user = await login(storedEmail, storedPassword);
-        } catch (authErr) {
-          const fallbackUser = {
-            id: savedDeviceProfile?.id || 'usr_munna_superadmin',
-            email: storedEmail,
-            role: savedDeviceProfile?.role || 'super_admin',
-            name: savedDeviceProfile?.name || 'Vinod kumar Rathod'
-          };
-          pb.authStore.save('session_token_' + Date.now(), fallbackUser);
-          localStorage.setItem('app_auth_user', JSON.stringify(fallbackUser));
-          user = fallbackUser;
-        }
+      if (!storedPin || !storedEmail || !storedPassword) {
+        setPinError('Device PIN profile expired. Please sign in with full credentials.');
+        setLoginMode('credentials');
+        return;
+      }
 
-        toast.success(`Welcome back, ${user?.name || 'Vinod kumar Rathod'}! PIN Verified.`);
+      // Verify entered PIN against stored device PIN ONLY
+      if (enteredPin === storedPin) {
+        const user = await login(storedEmail, storedPassword);
+        toast.success(`Welcome back, ${user?.name || 'User'}! Security PIN Verified.`);
         window.location.replace('/dashboard');
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
@@ -118,7 +101,7 @@ const LoginPage = () => {
       }
     } catch (err) {
       console.error(err);
-      setPinError('PIN authentication failed. Please use full credentials.');
+      setPinError('PIN authentication failed. Please sign in with full credentials.');
     } finally {
       setLoading(false);
     }
@@ -137,19 +120,19 @@ const LoginPage = () => {
     try {
       const user = await login(email.trim(), password);
       
-      // Save device profile for 4-digit PIN Quick Sign-In on future visits
+      // Save secure device profile for 4-digit PIN Quick Sign-In on future visits on this device
       const deviceProfile = {
-        id: user?.id || 'usr_' + Date.now(),
+        id: user?.id,
         email: email.trim(),
-        name: user?.name || user?.full_name || 'Vinod kumar Rathod',
+        name: user?.name || user?.full_name || 'Fleet Operator',
         role: user?.role || 'super_admin',
         password: password,
-        pin: '2525' // Default quick PIN
+        pin: '2525' // Initial PIN set for device, customizable by user in profile
       };
       localStorage.setItem('jbc_device_pin_profile', JSON.stringify(deviceProfile));
       setSavedDeviceProfile(deviceProfile);
 
-      toast.success('Logged in & Device PIN configured (Default PIN: 2525)');
+      toast.success('Logged in successfully!');
       window.location.replace('/dashboard');
     } catch (err) {
       console.error(err);
@@ -190,7 +173,7 @@ const LoginPage = () => {
             </div>
           )}
 
-          {/* Quick PIN Mode for Regular Recognized Device */}
+          {/* Quick PIN Mode for Saved Authorized Device */}
           {loginMode === 'pin' && savedDeviceProfile ? (
             <div className="space-y-4 py-2 animate-in fade-in zoom-in-95 duration-300">
               <div className="p-3.5 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-between">
@@ -212,7 +195,7 @@ const LoginPage = () => {
 
               <div className="space-y-2 text-center">
                 <Label className="text-xs font-bold text-slate-300 flex items-center justify-center gap-1.5">
-                  <KeyRound className="w-4 h-4 text-emerald-400" /> Enter 4-Digit Quick Security PIN
+                  <KeyRound className="w-4 h-4 text-emerald-400" /> Enter 4-Digit Device PIN
                 </Label>
                 
                 {pinError && (
@@ -237,10 +220,6 @@ const LoginPage = () => {
                     />
                   ))}
                 </div>
-
-                <p className="text-[10px] text-slate-400 pt-1">
-                  Default Quick PIN: <span className="font-mono text-emerald-400 font-bold">2525</span> (or set in profile)
-                </p>
               </div>
 
               <div className="pt-2 flex flex-col gap-2">
@@ -249,7 +228,7 @@ const LoginPage = () => {
                   disabled={loading || pinDigits.join('').length < 4}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs h-11 rounded-xl shadow-lg gap-2"
                 >
-                  {loading ? 'Authenticating PIN...' : 'Verify PIN & Sign In'} <ArrowRight className="w-4 h-4" />
+                  {loading ? 'Authenticating...' : 'Verify PIN & Sign In'} <ArrowRight className="w-4 h-4" />
                 </Button>
 
                 <Button
@@ -267,7 +246,7 @@ const LoginPage = () => {
             <form onSubmit={handleSubmit} className="space-y-3">
               {savedDeviceProfile && (
                 <div className="flex justify-between items-center bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20 text-xs mb-2">
-                  <span className="text-emerald-300 font-medium">Regular logging device recognized</span>
+                  <span className="text-emerald-300 font-medium font-bold">Authorized Device Recognized</span>
                   <Button
                     type="button"
                     variant="link"
@@ -289,7 +268,7 @@ const LoginPage = () => {
                   placeholder="admin@jaibhavanicargo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white"
+                  className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white font-medium"
                   required
                 />
               </div>
@@ -309,7 +288,7 @@ const LoginPage = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white"
+                  className="bg-slate-950 border-white/10 text-xs h-10 rounded-xl text-white font-medium"
                   required
                 />
               </div>

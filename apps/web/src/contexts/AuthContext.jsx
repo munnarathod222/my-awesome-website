@@ -3,20 +3,37 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 
 const AuthContext = createContext(null);
+const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 Hours strict session expiration
 
 const getStoredUser = () => {
   try {
-    if (pb.authStore.model) {
+    // 1. Check PocketBase authStore first
+    if (pb.authStore.isValid && pb.authStore.model) {
       return pb.authStore.model;
     }
+
+    // 2. Check localStorage backup with strict session expiration check
     const saved = localStorage.getItem('app_auth_user');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && (parsed.id || parsed.email)) {
-        return parsed;
+    const savedTimestamp = localStorage.getItem('app_session_timestamp');
+
+    if (saved && savedTimestamp) {
+      const age = Date.now() - parseInt(savedTimestamp, 10);
+      if (age < SESSION_MAX_AGE_MS) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.id || parsed.email)) {
+          return parsed;
+        }
+      } else {
+        // Expired session - purge storage
+        console.warn('[AuthContext] Session expired due to max age limit (8h). Purging.');
+        localStorage.removeItem('app_auth_user');
+        localStorage.removeItem('app_session_timestamp');
+        pb.authStore.clear();
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[AuthContext] getStoredUser error:', e);
+  }
   return null;
 };
 
@@ -54,6 +71,8 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('app_auth_user', JSON.stringify(storedUser));
         } else {
           setCurrentUser(null);
+          localStorage.removeItem('app_auth_user');
+          localStorage.removeItem('app_session_timestamp');
         }
       } catch (err) {
         console.error('[AuthContext] checkAuth error:', err);
@@ -66,41 +85,37 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const cleanEmail = (email || '').trim().toLowerCase();
-    
+    if (!cleanEmail || !password) {
+      throw new Error('Email address and password are required.');
+    }
+
+    // Check signup approval status first
+    await checkUserApprovalStatus(cleanEmail);
+
     let userRecord = null;
+    let authData = null;
+
     try {
-      let authData;
       try {
-        authData = await pb.collection('users').authWithPassword(email, password, { $autoCancel: false });
+        authData = await pb.collection('users').authWithPassword(cleanEmail, password, { $autoCancel: false });
       } catch (uErr) {
-        authData = await pb.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+        authData = await pb.collection('_superusers').authWithPassword(cleanEmail, password, { $autoCancel: false });
       }
       userRecord = authData?.record || authData;
     } catch (pbErr) {
-      // Direct local fallback below
+      console.error('[AuthContext] PocketBase Auth error:', pbErr);
     }
 
+    // STRICT SECURITY: Must be valid authenticated user from database
     if (!userRecord || !userRecord.id) {
-      const isClient = cleanEmail.includes('client');
-      userRecord = {
-        id: (cleanEmail === 'munnarathod222@gmail.com' || cleanEmail.includes('munna') || cleanEmail.includes('admin')) 
-          ? 'usr_munna_superadmin' 
-          : ('usr_' + Date.now()),
-        email: cleanEmail.includes('@') ? cleanEmail : 'munnarathod222@gmail.com',
-        name: (cleanEmail === 'munnarathod222@gmail.com' || cleanEmail.includes('munna')) 
-          ? 'Vinod kumar Rathod' 
-          : (cleanEmail.split('@')[0] || 'Fleet Admin'),
-        role: isClient ? 'client' : 'super_admin',
-        status: 'active'
-      };
+      throw new Error('Invalid email address or password. Please check your credentials.');
     }
 
-    try {
-      pb.authStore.save('session_' + Date.now(), userRecord);
-    } catch(e) {}
-
+    // Store verified session token and timestamp
     setCurrentUser(userRecord);
     localStorage.setItem('app_auth_user', JSON.stringify(userRecord));
+    localStorage.setItem('app_session_timestamp', Date.now().toString());
+
     return userRecord;
   };
 
@@ -124,46 +139,51 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      console.log('[AuthContext:changePassword] Attempting to verify old password for:', currentUser.email);
-      
-      // 1. Verify old password
-      const authResponse = await pb.collection('users').authWithPassword(currentUser.email, oldPassword, { $autoCancel: false });
-      console.log('[AuthContext:changePassword] Old password verified successfully. User ID:', authResponse.record.id);
+      let authResponse;
+      try {
+        authResponse = await pb.collection('users').authWithPassword(currentUser.email, oldPassword, { $autoCancel: false });
+      } catch (e) {
+        authResponse = await pb.collection('_superusers').authWithPassword(currentUser.email, oldPassword, { $autoCancel: false });
+      }
 
-      // 2. Update password in database
-      console.log('[AuthContext:changePassword] Attempting to update password in database...');
-      const updatePayload = {
-        oldPassword: oldPassword, // Required by PocketBase when user changes their own password
+      if (!authResponse || (!authResponse.record && !authResponse.token)) {
+        throw new Error("Old password verification failed.");
+      }
+
+      const targetCollection = authResponse.record?.collectionName || 'users';
+      const recordId = authResponse.record?.id || currentUser.id;
+
+      await pb.collection(targetCollection).update(recordId, {
         password: newPassword,
-        passwordConfirm: newPassword
-      };
-      
-      const record = await pb.collection('users').update(currentUser.id, updatePayload, { $autoCancel: false });
-      console.log('[AuthContext:changePassword] Password updated successfully for user ID:', record.id);
-      
-      return record;
-    } catch (error) {
-      console.error('[AuthContext:changePassword] Password change failed API error:', {
-        status: error?.status || error?.response?.code,
-        message: error?.message,
-        data: error?.response?.data
-      });
-      // Rethrow to let the modal handle the UI feedback
-      throw error;
+        passwordConfirm: newPassword,
+      }, { $autoCancel: false });
+
+      toast.success("Password updated successfully!");
+    } catch (err) {
+      console.error('[AuthContext:changePassword] Error:', err);
+      throw new Error(err.message || "Failed to update password. Please check your current password.");
     }
   };
 
   const logout = () => {
     pb.authStore.clear();
     localStorage.removeItem('app_auth_user');
+    localStorage.removeItem('app_session_timestamp');
+    localStorage.removeItem('jbc_device_pin_profile');
     setCurrentUser(null);
-    toast.info('You have been logged out.');
+    toast.info('You have been logged out safely.');
   };
 
-  const isAuthenticated = !!currentUser;
-
   return (
-    <AuthContext.Provider value={{ currentUser, login, signup, changePassword, logout, isAuthenticated, initialLoading, setCurrentUser }}>
+    <AuthContext.Provider value={{
+      currentUser,
+      isAuthenticated: Boolean(currentUser),
+      initialLoading,
+      login,
+      signup,
+      logout,
+      changePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -172,7 +192,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
