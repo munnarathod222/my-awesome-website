@@ -110,7 +110,7 @@ ___________________________          ___________________________
 {{full_name}}                        Authorized Signatory
 Employee Signature                   {{COMPANY_NAME}}`;
 
-export default function OfficialLetterheadPage() {
+export default function OfficialLetterheadPage({ embedMode = false }) {
   const { currentUser } = useAuth();
   const companyProfile = useCompanyProfile();
   
@@ -359,7 +359,7 @@ export default function OfficialLetterheadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
+    <div className={"min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans " + (embedMode ? "min-h-0 bg-transparent p-0 pb-12" : "")}>
       <Helmet>
         <title>Official Corporate Letterhead Studio | Jai Bhavani Cargo</title>
         <meta name="description" content="Generate, edit, and print official branded letterhead documents for Jai Bhavani Cargo." />
@@ -409,14 +409,14 @@ export default function OfficialLetterheadPage() {
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto space-y-4">
+      <div className={"max-w-7xl mx-auto space-y-4 " + (embedMode ? "space-y-3" : "")}>
         
         {/* Page Header Banner */}
         <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-3 px-5 rounded-2xl shadow-lg backdrop-blur-md">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-amber-400 shrink-0" />
             <h1 className="text-base font-black tracking-tight text-white">
-              Letterhead Studio
+              {embedMode ? "Letterhead Studio" : "Letterhead Studio"}
             </h1>
           </div>
 

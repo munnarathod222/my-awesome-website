@@ -83,7 +83,7 @@ const PRESET_THEMES = [
   }
 ];
 
-export default function BusinessCardStudioPage() {
+export default function BusinessCardStudioPage({ embedMode = false }) {
   const { currentUser } = useAuth();
   const companyProfile = useCompanyProfile();
   const [employees, setEmployees] = useState([]);
@@ -242,7 +242,7 @@ export default function BusinessCardStudioPage() {
   const themeObj = PRESET_THEMES.find(t => t.id === selectedTheme) || PRESET_THEMES[0];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans pb-24">
+    <div className={"min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans pb-24 " + (embedMode ? "min-h-0 bg-transparent p-0 pb-12" : "")}>
       <Helmet>
         <title>Visiting &amp; Business Card Studio | Jai Bhavani Cargo</title>
         <meta name="description" content="Design, upload custom templates, and share branded visiting cards on WhatsApp for Jai Bhavani Cargo." />
@@ -281,23 +281,33 @@ export default function BusinessCardStudioPage() {
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className={"max-w-7xl mx-auto space-y-6 " + (embedMode ? "space-y-4" : "")}>
         
         {/* Banner Header */}
-        <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-xl backdrop-blur-md">
-          <div>
-            <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-1.5 mb-1">
-              <CreditCard className="w-3.5 h-3.5 text-amber-400" /> VISITING &amp; BUSINESS CARD STUDIO
+        <div className={"no-print flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-xl backdrop-blur-md " + (embedMode ? "p-3 px-5 rounded-2xl gap-3" : "")}>
+          {!embedMode && (
+            <div>
+              <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-1.5 mb-1">
+                <CreditCard className="w-3.5 h-3.5 text-amber-400" /> VISITING &amp; BUSINESS CARD STUDIO
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                Digital &amp; Printable Business Card Designer
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Upload custom background templates, auto-fill employee profiles, and share branded cards instantly on WhatsApp.
+              </p>
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              Digital &amp; Printable Business Card Designer
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Upload custom background templates, auto-fill employee profiles, and share branded cards instantly on WhatsApp.
-            </p>
-          </div>
+          )}
+          {embedMode && (
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-amber-400 shrink-0" />
+              <h1 className="text-base font-black tracking-tight text-white">
+                Business Card Studio
+              </h1>
+            </div>
+          )}
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className={"flex flex-wrap items-center gap-3 " + (embedMode ? "gap-2" : "")}>
             <Button
               onClick={handleWhatsAppShare}
               className="rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-4 shadow-lg shadow-emerald-950/50"

@@ -96,6 +96,7 @@ import GstITCManagerPage from './pages/GstITCManagerPage.jsx';
 import OfficialLetterheadPage from './pages/OfficialLetterheadPage.jsx';
 import DataBackupPage from './pages/DataBackupPage.jsx';
 import BusinessCardStudioPage from './pages/BusinessCardStudioPage.jsx';
+import BrandingStudioHub from './pages/BrandingStudioHub.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
@@ -290,10 +291,10 @@ function App() {
                   <Route path="/dashboard/delivery-proof" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><DeliveryProofUploadPage /></ProtectedRoute>} />
                   <Route path="/pod-management" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PODManagementPage /></ProtectedRoute>} />
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
-                  <Route path="/letterhead" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><OfficialLetterheadPage /></ProtectedRoute>} />
+                  <Route path="/letterhead" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BrandingStudioHub /></ProtectedRoute>} />
                   <Route path="/dashboard/letterhead" element={<Navigate to="/letterhead" replace />} />
-                  <Route path="/visiting-card" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BusinessCardStudioPage /></ProtectedRoute>} />
-                  <Route path="/business-card-studio" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BusinessCardStudioPage /></ProtectedRoute>} />
+                  <Route path="/visiting-card" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BrandingStudioHub /></ProtectedRoute>} />
+                  <Route path="/business-card-studio" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BrandingStudioHub /></ProtectedRoute>} />
                   <Route path="/dashboard/visiting-card" element={<Navigate to="/visiting-card" replace />} />
                   
                   {/* Cashbook & Financials */}
@@ -311,8 +312,8 @@ function App() {
                   {/* HR & Payroll */}
                   <Route path="/employees" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><EmployeeDatabasePage /></ProtectedRoute>} />
                   <Route path="/employee-docs" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'supervisor']}><EmployeeDocsPage /></ProtectedRoute>} />
-                  <Route path="/id-card-generator" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
-                  <Route path="/id-cards" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><IdCardGeneratorPage /></ProtectedRoute>} />
+                  <Route path="/id-card-generator" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><BrandingStudioHub /></ProtectedRoute>} />
+                  <Route path="/id-cards" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><BrandingStudioHub /></ProtectedRoute>} />
                   <Route path="/dashboard/attendance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><AttendanceManagerPage /></ProtectedRoute>} />
                   
                   {/* Features */}

@@ -91,7 +91,7 @@ const TEMPLATES = [
   }
 ];
 
-export default function IdCardGeneratorPage() {
+export default function IdCardGeneratorPage({ embedMode = false }) {
   const { currentUser } = useAuth();
   const companyProfile = useCompanyProfile();
   const [employees, setEmployees] = useState([]);
@@ -363,7 +363,7 @@ export default function IdCardGeneratorPage() {
   const activeTemplate = TEMPLATES.find(t => t.id === selectedTemplateId) || TEMPLATES[0];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 font-sans">
+    <div className={"min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 font-sans " + (embedMode ? "min-h-0 bg-transparent p-0 pb-12" : "")}>
       <Helmet>
         <title>Vertical &amp; Printable ID Card Generator Studio | Jai Bhavani Cargo</title>
         <meta name="description" content="Generate high-resolution printable vertical ID cards for drivers and employees with scannable QR verification code." />
@@ -393,23 +393,25 @@ export default function IdCardGeneratorPage() {
       `}</style>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 no-print">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl text-blue-400 shadow-lg shadow-blue-500/10">
-            <IdCard className="w-7 h-7" />
+      <div className={"flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 no-print " + (embedMode ? "mb-4" : "")}>
+        {!embedMode && (
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl text-blue-400 shadow-lg shadow-blue-500/10">
+              <IdCard className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-white flex items-center gap-2">
+                Employee &amp; Driver ID Card Generator Studio
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
+                  Vertical Badges &amp; QR
+                </Badge>
+              </h1>
+              <p className="text-xs text-slate-400">Design, customize, &amp; print high-security vertical lanyard ID cards for drivers &amp; staff</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-white flex items-center gap-2">
-              Employee &amp; Driver ID Card Generator Studio
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
-                Vertical Badges &amp; QR
-              </Badge>
-            </h1>
-            <p className="text-xs text-slate-400">Design, customize, &amp; print high-security vertical lanyard ID cards for drivers &amp; staff</p>
-          </div>
-        </div>
+        )}
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={"flex flex-wrap items-center gap-2 " + (embedMode ? "w-full justify-end" : "")}>
           <Button onClick={() => setIsEditing(!isEditing)} variant="outline" className="rounded-xl text-xs font-bold border-slate-700 bg-slate-900 hover:bg-slate-800">
             <Sliders className="w-4 h-4 mr-1.5 text-amber-400" />
             {isEditing ? 'Hide Card Fields' : 'Edit Card Content'}
