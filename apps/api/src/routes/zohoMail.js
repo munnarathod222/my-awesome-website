@@ -413,6 +413,34 @@ const getZohoAccountId = async (token) => {
   return zohoConfig.accountId || '1000293881';
 };
 
+/**
+ * Resolve Folder String Aliases (like "Inbox", "Sent") to real Zoho numerical folder IDs
+ */
+const resolveZohoFolderId = async (token, accountId, folderAlias) => {
+  if (/^\d+$/.test(folderAlias)) {
+    return folderAlias;
+  }
+  try {
+    const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+    const res = await fetch(`${apiUrl}/accounts/${accountId}/folders`, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+    });
+    const data = await res.json();
+    if (data.data && data.data.length > 0) {
+      const match = data.data.find(f => 
+        f.folderName.toLowerCase() === folderAlias.toLowerCase() ||
+        f.folderType.toLowerCase() === folderAlias.toLowerCase()
+      );
+      if (match) {
+        return String(match.folderId);
+      }
+    }
+  } catch (e) {
+    logger.warn('Failed to resolve Zoho folder ID:', e.message);
+  }
+  return null;
+};
+
 // ── MOCK LOGISTICS INTELLIGENCE EMAILS DATABASE ──────────────────────────────
 const LOGISTICS_SIMULATED_MESSAGES = [
   {
@@ -619,19 +647,31 @@ router.get('/messages', async (req, res) => {
       const accountId = await getZohoAccountId(token);
       const apiUrl = getZohoMailApiUrl(zohoConfig.region);
 
+      // Resolve folder alias (like "INBOX", "Sent") to real numerical ID
+      let resolvedFolderId = folder;
+      if (folder && !/^\d+$/.test(folder)) {
+        resolvedFolderId = await resolveZohoFolderId(token, accountId, folder);
+      }
+
+      // If we couldn't resolve the folder and search is empty, log it and return empty
+      if (!resolvedFolderId && !search) {
+        logger.warn(`Could not resolve folder alias: ${folder}`);
+        return res.json({ success: true, source: 'zoho_live', messages: [] });
+      }
+
       // Build URL — use searchmail for search, view for folder listing
       let url;
       if (search) {
         url = `${apiUrl}/accounts/${accountId}/messages/search?searchKey=${encodeURIComponent(search)}&limit=30`;
       } else {
-        url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(folder)}&limit=50&sortBy=date&order=desc`;
+        url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(resolvedFolderId)}&limit=50&sortBy=date&order=desc`;
       }
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
       });
       const data = await response.json();
-      logger.info(`Zoho messages [${folder}] raw:`, JSON.stringify(data).substring(0, 300));
+      logger.info(`Zoho messages [${folder} -> ${resolvedFolderId}] raw:`, JSON.stringify(data).substring(0, 300));
 
       if (data.data && Array.isArray(data.data)) {
         const messages = data.data.map(m => ({
