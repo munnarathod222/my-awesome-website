@@ -93,9 +93,10 @@ export const AuthProvider = ({ children }) => {
     await checkUserApprovalStatus(cleanEmail);
 
     let userRecord = null;
-    let authData = null;
 
+    // 1. Try PocketBase database authentication
     try {
+      let authData;
       try {
         authData = await pb.collection('users').authWithPassword(cleanEmail, password, { $autoCancel: false });
       } catch (uErr) {
@@ -103,10 +104,23 @@ export const AuthProvider = ({ children }) => {
       }
       userRecord = authData?.record || authData;
     } catch (pbErr) {
-      console.error('[AuthContext] PocketBase Auth error:', pbErr);
+      console.warn('[AuthContext] Database auth check:', pbErr.message);
     }
 
-    // STRICT SECURITY: Must be valid authenticated user from database
+    // 2. Master Account Verification for Super Admin (munnarathod222@gmail.com)
+    if (!userRecord || !userRecord.id) {
+      if (cleanEmail === 'munnarathod222@gmail.com' && (password === 'Munnarathod@25' || password === 'Munnarathod@2026')) {
+        userRecord = {
+          id: 'usr_munna_superadmin',
+          email: 'munnarathod222@gmail.com',
+          name: 'Vinod kumar Rathod',
+          role: 'super_admin',
+          status: 'active'
+        };
+      }
+    }
+
+    // STRICT SECURITY: Reject invalid logins
     if (!userRecord || !userRecord.id) {
       throw new Error('Invalid email address or password. Please check your credentials.');
     }
