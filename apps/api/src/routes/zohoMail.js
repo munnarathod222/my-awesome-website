@@ -187,14 +187,6 @@ router.post('/oauth/exchange-code', async (req, res) => {
 
   return res.status(400).json({ error: lastErrorData?.error || 'Failed to exchange Grant Code with Zoho. Make sure Client ID, Secret, and Code are fresh.', details: lastErrorData });
 });
-      logger.error('Grant code exchange error from Zoho:', data);
-      return res.status(400).json({ error: data.error || 'Failed to exchange grant code with Zoho.', details: data });
-    }
-  } catch (err) {
-    logger.error('Grant code exchange exception:', err);
-    return res.status(500).json({ error: err.message });
-  }
-});
 
 /**
  * GET /api/zoho/auth-url
