@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
 
 const PRESET_THEMES = [
@@ -84,6 +85,7 @@ const PRESET_THEMES = [
 
 export default function BusinessCardStudioPage() {
   const { currentUser } = useAuth();
+  const companyProfile = useCompanyProfile();
   const [employees, setEmployees] = useState([]);
   const [selectedTheme, setSelectedTheme] = useState('gold_luxury');
   const [activeSide, setActiveSide] = useState('front');
@@ -91,25 +93,40 @@ export default function BusinessCardStudioPage() {
   const [customFrontBg, setCustomFrontBg] = useState(null);
   const [customBackBg, setCustomBackBg] = useState(null);
 
-  // Business Card Form State
+  // Business Card Form State initialized dynamically from Company Profile
   const [cardData, setCardData] = useState({
-    companyName: 'JAI BHAVANI CARGO',
+    companyName: companyProfile?.company_name || 'JAI BHAVANI CARGO',
     companyTagline: 'Heavy Fleet & All India Freight Logistics',
-    gstNo: '36ABCDE1234F1Z5',
+    gstNo: companyProfile?.company_gstin || '36AAAAA0000A1Z5',
     isoBadge: 'ISO 9001:2015 Certified Logistics Operator',
     
-    fullName: 'Munna Rathod',
-    designation: 'Managing Director',
+    fullName: currentUser?.name || companyProfile?.signatory_name || 'Vinod kumar Rathod',
+    designation: companyProfile?.signatory_title || 'Managing Director',
     empCode: 'JBC-MD-001',
-    phone1: '+91 7794072244',
+    phone1: companyProfile?.company_phone || '+91 7794072244',
     phone2: '+91 9666973085',
-    email: 'info@jaibhavanicargo.com',
-    website: 'www.jaibhavanicargo.com',
-    address: 'Transport Hub Plot 44, NH-44 Expressway, Hyderabad, TS',
+    email: companyProfile?.company_email || 'munnarathod222@gmail.com',
+    website: companyProfile?.company_website || 'www.jaibhavanicargo.com',
+    address: companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009',
     services: '32 FT Container Transit • Heavy Flatbed Trailers • 24/7 GPS Tracking • Cold Chain Logistics',
     photoUrl: '',
-    logoUrl: '/favicon.ico',
+    logoUrl: companyProfile?.company_logo || '/favicon.ico',
   });
+
+  useEffect(() => {
+    if (companyProfile) {
+      setCardData(prev => ({
+        ...prev,
+        companyName: companyProfile.company_name || prev.companyName,
+        gstNo: companyProfile.company_gstin || prev.gstNo,
+        phone1: companyProfile.company_phone || prev.phone1,
+        email: companyProfile.company_email || prev.email,
+        website: companyProfile.company_website || prev.website,
+        address: companyProfile.company_address || prev.address,
+        logoUrl: companyProfile.company_logo || prev.logoUrl,
+      }));
+    }
+  }, [companyProfile]);
 
   const frontFileInputRef = useRef(null);
   const backFileInputRef = useRef(null);

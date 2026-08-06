@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
 import { getCanonicalEmployeeCode } from '@/lib/employeeCodeUtils.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { 
   IdCard, Printer, Download, Search, RefreshCw, Sparkles, Truck, Users, 
   ShieldCheck, Phone, MapPin, Calendar, Upload, Eye, CheckCircle2, User, 
@@ -92,6 +93,7 @@ const TEMPLATES = [
 
 export default function IdCardGeneratorPage() {
   const { currentUser } = useAuth();
+  const companyProfile = useCompanyProfile();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -104,14 +106,14 @@ export default function IdCardGeneratorPage() {
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [batchSelected, setBatchSelected] = useState([]);
 
-  // Live Card Form Fields
+  // Live Card Form Fields initialized from Company Profile
   const [cardForm, setCardForm] = useState({
-    company_name: 'JAI BHAVANI CARGO',
+    company_name: companyProfile?.company_name || 'JAI BHAVANI CARGO',
     company_tagline: 'Logistics & Heavy Transport Fleet',
-    company_phone: '+91 7794072244',
-    company_email: 'vinod.jbcargo@gmail.com',
-    company_address: 'Plot No 3, Patel Nagar, Ghatkesar, TG - 501301',
-    company_logo_url: '',
+    company_phone: companyProfile?.company_phone || '+91 7794072244',
+    company_email: companyProfile?.company_email || 'munnarathod222@gmail.com',
+    company_address: companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009',
+    company_logo_url: companyProfile?.company_logo || '',
     name: '',
     employee_number: '',
     designation: '',
@@ -123,8 +125,22 @@ export default function IdCardGeneratorPage() {
     issue_date: '2024-01-01',
     expiry_date: '2029-12-31',
     photo_url: '',
-    auth_sign_title: 'Authorized Signatory',
+    auth_sign_title: companyProfile?.signatory_title || 'Authorized Signatory',
   });
+
+  useEffect(() => {
+    if (companyProfile) {
+      setCardForm(prev => ({
+        ...prev,
+        company_name: companyProfile.company_name || prev.company_name,
+        company_phone: companyProfile.company_phone || prev.company_phone,
+        company_email: companyProfile.company_email || prev.company_email,
+        company_address: companyProfile.company_address || prev.company_address,
+        company_logo_url: companyProfile.company_logo || prev.company_logo_url,
+        auth_sign_title: companyProfile.signatory_title || prev.auth_sign_title,
+      }));
+    }
+  }, [companyProfile]);
 
   const photoInputRef = useRef(null);
 

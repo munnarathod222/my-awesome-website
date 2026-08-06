@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import pb from './pocketbaseClient.js';
+import { getCompanyProfileSync } from './companyProfile.js';
 
 let companySettingsCache = null;
 let cachedLogoBase64 = null;
@@ -133,12 +134,13 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.rect(0, 7, doc.internal.pageSize.width, 1.5, 'F');
 
       // Dynamic Company Info from Company Settings
-      const cName = companySettingsCache?.company_name || inv.company_name || 'JAI BHAVANI CARGO';
-      const cAddress = companySettingsCache?.company_address || inv.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
-      const cPhone = companySettingsCache?.company_phone || inv.company_phone || '+91 7794072244';
-      const cEmail = companySettingsCache?.company_email || inv.company_email || 'vinod@jaibhavanicargo.com';
-      const cWebsite = companySettingsCache?.company_website || 'www.jaibhavanicargo.com';
-      const cGstin = companySettingsCache?.company_gstin || '36DPXPR9171A1Z8';
+      const cp = getCompanyProfileSync();
+      const cName = companySettingsCache?.company_name || inv.company_name || cp.company_name;
+      const cAddress = companySettingsCache?.company_address || inv.company_address || cp.company_address;
+      const cPhone = companySettingsCache?.company_phone || inv.company_phone || cp.company_phone;
+      const cEmail = companySettingsCache?.company_email || inv.company_email || cp.company_email;
+      const cWebsite = companySettingsCache?.company_website || cp.company_website;
+      const cGstin = companySettingsCache?.company_gstin || cp.company_gstin;
 
       // Draw Company Logo or Name Header
       if (cachedLogoBase64) {
@@ -305,11 +307,11 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.setTextColor(...primaryNavy);
       doc.text('BANK DETAILS:', 14, bankY);
 
-      const bName = companySettingsCache?.bank_name || 'HDFC BANK';
-      const bAccName = (companySettingsCache?.account_name || companySettingsCache?.company_name || 'JAI BHAVANI CARGO').toUpperCase();
-      const bAccNo = companySettingsCache?.account_number || '50200117182677';
-      const bIfsc = companySettingsCache?.ifsc_code || 'HDFC0004480';
-      const bBranch = companySettingsCache?.branch_name || 'GHATKESAR BRANCH';
+      const bName = companySettingsCache?.bank_name || cp.bank_name;
+      const bAccName = (companySettingsCache?.account_name || cp.account_name || cName).toUpperCase();
+      const bAccNo = companySettingsCache?.account_number || cp.account_number;
+      const bIfsc = companySettingsCache?.ifsc_code || cp.ifsc_code;
+      const bBranch = companySettingsCache?.branch_name || cp.branch_name;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
@@ -340,8 +342,8 @@ export const generatePDF = (data, filename, options = {}) => {
       doc.text('1. Payment is due as per agreed credit terms.\n2. Interest @ 18% p.a. will apply to overdue balances.\n3. All disputes subject to Hyderabad jurisdiction.', 14, footerY + 9);
 
       // Authorized Signatory (From Company Settings)
-      const sigName = companySettingsCache?.signatory_name || localStorage.getItem('jbc_signatory_name') || 'Vinod Rathod';
-      const sigTitle = companySettingsCache?.signatory_title || localStorage.getItem('jbc_signatory_title') || 'Authorized Signatory';
+      const sigName = companySettingsCache?.signatory_name || cp.signatory_name;
+      const sigTitle = companySettingsCache?.signatory_title || cp.signatory_title;
 
       if (cachedSignatureBase64) {
         try {

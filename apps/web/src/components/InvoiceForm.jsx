@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PlusCircle, Trash2, Receipt, Users, Banknote, FileText } from 'lucide-react';
 import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { toast } from 'sonner';
 
 const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
   const { currentUser } = useAuth();
+  const companyProfile = useCompanyProfile();
   const [loading, setLoading] = useState(false);
 
   const formatBankFromSettings = (settings) => {
@@ -32,18 +34,31 @@ const InvoiceForm = ({ invoice, prefilledQuote, onSuccess, onCancel }) => {
     customer_email: '',
     customer_address: '',
     customer_phone: '',
-    company_name: 'JAI BHAVANI CARGO',
-    company_address: 'Plot no 3, Patel nagar, Ghatkesar, pin: 501301',
-    company_phone: '+91 7794072244',
-    company_email: 'vinod@jaibhavanicargo.com',
+    company_name: companyProfile?.company_name || 'JAI BHAVANI CARGO',
+    company_address: companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009',
+    company_phone: companyProfile?.company_phone || '+91 7794072244',
+    company_email: companyProfile?.company_email || 'munnarathod222@gmail.com',
     payment_terms: 'Net 14 Days',
-    bank_details: '',
+    bank_details: formatBankFromSettings(companyProfile) || '',
     notes: '',
     status: 'Draft',
     tax_percentage: 18,
     discount_percentage: 0,
     quote_reference: ''
   });
+
+  useEffect(() => {
+    if (companyProfile && !invoice) {
+      setFormData(prev => ({
+        ...prev,
+        company_name: companyProfile.company_name || prev.company_name,
+        company_address: companyProfile.company_address || prev.company_address,
+        company_phone: companyProfile.company_phone || prev.company_phone,
+        company_email: companyProfile.company_email || prev.company_email,
+        bank_details: formatBankFromSettings(companyProfile) || prev.bank_details
+      }));
+    }
+  }, [companyProfile, invoice]);
 
   const [lineItems, setLineItems] = useState([
     { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0, amount: 0 }

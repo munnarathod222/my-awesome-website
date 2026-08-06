@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { useCompanyProfile } from '@/lib/companyProfile.js';
 import pb from '@/lib/pocketbaseClient.js';
 
 // Preset Letter Templates
@@ -110,6 +111,7 @@ Employee Signature                   {{COMPANY_NAME}}`;
 
 export default function OfficialLetterheadPage() {
   const { currentUser } = useAuth();
+  const companyProfile = useCompanyProfile();
   
   const [selectedPreset, setSelectedPreset] = useState('general_business');
   
@@ -121,8 +123,13 @@ export default function OfficialLetterheadPage() {
   const [salutation, setSalutation] = useState(PRESETS[0].salutation);
   const [bodyText, setBodyText] = useState(PRESETS[0].body);
   
-  const [signatoryName, setSignatoryName] = useState(currentUser?.name || 'Vinod Kumar Rathod');
-  const [signatoryTitle, setSignatoryTitle] = useState('Authorized Signatory / Managing Director');
+  const [signatoryName, setSignatoryName] = useState(companyProfile?.signatory_name || currentUser?.name || 'Vinod Kumar Rathod');
+  const [signatoryTitle, setSignatoryTitle] = useState(companyProfile?.signatory_title || 'Authorized Signatory / Managing Director');
+  
+  useEffect(() => {
+    if (companyProfile?.signatory_name) setSignatoryName(companyProfile.signatory_name);
+    if (companyProfile?.signatory_title) setSignatoryTitle(companyProfile.signatory_title);
+  }, [companyProfile]);
   
   const [includeStamp, setIncludeStamp] = useState(true);
   const [includeWatermark, setIncludeWatermark] = useState(true);
@@ -954,30 +961,30 @@ export default function OfficialLetterheadPage() {
                     <div className="flex justify-between items-start border-b-4 border-[#0b3c5d] pb-4 mb-6">
                       {/* Top Left: Logo & Company Name */}
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-md font-black shrink-0">
-                          <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                          </svg>
-                        </div>
+                        {companyProfile?.company_logo ? (
+                          <img src={companyProfile.company_logo} alt="Company Logo" className="w-14 h-14 object-contain rounded-xl shadow-md shrink-0" />
+                        ) : (
+                          <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-md font-black shrink-0">
+                            <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                            </svg>
+                          </div>
+                        )}
                         <div>
                           <h1 className="text-2xl font-black text-[#0b3c5d] tracking-tight uppercase leading-none font-heading">
-                            JAI BHAVANI
+                            {companyProfile?.company_name || 'JAI BHAVANI CARGO'}
                           </h1>
-                          <div className="text-sm font-black text-amber-600 tracking-[0.25em] uppercase mt-1">
-                            CARGO
-                          </div>
                         </div>
                       </div>
 
                       {/* Top Right: Registered Office Info */}
                       <div className="text-right text-[11px] leading-snug font-sans text-slate-700">
                         <p className="font-extrabold text-slate-900">Regd. Office:</p>
-                        <p>Plot no 3, Patel Nagar</p>
-                        <p>Ghatkesar, 501301</p>
-                        <p className="text-blue-700 font-semibold">vinod.jbcargo@gmail.com</p>
-                        <p className="font-bold">+91 7794072244</p>
-                        <p className="text-blue-700">www.jaibhavanicargo.com</p>
-                        <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: 36DPXPR9171A1Z8</p>
+                        <p className="max-w-[200px]">{companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009'}</p>
+                        <p className="text-blue-700 font-semibold">{companyProfile?.company_email || 'munnarathod222@gmail.com'}</p>
+                        <p className="font-bold">{companyProfile?.company_phone || '+91 7794072244'}</p>
+                        <p className="text-blue-700">{companyProfile?.company_website || 'www.jaibhavanicargo.com'}</p>
+                        <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: {companyProfile?.company_gstin || '36AAAAA0000A1Z5'}</p>
                       </div>
                     </div>
                   )}

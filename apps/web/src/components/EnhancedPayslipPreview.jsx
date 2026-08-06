@@ -20,18 +20,13 @@ const formatAmountToWords = (amount) => {
   return convert(value) + ' Rupees Only';
 };
 
+import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { getTranslation, transliterateText } from '@/lib/payslipTranslations.js';
 
 export default function EnhancedPayslipPreview({ payroll, employee, advances = [], language = 'en' }) {
-  const [companySettings, setCompanySettings] = useState(null);
+  const companyProfile = useCompanyProfile();
   const t = (key) => getTranslation(language, key);
   const tr = (text) => transliterateText(text, language);
-
-  useEffect(() => {
-    pb.collection('company_settings').getOne('companysettings', { $autoCancel: false })
-      .then(setCompanySettings)
-      .catch(() => {});
-  }, []);
 
   const hasAdvance = advances.length > 0;
   const advanceDeducted = (!payroll ? advances : advances.filter(a => a.status === 'Deducted')).reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
@@ -53,11 +48,11 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
     return 'EMP-001';
   };
 
-  const compName = companySettings?.company_name || 'JAI BHAVANI CARGO';
-  const compAddress = companySettings?.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
-  const compPhone = companySettings?.company_phone || '7794072244';
-  const compEmail = companySettings?.company_email || 'vinod@jaibhavanicargo.com';
-  const compGstin = companySettings?.company_gstin || '36AAACJ2230M1Z2';
+  const compName = companyProfile?.company_name || 'JAI BHAVANI CARGO';
+  const compAddress = companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009';
+  const compPhone = companyProfile?.company_phone || '+91 7794072244';
+  const compEmail = companyProfile?.company_email || 'munnarathod222@gmail.com';
+  const compGstin = companyProfile?.company_gstin || '36AAAAA0000A1Z5';
 
   const contactLine = [
     compPhone ? `Ph: ${compPhone}` : null,
