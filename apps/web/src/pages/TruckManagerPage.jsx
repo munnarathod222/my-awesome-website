@@ -112,280 +112,269 @@ export default function TruckManagerPage() {
     }
   };
 
+  const [viewMode, setViewMode] = useState('compact'); // 'compact' or 'grid'
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card/40 p-4 rounded-2xl border border-border/50 backdrop-blur-sm">
         <div>
-          <h1 className="text-3xl font-heading font-bold flex items-center gap-3">
+          <h1 className="text-2xl font-heading font-bold flex items-center gap-2.5">
             <div className="p-2 bg-primary/10 rounded-xl">
-              <Truck className="w-6 h-6 text-primary" />
+              <Truck className="w-5 h-5 text-primary" />
             </div>
             Truck Manager
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your fleet vehicles and their configurations.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage your fleet vehicles and configurations in space-saving compact tiles.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/vehicle-tco')} className="rounded-xl border-primary/20 text-primary hover:bg-primary/5">
-            <Calculator className="w-4 h-4 mr-2" /> TCO & Replacement Signal
+        
+        <div className="flex flex-wrap items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="bg-muted/60 p-1 rounded-xl flex items-center border border-border/40">
+            <Button
+              variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-semibold rounded-lg ${viewMode === 'compact' ? 'shadow-xs text-primary' : 'text-muted-foreground'}`}
+              onClick={() => setViewMode('compact')}
+            >
+              ☰ Compact List
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-semibold rounded-lg ${viewMode === 'grid' ? 'shadow-xs text-primary' : 'text-muted-foreground'}`}
+              onClick={() => setViewMode('grid')}
+            >
+              🔲 Grid Tiles
+            </Button>
+          </div>
+
+          <Button variant="outline" size="sm" onClick={() => navigate('/vehicle-tco')} className="h-8 rounded-xl border-primary/20 text-primary text-xs hover:bg-primary/5">
+            <Calculator className="w-3.5 h-3.5 mr-1.5" /> TCO Signal
           </Button>
-          <Button onClick={() => setModalConfig({ isOpen: true, truck: null })} className="rounded-xl shadow-sm">
-            <Plus className="w-4 h-4 mr-2" /> Add New Truck
+          <Button size="sm" onClick={() => setModalConfig({ isOpen: true, truck: null })} className="h-8 rounded-xl text-xs shadow-xs">
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Truck
           </Button>
         </div>
       </div>
 
       {loading ? (
-        <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-12 flex justify-center"><LoadingSpinner text="Loading trucks..." /></div>
+        <div className="bg-card rounded-2xl border border-border/50 shadow-xs p-12 flex justify-center"><LoadingSpinner text="Loading trucks..." /></div>
       ) : trucks.length === 0 ? (
-        <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-12 text-center text-muted-foreground">
+        <div className="bg-card rounded-2xl border border-border/50 shadow-xs p-12 text-center text-muted-foreground">
           <Truck className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>No trucks found. Add your first truck to get started.</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
+      ) : viewMode === 'compact' ? (
+        /* ULTRA-COMPACT LIST ROW TILES (Height ~72px) */
+        <div className="space-y-2.5">
           {trucks.map(truck => {
             const hasImages = truck.body_images && truck.body_images.length > 0;
-            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '400x250' }) : null;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '100x100' }) : null;
             const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
             const availableDrivers = drivers.filter(d => !d.assigned_truck);
 
             return (
-              <div key={truck.id} className="group bg-card border border-border/60 hover:border-primary/40 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
-                {/* Card Header Image - Compact h-36 */}
-                <div 
-                  className="h-36 w-full relative bg-muted overflow-hidden cursor-pointer"
-                  onClick={() => hasImages && setGalleryConfig({ isOpen: true, truck, activeIndex: 0 })}
-                >
-                  {hasImages ? (
-                    <img 
-                      src={primaryImage} 
-                      alt={truck.truck_name || 'Truck body'} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/10 relative">
-                      <Truck className="w-10 h-10 text-primary/20 mb-1" />
-                      <span className="text-[10px] text-muted-foreground">No reference images</span>
-                    </div>
-                  )}
-                  
-                  {/* Status Badge overlay */}
-                  <div className="absolute top-2.5 left-2.5 z-10">
-                    <Badge className={
-                      truck.status === 'active' 
-                        ? 'bg-emerald-500/90 hover:bg-emerald-600 text-white text-[10px] font-bold border-0 px-2 py-0.5' 
-                        : 'bg-zinc-500/90 hover:bg-zinc-600 text-white text-[10px] font-bold border-0 px-2 py-0.5'
-                    }>
-                      {truck.status === 'active' ? 'Active' : 'Inactive'}
-                    </Badge>
+              <div 
+                key={truck.id} 
+                className="group bg-card border border-border/60 hover:border-primary/40 rounded-xl p-2.5 sm:px-4 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+              >
+                {/* Left: 52x52 Photo Thumbnail + Registration & Name */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {/* Photo Thumbnail */}
+                  <div 
+                    className="w-12 h-12 rounded-lg bg-muted relative overflow-hidden shrink-0 border border-border/50 cursor-pointer group/img"
+                    onClick={() => hasImages && setGalleryConfig({ isOpen: true, truck, activeIndex: 0 })}
+                  >
+                    {hasImages ? (
+                      <img src={primaryImage} alt={truck.truck_number} className="w-full h-full object-cover group-hover/img:scale-110 transition-transform" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary/40">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                    )}
+                    <span className={`absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-background ${truck.status === 'active' ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                   </div>
 
-                  {/* Image count indicator overlay */}
-                  {hasImages && truck.body_images.length > 1 && (
-                    <div className="absolute bottom-2.5 right-2.5 z-10 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3" />
-                      <span>{truck.body_images.length} Photos</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Content - Compact padding */}
-                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
-                  <div>
-                    {/* Truck Header: Icon + Nickname */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1 bg-primary/10 rounded-md text-primary shrink-0">
-                          <Truck className="w-3.5 h-3.5" />
-                        </div>
-                        <h3 className="font-heading font-bold text-base text-foreground group-hover:text-primary transition-colors duration-200 truncate">
-                          {truck.truck_name || 'Unnamed Truck'}
-                        </h3>
-                      </div>
-                      <span className="text-[11px] font-mono font-bold text-primary shrink-0 bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">
+                  {/* Vehicle Details & Specs Pills */}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono font-extrabold text-sm text-foreground group-hover:text-primary transition-colors tracking-tight">
                         {truck.truck_number}
                       </span>
-                    </div>
-
-                    {/* Driver Link Section */}
-                    <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30 border border-border/40 mb-3">
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        {/* Driver Photo/Avatar */}
-                        {assignedDriver && assignedDriver.photo ? (
-                          <img 
-                            src={pb.files.getUrl(assignedDriver, assignedDriver.photo, { thumb: '100x100' })} 
-                            alt={assignedDriver.name} 
-                            className="w-7 h-7 rounded-full object-cover border border-border shrink-0"
-                          />
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-[10px] shrink-0">
-                            {assignedDriver ? (
-                              (assignedDriver?.name || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-                            ) : (
-                              <User className="w-3 h-3 opacity-50" />
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="overflow-hidden">
-                          <p className="text-xs font-semibold text-foreground truncate leading-tight">
-                            {assignedDriver ? assignedDriver.name : <span className="italic text-muted-foreground/60">No Driver Assigned</span>}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Dropdown Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-7 h-7 rounded-lg hover:bg-muted shrink-0">
-                            <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
-                          <DropdownMenuLabel>Manage Truck</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => setModalConfig({ isOpen: true, truck })}>
-                            <Edit className="w-4 h-4 mr-2 text-muted-foreground" />
-                            Edit Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive focus:bg-destructive/10 focus:text-destructive font-medium"
-                            onSelect={() => handleDelete(truck.id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Truck
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-
-                          {assignedDriver ? (
-                            <>
-                              <DropdownMenuLabel>Current Driver</DropdownMenuLabel>
-                              <DropdownMenuItem 
-                                className="text-destructive focus:bg-destructive/10 focus:text-destructive font-medium"
-                                onSelect={() => handleUnlink(assignedDriver)}
-                              >
-                                Unlink {assignedDriver.name}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuLabel>Swap Driver</DropdownMenuLabel>
-                            </>
-                          ) : (
-                            <DropdownMenuLabel>Assign Driver</DropdownMenuLabel>
-                          )}
-
-                          {availableDrivers.length === 0 ? (
-                            <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">
-                              No unassigned drivers
-                            </DropdownMenuItem>
-                          ) : (
-                            availableDrivers.map(d => (
-                              <DropdownMenuItem 
-                                key={d.id} 
-                                onSelect={() => handleSwap(truck.id, d.id, assignedDriver)}
-                              >
-                                {d.name}
-                              </DropdownMenuItem>
-                            ))
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    {/* Specs badges */}
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      <Badge variant="outline" className="border-border bg-background px-2 py-0.5 rounded-md text-[10px] font-medium">
-                        Size: {truck.truck_size}
+                      <span className="text-xs font-semibold text-muted-foreground truncate max-w-[140px]">
+                        {truck.truck_name || 'Unnamed'}
+                      </span>
+                      <Badge className={truck.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[9px] px-1.5 py-0' : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20 text-[9px] px-1.5 py-0'}>
+                        {truck.status === 'active' ? 'Active' : 'Inactive'}
                       </Badge>
-                      <Badge variant="secondary" className="px-2 py-0.5 rounded-md text-[10px] font-medium">
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                      <Badge variant="outline" className="px-1.5 py-0 rounded text-[10px] font-medium border-border/70">
+                        {truck.truck_size}
+                      </Badge>
+                      <Badge variant="secondary" className="px-1.5 py-0 rounded text-[10px] font-medium">
                         Axle: {truck.truck_axle}
                       </Badge>
-                      <Badge variant="outline" className="border-border bg-background px-2 py-0.5 rounded-md text-[10px] font-medium">
+                      <Badge variant="outline" className="px-1.5 py-0 rounded text-[10px] font-medium border-border/70">
                         {truck.tyre_count} Tyres
                       </Badge>
                       {truck.payload_capacity && (
-                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0 rounded text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                           🏋️ {truck.payload_capacity}
                         </Badge>
                       )}
-                      {(truck.body_length || truck.body_width || truck.body_height) && (
-                        <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 px-2 py-0.5 rounded-md text-[10px] font-bold text-violet-600 dark:text-violet-400">
-                          📐 {truck.body_length || '—'}×{truck.body_width || '—'}×{truck.body_height || '—'} ft
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-2 py-0.5 rounded-md text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                      <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-1.5 py-0 rounded text-[10px] font-bold text-blue-600 dark:text-blue-400">
                         FASTag: ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
                       </Badge>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Linked Loans / EMI Section */}
-                    {(() => {
-                      const truckLoans = loanProfiles.filter(p => p.truck_id === truck.id);
-                      if (truckLoans.length === 0) return null;
-                      return (
-                        <div className="pt-2 border-t border-border/40 space-y-1">
-                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Linked Loan Profiles</p>
-                          <div className="space-y-1">
-                            {truckLoans.map(loan => (
-                              <div 
-                                key={loan.id}
-                                onClick={() => navigate(`/emi-calculator?profileId=${loan.id}`)}
-                                className="flex items-center justify-between p-1.5 px-2 rounded-md bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-all cursor-pointer group/loan"
-                              >
-                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                  <Landmark className="w-3 h-3 text-primary shrink-0" />
-                                  <span className="text-[11px] font-semibold text-foreground truncate group-hover/loan:text-primary transition-colors">
-                                    {loan.profileName}
-                                  </span>
-                                </div>
-                                <span className="text-[10px] font-bold text-primary font-mono shrink-0">
-                                  ₹{(loan.loanAmount || 0).toLocaleString('en-IN')}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                {/* Center: Driver Pill */}
+                <div className="flex items-center gap-2 bg-muted/40 px-2.5 py-1 rounded-lg border border-border/30 shrink-0">
+                  <User className="w-3.5 h-3.5 text-primary opacity-70" />
+                  <span className="text-xs font-semibold text-foreground truncate max-w-[120px]">
+                    {assignedDriver ? assignedDriver.name : <span className="italic text-muted-foreground/60 text-[11px]">Unassigned</span>}
+                  </span>
+                </div>
+
+                {/* Right: Quick Action Buttons & Menu */}
+                <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted"
+                    onClick={() => navigate(`/tyres/${truck.id}`)}
+                    title="Tyres"
+                  >
+                    <Settings className="w-3 h-3 mr-1 text-primary" /> Tyres
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted"
+                    onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)}
+                    title="Maintenance"
+                  >
+                    <Wrench className="w-3 h-3 mr-1 text-amber-500" /> Maintenance
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted"
+                    onClick={() => setShareConfig({ isOpen: true, truckId: truck.id, employeeId: null, entityName: `Truck ${truck.truck_number}` })}
+                    title="Share Documents"
+                  >
+                    <Share2 className="w-3 h-3 text-blue-500" />
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-bold rounded-lg text-primary hover:bg-primary/10"
+                    onClick={() => setFastagConfig({ isOpen: true, truck })}
+                    title="FASTag Recharge"
+                  >
+                    <Wallet className="w-3 h-3 mr-1" /> FASTag
+                  </Button>
+
+                  {/* Dropdown Options */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="w-7 h-7 rounded-lg hover:bg-muted">
+                        <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52 bg-card border border-border">
+                      <DropdownMenuLabel>Vehicle Options</DropdownMenuLabel>
+                      <DropdownMenuItem onSelect={() => setModalConfig({ isOpen: true, truck })}>
+                        <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Edit Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive font-medium" onSelect={() => handleDelete(truck.id)}>
+                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Truck
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {assignedDriver ? (
+                        <DropdownMenuItem className="text-destructive font-medium" onSelect={() => handleUnlink(assignedDriver)}>
+                          Unlink {assignedDriver.name}
+                        </DropdownMenuItem>
+                      ) : null}
+                      <DropdownMenuLabel>Assign Driver</DropdownMenuLabel>
+                      {availableDrivers.length === 0 ? (
+                        <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">No unassigned drivers</DropdownMenuItem>
+                      ) : (
+                        availableDrivers.map(d => (
+                          <DropdownMenuItem key={d.id} onSelect={() => handleSwap(truck.id, d.id, assignedDriver)}>
+                            {d.name}
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* ULTRA-COMPACT 4-COLUMN MINI TILES */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {trucks.map(truck => {
+            const hasImages = truck.body_images && truck.body_images.length > 0;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '200x120' }) : null;
+            const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
+
+            return (
+              <div key={truck.id} className="group bg-card border border-border/60 hover:border-primary/40 rounded-xl p-3 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col justify-between space-y-2.5">
+                {/* Top Strip: Thumbnail + Reg + Status */}
+                <div className="flex items-center gap-2.5">
+                  <div 
+                    className="w-10 h-10 rounded-lg bg-muted relative overflow-hidden shrink-0 border border-border/50 cursor-pointer"
+                    onClick={() => hasImages && setGalleryConfig({ isOpen: true, truck, activeIndex: 0 })}
+                  >
+                    {hasImages ? (
+                      <img src={primaryImage} alt={truck.truck_number} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary/40">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Actions row */}
-                  <div className="flex flex-wrap items-center justify-between border-t border-border/40 pt-2.5 gap-1.5">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
-                        onClick={() => navigate(`/tyres/${truck.id}`)}
-                        title="Manage truck tyres"
-                      >
-                        <Settings className="w-3 h-3 text-primary" /> Tyres
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
-                        onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)}
-                        title="Manage fleet maintenance"
-                      >
-                        <Wrench className="w-3 h-3 text-amber-500" /> Maintenance
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
-                        onClick={() => setShareConfig({ isOpen: true, truckId: truck.id, employeeId: null, entityName: `Truck ${truck.truck_number}` })}
-                        title="Share vehicle document folder link"
-                      >
-                        <Share2 className="w-3 h-3 text-blue-500" /> Share
-                      </Button>
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono font-bold text-xs text-foreground truncate">{truck.truck_number}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{truck.truck_name || 'Unnamed'}</p>
+                  </div>
 
-                    <Button 
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setFastagConfig({ isOpen: true, truck })}
-                      className="rounded-lg text-[11px] font-bold h-7 px-2 text-primary hover:bg-primary/10 flex items-center gap-1 shrink-0"
-                    >
-                      <Wallet className="w-3 h-3" /> FASTag
+                  <Badge className={truck.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 text-[9px] px-1 py-0' : 'bg-zinc-500/10 text-zinc-500 text-[9px] px-1 py-0'}>
+                    {truck.status === 'active' ? 'Active' : 'Off'}
+                  </Badge>
+                </div>
+
+                {/* Specs badges */}
+                <div className="flex flex-wrap gap-1 text-[10px]">
+                  <Badge variant="outline" className="px-1.5 py-0 rounded text-[9px] font-medium">Size: {truck.truck_size}</Badge>
+                  <Badge variant="secondary" className="px-1.5 py-0 rounded text-[9px] font-medium">Axle: {truck.truck_axle}</Badge>
+                  <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-1.5 py-0 rounded text-[9px] font-bold text-blue-600">
+                    ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
+                  </Badge>
+                </div>
+
+                {/* Actions bottom bar */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[11px]">
+                  <span className="text-[10px] font-semibold text-muted-foreground truncate max-w-[100px]">
+                    👤 {assignedDriver ? assignedDriver.name : 'Unassigned'}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-primary" onClick={() => navigate(`/tyres/${truck.id}`)} title="Tyres">
+                      <Settings className="w-3 h-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-amber-500" onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)} title="Maintenance">
+                      <Wrench className="w-3 h-3" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-muted-foreground" onClick={() => setModalConfig({ isOpen: true, truck })} title="Edit">
+                      <Edit className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
