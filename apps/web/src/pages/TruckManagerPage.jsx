@@ -142,18 +142,18 @@ export default function TruckManagerPage() {
           <p>No trucks found. Add your first truck to get started.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
           {trucks.map(truck => {
             const hasImages = truck.body_images && truck.body_images.length > 0;
-            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0]) : null;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '400x250' }) : null;
             const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
             const availableDrivers = drivers.filter(d => !d.assigned_truck);
 
             return (
-              <div key={truck.id} className="group bg-card border border-border/60 hover:border-primary/30 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
-                {/* Card Header Image */}
+              <div key={truck.id} className="group bg-card border border-border/60 hover:border-primary/40 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+                {/* Card Header Image - Compact h-36 */}
                 <div 
-                  className="h-60 w-full relative bg-muted overflow-hidden cursor-pointer"
+                  className="h-36 w-full relative bg-muted overflow-hidden cursor-pointer"
                   onClick={() => hasImages && setGalleryConfig({ isOpen: true, truck, activeIndex: 0 })}
                 >
                   {hasImages ? (
@@ -164,17 +164,17 @@ export default function TruckManagerPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/10 relative">
-                      <Truck className="w-16 h-16 text-primary/20 mb-2" />
-                      <span className="text-xs text-muted-foreground">No reference images</span>
+                      <Truck className="w-10 h-10 text-primary/20 mb-1" />
+                      <span className="text-[10px] text-muted-foreground">No reference images</span>
                     </div>
                   )}
                   
                   {/* Status Badge overlay */}
-                  <div className="absolute top-4 left-4 z-10">
+                  <div className="absolute top-2.5 left-2.5 z-10">
                     <Badge className={
                       truck.status === 'active' 
-                        ? 'bg-emerald-500/90 hover:bg-emerald-600 text-white font-medium border-0 px-2.5 py-1' 
-                        : 'bg-zinc-500/90 hover:bg-zinc-600 text-white font-medium border-0 px-2.5 py-1'
+                        ? 'bg-emerald-500/90 hover:bg-emerald-600 text-white text-[10px] font-bold border-0 px-2 py-0.5' 
+                        : 'bg-zinc-500/90 hover:bg-zinc-600 text-white text-[10px] font-bold border-0 px-2 py-0.5'
                     }>
                       {truck.status === 'active' ? 'Active' : 'Inactive'}
                     </Badge>
@@ -182,54 +182,54 @@ export default function TruckManagerPage() {
 
                   {/* Image count indicator overlay */}
                   {hasImages && truck.body_images.length > 1 && (
-                    <div className="absolute bottom-4 right-4 z-10 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2 py-1 rounded-full flex items-center gap-1">
-                      <ImageIcon className="w-3.5 h-3.5" />
+                    <div className="absolute bottom-2.5 right-2.5 z-10 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3" />
                       <span>{truck.body_images.length} Photos</span>
                     </div>
                   )}
                 </div>
 
-                {/* Card Content */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                {/* Card Content - Compact padding */}
+                <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div>
                     {/* Truck Header: Icon + Nickname */}
-                    <div className="flex items-center gap-2.5 mb-3">
-                      <div className="p-1.5 bg-primary/10 rounded-lg text-primary">
-                        <Truck className="w-4 h-4" />
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="p-1 bg-primary/10 rounded-md text-primary shrink-0">
+                          <Truck className="w-3.5 h-3.5" />
+                        </div>
+                        <h3 className="font-heading font-bold text-base text-foreground group-hover:text-primary transition-colors duration-200 truncate">
+                          {truck.truck_name || 'Unnamed Truck'}
+                        </h3>
                       </div>
-                      <h3 className="font-heading font-bold text-lg text-foreground group-hover:text-primary transition-colors duration-200 truncate">
-                        {truck.truck_name || 'Unnamed Truck'}
-                      </h3>
+                      <span className="text-[11px] font-mono font-bold text-primary shrink-0 bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">
+                        {truck.truck_number}
+                      </span>
                     </div>
 
                     {/* Driver Link Section */}
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50 mb-4">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        {/* Driver Photo/Avatar Placeholder */}
+                    <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30 border border-border/40 mb-3">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        {/* Driver Photo/Avatar */}
                         {assignedDriver && assignedDriver.photo ? (
                           <img 
-                            src={pb.files.getUrl(assignedDriver, assignedDriver.photo)} 
+                            src={pb.files.getUrl(assignedDriver, assignedDriver.photo, { thumb: '100x100' })} 
                             alt={assignedDriver.name} 
-                            className="w-10 h-10 rounded-full object-cover border border-border shrink-0"
+                            className="w-7 h-7 rounded-full object-cover border border-border shrink-0"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary font-semibold text-xs shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-[10px] shrink-0">
                             {assignedDriver ? (
                               (assignedDriver?.name || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
                             ) : (
-                              <User className="w-4 h-4 opacity-40" />
+                              <User className="w-3 h-3 opacity-50" />
                             )}
                           </div>
                         )}
                         
                         <div className="overflow-hidden">
-                          {/* Truck Registration Number */}
-                          <p className="text-sm font-bold text-foreground tracking-wider font-mono truncate">
-                            {truck.truck_number}
-                          </p>
-                          {/* Driver Name directly below */}
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                            {assignedDriver ? assignedDriver.name : <span className="italic text-muted-foreground/60">Unassigned</span>}
+                          <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                            {assignedDriver ? assignedDriver.name : <span className="italic text-muted-foreground/60">No Driver Assigned</span>}
                           </p>
                         </div>
                       </div>
@@ -237,8 +237,8 @@ export default function TruckManagerPage() {
                       {/* Action Dropdown Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg hover:bg-muted shrink-0">
-                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="w-7 h-7 rounded-lg hover:bg-muted shrink-0">
+                            <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
@@ -291,32 +291,27 @@ export default function TruckManagerPage() {
                     </div>
 
                     {/* Specs badges */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Badge variant="outline" className="border-border bg-background px-2.5 py-0.5 rounded-lg text-xs font-medium">
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      <Badge variant="outline" className="border-border bg-background px-2 py-0.5 rounded-md text-[10px] font-medium">
                         Size: {truck.truck_size}
                       </Badge>
-                      <Badge variant="secondary" className="px-2.5 py-0.5 rounded-lg text-xs font-medium">
+                      <Badge variant="secondary" className="px-2 py-0.5 rounded-md text-[10px] font-medium">
                         Axle: {truck.truck_axle}
                       </Badge>
-                      <Badge variant="outline" className="border-border bg-background px-2.5 py-0.5 rounded-lg text-xs font-medium">
+                      <Badge variant="outline" className="border-border bg-background px-2 py-0.5 rounded-md text-[10px] font-medium">
                         {truck.tyre_count} Tyres
                       </Badge>
                       {truck.payload_capacity && (
-                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                           🏋️ {truck.payload_capacity}
                         </Badge>
                       )}
                       {(truck.body_length || truck.body_width || truck.body_height) && (
-                        <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-violet-600 dark:text-violet-400">
+                        <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10 px-2 py-0.5 rounded-md text-[10px] font-bold text-violet-600 dark:text-violet-400">
                           📐 {truck.body_length || '—'}×{truck.body_width || '—'}×{truck.body_height || '—'} ft
                         </Badge>
                       )}
-                      {truck.expand?.manager_id && (
-                        <Badge variant="outline" className="border-primary/20 bg-primary/5 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-primary">
-                          Mgr: {truck.expand.manager_id.full_name || truck.expand.manager_id.name}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-2.5 py-0.5 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400">
+                      <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-2 py-0.5 rounded-md text-[10px] font-bold text-blue-600 dark:text-blue-400">
                         FASTag: ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
                       </Badge>
                     </div>
@@ -326,22 +321,22 @@ export default function TruckManagerPage() {
                       const truckLoans = loanProfiles.filter(p => p.truck_id === truck.id);
                       if (truckLoans.length === 0) return null;
                       return (
-                        <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
-                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Linked Loan Profiles</p>
-                          <div className="space-y-1.5">
+                        <div className="pt-2 border-t border-border/40 space-y-1">
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Linked Loan Profiles</p>
+                          <div className="space-y-1">
                             {truckLoans.map(loan => (
                               <div 
                                 key={loan.id}
                                 onClick={() => navigate(`/emi-calculator?profileId=${loan.id}`)}
-                                className="flex items-center justify-between p-2 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 hover:border-primary/20 transition-all cursor-pointer group/loan"
+                                className="flex items-center justify-between p-1.5 px-2 rounded-md bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-all cursor-pointer group/loan"
                               >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  <Landmark className="w-3.5 h-3.5 text-primary shrink-0" />
-                                  <span className="text-xs font-semibold text-foreground truncate group-hover/loan:text-primary transition-colors">
+                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                  <Landmark className="w-3 h-3 text-primary shrink-0" />
+                                  <span className="text-[11px] font-semibold text-foreground truncate group-hover/loan:text-primary transition-colors">
                                     {loan.profileName}
                                   </span>
                                 </div>
-                                <span className="text-[11px] font-bold text-primary font-mono shrink-0">
+                                <span className="text-[10px] font-bold text-primary font-mono shrink-0">
                                   ₹{(loan.loanAmount || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
@@ -353,66 +348,45 @@ export default function TruckManagerPage() {
                   </div>
 
                   {/* Actions row */}
-                  <div className="flex flex-wrap items-center justify-between border-t border-border/50 pt-4 mt-2 gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex flex-wrap items-center justify-between border-t border-border/40 pt-2.5 gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1">
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
-                        onClick={() => navigate(`/tyre-manager/${truck.id}`)}
+                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
+                        onClick={() => navigate(`/tyres/${truck.id}`)}
                         title="Manage truck tyres"
                       >
-                        <Settings className="w-3 h-3" /> Tyres
+                        <Settings className="w-3 h-3 text-primary" /> Tyres
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
+                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
                         onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)}
                         title="Manage fleet maintenance"
                       >
-                        <Wrench className="w-3 h-3 text-primary" /> Maintenance
+                        <Wrench className="w-3 h-3 text-amber-500" /> Maintenance
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
+                        className="rounded-lg border-border bg-background hover:bg-muted text-[11px] font-medium h-7 px-2 flex items-center gap-1"
                         onClick={() => setShareConfig({ isOpen: true, truckId: truck.id, employeeId: null, entityName: `Truck ${truck.truck_number}` })}
                         title="Share vehicle document folder link"
                       >
-                        <Share2 className="w-3.5 h-3.5 text-primary" /> Share Link
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-xl border-border bg-background hover:bg-muted text-xs font-medium flex items-center gap-1"
-                        onClick={() => setFastagConfig({ isOpen: true, truck })}
-                        title="Recharge FASTag balance"
-                      >
-                        <Wallet className="w-3.5 h-3.5 text-blue-500" /> FASTag
+                        <Share2 className="w-3 h-3 text-blue-500" /> Share
                       </Button>
                     </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="w-8 h-8 rounded-lg hover:bg-muted" 
-                        onClick={() => setModalConfig({ isOpen: true, truck })}
-                        title="Edit vehicle details"
-                      >
-                        <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="w-8 h-8 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive" 
-                        onClick={() => handleDelete(truck.id)}
-                        title="Delete vehicle"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+
+                    <Button 
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setFastagConfig({ isOpen: true, truck })}
+                      className="rounded-lg text-[11px] font-bold h-7 px-2 text-primary hover:bg-primary/10 flex items-center gap-1 shrink-0"
+                    >
+                      <Wallet className="w-3 h-3" /> FASTag
+                    </Button>
                   </div>
                 </div>
               </div>
