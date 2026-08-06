@@ -499,20 +499,22 @@ router.get('/folders', async (req, res) => {
   try {
     const token = await ensureAccessToken();
     if (token) {
+      const accountId = await getZohoAccountId(token);
       const apiUrl = getZohoMailApiUrl(zohoConfig.region);
-      const url = `${apiUrl}/accounts/${zohoConfig.accountId}/folders`;
+      const url = `${apiUrl}/accounts/${accountId}/folders`;
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
       });
       const data = await response.json();
+      logger.info('Zoho folders raw response:', JSON.stringify(data).substring(0, 300));
 
-      if (data.data) {
+      if (data.data && data.data.length > 0) {
         const folders = data.data.map(f => ({
-          id: f.folderId || f.folderName,
-          name: f.folderName,
-          unreadCount: f.unreadCount || 0,
-          totalCount: f.totalCount || 0
+          id: String(f.folderId || f.id || f.folderName),
+          name: f.folderName || f.name,
+          unreadCount: Number(f.unreadCount) || 0,
+          totalCount: Number(f.mailCount || f.totalCount) || 0
         }));
         return res.json({ success: true, source: 'zoho_live', folders });
       }
@@ -551,34 +553,47 @@ router.get('/messages', async (req, res) => {
   try {
     const token = await ensureAccessToken();
     if (token) {
+      const accountId = await getZohoAccountId(token);
       const apiUrl = getZohoMailApiUrl(zohoConfig.region);
-      const url = `${apiUrl}/accounts/${zohoConfig.accountId}/messages/view?folderId=${folder}&limit=30`;
+
+      // Build URL — use searchmail for search, view for folder listing
+      let url;
+      if (search) {
+        url = `${apiUrl}/accounts/${accountId}/messages/search?searchKey=${encodeURIComponent(search)}&limit=30`;
+      } else {
+        url = `${apiUrl}/accounts/${accountId}/messages/view?folderId=${encodeURIComponent(folder)}&limit=50&sortBy=date&order=desc`;
+      }
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
       });
       const data = await response.json();
+      logger.info(`Zoho messages [${folder}] raw:`, JSON.stringify(data).substring(0, 300));
 
-      if (data.data) {
+      if (data.data && Array.isArray(data.data)) {
         const messages = data.data.map(m => ({
-          id: m.messageId,
-          messageId: m.messageId,
+          id: String(m.messageId),
+          messageId: String(m.messageId),
           folderId: folder,
-          senderName: m.sender || m.fromAddress,
-          senderEmail: m.fromAddress,
-          to: m.toAddress,
-          subject: m.subject || 'No Subject',
-          snippet: m.summary || '',
-          date: new Date(Number(m.receivedTime) || Date.now()).toISOString(),
-          isRead: m.status === '1',
-          isStarred: m.flag === '1',
-          hasAttachment: m.hasAttachment === '1',
+          senderName: m.sender || m.fromAddress || '',
+          senderEmail: m.fromAddress || '',
+          to: m.toAddress || '',
+          subject: m.subject || '(No Subject)',
+          snippet: m.summary || m.content || '',
+          date: m.receivedTime ? new Date(Number(m.receivedTime)).toISOString() : new Date().toISOString(),
+          isRead: m.status === '1' || m.readStatus === 'true',
+          isStarred: m.flag === '1' || m.flagged === 'true',
+          hasAttachment: m.hasAttachment === '1' || m.hasAttachment === true,
           priority: m.priority === '1' ? 'High' : 'Normal',
           category: 'General'
         }));
 
         return res.json({ success: true, source: 'zoho_live', messages });
       }
+
+      // Log if empty but connected
+      logger.info(`Zoho messages returned empty for folder ${folder}:`, JSON.stringify(data));
+      return res.json({ success: true, source: 'zoho_live', messages: [] });
     }
   } catch (err) {
     logger.warn('Zoho Mail API messages fetch error, using fallback engine:', err.message);
@@ -597,21 +612,16 @@ router.get('/messages', async (req, res) => {
 
   if (search) {
     const q = search.toLowerCase();
-    result = result.filter(m => 
-      m.subject.toLowerCase().includes(q) || 
-      m.senderName.toLowerCase().includes(q) || 
-      m.senderEmail.toLowerCase().includes(q) || 
+    result = result.filter(m =>
+      m.subject.toLowerCase().includes(q) ||
+      m.senderName.toLowerCase().includes(q) ||
+      m.senderEmail.toLowerCase().includes(q) ||
       m.snippet.toLowerCase().includes(q)
     );
   }
 
-  if (unreadOnly === 'true') {
-    result = result.filter(m => !m.isRead);
-  }
-
-  if (starredOnly === 'true') {
-    result = result.filter(m => m.isStarred);
-  }
+  if (unreadOnly === 'true') result = result.filter(m => !m.isRead);
+  if (starredOnly === 'true') result = result.filter(m => m.isStarred);
 
   return res.json({ success: true, source: 'fallback_native', messages: result });
 });
