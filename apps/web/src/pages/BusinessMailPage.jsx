@@ -605,7 +605,7 @@ export default function BusinessMailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
           {/* ── COLUMN 1: FOLDERS & QUICK CATEGORIES (lg:col-span-2) ────────── */}
-          <Card className="lg:col-span-2 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl p-3 space-y-4">
+          <Card className="lg:col-span-2 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl p-3 space-y-4 lg:h-[calc(100vh-180px)] lg:min-h-[550px] overflow-y-auto scrollbar-none">
             <div>
               <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider px-3 mb-2">Mail Folders</p>
               <div className="space-y-1">
@@ -684,7 +684,7 @@ export default function BusinessMailPage() {
           </Card>
 
           {/* ── COLUMN 2: INBOX MESSAGES LIST (lg:col-span-4) ───────────────── */}
-          <Card className="lg:col-span-4 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl flex flex-col h-[750px] overflow-hidden">
+          <Card className="lg:col-span-4 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl flex flex-col h-auto lg:h-[calc(100vh-180px)] lg:min-h-[550px] overflow-hidden">
             
             {/* Search & Filter Header */}
             <div className="p-3 border-b border-slate-800 space-y-2 shrink-0">
@@ -811,7 +811,7 @@ export default function BusinessMailPage() {
           </Card>
 
           {/* ── COLUMN 3: EMAIL READER & INTELLIGENCE PANE (lg:col-span-6) ──── */}
-          <Card className="lg:col-span-6 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl flex flex-col h-[750px] overflow-hidden">
+          <Card className="lg:col-span-6 bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl flex flex-col h-auto lg:h-[calc(100vh-180px)] lg:min-h-[550px] overflow-hidden">
             {selectedMessage ? (
               <div className="flex flex-col h-full overflow-y-auto scrollbar-none">
 
@@ -1043,7 +1043,7 @@ export default function BusinessMailPage() {
 
       {/* ── COMPOSE EMAIL MODAL ─────────────────────────────────────────── */}
       <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
-        <DialogContent className="max-w-3xl bg-slate-950 text-slate-100 border-blue-500/40 rounded-3xl p-6 shadow-2xl font-sans">
+        <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto bg-slate-950 text-slate-100 border-blue-500/40 rounded-3xl p-5 md:p-6 shadow-2xl font-sans scrollbar-none">
           <DialogHeader className="pb-3 border-b border-slate-800 flex flex-row items-center justify-between">
             <div>
               <DialogTitle className="text-xl font-black text-blue-400 flex items-center gap-2">
@@ -1151,7 +1151,7 @@ export default function BusinessMailPage() {
 
       {/* ── ZOHO OAUTH SETTINGS MODAL ───────────────────────────────────── */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-md bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-6 shadow-2xl font-sans">
+        <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto bg-slate-950 text-slate-100 border-slate-800 rounded-3xl p-6 shadow-2xl font-sans scrollbar-none">
           <DialogHeader className="pb-3 border-b border-slate-800">
             <DialogTitle className="text-xl font-black text-white flex items-center gap-2">
               <Settings className="w-5 h-5 text-amber-400" /> Zoho Mail OAuth 2.0 Settings
