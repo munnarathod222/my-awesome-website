@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import pb from '@/lib/pocketbaseClient';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TyreFormModal, { TYRE_SLOTS } from '@/components/TyreFormModal.jsx';
 import TyreDiagramView from '@/components/TyreDiagramView.jsx';
 import TyreDetailsModal from '@/components/TyreDetailsModal.jsx';
@@ -434,43 +435,53 @@ export default function TyreManagementPage() {
     return <div className="p-12 flex justify-center"><LoadingSpinner text="Loading..." /></div>;
   }
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <Button variant="ghost" onClick={() => navigate('/truck-manager')} className="mb-2 -ml-4 text-muted-foreground hover:bg-secondary/50 rounded-xl">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Trucks
-      </Button>
+  const replaceWarningCount = tyres.filter(t => (t.current_lifecycle_kms || 0) >= 80000 || t.status === 'damaged').length;
+  const rotationDueCount = tyres.filter(t => (t.current_lifecycle_kms || 0) >= 60000 && (t.current_lifecycle_kms || 0) < 80000).length;
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-card p-6 sm:p-8 rounded-3xl border border-border shadow-sm">
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* Top Header & Navigation */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-5 sm:p-6 rounded-3xl border border-border shadow-sm">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-bold flex items-center gap-3 tracking-tight">
-            <div className="p-2.5 bg-primary/10 rounded-xl shadow-inner">
-              <CircleDashed className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
-            </div>
-            Tyre & Battery Management
-          </h1>
-          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-muted-foreground font-medium">
-            <Badge variant="secondary" className="px-3 py-1 shadow-sm font-bold text-foreground bg-background border">{truck?.truck_number || 'Select Vehicle'}</Badge>
-            {truck?.truck_name && <span>{truck.truck_name}</span>}
-            <span className="opacity-50">•</span>
-            <span>{tyres.length} / 7 Positions Filled</span>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/truck-manager')} className="rounded-xl h-9 w-9 text-muted-foreground hover:bg-secondary/50">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-xl sm:text-2xl font-heading font-bold flex items-center gap-2.5 tracking-tight">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <CircleDashed className="w-5 h-5 text-primary" />
+              </div>
+              Tyre & Battery Hub
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground font-medium">
+            <Badge variant="secondary" className="px-2.5 py-0.5 font-bold text-foreground bg-background border">{truck?.truck_number || 'Select Vehicle'}</Badge>
+            {truck?.truck_name && <span className="font-semibold text-foreground">{truck.truck_name}</span>}
+            <span className="opacity-40">•</span>
+            <span className="text-emerald-500 font-bold">{tyres.length}/7 Positions Active</span>
+            {replaceWarningCount > 0 && (
+              <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30 text-[10px]">
+                <ShieldAlert className="w-3 h-3 mr-1" /> {replaceWarningCount} Replace Warning
+              </Badge>
+            )}
           </div>
         </div>
 
-        {/* Vehicle Selector Dropdown */}
-        {allTrucks.length > 0 && (
-          <div className="flex items-center gap-3 bg-secondary/30 p-2.5 rounded-2xl border border-border/50 w-full md:w-auto">
-            <Truck className="w-5 h-5 text-primary ml-2 shrink-0" />
-            <div className="w-full md:w-64">
+        {/* Vehicle Selector Dropdown & Quick Actions */}
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {allTrucks.length > 0 && (
+            <div className="flex items-center gap-2 bg-secondary/40 p-1.5 rounded-2xl border border-border/50 flex-1 md:flex-none">
+              <Truck className="w-4 h-4 text-primary ml-2 shrink-0" />
               <Select
                 value={truck?.id || ''}
                 onValueChange={(selectedId) => navigate(`/tyres/${selectedId}`)}
               >
-                <SelectTrigger className="w-full bg-background rounded-xl font-bold h-10 border-border/60">
+                <SelectTrigger className="w-full md:w-56 bg-background rounded-xl font-bold h-9 border-border/60 text-xs">
                   <SelectValue placeholder="Select Vehicle..." />
                 </SelectTrigger>
                 <SelectContent>
                   {allTrucks.map(t => (
-                    <SelectItem key={t.id} value={t.id} className="font-medium">
+                    <SelectItem key={t.id} value={t.id} className="font-medium text-xs">
                       <span className="font-mono font-bold text-primary mr-2">{t.truck_number}</span>
                       {t.truck_name ? `(${t.truck_name})` : ''}
                     </SelectItem>
@@ -478,78 +489,121 @@ export default function TyreManagementPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        )}
+          )}
+
+          <Button
+            size="sm"
+            onClick={() => setBatteryEditOpen(true)}
+            className="rounded-xl bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 border border-amber-500/30 text-xs font-bold gap-1.5 h-9"
+          >
+            <Battery className="w-3.5 h-3.5" /> Edit Battery
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => setFormModal({ isOpen: true, tyre: null, initialPosition: null })}
+            className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5 h-9"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Tyre
+          </Button>
+        </div>
       </div>
 
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-12">
-        {/* Diagram Section */}
-        <section>
-          <div className="flex items-center justify-between mb-4 px-2">
-             <h2 className="text-xl font-heading font-bold tracking-tight">Visual Layout</h2>
-             <p className="text-sm text-muted-foreground">Drag & drop tyres on visual nodes to swap or rotate</p>
-          </div>
-          <TyreDiagramView 
-            tyres={tyres} 
-            onSlotClick={handleSlotClick} 
-            onDragStart={handleDragStart}
-            onDrop={handleDrop}
-          />
-        </section>
+      {/* Main Tabbed Interface for Zero-Scroll Navigation */}
+      <Tabs defaultValue="visual" className="w-full space-y-6">
+        <TabsList className="w-full justify-start overflow-x-auto bg-card p-1.5 rounded-2xl border border-border/60 gap-1 scrollbar-none">
+          <TabsTrigger value="visual" className="rounded-xl text-xs font-bold gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <CircleDashed className="w-3.5 h-3.5" /> Visual Axle Diagram
+          </TabsTrigger>
+          <TabsTrigger value="positions" className="rounded-xl text-xs font-bold gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Truck className="w-3.5 h-3.5" /> Position Details ({tyres.length}/7)
+          </TabsTrigger>
+          <TabsTrigger value="battery" className="rounded-xl text-xs font-bold gap-2 py-2 px-4 data-[state=active]:bg-amber-500 data-[state=active]:text-white">
+            <Battery className="w-3.5 h-3.5" /> Battery Details {truck?.battery_serial_number ? `(${truck.battery_serial_number})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="rotations" className="rounded-xl text-xs font-bold gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <RefreshCw className="w-3.5 h-3.5" /> Rotation History ({rotations.length})
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Details & Logs Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Cards Section */}
-          <section className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-heading font-bold tracking-tight px-2">Position Details</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {TYRE_SLOTS.map(slot => (
-                <TyreSlotCard key={slot.id} slot={slot} />
-              ))}
-            </div>
-          </section>
-
-          {/* Sidebar Panel: Battery & Rotations */}
-          <div className="space-y-8">
-            
-            {/* Battery Management Card */}
-            <Card className="p-6 border-border/50 shadow-sm rounded-3xl bg-card space-y-6">
-              <div className="flex justify-between items-center border-b border-border/50 pb-4">
-                <div className="flex items-center space-x-2">
-                  <div className="p-1.5 bg-primary/10 rounded-lg">
-                    <Battery className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-md font-bold font-heading text-foreground">Battery Details</h3>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setBatteryEditOpen(true)} className="rounded-xl">
-                  Edit Details
-                </Button>
+        {/* TAB 1: VISUAL DIAGRAM */}
+        <TabsContent value="visual" className="space-y-6 animate-in fade-in duration-300">
+          <Card className="p-6 rounded-3xl border-border/60 bg-card shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <div>
+                <h2 className="text-lg font-heading font-bold tracking-tight">Interactive Axle Layout</h2>
+                <p className="text-xs text-muted-foreground">Click any node to view/add details, or drag & drop nodes to swap tyre positions.</p>
               </div>
+              <Badge variant="outline" className="text-[11px] font-mono bg-background">
+                {truck?.truck_number}
+              </Badge>
+            </div>
+            <TyreDiagramView 
+              tyres={tyres} 
+              onSlotClick={handleSlotClick} 
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+            />
+          </Card>
+        </TabsContent>
 
+        {/* TAB 2: POSITION DETAILS (7 TYRE CARDS GRID) */}
+        <TabsContent value="positions" className="space-y-6 animate-in fade-in duration-300">
+          <div className="flex justify-between items-center px-1">
+            <h2 className="text-lg font-heading font-bold tracking-tight">All 7 Tyre Positions</h2>
+            <p className="text-xs text-muted-foreground">Detailed wear bars, tread depth, and serial numbers</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {TYRE_SLOTS.map(slot => (
+              <TyreSlotCard key={slot.id} slot={slot} />
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* TAB 3: BATTERY MANAGEMENT */}
+        <TabsContent value="battery" className="animate-in fade-in duration-300">
+          <Card className="p-6 border-border/60 shadow-sm rounded-3xl bg-card space-y-6 max-w-4xl mx-auto">
+            <div className="flex justify-between items-center border-b border-border/50 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-amber-500">
+                  <Battery className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold font-heading text-foreground">Battery Specification & Bill</h3>
+                  <p className="text-xs text-muted-foreground">Vehicle: {truck?.truck_number || 'N/A'}</p>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => setBatteryEditOpen(true)} className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold">
+                Edit Details
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-border/40">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Serial Number</span>
-                    <span className="font-mono text-sm font-semibold text-foreground truncate block">{truck?.battery_serial_number || 'N/A'}</span>
+                    <span className="font-mono text-sm font-bold text-foreground truncate block">{truck?.battery_serial_number || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Purchase Date</span>
-                    <span className="text-sm font-semibold text-foreground block">
+                    <span className="text-sm font-bold text-foreground block">
                       {truck?.battery_purchase_date ? new Date(truck.battery_purchase_date).toLocaleDateString() : 'N/A'}
                     </span>
                   </div>
                 </div>
+
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-1">Warranty Details</span>
-                  <p className="text-xs text-foreground bg-muted/30 p-3 rounded-xl border border-border/50 min-h-[50px] whitespace-pre-line leading-relaxed">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-1.5">Warranty & Terms</span>
+                  <p className="text-xs text-foreground bg-muted/30 p-3.5 rounded-2xl border border-border/50 min-h-[60px] whitespace-pre-line leading-relaxed font-medium">
                     {truck?.battery_warranty_details || 'No warranty details provided.'}
                   </p>
                 </div>
+              </div>
+
+              <div className="space-y-4">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Photo Snapshots</span>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Battery Snapshots</span>
                   {truck?.battery_image && (Array.isArray(truck.battery_image) ? truck.battery_image.length > 0 : truck.battery_image) ? (
                     <div className="grid grid-cols-2 gap-2">
                       {(Array.isArray(truck.battery_image) ? truck.battery_image : [truck.battery_image]).map((img, idx) => (
@@ -573,108 +627,110 @@ export default function TyreManagementPage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="w-full aspect-video rounded-2xl overflow-hidden border border-border bg-muted/20 flex items-center justify-center">
-                      <div className="text-center p-4 text-muted-foreground">
-                        <span className="text-xs">No image uploaded</span>
-                      </div>
+                    <div className="w-full aspect-video rounded-2xl border border-dashed border-border/60 bg-muted/10 flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">No photos uploaded</span>
                     </div>
                   )}
                 </div>
 
-                {/* Battery Bill */}
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Purchase Bill / Invoice</span>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2 block">Purchase Invoice / Bill</span>
                   {truck?.battery_bill ? (
-                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-border/50 rounded-xl">
-                      <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-border/50 rounded-2xl">
+                      <div className="p-2 bg-amber-500/10 rounded-xl shrink-0 text-amber-500">
                         {truck.battery_bill.toLowerCase().endsWith('.pdf') ? (
-                          <FileText className="w-5 h-5 text-primary" />
+                          <FileText className="w-5 h-5" />
                         ) : (
-                          <Receipt className="w-5 h-5 text-primary" />
+                          <Receipt className="w-5 h-5" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">{truck.battery_bill}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{truck.battery_bill}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
                           {truck.battery_bill.toLowerCase().endsWith('.pdf') ? 'PDF Document' : 'Image'}
                         </p>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
-                        {!truck.battery_bill.toLowerCase().endsWith('.pdf') && (
-                          <a
-                            href={pb.files.getUrl(truck, truck.battery_bill)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                            title="View"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </a>
-                        )}
                         <a
                           href={pb.files.getUrl(truck, truck.battery_bill)}
-                          download
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                          title="Download"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
+                          title="View / Download"
                         >
-                          <Download className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4" />
                         </a>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 p-3 bg-muted/20 border border-dashed border-border/50 rounded-xl">
+                    <div className="flex items-center gap-2 p-3.5 bg-muted/20 border border-dashed border-border/50 rounded-2xl">
                       <Receipt className="w-4 h-4 text-muted-foreground/50" />
-                      <span className="text-xs text-muted-foreground">No bill uploaded. Click Edit Details to add one.</span>
+                      <span className="text-xs text-muted-foreground">No bill uploaded yet.</span>
                     </div>
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
+          </Card>
+        </TabsContent>
 
-            {/* Tyre Rotation History */}
-            <Card className="p-6 border-border/50 shadow-sm rounded-3xl bg-card space-y-4">
-              <div className="flex items-center space-x-2 border-b border-border/50 pb-4">
-                <div className="p-1.5 bg-primary/10 rounded-lg">
-                  <RefreshCw className="w-5 h-5 text-primary" />
+        {/* TAB 4: ROTATION & SWAP HISTORY */}
+        <TabsContent value="rotations" className="animate-in fade-in duration-300">
+          <Card className="p-6 border-border/60 shadow-sm rounded-3xl bg-card space-y-4 max-w-4xl mx-auto">
+            <div className="flex items-center justify-between border-b border-border/50 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-primary/10 rounded-2xl text-primary">
+                  <RefreshCw className="w-5 h-5" />
                 </div>
-                <h3 className="text-md font-bold font-heading text-foreground">Rotation History</h3>
+                <div>
+                  <h3 className="text-lg font-bold font-heading text-foreground">Tyre Rotation & Swap Logs</h3>
+                  <p className="text-xs text-muted-foreground">Historical odometer readings and position changes</p>
+                </div>
               </div>
+              <Badge variant="secondary" className="font-mono text-xs">
+                {rotations.length} Logs Saved
+              </Badge>
+            </div>
 
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
-                {rotations.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No rotation history logged yet.</p>
-                ) : (
-                  rotations.map((log) => {
-                    const tyreA = log.expand?.tyre1_id;
-                    const tyreB = log.expand?.tyre2_id;
-                    const slotA = TYRE_SLOTS.find(s => s.id === log.to_position1);
-                    const slotB = TYRE_SLOTS.find(s => s.id === log.to_position2);
+            <div className="space-y-3">
+              {rotations.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground space-y-2">
+                  <RefreshCw className="w-8 h-8 mx-auto opacity-30 animate-spin-slow" />
+                  <p className="text-sm font-semibold">No rotation history logged yet.</p>
+                  <p className="text-xs">Drag and drop tyres on the Visual Axle Diagram to log a swap!</p>
+                </div>
+              ) : (
+                rotations.map((log) => {
+                  const tyreA = log.expand?.tyre1_id;
+                  const tyreB = log.expand?.tyre2_id;
+                  const slotA = TYRE_SLOTS.find(s => s.id === log.to_position1);
+                  const slotB = TYRE_SLOTS.find(s => s.id === log.to_position2);
 
-                    return (
-                      <div key={log.id} className="p-3 bg-muted/30 border border-border/50 rounded-xl space-y-2 text-xs">
-                        <div className="flex justify-between items-center text-muted-foreground font-semibold">
+                  return (
+                    <div key={log.id} className="p-4 bg-muted/20 border border-border/50 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs">
+                      <div>
+                        <div className="flex items-center gap-2 text-muted-foreground font-semibold mb-1">
+                          <Calendar className="w-3.5 h-3.5 text-primary" />
                           <span>{new Date(log.swap_date).toLocaleDateString()}</span>
-                          <Badge variant="outline" className="font-mono text-[9px] bg-background">
-                            {log.swap_odometer_reading} KM
-                          </Badge>
                         </div>
-                        <p className="text-foreground leading-relaxed">
+                        <p className="text-foreground leading-relaxed text-xs">
                           <strong>{tyreA?.tyre_brand || 'Tyre'}</strong> moved to <strong>{slotA?.label || log.to_position1}</strong>.
                           {tyreB && (
                             <span> Swapped with <strong>{tyreB?.tyre_brand || 'Tyre'}</strong> at <strong>{slotB?.label || log.to_position2}</strong>.</span>
                           )}
                         </p>
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </Card>
-
-          </div>
-
-        </div>
-      </div>
+                      <Badge variant="outline" className="font-mono text-xs bg-background shrink-0 font-bold text-primary">
+                        {log.swap_odometer_reading} KM
+                      </Badge>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Battery Edit Dialog */}
       <Dialog open={batteryEditOpen} onOpenChange={(val) => !val && !loading && setBatteryEditOpen(false)}>
