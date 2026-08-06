@@ -328,6 +328,35 @@ const ensureAccessToken = async () => {
   return null;
 };
 
+/**
+ * Dynamic Zoho Account ID Fetcher
+ */
+const getZohoAccountId = async (token) => {
+  if (zohoConfig.accountId && zohoConfig.accountId.length > 5 && zohoConfig.accountId !== '1000293881') {
+    return zohoConfig.accountId;
+  }
+  try {
+    const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+    const res = await fetch(`${apiUrl}/accounts`, {
+      headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+    });
+    const data = await res.json();
+    if (data.data && data.data.length > 0) {
+      const accId = String(data.data[0].accountId || data.data[0].account_id || data.data[0].id);
+      zohoConfig.accountId = accId;
+      if (data.data[0].incomingAddress || data.data[0].accountEmail) {
+        zohoConfig.accountEmail = data.data[0].incomingAddress || data.data[0].accountEmail;
+      }
+      saveZohoConfigToDisk();
+      logger.info(`Fetched live Zoho Account ID: ${accId} for ${zohoConfig.accountEmail}`);
+      return accId;
+    }
+  } catch (e) {
+    logger.warn('Failed to fetch Zoho accountId:', e.message);
+  }
+  return zohoConfig.accountId || '1000293881';
+};
+
 // ── MOCK LOGISTICS INTELLIGENCE EMAILS DATABASE ──────────────────────────────
 const LOGISTICS_SIMULATED_MESSAGES = [
   {
@@ -608,8 +637,9 @@ router.post('/send', async (req, res) => {
   try {
     const token = await ensureAccessToken();
     if (token) {
+      const accountId = await getZohoAccountId(token);
       const apiUrl = getZohoMailApiUrl(zohoConfig.region);
-      const url = `${apiUrl}/accounts/${zohoConfig.accountId}/messages`;
+      const url = `${apiUrl}/accounts/${accountId}/messages`;
 
       const payload = {
         fromAddress: zohoConfig.accountEmail,
@@ -631,9 +661,11 @@ router.post('/send', async (req, res) => {
       });
 
       const data = await response.json();
-      if (data.status && data.status.code === 200) {
+      if (data.status && (data.status.code === 200 || data.status.code === 201)) {
         logger.info(`Zoho API mail sent successfully to ${to}`);
-        return res.json({ success: true, source: 'zoho_live', message: 'Email sent successfully via Zoho Mail API' });
+        return res.json({ success: true, source: 'zoho_live', message: `Email delivered successfully to ${to} via Zoho Mail API!` });
+      } else {
+        logger.warn('Zoho Mail API response error:', data);
       }
     }
   } catch (err) {
