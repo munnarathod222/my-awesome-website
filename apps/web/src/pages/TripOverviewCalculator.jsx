@@ -44,7 +44,7 @@ export default function TripOverviewCalculator() {
   // Saved reports state
   const [savedReports, setSavedReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('calculator');
+  const [activeTab, setActiveTab] = useState('reports');
   const [viewingReport, setViewingReport] = useState(null);
 
   const fetchSavedReports = async () => {
@@ -235,9 +235,13 @@ export default function TripOverviewCalculator() {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {activeTab === 'calculator' && (
+          {activeTab === 'calculator' ? (
             <Button onClick={() => setIsSaveDialogOpen(true)} className="rounded-xl font-bold shadow-sm w-full md:w-auto">
               <Save className="w-4 h-4 mr-2" /> Save Calculation
+            </Button>
+          ) : (
+            <Button onClick={() => setActiveTab('calculator')} className="rounded-xl font-extrabold bg-blue-600 hover:bg-blue-500 text-white shadow-md w-full md:w-auto gap-2">
+              <Calculator className="w-4 h-4" /> Calculate New Trip
             </Button>
           )}
         </div>
