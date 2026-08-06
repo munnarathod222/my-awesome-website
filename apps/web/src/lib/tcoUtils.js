@@ -135,6 +135,7 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
 
   const revenuePerKm = totalDistanceKm > 0 ? Number((totalTripRevenue / totalDistanceKm).toFixed(2)) : 0;
   const operatingCostPerKm = totalDistanceKm > 0 ? Number((totalOperatingCost / totalDistanceKm).toFixed(2)) : 0;
+  const profitPerKm = totalDistanceKm > 0 ? Number((netProfit / totalDistanceKm).toFixed(2)) : 0;
   const costPerKm = totalDistanceKm > 0 ? Number((netTCO / totalDistanceKm).toFixed(2)) : 0;
 
   const vehicleAgeMonths = Math.max(1, Math.round(vehicleAgeYears * 12));
