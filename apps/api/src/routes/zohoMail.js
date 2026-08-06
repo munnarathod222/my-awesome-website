@@ -588,9 +588,6 @@ Phone: +91 7794072244`
  */
 router.get('/debug-pb', async (req, res) => {
   try {
-    const collections = await pocketbaseClient.collections.getFullList();
-    const collectionNames = collections.map(c => c.name);
-    
     let appSettingsItems = [];
     try {
       const items = await pocketbaseClient.collection('app_settings').getFullList();
@@ -599,10 +596,18 @@ router.get('/debug-pb', async (req, res) => {
       appSettingsItems = { error: e.message };
     }
 
+    let companySettingsItems = [];
+    try {
+      const items = await pocketbaseClient.collection('company_settings').getFullList();
+      companySettingsItems = items;
+    } catch (e) {
+      companySettingsItems = { error: e.message };
+    }
+
     return res.json({
       success: true,
-      collections: collectionNames,
-      appSettingsItems
+      appSettingsItems,
+      companySettingsItems
     });
   } catch (err) {
     return res.json({
