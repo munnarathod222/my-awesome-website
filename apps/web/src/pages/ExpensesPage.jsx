@@ -157,6 +157,36 @@ const ExpensesPage = () => {
         console.warn('Direct cashbook advances query skipped:', cbErr);
       }
 
+      // 🛡️ Fail-Safe 3: Merge driver advances paid on trip logs (`advance_paid_to_driver > 0`)
+      try {
+        const tripAdvances = await pb.collection('trip_logs').getFullList({
+          filter: 'advance_paid_to_driver > 0',
+          sort: '-date',
+          $autoCancel: false
+        });
+
+        const existingIds = new Set(fetchedAdvances.map(a => a.id));
+        tripAdvances.forEach(t => {
+          const advId = `trip_adv_${t.id}`;
+          if (!existingIds.has(advId) && !existingIds.has(t.id)) {
+            fetchedAdvances.push({
+              id: advId,
+              employee_id: '',
+              employee_name: t.driver_name || 'Trip Driver',
+              amount: Number(t.advance_paid_to_driver) || 0,
+              date: t.date || t.created,
+              status: 'given',
+              remaining_balance: 0,
+              reason: `Trip Advance (${t.trip_id || t.route || 'Trip'})`,
+              notes: `Truck: ${t.truck_number || ''}`,
+              created: t.created
+            });
+          }
+        });
+      } catch (tErr) {
+        console.warn('Trip advances query skipped:', tErr);
+      }
+
       const sortedAdvs = (fetchedAdvances || []).sort((a, b) => new Date(b.date || b.created) - new Date(a.date || a.created));
       setAdvances(sortedAdvs);
 
@@ -478,20 +508,28 @@ const ExpensesPage = () => {
     return result;
   }, [advances, advFilters]);
 
+  const parseYearMonth = (dateVal) => {
+    if (!dateVal) return '';
+    const str = String(dateVal).trim();
+    const m = str.match(/^(\d{4})[-/](\d{1,2})/);
+    if (m) {
+      return `${m[1]}-${String(m[2]).padStart(2, '0')}`;
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
   // Available YYYY-MM list from database
   const availableMonths = useMemo(() => {
     const setMap = new Set();
     expenses.forEach(e => {
-      if (e.date) {
-        const d = new Date(e.date);
-        setMap.add(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
-      }
+      const ym = parseYearMonth(e.date);
+      if (ym) setMap.add(ym);
     });
     advances.forEach(a => {
-      if (a.date) {
-        const d = new Date(a.date);
-        setMap.add(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
-      }
+      const ym = parseYearMonth(a.date);
+      if (ym) setMap.add(ym);
     });
     return Array.from(setMap).sort().reverse();
   }, [expenses, advances]);
@@ -499,7 +537,7 @@ const ExpensesPage = () => {
   // Compute 8 category totals based on selected period or active filters
   const { activeSummaryLabel, summaryTotals } = useMemo(() => {
     const now = new Date();
-    const currentYM = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     let targetExpenses = [];
     let targetAdvances = [];
@@ -517,15 +555,8 @@ const ExpensesPage = () => {
     } else {
       let targetYM = selectedSummaryPeriod;
       if (selectedSummaryPeriod === 'auto') {
-        const hasCurrentMonthData = expenses.some(e => {
-          if (!e.date) return false;
-          const d = new Date(e.date);
-          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` === currentYM;
-        }) || advances.some(a => {
-          if (!a.date) return false;
-          const d = new Date(a.date);
-          return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` === currentYM;
-        });
+        const hasCurrentMonthData = expenses.some(e => parseYearMonth(e.date) === currentYM) ||
+          advances.some(a => parseYearMonth(a.date) === currentYM);
 
         targetYM = hasCurrentMonthData ? currentYM : (availableMonths[0] || currentYM);
       } else if (selectedSummaryPeriod === 'current') {
@@ -536,19 +567,10 @@ const ExpensesPage = () => {
       const targetYear = Number(yearStr);
       const targetMonth = Number(monthStr) - 1;
 
-      targetExpenses = expenses.filter(exp => {
-        if (!exp.date) return false;
-        const d = new Date(exp.date);
-        return d.getUTCFullYear() === targetYear && d.getUTCMonth() === targetMonth;
-      });
+      targetExpenses = expenses.filter(exp => parseYearMonth(exp.date) === targetYM);
+      targetAdvances = advances.filter(adv => parseYearMonth(adv.date) === targetYM);
 
-      targetAdvances = advances.filter(adv => {
-        if (!adv.date) return false;
-        const d = new Date(adv.date);
-        return d.getUTCFullYear() === targetYear && d.getUTCMonth() === targetMonth;
-      });
-
-      const monthDate = new Date(Date.UTC(targetYear, targetMonth, 1));
+      const monthDate = new Date(targetYear, targetMonth, 1);
       label = targetYM === currentYM ? `${format(monthDate, 'MMM yyyy')} (Current)` : `${format(monthDate, 'MMM yyyy')}`;
       if (selectedSummaryPeriod === 'auto' && targetYM !== currentYM) {
         label = `${format(monthDate, 'MMM yyyy')} (Latest Data)`;
