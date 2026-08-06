@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format, differenceInDays, setDate, isPast, isToday, addMonths } from 'date-fns';
-import { Calendar, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Calendar, AlertTriangle, CheckCircle2, Mail } from 'lucide-react';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 import PaymentModal from '@/components/PaymentModal.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 
@@ -19,6 +20,18 @@ const PaymentReminders = () => {
   const [loading, setLoading] = useState(true);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedPaymentData, setSelectedPaymentData] = useState(null);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailReminders = () => {
+    const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    const rems = getReminders();
+    const rows = rems.map(r => `<tr><td style="padding:7px 0;font-size:12px;color:#1e293b;font-weight:600">${r.card.card_name}</td><td style="padding:7px 0;font-size:12px;color:#64748b">...${r.card.card_number_last4 || ''}</td><td style="padding:7px 0;font-size:12px;color:#6366f1">${r.daysUntil < 0 ? `${Math.abs(r.daysUntil)}d overdue` : r.daysUntil === 0 ? 'TODAY' : `${r.daysUntil} days left`}</td><td style="padding:7px 0;font-weight:700;font-size:12px;color:${r.status==='Overdue'?'#e11d48':r.status==='Due Soon'?'#f59e0b':'#059669'};text-align:right">${fmt(r.outstanding)}</td></tr>`).join('');
+    const total = rems.reduce((s, r) => s + r.outstanding, 0);
+    const html = `<div style="font-family:sans-serif;max-width:580px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Payment Reminders</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">${rems.length} active reminders</p></div><div style="padding:20px 24px;background:#f8fafc"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">TOTAL PENDING</p><p style="color:#e11d48;font-size:22px;font-weight:800;margin:0">${fmt(total)}</p></div>${rems.length > 0 ? `<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">CARD</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">LAST4</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">DUE IN</th><th style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">AMOUNT</th></tr></thead><tbody>${rows}</tbody></table>` : '<p style="color:#059669;font-weight:700">All payments are up to date!</p>'}</div></div>`;
+    setMailData({ recipient: '', subject: 'Payment Reminders – Jai Bhavani Cargo', body: 'Please find the outstanding payment reminders below.', html, label: 'Payment Reminders' });
+    setMailOpen(true);
+  };
   
   useEffect(() => {
     fetchData();
@@ -120,9 +133,14 @@ const PaymentReminders = () => {
       <Header />
       <div className="min-h-screen bg-background py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Payment Reminders</h1>
-            <p className="text-muted-foreground mt-1">Upcoming credit card bills and outstanding balances.</p>
+          <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Payment Reminders</h1>
+              <p className="text-muted-foreground mt-1">Upcoming credit card bills and outstanding balances.</p>
+            </div>
+            <Button onClick={triggerEmailReminders} variant="outline" className="gap-2 rounded-xl text-blue-400 border-blue-500/30 hover:bg-blue-500/10">
+              <Mail className="w-4 h-4" /> Email Reminders
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -224,6 +242,15 @@ const PaymentReminders = () => {
         defaultCardId={selectedPaymentData?.cardId}
         defaultAmount={selectedPaymentData?.amount}
         onSuccess={fetchData}
+      />
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </>
   );

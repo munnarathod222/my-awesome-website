@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X, CheckCircle } from 'lucide-react';
+import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X, CheckCircle, Mail } from 'lucide-react';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,17 @@ const ExpensesPage = () => {
   const [selectedAdvanceIds, setSelectedAdvanceIds] = useState(new Set());
   const [isBulkProcessingAdvances, setIsBulkProcessingAdvances] = useState(false);
   const [selectedSummaryPeriod, setSelectedSummaryPeriod] = useState('auto');
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailExpenses = () => {
+    const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+    const total = expenses.reduce((a, b) => a + Number(b.amount || 0), 0);
+    const rows = expenses.slice(0, 10).map(e => `<tr><td style="padding:6px 0;color:#64748b;font-size:12px">${e.date || '—'}</td><td style="padding:6px 0;font-size:12px;color:#1e293b">${e.category || '—'}</td><td style="padding:6px 0;font-size:12px;color:#1e293b">${e.description || '—'}</td><td style="padding:6px 0;font-weight:700;font-size:12px;color:#e11d48;text-align:right">${fmt(e.amount)}</td></tr>`).join('');
+    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Expenses Report</h2></div><div style="padding:20px 24px;background:#f8fafc"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">TOTAL EXPENSES</p><p style="color:#e11d48;font-size:22px;font-weight:800;margin:0">${fmt(total)}</p></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">DATE</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">CATEGORY</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">DESCRIPTION</th><th style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">AMOUNT</th></tr></thead><tbody>${rows}</tbody></table>${expenses.length > 10 ? `<p style="font-size:11px;color:#94a3b8;margin-top:10px">+ ${expenses.length - 10} more records</p>` : ''}</div></div>`;
+    setMailData({ recipient: '', subject: 'Expenses Report – Jai Bhavani Cargo', body: 'Please find the expenses report below.', html, label: 'Expenses Report' });
+    setMailOpen(true);
+  };
 
   const [filters, setFilters] = useState({
     search: '', dateFrom: '', dateTo: '', category: 'all', subcategory: 'all', truckNo: 'all', paymentMode: 'all', creditCard: 'all', sortBy: '-date'
@@ -690,6 +702,9 @@ const ExpensesPage = () => {
             <Button onClick={handleManualRefresh} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none bg-background" disabled={loading || isRefreshing}>
               <RefreshCw className={`w-4 h-4 ${(loading || isRefreshing) ? 'animate-spin' : ''}`} /> Refresh
             </Button>
+            <Button onClick={triggerEmailExpenses} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none text-blue-400 border-blue-500/30 hover:bg-blue-500/10">
+              <Mail className="w-4 h-4" /> Email Report
+            </Button>
             <Button onClick={() => navigate('/bulk-upload?tab=expenses')} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none bg-background">
               <UploadCloud className="w-4 h-4" /> Bulk Import
             </Button>
@@ -1287,6 +1302,15 @@ const ExpensesPage = () => {
           </DialogContent>
         </Dialog>
       )}
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+      />
     </div>
   );
 };

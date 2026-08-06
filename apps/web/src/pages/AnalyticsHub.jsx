@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Activity, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, BarChart3, 
   CalendarDays, BarChart as BarChartIcon, Truck, AlertCircle, Calendar, 
-  MapPin, User, FileText, CheckCircle2, ChevronDown 
+  MapPin, User, FileText, CheckCircle2, ChevronDown, Mail 
 } from 'lucide-react';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 import * as XLSX from 'xlsx';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -131,6 +132,48 @@ const AnalyticsHub = () => {
   const [customTaxValues, setCustomTaxValues] = useState({});
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [payrollLogs, setPayrollLogs] = useState([]);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailReport = () => {
+    const t = data.totals;
+    const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+    const period = filters.startDate && filters.endDate
+      ? `${filters.startDate} to ${filters.endDate}`
+      : 'All Time';
+    const html = `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px">
+          <p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p>
+          <h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Analytics Report</h2>
+          <p style="color:#64748b;font-size:12px;margin:6px 0 0">${period}</p>
+        </div>
+        <div style="padding:20px 24px;background:#f8fafc">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+              <p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">REVENUE</p>
+              <p style="color:#059669;font-size:20px;font-weight:800;margin:0">${fmt(t.revenue)}</p>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+              <p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">EXPENSES</p>
+              <p style="color:#e11d48;font-size:20px;font-weight:800;margin:0">${fmt(t.expenses)}</p>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+              <p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">NET PROFIT</p>
+              <p style="color:${t.profit>=0?'#059669':'#e11d48'};font-size:20px;font-weight:800;margin:0">${fmt(t.profit)}</p>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+              <p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">MARGIN</p>
+              <p style="color:#6366f1;font-size:20px;font-weight:800;margin:0">${Number(t.margin||0).toFixed(1)}%</p>
+            </div>
+          </div>
+          <p style="margin-top:14px;font-size:11px;color:#94a3b8;text-align:center">Generated from Jai Bhavani Cargo Analytics Hub</p>
+        </div>
+      </div>`;
+    setMailData({ recipient: '', subject: `Analytics Report – ${period}`, body: 'Please find the analytics summary for Jai Bhavani Cargo attached below.', html, label: 'Analytics Report' });
+    setMailOpen(true);
+    setExportDropdownOpen(false);
+  };
 
   // Calculate available months dynamically from trip and expense logs
   const availableMonths = React.useMemo(() => {
@@ -495,6 +538,13 @@ const AnalyticsHub = () => {
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs text-slate-200 hover:bg-slate-800 hover:text-white transition-colors"
                   >
                     <span>🖨️ Print / PDF</span>
+                  </button>
+                  <button
+                    onClick={triggerEmailReport}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-xs text-slate-200 hover:bg-slate-800 hover:text-white transition-colors"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-blue-400" />
+                    <span>📧 Email Report</span>
                   </button>
                 </div>
               </div>
@@ -1492,6 +1542,15 @@ const AnalyticsHub = () => {
         </>
         );
       })()}
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+      />
     </div>
   );
 };

@@ -14,7 +14,7 @@ import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2 } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -24,6 +24,7 @@ import AddRecurringTripModal from '@/components/AddRecurringTripModal.jsx';
 import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
@@ -119,6 +120,15 @@ const TripLogsPage = () => {
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
   const [whatsappConfig, setWhatsappConfig] = useState({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' });
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailTrip = (log) => {
+    const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+    const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Trip Sheet</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">LR No: ${log.lr_number || '—'}</p></div><div style="padding:20px 24px;background:#f8fafc"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td style="padding:7px 0;color:#64748b;font-weight:600;width:140px">Truck</td><td style="padding:7px 0;font-weight:700;color:#1e293b">${log.truck_number || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Driver</td><td style="padding:7px 0;color:#1e293b">${log.driver_name || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Route</td><td style="padding:7px 0;color:#1e293b">${log.origin || '—'} → ${log.destination || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Date</td><td style="padding:7px 0;color:#1e293b">${log.start_date || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Status</td><td style="padding:7px 0;font-weight:700;color:#6366f1">${log.trip_status || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Freight</td><td style="padding:7px 0;font-weight:700;color:#059669">${fmt(log.freight_amount)}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Payment</td><td style="padding:7px 0;color:#1e293b">${log.payment_status || '—'}</td></tr></table></div></div>`;
+    setMailData({ recipient: '', subject: `Trip Sheet – ${log.truck_number || ''} | ${log.origin || ''} → ${log.destination || ''}`, body: `Trip sheet for LR# ${log.lr_number || 'N/A'}.`, html, label: `Trip – ${log.lr_number || ''}` });
+    setMailOpen(true);
+  };
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -1056,6 +1066,16 @@ const TripLogsPage = () => {
                                   </DropdownMenuContent>
                                 </DropdownMenu>
 
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => triggerEmailTrip(log)}
+                                  className="h-8 w-8 rounded-lg text-blue-400 border-blue-500/30 hover:bg-blue-500/10 bg-background"
+                                  title="Email Trip Sheet"
+                                >
+                                  <Mail className="w-4 h-4" />
+                                </Button>
+
                                 <Button 
                                   variant="outline" 
                                   size="icon" 
@@ -1493,6 +1513,15 @@ const TripLogsPage = () => {
           defaultTemplate={whatsappConfig.defaultTemplate}
         />
       )}
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+      />
     </>
   );
 };

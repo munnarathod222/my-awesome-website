@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
-  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin
+  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 const CATEGORIES = [
   'All',
@@ -84,6 +85,15 @@ export default function CompanyVaultPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailVault = () => {
+    const docRows = documents.slice(0, 15).map(d => `<tr><td style="padding:5px 0;font-size:12px;color:#64748b">${d.category || '—'}</td><td style="padding:5px 0;font-size:12px;color:#1e293b">${d.title || '—'}</td><td style="padding:5px 0;font-size:12px;color:#6366f1">${d.financial_year || '—'}</td></tr>`).join('');
+    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Company Document Vault Index</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">${documents.length} documents stored</p></div><div style="padding:20px 24px;background:#f8fafc"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">CATEGORY</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">DOCUMENT</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">FY</th></tr></thead><tbody>${docRows}</tbody></table>${documents.length > 15 ? `<p style="font-size:11px;color:#94a3b8;margin-top:10px">+ ${documents.length - 15} more documents</p>` : ''}<p style="margin-top:14px;font-size:11px;color:#94a3b8">Company: ${companyInfo.company_name} | GSTIN: ${companyInfo.company_gstin}</p></div></div>`;
+    setMailData({ recipient: '', subject: 'Company Vault Document Index – Jai Bhavani Cargo', body: 'Please find the company document vault index below.', html, label: 'Vault Document Index' });
+    setMailOpen(true);
+  };
 
   // Upload Form state
   const [uploadFormData, setUploadFormData] = useState({
@@ -379,6 +389,16 @@ export default function CompanyVaultPage() {
           >
             <Share2 className="w-4 h-4 mr-2" />
             ⚡ 1-Click Share Company Dossier
+          </Button>
+
+          <Button 
+            size="sm"
+            variant="outline"
+            className="h-10 font-semibold text-blue-400 border-blue-500/30 hover:bg-blue-500/10"
+            onClick={triggerEmailVault}
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Email Vault Index
           </Button>
 
           <Button 
@@ -1186,6 +1206,15 @@ export default function CompanyVaultPage() {
           </form>
         </DialogContent>
       </Dialog>
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+      />
     </div>
   );
 }

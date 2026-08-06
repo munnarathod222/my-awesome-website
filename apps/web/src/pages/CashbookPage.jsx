@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { format, parseISO } from 'date-fns';
-import { Wallet, Search, Filter, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight, PlusCircle, Settings, Users, TrendingDown, Trash2 } from 'lucide-react';
+import { Wallet, Search, Filter, RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight, PlusCircle, Settings, Users, TrendingDown, Trash2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useCashbookData } from '@/hooks/useCashbookData.js';
@@ -20,6 +20,7 @@ import ExpenseModal from '@/components/ExpenseModal.jsx';
 import AddIncomeModal from '@/components/AddIncomeModal.jsx';
 import EditOpeningBalanceModal from '@/components/EditOpeningBalanceModal.jsx';
 import CashbookTransactionList from '@/components/CashbookTransactionList.jsx';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 export default function CashbookPage() {
   const { currentUser } = useAuth();
@@ -31,6 +32,18 @@ export default function CashbookPage() {
   const [isOpeningBalanceModalOpen, setIsOpeningBalanceModalOpen] = useState(false);
   const [openingBalanceRecord, setOpeningBalanceRecord] = useState(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailCashbook = () => {
+    const fmt = (n) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Math.abs(n || 0));
+    const txs = transactions || [];
+    const income = txs.filter(t => t.transaction_type === 'Income' || t.transaction_type === 'credit').reduce((a, b) => a + Number(b.amount || 0), 0);
+    const expense = txs.filter(t => t.transaction_type !== 'Income' && t.transaction_type !== 'credit').reduce((a, b) => a + Number(b.amount || 0), 0);
+    const html = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Cashbook Summary</h2></div><div style="padding:20px 24px;background:#f8fafc"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">INCOME</p><p style="color:#059669;font-size:18px;font-weight:800;margin:0">${fmt(income)}</p></div><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">EXPENSE</p><p style="color:#e11d48;font-size:18px;font-weight:800;margin:0">${fmt(expense)}</p></div><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">BALANCE</p><p style="color:#6366f1;font-size:18px;font-weight:800;margin:0">${fmt(income - expense)}</p></div></div><p style="margin-top:14px;font-size:11px;color:#94a3b8;text-align:center">Generated from Jai Bhavani Cargo Cashbook</p></div></div>`;
+    setMailData({ recipient: '', subject: 'Cashbook Summary – Jai Bhavani Cargo', body: 'Please find the cashbook summary below.', html, label: 'Cashbook Summary' });
+    setMailOpen(true);
+  };
   
   const [employees, setEmployees] = useState([]);
   
@@ -283,6 +296,9 @@ export default function CashbookPage() {
               <Button onClick={() => setIsIncomeModalOpen(true)} className="rounded-xl shadow-sm gap-2 bg-success hover:bg-success/90 text-success-foreground">
                 <PlusCircle className="w-4 h-4" /> Add Income
               </Button>
+              <Button onClick={triggerEmailCashbook} variant="outline" className="rounded-xl shadow-sm gap-2 text-blue-400 border-blue-500/30 hover:bg-blue-500/10">
+                <Mail className="w-4 h-4" /> Email Summary
+              </Button>
               <Button onClick={() => setIsExpenseModalOpen(true)} className="rounded-xl shadow-sm gap-2">
                 <PlusCircle className="w-4 h-4" /> Add Expense
               </Button>
@@ -420,6 +436,15 @@ export default function CashbookPage() {
           fetchOpeningBalance();
           refetch();
         }}
+      />
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </div>
   );

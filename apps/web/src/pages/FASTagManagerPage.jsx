@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { 
   CreditCard, Wallet, Plus, Search, Truck, AlertTriangle, 
   ArrowUpRight, ArrowDownRight, RefreshCw, Filter, CheckCircle2, 
-  History, DollarSign, Route as RouteIcon, ShieldAlert, Sparkles 
+  History, DollarSign, Route as RouteIcon, ShieldAlert, Sparkles, Mail 
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 import RecordTollDeductionModal from '@/components/RecordTollDeductionModal.jsx';
 import { fetchAllFASTagDeductions } from '@/lib/fastagDeductionUtils.js';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 import { useSearchParams } from 'react-router-dom';
 
@@ -45,6 +46,18 @@ export default function FASTagManagerPage() {
   const [selectedTruckForRecharge, setSelectedTruckForRecharge] = useState(null);
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [isDeductionModalOpen, setIsDeductionModalOpen] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const triggerEmailFAStag = () => {
+    const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+    const totalRecharge = recharges.reduce((a, b) => a + Number(b.recharge_amount || 0), 0);
+    const totalToll = deductions.reduce((a, b) => a + Number(b.amount || 0), 0);
+    const rows = deductions.slice(0, 10).map(d => `<tr><td style="padding:5px 0;font-size:12px;color:#64748b">${d.date || d.created?.substring(0,10) || '—'}</td><td style="padding:5px 0;font-size:12px;color:#1e293b">${d.truck_number || '—'}</td><td style="padding:5px 0;font-size:12px;color:#1e293b">${d.description || 'Toll'}</td><td style="padding:5px 0;font-weight:700;font-size:12px;color:#e11d48;text-align:right">${fmt(d.amount)}</td></tr>`).join('');
+    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">FASTag Statement</h2></div><div style="padding:20px 24px;background:#f8fafc"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px"><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">TOTAL RECHARGED</p><p style="color:#059669;font-size:20px;font-weight:800;margin:0">${fmt(totalRecharge)}</p></div><div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px"><p style="color:#64748b;font-size:10px;font-weight:700;letter-spacing:1px;margin:0 0 4px">TOTAL TOLL PAID</p><p style="color:#e11d48;font-size:20px;font-weight:800;margin:0">${fmt(totalToll)}</p></div></div><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">DATE</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">TRUCK</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">DESCRIPTION</th><th style="text-align:right;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px">AMOUNT</th></tr></thead><tbody>${rows}</tbody></table>${deductions.length > 10 ? `<p style="font-size:11px;color:#94a3b8;margin-top:10px">+ ${deductions.length - 10} more records</p>` : ''}</div></div>`;
+    setMailData({ recipient: '', subject: 'FASTag Statement – Jai Bhavani Cargo', body: 'Please find the FASTag statement below.', html, label: 'FASTag Statement' });
+    setMailOpen(true);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -208,6 +221,13 @@ export default function FASTagManagerPage() {
           </Button>
           {trucks.length > 0 && (
             <>
+              <Button 
+                onClick={triggerEmailFAStag}
+                variant="outline"
+                className="rounded-xl shadow-sm text-blue-400 border-blue-500/30 hover:bg-blue-500/10 font-bold"
+              >
+                <Mail className="w-4 h-4 mr-1.5" /> Email Statement
+              </Button>
               <Button 
                 onClick={() => setIsDeductionModalOpen(true)} 
                 variant="outline"
@@ -718,6 +738,15 @@ export default function FASTagManagerPage() {
         onClose={() => setIsDeductionModalOpen(false)}
         trucks={trucks}
         onSuccess={fetchData}
+      />
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
       />
     </motion.div>
   );
