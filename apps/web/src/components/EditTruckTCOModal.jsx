@@ -34,6 +34,7 @@ export default function EditTruckTCOModal({ isOpen, onClose, truckTCO, onSuccess
         breakdown_days: (truckTCO.estimatedBreakdownDays || 12).toString(),
         daily_opportunity_cost: (truckTCO.dailyOpportunityCost || 5000).toString(),
         manual_maintenance_cost: (truckTCO.totalMaintenanceCost || 0).toString(),
+        manual_operating_cost: (truckTCO.totalOperatingCost || 0).toString(),
         manual_total_revenue: (truckTCO.totalTripRevenue || 0).toString()
       });
     }
@@ -59,6 +60,7 @@ export default function EditTruckTCOModal({ isOpen, onClose, truckTCO, onSuccess
         breakdown_days: parseFloat(formData.breakdown_days) || 0,
         daily_opportunity_cost: parseFloat(formData.daily_opportunity_cost) || 0,
         manual_maintenance_cost: parseFloat(formData.manual_maintenance_cost) || 0,
+        manual_operating_cost: parseFloat(formData.manual_operating_cost) || 0,
         manual_total_revenue: parseFloat(formData.manual_total_revenue) || 0
       };
 

@@ -332,9 +332,10 @@ export default function VehicleTCOPage() {
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">CapEx (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Net TCO (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Trip Revenue (₹)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">Net Profit (₹)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right text-amber-500">Op Expenses (₹)</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right text-emerald-500">Net Profit (₹)</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">ROI (%)</TableHead>
-                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">RPKM vs CPKM</TableHead>
+                    <TableHead className="font-semibold text-muted-foreground py-4 text-right">RPKM vs Op-CPKM</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right">Tipping Signal</TableHead>
                     <TableHead className="font-semibold text-muted-foreground py-4 text-right pr-6">Action</TableHead>
                   </TableRow>
@@ -348,6 +349,7 @@ export default function VehicleTCOPage() {
                         <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                        <TableCell className="py-4 text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                         <TableCell className="py-4 text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
@@ -357,7 +359,7 @@ export default function VehicleTCOPage() {
                     ))
                   ) : filteredTCOList.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="h-48 text-center text-muted-foreground">
+                      <TableCell colSpan={11} className="h-48 text-center text-muted-foreground">
                         <Truck className="w-10 h-10 opacity-30 mx-auto mb-2" />
                         No vehicles found matching criteria.
                       </TableCell>
@@ -390,19 +392,23 @@ export default function VehicleTCOPage() {
                           <span className="block text-[10px] text-muted-foreground font-normal">{v.totalTripsCount} trips</span>
                         </TableCell>
 
-                        <TableCell className="py-4 text-right font-mono font-extrabold text-sm text-purple-400">
-                          ₹{(v.netProfit / 100000).toFixed(2)}L
+                        <TableCell className="py-4 text-right font-mono font-bold text-sm text-amber-500">
+                          ₹{(v.totalOperatingCost / 100000).toFixed(2)}L
+                        </TableCell>
+
+                        <TableCell className="py-4 text-right font-mono font-extrabold text-sm text-emerald-500">
+                          {v.netProfit >= 0 ? `+₹${(v.netProfit / 100000).toFixed(2)}L` : `-₹${(Math.abs(v.netProfit) / 100000).toFixed(2)}L`}
                         </TableCell>
 
                         <TableCell className="py-4 text-right">
                           <Badge variant="outline" className={`font-mono font-bold text-xs px-2.5 py-0.5 rounded-lg border ${v.roiBadgeColor}`}>
-                            +{v.roiPercent}%
+                            {v.roiPercent >= 0 ? `+${v.roiPercent}%` : `${v.roiPercent}%`}
                           </Badge>
                         </TableCell>
 
                         <TableCell className="py-4 text-right font-mono text-xs">
                           <div className="font-bold text-emerald-400">₹{v.revenuePerKm}/km</div>
-                          <div className="text-muted-foreground">vs ₹{v.costPerKm}/km</div>
+                          <div className="text-amber-500 font-medium">vs ₹{v.operatingCostPerKm}/km</div>
                         </TableCell>
 
                         <TableCell className="py-4 text-right">

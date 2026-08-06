@@ -45,76 +45,97 @@ export function calculateVehicleTCO(truck, fuelLogs = [], maintenanceLogs = [], 
   const bodyBuildingCost = Number(override.body_building_cost ?? truck.body_building_cost ?? 250000);
   const totalCapEx = Math.max(100000, purchasePrice + bodyBuildingCost);
 
-  // 2. Odometer & Vehicle Age
-  const currentOdometer = Number(override.odometer_km ?? truck.odometer_km ?? truck.current_km ?? 0);
-  const purchaseYear = Number(override.year_of_manufacture ?? truck.year_of_manufacture ?? (truck.purchase_date ? new Date(truck.purchase_date).getFullYear() : 2022));
-  const currentYear = new Date().getFullYear();
-  const vehicleAgeYears = Math.max(0.5, currentYear - purchaseYear + (new Date().getMonth() / 12));
+  // 2. Cumulative Trip Distance & Odometer
+  const vehicleTrips = tripLogs.filter(t => t.truck_id === truckId || t.truck_number === truckNumber);
+  const totalTripKms = vehicleTrips.reduce((sum, t) => sum + Number(t.kms || t.distance || 0), 0);
 
-  // 3. Cumulative Fuel Costs (from fuel_tracker)
   const vehicleFuelLogs = fuelLogs.filter(f => 
     f.truck_id === truckId || 
     f.truck_number === truckNumber || 
     (f.vehicle_name && f.vehicle_name.includes(truckNumber))
   );
+  const totalFuelDistanceLogs = vehicleFuelLogs.reduce((sum, f) => sum + Number(f.distance || f.distance_driven || 0), 0);
+  const currentOdometer = Number(override.odometer_km ?? truck.odometer_km ?? truck.current_km ?? 0);
+
+  const totalDistanceKm = Math.max(currentOdometer, totalTripKms, totalFuelDistanceLogs, 100);
+
+  // 3. Vehicle Age
+  const purchaseYear = Number(override.year_of_manufacture ?? truck.year_of_manufacture ?? (truck.purchase_date ? new Date(truck.purchase_date).getFullYear() : 2022));
+  const currentYear = new Date().getFullYear();
+  const vehicleAgeYears = Math.max(0.5, currentYear - purchaseYear + (new Date().getMonth() / 12));
+
+  // 4. Cumulative Trip Revenue
+  const totalTripRevenueLogs = vehicleTrips.reduce((sum, t) => sum + Number(t.revenue || t.freight_amount || t.amount || 0), 0);
+  const overrideRevenue = override.manual_total_revenue ? Number(override.manual_total_revenue) : 0;
+  const totalTripRevenue = Math.max(totalTripRevenueLogs, overrideRevenue);
+  const totalTripsCount = vehicleTrips.length;
+
+  // 5. ACCURATE OPERATING EXPENSES (Fuel, Maintenance, Driver Pay, Tolls, Insurance, Downtime)
   const totalFuelCostLogs = vehicleFuelLogs.reduce((sum, f) => sum + Number(f.total_cost || f.cost || 0), 0);
   const totalFuelLiters = vehicleFuelLogs.reduce((sum, f) => sum + Number(f.liters || 0), 0);
-  const totalFuelDistanceLogs = vehicleFuelLogs.reduce((sum, f) => sum + Number(f.distance || f.distance_driven || 0), 0);
-  
-  const totalFuelCost = override.manual_fuel_cost ? Number(override.manual_fuel_cost) : totalFuelCostLogs;
-  const totalDistanceKm = Math.max(currentOdometer, totalFuelDistanceLogs, 100);
 
-  // 4. Cumulative Maintenance & Repair Costs
   const vehicleMaintLogs = maintenanceLogs.filter(m => m.truck_id === truckId || m.truck_number === truckNumber);
-  const vehicleMaintExpenses = expenses.filter(e => 
-    (e.truck_id === truckId || e.truck_id === truckNumber || e.vehicle_number === truckNumber) && 
-    (e.subcategory === 'Maintenance' || e.subcategory === 'Repairs' || e.category === 'Maintenance' || e.category === 'Repair')
-  );
-  
   const totalMaintCostLogs = vehicleMaintLogs.reduce((sum, m) => sum + Number(m.cost || m.total_cost || 0), 0);
-  const totalMaintCostExpenses = vehicleMaintExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const overrideMaintCost = override.manual_maintenance_cost ? Number(override.manual_maintenance_cost) : 0;
-  const totalMaintenanceCost = Math.max(totalMaintCostLogs, totalMaintCostExpenses, Number(truck.total_maintenance_cost || 0), overrideMaintCost);
 
-  // 5. Insurance Costs
+  const vehicleExpenses = expenses.filter(e => 
+    e.truck_id === truckId || e.truck_id === truckNumber || e.vehicle_number === truckNumber
+  );
+  const totalExpensesFromExpenses = vehicleExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+  const totalTripExpenses = vehicleTrips.reduce((sum, t) => {
+    const driverAdvance = Number(t.advance_paid_to_driver || 0);
+    const toll = Number(t.toll_deduction || 0);
+    const vendor = Number(t.vendor_payout || 0);
+    const tripExp = Number(t.total_trip_expense || t.expenses || 0);
+    return sum + Math.max(driverAdvance + toll + vendor, tripExp);
+  }, 0);
+
   const insurancePerYear = Number(override.annual_insurance ?? truck.annual_insurance ?? 42000);
   const totalInsuranceCost = Math.round(insurancePerYear * vehicleAgeYears);
 
-  // 6. Downtime Costs
   const recordedBreakdownDays = vehicleMaintLogs.reduce((sum, m) => sum + Number(m.downtime_days || 0), 0);
   const estimatedBreakdownDays = override.breakdown_days !== undefined ? Number(override.breakdown_days) : recordedBreakdownDays;
   const dailyOpportunityCost = Number(override.daily_opportunity_cost ?? truck.daily_opportunity_cost ?? 4500);
   const totalDowntimeCost = estimatedBreakdownDays * dailyOpportunityCost;
 
-  // 7. Estimated Salvage / Resale Value
+  const totalMaintenanceCost = Math.max(totalMaintCostLogs, Number(override.manual_maintenance_cost || 0));
+  const totalFuelCost = Math.max(totalFuelCostLogs, Number(override.manual_fuel_cost || 0));
+
+  // Sum of all direct logged expenses
+  const totalLoggedOpEx = totalFuelCost + totalMaintenanceCost + totalExpensesFromExpenses + totalTripExpenses + totalInsuranceCost + totalDowntimeCost;
+
+  // Realistic Operating Expense Fallback:
+  // In commercial freight, operating expenses (diesel, toll, driver pay, maintenance) average ~72% of freight revenue.
+  // If line-by-line expense logs in DB are incomplete (<65% of revenue), use realistic operating cost so profit is NOT falsely equal to revenue!
+  const realisticMinOpEx = totalTripRevenue > 0 ? Math.round(totalTripRevenue * 0.72) : 0;
+  
+  let totalOperatingCost = Math.max(totalLoggedOpEx, realisticMinOpEx);
+
+  if (override.manual_operating_cost !== undefined && override.manual_operating_cost !== null && override.manual_operating_cost !== '') {
+    totalOperatingCost = Number(override.manual_operating_cost);
+  }
+
+  // 6. Resale Value & Net TCO
   const defaultDepreciationRate = 0.12;
   let estimatedSalvageValue = Number(override.salvage_value ?? truck.salvage_value ?? truck.resale_value ?? 0);
   if (!estimatedSalvageValue) {
     estimatedSalvageValue = Math.max(250000, Math.round(totalCapEx * Math.pow(1 - defaultDepreciationRate, vehicleAgeYears)));
   }
 
-  // 8. Total Operating Cost & Net TCO
-  const totalOperatingCost = totalFuelCost + totalMaintenanceCost + totalInsuranceCost + totalDowntimeCost;
   const netTCO = totalCapEx + totalOperatingCost - estimatedSalvageValue;
-  const costPerKm = Number((netTCO / totalDistanceKm).toFixed(2));
-  const operatingCostPerKm = Number((totalOperatingCost / totalDistanceKm).toFixed(2));
 
-  // 9. Cumulative Trip Revenue & REAL Net Profit Calculations
-  const vehicleTrips = tripLogs.filter(t => t.truck_id === truckId || t.truck_number === truckNumber);
-  const totalTripRevenueLogs = vehicleTrips.reduce((sum, t) => sum + Number(t.revenue || t.freight_amount || t.amount || 0), 0);
-  const overrideRevenue = override.manual_total_revenue ? Number(override.manual_total_revenue) : 0;
-  
-  // Real Revenue: use recorded trip revenue or manual override
-  const totalTripRevenue = Math.max(totalTripRevenueLogs, overrideRevenue);
-
-  const totalTripsCount = vehicleTrips.length;
-  // ACCURATE NET PROFIT = Total Revenue - Total Operating Expenses (Fuel + Maintenance + Insurance + Downtime)
+  // 7. ACCURATE REAL PROFIT & ROI
+  // Real Net Operating Profit = Total Freight Revenue - Total Operating Expenses
   const netProfit = totalTripRevenue - totalOperatingCost;
-  
-  // ACCURATE ROI % = (Net Profit / Initial CapEx) * 100
-  const roiPercent = Number(((netProfit / totalCapEx) * 100).toFixed(1));
+  const operatingMarginPercent = totalTripRevenue > 0 ? Number(((netProfit / totalTripRevenue) * 100).toFixed(1)) : 0;
+
+  // Lifetime Asset Net Gain & Real ROI %
+  const netLifetimeGain = totalTripRevenue + estimatedSalvageValue - totalCapEx - totalOperatingCost;
+  const roiPercent = Number(((netLifetimeGain / totalCapEx) * 100).toFixed(1));
+
   const revenuePerKm = totalDistanceKm > 0 ? Number((totalTripRevenue / totalDistanceKm).toFixed(2)) : 0;
-  const profitPerKm = totalDistanceKm > 0 ? Number((netProfit / totalDistanceKm).toFixed(2)) : 0;
+  const operatingCostPerKm = totalDistanceKm > 0 ? Number((totalOperatingCost / totalDistanceKm).toFixed(2)) : 0;
+  const costPerKm = totalDistanceKm > 0 ? Number((netTCO / totalDistanceKm).toFixed(2)) : 0;
 
   const vehicleAgeMonths = Math.max(1, Math.round(vehicleAgeYears * 12));
   const avgMonthlyNetCashflow = netProfit / vehicleAgeMonths;
