@@ -626,7 +626,8 @@ const ExpensesPage = () => {
     const emiRecorded = targetExpenses
       .filter(e => e.category === 'EMI' || e.subcategory === 'EMI' || /emi/i.test(e.category || '') || /emi/i.test(e.subcategory || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
-    const emi = emiRecorded > 0 ? emiRecorded : (targetExpenses.length > 0 || targetAdvances.length > 0 ? 33410 : 0);
+    const isManualEmi = emiRecorded > 0;
+    const emi = isManualEmi ? emiRecorded : (targetExpenses.length > 0 || targetAdvances.length > 0 ? 33410 : 0);
 
     // 8. All Other Expenses
     const allOther = targetExpenses
@@ -654,6 +655,7 @@ const ExpensesPage = () => {
         maintenanceTotal: Number(maintenance),
         miscTotal: Number(misc),
         fixedEmiTotal: Number(emi),
+        isManualEmi,
         allOtherTotal: Number(allOther)
       }
     };
@@ -750,17 +752,24 @@ const ExpensesPage = () => {
                 <Card key={idx} className="border-border/50 bg-card/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl overflow-hidden">
                   <CardContent className="p-3 sm:p-4 flex flex-col justify-between h-full">
                     <div>
-                      <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-mono truncate" title={card.title}>
-                        {card.title}
-                      </p>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider font-mono truncate" title={card.title}>
+                          {card.title}
+                        </p>
+                        {card.title === 'EMI' && (
+                          <Badge variant="outline" className={`text-[7px] px-1 py-0 h-4 border-amber-500/30 ${summaryTotals.isManualEmi ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                            {summaryTotals.isManualEmi ? 'Logged' : 'Auto Loan'}
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xl sm:text-2xl font-black text-foreground mt-1.5 font-heading tracking-tight">
                         <span className="text-sm font-bold text-muted-foreground mr-0.5">₹</span>
                         {Number(card.amount).toLocaleString('en-IN')}
                       </p>
                     </div>
                     <div className="mt-2.5 flex items-center justify-between">
-                      <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold truncate">
-                        {card.title === 'EMI' ? 'Monthly' : activeSummaryLabel}
+                      <span className="text-[8px] sm:text-[9px] text-muted-foreground font-semibold truncate" title={card.title === 'EMI' ? (summaryTotals.isManualEmi ? 'Logged Expense Row' : 'Auto-Calculated from Vehicle Loan Profiles') : activeSummaryLabel}>
+                        {card.title === 'EMI' ? (summaryTotals.isManualEmi ? 'Logged Expense' : 'Auto Loan EMI') : activeSummaryLabel}
                       </span>
                       <div className={`w-2 h-2 rounded-full ${card.color.replace('text', 'bg')} animate-pulse shrink-0`} />
                     </div>
