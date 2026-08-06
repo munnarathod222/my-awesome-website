@@ -24,6 +24,7 @@ import BillsList from '@/components/BillsList.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
 import apiServerClient from '@/lib/apiServerClient.js';
+import { syncAutoEmiExpenses } from '@/lib/autoEmiLogger.js';
 
 const ExpensesPage = () => {
   const navigate = useNavigate();
@@ -66,6 +67,9 @@ const ExpensesPage = () => {
     
     try {
       if (!pb) throw new Error('PocketBase client not initialized');
+
+      // ⚡ Auto-sync any due EMI expenses for loan profiles on/after EMI date
+      await syncAutoEmiExpenses();
 
       const truckRecords = await pb.collection('trucks').getFullList({ $autoCancel: false });
       setTrucks(truckRecords);
