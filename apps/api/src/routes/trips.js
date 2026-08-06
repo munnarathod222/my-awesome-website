@@ -155,8 +155,10 @@ router.post('/bulk-create', pocketbaseAuth, async (req, res) => {
     if (!trip.client_id) delete trip.client_id;
     if (!trip.route_id) delete trip.route_id;
     if (!trip.billing_cycle_id) delete trip.billing_cycle_id;
-    // Remove unknown fields not in trip_logs schema
-    delete trip.toll_deduction;
+    // Ensure date is formatted properly for PocketBase DateTime field (yyyy-MM-dd HH:mm:ss.SSSZ)
+    if (trip.date && typeof trip.date === 'string' && !trip.date.includes(':')) {
+      trip.date = `${trip.date} 12:00:00.000Z`;
+    }
 
     logger.info(`Creating trip ${trip.trip_id} payload: ${JSON.stringify(trip)}`);
 

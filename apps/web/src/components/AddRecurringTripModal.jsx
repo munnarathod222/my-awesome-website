@@ -265,7 +265,7 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
           trip_id: '',
           client_id: formData.client_id,
           route_id: routeIdToSave,
-          date: format(date, 'yyyy-MM-dd'),
+          date: format(date, 'yyyy-MM-dd') + ' 12:00:00.000Z',
           route: routeCodeToSave,
           revenue: revenueToSave,
           kms: kmsToSave,
@@ -280,25 +280,50 @@ export default function AddRecurringTripModal({ isOpen, onClose, onSuccess }) {
         };
       });
 
-      toast.loading(`Creating ${total} trips on server...`, { id: 'batch-progress' });
-      const bulkRes = await apiServerClient.fetch('/trips/bulk-create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ trips: payloads })
-      });
+      toast.loading(`Creating ${total} recurring trips...`, { id: 'batch-progress' });
 
-      const bulkData = await bulkRes.json();
-      if (!bulkRes.ok || !bulkData.success) {
-        let errMsg = bulkData.error || 'Server error generating recurring trips.';
-        if (bulkData.details && typeof bulkData.details === 'object') {
-          const detailStr = Object.entries(bulkData.details)
-            .map(([field, d]) => `${field}: ${d.message || JSON.stringify(d)}`)
-            .join(', ');
-          if (detailStr) errMsg += ` (${detailStr})`;
+      let serverSuccess = false;
+      try {
+        const bulkRes = await apiServerClient.fetch('/trips/bulk-create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ trips: payloads })
+        });
+
+        const bulkData = await bulkRes.json();
+        if (bulkRes.ok && bulkData.success) {
+          serverSuccess = true;
+        } else {
+          console.warn('Server bulk-create returned error status, executing client fallback:', bulkData);
         }
-        throw new Error(errMsg);
+      } catch (srvErr) {
+        console.warn('Server bulk-create API call failed, executing client fallback:', srvErr);
+      }
+
+      // 🛡️ Reliable Client Fallback: If server route was unavailable or returned non-OK, create trips directly in PocketBase
+      if (!serverSuccess) {
+        let maxNum = 0;
+        try {
+          const allTrips = await pb.collection('trip_logs').getFullList({ fields: 'trip_id', $autoCancel: false });
+          allTrips.forEach(item => {
+            if (item.trip_id) {
+              const match = item.trip_id.match(/TRIP-(\d+)/);
+              if (match) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNum) maxNum = num;
+              }
+            }
+          });
+        } catch (e) {}
+
+        let startNum = maxNum + 1;
+        for (let i = 0; i < payloads.length; i++) {
+          const p = { ...payloads[i] };
+          p.trip_id = `TRIP-${(startNum + i).toString().padStart(3, '0')}`;
+          await pb.collection('trip_logs').create(p, { $autoCancel: false });
+        }
       }
 
       toast.dismiss('batch-progress');

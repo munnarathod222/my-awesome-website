@@ -35,7 +35,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
     }
 
     if (!pocketbaseClient.authStore.isValid && !authPromise) {
-        const email = process.env.PB_SUPERUSER_EMAIL || 'admin@jbcargo.com';
+        const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
         const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
         
         authPromise = (async () => {
@@ -66,7 +66,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
     try {
         await waitForHealth();
         if (!pocketbaseClient.authStore.isValid && !authPromise) {
-            const email = process.env.PB_SUPERUSER_EMAIL || 'admin@jbcargo.com';
+            const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
             const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
             
             authPromise = (async () => {
