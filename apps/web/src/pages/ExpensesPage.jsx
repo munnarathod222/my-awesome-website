@@ -89,14 +89,76 @@ const ExpensesPage = () => {
       }));
       setExpenses(mappedExpenses);
 
-      const advRes = await apiServerClient.fetch('/advances/with-employee-details/list');
-      const advData = await advRes.json();
-      if (advData.success) {
-        const sortedAdvs = (advData.advances || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-        setAdvances(sortedAdvs);
-      } else {
-        setAdvances([]);
+      let fetchedAdvances = [];
+
+      try {
+        const advRes = await apiServerClient.fetch('/advances/with-employee-details/list');
+        if (advRes.ok) {
+          const advData = await advRes.json();
+          if (advData.success && Array.isArray(advData.advances) && advData.advances.length > 0) {
+            fetchedAdvances = advData.advances;
+          }
+        }
+      } catch (e) {
+        console.warn('API advances list fetch failed, executing PocketBase direct fallback:', e);
       }
+
+      // 🛡️ Fail-Safe 1: Fetch directly from PocketBase `advances` collection if API list was empty or failed
+      if (fetchedAdvances.length === 0) {
+        try {
+          const pbAdvances = await pb.collection('advances').getFullList({
+            expand: 'employee_id',
+            sort: '-created',
+            $autoCancel: false
+          });
+          fetchedAdvances = pbAdvances.map(a => ({
+            id: a.id,
+            employee_id: a.employee_id || a.user_id || '',
+            employee_name: a.expand?.employee_id?.name || a.employee_name || a.driver_name || 'Driver / Employee',
+            amount: Number(a.amount) || 0,
+            date: a.date || a.created,
+            status: a.status || 'pending',
+            remaining_balance: Number(a.remaining_balance ?? a.amount) || 0,
+            reason: a.reason || a.description || a.notes || 'Driver Advance',
+            notes: a.notes || '',
+            created: a.created
+          }));
+        } catch (pbErr) {
+          console.warn('Direct PocketBase advances collection fetch failed:', pbErr);
+        }
+      }
+
+      // 🛡️ Fail-Safe 2: Merge any advance entries from `cashbook` where type="advance" or category="Advance"
+      try {
+        const cashbookAdvances = await pb.collection('cashbook').getFullList({
+          filter: 'type="advance" || category="Advance" || category="Driver Advance"',
+          sort: '-date',
+          $autoCancel: false
+        });
+        
+        const existingIds = new Set(fetchedAdvances.map(a => a.id));
+        cashbookAdvances.forEach(cb => {
+          if (!existingIds.has(cb.id) && !existingIds.has(cb.reference_id)) {
+            fetchedAdvances.push({
+              id: cb.id,
+              employee_id: cb.userId || cb.user_id || '',
+              employee_name: cb.person_name || cb.driver_name || cb.description || 'Driver / Employee',
+              amount: Number(cb.amount) || 0,
+              date: cb.date || cb.created,
+              status: cb.status || 'given',
+              remaining_balance: Number(cb.remaining_balance ?? cb.amount) || 0,
+              reason: cb.description || cb.category || 'Cashbook Advance',
+              notes: cb.notes || '',
+              created: cb.created
+            });
+          }
+        });
+      } catch (cbErr) {
+        console.warn('Direct cashbook advances query skipped:', cbErr);
+      }
+
+      const sortedAdvs = (fetchedAdvances || []).sort((a, b) => new Date(b.date || b.created) - new Date(a.date || a.created));
+      setAdvances(sortedAdvs);
 
     } catch (err) {
       console.error('[ExpensesPage] Error fetching data:', err);
