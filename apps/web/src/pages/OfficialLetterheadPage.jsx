@@ -496,415 +496,381 @@ export default function OfficialLetterheadPage() {
               </CardContent>
             </Card>
 
-            {/* ── EMPLOYEE AGREEMENT CONTROL PANEL ───────────────────────────── */}
-            {docMode === 'agreement' && (
-              <Card className="bg-slate-900/90 border-blue-500/40 rounded-3xl shadow-xl">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                    <ClipboardList className="w-4 h-4 text-blue-400" /> Employee Agreement Generator
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-400">
-                    Select an employee — their data will auto-fill the agreement on your letterhead.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  {/* Employee Selector */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-300">Select Employee</Label>
-                    <Select value={selectedEmpId} onValueChange={setSelectedEmpId}>
-                      <SelectTrigger className="rounded-xl bg-slate-800 border-slate-700 text-slate-100 h-10">
-                        <SelectValue placeholder="Choose employee..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.length === 0 && (
-                          <SelectItem value="__none" disabled>No employees found</SelectItem>
-                        )}
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.name} · {emp.employee_type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {/* ── UNIFIED CONTROL TABS CARD ──────────────────────────────────── */}
+            <Card className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+              <Tabs defaultValue="content" className="w-full">
+                <TabsList className="bg-slate-950 p-1.5 flex h-auto rounded-t-3xl border-b border-slate-800 gap-1.5">
+                  <TabsTrigger value="content" className="flex-1 gap-1.5 py-2 rounded-xl text-xs font-black data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all">
+                    <Edit3 className="w-3.5 h-3.5" /> Content
+                  </TabsTrigger>
+                  <TabsTrigger value="design" className="flex-1 gap-1.5 py-2 rounded-xl text-xs font-black data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all">
+                    <Sliders className="w-3.5 h-3.5" /> Branding &amp; Design
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="flex-1 gap-1.5 py-2 rounded-xl text-xs font-black data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all">
+                    <Bookmark className="w-3.5 h-3.5" /> Templates
+                  </TabsTrigger>
+                </TabsList>
 
-                  {/* Selected Employee Info Card */}
-                  {selectedEmpId && (() => {
-                    const emp = employees.find(e => e.id === selectedEmpId);
-                    if (!emp) return null;
-                    return (
-                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 space-y-2 text-xs">
-                        <p className="font-black text-blue-300 uppercase tracking-wider text-[10px]">Employee Data Preview</p>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-slate-300">
-                          <span className="text-slate-500 font-semibold">Name</span><span className="font-bold">{emp.name || '—'}</span>
-                          <span className="text-slate-500 font-semibold">Role</span><span>{emp.employee_type || '—'}</span>
-                          <span className="text-slate-500 font-semibold">Type</span><span>{emp.employment_type || '—'}</span>
-                          <span className="text-slate-500 font-semibold">Joining</span><span>{emp.joining_date ? format(new Date(emp.joining_date), 'dd MMM yyyy') : '—'}</span>
-                          <span className="text-slate-500 font-semibold">Salary</span><span className="text-emerald-400 font-bold">₹{emp.salary_amount ? Number(emp.salary_amount).toLocaleString('en-IN') : '—'}</span>
-                          <span className="text-slate-500 font-semibold">Contact</span><span>{emp.contact || '—'}</span>
-                          <span className="text-slate-500 font-semibold">Aadhaar</span><span className="font-mono">{emp.aadhaar_number || '—'}</span>
-                          <span className="text-slate-500 font-semibold">PAN</span><span className="font-mono">{emp.pan_card || '—'}</span>
+                {/* ── TAB CONTENT: DOCUMENT WRITING ─────────────────────────────── */}
+                <TabsContent value="content" className="p-5 space-y-4 m-0">
+                  {docMode === 'agreement' ? (
+                    <div className="space-y-4">
+                      {/* Employee Selector */}
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-300 font-bold text-xs">Select Employee</Label>
+                        <Select value={selectedEmpId} onValueChange={setSelectedEmpId}>
+                          <SelectTrigger className="rounded-xl bg-slate-950 border-slate-800 text-slate-100 h-9.5 text-xs">
+                            <SelectValue placeholder="Choose employee..." />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                            {employees.length === 0 && (
+                              <SelectItem value="__none" disabled>No employees found</SelectItem>
+                            )}
+                            {employees.map(emp => (
+                              <SelectItem key={emp.id} value={emp.id} className="text-xs">
+                                {emp.name} · {emp.employee_type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Selected Employee Info Preview */}
+                      {selectedEmpId && (() => {
+                        const emp = employees.find(e => e.id === selectedEmpId);
+                        if (!emp) return null;
+                        return (
+                          <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 space-y-2 text-xs">
+                            <p className="font-black text-blue-300 uppercase tracking-wider text-[10px]">Employee Data Filled</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-slate-300">
+                              <span className="text-slate-500 font-semibold">Name</span><span className="font-bold">{emp.name || '—'}</span>
+                              <span className="text-slate-500 font-semibold">Role</span><span>{emp.employee_type || '—'}</span>
+                              <span className="text-slate-500 font-semibold">Type</span><span>{emp.employment_type || '—'}</span>
+                              <span className="text-slate-500 font-semibold">Joining</span><span>{emp.joining_date ? format(new Date(emp.joining_date), 'dd MMM yyyy') : '—'}</span>
+                              <span className="text-slate-500 font-semibold">Salary</span><span className="text-emerald-400 font-bold">₹{emp.salary_amount ? Number(emp.salary_amount).toLocaleString('en-IN') : '—'}</span>
+                              <span className="text-slate-500 font-semibold">Contact</span><span>{emp.contact || '—'}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Agreement Template Editor */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-slate-300 font-bold text-xs">Agreement Template Body</Label>
+                          <button
+                            onClick={() => setAgreementTemplate(DEFAULT_AGREEMENT_TEMPLATE)}
+                            className="text-[10px] text-amber-400 font-bold hover:underline"
+                          >
+                            ↺ Reset to Default
+                          </button>
+                        </div>
+                        <textarea
+                          className="w-full h-[280px] p-3 text-[11px] bg-slate-950 border border-slate-800 rounded-xl font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-200 leading-relaxed resize-none"
+                          value={agreementTemplate}
+                          onChange={e => setAgreementTemplate(e.target.value)}
+                          spellCheck={false}
+                        />
+                      </div>
+
+                      {/* Variables Guide */}
+                      <div className="p-3 bg-slate-950/40 rounded-xl border border-slate-800 space-y-1.5">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Template Variables</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono text-blue-400">
+                          <span>{"{{full_name}}"}</span>
+                          <span>{"{{AADHAAR}}"}</span>
+                          <span>{"{{PAN}}"}</span>
+                          <span>{"{{CONTACT}}"}</span>
+                          <span>{"{{ROLE}}"}</span>
+                          <span>{"{{SALARY}}"}</span>
+                          <span>{"{{JOINING_DATE}}"}</span>
+                          <span>{"{{COMPANY_NAME}}"}</span>
                         </div>
                       </div>
-                    );
-                  })()}
-
-                  {/* Agreement Template Editor */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-xs font-bold text-slate-300">Agreement Template</Label>
-                      <button
-                        onClick={() => setAgreementTemplate(DEFAULT_AGREEMENT_TEMPLATE)}
-                        className="text-[10px] text-amber-400 font-bold hover:underline"
-                      >
-                        ↺ Reset to Default
-                      </button>
                     </div>
-                    <textarea
-                      className="w-full h-[320px] p-3 text-[11px] bg-slate-800 border border-slate-700 rounded-xl font-mono focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-200 leading-relaxed resize-none"
-                      value={agreementTemplate}
-                      onChange={e => setAgreementTemplate(e.target.value)}
-                      spellCheck={false}
-                    />
-                  </div>
-
-                  {/* Variables Guide */}
-                  <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700 space-y-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Available Variables</p>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] font-mono">
-                      {[
-                        ['{{full_name}}','Employee full name'],
-                        ['{{AADHAAR}}','Aadhaar number'],
-                        ['{{PAN}}','PAN card number'],
-                        ['{{CONTACT}}','Phone number'],
-                        ['{{ADDRESS}}','Home address'],
-                        ['{{ROLE}}','Designation / type'],
-                        ['{{EMPLOYMENT_TYPE}}','Employment type'],
-                        ['{{JOINING_DATE}}','Date of joining'],
-                        ['{{SALARY}}','Monthly salary'],
-                        ['{{CURRENT_DATE}}','Today\'s date'],
-                        ['{{COMPANY_NAME}}','Company name'],
-                        ['{{COMPANY_ADDRESS}}','Company address'],
-                      ].map(([v, desc]) => (
-                        <span key={v} className="text-blue-400" title={desc}>{v}</span>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* ── MY SAVED TEMPLATES CARD ────────────────────────────────────── */}
-            {docMode === 'letter' && savedTemplates.length > 0 && (
-
-              <Card className="bg-slate-900/90 border-emerald-500/40 rounded-3xl shadow-xl">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                      <Bookmark className="w-4 h-4 text-emerald-400" /> My Saved Templates ({savedTemplates.length})
-                    </CardTitle>
-                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                      Quick Load
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-xs text-slate-400">
-                    Click any saved template to load text, recipient, and background settings.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1 scrollbar-none">
-                    {savedTemplates.map((tpl) => (
-                      <div
-                        key={tpl.id}
-                        className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 transition-all group"
-                      >
-                        <button
-                          onClick={() => handleLoadSavedTemplate(tpl)}
-                          className="flex-1 text-left"
-                        >
-                          <div className="font-bold text-white group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
-                            {tpl.title}
-                          </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
-                            {tpl.subject ? tpl.subject.substring(0, 45) + '...' : 'No subject'}
-                          </div>
-                        </button>
-
-                        <Button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSavedTemplate(tpl.id, tpl.title); }}
-                          variant="ghost"
-                          size="icon"
-                          className="w-7 h-7 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                  ) : (
+                    <div className="space-y-4 text-xs">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-slate-300 font-bold">Reference Number</Label>
+                          <Input
+                            value={refNo}
+                            onChange={e => setRefNo(e.target.value)}
+                            className="bg-slate-950 border-slate-800 text-amber-300 font-mono rounded-xl h-9 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-slate-300 font-bold">Document Date</Label>
+                          <Input
+                            type="date"
+                            value={dateStr}
+                            onChange={e => setDateStr(e.target.value)}
+                            className="bg-slate-950 border-slate-800 text-white rounded-xl h-9 text-xs"
+                          />
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* ── CUSTOM LETTERHEAD FILE UPLOAD CARD ──────────────────────────── */}
-            <Card className="bg-slate-900/90 border-amber-500/40 rounded-3xl shadow-xl">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                    <Upload className="w-4 h-4 text-amber-400" /> Custom Letterhead (PDF / Image)
-                  </CardTitle>
-                  <Badge className={useCustomLetterhead ? "bg-amber-500 text-slate-950 font-black text-[10px]" : "bg-slate-800 text-slate-400 text-[10px]"}>
-                    {useCustomLetterhead ? 'Active Background' : 'Disabled'}
-                  </Badge>
-                </div>
-                <CardDescription className="text-xs text-slate-400">
-                  Upload your pre-designed letterhead image (PNG/JPG) or PDF to print text over your exact design.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 text-xs">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                />
 
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs shadow-md h-10"
-                  >
-                    <Upload className="w-4 h-4 mr-2" /> Upload Letterhead File (PDF/Image)
-                  </Button>
+                      <div className="space-y-1">
+                        <Label className="text-slate-300 font-bold">Recipient Name / Organization</Label>
+                        <Input
+                          value={recipientName}
+                          onChange={e => setRecipientName(e.target.value)}
+                          placeholder="e.g. Reliance Retail Supply Chain"
+                          className="bg-slate-950 border-slate-800 text-white rounded-xl h-9 text-xs"
+                        />
+                      </div>
 
-                  {customLetterheadUrl && (
-                    <Button
-                      onClick={() => { setCustomLetterheadUrl(null); setUseCustomLetterhead(false); try { localStorage.removeItem('jbc_custom_letterhead_bg'); } catch(e){} }}
-                      variant="outline"
-                      className="rounded-xl border-slate-700 text-rose-400 hover:bg-rose-500/10 h-10 px-3"
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
+                      <div className="space-y-1">
+                        <Label className="text-slate-300 font-bold">Recipient Address</Label>
+                        <Input
+                          value={recipientAddress}
+                          onChange={e => setRecipientAddress(e.target.value)}
+                          placeholder="e.g. Plot 12, Logistics Park, Hyderabad"
+                          className="bg-slate-950 border-slate-800 text-white rounded-xl h-9 text-xs"
+                        />
+                      </div>
 
-                {/* Mode Toggle */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-                  <span className="text-xs text-slate-300 font-bold">Use Uploaded Design Background</span>
-                  <Switch
-                    disabled={!customLetterheadUrl}
-                    checked={useCustomLetterhead}
-                    onCheckedChange={setUseCustomLetterhead}
-                  />
-                </div>
+                      <div className="space-y-1">
+                        <Label className="text-slate-300 font-bold">Subject Line</Label>
+                        <Input
+                          value={subject}
+                          onChange={e => setSubject(e.target.value)}
+                          placeholder="Subject of the letter..."
+                          className="bg-slate-950 border-slate-800 text-amber-200 font-semibold rounded-xl h-9 text-xs"
+                        />
+                      </div>
 
-                {/* Margin & Fit Adjustments */}
-                {useCustomLetterhead && (
-                  <div className="space-y-3 pt-3 border-t border-slate-800 bg-slate-950/60 p-3 rounded-2xl border">
-                    <div className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
-                      <Sliders className="w-3.5 h-3.5" /> Background Image Fit &amp; Margins
+                      <div className="space-y-1">
+                        <Label className="text-slate-300 font-bold">Salutation</Label>
+                        <Input
+                          value={salutation}
+                          onChange={e => setSalutation(e.target.value)}
+                          placeholder="e.g. Dear Sir / Madam,"
+                          className="bg-slate-950 border-slate-800 text-white rounded-xl h-9 text-xs"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-slate-300 font-bold">Letter Body Content</Label>
+                        <Textarea
+                          value={bodyText}
+                          onChange={e => setBodyText(e.target.value)}
+                          rows={6}
+                          className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs leading-relaxed font-sans resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800/80">
+                        <div className="space-y-1">
+                          <Label className="text-slate-300 font-bold">Signatory Name</Label>
+                          <Input
+                            value={signatoryName}
+                            onChange={e => setSignatoryName(e.target.value)}
+                            className="bg-slate-950 border-slate-800 text-white font-bold rounded-xl h-9 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-slate-300 font-bold">Signatory Title</Label>
+                          <Input
+                            value={signatoryTitle}
+                            onChange={e => setSignatoryTitle(e.target.value)}
+                            className="bg-slate-950 border-slate-800 text-slate-300 rounded-xl h-9 text-xs"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="space-y-1">
-                      <Label className="text-slate-300 text-[11px] font-bold">Image Fit Mode</Label>
-                      <Select value={imageFitMode} onValueChange={setImageFitMode}>
-                        <SelectTrigger className="bg-slate-900 border-slate-800 text-white rounded-xl text-xs h-8">
-                          <SelectValue placeholder="Select Fit Mode" />
+                  )}
+                </TabsContent>
+
+                {/* ── TAB CONTENT: BRANDING & DESIGN ────────────────────────────── */}
+                <TabsContent value="design" className="p-5 space-y-4 m-0 text-xs">
+                  {/* File Upload Box */}
+                  <div className="bg-slate-950/40 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <p className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                      <Upload className="w-3.5 h-3.5" /> Upload Custom Design Background
+                    </p>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Upload your corporate pre-designed letterhead background image (PNG/JPG) or PDF to print text over it.
+                    </p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/*,application/pdf"
+                      className="hidden"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-1 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-[11px] h-8.5 shadow-sm"
+                      >
+                        Choose File
+                      </Button>
+                      {customLetterheadUrl && (
+                        <Button
+                          type="button"
+                          onClick={() => { setCustomLetterheadUrl(null); setUseCustomLetterhead(false); try { localStorage.removeItem('jbc_custom_letterhead_bg'); } catch(e){} }}
+                          variant="outline"
+                          className="rounded-xl border-slate-800 text-rose-400 hover:bg-rose-500/10 h-8.5 px-3"
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+
+                    {customLetterheadUrl && (
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-800/80">
+                        <span className="text-slate-300 font-bold text-[11px]">Use Uploaded Design Background</span>
+                        <Switch
+                          checked={useCustomLetterhead}
+                          onCheckedChange={setUseCustomLetterhead}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Margins & fit sliders */}
+                  {useCustomLetterhead && (
+                    <div className="space-y-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
+                      <p className="text-[11px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                        <Sliders className="w-3.5 h-3.5" /> Layout Clear Margins
+                      </p>
+                      
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-300 text-[11px] font-bold">Image Fit Mode</Label>
+                        <Select value={imageFitMode} onValueChange={setImageFitMode}>
+                          <SelectTrigger className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs h-8">
+                            <SelectValue placeholder="Select Fit" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            <SelectItem value="contain" className="text-xs">Safe (No Stretch)</SelectItem>
+                            <SelectItem value="cover" className="text-xs">Full Bleed Cover</SelectItem>
+                            <SelectItem value="fill" className="text-xs">Stretch Fill</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <span>Top Padding:</span>
+                          <span className="text-amber-300 font-bold">{topPadding}px</span>
+                        </div>
+                        <input
+                          type="range" min="20" max="300" value={topPadding}
+                          onChange={e => setTopPadding(Number(e.target.value))}
+                          className="w-full accent-amber-400 cursor-pointer h-1"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <span>Side Padding:</span>
+                          <span className="text-blue-400 font-bold">{sidePadding}px</span>
+                        </div>
+                        <input
+                          type="range" min="10" max="120" value={sidePadding}
+                          onChange={e => setSidePadding(Number(e.target.value))}
+                          className="w-full accent-blue-400 cursor-pointer h-1"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                          <span>Bottom Padding:</span>
+                          <span className="text-emerald-400 font-bold">{bottomPadding}px</span>
+                        </div>
+                        <input
+                          type="range" min="20" max="200" value={bottomPadding}
+                          onChange={e => setBottomPadding(Number(e.target.value))}
+                          className="w-full accent-emerald-400 cursor-pointer h-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Built-in Brand Elements switches */}
+                  <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
+                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Letterhead Elements</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300 font-bold">Include Digital Signature & Stamp</span>
+                      <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
+                    </div>
+                    {!useCustomLetterhead && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-300 font-bold">Include Central Watermark Logo</span>
+                        <Switch checked={includeWatermark} onCheckedChange={setIncludeWatermark} />
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* ── TAB CONTENT: PRESETS & SAVED TEMPLATES ────────────────────── */}
+                <TabsContent value="templates" className="p-5 space-y-4 m-0 text-xs">
+                  {/* Preset Templates Selector */}
+                  {docMode === 'letter' && (
+                    <div className="space-y-2">
+                      <Label className="text-slate-300 font-bold text-xs">Letter Presets</Label>
+                      <Select value={selectedPreset} onValueChange={handleSelectPreset}>
+                        <SelectTrigger className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs h-9.5">
+                          <SelectValue placeholder="Choose Preset Template" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                          <SelectItem value="contain" className="text-xs font-semibold">Aspect Ratio Safe (No Stretch)</SelectItem>
-                          <SelectItem value="cover" className="text-xs font-semibold">Full Bleed Cover</SelectItem>
-                          <SelectItem value="fill" className="text-xs font-semibold">Stretch Fill</SelectItem>
+                          {PRESETS.map(p => (
+                            <SelectItem key={p.id} value={p.id} className="text-xs font-semibold">
+                              {p.title}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+                  )}
 
-                    <div className="space-y-1 pt-1">
-                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                        <span>Top Header Clear Margin:</span>
-                        <span className="text-amber-400 font-bold">{topPadding}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="20"
-                        max="300"
-                        value={topPadding}
-                        onChange={e => setTopPadding(Number(e.target.value))}
-                        className="w-full accent-amber-400 cursor-pointer"
-                      />
-                    </div>
+                  {/* Saved Templates List */}
+                  {docMode === 'letter' && (
+                    <div className="space-y-2">
+                      <Label className="text-slate-300 font-bold text-xs flex items-center justify-between">
+                        <span>My Saved Templates ({savedTemplates.length})</span>
+                      </Label>
+                      {savedTemplates.length === 0 ? (
+                        <div className="py-8 text-center text-slate-500 border border-dashed border-slate-800 rounded-2xl">
+                          No saved templates. Click "Save Template" in the header to save current parameters.
+                        </div>
+                      ) : (
+                        <div className="max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-none">
+                          {savedTemplates.map((tpl) => (
+                            <div
+                              key={tpl.id}
+                              className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-emerald-500/40 transition-all group"
+                            >
+                              <button
+                                onClick={() => handleLoadSavedTemplate(tpl)}
+                                className="flex-1 text-left"
+                              >
+                                <div className="font-bold text-white group-hover:text-emerald-300 transition-colors">
+                                  {tpl.title}
+                                </div>
+                                <div className="text-[9.5px] text-slate-500 truncate max-w-[200px]">
+                                  {tpl.subject || 'No subject'}
+                                </div>
+                              </button>
 
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                        <span>Side Margins:</span>
-                        <span className="text-blue-400 font-bold">{sidePadding}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="10"
-                        max="120"
-                        value={sidePadding}
-                        onChange={e => setSidePadding(Number(e.target.value))}
-                        className="w-full accent-blue-400 cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                        <span>Bottom Footer Margin:</span>
-                        <span className="text-emerald-400 font-bold">{bottomPadding}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="20"
-                        max="200"
-                        value={bottomPadding}
-                        onChange={e => setBottomPadding(Number(e.target.value))}
-                        className="w-full accent-emerald-400 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Template Selector */}
-            <Card className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                  <Layers className="w-4 h-4" /> Letter Template Presets
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
-                  Select a pre-formatted corporate document template
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Select value={selectedPreset} onValueChange={handleSelectPreset}>
-                  <SelectTrigger className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs font-semibold">
-                    <SelectValue placeholder="Choose Template Preset" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                    {PRESETS.map(p => (
-                      <SelectItem key={p.id} value={p.id} className="text-xs font-medium">
-                        {p.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            {/* Document Content Fields */}
-            <Card className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                  <Edit3 className="w-4 h-4 text-blue-400" /> Document Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-slate-300 font-bold">Reference Number</Label>
-                    <Input
-                      value={refNo}
-                      onChange={e => setRefNo(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-amber-300 font-mono rounded-xl text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-slate-300 font-bold">Document Date</Label>
-                    <Input
-                      type="date"
-                      value={dateStr}
-                      onChange={e => setDateStr(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-slate-300 font-bold">Recipient Name / Organization</Label>
-                  <Input
-                    value={recipientName}
-                    onChange={e => setRecipientName(e.target.value)}
-                    placeholder="e.g. Reliance Retail Supply Chain & Logistics"
-                    className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-slate-300 font-bold">Recipient Address</Label>
-                  <Input
-                    value={recipientAddress}
-                    onChange={e => setRecipientAddress(e.target.value)}
-                    placeholder="e.g. Plot 12, Logistics Park, Shamshabad, Hyderabad"
-                    className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-slate-300 font-bold">Subject Line</Label>
-                  <Input
-                    value={subject}
-                    onChange={e => setSubject(e.target.value)}
-                    placeholder="Subject of the letter..."
-                    className="bg-slate-950 border-slate-800 text-amber-200 font-semibold rounded-xl text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-slate-300 font-bold">Salutation</Label>
-                  <Input
-                    value={salutation}
-                    onChange={e => setSalutation(e.target.value)}
-                    placeholder="e.g. Dear Sir / Madam,"
-                    className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-slate-300 font-bold">Letter Body Content</Label>
-                  <Textarea
-                    value={bodyText}
-                    onChange={e => setBodyText(e.target.value)}
-                    rows={8}
-                    className="bg-slate-950 border-slate-800 text-white rounded-xl text-xs leading-relaxed font-sans"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-                  <div className="space-y-1">
-                    <Label className="text-slate-300 font-bold">Signatory Name</Label>
-                    <Input
-                      value={signatoryName}
-                      onChange={e => setSignatoryName(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-white font-bold rounded-xl text-xs"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-slate-300 font-bold">Signatory Title</Label>
-                    <Input
-                      value={signatoryTitle}
-                      onChange={e => setSignatoryTitle(e.target.value)}
-                      className="bg-slate-950 border-slate-800 text-slate-300 rounded-xl text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Display Toggles */}
-                <div className="pt-3 border-t border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-300 font-semibold">Include Official Digital Stamp & Signature</span>
-                    <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
-                  </div>
-                  {!useCustomLetterhead && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-300 font-semibold">Include Trident Background Watermark</span>
-                      <Switch checked={includeWatermark} onCheckedChange={setIncludeWatermark} />
+                              <Button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteSavedTemplate(tpl.id, tpl.title); }}
+                                variant="ghost"
+                                size="icon"
+                                className="w-7 h-7 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg shrink-0"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              </CardContent>
+                </TabsContent>
+              </Tabs>
             </Card>
 
           </div>
