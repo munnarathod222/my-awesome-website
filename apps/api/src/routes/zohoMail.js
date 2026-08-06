@@ -11,8 +11,8 @@ const CONFIG_FILE_PATH = path.join(process.cwd(), 'zoho_config_store.json');
 
 // In-memory / environment store for Zoho OAuth configuration & tokens
 let zohoConfig = {
-  clientId: process.env.ZOHO_CLIENT_ID || '',
-  clientSecret: process.env.ZOHO_CLIENT_SECRET || '',
+  clientId: process.env.ZOHO_CLIENT_ID || '1000.LLSEL8ZYR5N83WZXW1SYWMY9NWHH8A',
+  clientSecret: process.env.ZOHO_CLIENT_SECRET || '09f799d31a1ec842c37665345241e32fa9e029f6b4',
   redirectUri: process.env.ZOHO_REDIRECT_URI || 'https://www.jaibhavanicargo.com/api/zoho/oauth/callback',
   region: process.env.ZOHO_REGION || 'in',
   accessToken: process.env.ZOHO_ACCESS_TOKEN || '',
