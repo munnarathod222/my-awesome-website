@@ -587,7 +587,7 @@ const ExpensesPage = () => {
       .filter(e => e.subcategory === 'Toll' || e.subcategory === 'FASTag' || e.subcategory === 'FASTag - Toll' || e.category === 'Toll' || /toll|fastag/i.test(e.subcategory || '') || /toll|fastag/i.test(e.category || ''))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
-    // 3. Driver Advance
+    // 3. Driver Advance (Deduplicated against expenses synced from the same advance)
     const unlinkedExpAdvance = targetExpenses
       .filter(e => {
         const cat = (e.category || '').toLowerCase();
@@ -595,7 +595,13 @@ const ExpensesPage = () => {
         const desc = (e.description || '').toLowerCase();
         return cat.includes('advance') || sub.includes('advance') || (cat.includes('employee') && (sub.includes('advance') || desc.includes('advance')));
       })
-      .filter(e => !targetAdvances.some(a => a.expense_id === e.id || e.advance_id === a.id))
+      .filter(e => !targetAdvances.some(a => {
+        if (a.expense_id === e.id || e.advance_id === a.id || a.id === e.id) return true;
+        // Deduplicate if amount and date match (same advance recorded in both tables)
+        const amountMatch = Math.abs(Number(a.amount || 0) - Number(e.amount || 0)) < 0.01;
+        const dateMatch = parseYearMonth(a.date) === parseYearMonth(e.date);
+        return amountMatch && dateMatch;
+      }))
       .reduce((sum, e) => Number(sum) + Number(e.amount || 0), 0);
 
     const driverAdvance = targetAdvances
