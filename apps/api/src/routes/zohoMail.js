@@ -583,6 +583,37 @@ Phone: +91 7794072244`
 ];
 
 /**
+ * GET /api/zoho/debug-pb
+ * Check collections and items in PocketBase
+ */
+router.get('/debug-pb', async (req, res) => {
+  try {
+    const collections = await pocketbaseClient.collections.getFullList();
+    const collectionNames = collections.map(c => c.name);
+    
+    let appSettingsItems = [];
+    try {
+      const items = await pocketbaseClient.collection('app_settings').getFullList();
+      appSettingsItems = items;
+    } catch (e) {
+      appSettingsItems = { error: e.message };
+    }
+
+    return res.json({
+      success: true,
+      collections: collectionNames,
+      appSettingsItems
+    });
+  } catch (err) {
+    return res.json({
+      success: false,
+      error: err.message,
+      stack: err.stack
+    });
+  }
+});
+
+/**
  * GET /api/zoho/debug-messages
  * Debug messages fetch helper
  */
