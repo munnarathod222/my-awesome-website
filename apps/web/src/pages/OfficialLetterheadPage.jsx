@@ -409,54 +409,53 @@ export default function OfficialLetterheadPage() {
         }
       `}</style>
 
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-4">
         
         {/* Page Header Banner */}
-        <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-xl backdrop-blur-md">
-          <div>
-            <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-1.5 mb-1">
-              <Building2 className="w-3.5 h-3.5 text-amber-400" /> OFFICIAL CORPORATE STUDIO
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              Official Letterhead Generator &amp; Print Studio
+        <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 p-3 px-5 rounded-2xl shadow-lg backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-amber-400 shrink-0" />
+            <h1 className="text-base font-black tracking-tight text-white">
+              Letterhead Studio
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Create, customize, and print official branded documents on verified Jai Bhavani Cargo letterhead.
-            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               asChild
               variant="outline"
-              className="rounded-2xl border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800 font-bold text-xs h-10 px-4"
+              className="rounded-xl border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900 font-bold text-[11px] h-8 px-3"
             >
               <Link to="/data-backup">
-                <Database className="w-4 h-4 mr-2 text-amber-400" /> Export / Backup Data
+                <Database className="w-3.5 h-3.5 text-amber-400" />
+                <span>Backup</span>
               </Link>
             </Button>
 
             <Button
               onClick={() => setIsSaveModalOpen(true)}
               variant="outline"
-              className="rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold text-xs h-10 px-4 hover:bg-amber-500/20"
+              className="rounded-xl border-amber-500/30 bg-amber-500/5 text-amber-300 font-bold text-[11px] h-8 px-3 hover:bg-amber-500/10"
             >
-              <Save className="w-4 h-4 mr-2 text-amber-400" /> Save Template
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Template</span>
             </Button>
 
             <Button
               onClick={handleCopyText}
               variant="outline"
-              className="rounded-2xl border-slate-700 bg-slate-900 text-slate-200 font-bold text-xs h-10 px-4"
+              className="rounded-xl border-slate-800 bg-slate-950 text-slate-300 font-bold text-[11px] h-8 px-3 hover:bg-slate-900"
             >
-              <Copy className="w-4 h-4 mr-2 text-blue-400" /> Copy Text
+              <Copy className="w-3.5 h-3.5 text-blue-400" />
+              <span>Copy Text</span>
             </Button>
 
             <Button
               onClick={handlePrint}
-              className="rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg h-10 px-5"
+              className="rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[11px] shadow-sm h-8 px-4"
             >
-              <Printer className="w-4 h-4 mr-2" /> Print Letterhead (A4 PDF)
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print A4 PDF</span>
             </Button>
           </div>
         </div>
