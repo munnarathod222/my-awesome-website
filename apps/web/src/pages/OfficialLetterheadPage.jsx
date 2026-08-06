@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useCompanyProfile } from '@/lib/companyProfile.js';
 import pb from '@/lib/pocketbaseClient.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Preset Letter Templates
 const PRESETS = [
