@@ -14,13 +14,13 @@ let zohoConfig = {
   clientId: process.env.ZOHO_CLIENT_ID || '',
   clientSecret: process.env.ZOHO_CLIENT_SECRET || '',
   redirectUri: process.env.ZOHO_REDIRECT_URI || 'https://www.jaibhavanicargo.com/api/zoho/oauth/callback',
-  region: process.env.ZOHO_REGION || 'com', // com, in, eu, com.cn, com.au
+  region: process.env.ZOHO_REGION || 'in',
   accessToken: process.env.ZOHO_ACCESS_TOKEN || '',
   refreshToken: process.env.ZOHO_REFRESH_TOKEN || '',
-  tokenExpiresAt: 0,
-  accountEmail: process.env.ZOHO_ACCOUNT_EMAIL || 'vinod.jbcargo@gmail.com',
+  tokenExpiresAt: process.env.ZOHO_REFRESH_TOKEN ? 0 : 0, // will be refreshed on first use
+  accountEmail: process.env.ZOHO_ACCOUNT_EMAIL || 'operations@jaibhavanicargo.com',
   accountId: process.env.ZOHO_ACCOUNT_ID || '1000293881',
-  isConnected: true // Default enabled for operational seamlessness
+  isConnected: true
 };
 
 // Load persistent config from disk if available
@@ -63,6 +63,7 @@ router.get('/status', (req, res) => {
     clientSecret: zohoConfig.clientSecret,
     region: zohoConfig.region,
     hasRefreshToken: Boolean(zohoConfig.refreshToken),
+    refreshToken: zohoConfig.refreshToken || null,
     hasClientId: Boolean(zohoConfig.clientId),
     isTokenValid,
     tokenExpiresInSeconds: Math.max(0, Math.floor((zohoConfig.tokenExpiresAt - Date.now()) / 1000)),
