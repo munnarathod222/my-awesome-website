@@ -185,7 +185,7 @@ export default function PrintableQRStickerModal({ isOpen, onClose, truck, qrToke
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-card border-border shadow-2xl rounded-2xl p-6 font-sans">
+      <DialogContent className="max-w-lg max-h-[95vh] overflow-y-auto bg-card border-border shadow-2xl rounded-2xl p-6 font-sans">
         <DialogHeader className="pb-3 border-b border-border/40">
           <DialogTitle className="text-lg font-extrabold flex items-center gap-2">
             <QrCode className="w-5 h-5 text-primary" /> Official Windshield & Cabin QR Sticker
