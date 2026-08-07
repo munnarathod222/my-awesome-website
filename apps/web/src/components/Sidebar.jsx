@@ -7,7 +7,7 @@ import {
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
   TrendingUp, Mail, Trophy, Package, ShieldCheck, ShieldAlert, Building2, UserPlus, Sparkles,
-  Navigation, QrCode, Receipt, IdCard, Database, CircleDashed
+  Navigation, QrCode, Receipt, IdCard, Database, CircleDashed, Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import pb from '@/lib/pocketbaseClient.js';
@@ -105,7 +105,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: FileBox,      label: 'Employee Docs',     path: '/employee-docs',        roles: ['super_admin','admin','supervisor'] },
         { icon: CalendarDays, label: 'Attendance Hub',    path: '/dashboard/attendance', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: UserPlus,     label: 'Recruitment Portal',path: '/recruitment',          roles: ['super_admin','admin','manager'] },
-        { icon: IdCard,       label: 'ID Card Generator', path: '/id-card-generator',    roles: ['super_admin','admin','manager','supervisor'] },
       ]
     },
     {
@@ -120,8 +119,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     {
       title: 'Studio & Tools',
       items: [
-        { icon: FileText,     label: 'Letterhead Studio',     path: '/letterhead',       roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
-        { icon: CreditCard,   label: 'Visiting Card Studio',  path: '/visiting-card',    roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { icon: Briefcase,    label: 'Branding Hub',          path: '/branding-hub',     roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { icon: Mail,         label: 'Business Mail',         path: '/business-mail',    roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: CalendarDays, label: 'Calendar',              path: '/calendar',         roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Bell,         label: 'Reminders',             path: '/reminders',        roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
