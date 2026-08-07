@@ -1077,26 +1077,38 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
                     {/* Right: Signature Block */}
                     <div className="text-right space-y-1">
-                      <p className="text-xs font-black text-slate-900 uppercase">For JAI BHAVANI CARGO</p>
-
-                      {includeStamp && (
+                      {includeStamp ? (
                         <div className="py-2 flex justify-end">
-                          <div className="w-32 h-16 border-2 border-blue-800 rounded-xl p-1 bg-blue-50/80 flex flex-col items-center justify-center text-center shadow-inner relative transform -rotate-2">
-                            <div className="text-[9px] font-black text-blue-900 uppercase tracking-tighter">
-                              JAI BHAVANI CARGO LTD
+                          <div className="w-40 h-20 border-2 border-blue-600 rounded-lg p-1.5 bg-blue-50/20 flex flex-col items-center justify-between text-center relative transform -rotate-1 shadow-sm font-sans">
+                            <div className="text-[10px] font-black text-blue-600 uppercase tracking-wide">
+                              For JAI BHAVANI CARGO
                             </div>
-                            <div className="text-[7.5px] text-blue-700 font-extrabold">★ SECUNDERABAD ★</div>
-                            <div className="text-[8px] font-mono font-bold text-blue-900 border-t border-blue-300 mt-0.5 pt-0.5">
-                              AUTHORIZED SIGNATORY
+                            
+                            {/* Signature Space / Digital script signature */}
+                            <div className="flex-1 flex items-center justify-center min-h-[30px]">
+                              {companyProfile?.e_signature ? (
+                                <img src={companyProfile.e_signature} className="max-h-8 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                              ) : (
+                                <span className="font-serif italic text-blue-600/80 text-sm tracking-widest leading-none select-none">
+                                  {signatoryName}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
+                              {signatoryTitle || 'Proprietor'}
                             </div>
                           </div>
                         </div>
+                      ) : (
+                        <>
+                          <p className="text-xs font-black text-slate-900 uppercase">For JAI BHAVANI CARGO</p>
+                          <div className="pt-8">
+                            <p className="text-xs font-black text-slate-900">{signatoryName}</p>
+                            <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
+                          </div>
+                        </>
                       )}
-
-                      <div className="pt-1">
-                        <p className="text-xs font-black text-slate-900">{signatoryName}</p>
-                        <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
-                      </div>
                     </div>
                   </div>
                 </div>
