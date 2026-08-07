@@ -58,12 +58,15 @@ const TruckDocsPage = () => {
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
 
-  const triggerEmailDoc = async (doc) => {
+  const triggerEmailDoc = (doc) => {
     const formattedExpiry = doc.expiry_date ? format(new Date(doc.expiry_date), 'dd MMM yyyy') : 'No Expiry';
     const formattedIssue = doc.issue_date ? format(new Date(doc.issue_date), 'dd MMM yyyy') : 'N/A';
     
     const tr = trucks.find(t => t.id === doc.truck_id);
     const truckNo = tr ? tr.truck_number : 'Fleet Vehicle';
+
+    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+    const fileUrl = activeFile ? pb.files.getURL(doc, activeFile) : '';
 
     const htmlContent = `
       <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background-color: #ffffff; max-width: 500px; font-family: sans-serif;">
@@ -95,36 +98,27 @@ const TruckDocsPage = () => {
           </tr>
         </table>
         
+        ${fileUrl ? `
+        <div style="margin-top: 20px; margin-bottom: 20px; text-align: center;">
+          <a href="${fileUrl}" target="_blank" style="display: inline-block; padding: 10px 20px; color: #ffffff; background-color: #3b82f6; text-decoration: none; border-radius: 8px; font-size: 12px; font-weight: bold;">
+            Download / View Document File
+          </a>
+        </div>
+        ` : ''}
+        
         ${doc.notes ? `<div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; font-size: 10px; color: #475569; margin-top: 10px;">
           <strong>Notes:</strong><br/>${doc.notes}
         </div>` : ''}
       </div>
     `;
 
-    let attachment = null;
-    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
-    
-    if (activeFile) {
-      toast.loading("Preparing document attachment...", { id: "email-attach" });
-      try {
-        const fileUrl = pb.files.getURL(doc, activeFile);
-        const response = await fetch(fileUrl);
-        const blob = await response.blob();
-        attachment = { blob, name: activeFile };
-        toast.success("Document attached successfully", { id: "email-attach" });
-      } catch (err) {
-        console.error("Failed to load attachment:", err);
-        toast.error("Failed to attach actual document file", { id: "email-attach" });
-      }
-    }
-
     setMailData({
       recipient: '',
       subject: `Jai Bhavani Cargo - Vehicle Document (${doc.document_type} - ${truckNo})`,
-      body: `Dear Team,\n\nPlease find compliance details for ${doc.document_type} regarding Vehicle ${truckNo}.\n\nDocument Number: ${doc.document_number || 'N/A'}\nExpiry Date: ${formattedExpiry}\n\nKindly review.\n\nRegards,\nJai Bhavani Cargo Ltd`,
+      body: `Dear Team,\n\nPlease find compliance details for ${doc.document_type} regarding Vehicle ${truckNo}.\n\nDocument Number: ${doc.document_number || 'N/A'}\nExpiry Date: ${formattedExpiry}\n\n${fileUrl ? `View & Download Document: ${fileUrl}\n\n` : ''}Regards,\nJai Bhavani Cargo Ltd`,
       html: htmlContent,
       label: `${doc.document_type} doc for ${truckNo}`,
-      attachment
+      attachment: null
     });
     setMailOpen(true);
   };

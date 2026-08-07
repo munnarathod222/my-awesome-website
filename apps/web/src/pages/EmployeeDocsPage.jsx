@@ -340,12 +340,16 @@ export default function EmployeeDocsPage() {
   const [mailOpen,       setMailOpen]       = useState(false);
   const [mailData,       setMailData]       = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
 
-  const triggerEmailDoc = async (doc) => {
+  const triggerEmailDoc = (doc) => {
     const emp = employees.find(e => e.id === doc.employee_id);
     const empName = emp?.name || 'Employee';
     const empEmail = emp?.email || '';
     const expiry = doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
     const issued = doc.issue_date  ? new Date(doc.issue_date).toLocaleDateString('en-IN',  { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+
+    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+    const fileUrl = activeFile ? pb.files.getURL(doc, activeFile) : '';
+
     const html = `
       <div style="font-family:sans-serif;max-width:540px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px">
@@ -360,28 +364,27 @@ export default function EmployeeDocsPage() {
             <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Issue Date</td><td style="padding:8px 0;color:#1e293b">${issued}</td></tr>
             <tr><td style="padding:8px 0;color:#64748b;font-weight:600">Expiry Date</td><td style="padding:8px 0;color:#e11d48;font-weight:700">${expiry}</td></tr>
           </table>
+          
+          ${fileUrl ? `
+          <div style="margin-top: 20px; margin-bottom: 20px; text-align: center;">
+            <a href="${fileUrl}" target="_blank" style="display: inline-block; padding: 10px 20px; color: #ffffff; background-color: #6366f1; text-decoration: none; border-radius: 8px; font-size: 12px; font-weight: bold;">
+              Download / View Document File
+            </a>
+          </div>
+          ` : ''}
+
           ${doc.notes ? `<p style="margin-top:12px;padding:10px 14px;background:#f1f5f9;border-left:3px solid #6366f1;border-radius:4px;font-size:12px;color:#475569">${doc.notes}</p>` : ''}
         </div>
       </div>`;
 
-    let attachment = null;
-    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
-    
-    if (activeFile) {
-      toast.loading("Preparing document attachment...", { id: "email-attach" });
-      try {
-        const fileUrl = pb.files.getURL(doc, activeFile);
-        const response = await fetch(fileUrl);
-        const blob = await response.blob();
-        attachment = { blob, name: activeFile };
-        toast.success("Document attached successfully", { id: "email-attach" });
-      } catch (err) {
-        console.error("Failed to load attachment:", err);
-        toast.error("Failed to attach actual document file", { id: "email-attach" });
-      }
-    }
-
-    setMailData({ recipient: empEmail, subject: `Employee Document – ${doc.document_type} | ${empName}`, body: `Please find the ${doc.document_type} details for ${empName} below.`, html, label: `Employee Doc – ${empName}`, attachment });
+    setMailData({
+      recipient: empEmail,
+      subject: `Employee Document – ${doc.document_type} | ${empName}`,
+      body: `Please find the ${doc.document_type} details for ${empName} below.\n\nDocument Number: ${doc.document_number || '—'}\nExpiry Date: ${expiry}\n\n${fileUrl ? `View & Download Document: ${fileUrl}\n\n` : ''}Regards,\nJai Bhavani Cargo Ltd`,
+      html,
+      label: `Employee Doc – ${empName}`,
+      attachment: null
+    });
     setMailOpen(true);
   };
 
