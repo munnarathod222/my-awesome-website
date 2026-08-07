@@ -274,13 +274,13 @@ export default function VendorTrackerPage() {
         pb.collection('vendors').getFullList({ sort: '-created', $autoCancel: false }).catch(() => [])
       ]);
 
-      setEmpanelments(empRecords && empRecords.length > 0 ? empRecords : DEFAULT_CLIENT_EMPANELMENTS);
-      setSubcontractors(subRecords && subRecords.length > 0 ? subRecords : DEFAULT_SUBCONTRACTOR_VENDORS);
-      setSuppliers(supRecords && supRecords.length > 0 ? supRecords : DEFAULT_SUPPLIER_VENDORS);
+      setEmpanelments(empRecords);
+      setSubcontractors(subRecords);
+      setSuppliers(supRecords);
     } catch (err) {
-      setEmpanelments(DEFAULT_CLIENT_EMPANELMENTS);
-      setSubcontractors(DEFAULT_SUBCONTRACTOR_VENDORS);
-      setSuppliers(DEFAULT_SUPPLIER_VENDORS);
+      setEmpanelments([]);
+      setSubcontractors([]);
+      setSuppliers([]);
     } finally {
       setLoading(false);
     }
@@ -301,12 +301,11 @@ export default function VendorTrackerPage() {
       };
 
       if (editingSub) {
-        await pb.collection('subcontractor_vendors').update(editingSub.id, payload, { $autoCancel: false }).catch(() => {});
+        await pb.collection('subcontractor_vendors').update(editingSub.id, payload, { $autoCancel: false });
         setSubcontractors(prev => prev.map(s => s.id === editingSub.id ? { ...s, ...payload } : s));
         toast.success('Subcontractor Vendor ID updated');
       } else {
-        const created = await pb.collection('subcontractor_vendors').create(payload, { $autoCancel: false })
-          .catch(() => ({ id: 'sub_' + Date.now(), ...payload }));
+        const created = await pb.collection('subcontractor_vendors').create(payload, { $autoCancel: false });
         setSubcontractors(prev => [created, ...prev]);
         toast.success(`Issued Vendor ID ${payload.issued_jbc_vendor_id} to Subcontractor!`);
       }
@@ -364,7 +363,7 @@ export default function VendorTrackerPage() {
   const handleDeleteSub = async (id) => {
     if (!window.confirm('Delete this subcontractor Vendor ID record?')) return;
     try {
-      await pb.collection('subcontractor_vendors').delete(id, { $autoCancel: false }).catch(() => {});
+      await pb.collection('subcontractor_vendors').delete(id, { $autoCancel: false });
       setSubcontractors(prev => prev.filter(s => s.id !== id));
       toast.success('Record removed');
     } catch (err) {
@@ -402,12 +401,11 @@ export default function VendorTrackerPage() {
       };
 
       if (editingEmp) {
-        await pb.collection('vendor_empanelments').update(editingEmp.id, payload, { $autoCancel: false }).catch(() => {});
+        await pb.collection('vendor_empanelments').update(editingEmp.id, payload, { $autoCancel: false });
         setEmpanelments(prev => prev.map(e => e.id === editingEmp.id ? { ...e, ...payload } : e));
         toast.success('Client Empanelment record updated');
       } else {
-        const created = await pb.collection('vendor_empanelments').create(payload, { $autoCancel: false })
-          .catch(() => ({ id: 'emp_' + Date.now(), ...payload }));
+        const created = await pb.collection('vendor_empanelments').create(payload, { $autoCancel: false });
         setEmpanelments(prev => [created, ...prev]);
         toast.success(`Tracked new Client Empanelment for ${payload.company_name}!`);
       }
@@ -461,7 +459,7 @@ export default function VendorTrackerPage() {
   const handleDeleteEmp = async (id) => {
     if (!window.confirm('Delete this Client Empanelment record?')) return;
     try {
-      await pb.collection('vendor_empanelments').delete(id, { $autoCancel: false }).catch(() => {});
+      await pb.collection('vendor_empanelments').delete(id, { $autoCancel: false });
       setEmpanelments(prev => prev.filter(e => e.id !== id));
       toast.success('Empanelment record removed');
     } catch (err) {
@@ -486,12 +484,11 @@ export default function VendorTrackerPage() {
       };
 
       if (editingSup) {
-        await pb.collection('vendors').update(editingSup.id, payload, { $autoCancel: false }).catch(() => {});
+        await pb.collection('vendors').update(editingSup.id, payload, { $autoCancel: false });
         setSuppliers(prev => prev.map(s => s.id === editingSup.id ? { ...s, ...payload } : s));
         toast.success('Supplier Vendor details updated');
       } else {
-        const created = await pb.collection('vendors').create(payload, { $autoCancel: false })
-          .catch(() => ({ id: 'vnd_' + Date.now(), ...payload }));
+        const created = await pb.collection('vendors').create(payload, { $autoCancel: false });
         setSuppliers(prev => [created, ...prev]);
         toast.success(`Registered Supplier ${payload.company_name}!`);
       }
@@ -547,7 +544,7 @@ export default function VendorTrackerPage() {
   const handleDeleteSup = async (id) => {
     if (!window.confirm('Delete this supplier vendor record?')) return;
     try {
-      await pb.collection('vendors').delete(id, { $autoCancel: false }).catch(() => {});
+      await pb.collection('vendors').delete(id, { $autoCancel: false });
       setSuppliers(prev => prev.filter(s => s.id !== id));
       toast.success('Supplier Vendor record removed');
     } catch (err) {
