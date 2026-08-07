@@ -19,6 +19,11 @@ import { useLanguage } from '@/contexts/LanguageContext.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import apiServerClient from '@/lib/apiServerClient.js';
+import ExpenseModal from '@/components/ExpenseModal.jsx';
+import AddTripModal from '@/components/AddTripModal.jsx';
+import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';
+import MaintenanceFormModal from '@/components/MaintenanceFormModal.jsx';
+import LogFuelModal from '@/components/LogFuelModal.jsx';
 
 // ── Breadcrumb resolver ───────────────────────────────────────────────────────
 const ROUTE_LABELS = {
@@ -103,6 +108,11 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [backingUp, setBackingUp] = useState(false);
+  const [isExpenseOpen, setIsExpenseOpen] = useState(false);
+  const [isTripOpen, setIsTripOpen] = useState(false);
+  const [isAdvanceOpen, setIsAdvanceOpen] = useState(false);
+  const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
+  const [isFuelOpen, setIsFuelOpen] = useState(false);
 
   const handleBackup = async () => {
     setBackingUp(true);
@@ -341,12 +351,12 @@ export default function Header() {
                     {/* Add Expense */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link
-                          to="/expenses"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        <button
+                          onClick={() => setIsExpenseOpen(true)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
                         >
                           <Receipt className="w-4 h-4" />
-                        </Link>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
                         Add Expense
@@ -356,12 +366,12 @@ export default function Header() {
                     {/* Dispatch Trip */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link
-                          to="/trip-logs"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        <button
+                          onClick={() => setIsTripOpen(true)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
                         >
                           <Truck className="w-4 h-4" />
-                        </Link>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
                         Dispatch Trip
@@ -371,12 +381,12 @@ export default function Header() {
                     {/* Record Advance */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link
-                          to="/cashbook"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        <button
+                          onClick={() => setIsAdvanceOpen(true)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
                         >
                           <CreditCard className="w-4 h-4" />
-                        </Link>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
                         Record Advance
@@ -386,12 +396,12 @@ export default function Header() {
                     {/* Log Maintenance */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link
-                          to="/fleet-maintenance"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        <button
+                          onClick={() => setIsMaintenanceOpen(true)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
                         >
                           <Wrench className="w-4 h-4" />
-                        </Link>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
                         Log Maintenance
@@ -401,12 +411,12 @@ export default function Header() {
                     {/* Log Fuel */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link
-                          to="/fuel-tracker"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        <button
+                          onClick={() => setIsFuelOpen(true)}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
                         >
                           <Droplet className="w-4 h-4" />
-                        </Link>
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
                         Log Fuel
@@ -570,44 +580,44 @@ export default function Header() {
                 </Link>
 
                 {/* Add Expense */}
-                <Link
-                  to="/expenses"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                <button
+                  onClick={() => setIsExpenseOpen(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 >
                   <Receipt className="w-3.5 h-3.5" />
-                </Link>
+                </button>
 
                 {/* Dispatch Trip */}
-                <Link
-                  to="/trip-logs"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                <button
+                  onClick={() => setIsTripOpen(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 >
                   <Truck className="w-3.5 h-3.5" />
-                </Link>
+                </button>
 
                 {/* Record Advance */}
-                <Link
-                  to="/cashbook"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                <button
+                  onClick={() => setIsAdvanceOpen(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 >
                   <CreditCard className="w-3.5 h-3.5" />
-                </Link>
+                </button>
 
                 {/* Log Maintenance */}
-                <Link
-                  to="/fleet-maintenance"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                <button
+                  onClick={() => setIsMaintenanceOpen(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 >
                   <Wrench className="w-3.5 h-3.5" />
-                </Link>
+                </button>
 
                 {/* Log Fuel */}
-                <Link
-                  to="/fuel-tracker"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                <button
+                  onClick={() => setIsFuelOpen(true)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 >
                   <Droplet className="w-3.5 h-3.5" />
-                </Link>
+                </button>
 
                 {/* Backup (Admins only) */}
                 {(isAdmin || isSuperAdmin) && (
@@ -646,6 +656,41 @@ export default function Header() {
           )}
         </div>
       </header>
+      {isExpenseOpen && (
+        <ExpenseModal
+          isOpen={isExpenseOpen}
+          onClose={() => setIsExpenseOpen(false)}
+          onSuccess={() => { setIsExpenseOpen(false); toast.success("Expense logged successfully!"); }}
+        />
+      )}
+      {isTripOpen && (
+        <AddTripModal
+          isOpen={isTripOpen}
+          onClose={() => setIsTripOpen(false)}
+          onSuccess={() => { setIsTripOpen(false); toast.success("Trip dispatched successfully!"); }}
+        />
+      )}
+      {isAdvanceOpen && (
+        <AdvanceEditModal
+          isOpen={isAdvanceOpen}
+          onClose={() => setIsAdvanceOpen(false)}
+          onSuccess={() => { setIsAdvanceOpen(false); toast.success("Advance recorded successfully!"); }}
+        />
+      )}
+      {isMaintenanceOpen && (
+        <MaintenanceFormModal
+          isOpen={isMaintenanceOpen}
+          onClose={() => setIsMaintenanceOpen(false)}
+          onSuccess={() => { setIsMaintenanceOpen(false); toast.success("Maintenance request logged successfully!"); }}
+        />
+      )}
+      {isFuelOpen && (
+        <LogFuelModal
+          isOpen={isFuelOpen}
+          onClose={() => setIsFuelOpen(false)}
+          onSuccess={() => { setIsFuelOpen(false); toast.success("Fuel log recorded successfully!"); }}
+        />
+      )}
     </>
   );
 }
