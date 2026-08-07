@@ -206,7 +206,7 @@ export default function SendMailDialog({
             </div>
           </DialogFooter>
         </form>
-      </Dialog>
+      </DialogContent>
     </Dialog>
   );
 }
