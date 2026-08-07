@@ -1192,6 +1192,7 @@ router.get('/messages/:messageId/attachments/:attachmentId', async (req, res) =>
     return res.send(Buffer.from(mockContent));
   } catch (mockErr) {
     return res.status(500).json({ error: 'Failed to serve mock attachment' });
+  }
 });
 
 export default router;
