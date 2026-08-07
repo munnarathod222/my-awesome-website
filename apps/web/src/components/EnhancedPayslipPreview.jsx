@@ -49,10 +49,10 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   };
 
   const compName = companyProfile?.company_name || 'JAI BHAVANI CARGO';
-  const compAddress = companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009';
+  const compAddress = companyProfile?.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301';
   const compPhone = companyProfile?.company_phone || '+91 7794072244';
-  const compEmail = companyProfile?.company_email || 'munnarathod222@gmail.com';
-  const compGstin = companyProfile?.company_gstin || '36AAAAA0000A1Z5';
+  const compEmail = companyProfile?.company_email || 'operations@jaibhavanicargo.com';
+  const compGstin = companyProfile?.company_gstin || '36DPXPR9171A1Z8';
 
   const contactLine = [
     compPhone ? `Ph: ${compPhone}` : null,

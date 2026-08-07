@@ -1011,11 +1011,11 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                       {/* Top Right: Registered Office Info */}
                       <div className="text-right text-[11px] leading-snug font-sans text-slate-700">
                         <p className="font-extrabold text-slate-900">Regd. Office:</p>
-                        <p className="max-w-[200px]">{companyProfile?.company_address || 'Plot No. 12, Transport Nagar, Secunderabad - 500009'}</p>
-                        <p className="text-blue-700 font-semibold">{companyProfile?.company_email || 'munnarathod222@gmail.com'}</p>
+                        <p className="max-w-[200px]">{companyProfile?.company_address || 'Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301'}</p>
+                        <p className="text-blue-700 font-semibold">{companyProfile?.company_email || 'vinod@jaibhavanicargo.com'}</p>
                         <p className="font-bold">{companyProfile?.company_phone || '+91 7794072244'}</p>
                         <p className="text-blue-700">{companyProfile?.company_website || 'www.jaibhavanicargo.com'}</p>
-                        <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: {companyProfile?.company_gstin || '36AAAAA0000A1Z5'}</p>
+                        <p className="font-mono font-black text-slate-900 mt-0.5">GSTIN: {companyProfile?.company_gstin || '36DPXPR9171A1Z8'}</p>
                       </div>
                     </div>
                   )}
