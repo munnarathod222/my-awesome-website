@@ -42,7 +42,9 @@ const isValidExpiry = (expiry) => {
   return expDate >= today;
 };
 
-const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = [], editLog = null }) => {
+const EMPTY_ARRAY = [];
+
+const LogFuelModal = ({ isOpen, onClose, onSuccess, savedCards = EMPTY_ARRAY, editLog = null }) => {
   const { currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [trucksLoading, setTrucksLoading] = useState(false);
