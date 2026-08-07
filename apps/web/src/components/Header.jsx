@@ -551,42 +551,75 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          {isAuthenticated && (
-            <>
-              <Button
-                asChild
-                size="sm"
-                className="h-7 px-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-extrabold text-[11px] gap-1 shadow-sm"
-              >
-                <Link to="/qr-scanner">
-                  <QrCode className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden sm:inline">QR Pass</span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="sm"
-                className="h-7 px-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-[11px] gap-1 shadow-sm"
-              >
-                <Link to="/dashboard">
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  Dashboard
-                </Link>
-              </Button>
-              {(isAdmin || isSuperAdmin) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleBackup}
-                  disabled={backingUp}
-                  className="h-7 px-2 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-400 border border-sky-500/30 font-extrabold text-[11px] gap-1 shadow-sm"
+              {/* Mobile Quick Access Shortcuts (Tan styled, scrollable) */}
+              <div className="flex items-center gap-1 p-0.5 bg-slate-950/80 border border-slate-800/80 rounded-xl max-w-[130px] xs:max-w-[170px] sm:max-w-xs overflow-x-auto scrollbar-none no-print shrink-0">
+                {/* Dashboard */}
+                <Link
+                  to="/dashboard"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
                 >
-                  {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3 h-3" />}
-                  <span>Backup</span>
-                </Button>
-              )}
-            </>
-          )}
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* QR Pass Scanner */}
+                <Link
+                  to="/qr-scanner"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Add Expense */}
+                <Link
+                  to="/expenses"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Dispatch Trip */}
+                <Link
+                  to="/trip-logs"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Record Advance */}
+                <Link
+                  to="/cashbook"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Log Maintenance */}
+                <Link
+                  to="/fleet-maintenance"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Log Fuel */}
+                <Link
+                  to="/fuel-tracker"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                >
+                  <Droplet className="w-3.5 h-3.5" />
+                </Link>
+
+                {/* Backup (Admins only) */}
+                {(isAdmin || isSuperAdmin) && (
+                  <button
+                    onClick={handleBackup}
+                    disabled={backingUp}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                  >
+                    {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+              </div>
           <LangSelector compact={true} language={language} setLanguage={setLanguage} />
           {isAuthenticated && (
             <button

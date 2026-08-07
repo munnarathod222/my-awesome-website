@@ -432,13 +432,6 @@ const DashboardPage = () => {
         </motion.div>
       )}
 
-      {/* Quick Actions */}
-      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <QuickAction icon={Receipt}     label={t('add_expense')}    onClick={() => setIsExpenseModalOpen(true)}    accentColor="#6366f1" />
-        <QuickAction icon={Truck}       label={t('dispatch_trip')}  onClick={() => setIsTripModalOpen(true)}       accentColor="#10b981" />
-        <QuickAction icon={IndianRupee} label={t('record_advance')} onClick={() => setIsAdvanceModalOpen(true)}    accentColor="#f59e0b" />
-        <QuickAction icon={Zap}         label={t('log_maintenance')} onClick={() => setIsMaintenanceModalOpen(true)} accentColor="#f43f5e" />
-      </motion.div>
 
       {(isSuperAdmin || isAdmin) ? (
         <>
