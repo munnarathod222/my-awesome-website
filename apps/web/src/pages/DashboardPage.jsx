@@ -23,7 +23,6 @@ import AddTripModal from '@/components/AddTripModal.jsx';
 import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';
 import MaintenanceFormModal from '@/components/MaintenanceFormModal.jsx';
 import { Badge } from '@/components/ui/badge';
-import RenderNetworkMetrics from '@/components/RenderNetworkMetrics.jsx';
 
 // ── Animated counter hook ─────────────────────────────────────────────────────
 function useCountUp(target, duration = 900) {
@@ -792,10 +791,7 @@ const DashboardPage = () => {
               </CardContent>
             </Card>
           </motion.div>
-          {/* Compact Render Network Metrics & Bandwidth Telemetry */}
-          <motion.div variants={item} className="pt-2">
-            <RenderNetworkMetrics />
-          </motion.div>
+          {/* Network metrics removed */}
         </>
       ) : (
         <motion.div variants={item} className="space-y-4">

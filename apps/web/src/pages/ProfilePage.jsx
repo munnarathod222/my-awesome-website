@@ -15,11 +15,10 @@ import { cn } from '@/lib/utils.js';
 import ChangePasswordModal from '@/components/ChangePasswordModal.jsx';
 import ChangeEmailModal from '@/components/ChangeEmailModal.jsx';
 import SignaturePadModal from '@/components/SignaturePadModal.jsx';
-import BandwidthTrackerCard from '@/components/BandwidthTrackerCard.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchCompanySettings as refreshDownloadCache } from '@/lib/downloadUtils.js';
 import { exportEnterpriseBackupJSON } from '@/lib/backupUtils.js';
-import { PenTool, Activity, FileJson, Download } from 'lucide-react';
+import { PenTool, FileJson, Download } from 'lucide-react';
 
 const ProfilePage = () => {
   const { currentUser, setCurrentUser } = useAuth();
@@ -1580,9 +1579,6 @@ const ProfilePage = () => {
             <TabsTrigger value="company" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <Building className="w-4 h-4" /> Company Settings
             </TabsTrigger>
-            <TabsTrigger value="bandwidth" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
-              <Activity className="w-4 h-4 text-purple-500" /> Bandwidth & Usage
-            </TabsTrigger>
             <TabsTrigger value="backup" className="flex-1 sm:px-6 flex items-center gap-2 rounded-lg data-[state=active]:bg-background">
               <UploadCloud className="w-4 h-4" /> System Backup
             </TabsTrigger>
@@ -1594,10 +1590,6 @@ const ProfilePage = () => {
 
           <TabsContent value="company" className="space-y-6 m-0 outline-none">
             {renderCompanySettingsView()}
-          </TabsContent>
-
-          <TabsContent value="bandwidth" className="space-y-6 m-0 outline-none">
-            <BandwidthTrackerCard />
           </TabsContent>
 
           <TabsContent value="backup" className="space-y-6 m-0 outline-none">
