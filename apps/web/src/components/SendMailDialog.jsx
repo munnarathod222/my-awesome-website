@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Send, X, Plus, Sparkles, HelpCircle, Loader2 } from 'lucide-react';
+import { Mail, Send, X, Plus, Sparkles, HelpCircle, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SendMailDialog({ 
@@ -14,7 +14,8 @@ export default function SendMailDialog({
   defaultSubject = '', 
   defaultBody = '', 
   richHtmlContent = '', 
-  contextLabel = '' 
+  contextLabel = '',
+  defaultAttachment = null
 }) {
   const [to, setTo] = useState(defaultRecipient);
   const [cc, setCc] = useState('');
@@ -23,14 +24,16 @@ export default function SendMailDialog({
   const [body, setBody] = useState(defaultBody);
   const [showCcBcc, setShowCcBcc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [attachment, setAttachment] = useState(defaultAttachment);
 
   useEffect(() => {
     if (isOpen) {
       setTo(defaultRecipient);
       setSubject(defaultSubject);
       setBody(defaultBody);
+      setAttachment(defaultAttachment);
     }
-  }, [isOpen, defaultRecipient, defaultSubject, defaultBody]);
+  }, [isOpen, defaultRecipient, defaultSubject, defaultBody, defaultAttachment]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -54,18 +57,20 @@ export default function SendMailDialog({
            </div>`
         : `<div style="font-family: sans-serif; color: #1e293b; line-height: 1.6; white-space: pre-line;">${body}</div>`;
 
+      const formData = new FormData();
+      formData.append('to', to);
+      formData.append('cc', cc);
+      formData.append('bcc', bcc);
+      formData.append('subject', subject);
+      formData.append('body', finalBody);
+
+      if (attachment) {
+        formData.append('attachments', attachment.blob, attachment.name);
+      }
+
       const response = await fetch('/hcgi/api/zoho/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          to,
-          cc,
-          bcc,
-          subject,
-          body: finalBody
-        })
+        body: formData
       });
 
       const data = await response.json();
@@ -172,6 +177,27 @@ export default function SendMailDialog({
             </div>
 
             {/* Attachment Preview Card */}
+            {attachment && (
+              <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-slate-200">{attachment.name}</p>
+                    <p className="text-[10px] text-slate-400 font-mono">{(attachment.blob.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setAttachment(null)}
+                  className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {richHtmlContent && (
               <div className="bg-slate-900/60 p-3 rounded-2xl border border-slate-800/80 space-y-1.5">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">

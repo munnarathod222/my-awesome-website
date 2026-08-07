@@ -25,6 +25,8 @@ import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
@@ -121,12 +123,80 @@ const TripLogsPage = () => {
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
   const [whatsappConfig, setWhatsappConfig] = useState({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' });
   const [mailOpen, setMailOpen] = useState(false);
-  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
+
+  const generateTripPDFBlob = (log) => {
+    try {
+      const doc = new jsPDF();
+      const fmtVal = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
+      
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.setFont(undefined, 'bold');
+      doc.text('JAI BHAVANI CARGO', 14, 25);
+      
+      doc.setFontSize(13);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont(undefined, 'normal');
+      doc.text('Official Trip Sheet Statement', 14, 33);
+      
+      // Info Block Box
+      doc.setFillColor(248, 250, 252);
+      doc.rect(14, 42, 182, 86, 'F');
+      doc.rect(14, 42, 182, 86, 'S'); // border
+      
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      
+      let yPos = 56;
+      const addRow = (label, val, highlight = false) => {
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(100, 116, 139);
+        doc.text(label, 20, yPos);
+        
+        doc.setFont(undefined, highlight ? 'bold' : 'normal');
+        doc.setTextColor(highlight ? 99 : 15, highlight ? 102 : 23, highlight ? 241 : 42);
+        doc.text(String(val || '—'), 75, yPos);
+        yPos += 11;
+      };
+      
+      addRow('Trip ID / LR Number:', log.lr_number || log.trip_id || '—', true);
+      addRow('Truck Number:', log.truck_number || '—');
+      addRow('Driver Name:', log.driver_name || '—');
+      addRow('Route (Origin → Dest):', `${log.origin || '—'} to ${log.destination || '—'}`);
+      addRow('Date of Dispatch:', log.start_date || '—');
+      addRow('Freight Amount:', fmtVal(log.freight_amount), true);
+      addRow('Trip Status:', log.trip_status || '—');
+      
+      // Footer watermark
+      doc.setFontSize(9);
+      doc.setTextColor(156, 163, 175);
+      doc.setFont(undefined, 'italic');
+      doc.text('System generated statement via JBC Cargo Portal.', 14, 145);
+      
+      return doc.output('blob');
+    } catch (e) {
+      console.error('Failed to generate Trip PDF:', e);
+      return null;
+    }
+  };
 
   const triggerEmailTrip = (log) => {
     const fmt = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
     const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Trip Sheet</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">LR No: ${log.lr_number || '—'}</p></div><div style="padding:20px 24px;background:#f8fafc"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr><td style="padding:7px 0;color:#64748b;font-weight:600;width:140px">Truck</td><td style="padding:7px 0;font-weight:700;color:#1e293b">${log.truck_number || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Driver</td><td style="padding:7px 0;color:#1e293b">${log.driver_name || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Route</td><td style="padding:7px 0;color:#1e293b">${log.origin || '—'} → ${log.destination || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Date</td><td style="padding:7px 0;color:#1e293b">${log.start_date || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Status</td><td style="padding:7px 0;font-weight:700;color:#6366f1">${log.trip_status || '—'}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Freight</td><td style="padding:7px 0;font-weight:700;color:#059669">${fmt(log.freight_amount)}</td></tr><tr><td style="padding:7px 0;color:#64748b;font-weight:600">Payment</td><td style="padding:7px 0;color:#1e293b">${log.payment_status || '—'}</td></tr></table></div></div>`;
-    setMailData({ recipient: '', subject: `Trip Sheet – ${log.truck_number || ''} | ${log.origin || ''} → ${log.destination || ''}`, body: `Trip sheet for LR# ${log.lr_number || 'N/A'}.`, html, label: `Trip – ${log.lr_number || ''}` });
+    
+    const pdfBlob = generateTripPDFBlob(log);
+    const fileName = `trip_sheet_${log.lr_number || log.trip_id || 'export'}.pdf`;
+
+    setMailData({ 
+      recipient: '', 
+      subject: `Trip Sheet – ${log.truck_number || ''} | ${log.origin || ''} → ${log.destination || ''}`, 
+      body: `Hi, please find the attached trip sheet document for LR# ${log.lr_number || 'N/A'}.`, 
+      html, 
+      label: `Trip – ${log.lr_number || ''}`,
+      attachment: pdfBlob ? { blob: pdfBlob, name: fileName } : null
+    });
     setMailOpen(true);
   };
 
@@ -1525,6 +1595,7 @@ const TripLogsPage = () => {
         defaultBody={mailData.body}
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
       />
     </>
   );
