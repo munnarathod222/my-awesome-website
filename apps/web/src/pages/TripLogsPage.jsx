@@ -539,58 +539,62 @@ const TripLogsPage = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 flex-1 flex flex-col"
+          className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex-1 flex flex-col"
         >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-5 shrink-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 shrink-0">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-heading font-extrabold tracking-tight text-foreground">Trip Logs</h1>
-              <p className="text-muted-foreground mt-2 max-w-2xl">Manage fleet shipments, driver assignments, and monitor payment progress.</p>
+              <h1 className="text-2xl font-heading font-extrabold tracking-tight text-foreground">Trip Logs</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage fleet shipments, driver assignments, and monitor payment progress.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => setIsBulkModalOpen(true)} variant="outline" className="bg-card shadow-sm rounded-xl hover:border-primary/50">
-                <UploadCloud className="w-4 h-4 mr-2" /> Bulk Upload
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => setIsBulkModalOpen(true)} variant="outline" size="sm" className="bg-card h-8 rounded-lg text-xs hover:border-primary/50">
+                <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Bulk Upload
               </Button>
-              <Button onClick={() => setIsRecurringModalOpen(true)} variant="outline" className="bg-card shadow-sm rounded-xl hover:border-primary/50">
-                <RouteIcon className="w-4 h-4 mr-2" /> Add Recurring Trips
+              <Button onClick={() => setIsRecurringModalOpen(true)} variant="outline" size="sm" className="bg-card h-8 rounded-lg text-xs hover:border-primary/50">
+                <RouteIcon className="w-3.5 h-3.5 mr-1.5" /> Add Recurring
               </Button>
-              <Button onClick={() => setIsAddModalOpen(true)} className="shadow-sm rounded-xl">
-                <PlusCircle className="w-4 h-4 mr-2" /> Add New Trip
+              <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-8 rounded-lg text-xs font-bold">
+                <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> Add New Trip
               </Button>
             </div>
           </div>
 
           <Card className="shadow-soft border-border/50 bg-card rounded-2xl flex-1 flex flex-col overflow-hidden">
-            <CardHeader className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 pb-5 border-b border-border/40 bg-secondary/10 shrink-0">
-              <div>
-                <CardTitle className="font-heading text-xl">Recent Shipments</CardTitle>
-                <CardDescription>Comprehensive list of all fleet operations.</CardDescription>
+            <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 py-3 px-4 border-b border-border/40 bg-secondary/5 shrink-0">
+              <div className="flex items-center gap-2">
+                <CardTitle className="font-heading text-sm font-extrabold uppercase tracking-wider text-slate-300">
+                  Recent Shipments
+                </CardTitle>
+                <span className="text-[10px] text-muted-foreground bg-white/[0.03] border border-white/[0.05] px-2 py-0.5 rounded-md font-mono">
+                  {filteredLogs.length} total
+                </span>
               </div>
-              <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                <div className="relative flex-1 min-w-[200px] xl:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <div className="relative flex-1 min-w-[160px] md:max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input 
                     placeholder="Search by Trip ID, route..." 
-                    className="pl-9 h-10 bg-background rounded-xl"
+                    className="pl-8 h-8 text-xs bg-background rounded-lg"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <Select value={tripStatusFilter} onValueChange={setTripStatusFilter}>
-                  <SelectTrigger className="w-[150px] h-10 bg-background rounded-xl">
+                  <SelectTrigger className="w-[120px] h-8 text-xs bg-background rounded-lg">
                     <SelectValue placeholder="Trip Status" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Trips</SelectItem>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-xs">
+                    <SelectItem value="all">All Statuses</SelectItem>
                     {TRIP_STATUS_OPTIONS.map(status => (
                       <SelectItem key={status} value={status}>{status}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger className="w-[150px] h-10 bg-background rounded-xl">
+                  <SelectTrigger className="w-[120px] h-8 text-xs bg-background rounded-lg">
                     <SelectValue placeholder="Payment Status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-xs">
                     <SelectItem value="all">All Payments</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="received">Paid</SelectItem>
