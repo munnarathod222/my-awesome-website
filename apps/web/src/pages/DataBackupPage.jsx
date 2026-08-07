@@ -281,6 +281,8 @@ export default function DataBackupPage() {
           return;
         }
 
+        setLoading(true);
+
         // Restore LocalStorage
         if (parsed.localStorage) {
           Object.keys(parsed.localStorage).forEach(key => {
@@ -288,12 +290,57 @@ export default function DataBackupPage() {
               localStorage.setItem(key, parsed.localStorage[key]);
             }
           });
+          toast.success('Local templates & cache restored!');
         }
 
-        toast.success('Backup file data successfully restored into local memory!');
+        // Restore Database Collections (specifically Vendor Tracker collections)
+        if (parsed.database) {
+          toast.info('Restoring database records (merging without deleting)...');
+          const collectionsToRestore = ['vendor_empanelments', 'subcontractor_vendors', 'vendors'];
+          let restoreCount = 0;
+          let failCount = 0;
+
+          for (const colName of collectionsToRestore) {
+            const records = parsed.database[colName];
+            if (Array.isArray(records)) {
+              for (const record of records) {
+                try {
+                  const { created, updated, collectionId, collectionName, expand, ...payload } = record;
+                  
+                  let exists = false;
+                  try {
+                    await pb.collection(colName).getOne(record.id);
+                    exists = true;
+                  } catch (e) {
+                    exists = false;
+                  }
+
+                  if (exists) {
+                    await pb.collection(colName).update(record.id, payload);
+                  } else {
+                    await pb.collection(colName).create({ id: record.id, ...payload });
+                  }
+                  restoreCount++;
+                } catch (dbErr) {
+                  console.error(`Failed to restore record in ${colName}:`, dbErr);
+                  failCount++;
+                }
+              }
+            }
+          }
+          if (restoreCount > 0) {
+            toast.success(`Successfully merged ${restoreCount} database records (No existing data was wiped out!).`);
+          }
+          if (failCount > 0) {
+            toast.warning(`Skipped/failed ${failCount} database records during merge.`);
+          }
+        }
+
         fetchStats();
       } catch (err) {
         toast.error('Error parsing JSON backup file!');
+      } finally {
+        setLoading(false);
       }
     };
     reader.readAsText(file);
