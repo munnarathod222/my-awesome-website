@@ -422,23 +422,26 @@ export default function Header() {
                         Log Fuel
                       </TooltipContent>
                     </Tooltip>
+
+                    {/* Backup Data (Admins only) */}
+                    {(isAdmin || isSuperAdmin) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleBackup}
+                            disabled={backingUp}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none disabled:opacity-50"
+                          >
+                            {backingUp ? <RefreshCw className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                          Backup Data
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </TooltipProvider>
                 </div>
-
-                {(isAdmin || isSuperAdmin) && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleBackup}
-                    disabled={backingUp}
-                    className="rounded-xl text-[12px] h-8 px-3 border-sky-500/30 text-sky-400 hover:bg-sky-500/10 font-bold gap-1.5 transition-all hover:scale-[1.02]"
-                  >
-                    {backingUp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
-                    <span>Backup Data</span>
-                  </Button>
-                )}
-
-                <LangSelector compact={false} language={language} setLanguage={setLanguage} />
 
                 {(isAdmin || isSuperAdmin) && (
                   <button
@@ -630,7 +633,6 @@ export default function Header() {
                   </button>
                 )}
               </div>
-          <LangSelector compact={true} language={language} setLanguage={setLanguage} />
           {isAuthenticated && (
             <button
               onClick={() => navigate('/business-mail')}
