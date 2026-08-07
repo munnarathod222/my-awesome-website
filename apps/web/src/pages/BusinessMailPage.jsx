@@ -171,6 +171,7 @@ export default function BusinessMailPage() {
   const [sending, setSending] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [autoAttachDoc, setAutoAttachDoc] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   // Modals & Panels
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -416,6 +417,33 @@ export default function BusinessMailPage() {
     } catch (e) {}
   };
 
+  // Fetch details and set selected message
+  const handleSelectMessage = async (msg) => {
+    setSelectedMessage(msg);
+    // Mark as read locally and on API
+    if (!msg.isRead) {
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, isRead: true } : m));
+      try {
+        await fetch(`${API_BASE}/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageId: msg.id, action: 'read', value: true })
+        });
+      } catch (e) {}
+    }
+
+    // Fetch full message details (including body and attachments list)
+    try {
+      const res = await fetch(`${API_BASE}/messages/${msg.id}`);
+      const data = await res.json();
+      if (data.success && data.message) {
+        setSelectedMessage(data.message);
+      }
+    } catch (err) {
+      console.error('Failed to load message details:', err);
+    }
+  };
+
   // Apply Template in Compose
   const handleApplyTemplate = (tplId) => {
     const tpl = LOGISTICS_TEMPLATES.find(t => t.id === tplId);
@@ -467,23 +495,29 @@ export default function BusinessMailPage() {
 
     const timer = setTimeout(async () => {
       try {
+        const formData = new FormData();
+        formData.append('to', composeData.to);
+        formData.append('cc', composeData.cc || '');
+        formData.append('bcc', composeData.bcc || '');
+        formData.append('subject', composeData.subject);
+        formData.append('body', composeData.body);
+        if (autoAttachDoc) formData.append('autoAttachDoc', autoAttachDoc);
+
+        // Append custom files
+        selectedFiles.forEach((file) => {
+          formData.append('attachments', file);
+        });
+
         const res = await fetch(`${API_BASE}/send`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: composeData.to,
-            cc: composeData.cc,
-            bcc: composeData.bcc,
-            subject: composeData.subject,
-            body: composeData.body,
-            autoAttachDoc
-          })
+          body: formData
         });
         const data = await res.json();
         if (data.success) {
           toast.success(data.message || 'Email sent successfully!', { id: toastId });
           setComposeData({ to: '', cc: '', bcc: '', subject: '', body: '', templateId: '' });
           setAutoAttachDoc(null);
+          setSelectedFiles([]);
           fetchMessages(currentFolder);
         } else {
           toast.error(data.error || 'Failed to send email', { id: toastId });
@@ -736,10 +770,7 @@ export default function BusinessMailPage() {
                   return (
                     <div
                       key={msg.id}
-                      onClick={() => {
-                        setSelectedMessage(msg);
-                        msg.isRead = true;
-                      }}
+                      onClick={() => handleSelectMessage(msg)}
                       className={`p-3.5 cursor-pointer transition-all ${
                         isSelected
                           ? 'bg-blue-600/15 border-l-4 border-blue-500'
@@ -970,6 +1001,53 @@ export default function BusinessMailPage() {
                   {selectedMessage.body}
                 </div>
 
+                {/* Email Attachments List Section */}
+                {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
+                  <div className="p-5 border-t border-slate-800/80 bg-slate-950/40 space-y-2.5">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                      <Paperclip className="w-3.5 h-3.5 text-amber-400 animate-pulse" /> Attachments ({selectedMessage.attachments.length})
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedMessage.attachments.map((att, idx) => {
+                        const name = att.attachmentName || att.filename || `attachment_${idx}`;
+                        const size = att.attachmentSize || att.size || 'Unknown size';
+                        const id = att.attachmentId || att.id;
+                        const downloadUrl = `${API_BASE}/messages/${selectedMessage.id}/attachments/${id}?name=${encodeURIComponent(name)}`;
+                        return (
+                          <div
+                            key={id || idx}
+                            className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900 border border-slate-800/80 hover:border-blue-500/30 transition-all duration-200"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-xl bg-slate-950 flex items-center justify-center text-slate-400 border border-slate-800 shrink-0">
+                                <FileText className="w-4 h-4 text-blue-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-bold text-white truncate" title={name}>
+                                  {name}
+                                </p>
+                                <p className="text-[10px] text-slate-500 font-mono">
+                                  {size}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              asChild
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-400 hover:text-white hover:bg-blue-500/20 rounded-xl"
+                            >
+                              <a href={downloadUrl} download target="_blank" rel="noreferrer">
+                                <Download className="w-4 h-4" />
+                              </a>
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Customer CRM Panel Footer */}
                 {matchedCRM && (
                   <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
@@ -1123,6 +1201,57 @@ export default function BusinessMailPage() {
               >
                 {autoAttachDoc ? '✓ POD Attached' : '+ Attach Trip POD'}
               </Button>
+            </div>
+
+            {/* Custom File Attachments Selector */}
+            <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300 font-bold text-xs flex items-center gap-2">
+                  <Paperclip className="w-4 h-4 text-blue-400" /> Attach Any File
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('compose-file-input').click()}
+                  className="rounded-xl border-slate-700 text-slate-300 font-bold text-xs h-7 px-3 hover:bg-slate-800"
+                >
+                  Choose Files...
+                </Button>
+                <input
+                  id="compose-file-input"
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setSelectedFiles(prev => [...prev, ...files]);
+                    toast.success(`Attached ${files.length} custom file(s).`);
+                  }}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Selected Files List */}
+              {selectedFiles.length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-900 text-[11px]">
+                      <span className="text-slate-300 font-medium truncate max-w-[200px]" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="text-slate-500 font-mono">
+                        ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== idx))}
+                        className="text-red-400 hover:text-red-300 font-bold px-1.5 ml-2"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <DialogFooter className="pt-3 border-t border-slate-800 flex justify-between items-center">

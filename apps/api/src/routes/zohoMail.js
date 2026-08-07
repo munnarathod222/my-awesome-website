@@ -1,11 +1,13 @@
 import express from 'express';
 import logger from '../utils/logger.js';
 import nodemailer from 'nodemailer';
+import multer from 'multer';
 
 import fs from 'fs';
 import path from 'path';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), 'zoho_config_store.json');
 
@@ -514,6 +516,10 @@ const LOGISTICS_SIMULATED_MESSAGES = [
       invoiceNumber: 'INV-2026-881',
       gstNumber: '36DPXPR9171A1Z8'
     },
+    attachments: [
+      { attachmentId: 'att_101_1', attachmentName: 'Loading_Advice_JBC-9002.pdf', attachmentSize: '1.2 MB' },
+      { attachmentId: 'att_101_2', attachmentName: 'Empanelment_Rate_Card.xlsx', attachmentSize: '450 KB' }
+    ],
     body: `Dear Vinod Kumar Rathod / Dispatch Team,
 
 We are pleased to confirm the long-haul container freight shipment under Trip ID JBC-TRIP-9002 from Shamshabad Logistics Park, Hyderabad to Reliance Retail Distribution Hub, NCR Delhi.
@@ -553,6 +559,9 @@ Reliance Retail Logistics Ltd`
       truckNumber: 'MH12AB1234',
       invoiceNumber: 'INV-TATA-9902'
     },
+    attachments: [
+      { attachmentId: 'att_102_1', attachmentName: 'Tata_Motors_Estimate_INV-TATA-9902.pdf', attachmentSize: '180 KB' }
+    ],
     body: `Dear Jai Bhavani Cargo Management,
 
 Your commercial vehicle MH12AB1234 (Tata Prima 3525.K) has reached 62,400 KM on the odometer. As per fleet service norms, please schedule:
@@ -585,6 +594,7 @@ Patel Nagar Service Station, Hyderabad`
       tripId: 'JBC-TRIP-9002',
       truckNumber: 'TS09UB8822'
     },
+    attachments: [],
     body: `Dear Customer,
 
 Your BPCL Corporate FASTag Account (JBC-77940) has been credited with Rs. 25,000 via HDFC Corporate Netbanking.
@@ -616,6 +626,9 @@ Thank you for choosing BPCL SmartFleet FASTag.`
     detectedEntities: {
       gstNumber: '36DPXPR9171A1Z8'
     },
+    attachments: [
+      { attachmentId: 'att_104_1', attachmentName: 'JBC_Contract_Rates_FY_2026-27.pdf', attachmentSize: '850 KB' }
+    ],
     body: `Dear Anand Sharma Ji,
 
 Thank you for contacting Jai Bhavani Cargo. Attached herewith is our formal freight rate contract proposal along with our corporate GST certificate (36DPXPR9171A1Z8), solvency certificate, and fleet insurance details.
@@ -854,22 +867,64 @@ router.get('/messages', async (req, res) => {
 
 /**
  * POST /api/zoho/send
- * Send email via Zoho Mail API or Nodemailer SMTP fallback
+ * Send email via Zoho Mail API or Nodemailer SMTP fallback (supporting attachments)
  */
-router.post('/send', async (req, res) => {
+router.post('/send', upload.array('attachments'), async (req, res) => {
   const { to, cc, bcc, subject, body, templateId, scheduledTime, autoAttachDoc } = req.body;
+  const files = req.files || [];
 
   if (!to || !subject || !body) {
     return res.status(400).json({ error: 'To, Subject, and Body text are required' });
   }
 
-  try {
-    const token = await ensureAccessToken();
-    if (token) {
-      const accountId = await getZohoAccountId(token);
-      const apiUrl = getZohoMailApiUrl(zohoConfig.region);
-      const url = `${apiUrl}/accounts/${accountId}/messages`;
+  // Upload attachments to Zoho if active and files are present
+  let zohoAttachments = [];
+  let token = null;
+  let accountId = null;
+  let apiUrl = null;
 
+  try {
+    token = await ensureAccessToken();
+    if (token) {
+      accountId = await getZohoAccountId(token);
+      apiUrl = getZohoMailApiUrl(zohoConfig.region);
+
+      // If we have files, upload them to Zoho Mail API first
+      if (files.length > 0) {
+        for (const file of files) {
+          try {
+            const uploadUrl = `${apiUrl}/accounts/${accountId}/messages/attachments`;
+            const formData = new FormData();
+            const blob = new Blob([file.buffer], { type: file.mimetype });
+            formData.append('attach', blob, file.originalname);
+
+            const uploadRes = await fetch(uploadUrl, {
+              method: 'POST',
+              headers: { 'Authorization': `Zoho-oauthtoken ${token}` },
+              body: formData
+            });
+
+            const uploadData = await uploadRes.json();
+            if (uploadData.status && uploadData.status.code === 200 && uploadData.data && uploadData.data.length > 0) {
+              zohoAttachments.push(uploadData.data[0]);
+              logger.info(`Uploaded attachment ${file.originalname} to Zoho. ID: ${uploadData.data[0].attachmentId}`);
+            } else {
+              logger.warn(`Zoho attachment upload failed for ${file.originalname}:`, uploadData.status?.description);
+            }
+          } catch (uploadErr) {
+            logger.error(`Error uploading file ${file.originalname} to Zoho:`, uploadErr.message);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn('Failed to prepare Zoho token for attachments upload:', err.message);
+  }
+
+  // Send via Zoho Mail API if connected
+  if (token && accountId && apiUrl) {
+    try {
+      const url = `${apiUrl}/accounts/${accountId}/messages`;
       const payload = {
         fromAddress: zohoConfig.accountEmail,
         toAddress: to,
@@ -879,6 +934,10 @@ router.post('/send', async (req, res) => {
         content: body,
         mailFormat: 'html'
       };
+
+      if (zohoAttachments.length > 0) {
+        payload.attachments = zohoAttachments;
+      }
 
       const response = await fetch(url, {
         method: 'POST',
@@ -896,12 +955,12 @@ router.post('/send', async (req, res) => {
       } else {
         logger.warn('Zoho Mail API response error:', data);
       }
+    } catch (err) {
+      logger.warn('Zoho Mail API send failed, falling back to SMTP:', err.message);
     }
-  } catch (err) {
-    logger.warn('Zoho Mail API send failed, falling back to Nodemailer SMTP:', err.message);
   }
 
-  // Fallback SMTP Sender (Supports Zoho SMTP smtppro.zoho.in / smtppro.zoho.com & Hostinger / Custom SMTP)
+  // Fallback SMTP Sender
   try {
     const region = (zohoConfig.region || 'in').toLowerCase();
     const defaultZohoHost = region === 'in' ? 'smtppro.zoho.in' : 'smtppro.zoho.com';
@@ -919,13 +978,19 @@ router.post('/send', async (req, res) => {
         auth: { user: smtpUser, pass: smtpPass }
       });
 
+      const smtpAttachments = files.map(file => ({
+        filename: file.originalname,
+        content: file.buffer
+      }));
+
       const sendInfo = await transporter.sendMail({
         from: `"Jai Bhavani Cargo" <${smtpUser}>`,
         to,
         cc,
         bcc,
         subject,
-        html: body
+        html: body,
+        attachments: smtpAttachments.length > 0 ? smtpAttachments : undefined
       });
 
       logger.info(`Mail sent successfully via SMTP (${smtpHost}) to ${to}. MessageId: ${sendInfo.messageId}`);
@@ -936,6 +1001,12 @@ router.post('/send', async (req, res) => {
   }
 
   // Simulated successful send response
+  const mappedFiles = files.map((file, idx) => ({
+    attachmentId: `att_sim_${Date.now()}_${idx}`,
+    attachmentName: file.originalname,
+    attachmentSize: `${(file.size / 1024).toFixed(1)} KB`
+  }));
+
   const newMsg = {
     id: `msg_${Date.now()}`,
     messageId: `msg_${Date.now()}`,
@@ -948,9 +1019,10 @@ router.post('/send', async (req, res) => {
     date: new Date().toISOString(),
     isRead: true,
     isStarred: false,
-    hasAttachment: Boolean(autoAttachDoc),
+    hasAttachment: Boolean(autoAttachDoc) || files.length > 0,
     priority: 'Normal',
     category: 'General',
+    attachments: mappedFiles,
     body
   };
   LOGISTICS_SIMULATED_MESSAGES.unshift(newMsg);
@@ -1017,6 +1089,109 @@ router.post('/ai', (req, res) => {
   }
 
   return res.json({ success: true, result: 'AI operation completed' });
+});
+
+/**
+ * GET /api/zoho/messages/:messageId
+ * Get detailed message content (including attachments list)
+ */
+router.get('/messages/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+
+  try {
+    const token = await ensureAccessToken();
+    if (token) {
+      const accountId = await getZohoAccountId(token);
+      const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+      const url = `${apiUrl}/accounts/${accountId}/messages/${messageId}/content`;
+
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+      });
+      const data = await response.json();
+      if (data.status && data.status.code === 200 && data.data) {
+        const m = data.data;
+        return res.json({
+          success: true,
+          message: {
+            id: messageId,
+            messageId: messageId,
+            senderName: m.sender || m.fromAddress || '',
+            senderEmail: m.fromAddress || '',
+            to: m.toAddress || '',
+            subject: m.subject || '(No Subject)',
+            date: m.receivedTime ? new Date(Number(m.receivedTime)).toISOString() : new Date().toISOString(),
+            body: m.content || m.summary || '',
+            hasAttachment: m.hasAttachment === '1' || m.hasAttachment === true || (m.attachments && m.attachments.length > 0),
+            attachments: m.attachments || []
+          }
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn(`Zoho live details fetch failed for message ${messageId}:`, err.message);
+  }
+
+  // Fallback / simulated message lookup
+  const mockMsg = LOGISTICS_SIMULATED_MESSAGES.find(m => m.id === messageId);
+  if (mockMsg) {
+    return res.json({ success: true, message: mockMsg });
+  }
+
+  return res.status(404).json({ error: 'Message not found' });
+});
+
+/**
+ * GET /api/zoho/messages/:messageId/attachments/:attachmentId
+ * Download attachment file
+ */
+router.get('/messages/:messageId/attachments/:attachmentId', async (req, res) => {
+  const { messageId, attachmentId } = req.params;
+  const filename = req.query.name || 'attachment.bin';
+
+  try {
+    const token = await ensureAccessToken();
+    if (token) {
+      const accountId = await getZohoAccountId(token);
+      const apiUrl = getZohoMailApiUrl(zohoConfig.region);
+      const url = `${apiUrl}/accounts/${accountId}/messages/${messageId}/attachments/${attachmentId}`;
+
+      const response = await fetch(url, {
+        headers: { 'Authorization': `Zoho-oauthtoken ${token}` }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        res.setHeader('Content-Type', response.headers.get('Content-Type') || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        return res.send(buffer);
+      }
+    }
+  } catch (err) {
+    logger.warn(`Zoho live attachment download failed for ${attachmentId}:`, err.message);
+  }
+
+  // Fallback: Generate mock file buffer for simulated messages
+  try {
+    let mockContent = `This is a simulated logistics attachment file from Jai Bhavani Cargo.\nFilename: ${filename}\nGenerated on: ${new Date().toLocaleString()}`;
+    let contentType = 'text/plain';
+
+    if (filename.endsWith('.pdf')) {
+      contentType = 'application/pdf';
+      // Basic valid mock PDF document
+      mockContent = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 75 >>\nstream\nBT\n/F1 12 Tf\n70 700 Td\n(Simulated JBC Logistics Document: ${filename}) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000111 00000 n\n0000000253 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n379\n%%EOF`;
+    } else if (filename.endsWith('.xlsx')) {
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    return res.send(Buffer.from(mockContent));
+  } catch (mockErr) {
+    return res.status(500).json({ error: 'Failed to serve mock attachment' });
 });
 
 export default router;
