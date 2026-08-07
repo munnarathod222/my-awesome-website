@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { cn } from '@/lib/utils.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -304,28 +305,115 @@ export default function Header() {
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <Button
-                  asChild
-                  size="sm"
-                  className="rounded-xl text-[12px] h-8 px-3.5 bg-gradient-to-r from-indigo-600 via-primary to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold gap-1.5 shadow-lg shadow-indigo-500/25 border border-indigo-400/30 transition-all hover:scale-[1.02]"
-                >
-                  <Link to="/dashboard">
-                    <LayoutDashboard className="w-3.5 h-3.5 text-white" />
-                    Dashboard
-                  </Link>
-                </Button>
+                {/* Desktop Quick Access Header Shortcuts (Tan styled) */}
+                <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-800/80 rounded-xl mr-2.5 no-print">
+                  <TooltipProvider delayDuration={0}>
+                    {/* Dashboard */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/dashboard"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <LayoutDashboard className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Dashboard
+                      </TooltipContent>
+                    </Tooltip>
 
-                <Button
-                  asChild
-                  size="sm"
-                  variant="outline"
-                  className="rounded-xl text-[12px] h-8 px-3 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-bold gap-1.5 transition-all hover:scale-[1.02]"
-                >
-                  <Link to="/qr-scanner">
-                    <QrCode className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>QR Pass Scanner</span>
-                  </Link>
-                </Button>
+                    {/* QR Pass Scanner */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/qr-scanner"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <QrCode className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        QR Pass Scanner
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Add Expense */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/expenses"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Receipt className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Add Expense
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Dispatch Trip */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/trip-logs"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Truck className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Dispatch Trip
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Record Advance */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/cashbook"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Record Advance
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Log Maintenance */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/fleet-maintenance"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Wrench className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Log Maintenance
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Log Fuel */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/fuel-tracker"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Droplet className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Log Fuel
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
 
                 {(isAdmin || isSuperAdmin) && (
                   <Button
