@@ -185,106 +185,106 @@ export default function PrintableQRStickerModal({ isOpen, onClose, truck, qrToke
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[95vh] overflow-y-auto bg-card border-border shadow-2xl rounded-2xl p-6 font-sans">
-        <DialogHeader className="pb-3 border-b border-border/40">
-          <DialogTitle className="text-lg font-extrabold flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-primary" /> Official Windshield & Cabin QR Sticker
+      <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto bg-card border-border shadow-2xl rounded-2xl p-4 font-sans scrollbar-none">
+        <DialogHeader className="pb-2 border-b border-border/40">
+          <DialogTitle className="text-base font-extrabold flex items-center gap-2">
+            <QrCode className="w-4 h-4 text-primary" /> Official Windshield & Cabin QR Sticker
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground">
             Print and paste this tamper-resistant QR sticker on the truck's front windshield and side cabin doors.
           </p>
         </DialogHeader>
 
         {/* Admin Downloadable Privilege Toggle */}
-        <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Checkbox 
               id="dl-permission-check" 
               checked={allowDownload} 
               onCheckedChange={(val) => setAllowDownload(Boolean(val))} 
             />
-            <Label htmlFor="dl-permission-check" className="text-xs font-extrabold cursor-pointer text-foreground">
+            <Label htmlFor="dl-permission-check" className="text-[11px] font-extrabold cursor-pointer text-foreground">
               Enable Document Downloads for End-Users
             </Label>
           </div>
-          <Badge variant="outline" className={`text-[10px] font-mono ${allowDownload ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-slate-800 text-slate-400'}`}>
-            {allowDownload ? '📥 Download Enabled' : '🔒 View Only (Protected)'}
+          <Badge variant="outline" className={`text-[9px] font-mono ${allowDownload ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-slate-800 text-slate-400'}`}>
+            {allowDownload ? 'Download' : 'View Only'}
           </Badge>
         </div>
 
         {/* Preview Pass Container */}
-        <div className="py-4">
-          <div className="border-4 border-primary/80 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white rounded-3xl p-6 shadow-2xl relative overflow-hidden text-center space-y-4">
+        <div className="py-2.5">
+          <div className="border-4 border-primary/80 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white rounded-2xl p-4 shadow-xl relative overflow-hidden text-center space-y-3">
             
             {/* Header Badge */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <div className="flex items-center gap-2 text-left">
-                <div className="p-2 bg-primary text-white rounded-xl font-black text-sm">JBC</div>
+                <div className="p-1.5 bg-primary text-white rounded-lg font-black text-xs">JBC</div>
                 <div>
-                  <div className="text-sm font-extrabold tracking-wider uppercase">JAI BHAVANI CARGO</div>
-                  <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">VERIFIED FLEET VEHICLE</div>
+                  <div className="text-xs font-extrabold tracking-wider uppercase">JAI BHAVANI CARGO</div>
+                  <div className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest">VERIFIED FLEET VEHICLE</div>
                 </div>
               </div>
-              <Badge className="bg-emerald-500 text-white font-mono font-bold text-xs px-2.5 py-1">
+              <Badge className="bg-emerald-500 text-white font-mono font-bold text-[10px] px-2 py-0.5">
                 SECURITY PASS
               </Badge>
             </div>
 
             {/* Truck Number Display */}
-            <div className="py-1">
-              <div className="text-3xl font-black font-mono tracking-wider text-amber-400">
+            <div className="py-0.5">
+              <div className="text-2xl font-black font-mono tracking-wider text-amber-400">
                 {truck.truck_number}
               </div>
-              <div className="text-xs text-slate-300 font-semibold mt-0.5">
+              <div className="text-[11px] text-slate-300 font-semibold mt-0.5">
                 {truck.truck_name || 'Ashoke Leyland'} • {truck.truck_size || '32 FT Goods Carrier'}
               </div>
             </div>
 
             {/* QR Code Canvas */}
-            <div className="flex flex-col items-center justify-center space-y-2">
-              <div className="p-3 bg-white rounded-2xl shadow-xl border-2 border-primary/30 inline-block">
+            <div className="flex flex-col items-center justify-center space-y-1.5">
+              <div className="p-2.5 bg-white rounded-xl shadow-lg border-2 border-primary/30 inline-block">
                 <img 
                   src={qrImageUrl} 
                   alt={`QR Verification Pass for ${truck.truck_number}`}
-                  className="w-44 h-44 object-contain"
+                  className="w-32 h-32 object-contain"
                 />
               </div>
-              <div className="text-[11px] font-mono text-emerald-400 font-bold flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> VERIFIED BY RTO & HIGHWAY PATROL
+              <div className="text-[10px] font-mono text-emerald-400 font-bold flex items-center justify-center gap-1">
+                <ShieldCheck className="w-3 h-3" /> VERIFIED BY RTO & HIGHWAY PATROL
               </div>
             </div>
 
             {/* Roadside Inspection Banner */}
-            <div className="p-2.5 bg-white/10 rounded-xl border border-white/15 text-[11px] space-y-0.5">
+            <div className="p-2 bg-white/10 rounded-lg border border-white/15 text-[10px] space-y-0.5">
               <div className="font-bold text-amber-300">FOR RTO / TRAFFIC POLICE / TOLL INSPECTION</div>
-              <div className="text-[10px] text-slate-300">
+              <div className="text-[9px] text-slate-300">
                 Scan with smartphone camera to view Digital RC, Insurance, Fitness, Permit & Emergency Helpline
               </div>
             </div>
 
             {/* Footer Helplines */}
-            <div className="pt-2 border-t border-white/10 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+            <div className="pt-1.5 border-t border-white/10 flex justify-between items-center text-[9px] text-slate-400 font-mono">
               <span>Pass ID: {qrToken || truck.truck_number}</span>
               <span className="font-bold text-white">24x7 Helpline: +91 7794072244</span>
             </div>
           </div>
         </div>
 
-        <DialogFooter className="pt-3 border-t border-border/40 flex items-center justify-between">
-          <Button variant="outline" onClick={onClose} className="rounded-xl text-xs">
+        <DialogFooter className="pt-2.5 border-t border-border/40 flex items-center justify-between">
+          <Button variant="outline" onClick={onClose} className="rounded-xl text-[11px] h-8">
             Close
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <a 
               href={verificationUrl} 
               target="_blank" 
               rel="noreferrer"
-              className="px-3 py-2 border border-border/60 rounded-xl text-xs font-semibold flex items-center gap-1 hover:bg-muted/30"
+              className="px-2.5 py-1.5 border border-border/60 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:bg-muted/30 h-8"
             >
-              <ExternalLink className="w-3.5 h-3.5" /> Test Live Link
+              <ExternalLink className="w-3 h-3" /> Test Live Link
             </a>
-            <Button onClick={handlePrint} className="rounded-xl shadow-md font-bold text-xs">
-              <Printer className="w-4 h-4 mr-1.5" /> Print QR Sticker Pass
+            <Button onClick={handlePrint} className="rounded-xl shadow-md font-bold text-[11px] h-8">
+              <Printer className="w-3.5 h-3.5 mr-1" /> Print QR Sticker Pass
             </Button>
           </div>
         </DialogFooter>
