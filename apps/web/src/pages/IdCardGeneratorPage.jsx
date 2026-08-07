@@ -20,8 +20,9 @@ import {
   IdCard, Printer, Download, Search, RefreshCw, Sparkles, Truck, Users, 
   ShieldCheck, Phone, MapPin, Calendar, Upload, Eye, CheckCircle2, User, 
   Building2, QrCode, CreditCard, ChevronRight, Copy, Check, FileText,
-  Sliders, LayoutGrid, CheckSquare, ShieldAlert, Award, Star, Zap, Cpu
+  Sliders, LayoutGrid, CheckSquare, ShieldAlert, Award, Star, Zap, Cpu, Mail
 } from 'lucide-react';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 const SAMPLE_EMPLOYEES = [];
 
@@ -105,6 +106,68 @@ export default function IdCardGeneratorPage({ embedMode = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isBatchOpen, setIsBatchOpen] = useState(false);
   const [batchSelected, setBatchSelected] = useState([]);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const handleShareEmail = () => {
+    if (!cardForm.name) {
+      toast.error('Please select or fill an employee ID Card first.');
+      return;
+    }
+
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; padding: 24px; color: #1e293b;">
+        <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 12px; margin-bottom: 15px; text-align: center;">
+          <h2 style="margin: 0; color: #0f172a; font-size: 18px; font-weight: 800;">${cardForm.company_name}</h2>
+          <p style="margin: 2px 0 0 0; color: #3b82f6; font-size: 10px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">${cardForm.company_tagline}</p>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+          ${cardForm.photo_url ? `<img src="${cardForm.photo_url}" style="width: 100px; height: 100px; border-radius: 10px; border: 2px solid #e2e8f0; object-fit: cover;" alt="Photo" />` : '<div style="width: 100px; height: 100px; border-radius: 10px; background: #f1f5f9; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px;">No Photo</div>'}
+          <h3 style="margin: 10px 0 2px 0; color: #0f172a; font-size: 16px; font-weight: 800;">${cardForm.name}</h3>
+          <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: bold;">${cardForm.designation}</p>
+        </div>
+
+        <table style="width: 100%; font-size: 11px; margin-bottom: 15px; color: #475569;">
+          <tr>
+            <td style="width: 40%; color: #64748b; padding: 4px 0;">Employee ID:</td>
+            <td style="color: #0f172a; font-weight: bold; font-family: monospace;">${cardForm.employee_number || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; padding: 4px 0;">Department:</td>
+            <td style="color: #0f172a; font-weight: bold;">${cardForm.department}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; padding: 4px 0;">Blood Group:</td>
+            <td style="color: #ef4444; font-weight: bold;">${cardForm.blood_group || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; padding: 4px 0;">Contact:</td>
+            <td style="color: #0f172a; font-family: monospace;">${cardForm.contact || 'N/A'}</td>
+          </tr>
+          <tr>
+            <td style="color: #64748b; padding: 4px 0;">Emergency:</td>
+            <td style="color: #0f172a; font-family: monospace;">${cardForm.emergency_contact || 'N/A'}</td>
+          </tr>
+        </table>
+        
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 12px; font-size: 9px; color: #64748b; text-align: center;">
+          <p style="margin: 2px 0;">${cardForm.company_address}</p>
+          <p style="margin: 2px 0;">Phone: ${cardForm.company_phone} | Email: ${cardForm.company_email}</p>
+        </div>
+      </div>
+    `;
+
+    setMailData({
+      recipient: '',
+      subject: `Jai Bhavani Cargo - Corporate ID Card: ${cardForm.name}`,
+      body: `Hi,\n\nPlease find the official Employee ID Card details for ${cardForm.name} attached below.\n\nRegards,\nVinod kumar Rathod`,
+      html: htmlContent,
+      label: `ID Card – ${cardForm.name}`
+    });
+    setMailOpen(true);
+  };
 
   // Live Card Form Fields initialized from Company Profile
   const [cardForm, setCardForm] = useState({
@@ -423,6 +486,10 @@ export default function IdCardGeneratorPage({ embedMode = false }) {
 
           <Button onClick={handlePrint} className="rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30">
             <Printer className="w-4 h-4 mr-1.5" /> Print / Save PDF
+          </Button>
+
+          <Button onClick={handleShareEmail} variant="outline" className="rounded-xl text-xs font-bold border-slate-700 bg-slate-900 hover:bg-slate-800">
+            <Mail className="w-4 h-4 mr-1.5 text-blue-400" /> Share via Email
           </Button>
         </div>
       </div>
@@ -1300,6 +1367,16 @@ export default function IdCardGeneratorPage({ embedMode = false }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
+      />
     </div>
   );
 }

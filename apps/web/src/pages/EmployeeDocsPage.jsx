@@ -338,9 +338,9 @@ export default function EmployeeDocsPage() {
   const [previewDoc,     setPreviewDoc]     = useState(null);
   const [shareConfig,    setShareConfig]    = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   const [mailOpen,       setMailOpen]       = useState(false);
-  const [mailData,       setMailData]       = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+  const [mailData,       setMailData]       = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
 
-  const triggerEmailDoc = (doc) => {
+  const triggerEmailDoc = async (doc) => {
     const emp = employees.find(e => e.id === doc.employee_id);
     const empName = emp?.name || 'Employee';
     const empEmail = emp?.email || '';
@@ -363,7 +363,25 @@ export default function EmployeeDocsPage() {
           ${doc.notes ? `<p style="margin-top:12px;padding:10px 14px;background:#f1f5f9;border-left:3px solid #6366f1;border-radius:4px;font-size:12px;color:#475569">${doc.notes}</p>` : ''}
         </div>
       </div>`;
-    setMailData({ recipient: empEmail, subject: `Employee Document – ${doc.document_type} | ${empName}`, body: `Please find the ${doc.document_type} details for ${empName} below.`, html, label: `Employee Doc – ${empName}` });
+
+    let attachment = null;
+    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+    
+    if (activeFile) {
+      toast.loading("Preparing document attachment...", { id: "email-attach" });
+      try {
+        const fileUrl = pb.files.getURL(doc, activeFile);
+        const response = await fetch(fileUrl);
+        const blob = await response.blob();
+        attachment = { blob, name: activeFile };
+        toast.success("Document attached successfully", { id: "email-attach" });
+      } catch (err) {
+        console.error("Failed to load attachment:", err);
+        toast.error("Failed to attach actual document file", { id: "email-attach" });
+      }
+    }
+
+    setMailData({ recipient: empEmail, subject: `Employee Document – ${doc.document_type} | ${empName}`, body: `Please find the ${doc.document_type} details for ${empName} below.`, html, label: `Employee Doc – ${empName}`, attachment });
     setMailOpen(true);
   };
 
@@ -1055,6 +1073,7 @@ export default function EmployeeDocsPage() {
         defaultBody={mailData.body}
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
       />
     </div>
   );

@@ -343,6 +343,18 @@ export default function CompanyVaultPage() {
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
   };
 
+  const handleShareEmail = () => {
+    const formattedHtml = `<div style="font-family: monospace; white-space: pre-wrap; font-size: 13px; color: #1e293b; line-height: 1.5; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">${dossierShareText}</div>`;
+    setMailData({
+      recipient: companyInfo.company_email || '',
+      subject: `Company Dossier Credentials - Jai Bhavani Cargo`,
+      body: `Dear Team,\n\nPlease find the Jai Bhavani Cargo official company dossier and active documents attached below.\n\nRegards,\nVinod kumar Rathod`,
+      html: formattedHtml,
+      label: `Company Vault Dossier`
+    });
+    setMailOpen(true);
+  };
+
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       
@@ -1069,6 +1081,13 @@ export default function CompanyVaultPage() {
             </Button>
 
             <Button 
+              className="w-full sm:flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-blue-500/20 border-none"
+              onClick={handleShareEmail}
+            >
+              <Mail className="w-4 h-4 mr-2" /> Share via Email
+            </Button>
+
+            <Button 
               variant="outline"
               className="w-full sm:flex-1 h-11 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs rounded-xl border-slate-700"
               onClick={handleCopyDossier}
@@ -1214,6 +1233,7 @@ export default function CompanyVaultPage() {
         defaultBody={mailData.body}
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
       />
     </div>
   );

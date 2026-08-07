@@ -58,7 +58,7 @@ const TruckDocsPage = () => {
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
 
-  const triggerEmailDoc = (doc) => {
+  const triggerEmailDoc = async (doc) => {
     const formattedExpiry = doc.expiry_date ? format(new Date(doc.expiry_date), 'dd MMM yyyy') : 'No Expiry';
     const formattedIssue = doc.issue_date ? format(new Date(doc.issue_date), 'dd MMM yyyy') : 'N/A';
     
@@ -101,12 +101,30 @@ const TruckDocsPage = () => {
       </div>
     `;
 
+    let attachment = null;
+    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+    
+    if (activeFile) {
+      toast.loading("Preparing document attachment...", { id: "email-attach" });
+      try {
+        const fileUrl = pb.files.getURL(doc, activeFile);
+        const response = await fetch(fileUrl);
+        const blob = await response.blob();
+        attachment = { blob, name: activeFile };
+        toast.success("Document attached successfully", { id: "email-attach" });
+      } catch (err) {
+        console.error("Failed to load attachment:", err);
+        toast.error("Failed to attach actual document file", { id: "email-attach" });
+      }
+    }
+
     setMailData({
       recipient: '',
       subject: `Jai Bhavani Cargo - Vehicle Document (${doc.document_type} - ${truckNo})`,
       body: `Dear Team,\n\nPlease find compliance details for ${doc.document_type} regarding Vehicle ${truckNo}.\n\nDocument Number: ${doc.document_number || 'N/A'}\nExpiry Date: ${formattedExpiry}\n\nKindly review.\n\nRegards,\nJai Bhavani Cargo Ltd`,
       html: htmlContent,
-      label: `${doc.document_type} doc for ${truckNo}`
+      label: `${doc.document_type} doc for ${truckNo}`,
+      attachment
     });
     setMailOpen(true);
   };
@@ -1023,6 +1041,7 @@ const TruckDocsPage = () => {
         defaultBody={mailData.body}
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
       />
     </div>
   );

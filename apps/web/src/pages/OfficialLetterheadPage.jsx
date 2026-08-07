@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useCompanyProfile } from '@/lib/companyProfile.js';
@@ -159,6 +160,61 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
   const fileInputRef = useRef(null);
   const letterRef = useRef(null);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const handleShareEmail = () => {
+    let emailHtml = "";
+    if (docMode === 'letter') {
+      emailHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; background-color: #ffffff; color: #1e293b;">
+          <div style="text-align: right; font-size: 11px; color: #64748b; margin-bottom: 15px;">
+            <strong>Ref No:</strong> ${refNo}<br/>
+            <strong>Date:</strong> ${dateStr ? dateStr : ''}
+          </div>
+          
+          <div style="margin-bottom: 20px; font-size: 13px; line-height: 1.4;">
+            <strong>To,</strong><br/>
+            <strong>${recipientName}</strong><br/>
+            <span style="color: #64748b; white-space: pre-line;">${recipientAddress}</span>
+          </div>
+          
+          <div style="margin-bottom: 20px; font-size: 13px;">
+            <strong>Subject:</strong> <span style="text-decoration: underline; font-weight: bold;">${subject}</span>
+          </div>
+          
+          <p style="font-size: 13px; margin-bottom: 15px;">${salutation}</p>
+          <div style="font-size: 13px; line-height: 1.6; white-space: pre-line; margin-bottom: 30px;">
+            ${bodyText}
+          </div>
+          
+          <div style="margin-top: 40px; font-size: 13px;">
+            <p>For <strong>JAI BHAVANI CARGO</strong></p>
+            <div style="margin-top: 40px;">
+              <strong>${signatoryName}</strong><br/>
+              <span style="color: #64748b; font-size: 11px;">${signatoryTitle}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      emailHtml = `
+        <div style="font-family: sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 30px; background-color: #ffffff; color: #1e293b; line-height: 1.6; font-size: 13px; white-space: pre-line;">
+          ${agreementTemplate}
+        </div>
+      `;
+    }
+
+    setMailData({
+      recipient: '',
+      subject: docMode === 'letter' ? `Official Letter: ${subject}` : `Employment Agreement / Contract`,
+      body: `Dear recipient,\n\nPlease find our official corporate document correspondence detailed below.\n\nRegards,\nJai Bhavani Cargo Ltd`,
+      html: emailHtml,
+      label: docMode === 'letter' ? 'Official Letter' : 'Agreement / Contract'
+    });
+    setMailOpen(true);
+  };
 
   // Load stored letterhead background & saved templates on mount
   useEffect(() => {
@@ -448,6 +504,15 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
             >
               <Copy className="w-3.5 h-3.5 text-blue-400" />
               <span>Copy Text</span>
+            </Button>
+
+            <Button
+              onClick={handleShareEmail}
+              variant="outline"
+              className="rounded-xl border-slate-800 bg-slate-950 text-slate-300 font-bold text-[11px] h-8 px-3 hover:bg-slate-900 gap-1.5"
+            >
+              <Mail className="w-3.5 h-3.5 text-blue-400" />
+              <span>Share via Email</span>
             </Button>
 
             <Button
@@ -1096,6 +1161,16 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
+      />
     </div>
   </div>
   );

@@ -19,6 +19,7 @@ import pb from '@/lib/pocketbaseClient.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { getEmployeePhotoUrl } from '@/lib/photoUtils.js';
+import SendMailDialog from '@/components/SendMailDialog.jsx';
 
 const PRESET_THEMES = [
   {
@@ -92,6 +93,62 @@ export default function BusinessCardStudioPage({ embedMode = false }) {
   const [copied, setCopied] = useState(false);
   const [customFrontBg, setCustomFrontBg] = useState(null);
   const [customBackBg, setCustomBackBg] = useState(null);
+
+  const [mailOpen, setMailOpen] = useState(false);
+  const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
+
+  const handleShareEmail = () => {
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; border: 1px solid #d2b48c; border-radius: 16px; background-color: #0f172a; color: #f8fafc; padding: 24px;">
+        <div style="border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 15px;">
+          <h2 style="margin: 0; color: #fbbf24; font-size: 18px; font-weight: 800;">${cardData.companyName}</h2>
+          <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 10px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">${cardData.companyTagline}</p>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <h3 style="margin: 0; color: #ffffff; font-size: 16px; font-weight: 800;">${cardData.fullName}</h3>
+          <p style="margin: 2px 0 0 0; color: #fbbf24; font-size: 11px; font-weight: bold; text-transform: uppercase;">${cardData.designation}</p>
+          <span style="color: #64748b; font-size: 9px; font-family: monospace;">Emp Code: ${cardData.empCode}</span>
+        </div>
+
+        <table style="width: 100%; font-size: 11px; margin-bottom: 15px; color: #cbd5e1;">
+          <tr>
+            <td style="width: 30%; color: #94a3b8; padding: 4px 0;">Phone:</td>
+            <td style="color: #ffffff; font-family: monospace;">${cardData.phone1} ${cardData.phone2 ? `/ ${cardData.phone2}` : ''}</td>
+          </tr>
+          <tr>
+            <td style="color: #94a3b8; padding: 4px 0;">Email:</td>
+            <td style="color: #fbbf24; font-family: monospace;">${cardData.email}</td>
+          </tr>
+          <tr>
+            <td style="color: #94a3b8; padding: 4px 0;">Website:</td>
+            <td style="color: #3b82f6; font-family: monospace;">${cardData.website}</td>
+          </tr>
+          <tr>
+            <td style="color: #94a3b8; padding: 4px 0; vertical-align: top;">Address:</td>
+            <td style="color: #ffffff; line-height: 1.4;">${cardData.address}</td>
+          </tr>
+          <tr>
+            <td style="color: #94a3b8; padding: 4px 0; vertical-align: top;">Services:</td>
+            <td style="color: #94a3b8; font-style: italic; line-height: 1.4;">${cardData.services}</td>
+          </tr>
+        </table>
+        
+        <div style="border-top: 1px solid #334155; padding-top: 12px; font-size: 8.5px; color: #64748b; text-align: center;">
+          <span>GSTIN: ${cardData.gstNo} | ${cardData.isoBadge}</span>
+        </div>
+      </div>
+    `;
+
+    setMailData({
+      recipient: '',
+      subject: `Business Visiting Card - ${cardData.fullName} | ${cardData.companyName}`,
+      body: `Dear Recipient,\n\nPlease find my official digital business card credentials detailed below.\n\nRegards,\n${cardData.fullName}`,
+      html: htmlContent,
+      label: `Visiting Card – ${cardData.fullName}`
+    });
+    setMailOpen(true);
+  };
 
   // Business Card Form State initialized dynamically from Company Profile
   const [cardData, setCardData] = useState({
@@ -313,6 +370,13 @@ export default function BusinessCardStudioPage({ embedMode = false }) {
               className="rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-10 px-4 shadow-lg shadow-emerald-950/50"
             >
               <MessageSquare className="w-4 h-4 mr-2" /> Share on WhatsApp
+            </Button>
+
+            <Button
+              onClick={handleShareEmail}
+              className="rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 shadow-lg shadow-blue-950/50"
+            >
+              <Mail className="w-4 h-4 mr-2" /> Share via Email
             </Button>
 
             <Button
@@ -768,6 +832,16 @@ export default function BusinessCardStudioPage({ embedMode = false }) {
         </div>
 
       </div>
+      <SendMailDialog
+        isOpen={mailOpen}
+        onOpenChange={setMailOpen}
+        defaultRecipient={mailData.recipient}
+        defaultSubject={mailData.subject}
+        defaultBody={mailData.body}
+        richHtmlContent={mailData.html}
+        contextLabel={mailData.label}
+        defaultAttachment={mailData.attachment}
+      />
     </div>
   );
 }
