@@ -543,13 +543,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
                   <Switch checked={includeSignature} onCheckedChange={setIncludeSignature} />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-xs font-bold text-slate-300">Signatory Rubber Stamp</Label>
-                    <p className="text-[10px] text-slate-400 leading-none">Print blue corporate signature stamp on leaf</p>
-                  </div>
-                  <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
-                </div>
+
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
@@ -826,48 +820,22 @@ export default function ChequeWriterPage({ embedMode = false }) {
               {amount ? `** ${Number(amount).toLocaleString('en-IN')}/- **` : ''}
             </div>
 
-            {/* Signatory Rubber Stamp */}
-            {includeStamp && (
-              <div 
-                className="absolute select-none pointer-events-none"
-                style={{ top: `${stampTop}mm`, left: `${stampLeft}mm` }}
-              >
-                <div className="w-40 h-20 border-2 border-blue-600 rounded-lg p-1.5 bg-blue-50/20 flex flex-col items-center justify-between text-center relative transform -rotate-1 font-sans">
-                  <div className="text-[10px] font-black text-blue-600 uppercase tracking-wide">
-                    For JAI BHAVANI CARGO
-                  </div>
-                  <div className="flex-1 flex items-center justify-center min-h-[25px] w-full">
-                    {includeSignature ? (
-                      companyProfile?.e_signature ? (
-                        <img src={companyProfile.e_signature} className="max-h-7 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
-                      ) : (
-                        <span className="font-serif italic text-blue-500/80 text-[10.5px] tracking-widest leading-none">
-                          {signatoryName}
-                        </span>
-                      )
-                    ) : (
-                      <div className="h-4 w-full opacity-0"></div>
-                    )}
-                  </div>
-                  <div className="text-[7.5px] font-bold text-blue-500 uppercase tracking-wider">
-                    {signatoryTitle || 'Proprietor'}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Raw Digital Signature (Stamp Off, Signature On) */}
-            {!includeStamp && includeSignature && (
+            {/* E-Signature / Signatory Block */}
+            {includeSignature && (
               <div 
                 className="absolute select-none pointer-events-none flex flex-col items-end"
-                style={{ top: `${stampTop + 1}mm`, left: `${stampLeft + 5}mm` }}
+                style={{ top: `${stampTop}mm`, left: `${stampLeft}mm` }}
               >
                 {companyProfile?.e_signature ? (
-                  <img src={companyProfile.e_signature} className="max-h-11 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                  <img src={companyProfile.e_signature} className="max-h-16 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
                 ) : (
-                  <span className="font-serif italic text-blue-950/80 text-xs tracking-widest leading-none select-none pt-2">
-                    {signatoryName}
-                  </span>
+                  <div className="flex flex-col items-center text-center font-sans">
+                    <span className="text-[8px] font-bold text-slate-500 uppercase leading-none">For JAI BHAVANI CARGO</span>
+                    <span className="font-serif italic text-blue-955/80 text-[11px] tracking-widest leading-none pt-1">
+                      {signatoryName}
+                    </span>
+                    <span className="text-[7.5px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{signatoryTitle}</span>
+                  </div>
                 )}
               </div>
             )}

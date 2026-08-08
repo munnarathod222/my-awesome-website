@@ -862,10 +862,6 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                       <span className="text-[11px] text-slate-300 font-bold">Include Digital Signature</span>
                       <Switch checked={includeSignature} onCheckedChange={setIncludeSignature} />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-300 font-bold">Include Digital Stamp</span>
-                      <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
-                    </div>
                     {!useCustomLetterhead && (
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-slate-300 font-bold">Include Central Watermark Logo</span>
@@ -1082,51 +1078,22 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
                     {/* Right: Signature Block */}
                     <div className="text-right space-y-1">
-                      {includeStamp ? (
-                        <div className="py-2 flex justify-end">
-                          <div className="w-40 h-20 border-2 border-blue-600 rounded-lg p-1.5 bg-blue-50/20 flex flex-col items-center justify-between text-center relative transform -rotate-1 shadow-sm font-sans">
-                            <div className="text-[10px] font-black text-blue-600 uppercase tracking-wide">
-                              For JAI BHAVANI CARGO
-                            </div>
-                            
-                            {/* Signature Space / Digital script signature */}
-                            <div className="flex-1 flex items-center justify-center min-h-[30px] w-full">
-                              {includeSignature ? (
-                                companyProfile?.e_signature ? (
-                                  <img src={companyProfile.e_signature} className="max-h-8 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
-                                ) : (
-                                  <span className="font-serif italic text-blue-600/80 text-sm tracking-widest leading-none select-none">
-                                    {signatoryName}
-                                  </span>
-                                )
-                              ) : (
-                                <div className="h-4 w-full opacity-0"></div>
-                              )}
-                            </div>
-
-                            <div className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
-                              {signatoryTitle || 'Proprietor'}
-                            </div>
-                          </div>
+                      <div className="flex flex-col items-end">
+                        <p className="text-xs font-black text-slate-900 uppercase font-sans">For JAI BHAVANI CARGO</p>
+                        
+                        <div className="h-12 flex items-center justify-end select-none">
+                          {includeSignature && companyProfile?.e_signature ? (
+                            <img src={companyProfile.e_signature} className="max-h-12 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                          ) : (
+                            <div className="h-10"></div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-end">
-                          <p className="text-xs font-black text-slate-900 uppercase font-sans">For JAI BHAVANI CARGO</p>
-                          
-                          <div className="h-12 flex items-center justify-end select-none">
-                            {includeSignature && companyProfile?.e_signature ? (
-                              <img src={companyProfile.e_signature} className="max-h-10 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
-                            ) : (
-                              <div className="h-10"></div>
-                            )}
-                          </div>
 
-                          <div className="pt-1">
-                            <p className="text-xs font-black text-slate-900">{signatoryName}</p>
-                            <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
-                          </div>
+                        <div className="pt-1">
+                          <p className="text-xs font-black text-slate-900">{signatoryName}</p>
+                          <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
