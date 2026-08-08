@@ -984,15 +984,30 @@ export default function VendorTrackerPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between pt-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewEmpanelment(emp)}
-                      className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
-                    >
-                      <Eye className="w-3.5 h-3.5 mr-1" /> Empanelment Intel
-                    </Button>
+                  <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewEmpanelment(emp)}
+                        className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Empanelment Intel
+                      </Button>
+
+                      {emp.portal_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl hover:text-amber-400 hover:border-amber-500/30"
+                        >
+                          <a href={emp.portal_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                            <ExternalLink className="w-3.5 h-3.5 text-amber-450" /> Open Portal
+                          </a>
+                        </Button>
+                      )}
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                       <Button
@@ -1081,14 +1096,29 @@ export default function VendorTrackerPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-1">
-                      <Button
-                        size="sm"
-                        onClick={() => handleApplyNow(emp)}
-                        className="h-8 px-4 text-xs bg-emerald-500 hover:bg-emerald-450 text-slate-950 font-black rounded-xl shadow-md gap-1.5"
-                      >
-                        <CheckSquare className="w-3.5 h-3.5 text-slate-950" /> Apply & Start Progress
-                      </Button>
+                    <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApplyNow(emp)}
+                          className="h-8 px-4 text-xs bg-emerald-500 hover:bg-emerald-450 text-slate-950 font-black rounded-xl shadow-md gap-1.5"
+                        >
+                          <CheckSquare className="w-3.5 h-3.5 text-slate-950" /> Apply & Start Progress
+                        </Button>
+
+                        {emp.portal_url && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                            className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl hover:text-amber-400 hover:border-amber-500/30"
+                          >
+                            <a href={emp.portal_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                              <ExternalLink className="w-3.5 h-3.5 text-amber-450" /> Open Portal
+                            </a>
+                          </Button>
+                        )}
+                      </div>
 
                       <div className="flex items-center gap-1.5">
                         <Button
