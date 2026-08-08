@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useCompanyProfile } from '@/lib/companyProfile.js';
@@ -67,9 +68,118 @@ const convertNumberToWords = (num) => {
   return words ? '*** ' + words.trim() + ' Rupees Only ***' : '';
 };
 
+// Bank-wise CTS check print presets
+const BANK_PRESETS = {
+  hdfc: {
+    name: 'HDFC Bank',
+    theme: {
+      color: 'blue',
+      bgColor: 'from-slate-100 via-[#e0f2fe] to-slate-50 border-sky-200/50',
+      logoChar: 'H',
+      logoBg: 'bg-blue-900',
+      bankName: 'HDFC BANK LTD',
+      subtitle: 'CTS-2010 COMPLIANT BRANCH • INDIA'
+    },
+    offsets: {
+      dateTop: 8,
+      dateLeft: 154,
+      payeeTop: 24,
+      payeeLeft: 20,
+      wordsTop: 32,
+      wordsLeft: 24,
+      amountTop: 42,
+      amountLeft: 152,
+      stampTop: 54,
+      stampLeft: 140
+    }
+  },
+  sbi: {
+    name: 'State Bank of India (SBI)',
+    theme: {
+      color: 'sky',
+      bgColor: 'from-slate-50 via-[#ecfeff] to-slate-50 border-cyan-200/50',
+      logoChar: 'S',
+      logoBg: 'bg-cyan-600',
+      bankName: 'STATE BANK OF INDIA',
+      subtitle: 'CTS-2010 COMPLIANT • SECUNDERABAD BRANCH'
+    },
+    offsets: {
+      dateTop: 10,
+      dateLeft: 152,
+      payeeTop: 22,
+      payeeLeft: 22,
+      wordsTop: 31,
+      wordsLeft: 25,
+      amountTop: 41,
+      amountLeft: 146,
+      stampTop: 55,
+      stampLeft: 135
+    }
+  },
+  icici: {
+    name: 'ICICI Bank',
+    theme: {
+      color: 'amber',
+      bgColor: 'from-slate-100 via-[#fffbeb] to-slate-50 border-amber-200/50',
+      logoChar: 'I',
+      logoBg: 'bg-amber-800',
+      bankName: 'ICICI BANK LTD',
+      subtitle: 'CTS-2010 COMPLIANT • CORPORATE OFFICE'
+    },
+    offsets: {
+      dateTop: 9,
+      dateLeft: 156,
+      payeeTop: 25,
+      payeeLeft: 24,
+      wordsTop: 34,
+      wordsLeft: 28,
+      amountTop: 44,
+      amountLeft: 150,
+      stampTop: 56,
+      stampLeft: 142
+    }
+  },
+  axis: {
+    name: 'Axis Bank',
+    theme: {
+      color: 'rose',
+      bgColor: 'from-slate-100 via-[#fff1f2] to-slate-50 border-rose-200/50',
+      logoChar: 'A',
+      logoBg: 'bg-rose-900',
+      bankName: 'AXIS BANK LTD',
+      subtitle: 'CTS-2010 COMPLIANT • GHATKESAR BRANCH'
+    },
+    offsets: {
+      dateTop: 8,
+      dateLeft: 153,
+      payeeTop: 23,
+      payeeLeft: 18,
+      wordsTop: 30,
+      wordsLeft: 22,
+      amountTop: 42,
+      amountLeft: 147,
+      stampTop: 53,
+      stampLeft: 138
+    }
+  },
+  custom: {
+    name: 'Custom Calibration',
+    theme: {
+      color: 'slate',
+      bgColor: 'from-slate-100 via-slate-200/50 to-slate-50 border-slate-300/50',
+      logoChar: 'C',
+      logoBg: 'bg-slate-800',
+      bankName: 'CUSTOM CHEQUE WRITER',
+      subtitle: 'MANUAL ALIGNMENT CALIBRATION'
+    },
+    offsets: null
+  }
+};
+
 export default function ChequeWriterPage({ embedMode = false }) {
   const companyProfile = useCompanyProfile();
   
+  const [selectedBank, setSelectedBank] = useState('hdfc');
   const [payee, setPayee] = useState('');
   const [amount, setAmount] = useState('');
   const [amountWords, setAmountWords] = useState('');
@@ -86,21 +196,44 @@ export default function ChequeWriterPage({ embedMode = false }) {
   const [chequeNumber, setChequeNumber] = useState('000012');
 
   // Print Offset Adjustment Configurations (fine-tuning coordinates in millimetres)
-  const [dateTop, setDateTop] = useState(10);
-  const [dateLeft, setDateLeft] = useState(158);
-  const [payeeTop, setPayeeTop] = useState(25);
-  const [payeeLeft, setPayeeLeft] = useState(24);
-  const [wordsTop, setWordsTop] = useState(33);
-  const [wordsLeft, setWordsLeft] = useState(28);
-  const [amountTop, setAmountTop] = useState(43);
-  const [amountLeft, setAmountLeft] = useState(150);
-  const [stampTop, setStampTop] = useState(55);
+  const [dateTop, setDateTop] = useState(8);
+  const [dateLeft, setDateLeft] = useState(154);
+  const [payeeTop, setPayeeTop] = useState(24);
+  const [payeeLeft, setPayeeLeft] = useState(20);
+  const [wordsTop, setWordsTop] = useState(32);
+  const [wordsLeft, setWordsLeft] = useState(24);
+  const [amountTop, setAmountTop] = useState(42);
+  const [amountLeft, setAmountLeft] = useState(152);
+  const [stampTop, setStampTop] = useState(54);
   const [stampLeft, setStampLeft] = useState(140);
 
   // Template States
   const [savedCheques, setSavedCheques] = useState([]);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [chequeTitleInput, setChequeTitleInput] = useState('');
+
+  const handleBankPresetChange = (bankKey) => {
+    setSelectedBank(bankKey);
+    const preset = BANK_PRESETS[bankKey];
+    if (preset && preset.offsets) {
+      setDateTop(preset.offsets.dateTop);
+      setDateLeft(preset.offsets.dateLeft);
+      setPayeeTop(preset.offsets.payeeTop);
+      setPayeeLeft(preset.offsets.payeeLeft);
+      setWordsTop(preset.offsets.wordsTop);
+      setWordsLeft(preset.offsets.wordsLeft);
+      setAmountTop(preset.offsets.amountTop);
+      setAmountLeft(preset.offsets.amountLeft);
+      setStampTop(preset.offsets.stampTop);
+      setStampLeft(preset.offsets.stampLeft);
+      toast.success(`Loaded offsets for ${preset.name}`);
+    }
+  };
+
+  const handleOffsetChange = (setter, val) => {
+    setter(val);
+    setSelectedBank('custom');
+  };
 
   useEffect(() => {
     if (companyProfile) {
@@ -199,6 +332,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
   };
 
   const dateDigits = getChequeDateDigits();
+  const bankTheme = BANK_PRESETS[selectedBank]?.theme || BANK_PRESETS.hdfc.theme;
 
   return (
     <div className={"min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 font-sans " + (embedMode ? "min-h-0 bg-transparent p-0 pb-12" : "")}>
@@ -316,6 +450,23 @@ export default function ChequeWriterPage({ embedMode = false }) {
             </CardHeader>
             <CardContent className="p-5 space-y-4">
               
+              {/* Bank Preset Selection */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-slate-300">Select Bank Cheque Format Preset</Label>
+                <Select value={selectedBank} onValueChange={handleBankPresetChange}>
+                  <SelectTrigger className="bg-slate-950 border-slate-800 text-white rounded-xl font-bold h-10">
+                    <SelectValue placeholder="Select bank format" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-850 text-white rounded-xl">
+                    <SelectItem value="hdfc">HDFC Bank</SelectItem>
+                    <SelectItem value="sbi">State Bank of India (SBI)</SelectItem>
+                    <SelectItem value="icici">ICICI Bank</SelectItem>
+                    <SelectItem value="axis">Axis Bank</SelectItem>
+                    <SelectItem value="custom">Custom Alignment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Payee Name */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold text-slate-300">Payee Name (Beneficiary)</Label>
@@ -426,11 +577,11 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Top Margin</span>
-                    <Slider min={0} max={90} step={1} value={[payeeTop]} onValueChange={([val]) => setPayeeTop(val)} />
+                    <Slider min={0} max={90} step={1} value={[payeeTop]} onValueChange={([val]) => handleOffsetChange(setPayeeTop, val)} />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Left Margin</span>
-                    <Slider min={0} max={180} step={1} value={[payeeLeft]} onValueChange={([val]) => setPayeeLeft(val)} />
+                    <Slider min={0} max={180} step={1} value={[payeeLeft]} onValueChange={([val]) => handleOffsetChange(setPayeeLeft, val)} />
                   </div>
                 </div>
               </div>
@@ -444,11 +595,11 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Top Margin</span>
-                    <Slider min={0} max={90} step={1} value={[wordsTop]} onValueChange={([val]) => setWordsTop(val)} />
+                    <Slider min={0} max={90} step={1} value={[wordsTop]} onValueChange={([val]) => handleOffsetChange(setWordsTop, val)} />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Left Margin</span>
-                    <Slider min={0} max={180} step={1} value={[wordsLeft]} onValueChange={([val]) => setWordsLeft(val)} />
+                    <Slider min={0} max={180} step={1} value={[wordsLeft]} onValueChange={([val]) => handleOffsetChange(setWordsLeft, val)} />
                   </div>
                 </div>
               </div>
@@ -462,11 +613,11 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Top Margin</span>
-                    <Slider min={0} max={90} step={1} value={[amountTop]} onValueChange={([val]) => setAmountTop(val)} />
+                    <Slider min={0} max={90} step={1} value={[amountTop]} onValueChange={([val]) => handleOffsetChange(setAmountTop, val)} />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Left Margin</span>
-                    <Slider min={0} max={180} step={1} value={[amountLeft]} onValueChange={([val]) => setAmountLeft(val)} />
+                    <Slider min={0} max={180} step={1} value={[amountLeft]} onValueChange={([val]) => handleOffsetChange(setAmountLeft, val)} />
                   </div>
                 </div>
               </div>
@@ -480,11 +631,11 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Top Margin</span>
-                    <Slider min={0} max={90} step={1} value={[dateTop]} onValueChange={([val]) => setDateTop(val)} />
+                    <Slider min={0} max={90} step={1} value={[dateTop]} onValueChange={([val]) => handleOffsetChange(setDateTop, val)} />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Left Margin</span>
-                    <Slider min={0} max={180} step={1} value={[dateLeft]} onValueChange={([val]) => setDateLeft(val)} />
+                    <Slider min={0} max={180} step={1} value={[dateLeft]} onValueChange={([val]) => handleOffsetChange(setDateLeft, val)} />
                   </div>
                 </div>
               </div>
@@ -498,11 +649,11 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Top Margin</span>
-                    <Slider min={0} max={90} step={1} value={[stampTop]} onValueChange={([val]) => setStampTop(val)} />
+                    <Slider min={0} max={90} step={1} value={[stampTop]} onValueChange={([val]) => handleOffsetChange(setStampTop, val)} />
                   </div>
                   <div className="space-y-1">
                     <span className="text-[9px] text-slate-400 uppercase tracking-wider block">Left Margin</span>
-                    <Slider min={0} max={180} step={1} value={[stampLeft]} onValueChange={([val]) => setStampLeft(val)} />
+                    <Slider min={0} max={180} step={1} value={[stampLeft]} onValueChange={([val]) => handleOffsetChange(setStampLeft, val)} />
                   </div>
                 </div>
               </div>
@@ -525,7 +676,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
             id="cheque-print-canvas"
             className={`w-[203mm] h-[90mm] min-w-[203mm] min-h-[90mm] bg-card rounded-2xl relative shadow-2xl overflow-hidden border border-slate-800 transition-all ${
               showChequeBackground 
-                ? 'bg-gradient-to-tr from-slate-100 via-[#e0f2fe] to-slate-50 border-sky-200/50 print-hidden-bg' 
+                ? `bg-gradient-to-tr ${bankTheme.bgColor}` 
                 : 'bg-white border-slate-300 print-hidden-bg'
             }`}
           >
@@ -537,10 +688,16 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 
                 {/* Bank Branding Placeholder Header */}
                 <div className="absolute top-4 left-6 flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded bg-blue-900 flex items-center justify-center text-white font-black text-sm">J</div>
+                  <div className={`w-7 h-7 rounded ${bankTheme.logoBg} flex items-center justify-center text-white font-black text-sm`}>
+                    {bankTheme.logoChar}
+                  </div>
                   <div>
-                    <h4 className="text-xs font-black text-blue-950 uppercase tracking-tighter leading-none">JAI BHAVANI CARGO BANKING</h4>
-                    <p className="text-[7.5px] text-blue-700/80 tracking-wider font-semibold uppercase mt-0.5">CTS-2010 COMPLIANT BRANCH • INDIA</p>
+                    <h4 className="text-xs font-black text-blue-950 uppercase tracking-tighter leading-none">
+                      {bankTheme.bankName}
+                    </h4>
+                    <p className="text-[7.5px] text-blue-700/80 tracking-wider font-semibold uppercase mt-0.5">
+                      {bankTheme.subtitle}
+                    </p>
                   </div>
                 </div>
 
