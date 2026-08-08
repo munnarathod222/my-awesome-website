@@ -27,6 +27,29 @@ const pocketbaseClient = new Pocketbase(POCKETBASE_HOST);
 
 pocketbaseClient.autoCancellation(false);
 
+const originalSend = pocketbaseClient.send.bind(pocketbaseClient);
+pocketbaseClient.send = async function (path, sendOptions) {
+    try {
+        return await originalSend(path, sendOptions);
+    } catch (err) {
+        if ((err.status === 401 || err.status === 403) && !path.includes('/auth-with-password')) {
+            logger.warn(`PocketBase request to ${path} returned 401/403. Re-authenticating superuser client...`);
+            pocketbaseClient.authStore.clear();
+            const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+            const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
+            try {
+                await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
+                logger.info(`Re-authentication successful. Retrying request: ${path}`);
+                return await originalSend(path, sendOptions);
+            } catch (authErr) {
+                logger.error('Failed to re-authenticate PocketBase superuser client:', authErr);
+                throw err;
+            }
+        }
+        throw err;
+    }
+};
+
 let authPromise = null;
 
 pocketbaseClient.beforeSend = async function (url, options) {
