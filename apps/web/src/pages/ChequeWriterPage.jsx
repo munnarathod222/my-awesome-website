@@ -664,16 +664,18 @@ export default function ChequeWriterPage({ embedMode = false }) {
         </div>
 
         {/* ── RIGHT COLUMN: CHEQUE CANVAS PREVIEW (PRINT AREA) ────────────────── */}
-        <div className="lg:col-span-7 flex flex-col items-center">
+        <div className="lg:col-span-7 flex flex-col items-center w-full min-w-0">
           
           <div className="no-print w-full flex items-center justify-between mb-3 text-xs text-slate-400">
             <span className="font-extrabold flex items-center gap-1"><Layout className="w-3.5 h-3.5 text-amber-400" /> LIVE CHEQUE WRITER LEAF (PRINT PREVIEW)</span>
-            <span className="font-mono text-[10px]">Actual Size: 203mm x 90mm (Standard Indian CTS Check)</span>
+            <span className="font-mono text-[10px]">Actual Size: 203mm x 90mm</span>
           </div>
 
-          {/* Virtual CTS Cheque Canvas Leaf */}
-          <div 
-            id="cheque-print-canvas"
+          {/* Overflow wrapper to prevent grid blowout on smaller viewports */}
+          <div className="w-full overflow-x-auto pb-4 scrollbar-thin flex justify-start md:justify-center">
+            {/* Virtual CTS Cheque Canvas Leaf */}
+            <div 
+              id="cheque-print-canvas"
             className={`w-[203mm] h-[90mm] min-w-[203mm] min-h-[90mm] bg-card rounded-2xl relative shadow-2xl overflow-hidden border border-slate-800 transition-all ${
               showChequeBackground 
                 ? `bg-gradient-to-tr ${bankTheme.bgColor}` 
@@ -687,7 +689,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(#0369a1 2px, transparent 2px)', backgroundSize: '12px 12px' }} />
                 
                 {/* Bank Branding Placeholder Header */}
-                <div className="absolute top-4 left-6 flex items-start gap-2.5">
+                <div className="absolute top-4 left-[32mm] flex items-start gap-2.5">
                   <div className={`w-7 h-7 rounded ${bankTheme.logoBg} flex items-center justify-center text-white font-black text-sm`}>
                     {bankTheme.logoChar}
                   </div>
@@ -749,11 +751,13 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 </div>
 
                 {/* Signature text bottom right */}
-                <div className="absolute bottom-5 right-6 text-center w-[50mm]">
-                  <p className="text-[8px] font-bold text-slate-500 uppercase leading-none">For JAI BHAVANI CARGO</p>
-                  <div className="h-7" />
-                  <p className="text-[8.5px] font-black text-slate-800 uppercase tracking-wider">{signatoryTitle}</p>
-                </div>
+                {!includeStamp && (
+                  <div className="absolute bottom-5 right-6 text-center w-[50mm]">
+                    <p className="text-[8px] font-bold text-slate-500 uppercase leading-none">For JAI BHAVANI CARGO</p>
+                    <div className="h-7" />
+                    <p className="text-[8.5px] font-black text-slate-800 uppercase tracking-wider">{signatoryTitle}</p>
+                  </div>
+                )}
 
                 {/* Account Number Box (middle-left) */}
                 <div className="absolute top-[49mm] left-6 flex items-center border border-slate-400/50 bg-white/30 rounded px-2 py-0.5 font-mono text-[9px] text-slate-800 font-bold">
@@ -848,6 +852,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
               </div>
             )}
 
+            </div>
           </div>
 
           <div className="no-print mt-6 bg-slate-900/40 p-4 border border-slate-800 rounded-3xl w-full max-w-[203mm] text-xs space-y-2">
