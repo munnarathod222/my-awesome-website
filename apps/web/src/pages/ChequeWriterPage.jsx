@@ -190,6 +190,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
   // Custom Display & Print configurations
   const [includeBearer, setIncludeBearer] = useState(true);
   const [includeStamp, setIncludeStamp] = useState(true);
+  const [includeSignature, setIncludeSignature] = useState(true);
   const [crossedAccountPayee, setCrossedAccountPayee] = useState(true);
   const [showChequeBackground, setShowChequeBackground] = useState(true);
   const [printChequeNumber, setPrintChequeNumber] = useState(false);
@@ -536,6 +537,14 @@ export default function ChequeWriterPage({ embedMode = false }) {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
+                    <Label className="text-xs font-bold text-slate-300">Digital Signature</Label>
+                    <p className="text-[10px] text-slate-400 leading-none">Print digital e-signature on check leaf</p>
+                  </div>
+                  <Switch checked={includeSignature} onCheckedChange={setIncludeSignature} />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
                     <Label className="text-xs font-bold text-slate-300">Signatory Rubber Stamp</Label>
                     <p className="text-[10px] text-slate-400 leading-none">Print blue corporate signature stamp on leaf</p>
                   </div>
@@ -827,19 +836,39 @@ export default function ChequeWriterPage({ embedMode = false }) {
                   <div className="text-[10px] font-black text-blue-600 uppercase tracking-wide">
                     For JAI BHAVANI CARGO
                   </div>
-                  <div className="flex-1 flex items-center justify-center min-h-[25px]">
-                    {companyProfile?.e_signature ? (
-                      <img src={companyProfile.e_signature} className="max-h-7 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                  <div className="flex-1 flex items-center justify-center min-h-[25px] w-full">
+                    {includeSignature ? (
+                      companyProfile?.e_signature ? (
+                        <img src={companyProfile.e_signature} className="max-h-7 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                      ) : (
+                        <span className="font-serif italic text-blue-500/80 text-[10.5px] tracking-widest leading-none">
+                          {signatoryName}
+                        </span>
+                      )
                     ) : (
-                      <span className="font-serif italic text-blue-500/80 text-[10.5px] tracking-widest leading-none">
-                        {signatoryName}
-                      </span>
+                      <div className="h-4 w-full opacity-0"></div>
                     )}
                   </div>
                   <div className="text-[7.5px] font-bold text-blue-500 uppercase tracking-wider">
                     {signatoryTitle || 'Proprietor'}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Raw Digital Signature (Stamp Off, Signature On) */}
+            {!includeStamp && includeSignature && (
+              <div 
+                className="absolute select-none pointer-events-none flex flex-col items-end"
+                style={{ top: `${stampTop + 1}mm`, left: `${stampLeft + 5}mm` }}
+              >
+                {companyProfile?.e_signature ? (
+                  <img src={companyProfile.e_signature} className="max-h-11 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                ) : (
+                  <span className="font-serif italic text-blue-950/80 text-xs tracking-widest leading-none select-none pt-2">
+                    {signatoryName}
+                  </span>
+                )}
               </div>
             )}
 

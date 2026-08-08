@@ -133,6 +133,8 @@ const ProfilePage = () => {
     }
   };
 
+  const [signatureDeleted, setSignatureDeleted] = useState(false);
+
   const fetchCompanySettings = async () => {
     try {
       const record = await pb.collection('company_settings').getOne('companysettings', { $autoCancel: false });
@@ -164,6 +166,7 @@ const ProfilePage = () => {
         const localSig = localStorage.getItem('jbc_e_signature');
         setCompanySignaturePreview(localSig || '');
       }
+      setSignatureDeleted(false);
     } catch (error) {
       console.error('Failed to load company settings:', error);
     }
@@ -327,6 +330,23 @@ const ProfilePage = () => {
     }
   };
 
+  const dataURLtoFile = (dataurl, filename) => {
+    try {
+      const arr = dataurl.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], filename, { type: mime });
+    } catch (e) {
+      console.error('Failed to parse signature dataurl:', e);
+      return null;
+    }
+  };
+
   const handleCompanySave = async (e) => {
     e.preventDefault();
     if (!companyFormData.company_name) {
@@ -360,6 +380,12 @@ const ProfilePage = () => {
         payload.append('e_signature', companySignatureFile);
       } else if (typeof companySignaturePreview === 'string' && companySignaturePreview.startsWith('data:image')) {
         localStorage.setItem('jbc_e_signature', companySignaturePreview);
+        const fileObj = dataURLtoFile(companySignaturePreview, 'esignature.png');
+        if (fileObj) {
+          payload.append('e_signature', fileObj);
+        }
+      } else if (signatureDeleted) {
+        payload.append('e_signature', ''); // Delete the file in pocketbase
       }
 
       await pb.collection('company_settings').update('companysettings', payload, { $autoCancel: false });
@@ -419,6 +445,7 @@ const ProfilePage = () => {
     setCompanySignatureFile(null);
     setCompanySignaturePreview('');
     localStorage.removeItem('jbc_e_signature');
+    setSignatureDeleted(true);
   };
 
   // Initialize form data

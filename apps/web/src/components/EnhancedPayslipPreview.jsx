@@ -23,7 +23,7 @@ const formatAmountToWords = (amount) => {
 import { useCompanyProfile } from '@/lib/companyProfile.js';
 import { getTranslation, transliterateText } from '@/lib/payslipTranslations.js';
 
-export default function EnhancedPayslipPreview({ payroll, employee, advances = [], language = 'en' }) {
+export default function EnhancedPayslipPreview({ payroll, employee, advances = [], language = 'en', includeSignature = false }) {
   const companyProfile = useCompanyProfile();
   const t = (key) => getTranslation(language, key);
   const tr = (text) => transliterateText(text, language);
@@ -197,7 +197,13 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
       {/* Signatures */}
       <div className="grid grid-cols-2 gap-8 pt-12 mt-8 text-center text-xs border-t border-dashed border-slate-300" style={{ borderColor: '#cbd5e1' }}>
         <div>
-          <div className="border-b border-slate-400 mb-2 h-10 border-dashed"></div>
+          <div className="mb-2 h-12 flex items-center justify-center relative select-none">
+            {includeSignature && companyProfile?.e_signature ? (
+              <img src={companyProfile.e_signature} className="max-h-12 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+            ) : (
+              <div className="h-10 border-b border-slate-400 border-dashed w-full"></div>
+            )}
+          </div>
           <p className="font-semibold text-slate-800">{t('authorizedSignatory')}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">{compName}</p>
         </div>

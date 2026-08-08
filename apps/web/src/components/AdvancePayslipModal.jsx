@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { generateAdvancePayslipPDF } from '@/lib/AdvancePayslipGenerator.js';
 import { downloadFile } from '@/lib/downloadUtils.js';
 import { LANGUAGES, getTranslation } from '@/lib/payslipTranslations.js';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 import EnhancedPayslipPreview from './EnhancedPayslipPreview.jsx';
 import PayslipHistory from './PayslipHistory.jsx';
@@ -18,6 +20,7 @@ import EmailPayslipDialog from './EmailPayslipDialog.jsx';
 import PayslipExportDialog from './PayslipExportDialog.jsx';
 
 export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employeeId }) {
+  const [includeSignature, setIncludeSignature] = useState(true);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [payroll, setPayroll] = useState(null);
@@ -318,6 +321,10 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 {hasAdvance ? 'Advance & Payslip Center' : 'Payslip Center'}
               </DialogTitle>
               <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-2 shrink-0 bg-muted/65 py-1 px-3 rounded-lg border border-border">
+                  <Switch id="payslip-sig-toggle" checked={includeSignature} onCheckedChange={setIncludeSignature} />
+                  <Label htmlFor="payslip-sig-toggle" className="text-[11px] font-black text-slate-300 select-none cursor-pointer">E-Sign</Label>
+                </div>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger className="h-9 w-[140px] text-xs font-bold border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg shrink-0">
                     <Globe className="w-3.5 h-3.5 mr-1 text-emerald-400 shrink-0" />
@@ -368,7 +375,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
                 
                 <div className="flex-1 overflow-y-auto p-6">
                   <TabsContent value="preview" className="m-0 border-none outline-none">
-                    <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} language={language} />
+                    <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} language={language} includeSignature={includeSignature} />
                   </TabsContent>
                   
                   <TabsContent value="compare" className="m-0 border-none outline-none">
@@ -404,7 +411,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
       {/* Hidden print container for raw printing if needed, though media queries usually suffice */}
       <div className="hidden print-only print:block print:w-full">
         {activeTab === 'preview' && !loading && (
-          <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} />
+          <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} includeSignature={includeSignature} />
         )}
       </div>
     </>

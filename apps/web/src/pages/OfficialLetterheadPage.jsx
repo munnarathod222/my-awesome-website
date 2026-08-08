@@ -134,6 +134,7 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
   }, [companyProfile]);
   
   const [includeStamp, setIncludeStamp] = useState(true);
+  const [includeSignature, setIncludeSignature] = useState(true);
   const [includeWatermark, setIncludeWatermark] = useState(true);
 
   // Document mode: 'letter' | 'agreement'
@@ -858,7 +859,11 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                   <div className="space-y-3.5 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
                     <p className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Letterhead Elements</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-300 font-bold">Include Digital Signature & Stamp</span>
+                      <span className="text-[11px] text-slate-300 font-bold">Include Digital Signature</span>
+                      <Switch checked={includeSignature} onCheckedChange={setIncludeSignature} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300 font-bold">Include Digital Stamp</span>
                       <Switch checked={includeStamp} onCheckedChange={setIncludeStamp} />
                     </div>
                     {!useCustomLetterhead && (
@@ -1085,13 +1090,17 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                             </div>
                             
                             {/* Signature Space / Digital script signature */}
-                            <div className="flex-1 flex items-center justify-center min-h-[30px]">
-                              {companyProfile?.e_signature ? (
-                                <img src={companyProfile.e_signature} className="max-h-8 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                            <div className="flex-1 flex items-center justify-center min-h-[30px] w-full">
+                              {includeSignature ? (
+                                companyProfile?.e_signature ? (
+                                  <img src={companyProfile.e_signature} className="max-h-8 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                                ) : (
+                                  <span className="font-serif italic text-blue-600/80 text-sm tracking-widest leading-none select-none">
+                                    {signatoryName}
+                                  </span>
+                                )
                               ) : (
-                                <span className="font-serif italic text-blue-600/80 text-sm tracking-widest leading-none select-none">
-                                  {signatoryName}
-                                </span>
+                                <div className="h-4 w-full opacity-0"></div>
                               )}
                             </div>
 
@@ -1101,13 +1110,22 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <p className="text-xs font-black text-slate-900 uppercase">For JAI BHAVANI CARGO</p>
-                          <div className="pt-8">
+                        <div className="flex flex-col items-end">
+                          <p className="text-xs font-black text-slate-900 uppercase font-sans">For JAI BHAVANI CARGO</p>
+                          
+                          <div className="h-12 flex items-center justify-end select-none">
+                            {includeSignature && companyProfile?.e_signature ? (
+                              <img src={companyProfile.e_signature} className="max-h-10 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                            ) : (
+                              <div className="h-10"></div>
+                            )}
+                          </div>
+
+                          <div className="pt-1">
                             <p className="text-xs font-black text-slate-900">{signatoryName}</p>
                             <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
