@@ -2,10 +2,11 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, UserSquare, CreditCard, Briefcase } from 'lucide-react';
+import { FileText, UserSquare, CreditCard, Briefcase, FileCheck } from 'lucide-react';
 import OfficialLetterheadPage from './OfficialLetterheadPage.jsx';
 import IdCardGeneratorPage from './IdCardGeneratorPage.jsx';
 import BusinessCardStudioPage from './BusinessCardStudioPage.jsx';
+import ChequeWriterPage from './ChequeWriterPage.jsx';
 
 export default function BrandingStudioHub() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,7 +20,7 @@ export default function BrandingStudioHub() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-3 md:p-6 font-sans">
       <Helmet>
         <title>Corporate Branding Hub | Jai Bhavani Cargo</title>
-        <meta name="description" content="Official Corporate Branding, Letterhead, Employee ID, and Business Card Designer Hub for Jai Bhavani Cargo." />
+        <meta name="description" content="Official Corporate Branding, Letterhead, Employee ID, Business Card, and Cheque Writer Hub for Jai Bhavani Cargo." />
       </Helmet>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -59,6 +60,13 @@ export default function BrandingStudioHub() {
               <CreditCard className="w-3.5 h-3.5" /> 
               <span>Visiting Card</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="cheque-writer" 
+              className="flex-1 sm:flex-initial gap-1.5 px-4 py-2 rounded-lg text-xs font-black text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 data-[state=active]:bg-[#d2b48c] data-[state=active]:text-slate-950 transition-all duration-200"
+            >
+              <FileCheck className="w-3.5 h-3.5" /> 
+              <span>Cheque Writer</span>
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -70,6 +78,9 @@ export default function BrandingStudioHub() {
         </TabsContent>
         <TabsContent value="business-card" className="m-0 focus-visible:outline-none animate-in fade-in duration-300">
           <BusinessCardStudioPage embedMode={true} />
+        </TabsContent>
+        <TabsContent value="cheque-writer" className="m-0 focus-visible:outline-none animate-in fade-in duration-300">
+          <ChequeWriterPage embedMode={true} />
         </TabsContent>
       </Tabs>
     </div>
