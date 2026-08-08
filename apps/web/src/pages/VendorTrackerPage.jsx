@@ -221,6 +221,7 @@ export default function VendorTrackerPage() {
 
   // Search Terms
   const [empSearch, setEmpSearch] = useState('');
+  const [prioritySearch, setPrioritySearch] = useState('');
   const [subSearch, setSubSearch] = useState('');
   const [supSearch, setSupSearch] = useState('');
 
@@ -481,6 +482,26 @@ export default function VendorTrackerPage() {
     setIsEmpFormOpen(true);
   };
 
+  const handleApplyNow = (emp) => {
+    setEditingEmp(emp);
+    setEmpFormData({
+      company_name: emp.company_name || '',
+      assigned_vendor_id: emp.assigned_vendor_id || '',
+      application_ref_no: emp.application_ref_no || '',
+      category: emp.category || 'Retail & FMCG Logistics',
+      applied_date: format(new Date(), 'yyyy-MM-dd'),
+      stage: 'Document Verification', // Auto-set stage to applied progress!
+      procurement_officer: emp.procurement_officer || '',
+      officer_phone: emp.officer_phone || '',
+      officer_email: emp.officer_email || '',
+      portal_url: emp.portal_url || '',
+      allocated_fleet: emp.allocated_fleet || '',
+      status: 'Under Review',
+      notes: emp.notes || ''
+    });
+    setIsEmpFormOpen(true);
+  };
+
   const handleDeleteEmp = async (id) => {
     if (!window.confirm('Delete this Client Empanelment record?')) return;
     try {
@@ -590,11 +611,29 @@ export default function VendorTrackerPage() {
            (s.city || '').toLowerCase().includes(q);
   });
 
-  // Filtered Empanelments Search
-  const filteredEmpanelments = empanelments.filter(e => {
+  // Split empanelments into active (non-Priority) and prospective Next Priority list
+  const activeEmpanelments = useMemo(() => {
+    return empanelments.filter(e => e.stage !== 'Next Priority');
+  }, [empanelments]);
+
+  const nextPriorityEmpanelments = useMemo(() => {
+    return empanelments.filter(e => e.stage === 'Next Priority');
+  }, [empanelments]);
+
+  // Filtered Active Empanelments Search
+  const filteredEmpanelments = activeEmpanelments.filter(e => {
     const q = empSearch.toLowerCase();
     return (e.company_name || '').toLowerCase().includes(q) ||
            (e.assigned_vendor_id || '').toLowerCase().includes(q) ||
+           (e.application_ref_no || '').toLowerCase().includes(q) ||
+           (e.procurement_officer || '').toLowerCase().includes(q) ||
+           (e.category || '').toLowerCase().includes(q);
+  });
+
+  // Filtered Next Priority Empanelments Search
+  const filteredPriorityEmpanelments = nextPriorityEmpanelments.filter(e => {
+    const q = prioritySearch.toLowerCase();
+    return (e.company_name || '').toLowerCase().includes(q) ||
            (e.application_ref_no || '').toLowerCase().includes(q) ||
            (e.procurement_officer || '').toLowerCase().includes(q) ||
            (e.category || '').toLowerCase().includes(q);
@@ -636,12 +675,18 @@ export default function VendorTrackerPage() {
             </Button>
           )}
 
-          {activeTab === 'clients' && (
+          {(activeTab === 'clients' || activeTab === 'priority') && (
             <Button
-              onClick={() => { resetEmpForm(); setIsEmpFormOpen(true); }}
+              onClick={() => {
+                resetEmpForm();
+                if (activeTab === 'priority') {
+                  setEmpFormData(prev => ({ ...prev, stage: 'Next Priority' }));
+                }
+                setIsEmpFormOpen(true);
+              }}
               className="rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg h-10 px-4"
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Track Client Empanelment
+              <Plus className="w-4 h-4 mr-1.5" /> {activeTab === 'priority' ? 'Add Next Priority Target' : 'Track Client Empanelment'}
             </Button>
           )}
 
@@ -658,16 +703,20 @@ export default function VendorTrackerPage() {
 
       {/* 3-Tab Main Navigation Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-slate-900 border border-slate-800 p-1.5 rounded-2xl w-full grid grid-cols-3 max-w-3xl">
-          <TabsTrigger value="subcontractors" className="rounded-xl text-xs font-bold data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950">
-            🪪 Subcontractor Vendor IDs ({subcontractors.length})
+        <TabsList className="bg-slate-900 border border-slate-800 p-1.5 rounded-2xl w-full grid grid-cols-2 md:grid-cols-4 max-w-5xl gap-1.5 h-auto">
+          <TabsTrigger value="subcontractors" className="rounded-xl text-xs font-bold data-[state=active]:bg-emerald-500 data-[state=active]:text-slate-950 py-2.5">
+            🪪 Subcontractors ({subcontractors.length})
           </TabsTrigger>
 
-          <TabsTrigger value="clients" className="rounded-xl text-xs font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">
-            🏢 Client Vendor IDs ({empanelments.length})
+          <TabsTrigger value="clients" className="rounded-xl text-xs font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 py-2.5">
+            🏢 Client Vendor IDs ({activeEmpanelments.length})
           </TabsTrigger>
 
-          <TabsTrigger value="suppliers" className="rounded-xl text-xs font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-slate-950">
+          <TabsTrigger value="priority" className="rounded-xl text-xs font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 py-2.5">
+            🎯 Next Priority ({nextPriorityEmpanelments.length})
+          </TabsTrigger>
+
+          <TabsTrigger value="suppliers" className="rounded-xl text-xs font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-slate-950 py-2.5">
             🔧 Supplier Vendors ({suppliers.length})
           </TabsTrigger>
         </TabsList>
@@ -968,6 +1017,103 @@ export default function VendorTrackerPage() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* ── TAB 4: NEXT PRIORITY TARGET VENDORS ───────────────────────── */}
+        <TabsContent value="priority" className="space-y-6 mt-6">
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-3xl">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={prioritySearch}
+                onChange={e => setPrioritySearch(e.target.value)}
+                placeholder="Search Prospective Clients, Ref No, Category..."
+                className="bg-slate-950 border-slate-800 text-white rounded-2xl text-xs pl-10 h-10"
+              />
+            </div>
+          </div>
+
+          {filteredPriorityEmpanelments.length === 0 ? (
+            <div className="text-center py-12 bg-slate-900/60 border border-slate-850 rounded-3xl">
+              <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-sm font-bold text-slate-400">No prospective client targets listed.</p>
+              <p className="text-xs text-slate-500 mt-1">Click "Add Next Priority Target" to create one.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredPriorityEmpanelments.map(emp => (
+                <Card key={emp.id} className="bg-slate-900/90 border-slate-800 rounded-3xl shadow-lg hover:border-amber-500/30 transition-all font-sans overflow-hidden">
+                  <CardContent className="p-5 space-y-4">
+                    {/* Top Bar */}
+                    <div className="flex justify-between items-start gap-2 border-b border-slate-800 pb-3">
+                      <div>
+                        <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px] font-mono">
+                          TARGET CLIENT
+                        </Badge>
+                        <h3 className="text-base font-black text-white mt-1.5">{emp.company_name}</h3>
+                        <p className="text-[11px] text-slate-400 font-medium">{emp.category}</p>
+                      </div>
+                      
+                      <Badge className="bg-slate-800 text-slate-350 text-[10px] font-bold px-2.5 py-1">
+                        Ready to Apply
+                      </Badge>
+                    </div>
+
+                    {/* Officer Info & Ref No */}
+                    <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Ref No:</span>
+                        <span className="text-amber-400 font-bold">{emp.application_ref_no || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-slate-400">Procurement Officer:</span>
+                        <span className="text-white font-bold">{emp.procurement_officer || 'Procurement Desk'}</span>
+                      </div>
+                      {emp.officer_phone && (
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">Contact:</span>
+                          <span className="text-blue-400 font-bold">{emp.officer_phone}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-1">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApplyNow(emp)}
+                        className="h-8 px-4 text-xs bg-emerald-500 hover:bg-emerald-450 text-slate-950 font-black rounded-xl shadow-md gap-1.5"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5 text-slate-950" /> Apply & Start Progress
+                      </Button>
+
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditEmp(emp)}
+                          className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl"
+                          title="Edit Target info"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-blue-400" />
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteEmp(emp.id)}
+                          className="h-8 w-8 p-0 text-slate-300 border-slate-700 bg-slate-950 rounded-xl hover:bg-rose-500/20"
+                          title="Delete Target"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── TAB 3: SUPPLIER & SERVICE VENDORS WE PAY ───────────────────────── */}
@@ -1306,6 +1452,7 @@ export default function VendorTrackerPage() {
                     <SelectValue placeholder="Select Stage" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="Next Priority">Next Priority Target</SelectItem>
                     <SelectItem value="Document Verification">Document Verification</SelectItem>
                     <SelectItem value="Physical Yard & Vehicle Inspection">Physical Yard & Vehicle Inspection</SelectItem>
                     <SelectItem value="Commercial Rate Approval">Commercial Rate Approval</SelectItem>
