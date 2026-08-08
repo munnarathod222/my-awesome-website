@@ -35,15 +35,22 @@ pocketbaseClient.send = async function (path, sendOptions) {
         if ((err.status === 401 || err.status === 403) && !path.includes('/auth-with-password')) {
             logger.warn(`PocketBase request to ${path} returned 401/403. Re-authenticating superuser client...`);
             pocketbaseClient.authStore.clear();
-            const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+            const email = process.env.PB_SUPERUSER_EMAIL || 'operations@jaibhavanicargo.com';
             const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
             try {
                 await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
                 logger.info(`Re-authentication successful. Retrying request: ${path}`);
                 return await originalSend(path, sendOptions);
             } catch (authErr) {
-                logger.error('Failed to re-authenticate PocketBase superuser client:', authErr);
-                throw err;
+                // Try old superuser email as fallback
+                try {
+                    await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', password, { $autoCancel: false });
+                    logger.info(`Re-authentication successful via old superuser fallback. Retrying request: ${path}`);
+                    return await originalSend(path, sendOptions);
+                } catch (oldAuthErr) {
+                    logger.error('Failed to re-authenticate PocketBase superuser client:', authErr);
+                    throw err;
+                }
             }
         }
         throw err;
@@ -58,7 +65,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
     }
 
     if (!pocketbaseClient.authStore.isValid && !authPromise) {
-        const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+        const email = process.env.PB_SUPERUSER_EMAIL || 'operations@jaibhavanicargo.com';
         const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
         
         authPromise = (async () => {
@@ -66,11 +73,15 @@ pocketbaseClient.beforeSend = async function (url, options) {
                 await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
             } catch (e1) {
                 try {
-                    await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                    await pocketbaseClient.collection('_superusers').authWithPassword('operations@jaibhavanicargo.com', 'Munnarathod@25', { $autoCancel: false });
                 } catch (e1_alt) {
                     try {
-                        await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
-                    } catch (e2) {}
+                        await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                    } catch (e1_old) {
+                        try {
+                            await pocketbaseClient.collection('users').authWithPassword('operations@jaibhavanicargo.com', 'Munnarathod@25', { $autoCancel: false });
+                        } catch (e2) {}
+                    }
                 }
             }
         })().finally(() => {
@@ -89,7 +100,7 @@ pocketbaseClient.beforeSend = async function (url, options) {
     try {
         await waitForHealth();
         if (!pocketbaseClient.authStore.isValid && !authPromise) {
-            const email = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
+            const email = process.env.PB_SUPERUSER_EMAIL || 'operations@jaibhavanicargo.com';
             const password = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
             
             authPromise = (async () => {
@@ -97,11 +108,15 @@ pocketbaseClient.beforeSend = async function (url, options) {
                     await pocketbaseClient.collection('_superusers').authWithPassword(email, password, { $autoCancel: false });
                 } catch (e1) {
                     try {
-                        await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                        await pocketbaseClient.collection('_superusers').authWithPassword('operations@jaibhavanicargo.com', 'Munnarathod@25', { $autoCancel: false });
                     } catch (e1_alt) {
                         try {
-                            await pocketbaseClient.collection('users').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
-                        } catch (e2) {}
+                            await pocketbaseClient.collection('_superusers').authWithPassword('munnarathod222@gmail.com', 'Munnarathod@25', { $autoCancel: false });
+                        } catch (e1_old) {
+                            try {
+                                await pocketbaseClient.collection('users').authWithPassword('operations@jaibhavanicargo.com', 'Munnarathod@25', { $autoCancel: false });
+                            } catch (e2) {}
+                        }
                     }
                 }
             })().finally(() => {
