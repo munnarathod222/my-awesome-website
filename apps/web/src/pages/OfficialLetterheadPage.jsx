@@ -430,14 +430,18 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
             margin: 0;
           }
           body {
+            visibility: hidden !important;
             background-color: white !important;
-            color: black !important;
+            background: white !important;
             margin: 0 !important;
             padding: 0 !important;
           }
-          /* Hide all UI controls, sidebars, headers, mobile bars, footers */
-          header, footer, nav, sidebar, aside, .no-print, [role="navigation"], div[class*="fixed"] {
+          /* Hide all UI elements */
+          .no-print, header, footer, nav, sidebar, aside, [role="navigation"], button {
             display: none !important;
+          }
+          .print-area, .print-area * {
+            visibility: visible !important;
           }
           .print-area {
             position: absolute !important;
@@ -462,6 +466,14 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
             page-break-inside: avoid;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+          /* Force all text inside the print area to dark slate to prevent invisible white text in dark mode */
+          .print-area p, .print-area span, .print-area h1, .print-area h2, .print-area h3, .print-area h4, .print-area h5, .print-area h6, .print-area div, .print-area td, .print-area th {
+            color: #0f172a !important;
+          }
+          /* Except watermark opacity and vector color */
+          .print-area .absolute svg {
+            color: currentColor !important;
           }
         }
       `}</style>
@@ -983,10 +995,8 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                   </svg>
                 </div>
               )}
-
               {/* ── LETTERHEAD CONTENT CONTAINER (OVERLAY Z-10) ───────────────── */}
-              <div className="relative z-10 flex flex-col justify-between h-full min-h-full flex-1">
-                
+              <div className="relative z-10 flex flex-col justify-between flex-1">
                 <div>
                   {/* Built-in Header (Rendered ONLY if Custom Letterhead is NOT used) */}
                   {!useCustomLetterhead && (
