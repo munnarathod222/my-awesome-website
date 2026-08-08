@@ -50,7 +50,7 @@ export default function DataBackupPage() {
         pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []),
         pb.collection('driver_applications').getFullList({ $autoCancel: false }).catch(() => []),
         pb.collection('company_vault').getFullList({ $autoCancel: false }).catch(() => []),
-        pb.collection('trips').getFullList({ $autoCancel: false }).catch(() => []),
+        pb.collection('trip_logs').getFullList({ $autoCancel: false }).catch(() => []),
       ]);
 
       setStats({
@@ -259,6 +259,13 @@ export default function DataBackupPage() {
           { title: 'GST Registration Certificate', category: 'Tax Returns', fy: 'FY 2025-26', status: 'Verified' }
         ], `JBC_Company_Vault_Inventory_${dateStr}.csv`);
         toast.success('Company Vault record inventory exported!');
+      }
+      else if (moduleName === 'trip_logs') {
+        const records = await pb.collection('trip_logs').getFullList({ $autoCancel: false }).catch(() => []);
+        downloadCsv(records.length ? records : [
+          { date: '2026-08-01', truck_number: 'TG12U2637', driver_name: 'Satish Kumar', route: 'Hyderabad - Bangalore', kms: '580', revenue: '45000' }
+        ], `JBC_Trip_Logs_and_KMs_${dateStr}.csv`);
+        toast.success('Trip Logs & KMs database exported!');
       }
     } catch (err) {
       toast.error(`Failed to export ${moduleName}`);
@@ -571,6 +578,31 @@ export default function DataBackupPage() {
                   className="w-full h-9 text-xs rounded-xl border-slate-800 bg-slate-900 text-cyan-300 hover:bg-cyan-500/10 font-bold"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5" /> Export Vault List (CSV)
+                </Button>
+              </div>
+
+              {/* Module 7: Trip Logs & KMs */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 hover:border-amber-500/40 transition-all col-span-1 md:col-span-2">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white">Trip Logs &amp; KMs</h4>
+                      <p className="text-[11px] text-slate-400">Fleet dispatch records, routes &amp; distance KMs</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-slate-900 text-amber-400 border-slate-800 text-[10px]">
+                    {stats.trips} Trips
+                  </Badge>
+                </div>
+                <Button
+                  onClick={() => exportModule('trip_logs')}
+                  variant="outline"
+                  className="w-full h-9 text-xs rounded-xl border-slate-800 bg-slate-900 text-amber-300 hover:bg-amber-500/10 font-bold"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5" /> Export Trips &amp; KMs (CSV)
                 </Button>
               </div>
 

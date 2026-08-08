@@ -3,8 +3,8 @@ import path from 'path';
 import PocketBase from 'pocketbase';
 
 const PB_HOST = process.env.PB_URL || 'https://www.jaibhavanicargo.com/hcgi/platform';
-const SUPERUSER_EMAIL = process.env.PB_SUPERUSER_EMAIL || 'munnarathod222@gmail.com';
-const SUPERUSER_PASS = process.env.PB_SUPERUSER_PASSWORD || 'cargo123456';
+const SUPERUSER_EMAIL = process.env.PB_SUPERUSER_EMAIL || 'operations@jaibhavanicargo.com';
+const SUPERUSER_PASS = process.env.PB_SUPERUSER_PASSWORD || 'Munnarathod@25';
 
 async function runBackup() {
   console.log(`\n======================================================`);
