@@ -160,7 +160,7 @@ export async function deleteApplication(id) {
 export function getLicenseFileUrl(record) {
   if (!record) return null;
   if (record.license_file) {
-    return pb.files.getURL(record, record.license_file);
+    return pb.files.getUrl(record, record.license_file);
   }
   return null;
 }
@@ -169,7 +169,7 @@ export function getPhotoFileUrl(record) {
   if (!record) return null;
   const file = record.photo_file || record.passport_photo || record.photo;
   if (file && typeof file === 'string' && !file.startsWith('data:')) {
-    return pb.files.getURL(record, file);
+    return pb.files.getUrl(record, file);
   }
   return null;
 }
@@ -178,7 +178,7 @@ export function getPanFileUrl(record) {
   if (!record) return null;
   const file = record.pan_file || record.pan_card_file || record.pan_doc;
   if (file && typeof file === 'string' && !file.startsWith('data:')) {
-    return pb.files.getURL(record, file);
+    return pb.files.getUrl(record, file);
   }
   return null;
 }
