@@ -1078,22 +1078,20 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
                     {/* Right: Signature Block */}
                     <div className="text-right space-y-1">
-                      <div className="flex flex-col items-end">
-                        <p className="text-xs font-black text-slate-900 uppercase font-sans">For JAI BHAVANI CARGO</p>
-                        
-                        <div className="h-12 flex items-center justify-end select-none">
-                          {includeSignature && companyProfile?.e_signature ? (
-                            <img src={companyProfile.e_signature} className="max-h-12 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
-                          ) : (
-                            <div className="h-10"></div>
-                          )}
+                      {includeSignature && companyProfile?.e_signature ? (
+                        <div className="h-20 flex items-center justify-end select-none">
+                          <img src={companyProfile.e_signature} className="max-h-20 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
                         </div>
-
-                        <div className="pt-1">
-                          <p className="text-xs font-black text-slate-900">{signatoryName}</p>
-                          <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
+                      ) : (
+                        <div className="flex flex-col items-end">
+                          <p className="text-xs font-black text-slate-900 uppercase font-sans">For JAI BHAVANI CARGO</p>
+                          <div className="h-14" />
+                          <div className="pt-1">
+                            <p className="text-xs font-black text-slate-900">{signatoryName}</p>
+                            <p className="text-[10.5px] text-slate-600 font-semibold">{signatoryTitle}</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>

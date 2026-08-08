@@ -754,7 +754,7 @@ export default function ChequeWriterPage({ embedMode = false }) {
                 </div>
 
                 {/* Signature text bottom right */}
-                {!includeStamp && (
+                {!includeSignature && (
                   <div className="absolute bottom-5 right-6 text-center w-[50mm]">
                     <p className="text-[8px] font-bold text-slate-500 uppercase leading-none">For JAI BHAVANI CARGO</p>
                     <div className="h-7" />
