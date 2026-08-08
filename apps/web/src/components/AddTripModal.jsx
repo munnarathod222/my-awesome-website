@@ -301,57 +301,69 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background rounded-3xl">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-secondary/10 shrink-0">
+      <DialogContent className="w-[95vw] max-w-5xl h-[88vh] max-h-[88vh] p-0 flex flex-col overflow-hidden bg-background rounded-3xl">
+        <DialogHeader className="p-4 pb-3 border-b border-border/50 bg-secondary/10 shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl font-bold">Add New Trip</DialogTitle>
-              <DialogDescription>Record a new shipment, route details, and assigned advances.</DialogDescription>
+              <DialogTitle className="text-xl font-bold">Add New Trip</DialogTitle>
+              <DialogDescription className="text-xs">Record a new shipment, route details, and assigned advances.</DialogDescription>
             </div>
             {generatedTripId && (
-              <div className="bg-background px-3 py-1.5 rounded-lg border border-border/50 shadow-sm text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Trip ID</p>
-                <p className="text-sm font-mono font-bold text-primary">{generatedTripId}</p>
+              <div className="bg-background px-3 py-1 rounded-lg border border-border/50 shadow-sm text-center">
+                <p className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Trip ID</p>
+                <p className="text-xs font-mono font-bold text-primary">{generatedTripId}</p>
               </div>
             )}
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col lg:flex-row gap-8 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col lg:flex-row gap-6 min-h-0">
           
-          <form id="add-trip-form" onSubmit={handleSubmit} className="flex-1 space-y-8">
+          <form id="add-trip-form" onSubmit={handleSubmit} className="flex-1 space-y-5">
             
             {/* Trip Details Section */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-lg border-b pb-2">Trip Details</h4>
+            <div className="space-y-3">
+              <h4 className="font-semibold text-base border-b pb-1">Trip Details</h4>
               
-              <div className="space-y-2">
-                <Label>Client / Company <span className="text-destructive">*</span></Label>
-                <Select value={formData.client_id} onValueChange={handleClientChange} disabled={dataLoading}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder={dataLoading ? "Loading clients..." : "Select a client"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(c => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.client_name || c.company_name} {c.company_name ? `(${c.company_name})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Client / Company <span className="text-destructive">*</span></Label>
+                  <Select value={formData.client_id} onValueChange={handleClientChange} disabled={dataLoading}>
+                    <SelectTrigger className="bg-background h-9 text-xs">
+                      <SelectValue placeholder={dataLoading ? "Loading clients..." : "Select a client"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map(c => (
+                        <SelectItem key={c.id} value={c.id} className="text-xs">
+                          {c.client_name || c.company_name} {c.company_name ? `(${c.company_name})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Trip Date <span className="text-destructive">*</span></Label>
+                  <Input 
+                    type="date" 
+                    value={formData.date} 
+                    onChange={e => setFormData({...formData, date: e.target.value})} 
+                    required 
+                    className="bg-background h-9 text-xs"
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Route Master Template</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Route Master Template</Label>
                   <Select value={formData.selected_route_id} onValueChange={handleRouteSelection} disabled={dataLoading}>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-9 text-xs">
                       <SelectValue placeholder={dataLoading ? "Loading routes..." : "Select route template"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="custom" className="font-medium text-primary">-- Custom Route --</SelectItem>
+                      <SelectItem value="custom" className="font-medium text-primary text-xs">-- Custom Route --</SelectItem>
                       {routes.map(r => (
-                        <SelectItem key={r.id} value={r.id}>
+                        <SelectItem key={r.id} value={r.id} className="text-xs">
                           {r.route_name} {r.is_round_trip ? '(Round-Trip)' : `(${r.route_code})`}
                         </SelectItem>
                       ))}
@@ -363,9 +375,9 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     const selectedRouteTemplate = routes.find(r => r.id === formData.selected_route_id);
                     if (!selectedRouteTemplate?.is_round_trip) return null;
                     return (
-                      <div className="space-y-2 mt-2 p-2 bg-secondary/10 rounded-lg border border-border/40 animate-in fade-in duration-300">
-                        <Label className="text-xs font-semibold text-primary">Select Leg</Label>
-                        <div className="flex gap-2">
+                      <div className="space-y-1 mt-1.5 p-1.5 bg-secondary/10 rounded-lg border border-border/40 animate-in fade-in duration-300">
+                        <Label className="text-[10px] font-semibold text-primary">Select Leg</Label>
+                        <div className="flex gap-1.5">
                           <Button
                             type="button"
                             size="sm"
@@ -378,7 +390,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                                 kms: selectedRouteTemplate.distance_km?.toString() || ''
                               }));
                             }}
-                            className="flex-1 text-[11px] h-8 px-2"
+                            className="flex-1 text-[10px] h-7 px-1.5"
                           >
                             Up Leg ({selectedRouteTemplate.route_code})
                           </Button>
@@ -394,7 +406,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                                 kms: selectedRouteTemplate.distance_km?.toString() || ''
                               }));
                             }}
-                            className="flex-1 text-[11px] h-8 px-2"
+                            className="flex-1 text-[10px] h-7 px-1.5"
                           >
                             Down Leg ({selectedRouteTemplate.down_route_code})
                           </Button>
@@ -403,43 +415,43 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     );
                   })()}
                 </div>
-                <div className="space-y-2">
-                  <Label>Route Entry <span className="text-destructive">*</span></Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Route Entry <span className="text-destructive">*</span></Label>
                   <Input 
                     placeholder="Route string or code" 
                     value={formData.route} 
                     onChange={e => setFormData({...formData, route: e.target.value})} 
                     required 
-                    className="bg-background"
+                    className="bg-background h-9 text-xs"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Driver <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Driver <span className="text-destructive">*</span></Label>
                   <Select value={formData.driver_name} onValueChange={v => setFormData({...formData, driver_name: v})} disabled={dataLoading}>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-9 text-xs">
                       <SelectValue placeholder="Select driver" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
+                      <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400 text-xs">
                         ⚡ Temporary Driver
                       </SelectItem>
-                      {employees.map(e => <SelectItem key={e.id} value={e.name}>{e.name}</SelectItem>)}
+                      {employees.map(e => <SelectItem key={e.id} value={e.name} className="text-xs">{e.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   {formData.driver_name?.startsWith('Temporary Driver') && (
                     <Input
-                      placeholder="Custom Temp Name (Optional, e.g. Temporary - Ramesh)"
+                      placeholder="Custom Temp Name (Optional)"
                       value={formData.driver_name === 'Temporary Driver' ? '' : formData.driver_name}
                       onChange={e => setFormData({ ...formData, driver_name: e.target.value ? e.target.value : 'Temporary Driver' })}
-                      className="text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"
+                      className="text-[11px] h-7 mt-1 bg-amber-500/5 border-amber-500/30"
                     />
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label>Truck <span className="text-destructive">*</span></Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Truck <span className="text-destructive">*</span></Label>
                   <Select 
                     value={formData.truck_number} 
                     onValueChange={v => {
@@ -453,21 +465,21 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     }} 
                     disabled={dataLoading}
                   >
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-9 text-xs">
                       <SelectValue placeholder="Select truck" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[200px]">
                       {trucks.map(t => {
                         const count = assignedTrucks[t.truck_number] || 0;
                         const isBooked = count > 0;
                         const isDisabled = isBooked && !allowMultipleTrips;
                         return (
-                          <SelectItem key={t.id} value={t.truck_number} disabled={isDisabled}>
+                          <SelectItem key={t.id} value={t.truck_number} disabled={isDisabled} className="text-xs">
                             <span className="flex items-center justify-between w-full">
                               <span>{t.truck_number}</span>
                               {isBooked && (
-                                <span className="ml-2 text-[10px] bg-secondary/80 px-1.5 py-0.5 rounded font-normal text-muted-foreground">
-                                  ({count} {count === 1 ? 'trip' : 'trips'} logged today)
+                                <span className="ml-2 text-[9px] bg-secondary/80 px-1.5 py-0.5 rounded font-normal text-muted-foreground">
+                                  ({count} {count === 1 ? 'trip' : 'trips'} today)
                                 </span>
                               )}
                             </span>
@@ -477,43 +489,44 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     </SelectContent>
                   </Select>
 
-                  <div className="flex items-center space-x-2 mt-2 select-none">
+                  <div className="flex items-center space-x-2 mt-1.5 select-none">
                     <Switch
                       id="allow-multiple-trips"
                       checked={allowMultipleTrips}
                       onCheckedChange={setAllowMultipleTrips}
+                      className="scale-90"
                     />
-                    <Label htmlFor="allow-multiple-trips" className="text-xs font-normal text-muted-foreground cursor-pointer">
+                    <Label htmlFor="allow-multiple-trips" className="text-[10px] font-normal text-muted-foreground cursor-pointer">
                       Allow Multiple Trips Today (Short-Haul Loop)
                     </Label>
                   </div>
 
                   {hasTruckConflict && (
-                    <p className="text-xs text-destructive mt-1">
+                    <p className="text-[10px] text-destructive mt-0.5">
                       This truck is already assigned to a trip on this date.
                     </p>
                   )}
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label>Trip Description / Notes</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Trip Description / Notes</Label>
                 <Input 
                   placeholder="Optional notes or details" 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
-                  className="bg-background"
+                  className="bg-background h-9 text-xs"
                 />
               </div>
             </div>
 
             {/* Advance & Financial Details Section */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-lg border-b pb-2">Financials & Logistics</h4>
+            <div className="space-y-3">
+              <h4 className="font-semibold text-base border-b pb-1">Financials & Status</h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Total Revenue (₹) <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Total Revenue (₹) <span className="text-destructive">*</span></Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -522,11 +535,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     value={formData.amount} 
                     onChange={e => setFormData({...formData, amount: e.target.value})} 
                     required 
-                    className="bg-background"
+                    className="bg-background h-9 text-xs"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Distance (KM)</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Distance (KM)</Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -534,11 +547,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     placeholder="0.0" 
                     value={formData.kms} 
                     onChange={e => setFormData({...formData, kms: e.target.value})} 
-                    className="bg-background"
+                    className="bg-background h-9 text-xs"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Toll Deduction (₹)</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Toll Deduction (₹)</Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -546,15 +559,15 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     placeholder="0.00" 
                     value={formData.toll_deduction} 
                     onChange={e => setFormData({...formData, toll_deduction: e.target.value})} 
-                    className="bg-background"
+                    className="bg-background h-9 text-xs"
                   />
                 </div>
               </div>
 
               {ownershipType === 'Attached' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300">
-                  <div className="space-y-2">
-                    <Label>Brokerage Payment Model</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Brokerage Payment Model</Label>
                     <Select 
                       value={formData.payment_model} 
                       onValueChange={v => setFormData(prev => ({ 
@@ -563,17 +576,17 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                         vendor_payout: v === 'Model3' ? Math.max(0, (parseFloat(prev.amount) || 0) - 500).toString() : prev.vendor_payout
                       }))}
                     >
-                      <SelectTrigger className="bg-background">
+                      <SelectTrigger className="bg-background h-9 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Model2">Margin Based (Model 2)</SelectItem>
-                        <SelectItem value="Model3">Flat Fee ₹500 (Model 3)</SelectItem>
+                        <SelectItem value="Model2" className="text-xs">Margin Based (Model 2)</SelectItem>
+                        <SelectItem value="Model3" className="text-xs">Flat Fee ₹500 (Model 3)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Agreed Vendor Payout (₹)</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Agreed Vendor Payout (₹)</Label>
                     <Input 
                       type="number" 
                       min="0" 
@@ -582,10 +595,10 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       value={formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.amount) || 0) - 500).toString() : formData.vendor_payout} 
                       onChange={e => setFormData({...formData, vendor_payout: e.target.value})} 
                       readOnly={formData.payment_model === 'Model3'}
-                      className={formData.payment_model === 'Model3' ? "bg-muted" : "bg-background"}
+                      className={formData.payment_model === 'Model3' ? "bg-muted h-9 text-xs" : "bg-background h-9 text-xs"}
                     />
                     {formData.amount && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
                         Est. Brokerage Margin: <span className="font-bold text-emerald-400">
                           ₹{formData.payment_model === 'Model3' ? '500' : (parseFloat(formData.amount) || 0) - (parseFloat(formData.vendor_payout) || 0)}
                         </span>
@@ -594,9 +607,9 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Advance from Client (₹)</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Advance from Client (₹)</Label>
                     <Input 
                       type="number" 
                       min="0" 
@@ -604,11 +617,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       placeholder="0.00" 
                       value={formData.advance_received_from_client} 
                       onChange={e => setFormData({...formData, advance_received_from_client: e.target.value})} 
-                      className="bg-background"
+                      className="bg-background h-9 text-xs"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Advance to Driver (₹)</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Advance to Driver (₹)</Label>
                     <Input 
                       type="number" 
                       min="0" 
@@ -616,52 +629,36 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       placeholder="0.00" 
                       value={formData.advance_paid_to_driver} 
                       onChange={e => setFormData({...formData, advance_paid_to_driver: e.target.value})} 
-                      className="bg-background"
+                      className="bg-background h-9 text-xs"
                     />
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Dates & Status Section */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-lg border-b pb-2">Dates & Status</h4>
-              
-              <div className="space-y-2">
-                <Label>Trip Date <span className="text-destructive">*</span></Label>
-                <Input 
-                  type="date" 
-                  value={formData.date} 
-                  onChange={e => setFormData({...formData, date: e.target.value})} 
-                  required 
-                  className="bg-background"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Payment Status <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Payment Status <span className="text-destructive">*</span></Label>
                   <Select value={formData.client_payment_status} onValueChange={v => setFormData({...formData, client_payment_status: v})}>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-9 text-xs">
                       <SelectValue placeholder="Select Payment Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="received">Received / Paid</SelectItem>
-                      <SelectItem value="delayed">Delayed</SelectItem>
-                      <SelectItem value="blank">Blank / Unassigned</SelectItem>
+                      <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                      <SelectItem value="received" className="text-xs">Received / Paid</SelectItem>
+                      <SelectItem value="delayed" className="text-xs">Delayed</SelectItem>
+                      <SelectItem value="blank" className="text-xs">Blank / Unassigned</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Trip Status <span className="text-destructive">*</span></Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Trip Status <span className="text-destructive">*</span></Label>
                   <Select value={formData.trip_status} onValueChange={v => setFormData({...formData, trip_status: v})}>
-                    <SelectTrigger className="bg-background">
+                    <SelectTrigger className="bg-background h-9 text-xs">
                       <SelectValue placeholder="Select Trip Status" />
                     </SelectTrigger>
                     <SelectContent>
                       {TRIP_STATUS_OPTIONS.map(status => (
-                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                        <SelectItem key={status} value={status} className="text-xs">{status}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

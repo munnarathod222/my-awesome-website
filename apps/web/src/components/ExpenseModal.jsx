@@ -440,29 +440,29 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
     }
   };
 
-  const inputClass = "bg-muted/40 border-muted-foreground/20 focus-visible:ring-primary/30 rounded-xl h-12 text-base px-4";
-  const selectTriggerClass = "bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-12 text-base px-4";
+  const inputClass = "bg-muted/40 border-muted-foreground/20 focus-visible:ring-primary/30 rounded-xl h-9 text-xs px-3";
+  const selectTriggerClass = "bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-9 text-xs px-3";
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[90vh] rounded-[2rem] p-6 sm:p-10 shadow-2xl bg-card border-border/50 flex flex-col overflow-hidden gap-0">
-        <DialogHeader className="mb-6 shrink-0">
-          <DialogTitle className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
-            <div className="bg-primary/10 p-2.5 rounded-2xl text-primary">
-              <Receipt className="w-6 h-6" />
+      <DialogContent className="w-[95vw] max-w-5xl h-[88vh] max-h-[88vh] rounded-[2rem] p-4 sm:p-6 shadow-2xl bg-card border-border/50 flex flex-col overflow-hidden gap-0">
+        <DialogHeader className="mb-3 shrink-0">
+          <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-3">
+            <div className="bg-primary/10 p-2 rounded-2xl text-primary">
+              <Receipt className="w-5 h-5" />
             </div>
             {expense ? 'Edit Expense' : 'Record Expense'}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto -mx-6 sm:-mx-10 px-6 sm:px-10 pb-4">
-            <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto -mx-4 sm:-mx-6 px-4 sm:px-6 pb-2">
+            <div className="space-y-4">
               
-              <div className="space-y-2.5 bg-muted/20 p-5 rounded-2xl border border-border/40">
-                <Label className="text-sm font-semibold text-muted-foreground ml-1 uppercase tracking-wider">Total Amount</Label>
+              <div className="space-y-1 bg-muted/20 p-3 rounded-2xl border border-border/40">
+                <Label className="text-[10px] font-semibold text-muted-foreground ml-1 uppercase tracking-wider">Total Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-muted-foreground">₹</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold text-muted-foreground">₹</span>
                   <Input 
                     type="number" 
                     step="0.01" 
@@ -470,15 +470,15 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })} 
                     required 
                     placeholder="0.00"
-                    className="bg-background border-muted-foreground/30 focus-visible:ring-primary/40 rounded-xl h-16 text-3xl font-bold pl-10 tabular-nums shadow-sm"
+                    className="bg-background border-muted-foreground/30 focus-visible:ring-primary/40 rounded-xl h-11 text-xl font-bold pl-8 tabular-nums shadow-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" /> Date
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Date
                   </Label>
                   <Input 
                     type="date" 
@@ -489,8 +489,8 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1">Main Category</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1">Main Category</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(v) => {
@@ -507,34 +507,34 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                   >
                     <SelectTrigger className={selectTriggerClass}><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="Regular">Regular Expense</SelectItem>
-                      <SelectItem value="Employee">Employee Expense</SelectItem>
-                      <SelectItem value="EMI">EMI</SelectItem>
+                      <SelectItem value="Regular" className="text-xs">Regular Expense</SelectItem>
+                      <SelectItem value="Employee" className="text-xs">Employee Expense</SelectItem>
+                      <SelectItem value="EMI" className="text-xs">EMI</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
                 
               {(formData.category === 'Regular' || formData.category === 'Employee') && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1">Subcategory</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1">Subcategory</Label>
                   <Select value={formData.subcategory} onValueChange={(v) => setFormData({ ...formData, subcategory: v })} required>
                     <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="Select type" /></SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {formData.category === 'Regular' ? (
                         <>
-                          <SelectItem value="Fuel">Fuel</SelectItem>
-                          <SelectItem value="Toll">FASTag - Toll</SelectItem>
-                          <SelectItem value="Maintenance">Maintenance</SelectItem>
-                          <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
-                          <SelectItem value="Insurance">Insurance</SelectItem>
-                          <SelectItem value="Utilities">Utilities</SelectItem>
-                          <SelectItem value="Other">All Other Expenses</SelectItem>
+                          <SelectItem value="Fuel" className="text-xs">Fuel</SelectItem>
+                          <SelectItem value="Toll" className="text-xs">FASTag - Toll</SelectItem>
+                          <SelectItem value="Maintenance" className="text-xs">Maintenance</SelectItem>
+                          <SelectItem value="Miscellaneous" className="text-xs">Miscellaneous</SelectItem>
+                          <SelectItem value="Insurance" className="text-xs">Insurance</SelectItem>
+                          <SelectItem value="Utilities" className="text-xs">Utilities</SelectItem>
+                          <SelectItem value="Other" className="text-xs">All Other Expenses</SelectItem>
                         </>
                       ) : (
                         <>
-                          <SelectItem value="Employee Advance">Driver / Employee Advance</SelectItem>
-                          <SelectItem value="Salary">Salary</SelectItem>
+                          <SelectItem value="Employee Advance" className="text-xs">Driver / Employee Advance</SelectItem>
+                          <SelectItem value="Salary" className="text-xs">Salary</SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -543,26 +543,26 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
               )}
 
               {formData.category === 'Employee' && formData.subcategory === 'Employee Advance' && (
-                <div className="p-4 bg-warning/10 border border-warning/20 rounded-xl flex gap-3 text-warning">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p className="text-sm">
+                <div className="p-3 bg-warning/10 border border-warning/20 rounded-xl flex gap-2 text-warning">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p className="text-xs">
                     Selecting "Employee Advance" will automatically create a pending advance record for the selected employee in the Payroll system.
                   </p>
                 </div>
               )}
 
               {formData.category === 'Regular' && (formData.subcategory === 'Toll' || formData.subcategory === 'FASTag') && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex gap-3 text-emerald-500">
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p className="text-sm">
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex gap-2 text-emerald-500">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p className="text-xs">
                     Selecting "Toll" will automatically <strong>add this amount to the truck's FASTag wallet balance</strong> and log a recharge in FASTag Management.
                   </p>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-muted-foreground" /> Description
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" /> Description
                 </Label>
                 <Input 
                   value={formData.description} 
@@ -573,55 +573,55 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-muted-foreground" /> Payment Mode
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                    <Receipt className="w-3.5 h-3.5 text-muted-foreground" /> Payment Mode
                   </Label>
                   <Select value={formData.payment_method} onValueChange={(v) => setFormData({ ...formData, payment_method: v })}>
                     <SelectTrigger className={selectTriggerClass}><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Card">Card</SelectItem>
-                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                      <SelectItem value="UPI">UPI</SelectItem>
-                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="Cheque">Cheque</SelectItem>
+                      <SelectItem value="Cash" className="text-xs">Cash</SelectItem>
+                      <SelectItem value="Card" className="text-xs">Card</SelectItem>
+                      <SelectItem value="Credit Card" className="text-xs">Credit Card</SelectItem>
+                      <SelectItem value="UPI" className="text-xs">UPI</SelectItem>
+                      <SelectItem value="Bank Transfer" className="text-xs">Bank Transfer</SelectItem>
+                      <SelectItem value="Cheque" className="text-xs">Cheque</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-muted-foreground" /> Related Truck
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                    <Truck className="w-3.5 h-3.5 text-muted-foreground" /> Related Truck
                   </Label>
                   <Select value={formData.truck_id} onValueChange={(v) => setFormData({ ...formData, truck_id: v })}>
                     <SelectTrigger className={selectTriggerClass}>
                       <SelectValue placeholder="Select Truck (Optional)" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl max-h-[250px]">
-                      <SelectItem value="none">None / Not Applicable</SelectItem>
+                    <SelectContent className="rounded-xl max-h-[200px]">
+                      <SelectItem value="none" className="text-xs">None / Not Applicable</SelectItem>
                       {trucks.map(t => (
-                        <SelectItem key={t.id} value={t.id}>{t.truck_number}</SelectItem>
+                        <SelectItem key={t.id} value={t.id} className="text-xs">{t.truck_number}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" /> Employee {formData.category === 'Employee' && <span className="text-destructive">*</span>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5 text-muted-foreground" /> Employee {formData.category === 'Employee' && <span className="text-destructive">*</span>}
                   </Label>
                   <Select value={formData.employee_id} onValueChange={(v) => setFormData({ ...formData, employee_id: v })}>
                     <SelectTrigger className={`${selectTriggerClass} ${formData.category === 'Employee' && formData.employee_id === 'none' ? 'ring-2 ring-destructive/50 border-destructive' : ''}`}>
                       <SelectValue placeholder="Select Employee (Optional)" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl max-h-[250px]">
-                      <SelectItem value="none">None / Not Applicable</SelectItem>
+                    <SelectContent className="rounded-xl max-h-[200px]">
+                      <SelectItem value="none" className="text-xs">None / Not Applicable</SelectItem>
                       {employees.map(emp => (
-                        <SelectItem key={emp.id} value={emp.id}>
+                        <SelectItem key={emp.id} value={emp.id} className="text-xs">
                           {emp.name} {emp.position ? `- ${emp.position}` : ''}
                         </SelectItem>
                       ))}
@@ -629,18 +629,18 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                   </Select>
                 </div>
 
-                <div className={`space-y-2 transition-all duration-300 ${formData.payment_method === 'Credit Card' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                  <Label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-muted-foreground" /> Linked Credit Card
+                <div className={`space-y-1.5 transition-all duration-300 ${formData.payment_method === 'Credit Card' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                  <Label className="text-xs font-medium text-foreground ml-1 flex items-center gap-2">
+                    <CreditCard className="w-3.5 h-3.5 text-muted-foreground" /> Linked Credit Card
                   </Label>
                   <Select value={formData.credit_card_id} onValueChange={(v) => setFormData({ ...formData, credit_card_id: v })}>
                     <SelectTrigger className={`${selectTriggerClass} ${formData.payment_method === 'Credit Card' ? 'border-primary/40 ring-1 ring-primary/20' : ''}`}>
                       <SelectValue placeholder="Select Credit Card (Optional)" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
-                      <SelectItem value="none">None / Not Applicable</SelectItem>
+                      <SelectItem value="none" className="text-xs">None / Not Applicable</SelectItem>
                       {creditCards.map(c => (
-                        <SelectItem key={c.id} value={c.id}>
+                        <SelectItem key={c.id} value={c.id} className="text-xs">
                           {c.bank_name} - {c.card_name} (**** {c.card_number_last4})
                         </SelectItem>
                       ))}
@@ -649,135 +649,138 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                 </div>
               </div>
 
-              {/* Document upload section */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground ml-1">Attach Bills / Documents (Optional)</Label>
-                
-                <div 
-                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                    isDragging 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileSelect} 
-                    multiple 
-                    className="hidden" 
-                    accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  />
-                  <UploadCloud className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm font-medium">Drag & drop files here, or <span className="text-primary hover:underline">browse</span></p>
-                  <p className="text-xs text-muted-foreground mt-1">Supports PNG, JPG, PDF, DOC, DOCX up to 10MB each (max 10 files)</p>
+              {/* Document & Receipt upload section (Side-by-side) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Document upload zone */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1">Attach Bills / Documents (Optional)</Label>
+                  
+                  <div 
+                    className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all duration-200 ${
+                      isDragging 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleFileSelect} 
+                      multiple 
+                      className="hidden" 
+                      accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    />
+                    <UploadCloud className="w-6 h-6 text-muted-foreground mx-auto mb-1.5" />
+                    <p className="text-xs font-medium">Drag & drop docs, or <span className="text-primary hover:underline">browse</span></p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">PDF, DOC, DOCX up to 10MB each</p>
+                  </div>
+
+                  {/* File previews */}
+                  {(newFiles.length > 0 || existingFiles.length > 0) && (
+                    <div className="space-y-2 mt-2 max-h-[120px] overflow-y-auto pr-1">
+                      {existingFiles.map((file, idx) => (
+                        <DocumentFilePreview
+                          key={`existing-${idx}`}
+                          file={file}
+                          docRecord={expense}
+                          onDelete={handleRemoveFile}
+                          isNew={false}
+                        />
+                      ))}
+                      {newFiles.map((file, idx) => (
+                        <DocumentFilePreview
+                          key={`new-${idx}`}
+                          file={file}
+                          onDelete={handleRemoveFile}
+                          isNew={true}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* File previews */}
-                {(newFiles.length > 0 || existingFiles.length > 0) && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                    {existingFiles.map((file, idx) => (
-                      <DocumentFilePreview
-                        key={`existing-${idx}`}
-                        file={file}
-                        docRecord={expense}
-                        onDelete={handleRemoveFile}
-                        isNew={false}
-                      />
-                    ))}
-                    {newFiles.map((file, idx) => (
-                      <DocumentFilePreview
-                        key={`new-${idx}`}
-                        file={file}
-                        onDelete={handleRemoveFile}
-                        isNew={true}
-                      />
-                    ))}
+                {/* Attach Receipt / Invoice Zone */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-foreground ml-1">Attach Receipt / Invoice (Snapshots)</Label>
+                  
+                  <div 
+                    className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all duration-200 ${
+                      isDraggingReceipt 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10'
+                    }`}
+                    onDragOver={(e) => { e.preventDefault(); setIsDraggingReceipt(true); }}
+                    onDragLeave={() => setIsDraggingReceipt(false)}
+                    onDrop={handleReceiptDrop}
+                    onClick={() => receiptFileInputRef.current?.click()}
+                  >
+                    <input 
+                      type="file" 
+                      ref={receiptFileInputRef} 
+                      onChange={handleReceiptFileSelect} 
+                      multiple 
+                      className="hidden" 
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    />
+                    <UploadCloud className="w-6 h-6 text-muted-foreground mx-auto mb-1.5" />
+                    <p className="text-xs font-medium">Drag & drop receipts, or <span className="text-primary hover:underline">browse</span></p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">PNG, JPG, JPEG up to 5MB each</p>
                   </div>
-                )}
-              </div>
 
-              {/* Attach Receipt / Invoice Zone */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground ml-1">Attach Receipt / Invoice (Snapshots)</Label>
-                
-                <div 
-                  className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                    isDraggingReceipt 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/10'
-                  }`}
-                  onDragOver={(e) => { e.preventDefault(); setIsDraggingReceipt(true); }}
-                  onDragLeave={() => setIsDraggingReceipt(false)}
-                  onDrop={handleReceiptDrop}
-                  onClick={() => receiptFileInputRef.current?.click()}
-                >
-                  <input 
-                    type="file" 
-                    ref={receiptFileInputRef} 
-                    onChange={handleReceiptFileSelect} 
-                    multiple 
-                    className="hidden" 
-                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                  />
-                  <UploadCloud className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm font-medium">Drag & drop receipts here, or <span className="text-primary hover:underline">browse</span></p>
-                  <p className="text-xs text-muted-foreground mt-1">Supports PNG, JPG, JPEG up to 5MB each (max 10 files)</p>
+                  {/* Receipt Image thumbnails */}
+                  {(newReceiptFiles.length > 0 || existingReceiptFiles.length > 0) && (
+                    <div className="grid grid-cols-4 gap-2 mt-2 max-h-[120px] overflow-y-auto p-1">
+                      {existingReceiptFiles.map((file, idx) => {
+                        const url = pb.files.getUrl(expense, file);
+                        return (
+                          <div key={`existing-rec-${idx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border shadow-sm bg-muted/40">
+                            <img src={url} alt="receipt" className="object-cover w-full h-full" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveReceipt(file, false)}
+                              className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full p-0.5 text-[8px] w-4 h-4 flex items-center justify-center transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {newReceiptFiles.map((file, idx) => {
+                        const url = URL.createObjectURL(file);
+                        return (
+                          <div key={`new-rec-${idx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border shadow-sm bg-muted/40 animate-in fade-in zoom-in duration-200">
+                            <img src={url} alt="receipt" className="object-cover w-full h-full" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveReceipt(file, true)}
+                              className="absolute top-1 right-1 bg-black/70 hover:bg-destructive text-white rounded-full p-0.5 text-[8px] w-4 h-4 flex items-center justify-center transition-colors"
+                            >
+                              ✕
+                            </button>
+                            <span className="absolute bottom-1 left-1 bg-primary/85 text-primary-foreground text-[8px] px-1 rounded-full font-semibold animate-pulse">New</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-
-                {/* Receipt Image thumbnails */}
-                {(newReceiptFiles.length > 0 || existingReceiptFiles.length > 0) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
-                    {existingReceiptFiles.map((file, idx) => {
-                      const url = pb.files.getUrl(expense, file);
-                      return (
-                        <div key={`existing-rec-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-border shadow-sm bg-muted/40">
-                          <img src={url} alt="receipt" className="object-cover w-full h-full" />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveReceipt(file, false)}
-                            className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-destructive text-white rounded-full p-1 transition-colors"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {newReceiptFiles.map((file, idx) => {
-                      const url = URL.createObjectURL(file);
-                      return (
-                        <div key={`new-rec-${idx}`} className="relative group aspect-square rounded-xl overflow-hidden border border-border shadow-sm bg-muted/40 animate-in fade-in zoom-in duration-200">
-                          <img src={url} alt="receipt" className="object-cover w-full h-full" />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveReceipt(file, true)}
-                            className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-destructive text-white rounded-full p-1 transition-colors"
-                          >
-                            ✕
-                          </button>
-                          <span className="absolute bottom-1.5 left-1.5 bg-primary/85 text-primary-foreground text-[9px] px-1.5 py-0.5 rounded-full font-semibold animate-pulse">New</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
             </div>
           </div>
 
-          <DialogFooter className="pt-6 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-3 mt-4">
+          <DialogFooter className="pt-3 border-t border-border/50 shrink-0 flex flex-col sm:flex-row gap-2 mt-2">
             {expense && (
               <Button 
                 type="button" 
                 variant="destructive" 
                 onClick={handleDelete} 
                 disabled={isLoading} 
-                className="w-full sm:w-auto sm:mr-auto rounded-xl h-12 px-6 font-medium"
+                className="w-full sm:w-auto sm:mr-auto rounded-xl h-10 px-4 text-xs font-medium"
               >
                 Delete Expense
               </Button>
@@ -787,14 +790,14 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
               variant="outline" 
               onClick={onClose} 
               disabled={isLoading} 
-              className="w-full sm:w-auto rounded-xl h-12 px-6 font-medium bg-muted/30 border-muted-foreground/20 hover:bg-muted"
+              className="w-full sm:w-auto rounded-xl h-10 px-4 text-xs font-medium bg-muted/30 border-muted-foreground/20 hover:bg-muted"
             >
               Cancel
             </Button>
             <Button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full sm:w-auto rounded-xl h-12 px-8 font-semibold shadow-sm"
+              className="w-full sm:w-auto rounded-xl h-10 px-6 text-xs font-semibold shadow-sm"
             >
               {isLoading ? 'Saving...' : 'Save Expense'}
             </Button>
