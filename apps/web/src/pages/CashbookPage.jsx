@@ -33,7 +33,6 @@ export default function CashbookPage() {
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isOpeningBalanceModalOpen, setIsOpeningBalanceModalOpen] = useState(false);
   const [openingBalanceRecord, setOpeningBalanceRecord] = useState(null);
-  const [isResetting, setIsResetting] = useState(false);
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
 
@@ -155,48 +154,7 @@ export default function CashbookPage() {
     fetchEmployees();
   }, [transactions]);
 
-  // Automated one-time migration to wipe extra cashbook entries and set balance to -153,500 if requested
-  const handleWipeAndResetCashbook = async () => {
-    if (!window.confirm("Are you sure you want to delete all cashbook entries and set the current balance to -₹153,500? (Your expense logs will NOT be affected)")) {
-      return;
-    }
 
-    setIsResetting(true);
-    const toastId = toast.loading("Deleting cashbook entries and resetting balance to -₹153,500...");
-
-    try {
-      // 1. Fetch all cashbook records
-      const allRecords = await pb.collection('cashbook').getFullList({ $autoCancel: false });
-      
-      // 2. Delete all records
-      for (const rec of allRecords) {
-        await pb.collection('cashbook').delete(rec.id, { $autoCancel: false });
-      }
-
-      // 3. Create fresh Opening Balance entry of 153500 (Expense => -153,500)
-      const openingPayload = {
-        amount: 153500,
-        date: new Date().toISOString(),
-        description: 'Opening Balance',
-        category: 'Manual',
-        transaction_type: 'Expense',
-        status: 'Completed',
-        reference_type: 'opening_balance',
-        added_by: currentUser?.id || ''
-      };
-
-      await pb.collection('cashbook').create(openingPayload, { $autoCancel: false });
-      toast.success("Cashbook entries wiped successfully! Current balance is set to -₹153,500.", { id: toastId });
-      
-      await refetch();
-      await fetchOpeningBalance();
-    } catch (err) {
-      console.error("Cashbook reset error:", err);
-      toast.error(err.message || "Failed to reset cashbook", { id: toastId });
-    } finally {
-      setIsResetting(false);
-    }
-  };
 
   const employeesMap = useMemo(() => {
     return employees.reduce((acc, emp) => {
@@ -355,14 +313,7 @@ export default function CashbookPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button 
-                onClick={handleWipeAndResetCashbook} 
-                disabled={isResetting}
-                variant="outline" 
-                className="rounded-xl shadow-sm gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="w-4 h-4" /> Reset Balance to -₹1.53L
-              </Button>
+
               <Button onClick={() => setIsOpeningBalanceModalOpen(true)} variant="secondary" className="rounded-xl shadow-sm gap-2 bg-secondary text-secondary-foreground">
                 <Settings className="w-4 h-4" /> Set Opening Balance
               </Button>
