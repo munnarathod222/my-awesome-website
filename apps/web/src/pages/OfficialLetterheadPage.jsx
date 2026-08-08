@@ -443,6 +443,12 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
           .print-area, .print-area * {
             visibility: visible !important;
           }
+          /* Force page-relative absolute positioning for print area */
+          body, #root, #root > div, main {
+            position: static !important;
+            height: auto !important;
+            min-height: 0 !important;
+          }
           .print-area {
             position: absolute !important;
             left: 0 !important;
@@ -454,6 +460,7 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
             border: none !important;
             background: white !important;
             overflow: hidden !important;
+            z-index: 99999 !important;
           }
           .letterhead-sheet {
             width: 210mm !important;
@@ -1032,7 +1039,7 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                   )}
 
                   {/* Ref No & Date Row */}
-                  <div className="flex justify-between items-center text-xs font-mono text-slate-700 font-bold border-b border-slate-200/60 pb-2 mb-4">
+                  <div className="flex justify-between items-center text-xs font-mono text-slate-700 font-bold border-b border-slate-200/60 pb-2 mb-3 print:mb-1.5">
                     <div>
                       Ref: <span className="text-slate-900 font-black">{refNo}</span>
                     </div>
@@ -1043,13 +1050,13 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
                   {docMode === 'agreement' ? (
                     /* ── EMPLOYEE AGREEMENT BODY ── */
-                    <div className="mt-4 text-[11px] text-slate-800 leading-relaxed whitespace-pre-wrap font-mono">
+                    <div className="mt-4 print:mt-2 text-[11px] text-slate-800 leading-relaxed whitespace-pre-wrap font-mono">
                       {compileAgreement()}
                     </div>
                   ) : (
                     <>
                       {/* Recipient Block */}
-                      <div className="mt-4 text-xs text-slate-800 leading-relaxed font-sans">
+                      <div className="mt-4 print:mt-2 text-xs text-slate-800 leading-relaxed font-sans">
                         <p className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">To,</p>
                         <p className="font-black text-sm text-slate-900">{recipientName}</p>
                         <p className="text-slate-700 max-w-md">{recipientAddress}</p>
@@ -1057,19 +1064,19 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
 
                       {/* Subject Block */}
                       {subject && (
-                        <div className="mt-4 text-xs font-bold text-slate-900 bg-slate-50/90 border-l-4 border-[#0b3c5d] p-2.5">
+                        <div className="mt-4 print:mt-2 text-xs font-bold text-slate-900 bg-slate-50/90 border-l-4 border-[#0b3c5d] p-2.5 print:py-1.5">
                           <span className="uppercase text-slate-500 text-[10px] block">Subject:</span>
                           {subject}
                         </div>
                       )}
 
                       {/* Salutation */}
-                      <div className="mt-4 text-xs font-semibold text-slate-800">
+                      <div className="mt-4 print:mt-2 text-xs font-semibold text-slate-800">
                         {salutation}
                       </div>
 
                       {/* Letter Body Text */}
-                      <div className="mt-4 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
+                      <div className="mt-4 print:mt-2 text-xs text-slate-800 leading-relaxed whitespace-pre-line font-sans">
                         {bodyText}
                       </div>
                     </>
@@ -1077,7 +1084,7 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                 </div>
 
                 {/* ── LETTERHEAD FOOTER & SIGNATORY STAMP ──────────────────────────── */}
-                <div className="mt-10 pt-4 border-t border-slate-200/80">
+                <div className="mt-10 print:mt-4 pt-4 border-t border-slate-200/80">
                   <div className="flex justify-between items-end">
                     {/* Left: Security Authentication Hash */}
                     <div className="text-[9.5px] font-mono text-slate-500 space-y-0.5">
@@ -1089,8 +1096,8 @@ export default function OfficialLetterheadPage({ embedMode = false }) {
                     {/* Right: Signature Block */}
                     <div className="text-right space-y-1">
                       {includeSignature && companyProfile?.e_signature ? (
-                        <div className="h-20 flex items-center justify-end select-none">
-                          <img src={companyProfile.e_signature} className="max-h-20 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
+                        <div className="h-14 print:h-12 flex items-center justify-end select-none">
+                          <img src={companyProfile.e_signature} className="max-h-14 print:max-h-12 object-contain mix-blend-multiply filter brightness-95" alt="Signature" />
                         </div>
                       ) : (
                         <div className="flex flex-col items-end">
