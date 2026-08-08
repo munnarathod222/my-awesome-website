@@ -161,7 +161,9 @@ const ProfilePage = () => {
       }
 
       if (record.e_signature) {
-        setCompanySignaturePreview(pb.files.getUrl(record, record.e_signature));
+        const sigUrl = pb.files.getUrl(record, record.e_signature);
+        setCompanySignaturePreview(sigUrl);
+        localStorage.setItem('jbc_e_signature', sigUrl);
       } else {
         const localSig = localStorage.getItem('jbc_e_signature');
         setCompanySignaturePreview(localSig || '');

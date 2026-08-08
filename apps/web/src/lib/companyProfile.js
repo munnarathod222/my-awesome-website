@@ -46,6 +46,7 @@ export const fetchCompanyProfile = async () => {
       let sigUrl = localStorage.getItem('jbc_e_signature') || '';
       if (record.e_signature) {
         sigUrl = pb.files.getUrl(record, record.e_signature);
+        localStorage.setItem('jbc_e_signature', sigUrl);
       }
 
       cachedProfile = {
