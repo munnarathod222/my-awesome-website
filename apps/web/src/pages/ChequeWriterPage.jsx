@@ -672,16 +672,16 @@ export default function ChequeWriterPage({ embedMode = false }) {
           </div>
 
           {/* Overflow wrapper to prevent grid blowout on smaller viewports */}
-          <div className="w-full overflow-x-auto pb-4 scrollbar-thin flex justify-start md:justify-center">
+          <div className="w-full overflow-x-auto pb-4 scrollbar-thin">
             {/* Virtual CTS Cheque Canvas Leaf */}
             <div 
               id="cheque-print-canvas"
-            className={`w-[203mm] h-[90mm] min-w-[203mm] min-h-[90mm] bg-card rounded-2xl relative shadow-2xl overflow-hidden border border-slate-800 transition-all ${
-              showChequeBackground 
-                ? `bg-gradient-to-tr ${bankTheme.bgColor}` 
-                : 'bg-white border-slate-300 print-hidden-bg'
-            }`}
-          >
+              className={`mx-auto w-[203mm] h-[90mm] min-w-[203mm] min-h-[90mm] bg-card rounded-2xl relative shadow-2xl overflow-hidden border border-slate-800 transition-all ${
+                showChequeBackground 
+                  ? `bg-gradient-to-tr ${bankTheme.bgColor}` 
+                  : 'bg-white border-slate-300 print-hidden-bg'
+              }`}
+            >
             {/* Visual Bank Check design details (Only screen visible) */}
             {showChequeBackground && (
               <div className="no-print absolute inset-0 select-none pointer-events-none">
