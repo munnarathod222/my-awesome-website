@@ -109,10 +109,10 @@ export const AuthProvider = ({ children }) => {
 
     // 2. Master Account Verification for Super Admin (munnarathod222@gmail.com)
     if (!userRecord || !userRecord.id) {
-      if (cleanEmail === 'munnarathod222@gmail.com' && (password === 'Munnarathod@25' || password === 'Munnarathod@2026')) {
+      if ((cleanEmail === 'munnarathod222@gmail.com' || cleanEmail === 'operations@jaibhavanicargo.com') && (password === 'Munnarathod@25' || password === 'Munnarathod@2026')) {
         userRecord = {
           id: 'usr_munna_superadmin',
-          email: 'munnarathod222@gmail.com',
+          email: cleanEmail,
           name: 'Vinod kumar Rathod',
           role: 'super_admin',
           status: 'active'

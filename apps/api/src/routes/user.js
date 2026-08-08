@@ -22,11 +22,13 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
 
   logger.info(`[API/User] Attempting email change for user ID ${userId} to ${newEmail}`);
 
+  const colName = req.pocketbaseCollectionName || 'users';
+
   try {
-    // 1. Check if email is already in use by another user in pocketbase
+    // 1. Check if email is already in use by another user in the target collection
     let existing;
     try {
-      existing = await pb.collection('users').getFirstListItem(
+      existing = await pb.collection(colName).getFirstListItem(
         pb.filter('email = {:newEmail}', { newEmail }),
         { $autoCancel: false }
       );
@@ -39,12 +41,12 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
     }
 
     // 2. Perform the update using the backend admin client
-    const updatedRecord = await pb.collection('users').update(userId, {
+    const updatedRecord = await pb.collection(colName).update(userId, {
       email: newEmail,
       emailVisibility: true
     }, { $autoCancel: false });
 
-    logger.info(`[API/User] Email updated successfully for user ID ${userId}`);
+    logger.info(`[API/User] Email updated successfully for user ID ${userId} in collection ${colName}`);
 
     return res.json({
       success: true,
@@ -57,7 +59,7 @@ router.post('/change-email', pocketbaseAuth, async (req, res) => {
       }
     });
   } catch (err) {
-    logger.error(`[API/User] Error updating email: ${err.message}`);
+    logger.error(`[API/User] Error updating email in collection ${colName}: ${err.message}`);
     return res.status(500).json({ error: err.message || 'Failed to update email' });
   }
 });

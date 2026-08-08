@@ -31,10 +31,12 @@ export async function pocketbaseAuth(req, res, next) {
 		try {
 			const newToken = await pocketbaseClient.collection(colName).authRefresh();
 			req.pocketbaseUserId = newToken.record.id;
+			req.pocketbaseCollectionName = colName;
 		} catch (refreshErr) {
 			// Fallback: accept valid token with user record id
 			if (tokenData.record.id) {
 				req.pocketbaseUserId = tokenData.record.id;
+				req.pocketbaseCollectionName = colName;
 			} else {
 				throw refreshErr;
 			}
