@@ -33,6 +33,7 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
 
   const [searchTruck, setSearchTruck] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isCalculatorExpanded, setIsCalculatorExpanded] = useState(false);
 
   // Load from PocketBase company_settings if available
   useEffect(() => {
@@ -179,27 +180,60 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
   return (
     <div className="space-y-6">
       
-      {/* Top Banner & Benchmark Selector */}
-      <Card className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/80 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-xl relative overflow-hidden">
+      {/* Top Banner & Benchmark Selector (Collapsible) */}
+      <Card className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/80 border-slate-800 text-slate-100 p-4 sm:p-5 rounded-3xl shadow-xl relative overflow-hidden transition-all duration-300">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30">
-              <Zap className="w-3.5 h-3.5" /> Real-time Fleet Performance Intelligence
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-500/15 border border-blue-500/30 rounded-2xl text-blue-400">
+              <Zap className="w-5 h-5" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Fuel Mileage Benchmark & Savings Calculator</h2>
-            <p className="text-slate-300 text-xs sm:text-sm">
-              Compare individual truck efficiencies against target benchmarks to identify driver mileage gaps and calculate potential monthly fuel cost savings.
-            </p>
-          </div>
-
-          {/* Interactive Controls Card */}
-          <div className="bg-slate-800/90 backdrop-blur-md border border-slate-700 p-4 rounded-2xl w-full lg:w-80 space-y-4 shadow-xl">
             <div>
-              <div className="flex justify-between items-center text-xs font-bold text-slate-300 mb-1.5">
-                <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-blue-400" /> Target Benchmark Mileage:</span>
-                <span className="text-sm font-mono text-emerald-400 font-black">{targetBenchmark} km/L</span>
+              <h2 className="text-sm sm:text-base font-extrabold text-white flex flex-wrap items-center gap-2">
+                Fuel Mileage Benchmark Settings
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px] font-mono">
+                  Target: {targetBenchmark} km/L
+                </Badge>
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px] font-mono">
+                  Diesel Price: ₹{dieselPrice}/L
+                </Badge>
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Compare individual truck efficiencies against JBC benchmark targets to calculate potential cost savings.
+              </p>
+            </div>
+          </div>
+          
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsCalculatorExpanded(!isCalculatorExpanded)}
+            className="h-8 px-3.5 text-xs border-slate-750 bg-slate-950/50 hover:bg-slate-950 text-slate-300 font-bold rounded-xl flex items-center gap-1.5 self-end md:self-auto"
+          >
+            {isCalculatorExpanded ? (
+              <>Collapse Settings</>
+            ) : (
+              <>Adjust Settings</>
+            )}
+          </Button>
+        </div>
+
+        {/* Expanded Form Controls */}
+        {isCalculatorExpanded && (
+          <div className="mt-5 pt-5 border-t border-slate-800/80 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10 animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="lg:col-span-6 space-y-1">
+              <span className="text-xs font-bold text-slate-300">Configure Benchmark Targets</span>
+              <p className="text-[11px] text-slate-400">
+                Adjust benchmark values to calculate cost performance dynamically. Settings are synced with your company profile.
+              </p>
+            </div>
+
+            {/* Slider Control */}
+            <div className="lg:col-span-3 bg-slate-950/40 p-3 rounded-2xl border border-slate-850/60">
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-300 mb-1.5">
+                <span className="flex items-center gap-1"><Target className="w-3.5 h-3.5 text-blue-400" /> Target Mileage:</span>
+                <span className="text-xs font-mono text-emerald-400 font-black">{targetBenchmark} km/L</span>
               </div>
               <input 
                 type="range" 
@@ -212,42 +246,46 @@ export default function FuelBenchmarkTab({ fuelLogs = [], trucks = {}, loading =
                   setTargetBenchmark(val);
                   localStorage.setItem('target_benchmark_mileage', val.toString());
                 }}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className="w-full h-1.5 bg-slate-850 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
-              <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
+              <div className="flex justify-between text-[8px] text-slate-500 font-mono mt-1">
                 <span>3.0 km/L</span>
                 <span>Fleet Avg: {fleetSummary.fleetAvgMileage} km/L</span>
                 <span>7.0 km/L</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-700 text-xs">
-              <span className="text-slate-400">Diesel Price (₹/L):</span>
-              <div className="flex items-center gap-1">
-                <span className="text-slate-400 font-mono">₹</span>
-                <Input 
-                  type="number" 
-                  value={dieselPrice}
-                  onChange={e => {
-                    const val = Number(e.target.value) || 0;
-                    setDieselPrice(val);
-                    localStorage.setItem('fuel_diesel_price', val.toString());
-                  }}
-                  className="w-20 h-7 text-xs bg-slate-900 border-slate-700 text-white font-mono rounded-lg text-right font-bold"
-                />
+            {/* Price Control & Action */}
+            <div className="lg:col-span-3 bg-slate-950/40 p-3 rounded-2xl border border-slate-850/60 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 block">Diesel Rate</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-slate-500 font-mono">₹</span>
+                  <Input 
+                    type="number" 
+                    value={dieselPrice}
+                    onChange={e => {
+                      const val = Number(e.target.value) || 0;
+                      setDieselPrice(val);
+                      localStorage.setItem('fuel_diesel_price', val.toString());
+                    }}
+                    className="w-20 h-7 text-xs bg-slate-900 border-slate-700 text-white font-mono rounded-lg text-right font-bold py-0.5 px-2"
+                  />
+                  <span className="text-[10px] text-slate-500 font-mono">/L</span>
+                </div>
               </div>
+              
+              <Button 
+                onClick={() => handleSaveSettings()}
+                disabled={isSaving}
+                size="sm"
+                className="h-8 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" /> Save
+              </Button>
             </div>
-
-            {/* Save Button */}
-            <Button 
-              onClick={() => handleSaveSettings()}
-              disabled={isSaving}
-              className="w-full h-8 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5"
-            >
-              <Save className="w-3.5 h-3.5" /> {isSaving ? 'Saving...' : 'Save Benchmark Settings'}
-            </Button>
           </div>
-        </div>
+        )}
       </Card>
 
       {/* Summary KPI Cards */}
