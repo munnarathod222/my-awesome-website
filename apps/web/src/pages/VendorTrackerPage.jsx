@@ -185,6 +185,31 @@ const DEFAULT_SUPPLIER_VENDORS = [
   }
 ];
 
+const EM_STEPS = [
+  { label: 'Applied', key: 'Applied' },
+  { label: 'Doc Verify', key: 'Document Verification' },
+  { label: 'Inspection', key: 'Physical Yard & Vehicle Inspection' },
+  { label: 'Rate Approval', key: 'Commercial Rate Approval' },
+  { label: 'Active', key: 'Empanelled & Active' }
+];
+
+const getStageIndex = (stage) => {
+  if (!stage) return 0;
+  switch (stage) {
+    case 'Document Verification':
+      return 1;
+    case 'Physical Yard & Vehicle Inspection':
+      return 2;
+    case 'Commercial Rate Approval':
+      return 3;
+    case 'Empanelled & Active':
+    case 'Contract Under Renewal':
+      return 4;
+    default:
+      return 0;
+  }
+};
+
 export default function VendorTrackerPage() {
   const [activeTab, setActiveTab] = useState('subcontractors'); // 'clients' | 'subcontractors' | 'suppliers'
 
@@ -851,6 +876,43 @@ export default function VendorTrackerPage() {
                     </Badge>
                   </div>
 
+                  {/* Empanelment Progress Tracker */}
+                  <div className="relative py-2 px-1 bg-slate-950/40 rounded-2xl border border-slate-800/40">
+                    {/* Progress Connecting Line */}
+                    <div className="absolute top-[18px] left-[10%] right-[10%] h-0.5 bg-slate-850 z-0">
+                      <div 
+                        className="h-full bg-emerald-500 transition-all duration-500" 
+                        style={{ width: `${(getStageIndex(emp.stage) / 4) * 100}%` }}
+                      />
+                    </div>
+                    
+                    {/* Dots & Labels */}
+                    <div className="relative flex justify-between items-start z-10">
+                      {EM_STEPS.map((step, idx) => {
+                        const currentIdx = getStageIndex(emp.stage);
+                        const isCompleted = idx <= currentIdx;
+                        return (
+                          <div key={idx} className="flex flex-col items-center flex-1">
+                            {/* Dot indicator */}
+                            <div className={`w-3 h-3 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                              isCompleted 
+                                ? 'bg-emerald-550 border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
+                                : 'bg-slate-900 border-slate-700'
+                            }`}>
+                              {isCompleted && <div className="w-1 h-1 rounded-full bg-slate-950" />}
+                            </div>
+                            {/* Step Label */}
+                            <span className={`text-[8px] mt-1 text-center font-bold tracking-tight select-none transition-colors duration-300 ${
+                              isCompleted ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
+                            }`}>
+                              {step.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Officer Info & Ref No */}
                   <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs font-mono text-slate-300 space-y-1">
                     <div className="flex justify-between text-[11px]">
@@ -1365,6 +1427,43 @@ export default function VendorTrackerPage() {
                 {viewEmpanelment.category} • Stage: {viewEmpanelment.stage}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Empanelment Progress Tracker */}
+            <div className="relative py-3.5 px-3 bg-slate-900/40 rounded-2xl border border-slate-800/80 my-3">
+              {/* Progress Connecting Line */}
+              <div className="absolute top-[23px] left-[10%] right-[10%] h-0.5 bg-slate-800 z-0">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-500" 
+                  style={{ width: `${(getStageIndex(viewEmpanelment.stage) / 4) * 100}%` }}
+                />
+              </div>
+              
+              {/* Dots & Labels */}
+              <div className="relative flex justify-between items-start z-10">
+                {EM_STEPS.map((step, idx) => {
+                  const currentIdx = getStageIndex(viewEmpanelment.stage);
+                  const isCompleted = idx <= currentIdx;
+                  return (
+                    <div key={idx} className="flex flex-col items-center flex-1">
+                      {/* Dot indicator */}
+                      <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                        isCompleted 
+                          ? 'bg-emerald-500 border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]' 
+                          : 'bg-slate-950 border-slate-800'
+                      }`}>
+                        {isCompleted && <div className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                      </div>
+                      {/* Step Label */}
+                      <span className={`text-[9px] mt-1.5 text-center font-bold tracking-tight select-none transition-colors duration-300 ${
+                        isCompleted ? 'text-emerald-400 font-extrabold' : 'text-slate-500'
+                      }`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="space-y-4 py-3 text-xs">
               <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-2 font-mono">
