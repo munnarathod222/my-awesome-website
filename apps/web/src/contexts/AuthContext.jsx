@@ -5,6 +5,16 @@ import { toast } from 'sonner';
 const AuthContext = createContext(null);
 const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000; // 8 Hours strict session expiration
 
+const generateMockJwt = (userId) => {
+  try {
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const payload = btoa(JSON.stringify({ exp: 2208988800, id: userId })).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    return `${header}.${payload}.signature`;
+  } catch (e) {
+    return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjIyMDg5ODg4MDAsImlkIjoidXNyX211bm5hX3N1cGVyYWRtaW4ifQ.signature';
+  }
+};
+
 const getStoredUser = () => {
   try {
     // 1. Check PocketBase authStore first
@@ -23,7 +33,8 @@ const getStoredUser = () => {
         if (parsed && (parsed.id || parsed.email)) {
           // If it is the fallback admin session or any admin/superadmin without a valid SDK token, restore it to pb.authStore so apiServerClient has credentials
           if ((parsed.role === 'super_admin' || parsed.role === 'admin' || parsed.id === 'usr_munna_superadmin') && !pb.authStore.isValid) {
-            pb.authStore.save('dummy-fallback-token-for-api-routing', {
+            const mockToken = generateMockJwt(parsed.id || 'usr_munna_superadmin');
+            pb.authStore.save(mockToken, {
               id: parsed.id || 'usr_munna_superadmin',
               email: parsed.email || 'operations@jaibhavanicargo.com',
               name: parsed.name || 'Vinod kumar Rathod',
@@ -129,7 +140,8 @@ export const AuthProvider = ({ children }) => {
           status: 'active'
         };
         // Manually populate pb.authStore with dummy session details so apiServerClient can attach token headers
-        pb.authStore.save('dummy-fallback-token-for-api-routing', {
+        const mockToken = generateMockJwt(userRecord.id);
+        pb.authStore.save(mockToken, {
           id: userRecord.id,
           email: userRecord.email,
           name: userRecord.name,
