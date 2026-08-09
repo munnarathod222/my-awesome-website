@@ -21,6 +21,17 @@ const getStoredUser = () => {
       if (age < SESSION_MAX_AGE_MS) {
         const parsed = JSON.parse(saved);
         if (parsed && (parsed.id || parsed.email)) {
+          // If it is the fallback admin session, restore it to pb.authStore so apiServerClient has credentials
+          if (parsed.id === 'usr_munna_superadmin' && !pb.authStore.isValid) {
+            pb.authStore.save('dummy-fallback-token-for-api-routing', {
+              id: parsed.id,
+              email: parsed.email,
+              name: parsed.name || 'Vinod kumar Rathod',
+              role: parsed.role || 'super_admin',
+              status: parsed.status || 'active',
+              collectionName: 'users'
+            });
+          }
           return parsed;
         }
       } else {
@@ -117,6 +128,15 @@ export const AuthProvider = ({ children }) => {
           role: 'super_admin',
           status: 'active'
         };
+        // Manually populate pb.authStore with dummy session details so apiServerClient can attach token headers
+        pb.authStore.save('dummy-fallback-token-for-api-routing', {
+          id: userRecord.id,
+          email: userRecord.email,
+          name: userRecord.name,
+          role: userRecord.role,
+          status: userRecord.status,
+          collectionName: 'users'
+        });
       }
     }
 
