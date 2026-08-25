@@ -3,7 +3,8 @@ import { Helmet } from 'react-helmet';
 import { 
   Plus, AlertCircle, Fuel, TrendingUp, TrendingDown, Filter, 
   Car, Activity, Trash2, CreditCard, Search, Pencil, 
-  DollarSign, Wallet, AlertTriangle, Calendar, RefreshCw, Download
+  DollarSign, Wallet, AlertTriangle, Calendar, RefreshCw, Download,
+  Paperclip, Eye, FileText, Image as ImageIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format, parseISO, isAfter, isBefore } from 'date-fns';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
@@ -20,7 +22,11 @@ import LogFuelModal from '@/components/LogFuelModal.jsx';
 import FuelPaymentModal from '@/components/FuelPaymentModal.jsx';
 import FuelStationsTab from '@/components/FuelStationsTab.jsx';
 import FuelBenchmarkTab from '@/components/FuelBenchmarkTab.jsx';
+import FuelFraudSentinelTab from '@/components/FuelFraudSentinelTab.jsx';
+import FuelInvestigationModal from '@/components/FuelInvestigationModal.jsx';
+import FuelBillCameraScannerModal from '@/components/FuelBillCameraScannerModal.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+import { Camera } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, BarChart, Bar, Cell, Legend, PieChart, Pie, ComposedChart 
@@ -47,9 +53,12 @@ const FuelTrackerPage = () => {
   
   // Modals
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
   const [editingRefill, setEditingRefill] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
+  const [selectedLogForInvestigation, setSelectedLogForInvestigation] = useState(null);
+  const [selectedReceiptForView, setSelectedReceiptForView] = useState(null);
 
   // Tab 1 Filters (Refills)
   const [vehicleFilter, setVehicleFilter] = useState('all');
@@ -79,7 +88,7 @@ const FuelTrackerPage = () => {
     setError(null);
     try {
       console.log('Fetching fuel tracker data...');
-      const [logsRes, vehiclesRes, cardsRes, paymentsRes] = await Promise.all([
+      const [logsRes, vehiclesRes, cardsRes, paymentsRes, expensesRes] = await Promise.all([
         pb.collection('fuel_tracker').getFullList({
           sort: '-date',
           $autoCancel: false
@@ -93,6 +102,10 @@ const FuelTrackerPage = () => {
         pb.collection('fuel_payments').getFullList({
           filter: `user_id = "${currentUser?.id || ''}"`,
           sort: payFilters.sortBy,
+          $autoCancel: false
+        }).catch(() => []),
+        pb.collection('expenses').getFullList({
+          filter: 'subcategory = "Fuel" || category = "Regular" || fuel_tracker_id != ""',
           $autoCancel: false
         }).catch(() => [])
       ]);
@@ -109,18 +122,23 @@ const FuelTrackerPage = () => {
       });
       setTrucks(truckMap);
 
-      // Process refills logs
+      // Process refills logs and attach receipts from linked expense
       const processedLogs = logsRes.map(log => {
         const distance = log.distance_driven || 0;
         const liters = log.liters || 0;
         const efficiency = liters > 0 ? (distance / liters) : 0;
+        const linkedExp = (expensesRes || []).find(e => e.fuel_tracker_id === log.id || e.id === log.id);
+        const docs = (linkedExp && linkedExp.documents && linkedExp.documents.length > 0) ? linkedExp.documents : (log.documents || []);
 
         return {
           ...log,
           vehicle_name: truckMap[log.truck_id] || log.truck_number || 'Unknown',
           distance,
           efficiency,
-          liters
+          liters,
+          linked_expense: linkedExp,
+          documents: docs,
+          has_bill: docs.length > 0
         };
       });
 
@@ -531,6 +549,9 @@ const FuelTrackerPage = () => {
           <Button variant="outline" size="sm" onClick={() => setRefreshTrigger(p => p+1)} className="rounded-xl border-border/80 text-muted-foreground hover:text-foreground">
             <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh
           </Button>
+          <Button variant="outline" onClick={() => setIsOcrModalOpen(true)} className="rounded-xl border-emerald-500/50 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-semibold">
+            <Camera className="w-4 h-4 mr-2" /> AI Bill Scan
+          </Button>
           <Button onClick={() => setIsLogModalOpen(true)} className="shadow-sm rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" /> Log Refill
           </Button>
@@ -538,14 +559,25 @@ const FuelTrackerPage = () => {
       </div>
 
       {/* Tabs Layout */}
-      <Tabs defaultValue="benchmark" className="space-y-6">
-        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-2 sm:grid-cols-5 max-w-[800px]">
-          <TabsTrigger value="benchmark" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">🎯 Benchmark & Savings</TabsTrigger>
-          <TabsTrigger value="refills" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all font-sans">Refills & Efficiency</TabsTrigger>
-          <TabsTrigger value="stations" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">⛽ Fuel Stations</TabsTrigger>
-          <TabsTrigger value="payments" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">Card Payments</TabsTrigger>
-          <TabsTrigger value="analytics" className="rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all">Advanced Analytics</TabsTrigger>
+      <Tabs defaultValue="fraud" className="space-y-6">
+        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 max-w-[1050px]">
+          <TabsTrigger value="fraud" className="rounded-lg py-2 text-xs font-bold transition-all text-rose-400 data-[state=active]:bg-rose-950/40 data-[state=active]:text-rose-300">🛡️ Fraud Sentinel</TabsTrigger>
+          <TabsTrigger value="benchmark" className="rounded-lg py-2 text-xs font-semibold transition-all">🎯 Benchmark & Savings</TabsTrigger>
+          <TabsTrigger value="refills" className="rounded-lg py-2 text-xs font-semibold transition-all font-sans">Refills & Efficiency</TabsTrigger>
+          <TabsTrigger value="stations" className="rounded-lg py-2 text-xs font-semibold transition-all">⛽ Fuel Stations</TabsTrigger>
+          <TabsTrigger value="payments" className="rounded-lg py-2 text-xs font-semibold transition-all">Card Payments</TabsTrigger>
+          <TabsTrigger value="analytics" className="rounded-lg py-2 text-xs font-semibold transition-all">Advanced Analytics</TabsTrigger>
         </TabsList>
+
+        {/* Tab 0A: Fraud & Anomaly Sentinel */}
+        <TabsContent value="fraud" className="space-y-6 outline-none animate-in fade-in-50 duration-200">
+          <FuelFraudSentinelTab 
+            fuelLogs={fuelLogs} 
+            trucks={trucks} 
+            loading={loading} 
+            onRefresh={() => setRefreshTrigger(p => p + 1)} 
+          />
+        </TabsContent>
 
         {/* Tab 0: Fuel Benchmark & Savings */}
         <TabsContent value="benchmark" className="space-y-6 outline-none animate-in fade-in-50 duration-200">
@@ -764,6 +796,7 @@ const FuelTrackerPage = () => {
                       <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('total_cost')}>Cost</TableHead>
                       <TableHead className="text-right cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSort('efficiency')}>Efficiency (km/l)</TableHead>
                       <TableHead>Payment Method</TableHead>
+                      <TableHead className="text-center">Receipt / Bill</TableHead>
                       <TableHead className="text-right pr-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -778,12 +811,13 @@ const FuelTrackerPage = () => {
                           <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                         </TableRow>
                       ))
                     ) : filteredAndSortedLogs.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                        <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
                           <Fuel className="w-10 h-10 mb-3 opacity-20 mx-auto text-primary" />
                           <p>No fuel records found matching your criteria.</p>
                         </TableCell>
@@ -815,6 +849,44 @@ const FuelTrackerPage = () => {
                             <Badge variant="secondary" className="bg-muted text-muted-foreground font-medium border border-border/80">
                               {log.payment_method || 'Cash'}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {log.documents && log.documents.length > 0 ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => {
+                                  const doc = log.documents[0];
+                                  const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                                  setSelectedReceiptForView({
+                                    log,
+                                    name: doc,
+                                    count: log.documents.length,
+                                    documents: log.documents,
+                                    previewUrl: pb.files.getUrl(expRecord, doc)
+                                  });
+                                }}
+                                className="h-7 px-2.5 text-[11px] font-bold border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 gap-1 rounded-lg shadow-xs"
+                                title="View attached fuel bill receipt"
+                              >
+                                <Paperclip className="w-3.5 h-3.5" />
+                                <span>Bill ({log.documents.length})</span>
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setEditingRefill(log);
+                                  setIsLogModalOpen(true);
+                                }}
+                                className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary gap-1 opacity-60 hover:opacity-100"
+                                title="Attach Bill / Receipt"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>+ Bill</span>
+                              </Button>
+                            )}
                           </TableCell>
                           <TableCell className="text-right pr-6">
                             <div className="flex items-center justify-end gap-1">
@@ -849,60 +921,123 @@ const FuelTrackerPage = () => {
               </div>
 
               {/* Mobile Card List View */}
-              <div className="block md:hidden divide-y divide-border/40">
+              <div className="block md:hidden divide-y divide-border/30">
                 {loading ? (
                   <div className="space-y-4 p-4">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-28 w-full rounded-2xl" />
+                    <Skeleton className="h-28 w-full rounded-2xl" />
                   </div>
                 ) : filteredAndSortedLogs.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-12">
-                    <Fuel className="w-10 h-10 mb-3 opacity-20 mx-auto text-primary" />
-                    <p>No fuel records found.</p>
+                  <div className="text-center text-muted-foreground py-16">
+                    <Fuel className="w-12 h-12 mb-3 opacity-20 mx-auto text-primary" />
+                    <p className="text-sm font-semibold">No fuel records found.</p>
                   </div>
                 ) : (
                   filteredAndSortedLogs.map((log) => (
-                    <div key={log.id} className="p-4 space-y-3 hover:bg-muted/5 transition-colors">
+                    <div key={log.id} className="p-4 space-y-4 bg-card/10 hover:bg-muted/5 transition-all duration-200">
+                      {/* Vehicle & Efficiency Indicator */}
                       <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-bold text-sm text-foreground">{log.vehicle_name}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(log.date), 'MMM dd, yyyy')}</p>
+                        <div className="space-y-1">
+                          <p className="font-extrabold text-sm text-foreground flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-primary shrink-0 animate-pulse" />
+                            {log.vehicle_name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-semibold pl-4">
+                            📅 {log.date ? format(new Date(log.date), 'dd MMM yyyy, hh:mm a') : '-'}
+                          </p>
                         </div>
                         {log.efficiency > 0 ? (
-                          <Badge variant="outline" className={log.efficiency > refillMetrics.avgEfficiency ? 'text-success border-success/30 bg-success/5 font-bold text-xs' : 'text-warning border-warning/30 bg-warning/5 font-bold text-xs'}>
+                          <Badge 
+                            variant="outline" 
+                             className={`font-black text-xs px-2 py-0.5 rounded-lg border ${
+                               log.efficiency > refillMetrics.avgEfficiency 
+                                 ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5 animate-pulse" 
+                                 : "text-amber-400 border-amber-500/30 bg-amber-500/5"
+                             }`}
+                          >
                             {log.efficiency.toFixed(2)} km/l
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-muted-foreground">-</Badge>
+                          <Badge variant="outline" className="text-slate-500 border-slate-800 text-[10px] font-mono">No Stats</Badge>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 pt-2.5 border-t border-border/20 text-xs">
-                        <div>
-                          <p className="text-[9px] text-muted-foreground uppercase font-semibold">Distance</p>
-                          <p className="font-bold text-foreground mt-0.5">{log.distance ? `${log.distance.toLocaleString()} km` : '-'}</p>
+                      {/* Distance, Liters & Spend info */}
+                      <div className="grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-2xl border border-border/40 text-xs">
+                        <div className="text-center space-y-0.5">
+                          <span className="text-[9px] text-muted-foreground uppercase font-black tracking-wider block">Distance</span>
+                          <span className="font-bold text-foreground font-mono">{log.distance ? `${log.distance.toLocaleString()} km` : '-'}</span>
                         </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground uppercase font-semibold">Liters</p>
-                          <p className="font-bold text-foreground mt-0.5">{log.liters ? `${log.liters.toLocaleString()} L` : '-'}</p>
+                        <div className="text-center space-y-0.5 border-l border-r border-white/5">
+                          <span className="text-[9px] text-muted-foreground uppercase font-black tracking-wider block">Fuel Qty</span>
+                          <span className="font-bold text-foreground font-mono">{log.liters ? `${log.liters.toLocaleString()} L` : '-'}</span>
                         </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground uppercase font-semibold">Cost</p>
-                          <p className="font-extrabold text-foreground mt-0.5">₹{log.total_cost?.toLocaleString()}</p>
+                        <div className="text-center space-y-0.5">
+                          <span className="text-[9px] text-muted-foreground uppercase font-black tracking-wider block">Total Cost</span>
+                          <span className="font-black text-primary font-mono">₹{log.total_cost?.toLocaleString()}</span>
                         </div>
                       </div>
 
-                      {log.notes && (
-                        <div className="text-[11px] text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/30 whitespace-pre-line">
-                          {log.notes}
+                      {/* Payment method & Notes */}
+                      {(log.notes || log.payment_method) && (
+                        <div className="space-y-2 pl-2">
+                          {log.notes && (
+                            <p className="text-[11px] text-muted-foreground leading-relaxed bg-slate-900/40 p-2.5 rounded-xl border border-border/30 italic">
+                              💬 {log.notes}
+                            </p>
+                          )}
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                            <span>Payment Method:</span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="secondary" className="bg-slate-800 text-slate-300 font-mono text-[9px] px-2 py-0">
+                                {log.payment_method || 'Cash'}
+                              </Badge>
+                              {log.documents && log.documents.length > 0 && (
+                                <Badge 
+                                  variant="outline" 
+                                  onClick={() => {
+                                    const doc = log.documents[0];
+                                    const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                                    setSelectedReceiptForView({
+                                      log,
+                                      name: doc,
+                                      count: log.documents.length,
+                                      documents: log.documents,
+                                      previewUrl: pb.files.getUrl(expRecord, doc)
+                                    });
+                                  }}
+                                  className="border-primary/40 bg-primary/10 text-primary text-[9px] cursor-pointer"
+                                >
+                                  🧾 Bill ({log.documents.length})
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center pt-2.5 border-t border-border/20">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px]">
-                          {log.payment_method || 'Cash'}
-                        </Badge>
-                        <div className="flex items-center gap-2">
+                      {/* Actions */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20">
+                        {log.documents && log.documents.length > 0 ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              const doc = log.documents[0];
+                              const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                              setSelectedReceiptForView({
+                                log,
+                                name: doc,
+                                count: log.documents.length,
+                                documents: log.documents,
+                                previewUrl: pb.files.getUrl(expRecord, doc)
+                              });
+                            }}
+                            className="h-7 text-xs border-primary/40 bg-primary/10 text-primary flex items-center gap-1 font-bold rounded-xl px-2.5"
+                          >
+                            <Paperclip className="w-3 h-3" /> View Bill
+                          </Button>
+                        ) : (
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -910,7 +1045,21 @@ const FuelTrackerPage = () => {
                               setEditingRefill(log);
                               setIsLogModalOpen(true);
                             }}
-                            className="h-7 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-1.5 font-bold rounded-lg"
+                            className="h-7 text-xs text-muted-foreground hover:text-primary flex items-center gap-1 font-semibold rounded-xl px-2 opacity-70"
+                          >
+                            <Plus className="w-3 h-3" /> Attach Bill
+                          </Button>
+                        )}
+
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              setEditingRefill(log);
+                              setIsLogModalOpen(true);
+                            }}
+                            className="h-8 text-xs text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center gap-1.5 font-bold rounded-xl px-3"
                           >
                             <Pencil className="w-3.5 h-3.5" /> Edit
                           </Button>
@@ -918,7 +1067,7 @@ const FuelTrackerPage = () => {
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleDeleteRefill(log.id)}
-                            className="h-7 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 font-bold rounded-lg"
+                            className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center gap-1.5 font-bold rounded-xl px-3"
                           >
                             <Trash2 className="w-3.5 h-3.5" /> Delete
                           </Button>
@@ -1051,7 +1200,7 @@ const FuelTrackerPage = () => {
           {/* Payments Table */}
           <Card className="rounded-xl overflow-hidden shadow-sm border border-border/60">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-muted/50">
                     <TableRow>
@@ -1073,9 +1222,9 @@ const FuelTrackerPage = () => {
                       <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No transaction logs found.</TableCell></TableRow>
                     ) : (
                       filteredPayments.map(p => {
-                        const fuelAmt = p.fuel_amount || 0;
-                        const surAmt = p.surcharge_amount || 0;
-                        const waivedAmt = p.waived_amount || 0;
+                        const fuelAmt = Number(p.fuel_amount) || 0;
+                        const surAmt = Number(p.surcharge_amount) || 0;
+                        const waivedAmt = Number(p.surcharge_waiver_amount) || 0;
                         const billTotal = fuelAmt + surAmt - waivedAmt;
                         return (
                           <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
@@ -1108,6 +1257,53 @@ const FuelTrackerPage = () => {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile Card List View (Shown on screens < md) */}
+              <div className="block md:hidden divide-y divide-border/40">
+                {loading ? (
+                  <div className="p-8 text-center text-muted-foreground"><Activity className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" /> Loading payments...</div>
+                ) : filteredPayments.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground text-xs font-semibold">No transaction logs found.</div>
+                ) : (
+                  filteredPayments.map(p => {
+                    const fuelAmt = Number(p.fuel_amount) || 0;
+                    const surAmt = Number(p.surcharge_amount) || 0;
+                    const waivedAmt = Number(p.surcharge_waiver_amount) || 0;
+                    const billTotal = fuelAmt + surAmt - waivedAmt;
+                    return (
+                      <div key={p.id} className="p-4 space-y-3 relative text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-foreground">
+                            {p.date ? format(new Date(p.date), 'dd MMM yyyy') : '-'}
+                          </span>
+                          {getStatusBadge(p.payment_status)}
+                        </div>
+                        <div className="flex justify-between items-center border-t border-b border-white/5 py-2">
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground block text-[10px]">Card Used</span>
+                            <span className="font-bold text-foreground">{getCardName(p.card_id)}</span>
+                          </div>
+                          <div className="text-right space-y-0.5">
+                            <span className="text-muted-foreground block text-[10px]">Total Bill</span>
+                            <span className="font-black text-sm text-foreground">₹{billTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                          <span>Fuel: ₹{fuelAmt.toLocaleString()} • Surcharge: ₹{surAmt.toLocaleString()}</span>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => { setEditingPayment(p); setIsPaymentModalOpen(true); }} className="hover:bg-primary/10 hover:text-primary h-7 w-7 rounded-lg">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeletePayment(p.id)} className="hover:bg-destructive/10 hover:text-destructive text-destructive h-7 w-7 rounded-lg">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1366,6 +1562,89 @@ const FuelTrackerPage = () => {
         cards={creditCards}
         onSuccess={() => setRefreshTrigger(p => p + 1)}
       />
+
+      {/* Fuel Fraud Investigation Modal */}
+      {selectedLogForInvestigation && (
+        <FuelInvestigationModal
+          isOpen={!!selectedLogForInvestigation}
+          onClose={() => setSelectedLogForInvestigation(null)}
+          log={selectedLogForInvestigation}
+          onSuccess={() => setRefreshTrigger(p => p + 1)}
+        />
+      )}
+
+      {/* 🧾 Fuel Bill / Receipt Fullscreen Viewer Dialog */}
+      {selectedReceiptForView && (
+        <Dialog open={!!selectedReceiptForView} onOpenChange={() => setSelectedReceiptForView(null)}>
+          <DialogContent className="sm:max-w-3xl bg-zinc-950 border-zinc-800 text-white p-5">
+            <DialogHeader className="border-b border-zinc-800 pb-3 flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
+                  <Paperclip className="w-4 h-4 text-primary" />
+                  Fuel Bill Receipt: {selectedReceiptForView.log?.vehicle_name || selectedReceiptForView.log?.truck_number}
+                </DialogTitle>
+                <p className="text-xs text-zinc-400">
+                  📅 {selectedReceiptForView.log?.date ? format(new Date(selectedReceiptForView.log.date), 'dd MMM yyyy') : ''} • 
+                  ⛽ {selectedReceiptForView.log?.liters} Liters • ₹{selectedReceiptForView.log?.total_cost?.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedReceiptForView.previewUrl && (
+                  <Button variant="outline" size="sm" className="h-8 text-xs border-zinc-700 bg-zinc-900 text-zinc-200 hover:text-white" asChild>
+                    <a href={selectedReceiptForView.previewUrl} target="_blank" rel="noopener noreferrer" download>
+                      <Download className="w-3.5 h-3.5 mr-1.5" />
+                      Download Receipt
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </DialogHeader>
+
+            <div className="min-h-[350px] max-h-[70vh] flex items-center justify-center p-3 overflow-auto bg-black/50 rounded-xl border border-zinc-900">
+              {((selectedReceiptForView.name || '').toLowerCase().endsWith('.pdf')) ? (
+                <iframe src={selectedReceiptForView.previewUrl} title="Receipt PDF" className="w-full h-[60vh] rounded-lg border border-zinc-800" />
+              ) : selectedReceiptForView.previewUrl ? (
+                <img 
+                  src={selectedReceiptForView.previewUrl} 
+                  alt={selectedReceiptForView.name} 
+                  className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl" 
+                />
+              ) : (
+                <div className="text-zinc-500 text-sm flex flex-col items-center gap-2">
+                  <FileText className="w-10 h-10 opacity-30" />
+                  <p>No receipt image available</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 📸 AI Fuel Bill & Weighbridge Scanner Modal */}
+      {isOcrModalOpen && (
+        <FuelBillCameraScannerModal 
+          isOpen={isOcrModalOpen} 
+          onClose={() => setIsOcrModalOpen(false)} 
+          onApplyScan={(scanned) => {
+            console.log('Applying scanned diesel bill data into LogFuelModal:', scanned);
+            setEditingRefill({
+              liters: scanned.liters,
+              cost_per_liter: scanned.ratePerLiter,
+              total_cost: scanned.totalAmount,
+              date: scanned.date || new Date().toISOString().split('T')[0],
+              fuel_station: scanned.vendor,
+              truck_number: scanned.truckNumber,
+              truck_id: scanned.truckNumber,
+              receiptFile: scanned.receiptFile,
+              receiptPreviewUrl: scanned.receiptPreviewUrl
+            });
+            setIsOcrModalOpen(false);
+            setTimeout(() => {
+              setIsLogModalOpen(true);
+            }, 80);
+          }} 
+        />
+      )}
     </div>
   );
 };

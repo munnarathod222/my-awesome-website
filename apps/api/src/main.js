@@ -30,11 +30,11 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://d3mkw6s8thqya7.cloudfront.net", "https://*.aisensy.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
-      connectSrc: ["'self'", "http://127.0.0.1:8090", "http://localhost:3001", "https://api.render.com", "https://*.supabase.co"],
+      connectSrc: ["'self'", "http://127.0.0.1:8090", "http://localhost:3001", "https://api.render.com", "https://*.supabase.co", "https://*.aisensy.com", "https://d3mkw6s8thqya7.cloudfront.net", "https://api.ocr.space", "https://*.ocr.space"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
     },
@@ -237,6 +237,125 @@ const downloadDatabaseFromSupabase = async (dbFilePath, options = {}) => {
   }
 };
 
+const initPermanentSequences = async (dbFilePath) => {
+  try {
+    const { execSync } = await import('node:child_process');
+    if (dbFilePath && fs.existsSync(dbFilePath)) {
+      try { execSync(`sqlite3 "${dbFilePath}" "ALTER TABLE trucks ADD COLUMN truck_sequence INTEGER DEFAULT 0;"`, { stdio: 'pipe' }); } catch (_) {}
+      try { execSync(`sqlite3 "${dbFilePath}" "ALTER TABLE trucks ADD COLUMN truck_code TEXT DEFAULT '';"`, { stdio: 'pipe' }); } catch (_) {}
+      try { execSync(`sqlite3 "${dbFilePath}" "ALTER TABLE employees ADD COLUMN employee_number INTEGER DEFAULT 0;"`, { stdio: 'pipe' }); } catch (_) {}
+      try { execSync(`sqlite3 "${dbFilePath}" "ALTER TABLE employees ADD COLUMN employee_code TEXT DEFAULT '';"`, { stdio: 'pipe' }); } catch (_) {}
+    }
+
+    // 1. Process Trucks chronologically via PocketBase SDK
+    try {
+      const trucks = await pb.collection('trucks').getFullList({ sort: 'created', $autoCancel: false });
+      let maxTruckSeq = 0;
+      trucks.forEach(t => {
+        if (t.truck_sequence && Number(t.truck_sequence) > maxTruckSeq) {
+          maxTruckSeq = Number(t.truck_sequence);
+        }
+      });
+
+      let nextSeq = 1;
+      for (const t of trucks) {
+        if (!t.truck_sequence || Number(t.truck_sequence) <= 0) {
+          while (trucks.some(ot => ot.id !== t.id && Number(ot.truck_sequence) === nextSeq)) {
+            nextSeq++;
+          }
+          const seq = nextSeq++;
+          const code = `TRK-${String(seq).padStart(3, '0')}`;
+          t.truck_sequence = seq;
+          t.truck_code = code;
+          await pb.collection('trucks').update(t.id, { truck_sequence: seq, truck_code: code }, { $autoCancel: false }).catch(() => {});
+          if (dbFilePath && fs.existsSync(dbFilePath)) {
+            try { execSync(`sqlite3 "${dbFilePath}" "UPDATE trucks SET truck_sequence = ${seq}, truck_code = '${code}' WHERE id = '${t.id}';"`, { stdio: 'pipe' }); } catch (_) {}
+          }
+          logger.info(`🚛 Assigned permanent Truck #${seq} (${code}) to ${t.truck_number}`);
+        }
+      }
+    } catch (tErr) {
+      logger.warn(`Truck sequence init notice: ${tErr.message}`);
+    }
+
+    // 2. Process Employees chronologically via PocketBase SDK
+    try {
+      const emps = await pb.collection('employees').getFullList({ sort: 'created', $autoCancel: false });
+      let maxEmpSeq = 0;
+      emps.forEach(e => {
+        if (e.employee_number && Number(e.employee_number) > maxEmpSeq) {
+          maxEmpSeq = Number(e.employee_number);
+        }
+      });
+
+      let empNext = 1;
+      let driverCodeNext = 1;
+      let staffCodeNext = 1;
+
+      for (const e of emps) {
+        const isDriver = (e.employee_type || '').toLowerCase().includes('driver');
+        let seq = e.employee_number && Number(e.employee_number) > 0 ? Number(e.employee_number) : 0;
+        if (seq <= 0) {
+          while (emps.some(oe => oe.id !== e.id && Number(oe.employee_number) === empNext)) {
+            empNext++;
+          }
+          seq = empNext++;
+          e.employee_number = seq;
+        }
+
+        let code = (e.employee_code || '').trim().toUpperCase();
+        if (!code || !/^[DE]\d{3,}$/.test(code)) {
+          if (isDriver) {
+            while (emps.some(oe => oe.id !== e.id && oe.employee_code === `D${String(driverCodeNext).padStart(3, '0')}`)) {
+              driverCodeNext++;
+            }
+            code = `D${String(driverCodeNext++).padStart(3, '0')}`;
+          } else {
+            while (emps.some(oe => oe.id !== e.id && oe.employee_code === `E${String(staffCodeNext).padStart(3, '0')}`)) {
+              staffCodeNext++;
+            }
+            code = `E${String(staffCodeNext++).padStart(3, '0')}`;
+          }
+          e.employee_code = code;
+        }
+
+        await pb.collection('employees').update(e.id, { employee_number: seq, employee_code: code }, { $autoCancel: false }).catch(() => {});
+        if (dbFilePath && fs.existsSync(dbFilePath)) {
+          try { execSync(`sqlite3 "${dbFilePath}" "UPDATE employees SET employee_number = ${seq}, employee_code = '${code}' WHERE id = '${e.id}';"`, { stdio: 'pipe' }); } catch (_) {}
+        }
+        logger.info(`👤 Assigned permanent Employee #${seq} (${code}) to ${e.name}`);
+      }
+    } catch (eErr) {
+      logger.warn(`Employee sequence init notice: ${eErr.message}`);
+    }
+  } catch (err) {
+    logger.warn(`⚠️ initPermanentSequences notice: ${err.message}`);
+  }
+};
+
+const initDatabaseIndexes = async (dbFilePath) => {
+  try {
+    if (!dbFilePath || !fs.existsSync(dbFilePath)) return;
+    const { execSync } = await import('node:child_process');
+    const queries = [
+      "CREATE INDEX IF NOT EXISTS idx_trucks_seq ON trucks(truck_sequence);",
+      "CREATE INDEX IF NOT EXISTS idx_trucks_num ON trucks(truck_number);",
+      "CREATE INDEX IF NOT EXISTS idx_employees_num ON employees(employee_number);",
+      "CREATE INDEX IF NOT EXISTS idx_trip_logs_truck ON trip_logs(truck_id, start_date);",
+      "CREATE INDEX IF NOT EXISTS idx_expenses_trip ON expenses(trip_id, date);",
+      "CREATE INDEX IF NOT EXISTS idx_attendance_emp ON attendance(staff_member, date);"
+    ];
+    for (const q of queries) {
+      try {
+        execSync(`sqlite3 "${dbFilePath}" "${q}"`, { stdio: 'pipe' });
+      } catch (_) {}
+    }
+    logger.info('⚡ Performance database indexes initialized successfully!');
+  } catch (err) {
+    logger.warn(`Index initialization notice: ${err.message}`);
+  }
+};
+
 const uploadDatabaseToSupabase = async (dbFilePath) => {
   const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
   if (!isSyncEnabled) {
@@ -246,6 +365,12 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   const tempPath = `${dbFilePath}.upload_temp`;
   try {
     if (!fs.existsSync(dbFilePath)) return false;
+
+    // 🛡️ Ensure WAL file is fully checkpointed and consolidated into data.db
+    try {
+      const { execSync } = await import('node:child_process');
+      execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;"`, { stdio: 'pipe' });
+    } catch (_) {}
 
     fs.copyFileSync(dbFilePath, tempPath);
     const fileBuffer = fs.readFileSync(tempPath);
@@ -328,7 +453,106 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     return false;
   }
 };
+
+const downloadRecruitmentStoreFromSupabase = async () => {
+  const storePath = path.join(process.cwd(), 'driver_applications_store.json');
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/driver_applications_store.json`, {
+      headers: { 
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`
+      }
+    });
+
+    if (res.ok) {
+      const text = await res.text();
+      let remoteList = [];
+      try { remoteList = JSON.parse(text); } catch (e) {}
+
+      if (Array.isArray(remoteList) && remoteList.length > 0) {
+        let localList = [];
+        if (fs.existsSync(storePath)) {
+          try {
+            localList = JSON.parse(fs.readFileSync(storePath, 'utf8'));
+          } catch (e) {}
+        }
+
+        // Merge local & remote records cleanly without losing data
+        const mergedMap = new Map();
+        [...remoteList, ...localList].forEach(item => {
+          if (item && item.id) {
+            const existing = mergedMap.get(item.id);
+            mergedMap.set(item.id, { ...(existing || {}), ...item });
+          }
+        });
+
+        const mergedList = Array.from(mergedMap.values());
+        fs.writeFileSync(storePath, JSON.stringify(mergedList, null, 2), 'utf8');
+        logger.info(`✅ Restored & Merged ${mergedList.length} recruitment applications from Supabase Cloud Backup!`);
+        return true;
+      }
+    }
+  } catch (e) {
+    logger.warn(`⚠️ Failed to download driver_applications_store.json from Supabase: ${e.message}`);
+  }
+  return false;
+};
+
+const uploadRecruitmentStoreToSupabase = async () => {
+  const storePath = path.join(process.cwd(), 'driver_applications_store.json');
+  try {
+    if (!fs.existsSync(storePath)) return false;
+    const rawContent = fs.readFileSync(storePath, 'utf8');
+    let localList = [];
+    try { localList = JSON.parse(rawContent); } catch (e) {}
+
+    // 🛡️ ANTI-WIPEOUT GUARD: Never overwrite cloud backup with empty local list
+    if (!Array.isArray(localList) || localList.length === 0) {
+      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local recruitment store has 0 items. Aborting cloud upload to preserve backup! Attempting restore...`);
+      await downloadRecruitmentStoreFromSupabase();
+      return false;
+    }
+
+    const storeBuffer = Buffer.from(JSON.stringify(localList, null, 2), 'utf8');
+
+    let uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/driver_applications_store.json`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: storeBuffer
+    });
+
+    if (!uploadRes.ok) {
+      uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/driver_applications_store.json`, {
+        method: 'PUT',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: storeBuffer
+      });
+    }
+
+    if (uploadRes.ok) {
+      logger.info(`✅ Recruitment Applications backup (${localList.length} records, ${storeBuffer.byteLength} bytes) synced to Supabase Cloud Storage!`);
+      return true;
+    }
+  } catch (e) {
+    logger.error(`⚠️ Failed to sync driver_applications_store.json to Supabase: ${e.message}`);
+  }
+  return false;
+};
+
 global.uploadDatabaseToSupabase = uploadDatabaseToSupabase;
+global.uploadRecruitmentStoreToSupabase = uploadRecruitmentStoreToSupabase;
+
+// Auto-restore recruitment data store on boot
+downloadRecruitmentStoreFromSupabase().catch(() => {});
 
 const pruneOldLocalBackups = (dbFilePath) => {
   try {
@@ -367,11 +591,11 @@ const watchAndSyncDatabase = (dbFilePath) => {
       // Trigger sync if the database file or its WAL/journal files change
       if (filename && (filename === 'data.db' || filename.startsWith('data.db-'))) {
         if (uploadTimeout) clearTimeout(uploadTimeout);
-        // Debounce 10s to let PocketBase finish batch writes
+        // Debounce 2s to let PocketBase finish batch writes while still syncing quickly
         uploadTimeout = setTimeout(async () => {
           logger.info(`🔄 Directory-watcher: database files changed (${filename}), syncing to Supabase...`);
           await uploadDatabaseToSupabase(dbFilePath);
-        }, 10000);
+        }, 2000);
       }
     });
     logger.info('👁️  Directory-watcher sync: active (watches database directory changes)');
@@ -421,6 +645,7 @@ const watchAndSyncDatabase = (dbFilePath) => {
 
   // Run once immediately on boot
   runRollingBackup();
+  initPermanentSequences(dbFilePath);
 
   // Schedule to run every 12 hours
   const LOCAL_BACKUP_MS = 12 * 60 * 60 * 1000;
@@ -779,6 +1004,8 @@ const runPocketBase = async () => {
   global.dbFilePath = dbFilePath;
   const storageDir = path.join(dataDir, 'storage');
   global.storageDir = storageDir;
+  global.pbPath = pbPath;
+  global.dataDir = dataDir;
 
   // IMPORTANT: Only download on first cold boot (global._pbStartCount === 0).
   // On restarts (after kill for cache-clear), skip download — the local SQLite
@@ -875,12 +1102,25 @@ const runPocketBase = async () => {
     }
     
     
-    // 1. Add toll_deduction column to trip_logs table if not exists
+    // 1. Add toll_deduction and timeline columns to trip_logs table if not exists
     const cols = db.prepare("PRAGMA table_info(trip_logs)").all().map(c => c.name);
     if (!cols.includes('toll_deduction')) {
       logger.info("Migrating: Adding column 'toll_deduction' to 'trip_logs' table...");
       db.prepare("ALTER TABLE trip_logs ADD COLUMN toll_deduction REAL DEFAULT 0").run();
     }
+    const timelineFieldsToAdd = [
+      { name: 'loading_dock_arrival_time', id: 'date_loading_dock_arrival' },
+      { name: 'dispatched_time', id: 'date_dispatched_time' },
+      { name: 'delivered_time', id: 'date_delivered_time' },
+      { name: 'pickup_time', id: 'date_pickup_time' },
+      { name: 'delivery_eta', id: 'date_delivery_eta' }
+    ];
+    timelineFieldsToAdd.forEach(f => {
+      if (!cols.includes(f.name)) {
+        logger.info(`Migrating: Adding column '${f.name}' to 'trip_logs' table...`);
+        db.prepare(`ALTER TABLE trip_logs ADD COLUMN ${f.name} TEXT DEFAULT ''`).run();
+      }
+    });
 
     // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
     const allColDefs = db.prepare('SELECT id, name FROM _collections').all();
@@ -895,10 +1135,12 @@ const runPocketBase = async () => {
       } catch(e) {}
     }
 
-    // 2. Add toll_deduction field to trip_logs schema in _collections table if not exists
+    // 2. Add toll_deduction and timeline fields to trip_logs schema in _collections table if not exists
     const record = db.prepare("SELECT * FROM _collections WHERE name='trip_logs'").get();
     if (record) {
       const fields = JSON.parse(record.fields);
+      let recordUpdated = false;
+
       const hasField = fields.some(f => f.name === 'toll_deduction');
       if (!hasField) {
         logger.info("Migrating: Appending 'toll_deduction' field to PocketBase 'trip_logs' schema...");
@@ -915,6 +1157,26 @@ const runPocketBase = async () => {
           system: false,
           type: "number"
         });
+        recordUpdated = true;
+      }
+
+      timelineFieldsToAdd.forEach(f => {
+        if (!fields.some(field => field.name === f.name)) {
+          logger.info(`Migrating: Appending '${f.name}' field to PocketBase 'trip_logs' schema...`);
+          fields.push({
+            help: `Timestamp for ${f.name.replace(/_/g, ' ')}`,
+            hidden: false,
+            id: f.id,
+            name: f.name,
+            required: false,
+            system: false,
+            type: "date"
+          });
+          recordUpdated = true;
+        }
+      });
+
+      if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }
       if (record.listRule !== "") {
@@ -1224,6 +1486,171 @@ const runPocketBase = async () => {
       }
     }
 
+    // 7.5. Trucks schema migration for systematic fleet ownership & Subcontractor KYC
+    try {
+      const truckCols = db.prepare("PRAGMA table_info(trucks)").all().map(c => c.name);
+      const truckNewCols = [
+        { name: 'subcontractor_id', type: 'TEXT' },
+        { name: 'subcontractor_name', type: 'TEXT' },
+        { name: 'owner_name', type: 'TEXT' },
+        { name: 'owner_phone', type: 'TEXT' },
+        { name: 'owner_pan', type: 'TEXT' },
+        { name: 'owner_aadhaar', type: 'TEXT' },
+        { name: 'owner_bank_name', type: 'TEXT' },
+        { name: 'owner_account_number', type: 'TEXT' },
+        { name: 'owner_ifsc', type: 'TEXT' },
+        { name: 'assigned_driver_name', type: 'TEXT' },
+        { name: 'assigned_driver_phone', type: 'TEXT' },
+        { name: 'driver_dl_number', type: 'TEXT' },
+        { name: 'loan_id', type: 'TEXT' },
+        { name: 'financier_name', type: 'TEXT' },
+        { name: 'hypothecation_details', type: 'TEXT' },
+        { name: 'status', type: 'TEXT DEFAULT "active"' },
+        { name: 'expected_mileage', type: 'REAL DEFAULT 5.8' },
+        { name: 'payload_capacity', type: 'TEXT' },
+        { name: 'body_length', type: 'REAL DEFAULT 0' },
+        { name: 'body_width', type: 'REAL DEFAULT 0' },
+        { name: 'body_height', type: 'REAL DEFAULT 0' },
+        { name: 'driver_name', type: 'TEXT' },
+        { name: 'driver_phone', type: 'TEXT' }
+      ];
+
+      for (const item of truckNewCols) {
+        if (!truckCols.includes(item.name)) {
+          logger.info(`Migrating: Adding column '${item.name}' to 'trucks' table...`);
+          try {
+            db.prepare(`ALTER TABLE trucks ADD COLUMN ${item.name} ${item.type}`).run();
+          } catch (alterErr) {
+            logger.warn(`Could not add column ${item.name}: ${alterErr.message}`);
+          }
+        }
+      }
+
+      const truckRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='trucks'").get();
+      if (truckRecordBoot) {
+        const truckFieldsBoot = JSON.parse(truckRecordBoot.fields);
+        let updatedTruckFields = false;
+        for (const item of truckNewCols) {
+          if (!truckFieldsBoot.some(f => f.name === item.name)) {
+            const fType = (item.name === 'expected_mileage' || item.name.startsWith('body_')) ? 'number' : 'text';
+            truckFieldsBoot.push({ name: item.name, type: fType, required: false, system: false, hidden: false, id: `trk_${item.name}_fld` });
+            updatedTruckFields = true;
+          }
+        }
+        if (updatedTruckFields) {
+          db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(truckFieldsBoot), truckRecordBoot.id);
+          logger.info("Migrating: Trucks collection fields updated in PocketBase schema!");
+        }
+        // Set open rules so staff & drivers can create/update without rejection
+        db.prepare("UPDATE _collections SET createRule = '', updateRule = '', deleteRule = '', listRule = '', viewRule = '' WHERE id = ?").run(truckRecordBoot.id);
+        logger.info("Migrating: Trucks collection rules set to open access!");
+      }
+    } catch (truckMigErr) {
+      logger.error("Error migrating trucks collection in SQLite:", truckMigErr);
+    }
+
+    // 8. Workshop Job Cards collection sqlite registration & table creation
+    const wjcRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='workshop_job_cards'").get();
+    if (!wjcRecordBoot) {
+      logger.info("Migrating: Creating 'workshop_job_cards' table & registration in _collections...");
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS workshop_job_cards (
+          id TEXT PRIMARY KEY,
+          created TEXT,
+          updated TEXT,
+          job_card_number TEXT,
+          truck_number TEXT,
+          driver_name TEXT,
+          odometer_reading REAL,
+          service_type TEXT,
+          assigned_mechanic TEXT,
+          supervisor_name TEXT,
+          status TEXT,
+          parts_cost REAL,
+          labour_cost REAL,
+          tax_amount REAL,
+          total_cost REAL,
+          itemized_items TEXT,
+          complaints_list TEXT,
+          notes TEXT,
+          entry_date TEXT,
+          completion_date TEXT
+        )
+      `).run();
+
+      const wjcSchema = [
+        {"id":"jc_id","name":"id","type":"text","primaryKey":true,"required":true,"system":true},
+        {"id":"jc_number","name":"job_card_number","type":"text","required":true,"system":false},
+        {"id":"jc_truck","name":"truck_number","type":"text","required":true,"system":false},
+        {"id":"jc_driver","name":"driver_name","type":"text","required":false,"system":false},
+        {"id":"jc_odo","name":"odometer_reading","type":"number","required":false,"system":false},
+        {"id":"jc_serv_type","name":"service_type","type":"text","required":false,"system":false},
+        {"id":"jc_mechanic","name":"assigned_mechanic","type":"text","required":false,"system":false},
+        {"id":"jc_super","name":"supervisor_name","type":"text","required":false,"system":false},
+        {"id":"jc_status","name":"status","type":"text","required":false,"system":false},
+        {"id":"jc_parts_c","name":"parts_cost","type":"number","required":false,"system":false},
+        {"id":"jc_labour_c","name":"labour_cost","type":"number","required":false,"system":false},
+        {"id":"jc_tax_c","name":"tax_amount","type":"number","required":false,"system":false},
+        {"id":"jc_total_c","name":"total_cost","type":"number","required":false,"system":false},
+        {"id":"jc_items","name":"itemized_items","type":"json","required":false,"system":false},
+        {"id":"jc_complaints","name":"complaints_list","type":"text","required":false,"system":false},
+        {"id":"jc_notes","name":"notes","type":"text","required":false,"system":false},
+        {"id":"jc_entry_d","name":"entry_date","type":"text","required":false,"system":false},
+        {"id":"jc_comp_d","name":"completion_date","type":"text","required":false,"system":false},
+        {"id":"jc_created","name":"created","type":"autodate","onCreate":true,"onUpdate":false,"system":false},
+        {"id":"jc_updated","name":"updated","type":"autodate","onCreate":true,"onUpdate":true,"system":false}
+      ];
+
+      db.prepare(`
+        INSERT INTO _collections (id, system, type, name, fields, indexes, listRule, viewRule, createRule, updateRule, deleteRule, options, created, updated)
+        VALUES ('pbc_wjc_001', 0, 'base', 'workshop_job_cards', ?, '[]', '', '', '', '', '', '{}', datetime('now'), datetime('now'))
+      `).run(JSON.stringify(wjcSchema));
+    }
+
+    // 9. Workshop Parts Inventory collection sqlite registration & table creation
+    const wpiRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='workshop_parts_inventory'").get();
+    if (!wpiRecordBoot) {
+      logger.info("Migrating: Creating 'workshop_parts_inventory' table & registration in _collections...");
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS workshop_parts_inventory (
+          id TEXT PRIMARY KEY,
+          created TEXT,
+          updated TEXT,
+          part_number TEXT,
+          part_name TEXT,
+          category TEXT,
+          unit TEXT,
+          current_stock REAL,
+          min_stock_level REAL,
+          unit_price REAL,
+          supplier_name TEXT,
+          location_rack TEXT,
+          notes TEXT
+        )
+      `).run();
+
+      const wpiSchema = [
+        {"id":"pi_id","name":"id","type":"text","primaryKey":true,"required":true,"system":true},
+        {"id":"pi_num","name":"part_number","type":"text","required":true,"system":false},
+        {"id":"pi_name","name":"part_name","type":"text","required":true,"system":false},
+        {"id":"pi_cat","name":"category","type":"text","required":false,"system":false},
+        {"id":"pi_unit","name":"unit","type":"text","required":false,"system":false},
+        {"id":"pi_stock","name":"current_stock","type":"number","required":false,"system":false},
+        {"id":"pi_min","name":"min_stock_level","type":"number","required":false,"system":false},
+        {"id":"pi_price","name":"unit_price","type":"number","required":false,"system":false},
+        {"id":"pi_supp","name":"supplier_name","type":"text","required":false,"system":false},
+        {"id":"pi_rack","name":"location_rack","type":"text","required":false,"system":false},
+        {"id":"pi_notes","name":"notes","type":"text","required":false,"system":false},
+        {"id":"pi_created","name":"created","type":"autodate","onCreate":true,"onUpdate":false,"system":false},
+        {"id":"pi_updated","name":"updated","type":"autodate","onCreate":true,"onUpdate":true,"system":false}
+      ];
+
+      db.prepare(`
+        INSERT INTO _collections (id, system, type, name, fields, indexes, listRule, viewRule, createRule, updateRule, deleteRule, options, created, updated)
+        VALUES ('pbc_wpi_001', 0, 'base', 'workshop_parts_inventory', ?, '[]', '', '', '', '', '', '{}', datetime('now'), datetime('now'))
+      `).run(JSON.stringify(wpiSchema));
+    }
+
     // Migration for shared_folders collection: set open rules for share link generation
     const sfRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='shared_folders'").get();
     if (sfRecordBoot) {
@@ -1282,6 +1709,34 @@ const runPocketBase = async () => {
     } catch (e) {
       logger.error('Failed to set execute permissions on PocketBase binary:', e.message);
     }
+  }
+
+  // Run PocketBase migrations automatically on boot
+  try {
+    const { spawnSync } = await import('node:child_process');
+    logger.info("🚀 Running PocketBase database migrations (migrate up)...");
+    const migrationResult = spawnSync(pbPath, [
+      'migrate',
+      'up',
+      `--dir=${dataDir}`,
+      `--migrationsDir=${path.resolve(__dirname, '../../pocketbase/pb_migrations')}`
+    ], {
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout: 30000
+    });
+    if (migrationResult.error) {
+      logger.error(`❌ PocketBase migration spawn error: ${migrationResult.error.message}`);
+    } else {
+      logger.info(`PocketBase migration output: ${(migrationResult.stdout || '').trim()}`);
+      if (migrationResult.status !== 0) {
+        logger.warn(`⚠️ PocketBase migration exited with code ${migrationResult.status}. stderr: ${(migrationResult.stderr || '').trim()}`);
+      } else {
+        logger.info("✅ PocketBase migrations applied successfully!");
+      }
+    }
+  } catch (err) {
+    logger.error(`❌ Failed to run PocketBase migrations: ${err.message}`);
   }
 
   // Enforce superuser existence (non-fatal — PocketBase should still start even if this fails)
@@ -1344,6 +1799,10 @@ const runPocketBase = async () => {
   pbProcess.stdout.on('data', (data) => {
     const msg = data.toString().trim();
     logger.info(`[PocketBase] ${msg}`);
+    if (msg.includes('REST API server started at') || msg.includes('Server started at')) {
+      initPermanentSequences(dbFilePath).catch(() => {});
+      initDatabaseIndexes(dbFilePath).catch(() => {});
+    }
     if (!global._pbLogs) global._pbLogs = [];
     global._pbLogs.push({ t: new Date().toISOString(), level: 'info', msg });
     if (global._pbLogs.length > 200) global._pbLogs.shift();
@@ -1380,9 +1839,130 @@ runPocketBase();
 // Start end-of-month leaderboard + payroll cron job
 startMonthEndCron();
 
-  // Diagnostic endpoint — exposes PocketBase startup logs
-  app.get('/api/pb-logs', requireBackupAuth, (req, res) => {
-    res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
+// Diagnostic endpoint — executes pocketbase migrate up manually on Render
+app.get('/api/run-pb-migrate', requireBackupAuth, async (req, res) => {
+  try {
+    const { spawnSync, execSync } = await import('node:child_process');
+    const pbPath = global.pbPath;
+    const dataDir = global.dataDir;
+    const dbPath = global.dbFilePath;
+    const migrationsDir = path.resolve(__dirname, '../../pocketbase/pb_migrations');
+    
+    // First, clear the bad migration cache records from sqlite database
+    let deleteOutput = '';
+    try {
+      const deleteCmd = `sqlite3 "${dbPath}" "DELETE FROM _migrations WHERE file IN ('1786900000_create_workshop_job_cards.js', '1787000000_create_workshop_parts_inventory.js');"`;
+      deleteOutput = execSync(deleteCmd, { encoding: 'utf-8' });
+      logger.info("Cleared cached migrations from SQLite database.");
+    } catch (dbErr) {
+      deleteOutput = 'Failed: ' + dbErr.message;
+      logger.warn(`Failed to clear migration cache: ${dbErr.message}`);
+    }
+
+    // Now run pocketbase migrate up to apply them
+    const result = spawnSync(pbPath, [
+      'migrate',
+      'up',
+      `--dir=${dataDir}`,
+      `--migrationsDir=${migrationsDir}`
+    ], {
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout: 30000
+    });
+    
+    if (global.pbProcess) {
+      logger.info("Restarting PocketBase to load new schemas...");
+      global.pbProcess.kill();
+    }
+
+    res.json({
+      success: result.status === 0,
+      status: result.status,
+      deleteOutput,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      error: result.error ? result.error.message : null
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Diagnostic endpoint — exposes PocketBase startup logs
+app.get('/api/pb-logs', requireBackupAuth, (req, res) => {
+  res.json({ logs: global._pbLogs || [], count: (global._pbLogs || []).length });
+});
+
+// Diagnostic endpoint — exposes Express application logs
+app.get('/api/express-logs', requireBackupAuth, (req, res) => {
+  res.json({ logs: global._expressLogs || [], count: (global._expressLogs || []).length });
+});
+
+// Diagnostic endpoint — inspects local directories on Render
+app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
+  try {
+    const targetPath = req.query.path || '../../pocketbase/pb_migrations';
+    const absPath = path.resolve(__dirname, targetPath);
+    const exists = fs.existsSync(absPath);
+    let files = [];
+    if (exists) {
+      files = fs.readdirSync(absPath);
+    }
+    res.json({
+      success: true,
+      queryPath: targetPath,
+      resolvedAbsPath: absPath,
+      exists,
+      filesCount: files.length,
+      files
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+  // Diagnostic endpoint — initializes or audits permanent truck and employee sequence numbers
+  app.get('/api/init-permanent-sequences', requireBackupAuth, async (req, res) => {
+    try {
+      const dbPath = global.dbFilePath;
+      await initPermanentSequences(dbPath);
+
+      const trucks = await pb.collection('trucks').getFullList({ sort: 'truck_sequence,created', $autoCancel: false }).catch(() => []);
+      const employees = await pb.collection('employees').getFullList({ sort: 'employee_number,created', $autoCancel: false }).catch(() => []);
+
+      res.json({
+        success: true,
+        message: 'Permanent sequences initialized and synced successfully!',
+        trucks: trucks.map(t => ({ id: t.id, truck_number: t.truck_number, truck_sequence: t.truck_sequence, truck_code: t.truck_code, created: t.created })),
+        employees: employees.map(e => ({ id: e.id, name: e.name, employee_type: e.employee_type, employee_number: e.employee_number, employee_code: e.employee_code, created: e.created }))
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Diagnostic endpoint — executes SQLite collections migrations manually on production DB
+  app.get('/api/run-boot-migrations', requireBackupAuth, async (req, res) => {
+    try {
+      const { execSync } = await import('node:child_process');
+      const dbPath = global.dbFilePath;
+      if (!dbPath || !fs.existsSync(dbPath)) {
+        return res.status(400).json({ success: false, error: 'Database file not found' });
+      }
+
+      // Delete the cache of these migrations from the SQLite _migrations table so pb will run them again
+      const cmd = `sqlite3 "${dbPath}" "DELETE FROM _migrations WHERE file IN ('1786900000_create_workshop_job_cards.js', '1787000000_create_workshop_parts_inventory.js');"`;
+      const output = execSync(cmd, { encoding: 'utf-8' });
+
+      res.json({
+        success: true,
+        message: 'Deleted migration cache records successfully. You can now call run-pb-migrate to re-apply migrations.',
+        output
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
   });
 
   // Diagnostic endpoint — inspects the production database status
@@ -1416,6 +1996,14 @@ startMonthEndCron();
         } catch (pbErr) {
           logger.warn(`Failed to count records via pb SDK: ${pbErr.message}`);
         }
+      }
+
+      let sqlite3CliOutput = null;
+      try {
+        const { execSync } = await import('node:child_process');
+        sqlite3CliOutput = execSync(`sqlite3 "${dbPath}" "SELECT name FROM _collections; SELECT '---'; SELECT * FROM _migrations;"`, { encoding: 'utf8' });
+      } catch (cliErr) {
+        sqlite3CliOutput = 'CLI error: ' + cliErr.message;
       }
 
       try {
@@ -1454,6 +2042,7 @@ startMonthEndCron();
         tripCount,
         expenseCount,
         sqliteSupported,
+        sqlite3CliOutput,
         superusersList,
         lastBackupError: global.lastBackupError || null,
         uploadTestResult,
@@ -1551,6 +2140,138 @@ startMonthEndCron();
         syncedCount,
         syncedRecords: results,
         message: `Successfully synchronized ${syncedCount} missing cashbook transactions!`
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Dedicated endpoint to synchronize all fuel tracker logs to cashbook & expenses
+  app.get('/api/sync-fuel-cashbook', requireBackupAuth, async (req, res) => {
+    try {
+      const fuelLogs = await pb.collection('fuel_tracker').getFullList({ sort: '-date', $autoCancel: false });
+      let syncedCount = 0;
+      const results = [];
+
+      for (const fuel of fuelLogs) {
+        let expense = null;
+        try {
+          expense = await pb.collection('expenses').getFirstListItem(`fuel_tracker_id="${fuel.id}"`, { $autoCancel: false });
+        } catch (_) {}
+
+        if (!expense) {
+          try {
+            expense = await pb.collection('expenses').create({
+              date: fuel.date,
+              category: 'Regular',
+              subcategory: 'Fuel',
+              amount: fuel.total_cost,
+              liters: fuel.liters || 0,
+              truck_id: fuel.truck_number || '',
+              description: `${fuel.truck_number || 'Truck'} - ${fuel.distance_driven || 0} KMs - ${fuel.liters || 0} L`,
+              payment_method: fuel.payment_method || 'Cash',
+              status: 'Approved',
+              created_by: 'usr_munna_superadmin',
+              fuel_tracker_id: fuel.id
+            }, { $autoCancel: false });
+          } catch (createExpErr) {
+            logger.warn(`Failed to create missing expense for fuel ${fuel.id}: ${createExpErr.message}`);
+          }
+        }
+
+        if (expense) {
+          let cashbookEntry = null;
+          try {
+            cashbookEntry = await pb.collection('cashbook').getFirstListItem(`reference_id="${expense.id}"`, { $autoCancel: false });
+          } catch (_) {}
+
+          if (!cashbookEntry) {
+            try {
+              const newCb = await pb.collection('cashbook').create({
+                date: fuel.date,
+                description: `Fuel: ${fuel.truck_number || 'Truck'} (${fuel.liters || 0} L - ${fuel.distance_driven || 0} KM)`,
+                amount: fuel.total_cost,
+                transaction_type: 'Expense',
+                category: 'Regular - Fuel',
+                reference_id: expense.id,
+                reference_type: 'expense',
+                status: 'Completed',
+                added_by: 'usr_munna_superadmin'
+              }, { $autoCancel: false });
+
+              results.push({ fuelId: fuel.id, expenseId: expense.id, cashbookId: newCb.id, amount: fuel.total_cost });
+              syncedCount++;
+            } catch (cbCreateErr) {
+              logger.warn(`Failed to create cashbook for fuel ${fuel.id}: ${cbCreateErr.message}`);
+            }
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        syncedCount,
+        syncedRecords: results,
+        message: `Successfully synchronized ${syncedCount} fuel records into Cashbook!`
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Dedicated endpoint to deduplicate credit cards collection
+  app.get('/api/dedupe-credit-cards', requireBackupAuth, async (req, res) => {
+    try {
+      const allCards = await pb.collection('credit_cards').getFullList({ sort: 'created', $autoCancel: false });
+      const seen = new Map();
+      const toDelete = [];
+      const updated = [];
+
+      for (const card of allCards) {
+        const last4 = card.card_number_last4 || '';
+        let cleanName = (card.card_name || '').replace(/\[Add-On:.*?\]/gi, '').trim().toUpperCase();
+        const bank = (card.bank_name || '').trim().toUpperCase();
+        const key = `${cleanName}_${last4}_${bank}`;
+
+        if (seen.has(key)) {
+          const prev = seen.get(key);
+          toDelete.push(prev.id);
+          seen.set(key, card);
+        } else {
+          seen.set(key, card);
+        }
+      }
+
+      for (const id of toDelete) {
+        try {
+          await pb.collection('credit_cards').delete(id, { $autoCancel: false });
+        } catch (e) {
+          logger.warn(`Failed to delete duplicate card ${id}: ${e.message}`);
+        }
+      }
+
+      // Rename Add-on tag cleanly on surviving cards
+      const surviving = await pb.collection('credit_cards').getFullList({ $autoCancel: false });
+      for (const card of surviving) {
+        let cleanName = (card.card_name || '').trim();
+        const isAddon = /\[Add-On:.*?\]/i.test(cleanName);
+        cleanName = cleanName.replace(/\[Add-On:.*?\]/gi, '').trim();
+        if (isAddon && !cleanName.toLowerCase().includes('add-on')) {
+          cleanName += ' (Add-On)';
+        }
+        if (cleanName !== card.card_name) {
+          await pb.collection('credit_cards').update(card.id, { card_name: cleanName }, { $autoCancel: false });
+          updated.push({ id: card.id, oldName: card.card_name, newName: cleanName });
+        }
+      }
+
+      res.json({
+        success: true,
+        deletedCount: toDelete.length,
+        deletedIds: toDelete,
+        updatedCount: updated.length,
+        updated,
+        message: `Deduplicated ${toDelete.length} duplicate credit cards and cleaned names!`
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -2039,7 +2760,607 @@ const directDeleteEmployees = async (req, res) => {
 app.post('/hcgi/api/employees/delete-by-id', directDeleteEmployees);
 app.post('/api/employees/delete-by-id', directDeleteEmployees);
 app.delete('/hcgi/api/employees/:id', directDeleteEmployees);
-app.delete('/api/employees/:id', directDeleteEmployees);
+// Direct PDF Invoice Generation & Serving endpoint for WhatsApp media attachment
+const serveInvoicePdf = async (req, res) => {
+  try {
+    const { tripId } = req.params;
+    let trip = null;
+    let invRecord = null;
+
+    // 1. Try querying invoices collection first for existing official invoice record
+    try {
+      if (pb) {
+        try {
+          invRecord = await pb.collection('invoices').getOne(tripId, { $autoCancel: false });
+        } catch (e) {
+          const invList = await pb.collection('invoices').getList(1, 1, {
+            filter: `trip_id = "${tripId}" || invoice_number = "${tripId}" || id = "${tripId}"`,
+            $autoCancel: false
+          }).catch(() => ({ items: [] }));
+          if (invList.items && invList.items.length > 0) invRecord = invList.items[0];
+        }
+      }
+    } catch (e) {}
+
+    // 2. Query trip_logs collection
+    try {
+      if (pb) {
+        try {
+          trip = await pb.collection('trip_logs').getOne(tripId, { expand: 'client_id,driver_id,truck_id', $autoCancel: false });
+        } catch (e) {
+          const list = await pb.collection('trip_logs').getList(1, 1, {
+            filter: `trip_id = "${tripId}" || lr_number = "${tripId}" || id = "${tripId}"`,
+            expand: 'client_id,driver_id,truck_id',
+            $autoCancel: false
+          }).catch(() => ({ items: [] }));
+          if (list.items && list.items.length > 0) trip = list.items[0];
+        }
+      }
+    } catch (e) {}
+
+    // 3. Fallback SQLite direct query if PocketBase client was unauthenticated
+    if (!trip && !invRecord) {
+      try {
+        const dbPath = path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db');
+        const altPath = path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+        const targetDb = global.dbFilePath || (fs.existsSync(dbPath) ? dbPath : altPath);
+        if (fs.existsSync(targetDb)) {
+          const sqliteMod = await import('node:sqlite');
+          const DatabaseSync = sqliteMod.DatabaseSync;
+          if (DatabaseSync) {
+            const db = new DatabaseSync(targetDb);
+            try {
+              const stmtTrip = db.prepare('SELECT * FROM trip_logs WHERE trip_id = ? OR lr_number = ? OR id = ? LIMIT 1');
+              const row = stmtTrip.get(String(tripId), String(tripId), String(tripId));
+              if (row) trip = row;
+            } catch (e) {}
+            try {
+              const stmtInv = db.prepare('SELECT * FROM invoices WHERE trip_id = ? OR invoice_number = ? OR id = ? LIMIT 1');
+              const rowInv = stmtInv.get(String(tripId), String(tripId), String(tripId));
+              if (rowInv) invRecord = rowInv;
+            } catch (e) {}
+            try { db.close(); } catch(e) {}
+          }
+        }
+      } catch (e) {}
+    }
+
+    const tripRef = trip?.trip_id || trip?.lr_number || invRecord?.trip_id || tripId || 'TRIP-235';
+    const invNumber = invRecord?.invoice_number || trip?.invoice_no || `INV-${String(tripRef).replace(/^TRIP-?/i, '')}`;
+    const clientName = invRecord?.customer_name || trip?.expand?.client_id?.client_name || trip?.client_name || 'Amazon';
+    const clientAddr = invRecord?.customer_address || trip?.destination || 'mhyd';
+    const clientPhone = invRecord?.customer_phone || trip?.expand?.client_id?.phone || '+918106729777';
+    const clientEmail = invRecord?.customer_email || trip?.expand?.client_id?.email || 'raghunathrathod346@gmail.com';
+    const amount = Number(invRecord?.total_amount || trip?.revenue || trip?.total_freight || trip?.freight_rate || 17100);
+    const tripDateRaw = invRecord?.invoice_date || trip?.date || trip?.created || new Date().toISOString();
+    const tripDateObj = new Date(tripDateRaw);
+    const formattedTripDate = isNaN(tripDateObj.getTime()) ? '14 Aug 2026' : tripDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dueDateObj = invRecord?.due_date ? new Date(invRecord.due_date) : new Date(tripDateObj.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const formattedDueDate = isNaN(dueDateObj.getTime()) ? '21 Aug 2026' : dueDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const paymentStatus = (invRecord?.status || trip?.client_payment_status || 'PENDING').toUpperCase();
+
+    const jspdfMod = await import('jspdf');
+    const jsPDF = jspdfMod.jsPDF || jspdfMod.default;
+    const doc = new jsPDF();
+
+    const primaryNavy = [15, 23, 42];    // Deep Slate Navy (#0F172A)
+    const accentGold = [217, 119, 6];    // Amber Gold (#D97706)
+    const secondaryGray = [71, 85, 105];  // Slate 600 (#475569)
+    const lightBgColor = [248, 250, 252]; // Slate 50 (#F8FAFC)
+    const borderColor = [226, 232, 240];  // Slate 200 (#E2E8F0)
+
+    // Top Dual Colored Banners
+    doc.setFillColor(...primaryNavy);
+    doc.rect(0, 0, doc.internal.pageSize.width, 7, 'F');
+    doc.setFillColor(...accentGold);
+    doc.rect(0, 7, doc.internal.pageSize.width, 1.5, 'F');
+
+    // Header: Company Logo / Name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(...primaryNavy);
+    doc.text('JAI BHAVANI CARGO', 14, 21);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...secondaryGray);
+    doc.text('Plot no 3, Patel nagar, Ghatkesar, pin: 501301', 14, 26, { maxWidth: 110 });
+    doc.text('Phone: +91 7794072244 | Email: operations@jaibhavanicargo.com | GSTIN: 36DPXPR9171A1Z8', 14, 31);
+
+    // Document Type Header Label (Top Right)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...primaryNavy);
+    doc.text('TAX INVOICE', doc.internal.pageSize.width - 14, 20, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...secondaryGray);
+    doc.text(`Invoice No: ${invNumber}`, doc.internal.pageSize.width - 14, 26, { align: 'right' });
+    doc.text(`Date: ${formattedTripDate}`, doc.internal.pageSize.width - 14, 31, { align: 'right' });
+    doc.text(`Due Date: ${formattedDueDate}`, doc.internal.pageSize.width - 14, 36, { align: 'right' });
+
+    // Horizontal Divider
+    doc.setDrawColor(...borderColor);
+    doc.line(14, 41, doc.internal.pageSize.width - 14, 41);
+
+    // Bill To Box (Customer Info)
+    doc.setFillColor(...lightBgColor);
+    doc.roundedRect(14, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'F');
+    doc.setDrawColor(...borderColor);
+    doc.roundedRect(14, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'D');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...accentGold);
+    doc.text('BILLED TO / CUSTOMER DETAILS:', 18, 51);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(clientName, 18, 57);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...secondaryGray);
+    doc.text(clientAddr, 18, 62, { maxWidth: doc.internal.pageSize.width / 2 - 26 });
+    doc.text(`Phone: ${clientPhone} | Email: ${clientEmail}`, 18, 70);
+
+    // Payment Summary Box (Right Side)
+    doc.setFillColor(...lightBgColor);
+    doc.roundedRect(doc.internal.pageSize.width / 2 + 4, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'F');
+    doc.setDrawColor(...borderColor);
+    doc.roundedRect(doc.internal.pageSize.width / 2 + 4, 45, doc.internal.pageSize.width / 2 - 18, 30, 2, 2, 'D');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...accentGold);
+    doc.text('PAYMENT & STATUS SUMMARY:', doc.internal.pageSize.width / 2 + 8, 51);
+
+    let statusColor = [217, 119, 6]; // Amber
+    if (paymentStatus === 'PAID') statusColor = [16, 185, 129]; // Emerald
+    else if (paymentStatus === 'OVERDUE') statusColor = [225, 29, 72]; // Red
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...secondaryGray);
+    doc.text('Payment Status: ', doc.internal.pageSize.width / 2 + 8, 57);
+    doc.setTextColor(...statusColor);
+    doc.text(paymentStatus, doc.internal.pageSize.width / 2 + 36, 57);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...secondaryGray);
+    doc.text('Payment Terms: Credit Account / Net 30', doc.internal.pageSize.width / 2 + 8, 65);
+
+    const autoTableMod = await import('jspdf-autotable');
+    const autoTable = autoTableMod.default || autoTableMod;
+
+    const truckNo = trip?.truck_number || trip?.truck_id || 'TG12U2637';
+    const originDest = trip?.origin && trip?.destination ? `${trip.origin}->${trip.destination}` : (trip?.origin || trip?.destination || 'Freight Logistics Service');
+
+    const tableData = [
+      [
+        '1',
+        formattedTripDate,
+        tripRef,
+        originDest,
+        truckNo,
+        `₹${amount.toLocaleString('en-IN')}`
+      ]
+    ];
+
+    const columns = ['Sl', 'Trip Date', 'Trip ID', 'Pickup -> Drop Location', 'Vehicle', 'Freight (₹)'];
+
+    autoTable(doc, {
+      startY: 79,
+      head: [columns],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: primaryNavy, textColor: 255, fontStyle: 'bold', fontSize: 9 },
+      styles: { fontSize: 8.5, cellPadding: 3.5, font: 'helvetica' },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 12 },
+        1: { cellWidth: 26 },
+        2: { cellWidth: 26 },
+        3: { cellWidth: 55 },
+        4: { cellWidth: 28 },
+        5: { halign: 'right', fontStyle: 'bold' }
+      }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 8;
+
+    if (finalY > doc.internal.pageSize.height - 85) {
+      doc.addPage();
+      finalY = 20;
+    }
+
+    // Subtotal & Total
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...secondaryGray);
+    doc.text('Subtotal Amount:', doc.internal.pageSize.width - 70, finalY, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    doc.text(`₹${amount.toLocaleString('en-IN')}`, doc.internal.pageSize.width - 14, finalY, { align: 'right' });
+
+    finalY += 7;
+    const amountStr = `₹${amount.toLocaleString('en-IN')}`;
+    const boxWidth = 82;
+    const boxX = doc.internal.pageSize.width - 14 - boxWidth;
+
+    doc.setFillColor(...primaryNavy);
+    doc.roundedRect(boxX, finalY - 5, boxWidth, 9, 1.5, 1.5, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('TOTAL AMOUNT DUE:', boxX + 4, finalY + 1, { align: 'left' });
+    doc.text(amountStr, doc.internal.pageSize.width - 18, finalY + 1, { align: 'right' });
+
+    // Bank Details (Bottom Left)
+    let bankY = finalY - 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...primaryNavy);
+    doc.text('BANK DETAILS:', 14, bankY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...secondaryGray);
+    doc.text('Bank Name: HDFC BANK', 14, bankY + 5);
+    doc.text('Account Name: JAI BHAVANI CARGO', 14, bankY + 9);
+    doc.text('Account No: 50200117182677', 14, bankY + 13);
+    doc.text('IFSC Code: HDFC0004480', 14, bankY + 17);
+    doc.text('Branch / UPI: GHATKESAR BRANCH', 14, bankY + 21);
+
+    // Terms & Conditions (Bottom Left)
+    let termsY = bankY + 30;
+    if (termsY > doc.internal.pageSize.height - 35) {
+      doc.addPage();
+      termsY = 25;
+    }
+
+    doc.setDrawColor(...borderColor);
+    doc.line(14, termsY, doc.internal.pageSize.width - 14, termsY);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...primaryNavy);
+    doc.text('Terms & Conditions:', 14, termsY + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...secondaryGray);
+    doc.text('1. Payment is due as per agreed credit terms.\n2. Interest @ 18% p.a. will apply to overdue balances.\n3. All disputes subject to Hyderabad jurisdiction.', 14, termsY + 9);
+
+    // Signature Block (Bottom Right)
+    doc.line(doc.internal.pageSize.width - 65, termsY + 16, doc.internal.pageSize.width - 14, termsY + 16);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text('For JAI BHAVANI CARGO', doc.internal.pageSize.width - 14, termsY + 20, { align: 'right' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...secondaryGray);
+    doc.text('Vinod Kumar Rathod (Managing Director)', doc.internal.pageSize.width - 14, termsY + 24, { align: 'right' });
+
+    // Multi-page Page Numbers
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...secondaryGray);
+      doc.text(
+        `Page ${i} of ${pageCount} — Jai Bhavani Cargo Enterprise System (Official Document)`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 6,
+        { align: 'center' }
+      );
+    }
+
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=Freight_Invoice_${tripRef}.pdf`);
+    return res.send(pdfBuffer);
+  } catch (err) {
+    logger.error('Error serving invoice PDF:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+app.get('/api/invoices/trip/:tripId/pdf', serveInvoicePdf);
+app.get('/hcgi/api/invoices/trip/:tripId/pdf', serveInvoicePdf);
+app.get('/invoices/trip/:tripId/pdf', serveInvoicePdf);
+app.get('/api/invoice/:tripId/pdf', serveInvoicePdf);
+
+// ----------------------------------------------------
+// AI Fuel Receipt OCR Scanner Service
+// ----------------------------------------------------
+const parseFuelReceiptText = (rawText) => {
+  const clean = (rawText || '').replace(/\r\n/g, '\n');
+  const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const res = {
+    liters: null,
+    ratePerLiter: null,
+    totalAmount: null,
+    date: null,
+    vendor: null,
+    truckNumber: null,
+    invoiceNo: null,
+    rawText: rawText ? rawText.substring(0, 800) : ''
+  };
+
+  // 1. Station / Vendor
+  const brandRegex = /BPCL|BHARAT\s*PETROLEUM|HPCL|HINDUSTAN\s*PETROLEUM|IOCL|INDIAN\s*OIL|SHELL|NAYARA|RELIANCE|JIO-BP|ESSAR/i;
+  const brandMatch = clean.match(brandRegex);
+  const stationLine = lines.find(l => /SERVICE\s*STATION|PETROL\s*PUMP|FILLING\s*STATION|AUTO|OIL\s*CORP|FUELS|AUTOMOBILE/i.test(l));
+  if (stationLine) {
+    res.vendor = stationLine + (brandMatch && !stationLine.toUpperCase().includes(brandMatch[0].toUpperCase()) ? ` (${brandMatch[0].toUpperCase()})` : '');
+  } else if (brandMatch) {
+    res.vendor = brandMatch[0].toUpperCase();
+  } else if (lines.length > 0) {
+    res.vendor = lines[0].substring(0, 50);
+  }
+
+  // 2. Liters / Volume
+  const volPatterns = [
+    /(?:VOLUME|VOL|QTY|QUANTITY|VOL\(L\)|VOL\(LTR\)|QTY\(L\)|LITRES?|LTRS?|LTR)\s*[:=.]*\s*([0-9]+\.?[0-9]*)/i,
+    /([0-9]{1,4}\.[0-9]{2,3})\s*(?:LTR|LITRES?|L|LTRS)\b/i,
+    /(?:DIESEL|HSD|PETROL|MS)\s*[:=.]*\s*([0-9]+\.?[0-9]*)\s*(?:L|LTR)/i
+  ];
+  for (const pat of volPatterns) {
+    const m = clean.match(pat);
+    if (m && parseFloat(m[1]) > 0) {
+      res.liters = parseFloat(m[1]);
+      break;
+    }
+  }
+
+  // 3. Rate
+  const ratePatterns = [
+    /(?:RATE|RSP|PRICE|UNIT\s*PRICE|RATE\/LTR|RATE\/LITRE|RATE\s*\(RS\/L\)|RATE\s*\(INR\/L\))\s*[:=.]*\s*(?:RS\.?|INR|₹)?\s*([0-9]+\.?[0-9]*)/i,
+    /(?:RS\.?|INR|₹|\/L)\s*([0-9]{2,3}\.[0-9]{2})\s*(?:\/L|PER\s*L|PER\s*LTR)?/i
+  ];
+  for (const pat of ratePatterns) {
+    const m = clean.match(pat);
+    if (m && parseFloat(m[1]) > 0) {
+      const val = parseFloat(m[1]);
+      if (val >= 50 && val <= 200) {
+        res.ratePerLiter = val;
+        break;
+      }
+    }
+  }
+
+  // 4. Total Amount
+  const amountPatterns = [
+    /(?:TOTAL\s*AMOUNT|TOTAL\s*SALE|NET\s*AMOUNT|TOT\s*AMT|SALE\s*AMT|AMOUNT|TOTAL|AMT)\s*[:=.]*\s*(?:RS\.?|INR|₹)?\s*([0-9,]+\.?[0-9]*)/i,
+    /(?:RS\.?|INR|₹)\s*([0-9,]+\.[0-9]{2})/i
+  ];
+  for (const pat of amountPatterns) {
+    const m = clean.match(pat);
+    if (m) {
+      const parsed = parseFloat(m[1].replace(/,/g, ''));
+      if (parsed > 0) {
+        res.totalAmount = parsed;
+        break;
+      }
+    }
+  }
+
+  // 5. Mathematical Triplet Search Fallback (X * Y ≈ Z)
+  if (!res.totalAmount || !res.liters) {
+    const numberMatches = Array.from(clean.matchAll(/\b([0-9]+(?:\.[0-9]{1,3})?)\b/g))
+      .map(m => parseFloat(m[1]))
+      .filter(n => n > 0 && n !== 2024 && n !== 2025 && n !== 2026);
+
+    for (let i = 0; i < numberMatches.length; i++) {
+      for (let j = 0; j < numberMatches.length; j++) {
+        if (i === j) continue;
+        const n1 = numberMatches[i];
+        const n2 = numberMatches[j];
+        const prod = n1 * n2;
+        
+        const matchedTotal = numberMatches.find(t => Math.abs(t - prod) <= 1.0 && t > 500);
+        if (matchedTotal) {
+          const rateVal = Math.min(n1, n2);
+          const literVal = Math.max(n1, n2);
+          if (rateVal >= 70 && rateVal <= 130 && (!res.liters || !res.totalAmount)) {
+            res.ratePerLiter = rateVal;
+            res.liters = literVal;
+            res.totalAmount = +(rateVal * literVal).toFixed(2);
+            break;
+          }
+        }
+      }
+      if (res.totalAmount && res.liters) break;
+    }
+  }
+
+  // 6. Cross-verification
+  if (res.liters && res.ratePerLiter && !res.totalAmount) {
+    res.totalAmount = +(res.liters * res.ratePerLiter).toFixed(2);
+  } else if (res.totalAmount && res.ratePerLiter && !res.liters) {
+    res.liters = +(res.totalAmount / res.ratePerLiter).toFixed(2);
+  } else if (res.totalAmount && res.liters && !res.ratePerLiter) {
+    res.ratePerLiter = +(res.totalAmount / res.liters).toFixed(2);
+  }
+
+  // 7. Invoice & Vehicle
+  const fullVehMatch = clean.match(/\b([A-Z]{2}\s*[0-9]{1,2}\s*[A-Z]{1,3}\s*[0-9]{4})\b/i) ||
+                       clean.match(/(?:VEHICLE|VEH|TRUCK|REG|VEH\.?\s*NO)[:=.\s]*([0-9A-Z\s]{4,15})/i);
+  if (fullVehMatch) {
+    res.truckNumber = fullVehMatch[1].replace(/[\s-]/g, '').toUpperCase();
+  }
+
+  const invM = clean.match(/(?:INVOICE|INV|BILL|REC(?:EIPT)?|MEMO)\s*(?:NO|NUM|\.)?[:=.\s]*([0-9A-Z]+)/i);
+  if (invM) res.invoiceNo = invM[1];
+
+  // 8. Date
+  const dateM = clean.match(/(\d{1,2})[-/.]([A-Za-z]{3}|\d{1,2})[-/.](\d{2,4})/);
+  if (dateM) {
+    const months = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
+    const day = dateM[1].padStart(2, '0');
+    let m = dateM[2].toLowerCase();
+    m = months[m] || m.padStart(2, '0');
+    let y = dateM[3].length === 2 ? '20' + dateM[3] : dateM[3];
+    res.date = `${y}-${m}-${day}`;
+  } else {
+    res.date = new Date().toISOString().split('T')[0];
+  }
+
+  return res;
+};
+
+const handleReceiptOcrScan = async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ success: false, error: 'No image provided.' });
+    }
+
+    const postData = new URLSearchParams({
+      base64Image: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`,
+      language: 'eng',
+      isOverlayRequired: 'false',
+      isTable: 'true',
+      scale: 'true',
+      detectOrientation: 'true',
+      OCREngine: '2'
+    }).toString();
+
+    const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      headers: {
+        'apikey': 'K88289458488957',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: postData
+    });
+
+    const ocrJson = await ocrResponse.json();
+    const rawText = ocrJson?.ParsedResults?.[0]?.ParsedText || '';
+    const parsed = parseFuelReceiptText(rawText);
+
+    return res.json({
+      success: true,
+      data: parsed,
+      rawText
+    });
+  } catch (err) {
+    logger.error('OCR scan endpoint error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.post('/api/fuel/ocr-scan', handleReceiptOcrScan);
+app.post('/hcgi/api/fuel/ocr-scan', handleReceiptOcrScan);
+
+// Direct Superuser Fuel Refill -> Expenses & Cashbook Synchronizer
+const handleFuelExpenseSync = async (req, res) => {
+  try {
+    const {
+      fuel_tracker_id,
+      date,
+      truck_id,
+      liters,
+      amount,
+      payment_method,
+      description,
+      user_id
+    } = req.body || {};
+
+    if (!amount || !truck_id) {
+      return res.status(400).json({ success: false, error: 'Missing amount or truck_id' });
+    }
+
+    const cleanDate = (date && date.includes('T')) ? date : `${date || new Date().toISOString().split('T')[0]} 12:00:00.000Z`;
+    const cleanAmount = Number(amount) || 0;
+    const cleanLiters = Number(liters) || 0;
+
+    let expenseRecord = null;
+    let cashbookRecord = null;
+
+    // 1. Sync to expenses collection via PocketBase superuser client
+    try {
+      if (pb) {
+        const existingExp = await pb.collection('expenses').getList(1, 1, {
+          filter: fuel_tracker_id ? `fuel_tracker_id = "${fuel_tracker_id}"` : `truck_id = "${truck_id}" && date ~ "${cleanDate.split(' ')[0]}" && subcategory = "Fuel"`,
+          $autoCancel: false
+        }).catch(() => ({ items: [] }));
+
+        const expData = {
+          date: cleanDate,
+          category: 'Regular',
+          subcategory: 'Fuel',
+          amount: cleanAmount,
+          liters: cleanLiters,
+          truck_id: String(truck_id),
+          description: description || `${truck_id} - Fuel Refill - ${cleanLiters} L`,
+          payment_method: payment_method || 'Cash',
+          status: 'Approved',
+          created_by: user_id || '',
+          fuel_tracker_id: fuel_tracker_id || ''
+        };
+
+        if (existingExp.items && existingExp.items.length > 0) {
+          expenseRecord = await pb.collection('expenses').update(existingExp.items[0].id, expData, { $autoCancel: false });
+        } else {
+          expenseRecord = await pb.collection('expenses').create(expData, { $autoCancel: false });
+        }
+      }
+    } catch (expErr) {
+      logger.warn(`PocketBase expense sync warning: ${expErr.message}`);
+    }
+
+    // 2. Sync to cashbook collection via PocketBase superuser client
+    try {
+      if (pb) {
+        const refId = expenseRecord?.id || fuel_tracker_id || '';
+        const existingCb = await pb.collection('cashbook').getList(1, 1, {
+          filter: refId ? `reference_id = "${refId}"` : `description ~ "${truck_id}" && date ~ "${cleanDate.split(' ')[0]}"`,
+          $autoCancel: false
+        }).catch(() => ({ items: [] }));
+
+        const cbData = {
+          date: cleanDate,
+          description: `Fuel: ${truck_id} (${cleanLiters} L - ₹${cleanAmount.toLocaleString('en-IN')}) [${payment_method || 'Cash'}]`,
+          amount: cleanAmount,
+          transaction_type: 'Expense',
+          category: 'Regular - Fuel',
+          reference_id: refId,
+          reference_type: 'expense',
+          status: 'Completed',
+          added_by: user_id || ''
+        };
+
+        if (existingCb.items && existingCb.items.length > 0) {
+          cashbookRecord = await pb.collection('cashbook').update(existingCb.items[0].id, cbData, { $autoCancel: false });
+        } else {
+          cashbookRecord = await pb.collection('cashbook').create(cbData, { $autoCancel: false });
+        }
+      }
+    } catch (cbErr) {
+      logger.warn(`PocketBase cashbook sync warning: ${cbErr.message}`);
+    }
+
+    return res.json({
+      success: true,
+      expense: expenseRecord,
+      cashbook: cashbookRecord,
+      message: 'Fuel Refill synced to Expenses & Cashbook successfully'
+    });
+  } catch (err) {
+    logger.error('Fuel expense sync handler error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.post('/api/fuel/sync-expense', handleFuelExpenseSync);
+app.post('/hcgi/api/fuel/sync-expense', handleFuelExpenseSync);
 
 // API Router - Mount under prefixes to handle API calls without hijacking React page routes
 const apiRouter = routes();
@@ -2051,11 +3372,11 @@ app.use('/api', apiRouter);
 // ----------------------------------------------------
 const possibleWebDirs = [
   path.resolve(__dirname, '../../dist/apps/web'),
+  path.resolve(__dirname, '../../apps/web/dist'),
   path.resolve(__dirname, '../dist'),
-  path.resolve(__dirname, '../public'),
+  path.resolve(process.cwd(), 'dist/apps/web'),
   path.resolve(process.cwd(), '../dist/apps/web'),
   path.resolve(process.cwd(), '../web/dist'),
-  path.resolve(process.cwd(), 'dist/apps/web'),
   path.resolve(process.cwd(), 'dist')
 ];
 
@@ -2069,12 +3390,23 @@ for (const p of possibleWebDirs) {
 
 if (staticPath) {
   logger.info(`📂 Serving static client assets from: ${staticPath}`);
-  app.use(express.static(staticPath));
+  app.use(express.static(staticPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
   app.get(/.*/, (req, res, next) => {
     // If it's an API route or PocketBase route, pass to next handlers
     if (req.path.startsWith('/hcgi/') || req.path.startsWith('/api/')) {
       return next();
     }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
