@@ -6,58 +6,40 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Calculator, ArrowRight, PhoneCall, AlertTriangle, MapPin, Scale, Truck, Package, Info } from 'lucide-react';
+import { Calculator, ArrowRight, PhoneCall, AlertTriangle, MapPin, Scale, Truck, Package, Info, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const TRUCK_SPECS = {
-  type: '32FT SXL',
-  capacity: '6-9 Metric Tons',
-  dimensions: '32ft × 8ft × 8.5ft',
-  volume: '~61.5 cubic meters'
-};
+import { TRUCK_SIZE_OPTIONS, getTruckSizeSpec } from '@/constants/truckSizes.js';
 
-const SHIPMENT_TYPES = {
-  express: { 
-    label: 'Express Delivery', 
-    desc: 'Fast delivery for time-sensitive shipments up to 8 MT. Premium pricing for speed.',
-    maxMT: 8, 
-    rateKM: 48, 
-    rateKG: 0, 
-    baseCharge: 2000,
-    min: 2000 
-  },
-  specialized: { 
-    label: 'Specialized Transport', 
-    desc: 'For fragile, hazardous, or temperature-controlled cargo up to 6 MT.',
-    maxMT: 6, 
-    rateKM: 54, 
-    rateKG: 0, 
-    baseCharge: 3000,
-    min: 3000 
-  }
-};
+export const VEHICLE_OPTIONS = TRUCK_SIZE_OPTIONS.map(opt => ({
+  ...opt,
+  rateKM: opt.ratePerKm
+}));
 
 const SPECIAL_REQUIREMENTS = [
-  { id: 'fragile', label: 'Fragile Items', cost: 1000 },
-  { id: 'temp', label: 'Temperature Controlled', cost: 2000 },
-  { id: 'haz', label: 'Hazardous Goods', cost: 1500 },
-  { id: 'heavy', label: 'Heavy Machinery', cost: 2500 },
+  { id: 'fragile', label: 'Fragile / Delicate Cargo', cost: 1000 },
+  { id: 'temp', label: 'Weather Sealed / Double Lock', cost: 1500 },
+  { id: 'haz', label: 'Industrial Machinery', cost: 2000 },
+  { id: 'heavy', label: 'Multi-point Loading / Unloading', cost: 2500 },
 ];
 
 const QuoteCalculator = () => {
   const navigate = useNavigate();
   
   // Form State
+  const [vehicleId, setVehicleId] = useState('32ftsxl');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [distanceInput, setDistanceInput] = useState('');
   const [weight, setWeight] = useState('');
-  const [type, setType] = useState('express');
+  const [servicePriority, setServicePriority] = useState('express');
   const [dimensions, setDimensions] = useState({ l: '', w: '', h: '' });
   const [requirements, setRequirements] = useState({});
 
   // Validation State
   const [errors, setErrors] = useState({});
+
+  const selectedVehicle = VEHICLE_OPTIONS.find(v => v.id === vehicleId || v.value === vehicleId) || VEHICLE_OPTIONS[5];
 
   // Calculate effective distance
   const effectiveDistance = useMemo(() => {
@@ -75,16 +57,17 @@ const QuoteCalculator = () => {
     const numWeightKG = parseFloat(weight) || 0;
     const numWeightMT = numWeightKG / 1000;
     const dist = effectiveDistance;
-    const selectedType = SHIPMENT_TYPES[type];
     
     let isCapacityExceeded = false;
-    if (numWeightMT > selectedType.maxMT) {
+    if (numWeightMT > selectedVehicle.maxMT) {
       isCapacityExceeded = true;
     }
 
-    const distanceCharge = dist * selectedType.rateKM;
-    const weightCharge = numWeightKG * selectedType.rateKG;
-    const baseCharge = distanceCharge + weightCharge + selectedType.baseCharge;
+    const priorityMultiplier = servicePriority === 'specialized' ? 1.15 : 1.0;
+    const effectiveRateKM = Math.round(selectedVehicle.rateKM * priorityMultiplier);
+
+    const distanceCharge = dist * effectiveRateKM;
+    const baseCharge = selectedVehicle.baseCharge;
     
     let reqCharge = 0;
     Object.keys(requirements).forEach(key => {
@@ -94,23 +77,24 @@ const QuoteCalculator = () => {
       }
     });
 
-    let total = baseCharge + reqCharge;
-    if (total > 0 && total < selectedType.min) {
-      total = selectedType.min;
+    let total = distanceCharge + baseCharge + reqCharge;
+    const minCharge = selectedVehicle.baseCharge + 3000;
+    if (total > 0 && total < minCharge) {
+      total = minCharge;
     }
 
     return {
       distanceCharge: Math.round(distanceCharge),
-      weightCharge: Math.round(weightCharge),
       baseCharge: Math.round(baseCharge),
       reqCharge,
       total: Math.round(total),
-      minApplied: total === selectedType.min && baseCharge > 0,
+      effectiveRateKM,
+      minApplied: total === minCharge && distanceCharge > 0,
       isValid: dist > 0 && numWeightKG > 0 && !isCapacityExceeded,
       isCapacityExceeded,
-      maxMT: selectedType.maxMT
+      maxMT: selectedVehicle.maxMT
     };
-  }, [effectiveDistance, weight, type, requirements]);
+  }, [effectiveDistance, weight, selectedVehicle, servicePriority, requirements]);
 
   const handleRequirementChange = (id, checked) => {
     setRequirements(prev => ({ ...prev, [id]: checked }));
@@ -134,9 +118,10 @@ const QuoteCalculator = () => {
         state: { 
           origin, 
           destination, 
+          vehicle: vehicleId,
           distance: effectiveDistance,
           weight, 
-          type, 
+          type: servicePriority, 
           dimensions, 
           requirements,
           estimatedTotal: costs.total
@@ -150,25 +135,25 @@ const QuoteCalculator = () => {
       {/* Input Section (Left Column) */}
       <div className="lg:col-span-7 space-y-6">
         
-        {/* Truck Specs Info Box */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+        {/* Dynamic Truck Specs Info Box */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex flex-col sm:flex-row gap-5 items-center sm:items-start animate-in fade-in duration-200">
           <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
             <Truck className="w-8 h-8 text-primary" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-bold text-slate-100">Fleet Specification: {TRUCK_SPECS.type}</h3>
+              <h3 className="text-lg font-bold text-slate-100">Fleet Specification: {selectedVehicle.short}</h3>
               <div className="group relative cursor-help">
                 <Info className="w-4 h-4 text-muted-foreground" />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-                  Standard dimensions for our primary fleet vehicles.
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                  {selectedVehicle.name} - verified GPS fleet.
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300 mt-3">
-              <div><span className="text-slate-500">Capacity:</span> <span className="font-medium text-slate-200">{TRUCK_SPECS.capacity}</span></div>
-              <div><span className="text-slate-500">Volume:</span> <span className="font-medium text-slate-200">{TRUCK_SPECS.volume}</span></div>
-              <div className="col-span-2"><span className="text-slate-500">Dimensions:</span> <span className="font-medium text-slate-200">{TRUCK_SPECS.dimensions}</span></div>
+              <div><span className="text-slate-500">Payload Capacity:</span> <span className="font-semibold text-emerald-400">{selectedVehicle.capacity}</span></div>
+              <div><span className="text-slate-500">Volume:</span> <span className="font-medium text-slate-200">{selectedVehicle.volume}</span></div>
+              <div className="col-span-2"><span className="text-slate-500">Dimensions:</span> <span className="font-medium text-slate-200">{selectedVehicle.dimensions}</span></div>
             </div>
           </div>
         </div>
@@ -176,11 +161,38 @@ const QuoteCalculator = () => {
         <Card className="bg-card border-border shadow-lg rounded-2xl overflow-hidden">
           <CardHeader className="bg-muted/30 border-b border-border pb-4 pt-6">
             <CardTitle className="text-2xl flex items-center gap-2">
-              <Calculator className="w-6 h-6 text-primary" /> Shipment Details
+              <Calculator className="w-6 h-6 text-primary" /> Shipment Details & Vehicle Selector
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 sm:p-8 space-y-8">
             
+            {/* Vehicle Sizes Dropdown (Requested by user) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <label className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-primary" /> Vehicle Size / Fleet Type *
+                </label>
+                <span className="text-xs text-primary font-mono font-bold">
+                  {selectedVehicle.capacity} • {selectedVehicle.dimensions}
+                </span>
+              </div>
+              <Select value={vehicleId} onValueChange={setVehicleId}>
+                <SelectTrigger className="bg-background text-foreground font-bold h-12 text-sm border-primary/50 focus:border-primary">
+                  <SelectValue placeholder="Select Vehicle Size" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[340px]">
+                  {VEHICLE_OPTIONS.map(v => (
+                    <SelectItem key={v.id} value={v.id} className="py-2.5">
+                      <div className="flex items-center justify-between gap-4 w-full">
+                        <span className="font-bold text-foreground">{v.name}</span>
+                        <span className="text-xs text-emerald-400 font-mono font-semibold">({v.capacity})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Location & Distance */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-lg font-semibold border-b border-border pb-2">
@@ -189,9 +201,9 @@ const QuoteCalculator = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label>Origin City</Label>
+                  <Label>Origin City / Pincode</Label>
                   <Input 
-                    placeholder="e.g. Mumbai" 
+                    placeholder="e.g. Mumbai, 400001" 
                     value={origin} 
                     onChange={(e) => {
                       setOrigin(e.target.value);
@@ -201,9 +213,9 @@ const QuoteCalculator = () => {
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label>Destination City</Label>
+                  <Label>Destination City / Pincode</Label>
                   <Input 
-                    placeholder="e.g. Delhi" 
+                    placeholder="e.g. Delhi, 110001" 
                     value={destination} 
                     onChange={(e) => {
                       setDestination(e.target.value);
@@ -213,11 +225,11 @@ const QuoteCalculator = () => {
                   />
                 </div>
                 <div className="space-y-3 md:col-span-2">
-                  <Label>Distance (KM) <span className="text-muted-foreground font-normal">(Recommended)</span></Label>
+                  <Label>Distance in KM <span className="text-muted-foreground font-normal">(Auto-calculated or enter exact)</span></Label>
                   <Input 
                     type="number"
                     min="1"
-                    placeholder="Enter distance in KM" 
+                    placeholder="e.g. 500" 
                     value={distanceInput} 
                     onChange={(e) => {
                       setDistanceInput(e.target.value);
@@ -238,26 +250,18 @@ const QuoteCalculator = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <Label>Shipment Type</Label>
-                  <Select value={type} onValueChange={setType}>
-                    <SelectTrigger className="bg-background h-auto py-3">
-                      <div className="flex flex-col items-start text-left">
-                        <span className="font-medium">{SHIPMENT_TYPES[type].label}</span>
-                        <span className="text-xs text-muted-foreground mt-1 line-clamp-1">{SHIPMENT_TYPES[type].desc}</span>
-                      </div>
+                  <Label>Service Priority</Label>
+                  <Select value={servicePriority} onValueChange={setServicePriority}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(SHIPMENT_TYPES).map(([key, val]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex flex-col py-1">
-                            <span className="font-medium">{val.label}</span>
-                            <span className="text-xs text-muted-foreground">Max {val.maxMT} MT</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="express">⚡ Standard / Express Freight</SelectItem>
+                      <SelectItem value="specialized">🛡️ Specialized Heavy Transport</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-3">
                   <Label>Shipment Weight (KG) *</Label>
                   <Input 
@@ -274,7 +278,7 @@ const QuoteCalculator = () => {
                   {errors.weight && <p className="text-sm text-destructive">{errors.weight}</p>}
                   {costs.isCapacityExceeded && (
                     <p className="text-sm text-destructive font-medium bg-destructive/10 p-2 rounded mt-2">
-                      Weight exceeds {costs.maxMT} MT capacity for {SHIPMENT_TYPES[type].label}. Please contact us for custom pricing.
+                      Weight exceeds {costs.maxMT} MT capacity for {selectedVehicle.short}. Select a larger container or multi-axle truck.
                     </p>
                   )}
                 </div>
@@ -293,7 +297,7 @@ const QuoteCalculator = () => {
             {/* Special Requirements */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-lg font-semibold border-b border-border pb-2">
-                <Package className="w-5 h-5 text-secondary" /> Special Requirements
+                <Package className="w-5 h-5 text-secondary" /> Special Handling Options
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/20 p-5 rounded-xl border border-border/50">
                 {SPECIAL_REQUIREMENTS.map((req) => (
@@ -324,13 +328,13 @@ const QuoteCalculator = () => {
           <div className="bg-primary p-6 text-primary-foreground relative overflow-hidden">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none mix-blend-overlay"></div>
             <div className="relative z-10">
-              <h3 className="text-lg font-medium opacity-90 mb-1">Total Estimated Quote</h3>
-              <div className="text-5xl font-extrabold tracking-tight">
+              <h3 className="text-lg font-medium opacity-90 mb-1">Total Estimated Freight</h3>
+              <div className="text-5xl font-extrabold tracking-tight font-mono">
                 ₹{costs.isValid ? costs.total.toLocaleString('en-IN') : '0'}
               </div>
               {costs.isValid && (
                 <p className="text-sm opacity-80 mt-2">
-                  Based on {effectiveDistance} KM and {weight} KG
+                  Based on {effectiveDistance} KM and {weight} KG for {selectedVehicle.short}
                 </p>
               )}
             </div>
@@ -341,61 +345,59 @@ const QuoteCalculator = () => {
               <h4 className="font-semibold text-foreground border-b border-border pb-2">Cost Breakdown</h4>
               
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Truck Type</span>
-                <span className="font-medium">{TRUCK_SPECS.type}</span>
+                <span className="text-muted-foreground">Vehicle Selected</span>
+                <span className="font-bold text-foreground">{selectedVehicle.short}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Capacity</span>
-                <span className="font-medium">{TRUCK_SPECS.capacity}</span>
+                <span className="text-muted-foreground">Payload Capacity</span>
+                <span className="font-semibold text-emerald-400">{selectedVehicle.capacity}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Rate Per KM</span>
+                <span className="font-mono font-bold text-foreground">₹{costs.effectiveRateKM} / KM</span>
               </div>
               
               <div className="border-t border-border/50 my-2"></div>
 
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Base Charge</span>
-                <span className="font-medium">₹{costs.isValid ? SHIPMENT_TYPES[type].baseCharge.toLocaleString('en-IN') : '0'}</span>
+                <span className="text-muted-foreground">Base Vehicle Charge</span>
+                <span className="font-medium">₹{costs.isValid ? selectedVehicle.baseCharge.toLocaleString('en-IN') : '0'}</span>
               </div>
 
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Distance Charge ({effectiveDistance} KM @ ₹{costs.isValid ? SHIPMENT_TYPES[type].rateKM : 0}/KM)</span>
+                <span className="text-muted-foreground">Distance Transit ({effectiveDistance} KM @ ₹{costs.effectiveRateKM}/KM)</span>
                 <span className="font-medium">₹{costs.isValid ? costs.distanceCharge.toLocaleString('en-IN') : '0'}</span>
               </div>
               
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Special Requirements</span>
+                <span className="text-muted-foreground">Special Handling Options</span>
                 <span className="font-medium">
                   {costs.reqCharge > 0 ? '+' : ''}₹{costs.isValid ? costs.reqCharge.toLocaleString('en-IN') : '0'}
                 </span>
               </div>
-
-              {costs.minApplied && costs.isValid && (
-                <div className="text-xs text-secondary bg-secondary/10 p-2 rounded mt-2">
-                  * Minimum charge of ₹{SHIPMENT_TYPES[type].min.toLocaleString('en-IN')} applied for {SHIPMENT_TYPES[type].label}.
-                </div>
-              )}
             </div>
 
             <div className="space-y-3 pt-4">
               <Button 
                 size="lg" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-transform hover:-translate-y-0.5"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md transition-transform hover:-translate-y-0.5"
                 onClick={handleDetailedQuote}
                 disabled={costs.isCapacityExceeded}
               >
-                Get Detailed Quote <ArrowRight className="ml-2 w-4 h-4" />
+                Proceed to Book / Get Formal Quote <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
                 className="w-full bg-background hover:bg-muted transition-colors"
-                onClick={() => navigate('/contact')}
+                onClick={() => navigate('/quote')}
               >
-                <PhoneCall className="mr-2 w-4 h-4" /> Contact Us
+                <Truck className="mr-2 w-4 h-4" /> Open Full Quote Form
               </Button>
             </div>
             
             <p className="text-xs text-center text-muted-foreground pt-2">
-              Prices may vary. This is an estimate only. Contact us for final quote.
+              Prices subject to exact toll, unloading points & diesel price sync.
             </p>
           </CardContent>
         </Card>
@@ -409,24 +411,22 @@ const QuoteCalculator = () => {
           <div className="flex items-start gap-3 mb-3">
             <AlertTriangle className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-bold text-lg tracking-tight">⚠️ ESTIMATE ONLY</h4>
+              <h4 className="font-bold text-lg tracking-tight">⚠️ ESTIMATE NOTICE</h4>
               <p className="text-sm mt-1 opacity-90 leading-relaxed">
-                Pricing based on 32FT SXL truck capacity (6-9 MT) starting at ₹48/KM. Final market rates depend on several dynamic factors:
+                Pricing estimated for {selectedVehicle.name} ({selectedVehicle.capacity}) starting @ ₹{selectedVehicle.rateKM}/KM.
               </p>
             </div>
           </div>
           
           <ul className="list-disc pl-10 text-sm space-y-1.5 opacity-90 mb-4 marker:text-secondary">
-            <li>Current market rates & fuel prices</li>
-            <li>Route complexity & tolls</li>
-            <li>Seasonal demand & truck availability</li>
-            <li>Additional loading/unloading services</li>
-            <li>Real-time traffic conditions</li>
+            <li>Current diesel rates & toll routes</li>
+            <li>Guaranteed vehicle placement with live GPS</li>
+            <li>Zero hidden charges with digital POD</li>
           </ul>
           
           <div className="bg-black/5 dark:bg-black/20 p-3 rounded-lg text-sm border border-black/5 dark:border-white/5">
-            <p className="font-semibold mb-1">For an exact quote, contact our dispatch team:</p>
-            <div className="flex flex-col sm:flex-row sm:gap-4 opacity-90">
+            <p className="font-semibold mb-1">For instant dispatch confirmation, reach our team:</p>
+            <div className="flex flex-col sm:flex-row sm:gap-4 opacity-90 text-xs font-semibold">
               <span>📞 7794072244</span>
               <span>✉️ vinod.jbcargo@gmail.com</span>
             </div>

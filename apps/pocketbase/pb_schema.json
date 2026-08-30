@@ -2317,6 +2317,65 @@
         "required": false,
         "system": false,
         "type": "number"
+      },
+      {
+        "help": "Timestamp for loading dock arrival time",
+        "hidden": false,
+        "id": "date_loading_dock_arrival",
+        "name": "loading_dock_arrival_time",
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "help": "Timestamp for dispatched time",
+        "hidden": false,
+        "id": "date_dispatched_time",
+        "name": "dispatched_time",
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "help": "Timestamp for delivered time",
+        "hidden": false,
+        "id": "date_delivered_time",
+        "name": "delivered_time",
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_stop_timestamps",
+        "max": 0,
+        "min": 0,
+        "name": "stop_timestamps",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "Timestamp for pickup time",
+        "hidden": false,
+        "id": "date_pickup_time",
+        "name": "pickup_time",
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "help": "Timestamp for delivery ETA",
+        "hidden": false,
+        "id": "date_delivery_eta",
+        "name": "delivery_eta",
+        "required": false,
+        "system": false,
+        "type": "date"
       }
     ],
     "indexes": [
@@ -7281,18 +7340,11 @@
         "help": "",
         "hidden": false,
         "id": "select1842142422",
-        "maxSelect": 1,
         "name": "container_type",
         "presentable": false,
         "required": true,
         "system": false,
-        "type": "select",
-        "values": [
-          "24FT",
-          "24FTSXL",
-          "32FT",
-          "32FTSXL"
-        ]
+        "type": "text"
       },
       {
         "help": "",
@@ -7516,6 +7568,36 @@
         "presentable": false,
         "system": false,
         "type": "autodate"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Selected Truck Size (e.g. 24 FT SXL, 32 FT SXL, Other / Not Sure)",
+        "hidden": false,
+        "id": "text_truck_size_7b9j3b",
+        "max": 0,
+        "min": 0,
+        "name": "truck_size",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Custom Vehicle Requirement when Other / Not Sure is selected",
+        "hidden": false,
+        "id": "text_custom_veh_i5lbmn",
+        "max": 0,
+        "min": 0,
+        "name": "custom_vehicle_requirement",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
       }
     ],
     "indexes": [
@@ -7524,9 +7606,9 @@
     ],
     "listRule": "",
     "viewRule": "",
-    "createRule": "@request.auth.id != ''",
-    "updateRule": "created_by = @request.auth.id || @request.auth.role = 'admin'",
-    "deleteRule": "created_by = @request.auth.id || @request.auth.role = 'admin'",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": "",
     "options": {}
   },
   {
@@ -8955,6 +9037,12 @@
         "system": false,
         "type": "select",
         "values": [
+          "Direct Client",
+          "3PL Broker",
+          "E-Commerce",
+          "Pharma",
+          "FMCG",
+          "Retail",
           "Individual",
           "Company",
           "Distributor",
@@ -9223,6 +9311,15 @@
         "hidden": false,
         "id": "bool_portal_enabled",
         "name": "portal_enabled",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "bool"
+      },
+      {
+        "hidden": false,
+        "id": "bool_whatsapp_enabled",
+        "name": "whatsapp_enabled",
         "presentable": false,
         "required": false,
         "system": false,
@@ -9924,8 +10021,8 @@
     "listRule": "",
     "viewRule": "",
     "createRule": "",
-    "updateRule": "@request.auth.role = 'admin'",
-    "deleteRule": "@request.auth.role = 'admin'",
+    "updateRule": "",
+    "deleteRule": "",
     "options": {}
   },
   {
@@ -12687,6 +12784,11 @@
           "Truck Parts",
           "Oils & Fluids",
           "Ad Blue",
+          "Tyres & Wheels",
+          "Filters & Service",
+          "Brakes & Suspension",
+          "Electrical & Battery",
+          "Safety & Cargo Gear",
           "Accessories"
         ]
       },
@@ -12703,8 +12805,13 @@
         "values": [
           "pieces",
           "liters",
-          "gallons",
-          "kg"
+          "kg",
+          "sets",
+          "barrels",
+          "boxes",
+          "meters",
+          "pairs",
+          "gallons"
         ]
       },
       {

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useQuoteCalculator } from '@/hooks/useQuoteCalculator.js';
 import QuoteCalculationBreakdown from './QuoteCalculationBreakdown.jsx';
 import { CONTAINER_CONFIG, ZONE_CONFIG, FUEL_SURCHARGE_DEFAULT, HANDLING_FEES_DEFAULT } from '@/constants/quoteConfig.js';
+import { TRUCK_SIZE_OPTIONS } from '@/constants/truckSizes.js';
 
 const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
   const { currentUser } = useAuth();
@@ -28,7 +29,9 @@ const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
     origin: '',
     destination: '',
     destination_zone: '',
-    container_type: '',
+    truck_size: '32 FT SXL',
+    custom_vehicle_requirement: '',
+    container_type: '32 FT SXL',
     actual_weight: '',
     length: '',
     width: '',
@@ -65,7 +68,9 @@ const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
           origin: quote.origin || '',
           destination: quote.destination || '',
           destination_zone: quote.destination_zone || '',
-          container_type: quote.container_type || '',
+          truck_size: quote.truck_size || quote.container_type || '32 FT SXL',
+          custom_vehicle_requirement: quote.custom_vehicle_requirement || '',
+          container_type: quote.container_type || quote.truck_size || '32 FT SXL',
           actual_weight: quote.actual_weight || '',
           length: quote.length || '',
           width: quote.width || '',
@@ -86,7 +91,9 @@ const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
           origin: '',
           destination: '',
           destination_zone: '',
-          container_type: '',
+          truck_size: '32 FT SXL',
+          custom_vehicle_requirement: '',
+          container_type: '32 FT SXL',
           actual_weight: '',
           length: '',
           width: '',
@@ -105,8 +112,16 @@ const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
   const handleChange = (field, value) => {
     const updates = { [field]: value };
     
-    // Auto-fill logic for Container
-    if (field === 'container_type') {
+    // Auto-fill logic for Truck Size / Container
+    if (field === 'truck_size') {
+      updates.container_type = value;
+      const config = CONTAINER_CONFIG.find(c => c.type.toLowerCase().replace(/[^a-z0-9]/g, '') === value.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      if (config) {
+        updates.base_rate_per_kg = config.baseRatePerKg;
+      } else {
+        updates.base_rate_per_kg = 5.0;
+      }
+    } else if (field === 'container_type') {
       const config = CONTAINER_CONFIG.find(c => c.type === value);
       if (config) {
         updates.base_rate_per_kg = config.baseRatePerKg;
@@ -231,16 +246,28 @@ const QuoteFormModal = ({ isOpen, onClose, quote, onSuccess }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="container_type">Container Type *</Label>
-                  <Select required value={formData.container_type} onValueChange={(v) => handleChange('container_type', v)}>
-                    <SelectTrigger id="container_type"><SelectValue placeholder="Select container" /></SelectTrigger>
-                    <SelectContent>
-                      {CONTAINER_CONFIG.map(c => (
-                        <SelectItem key={c.type} value={c.type}>{c.name}</SelectItem>
+                  <Label htmlFor="truck_size">Truck Size / Vehicle Type *</Label>
+                  <Select required value={formData.truck_size} onValueChange={(v) => handleChange('truck_size', v)}>
+                    <SelectTrigger id="truck_size"><SelectValue placeholder="Select truck size" /></SelectTrigger>
+                    <SelectContent className="max-h-[300px]">
+                      {TRUCK_SIZE_OPTIONS.map(c => (
+                        <SelectItem key={c.id} value={c.value}>{c.value} ({c.capacity})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.truck_size === 'Other / Not Sure' && (
+                  <div className="space-y-2 bg-amber-500/10 border border-amber-500/30 p-3 rounded-lg animate-in fade-in-50 duration-200">
+                    <Label htmlFor="custom_vehicle_requirement" className="text-amber-400 font-bold">Please specify vehicle requirement *</Label>
+                    <Input 
+                      id="custom_vehicle_requirement" 
+                      placeholder="e.g. 10 ton, 7 ton, Open body, Container, Trailer, Refrigerated truck, Not sure..."
+                      value={formData.custom_vehicle_requirement} 
+                      onChange={(e) => handleChange('custom_vehicle_requirement', e.target.value)} 
+                    />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-4 gap-4">
                   <div className="col-span-1 space-y-2">
