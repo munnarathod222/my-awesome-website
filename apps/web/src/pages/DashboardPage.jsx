@@ -344,9 +344,11 @@ const DashboardPage = () => {
             <span className="text-[10px] font-extrabold tracking-widest uppercase text-primary">{greeting}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-foreground">
-            {currentUser?.full_name || currentUser?.name || 'Fleet Manager'}
+            {currentUser?.full_name || currentUser?.name || (currentUser?.role === 'super_admin' || currentUser?.id === 'usr_munna_superadmin' ? 'Vinod kumar Rathod' : 'Fleet Manager')}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Here's what's happening across your fleet.</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {currentUser?.role === 'super_admin' ? 'Super Admin Fleet Controller — Here\'s what\'s happening across your fleet.' : 'Here\'s what\'s happening across your fleet.'}
+          </p>
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <div className="inline-flex items-center gap-1.5 rounded-xl border border-border/50 bg-secondary/30 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
