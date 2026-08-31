@@ -309,24 +309,25 @@ const UsersPage = () => {
   // Merge local storage created users cache + remote PocketBase users + ALL signup_requests
   const combinedUsers = React.useMemo(() => {
     const map = new Map();
+    const EXCLUDED = ['dispatcher@jaibhavanicargo.com', 'admin@jaibhavanicargo.com', 'madhavi123456@gmail.com', 'munnarathod222@gmail.com'];
 
-    // 1. Default system users + Local storage users first (Guarantees user details table is NEVER empty!)
+    // 1. Default system users + Local storage users
     (localUsersList || []).forEach(u => {
-      if (u.email) map.set(u.email.toLowerCase(), u);
+      if (u.email && !EXCLUDED.includes(u.email.toLowerCase())) map.set(u.email.toLowerCase(), u);
     });
 
     // 2. Remote PocketBase users
     (users || []).forEach(u => {
-      if (u.email) {
+      if (u.email && !EXCLUDED.includes(u.email.toLowerCase())) {
         const key = u.email.toLowerCase();
         const existing = map.get(key) || {};
         map.set(key, { ...existing, ...u });
       }
     });
 
-    // 3. ALL signup requests records (Madhavi, clients, signed up users)
+    // 3. Signup requests records
     (allSignupRequests || []).forEach(r => {
-      if (r.email) {
+      if (r.email && !EXCLUDED.includes(r.email.toLowerCase())) {
         const key = r.email.toLowerCase();
         if (!map.has(key)) {
           map.set(key, {
@@ -343,13 +344,9 @@ const UsersPage = () => {
       }
     });
 
-    // Exclude Superusers from the User Directory as explicitly requested
-    const nonSuperUsers = Array.from(map.values()).filter(u => {
-      const r = (u.role || '').toLowerCase();
-      return r !== 'superuser' && r !== 'superadmin';
-    });
+    const finalUsersList = Array.from(map.values()).filter(u => u.email && !EXCLUDED.includes(u.email.toLowerCase()));
 
-    return nonSuperUsers.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+    return finalUsersList.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
   }, [users, allSignupRequests, localUsersList]);
 
   const searchedUsers = combinedUsers.filter(u => {
