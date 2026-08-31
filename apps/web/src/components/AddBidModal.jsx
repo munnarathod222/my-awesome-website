@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Building2, MapPin, Truck, DollarSign, Plus, Calculator, ExternalLink } from 'lucide-react';
+import { Building2, MapPin, Truck, DollarSign, Plus, Calculator, ExternalLink, Paperclip, Image as ImageIcon, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 const VEHICLE_OPTIONS = [
@@ -44,6 +44,7 @@ export default function AddBidModal({
     no_of_stops: 1,
     route_map: '',
     status: 'Not bidded',
+    attachments: [],
     notes: ''
   });
 
@@ -53,10 +54,31 @@ export default function AddBidModal({
         ...prev,
         client_name: defaultClient || 'Delhivery',
         bidding_type: defaultType || 'Contract',
-        date: format(new Date(), 'yyyy-MM-dd')
+        date: format(new Date(), 'yyyy-MM-dd'),
+        attachments: []
       }));
     }
   }, [isOpen, defaultClient, defaultType]);
+
+  const handleImageFileChange = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImgs = [];
+    let count = 0;
+    Array.from(files).forEach(f => {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        if (evt.target?.result) newImgs.push(evt.target.result);
+        count++;
+        if (count === files.length) {
+          setFormData(p => ({ ...p, attachments: [...(p.attachments || []), ...newImgs] }));
+          toast.success(`Attached ${newImgs.length} image(s)`);
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -279,6 +301,38 @@ export default function AddBidModal({
               onChange={(e) => setFormData(p => ({ ...p, route_map: e.target.value }))}
               className="h-9 mt-1 bg-slate-900 border-slate-800 text-slate-300 text-xs rounded-xl"
             />
+          </div>
+
+          {/* Row 6: Attach Images / Documents */}
+          <div>
+            <Label className="text-xs font-semibold text-slate-300 flex items-center gap-1">
+              <Paperclip className="w-3.5 h-3.5 text-cyan-400" /> Attach Contract/Spot Images (Rate Cards, Email RFQs, Route Photos)
+            </Label>
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              {(formData.attachments || []).map((img, idx) => (
+                <div key={idx} className="relative group/att border border-slate-800 rounded-lg p-0.5 bg-slate-900">
+                  <img src={img} alt={`Att ${idx+1}`} className="w-10 h-10 object-cover rounded" />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, attachments: p.attachments.filter((_, i) => i !== idx) }))}
+                    className="absolute -top-1 -right-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-0.5 shadow-md"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              <label className="cursor-pointer border border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/60 hover:bg-slate-900 p-2.5 rounded-xl flex items-center gap-2 text-xs text-slate-400 hover:text-cyan-400 transition-colors">
+                <ImageIcon className="w-4 h-4 text-cyan-400" />
+                <span>Upload Images</span>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handleImageFileChange} 
+                  className="hidden" 
+                />
+              </label>
+            </div>
           </div>
 
           <DialogFooter className="pt-3 border-t border-slate-800">

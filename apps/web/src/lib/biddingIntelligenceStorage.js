@@ -25,6 +25,20 @@ export const DEFAULT_BIDDING_SETTINGS = {
   defaultFixedAllocationPerKm: 6.0
 };
 
+export const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    if (raw.trim().startsWith('[')) return [];
+    return [raw];
+  }
+  return [];
+};
+
 /**
  * Normalizes bid record schema between Spreadsheet Grid and Wizard formats
  */
@@ -44,6 +58,7 @@ export const normalizeBid = (r = {}) => {
     : (r.actual_winning_rate !== undefined && r.actual_winning_rate !== null && r.actual_winning_rate !== '' ? Number(r.actual_winning_rate) : '');
 
   const dateVal = r.date || r.bid_date || (r.created ? r.created.split('T')[0] : new Date().toISOString().split('T')[0]);
+  const attachments = parseImageList(r.attachments || r.image_urls || r.images || []);
 
   return {
     ...r,
@@ -78,6 +93,7 @@ export const normalizeBid = (r = {}) => {
     monthly_trips: Number(r.monthly_trips || 15),
     contract_ref: r.contract_ref || '',
     contract_date: r.contract_date || '',
+    attachments: attachments,
     notes: r.notes || ''
   };
 };
@@ -118,6 +134,7 @@ const prepareBidPayload = (bid) => {
     monthly_trips: Number(norm.monthly_trips || 15),
     contract_ref: norm.contract_ref,
     contract_date: norm.contract_date,
+    attachments: JSON.stringify(norm.attachments || []),
     notes: norm.notes
   };
 };

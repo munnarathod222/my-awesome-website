@@ -1,17 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Plus, Search, Filter, Download, Trash2, ExternalLink, 
   CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, 
-  Building2, MapPin, Truck, ChevronRight, Layers, FileSpreadsheet
+  Building2, MapPin, Truck, ChevronRight, Layers, FileSpreadsheet,
+  Paperclip, Image as ImageIcon, Eye, X, Upload, Maximize2, ChevronLeft
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils.js';
+import { parseImageList } from '@/lib/biddingIntelligenceStorage.js';
 
 const VEHICLE_OPTIONS = [
   '32FTSXL',
@@ -33,6 +36,17 @@ const STATUS_OPTIONS = [
   { value: 'Cancelled', label: 'Cancelled', color: 'bg-muted text-muted-foreground border-border' }
 ];
 
+const resolveImageUrl = (img, bidRecord) => {
+  if (!img) return '';
+  if (img.startsWith('data:') || img.startsWith('http://') || img.startsWith('https://') || img.startsWith('blob:')) {
+    return img;
+  }
+  if (bidRecord?.collectionId && bidRecord?.id) {
+    return `/hcgi/platform/api/files/${bidRecord.collectionId}/${bidRecord.id}/${img}`;
+  }
+  return img;
+};
+
 export default function BiddingSpreadsheetGrid({
   bids = [],
   clients = [],
@@ -50,6 +64,55 @@ export default function BiddingSpreadsheetGrid({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingCell, setEditingCell] = useState(null); // { id, field }
+  const [activeImageModal, setActiveImageModal] = useState(null); // { bid, index }
+
+  const handleAttachImages = (bidId, files) => {
+    if (!files || files.length === 0) return;
+    const targetBid = bids.find(b => b.id === bidId);
+    if (!targetBid) return;
+
+    const existingImages = parseImageList(targetBid.attachments);
+    const newImages = [];
+    let processed = 0;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          newImages.push(e.target.result);
+        }
+        processed++;
+        if (processed === files.length) {
+          const updated = {
+            ...targetBid,
+            attachments: [...existingImages, ...newImages]
+          };
+          onUpdateBid?.(updated);
+          toast.success(`Attached ${newImages.length} image(s) to bid log!`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveImage = (bidId, imgIndex) => {
+    const targetBid = bids.find(b => b.id === bidId);
+    if (!targetBid) return;
+
+    const existingImages = parseImageList(targetBid.attachments);
+    const updatedImages = existingImages.filter((_, idx) => idx !== imgIndex);
+
+    const updated = {
+      ...targetBid,
+      attachments: updatedImages
+    };
+    onUpdateBid?.(updated);
+    toast.info('Image removed from bid log');
+    if (activeImageModal && activeImageModal.bid.id === bidId) {
+      if (updatedImages.length === 0) setActiveImageModal(null);
+      else setActiveImageModal({ bid: updated, index: Math.min(imgIndex, updatedImages.length - 1) });
+    }
+  };
 
   // Extract unique client sheet tabs
   const clientTabs = useMemo(() => {
@@ -238,6 +301,7 @@ export default function BiddingSpreadsheetGrid({
               <TableHead className="min-w-[170px]">Ending Point</TableHead>
               <TableHead className="w-[90px] text-center">No of Stops</TableHead>
               <TableHead className="w-[140px]">Route map</TableHead>
+              <TableHead className="w-[170px]">Images / Docs</TableHead>
               <TableHead className="w-[130px]">Status</TableHead>
               <TableHead className="w-[60px] text-right pr-4">Action</TableHead>
             </TableRow>
@@ -245,7 +309,7 @@ export default function BiddingSpreadsheetGrid({
           <TableBody className="text-xs divide-y divide-slate-800/60 font-mono">
             {filteredBids.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-16 text-slate-500 font-sans">
+                <TableCell colSpan={13} className="text-center py-16 text-slate-500 font-sans">
                   <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   No bids found for <span className="font-bold text-slate-400">{activeClientTab}</span> ({activeTypeTab}).
                   <div className="mt-3">
@@ -260,6 +324,7 @@ export default function BiddingSpreadsheetGrid({
                 const statusMeta = STATUS_OPTIONS.find(s => s.value === b.status) || STATUS_OPTIONS[0];
                 const isLostWithGap = b.status === 'Lost' && Number(b.bidding_amount) > 0 && Number(b.bidding_lost_at) > 0;
                 const priceGap = isLostWithGap ? Number(b.bidding_amount) - Number(b.bidding_lost_at) : 0;
+                const imgList = parseImageList(b.attachments);
 
                 return (
                   <TableRow key={b.id} className="hover:bg-slate-900/60 transition-colors group">
@@ -405,6 +470,48 @@ export default function BiddingSpreadsheetGrid({
                       </div>
                     </TableCell>
 
+                    {/* Images / Attachments */}
+                    <TableCell className="p-1">
+                      <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+                        {imgList.map((img, iIdx) => {
+                          const srcUrl = resolveImageUrl(img, b);
+                          return (
+                            <div key={iIdx} className="relative group/img shrink-0">
+                              <img 
+                                src={srcUrl} 
+                                alt={`Bid attachment ${iIdx+1}`}
+                                className="w-7 h-7 rounded border border-slate-700 object-cover hover:border-cyan-400 cursor-pointer shadow-sm transition-transform hover:scale-110"
+                                onClick={() => setActiveImageModal({ bid: b, index: iIdx })}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveImage(b.id, iIdx);
+                                }}
+                                className="absolute -top-1 -right-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-0.5 opacity-0 group-hover/img:opacity-100 transition-opacity z-10"
+                                title="Delete Image"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+
+                        <label className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-cyan-400 text-[10px] font-sans font-semibold rounded-lg shrink-0 transition-colors">
+                          <Paperclip className="w-3 h-3 text-cyan-400" />
+                          <span>{imgList.length > 0 ? `+ (${imgList.length})` : 'Attach'}</span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            onChange={(e) => handleAttachImages(b.id, e.target.files)}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </TableCell>
+
                     {/* Status */}
                     <TableCell className="p-1">
                       <select 
@@ -505,6 +612,74 @@ export default function BiddingSpreadsheetGrid({
           })}
         </div>
       </div>
+
+      {/* High-Resolution Image Lightbox Modal */}
+      {activeImageModal && (
+        <Dialog open={!!activeImageModal} onOpenChange={() => setActiveImageModal(null)}>
+          <DialogContent className="sm:max-w-[750px] bg-slate-950 border-slate-800 text-slate-100 shadow-2xl p-0 overflow-hidden">
+            <DialogHeader className="p-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <DialogTitle className="text-sm font-bold text-slate-200">
+                    Bid Document Attachment ({activeImageModal.index + 1} of {parseImageList(activeImageModal.bid.attachments).length})
+                  </DialogTitle>
+                  <p className="text-xs text-slate-400">
+                    {activeImageModal.bid.client_name} - {activeImageModal.bid.starting_point} → {activeImageModal.bid.ending_point}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs border-slate-700 text-rose-400 hover:bg-rose-500/10"
+                  onClick={() => handleRemoveImage(activeImageModal.bid.id, activeImageModal.index)}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                </Button>
+              </div>
+            </DialogHeader>
+
+            <div className="relative bg-black flex items-center justify-center min-h-[400px] max-h-[600px] p-4">
+              {(() => {
+                const imgs = parseImageList(activeImageModal.bid.attachments);
+                const currentImg = imgs[activeImageModal.index];
+                const srcUrl = resolveImageUrl(currentImg, activeImageModal.bid);
+
+                return (
+                  <>
+                    <img 
+                      src={srcUrl} 
+                      alt="Bid Image Attachment" 
+                      className="max-h-[550px] max-w-full object-contain rounded-lg shadow-2xl"
+                    />
+
+                    {imgs.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveImageModal(p => ({ ...p, index: (p.index - 1 + imgs.length) % imgs.length }))}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-900/80 hover:bg-slate-800 text-white p-2 rounded-full border border-slate-700 shadow-lg"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveImageModal(p => ({ ...p, index: (p.index + 1) % imgs.length }))}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-900/80 hover:bg-slate-800 text-white p-2 rounded-full border border-slate-700 shadow-lg"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
