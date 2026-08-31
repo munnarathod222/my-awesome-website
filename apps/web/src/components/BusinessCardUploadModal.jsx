@@ -97,7 +97,7 @@ export default function BusinessCardUploadModal({ isOpen, onClose, onSuccess }) 
           fileData.append('notes', `Visiting card image for ${formData.company_name}`);
 
           const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
-          cardImageUrl = pb.files.getURL(uploadedRec, uploadedRec.file);
+          cardImageUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
         } catch (uploadErr) {
           console.warn('Card image upload warning:', uploadErr);
         }

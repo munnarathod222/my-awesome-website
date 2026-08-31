@@ -53,7 +53,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
     }
   }, [document, filesList]);
 
-  const rawUrl = activeFile ? pb.files.getURL(document, activeFile) : '';
+  const rawUrl = activeFile ? pb.files.getUrl(document, activeFile) : '';
   const fileExt = activeFile ? activeFile.split('.').pop().toLowerCase() : '';
   const isPdf = fileExt === 'pdf';
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);

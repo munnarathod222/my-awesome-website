@@ -66,7 +66,7 @@ const TruckDocsPage = () => {
     const truckNo = tr ? tr.truck_number : 'Fleet Vehicle';
 
     const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
-    const fileUrl = activeFile ? pb.files.getURL(doc, activeFile) : '';
+    const fileUrl = activeFile ? pb.files.getUrl(doc, activeFile) : '';
 
     const htmlContent = `
       <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background-color: #ffffff; max-width: 500px; font-family: sans-serif;">

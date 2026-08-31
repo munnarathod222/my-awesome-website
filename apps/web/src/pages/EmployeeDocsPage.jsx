@@ -348,7 +348,7 @@ export default function EmployeeDocsPage() {
     const issued = doc.issue_date  ? new Date(doc.issue_date).toLocaleDateString('en-IN',  { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
 
     const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
-    const fileUrl = activeFile ? pb.files.getURL(doc, activeFile) : '';
+    const fileUrl = activeFile ? pb.files.getUrl(doc, activeFile) : '';
 
     const html = `
       <div style="font-family:sans-serif;max-width:540px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">

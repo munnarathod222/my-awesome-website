@@ -39,7 +39,7 @@ export function calculateVehicleCompliance(truck = {}, documents = []) {
     // Also fallback to truck object properties if document collection record not found
     let expiryDateStr = docRecord?.expiry_date || docRecord?.valid_till;
     let docNumber = docRecord?.document_number || docRecord?.doc_no || 'N/A';
-    let fileUrl = docRecord ? pb.files.getURL(docRecord, docRecord.file) : '';
+    let fileUrl = docRecord ? pb.files.getUrl(docRecord, docRecord.file) : '';
 
     if (!expiryDateStr) {
       if (typeObj.key === 'insurance' && truck.insurance_expiry) expiryDateStr = truck.insurance_expiry;

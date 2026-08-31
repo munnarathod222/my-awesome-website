@@ -128,7 +128,7 @@ export default function LogInsuranceClaimModal({ isOpen, onClose, claimToEdit, t
       fileData.append('notes', `Insurance claim evidence photo for ${formData.claim_number}`);
 
       const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
-      const publicUrl = pb.files.getURL(uploadedRec, uploadedRec.file);
+      const publicUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
 
       setFormData(prev => ({ ...prev, images: [...prev.images, publicUrl] }));
       toast.success('Accident photo uploaded successfully!');

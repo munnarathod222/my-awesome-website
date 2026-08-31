@@ -156,7 +156,7 @@ export default function VehicleQRVerificationPage() {
               issue_date: dlDoc.issue_date || null,
               file: file,
               files: dlDoc.files,
-              file_url: file ? pb.files.getURL(dlDoc, file) : null,
+              file_url: file ? pb.files.getUrl(dlDoc, file) : null,
               notes: `Assigned Driver: ${matchedDriver.name}`
             });
           }
@@ -430,7 +430,7 @@ export default function VehicleQRVerificationPage() {
           ) : (
             <div className="space-y-2.5">
               {documents.map((doc) => {
-                const fileUrl = doc.file_url || (doc.file ? pb.files.getURL(doc, doc.file) : null);
+                const fileUrl = doc.file_url || (doc.file ? pb.files.getUrl(doc, doc.file) : null);
                 const docHelpline = doc.helpline_number || doc.insurance_helpline;
                 return (
                   <div 
@@ -517,7 +517,7 @@ export default function VehicleQRVerificationPage() {
           <div className="flex items-center gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
             <div className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
               {driver?.photo ? (
-                <img src={pb.files.getURL(driver, driver.photo)} alt="Driver" className="w-full h-full object-cover" />
+                <img src={pb.files.getUrl(driver, driver.photo)} alt="Driver" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-8 h-8 text-slate-400" />
               )}

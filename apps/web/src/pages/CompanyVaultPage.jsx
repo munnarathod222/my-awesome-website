@@ -216,7 +216,7 @@ export default function CompanyVaultPage() {
 
         // Upload to PocketBase truck_documents storage bucket for permanent file hosting
         const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
-        finalFileUrl = pb.files.getURL(uploadedRec, uploadedRec.file);
+        finalFileUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
       }
 
       const newDoc = {
