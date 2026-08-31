@@ -108,7 +108,7 @@ const PaymentRequestsPage = () => {
 
         if (linkedTrip) {
           const isTripPaid = (linkedTrip.client_payment_status || '').toLowerCase() === 'received' || (linkedTrip.client_payment_status || '').toLowerCase() === 'paid';
-          const isDelivered = !linkedTrip.trip_status || linkedTrip.trip_status === 'Delivered';
+          const isDelivered = linkedTrip.trip_status === 'Delivered';
 
           if (isTripPaid) {
             currentStatus = 'Paid';
@@ -156,7 +156,7 @@ const PaymentRequestsPage = () => {
 
       // Fetch ONLY DELIVERED unpaid trips to auto-generate requests if they don't exist
       const unpaidTrips = await pb.collection('trip_logs').getFullList({
-        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && (trip_status = "Delivered" || trip_status = "") && client_id != ""',
+        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && trip_status = "Delivered" && client_id != ""',
         $autoCancel: false
       });
 
@@ -675,10 +675,13 @@ Best Regards,
     const timelineObj = {};
 
     requests.forEach(r => {
-      if (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue') pendingAmt += r.amount;
+      const isDelivered = r.linkedTrip?.trip_status === 'Delivered';
+      if (isDelivered && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')) pendingAmt += r.amount;
       if (r.calculatedStatus === 'Paid') paidAmt += r.amount;
       
-      stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
+      if (isDelivered || r.calculatedStatus === 'Paid') {
+        stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
+      }
 
       const d = (r?.request_date || '').split('T')[0];
       if (!timelineObj[d]) timelineObj[d] = 0;
@@ -704,7 +707,8 @@ Best Regards,
     let bucket60_plus = { count: 0, amount: 0, items: [] };
 
     requests.forEach(r => {
-      if (r.calculatedStatus === 'Paid' || r.calculatedStatus === 'Cancelled') return;
+      const isDelivered = r.linkedTrip?.trip_status === 'Delivered';
+      if (!isDelivered || r.calculatedStatus === 'Paid' || r.calculatedStatus === 'Cancelled') return;
       const days = r.daysOverdue || 0;
       if (days <= 0 || days <= 15) {
         bucket0_15.count++;
@@ -938,7 +942,7 @@ Best Regards,
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1 font-medium">
-                <span className="text-amber-500 font-bold">{requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').length}</span> invoices pending collection
+                <span className="text-amber-500 font-bold">{requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length}</span> invoices pending collection
               </p>
             </CardContent>
           </Card>
@@ -966,7 +970,7 @@ Best Regards,
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Overdue Invoices Risk</p>
                   <h3 className="text-2xl font-extrabold mt-1 text-rose-600 dark:text-rose-400">
-                    ₹{requests.filter(r => r.calculatedStatus === 'Overdue').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString('en-IN')}
+                    ₹{requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl">
@@ -975,9 +979,9 @@ Best Regards,
               </div>
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs text-rose-500 font-bold">
-                  {requests.filter(r => r.calculatedStatus === 'Overdue').length} overdue invoices
+                  {requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').length} overdue invoices
                 </p>
-                {requests.filter(r => r.calculatedStatus === 'Overdue').length > 0 && (
+                {requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').length > 0 && (
                   <button
                     onClick={() => {
                       setStatusFilter('Overdue');
@@ -1465,10 +1469,10 @@ Best Regards,
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').length === 0 ? (
+                  {processedData.filter(r => (r.linkedTrip?.trip_status === 'Delivered' || !r.linkedTrip) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No pending or overdue invoices.</TableCell></TableRow>
                   ) : (
-                    requests.filter(r => r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue').map(r => {
+                    processedData.filter(r => (r.linkedTrip?.trip_status === 'Delivered' || !r.linkedTrip) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).map(r => {
                       const days = r.daysOverdue || 0;
                       let bucketLabel = '0-15 Days';
                       let bucketBadgeCls = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
