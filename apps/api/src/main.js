@@ -2649,6 +2649,59 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
 
 
 
+// Express Direct File Serving Route Handler (handles both collection name & collection ID)
+const handleDirectFileServe = (req, res, next) => {
+  const collectionNameOrId = req.params.collection;
+  const recordId = req.params.recordId;
+  const filename = req.params.filename;
+
+  const storageBase = global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage');
+
+  // Candidate 1: direct folder match (e.g. storage/pbc_4061015685/recordId/filename or storage/expenses/recordId/filename)
+  let targetPath = path.join(storageBase, collectionNameOrId, recordId, filename);
+
+  // Candidate 2: resolve collectionName to collectionId from SQLite if candidate 1 does not exist
+  if (!fs.existsSync(targetPath)) {
+    try {
+      const { DatabaseSync } = require('node:sqlite');
+      const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+      const db = new DatabaseSync(dbPath);
+      const row = db.prepare("SELECT id FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
+      db.close();
+      if (row && row.id) {
+        const resolvedPath = path.join(storageBase, row.id, recordId, filename);
+        if (fs.existsSync(resolvedPath)) {
+          targetPath = resolvedPath;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // Candidate 3: fallback search across all collection folders in storageBase for recordId/filename
+  if (!fs.existsSync(targetPath)) {
+    try {
+      if (fs.existsSync(storageBase)) {
+        const folders = fs.readdirSync(storageBase);
+        for (const folder of folders) {
+          const checkPath = path.join(storageBase, folder, recordId, filename);
+          if (fs.existsSync(checkPath)) {
+            targetPath = checkPath;
+            break;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+    return res.sendFile(targetPath);
+  }
+  next();
+};
+
+app.get('/api/files/:collection/:recordId/:filename', handleDirectFileServe);
+app.get('/hcgi/platform/api/files/:collection/:recordId/:filename', handleDirectFileServe);
+
 // ----------------------------------------------------
 // 2. HTTP Proxy Middleware for PocketBase (/hcgi/platform)
 // ----------------------------------------------------
