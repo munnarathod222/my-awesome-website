@@ -25,24 +25,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const DEFAULT_SYSTEM_USERS = [
   {
-    id: 'usr_madhavi',
-    name: 'Madhavi',
-    full_name: 'Madhavi',
-    email: 'madhavi123456@gmail.com',
-    phone_number: '6281618046',
-    role: 'manager',
+    id: 'usr_ops_superadmin',
+    name: 'Jai Bhavani Operations',
+    full_name: 'Jai Bhavani Operations',
+    email: 'operations@jaibhavanicargo.com',
+    phone_number: '9876543210',
+    role: 'super_admin',
     status: 'active',
-    created: '2026-07-24T00:00:00.000Z'
-  },
-  {
-    id: 'usr_superuser_munna',
-    name: 'Munna Rathod',
-    full_name: 'Munna Rathod',
-    email: 'munnarathod222@gmail.com',
-    phone_number: '9876543212',
-    role: 'superuser',
-    status: 'active',
-    created: '2026-07-01T00:00:00.000Z'
+    created: '2026-09-01T00:00:00.000Z'
   }
 ];
 
@@ -58,8 +48,8 @@ const UsersPage = () => {
       if (raw) parsed = JSON.parse(raw);
     } catch (e) {}
 
-    // Filter out deleted demo accounts (dispatcher@jaibhavanicargo.com & admin@jaibhavanicargo.com)
-    const EXCLUDED_EMAILS = ['dispatcher@jaibhavanicargo.com', 'admin@jaibhavanicargo.com'];
+    // Filter out deleted demo accounts
+    const EXCLUDED_EMAILS = ['dispatcher@jaibhavanicargo.com', 'admin@jaibhavanicargo.com', 'madhavi123456@gmail.com', 'munnarathod222@gmail.com'];
 
     const emailMap = new Map();
     DEFAULT_SYSTEM_USERS.forEach(u => emailMap.set(u.email.toLowerCase(), u));
