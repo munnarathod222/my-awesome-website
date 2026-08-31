@@ -24,6 +24,20 @@ import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import SendMailDialog   from '@/components/SendMailDialog.jsx';
 
+const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    if (raw.trim().startsWith('[')) return [];
+    return [raw];
+  }
+  return [];
+};
+
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const ROLE_TABS = [
   { key: 'all',        label: 'All Staff',   icon: Users,     color: 'text-primary'       },
@@ -249,32 +263,36 @@ function DocCard({ doc, onView, onEdit, onDelete, onEmail }) {
       </div>
 
       {/* Thumbnails / Files preview */}
-      {doc.files && doc.files.length > 0 && (
-        <div className="px-4 pb-4 flex items-center gap-2 overflow-x-auto">
-          {doc.files.slice(0, 4).map((file, idx) => {
-            const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
-            return (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => onView(doc)}
-                className="w-10 h-10 rounded-lg overflow-hidden border border-white/[0.08] bg-muted/20 hover:scale-105 hover:border-white/[0.2] transition-all flex items-center justify-center shrink-0"
-              >
-                {isImg ? (
-                  <img src={pb.files.getUrl(doc, file, { thumb: '50x50' })} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <FileText className="w-4 h-4 text-blue-400" />
-                )}
-              </button>
-            );
-          })}
-          {doc.files.length > 4 && (
-            <span className="text-[10px] text-white/40 font-semibold px-2 py-1 rounded bg-white/5 border border-white/[0.08] shrink-0">
-              +{doc.files.length - 4}
-            </span>
-          )}
-        </div>
-      )}
+      {(() => {
+        const fileList = parseImageList(doc.files);
+        if (fileList.length === 0) return null;
+        return (
+          <div className="px-4 pb-4 flex items-center gap-2 overflow-x-auto">
+            {fileList.slice(0, 4).map((file, idx) => {
+              const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => onView(doc)}
+                  className="w-10 h-10 rounded-lg overflow-hidden border border-white/[0.08] bg-muted/20 hover:scale-105 hover:border-white/[0.2] transition-all flex items-center justify-center shrink-0"
+                >
+                  {isImg ? (
+                    <img src={pb.files.getUrl(doc, file, { thumb: '50x50' })} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-blue-400" />
+                  )}
+                </button>
+              );
+            })}
+            {fileList.length > 4 && (
+              <span className="text-[10px] text-white/40 font-semibold px-2 py-1 rounded bg-white/5 border border-white/[0.08] shrink-0">
+                +{fileList.length - 4}
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="flex-1" />
 
@@ -347,7 +365,8 @@ export default function EmployeeDocsPage() {
     const expiry = doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
     const issued = doc.issue_date  ? new Date(doc.issue_date).toLocaleDateString('en-IN',  { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
 
-    const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+    const parsedDocFiles = parseImageList(doc.files);
+    const activeFile = doc.file || (parsedDocFiles.length > 0 ? parsedDocFiles[0] : null);
     const fileUrl = activeFile ? pb.files.getUrl(doc, activeFile) : '';
 
     const html = `
@@ -808,8 +827,9 @@ export default function EmployeeDocsPage() {
                     <TableBody>
                       {folderDocs.map(doc => {
                         const stat    = getStatusInfo(doc.expiry_date);
-                        const tc      = getDocTypeColor(doc.document_type);
-                        const hasFile = doc.file || (doc.files?.length > 0);
+                        const tc        = getDocTypeColor(doc.document_type);
+                        const fileList  = parseImageList(doc.files);
+                        const hasFile   = doc.file || fileList.length > 0;
                         return (
                           <TableRow key={doc.id} className="hover:bg-muted/30 transition-colors">
                             <TableCell>
@@ -822,13 +842,13 @@ export default function EmployeeDocsPage() {
                             <TableCell className="text-muted-foreground">{doc.expiry_date ? format(new Date(doc.expiry_date), 'MMM dd, yyyy') : '—'}</TableCell>
                             <TableCell><span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${stat.badge}`}>{stat.text}</span></TableCell>
                             <TableCell>
-                              {doc.files && doc.files.length > 0 ? (
+                              {fileList.length > 0 ? (
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-muted border border-border">
-                                    {doc.files.length} file{doc.files.length !== 1 ? 's' : ''}
+                                    {fileList.length} file{fileList.length !== 1 ? 's' : ''}
                                   </span>
                                   <div className="flex gap-1">
-                                    {doc.files.slice(0, 3).map((f, i) => {
+                                    {fileList.slice(0, 3).map((f, i) => {
                                       const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f);
                                       return (
                                         <div key={i} className="w-6 h-6 rounded border border-border overflow-hidden bg-muted/50 flex items-center justify-center shrink-0">
@@ -866,9 +886,10 @@ export default function EmployeeDocsPage() {
                 {/* Mobile View */}
                 <div className="block md:hidden divide-y divide-border/40">
                   {folderDocs.map(doc => {
-                    const stat    = getStatusInfo(doc.expiry_date);
-                    const tc      = getDocTypeColor(doc.document_type);
-                    const hasFile = doc.file || (doc.files?.length > 0);
+                    const stat     = getStatusInfo(doc.expiry_date);
+                    const tc       = getDocTypeColor(doc.document_type);
+                    const fileList = parseImageList(doc.files);
+                    const hasFile  = doc.file || fileList.length > 0;
                     return (
                       <div key={doc.id} className="p-4 space-y-2 hover:bg-muted/5 transition-colors">
                         <div className="flex justify-between items-start">
@@ -886,13 +907,13 @@ export default function EmployeeDocsPage() {
                         </div>
 
                         {/* Mobile view files preview */}
-                        {doc.files && doc.files.length > 0 && (
+                        {fileList.length > 0 && (
                           <div className="flex items-center gap-2 pt-1">
                             <span className="text-[10px] font-semibold text-muted-foreground bg-muted border border-border px-1.5 py-0.5 rounded">
-                              {doc.files.length} file{doc.files.length !== 1 ? 's' : ''}
+                              {fileList.length} file{fileList.length !== 1 ? 's' : ''}
                             </span>
                             <div className="flex gap-1">
-                              {doc.files.slice(0, 4).map((f, i) => {
+                              {fileList.slice(0, 4).map((f, i) => {
                                 const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(f);
                                 return (
                                   <div key={i} className="w-7 h-7 rounded border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
