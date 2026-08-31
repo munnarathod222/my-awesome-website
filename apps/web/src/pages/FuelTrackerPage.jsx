@@ -142,6 +142,40 @@ const FuelTrackerPage = () => {
         };
       });
 
+      // Merge fuel expenses from expenses collection not already in fuel_tracker
+      const existingIds = new Set(logsRes.map(l => l.id));
+      (expensesRes || []).forEach(exp => {
+        if (!existingIds.has(exp.id) && !existingIds.has(exp.fuel_tracker_id)) {
+          const desc = exp.description || exp.notes || '';
+          const litersMatch = desc.match(/([\d\.]+)\s?L/i);
+          const distMatch = desc.match(/([\d\.]+)\s?KM/i);
+          const liters = litersMatch ? parseFloat(litersMatch[1]) : (exp.liters || 0);
+          const distance = distMatch ? parseFloat(distMatch[1]) : (exp.distance_driven || 0);
+          const efficiency = liters > 0 ? (distance / liters) : 0;
+          const truckMatch = desc.match(/([A-Z]{2}\s?\d{1,2}\s?[A-Z]{1,3}\s?\d{4})/i);
+          const truckNum = truckMatch ? truckMatch[1].replace(/\s+/g, '').toUpperCase() : (exp.truck_number || 'TG12U2637');
+
+          processedLogs.push({
+            id: exp.id,
+            date: exp.date,
+            truck_number: truckNum,
+            vehicle_name: truckNum,
+            liters,
+            distance,
+            efficiency,
+            total_cost: exp.amount,
+            amount: exp.amount,
+            payment_method: exp.payment_method || 'Cash',
+            notes: desc,
+            linked_expense: exp,
+            documents: exp.documents || [],
+            has_bill: (exp.documents || []).length > 0
+          });
+        }
+      });
+
+      processedLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
       setFuelLogs(processedLogs);
       setPayments(paymentsRes);
     } catch (err) {
