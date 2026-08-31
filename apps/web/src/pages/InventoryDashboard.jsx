@@ -19,6 +19,20 @@ import StockDeductionModal from '@/components/StockDeductionModal.jsx';
 import RestockManagementModal from '@/components/RestockManagementModal.jsx';
 import RestockHistoryModal from '@/components/RestockHistoryModal.jsx';
 
+const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    if (raw.trim().startsWith('[')) return [];
+    return [raw];
+  }
+  return [];
+};
+
 const InventoryDashboard = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -170,15 +184,18 @@ const InventoryDashboard = () => {
                 ) : (
                   filteredItems.map(item => {
                     const isLow = item.current_stock <= item.reorder_level;
+                    const itemImages = parseImageList(item.image_urls);
+                    const primaryItemImg = itemImages.length > 0 ? itemImages[0] : null;
+
                     return (
                       <TableRow key={item.id} className={isLow ? 'bg-destructive/5' : ''}>
                         <TableCell className="font-medium flex items-center gap-3">
-                          {item.image_urls && item.image_urls.length > 0 ? (
+                          {primaryItemImg ? (
                             <div 
-                              onClick={() => setActiveLightboxImage(pb.files.getUrl(item, item.image_urls[0]))}
+                              onClick={() => setActiveLightboxImage(pb.files.getUrl(item, primaryItemImg))}
                               className="w-10 h-10 rounded-lg border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
                             >
-                              <img src={pb.files.getUrl(item, item.image_urls[0])} alt={item.item_name} className="w-full h-full object-cover" />
+                              <img src={pb.files.getUrl(item, primaryItemImg)} alt={item.item_name} className="w-full h-full object-cover" />
                             </div>
                           ) : (
                             <div className="w-10 h-10 rounded-lg border border-border/60 bg-muted flex items-center justify-center text-muted-foreground shrink-0">
@@ -199,7 +216,7 @@ const InventoryDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1.5">
-                            {item.image_urls?.map((img, idx) => {
+                            {itemImages.map((img, idx) => {
                               const url = pb.files.getUrl(item, img);
                               return (
                                 <div 
@@ -235,16 +252,19 @@ const InventoryDashboard = () => {
             ) : (
               filteredItems.map(item => {
                 const isLow = item.current_stock <= item.reorder_level;
+                const itemImages = parseImageList(item.image_urls);
+                const primaryItemImg = itemImages.length > 0 ? itemImages[0] : null;
+
                 return (
                   <div key={item.id} className={cn("p-4 space-y-3 hover:bg-muted/5 transition-colors", isLow ? 'bg-destructive/[0.02]' : '')}>
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-3">
-                        {item.image_urls && item.image_urls.length > 0 ? (
+                        {primaryItemImg ? (
                           <div 
-                            onClick={() => setActiveLightboxImage(pb.files.getUrl(item, item.image_urls[0]))}
+                            onClick={() => setActiveLightboxImage(pb.files.getUrl(item, primaryItemImg))}
                             className="w-10 h-10 rounded-lg border border-border/80 overflow-hidden cursor-pointer bg-muted shrink-0 shadow-sm"
                           >
-                            <img src={pb.files.getUrl(item, item.image_urls[0])} alt={item.item_name} className="w-full h-full object-cover" />
+                            <img src={pb.files.getUrl(item, primaryItemImg)} alt={item.item_name} className="w-full h-full object-cover" />
                           </div>
                         ) : (
                           <div className="w-10 h-10 rounded-lg border border-border/60 bg-muted flex items-center justify-center text-muted-foreground shrink-0">
@@ -261,7 +281,7 @@ const InventoryDashboard = () => {
                       </div>
                       
                       <div className="flex gap-1">
-                        {item.image_urls?.map((img, idx) => {
+                        {itemImages.map((img, idx) => {
                           const url = pb.files.getUrl(item, img);
                           return (
                             <div 
