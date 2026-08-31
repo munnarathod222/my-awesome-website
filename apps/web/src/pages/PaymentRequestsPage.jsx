@@ -632,6 +632,9 @@ Best Regards,
 
   const processedData = useMemo(() => {
     let filtered = requests.filter(r => {
+      const isDelivered = !r.linkedTrip || r.linkedTrip.trip_status === 'Delivered';
+      if (!isDelivered && r.calculatedStatus !== 'Paid') return false;
+
       const matchStatus = statusFilter === 'all' || r.calculatedStatus === statusFilter;
       const matchClient = clientFilter === 'all' || r.client_id === clientFilter;
       const term = search.toLowerCase();
