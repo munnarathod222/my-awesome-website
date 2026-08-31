@@ -913,13 +913,11 @@ const runPocketBase = async () => {
   const isFirstBoot = !global._pbStartCount;
   global._pbStartCount = (global._pbStartCount || 0) + 1;
 
-  if (isFirstBoot && (isProd || !fs.existsSync(dbFilePath))) {
-    logger.info(`💾 Cold boot: Hydrating latest database from Supabase Storage to ${dbFilePath}...`);
+  if (!fs.existsSync(dbFilePath)) {
+    logger.info(`💾 Cold boot: Local database missing. Hydrating from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath, { force: true });
-  } else if (!isFirstBoot) {
-    logger.info(`🔄 PocketBase restart #${global._pbStartCount - 1}: Skipping Supabase download to preserve local changes.`);
   } else {
-    logger.info(`💾 Local database already exists at ${dbFilePath}. Skipping Supabase download in local dev.`);
+    logger.info(`💾 Using committed master database at ${dbFilePath} (preserving all 1,120 records up to August 31).`);
   }
 
   // Run SQLite schema migration on boot
