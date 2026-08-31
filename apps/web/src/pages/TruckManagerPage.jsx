@@ -22,6 +22,20 @@ import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 
+export const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    if (raw.trim().startsWith('[')) return [];
+    return [raw];
+  }
+  return [];
+};
+
 export default function TruckManagerPage() {
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -169,8 +183,9 @@ export default function TruckManagerPage() {
         /* ULTRA-COMPACT LIST ROW TILES (Height ~72px) */
         <div className="space-y-2.5">
           {trucks.map(truck => {
-            const hasImages = truck.body_images && truck.body_images.length > 0;
-            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '100x100' }) : null;
+            const bodyImgs = parseImageList(truck.body_images);
+            const hasImages = bodyImgs.length > 0;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, bodyImgs[0], { thumb: '100x100' }) : null;
             const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
             const availableDrivers = drivers.filter(d => !d.assigned_truck);
 
@@ -321,8 +336,9 @@ export default function TruckManagerPage() {
         /* ULTRA-COMPACT 4-COLUMN MINI TILES */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {trucks.map(truck => {
-            const hasImages = truck.body_images && truck.body_images.length > 0;
-            const primaryImage = hasImages ? pb.files.getUrl(truck, truck.body_images[0], { thumb: '200x120' }) : null;
+            const bodyImgs = parseImageList(truck.body_images);
+            const hasImages = bodyImgs.length > 0;
+            const primaryImage = hasImages ? pb.files.getUrl(truck, bodyImgs[0], { thumb: '200x120' }) : null;
             const assignedDriver = drivers.find(d => d.assigned_truck === truck.id);
 
             return (
@@ -416,62 +432,73 @@ export default function TruckManagerPage() {
             </div>
 
             {/* Main display */}
-            <div className="relative flex-1 flex items-center justify-center min-h-[400px] max-h-[550px] p-4 bg-zinc-950">
-              {galleryConfig.truck.body_images.length > 1 && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
-                  onClick={() => setGalleryConfig(prev => ({
-                    ...prev,
-                    activeIndex: (prev.activeIndex - 1 + prev.truck.body_images.length) % prev.truck.body_images.length
-                  }))}
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-              )}
+            {(() => {
+              const galleryImgs = parseImageList(galleryConfig.truck?.body_images);
+              const activeImg = galleryImgs[galleryConfig.activeIndex] || galleryImgs[0];
 
-              <img 
-                src={pb.files.getUrl(galleryConfig.truck, galleryConfig.truck.body_images[galleryConfig.activeIndex])} 
-                alt={`Truck body ${galleryConfig.activeIndex + 1}`} 
-                className="max-w-full max-h-[480px] object-contain rounded-lg shadow-lg"
-              />
+              return (
+                <>
+                  <div className="relative flex-1 flex items-center justify-center min-h-[400px] max-h-[550px] p-4 bg-zinc-950">
+                    {galleryImgs.length > 1 && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
+                        onClick={() => setGalleryConfig(prev => ({
+                          ...prev,
+                          activeIndex: (prev.activeIndex - 1 + galleryImgs.length) % galleryImgs.length
+                        }))}
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </Button>
+                    )}
 
-              {galleryConfig.truck.body_images.length > 1 && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="absolute right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
-                  onClick={() => setGalleryConfig(prev => ({
-                    ...prev,
-                    activeIndex: (prev.activeIndex + 1) % prev.truck.body_images.length
-                  }))}
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              )}
-            </div>
+                    {activeImg && (
+                      <img 
+                        src={pb.files.getUrl(galleryConfig.truck, activeImg)} 
+                        alt={`Truck body ${galleryConfig.activeIndex + 1}`} 
+                        className="max-w-full max-h-[480px] object-contain rounded-lg shadow-lg"
+                      />
+                    )}
 
-            {/* Thumbnail Navigation */}
-            {galleryConfig.truck.body_images.length > 1 && (
-              <div className="p-4 bg-black/60 border-t border-white/10 flex justify-center gap-2 overflow-x-auto">
-                {galleryConfig.truck.body_images.map((imgName, idx) => (
-                  <button 
-                    key={idx}
-                    className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                      galleryConfig.activeIndex === idx ? 'border-primary scale-105' : 'border-transparent opacity-60 hover:opacity-100'
-                    }`}
-                    onClick={() => setGalleryConfig(prev => ({ ...prev, activeIndex: idx }))}
-                  >
-                    <img 
-                      src={pb.files.getUrl(galleryConfig.truck, imgName)} 
-                      alt={`Thumbnail ${idx + 1}`} 
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+                    {galleryImgs.length > 1 && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
+                        onClick={() => setGalleryConfig(prev => ({
+                          ...prev,
+                          activeIndex: (prev.activeIndex + 1) % galleryImgs.length
+                        }))}
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Thumbnail Navigation */}
+                  {galleryImgs.length > 1 && (
+                    <div className="p-4 bg-black/60 border-t border-white/10 flex justify-center gap-2 overflow-x-auto">
+                      {galleryImgs.map((imgName, idx) => (
+                        <button 
+                          key={idx}
+                          className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                            galleryConfig.activeIndex === idx ? 'border-primary scale-105' : 'border-transparent opacity-60 hover:opacity-100'
+                          }`}
+                          onClick={() => setGalleryConfig(prev => ({ ...prev, activeIndex: idx }))}
+                        >
+                          <img 
+                            src={pb.files.getUrl(galleryConfig.truck, imgName)} 
+                            alt={`Thumbnail ${idx + 1}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </DialogContent>
         </Dialog>
       )}
