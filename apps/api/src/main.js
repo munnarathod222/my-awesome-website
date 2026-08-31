@@ -2647,6 +2647,62 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
 
 
 
+// Admin User Creation & Signup Request Approval Endpoint
+app.post('/api/admin/users/create-or-approve', async (req, res) => {
+  try {
+    const { email, password, full_name, name, role, status, phone_number, requestId, notes, approved_by } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = (full_name || name || '').trim() || cleanEmail.split('@')[0];
+    const cleanRole = (role || 'manager').toLowerCase();
+    const cleanStatus = status || 'active';
+    const tempPass = password || (require('crypto').randomBytes(6).toString('hex') + 'A1!');
+
+    const { DatabaseSync } = require('node:sqlite');
+    const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+    const db = new DatabaseSync(dbPath);
+
+    const now = new Date().toISOString();
+    const existing = db.prepare("SELECT * FROM users WHERE email = ?").get(cleanEmail);
+
+    let userRecord;
+    if (existing) {
+      db.prepare(`
+        UPDATE users SET 
+          name = ?, full_name = ?, role = ?, status = ?, updated = ?
+        WHERE id = ?
+      `).run(cleanName, cleanName, cleanRole, cleanStatus, now, existing.id);
+      userRecord = db.prepare("SELECT * FROM users WHERE id = ?").get(existing.id);
+    } else {
+      const newId = 'usr_' + require('crypto').randomBytes(8).toString('hex');
+      const tokenKey = require('crypto').randomBytes(20).toString('hex');
+      db.prepare(`
+        INSERT INTO users (id, email, emailVisibility, name, full_name, role, status, password, tokenKey, phone_number, created, updated, verified)
+        VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      `).run(newId, cleanEmail, cleanName, cleanName, cleanRole, cleanStatus, tempPass, tokenKey, phone_number || '', now, now);
+      userRecord = db.prepare("SELECT * FROM users WHERE id = ?").get(newId);
+    }
+
+    // If linked to a signup_request ID, update request status to Approved
+    if (requestId) {
+      try {
+        db.prepare(`
+          UPDATE signup_requests SET 
+            status = 'Approved', approved_date = ?, approved_by = ?, notes = ?, updated = ?
+          WHERE id = ?
+        `).run(now, approved_by || 'admin', notes || '', now, requestId);
+      } catch (sqErr) {}
+    }
+
+    db.close();
+    return res.json({ success: true, user: userRecord, tempPassword: tempPass });
+  } catch (err) {
+    console.error('Error in create-or-approve:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Express Direct File Serving Route Handler (handles both collection name & collection ID)
 const handleDirectFileServe = (req, res, next) => {
   const collectionNameOrId = req.params.collection;

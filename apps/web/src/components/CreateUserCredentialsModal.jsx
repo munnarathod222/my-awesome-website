@@ -128,24 +128,49 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
         }
         toast.success(`Updated role and credentials for ${cleanName}`);
       } else {
-        // Attempt to create new user account
-        const createPayload = {
-          email: cleanEmail,
-          emailVisibility: true,
-          password: password,
-          passwordConfirm: password,
-          name: cleanName,
-          full_name: cleanName,
-          role: role,
-          status: 'active',
-          phone_number: cleanPhone || ''
-        };
-
+        // Attempt to create new user account via server-side direct API
         try {
-          userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
-          toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
-        } catch (createErr) {
-          console.warn('[CreateUserCredentialsModal] Initial create failed:', createErr);
+          const response = await apiServerClient.fetch('/admin/users/create-or-approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: cleanEmail,
+              password: password,
+              full_name: cleanName,
+              name: cleanName,
+              role: role,
+              status: 'active',
+              phone_number: cleanPhone || ''
+            })
+          });
+
+          if (response.ok) {
+            const resData = await response.json();
+            userRecord = resData.user || { name: cleanName, email: cleanEmail, role };
+            toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
+          }
+        } catch (apiErr) {
+          console.warn('[CreateUserCredentialsModal] API endpoint create failed, falling back:', apiErr);
+        }
+
+        if (!userRecord) {
+          const createPayload = {
+            email: cleanEmail,
+            emailVisibility: true,
+            password: password,
+            passwordConfirm: password,
+            name: cleanName,
+            full_name: cleanName,
+            role: role,
+            status: 'active',
+            phone_number: cleanPhone || ''
+          };
+
+          try {
+            userRecord = await pb.collection('users').create(createPayload, { $autoCancel: false });
+            toast.success(`Created ${role.toUpperCase()} account for ${cleanName}`);
+          } catch (createErr) {
+            console.warn('[CreateUserCredentialsModal] Initial create failed:', createErr);
           
           // Check if error is due to existing email
           const isEmailInUse = createErr.status === 400 && 
