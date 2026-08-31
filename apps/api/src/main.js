@@ -580,38 +580,7 @@ let _syncStarted = false;
 const watchAndSyncDatabase = (dbFilePath) => {
   if (_syncStarted) return; // Only register once across PocketBase restarts
   _syncStarted = true;
-  let uploadTimeout = null;
-  let periodicSyncInterval = null;
-  const PERIODIC_SYNC_MS = 5 * 60 * 1000; // 5 minutes
-
-  // ── Strategy 1: Directory-watcher (more reliable for SQLite WAL mode than file-watcher) ──
-  try {
-    const dataDir = path.dirname(dbFilePath);
-    fs.watch(dataDir, (eventType, filename) => {
-      // Trigger sync if the database file or its WAL/journal files change
-      if (filename && (filename === 'data.db' || filename.startsWith('data.db-'))) {
-        if (uploadTimeout) clearTimeout(uploadTimeout);
-        // Debounce 2s to let PocketBase finish batch writes while still syncing quickly
-        uploadTimeout = setTimeout(async () => {
-          logger.info(`🔄 Directory-watcher: database files changed (${filename}), syncing to Supabase...`);
-          await uploadDatabaseToSupabase(dbFilePath);
-        }, 2000);
-      }
-    });
-    logger.info('👁️  Directory-watcher sync: active (watches database directory changes)');
-  } catch (watchErr) {
-    logger.warn(`⚠️  Directory-watcher could not be started: ${watchErr.message}. Falling back to periodic sync only.`);
-  }
-
-  // ── Strategy 2: Periodic forced sync every 5 minutes (safety net) ──
-  periodicSyncInterval = setInterval(async () => {
-    logger.info('⏰ Periodic sync: forcing database backup to Supabase (every 5 minutes)...');
-    await uploadDatabaseToSupabase(dbFilePath);
-  }, PERIODIC_SYNC_MS);
-
-  if (periodicSyncInterval.unref) periodicSyncInterval.unref();
-
-  logger.info(`⏰ Periodic sync: active (every 5 minutes)`);
+  logger.info('👁️ Database sync registered (syncs on graceful shutdown and 12-hour rolling backup)');
 
   // ── Strategy 2.2: Anti-Sleep Self-Ping Heartbeat (Every 8 Minutes) ──
   // Keeps Render web service active so it never spins down due to inactivity!
@@ -893,78 +862,7 @@ const uploadAllStorageToSupabase = async (storageDir) => {
 global.uploadAllStorageToSupabase = uploadAllStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
-  let knownFiles = {};
-  
-  // Initialize initial state of files
-  if (fs.existsSync(storageDir)) {
-    knownFiles = getLocalFilesRecursive(storageDir, storageDir);
-  }
-  
-  setInterval(async () => {
-    try {
-      if (!fs.existsSync(storageDir)) return;
-      const currentFiles = getLocalFilesRecursive(storageDir, storageDir);
-      
-      // 1. Detect new/modified files
-      for (const relPath of Object.keys(currentFiles)) {
-        const currentMtime = currentFiles[relPath];
-        const knownMtime = knownFiles[relPath];
-        
-        if (knownMtime === undefined || currentMtime !== knownMtime) {
-          const localFilePath = path.join(storageDir, relPath);
-          const remotePath = `storage/${relPath}`;
-          
-          try {
-            const fileBuffer = fs.readFileSync(localFilePath);
-            const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
-              method: 'POST',
-              headers: {
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`,
-                'x-upsert': 'true'
-              },
-              body: fileBuffer
-            });
-            if (uploadRes.ok) {
-              logger.info(`🔄 Synced file upload to Supabase: ${relPath}`);
-              knownFiles[relPath] = currentMtime;
-            } else {
-              logger.error(`❌ Failed to sync file upload to Supabase: ${relPath} (${uploadRes.statusText})`);
-            }
-          } catch (uploadErr) {
-            logger.error(`❌ Error uploading file ${relPath} to Supabase: ${uploadErr.message}`);
-          }
-        }
-      }
-      
-      // 2. Detect deleted files
-      for (const relPath of Object.keys(knownFiles)) {
-        if (currentFiles[relPath] === undefined) {
-          const remotePath = `storage/${relPath}`;
-          try {
-            const delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
-              method: 'DELETE',
-              headers: {
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-              }
-            });
-            if (delRes.ok) {
-              logger.info(`🗑️ Synced file deletion to Supabase: ${relPath}`);
-              delete knownFiles[relPath];
-            } else {
-              logger.error(`❌ Failed to sync file deletion to Supabase: ${relPath} (${delRes.statusText})`);
-            }
-          } catch (delErr) {
-            logger.error(`❌ Error deleting file ${relPath} from Supabase: ${delErr.message}`);
-          }
-        }
-      }
-      
-    } catch (err) {
-      logger.error(`❌ Error in storage background sync: ${err.message}`);
-    }
-  }, 3000); // Check every 3 seconds — fast enough to catch uploads before any abrupt kill
+  logger.info('📁 Storage background sync initialized (syncs on demand and shutdown)');
 };
 
 // ----------------------------------------------------
