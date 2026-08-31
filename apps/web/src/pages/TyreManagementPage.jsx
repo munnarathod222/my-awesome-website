@@ -321,11 +321,24 @@ export default function TyreManagementPage() {
     }
   };
 
+const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch(e) {}
+    if (raw.trim().startsWith('[')) return [];
+    return [raw];
+  }
+  return [];
+};
+
   const TyreSlotCard = ({ slot }) => {
     const tyre = tyres.find(t => t.tyre_position === slot.id);
-    const tyreImage = tyre?.tyre_image 
-      ? (Array.isArray(tyre.tyre_image) ? tyre.tyre_image[0] : tyre.tyre_image) 
-      : null;
+    const tyreImages = parseImageList(tyre?.tyre_image);
+    const tyreImage = tyreImages.length > 0 ? tyreImages[0] : null;
     const imageUrl = tyreImage ? pb.files.getUrl(tyre, tyreImage, { thumb: '150x150' }) : null;
 
     // Calculate wear bar metrics
