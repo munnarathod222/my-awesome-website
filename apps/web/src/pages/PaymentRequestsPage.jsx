@@ -200,7 +200,7 @@ const PaymentRequestsPage = () => {
           }
         }
         
-        // Merge with local storage cache
+        // Merge with local storage cache (only for delivered trips)
         let localReqs = [];
         try {
           localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
@@ -210,6 +210,9 @@ const PaymentRequestsPage = () => {
         const remoteMap = new Map(allRemote.map(r => [r.id, r]));
 
         localReqs.forEach(lr => {
+          const linked = lr.expand?.trip_id || tripMap[lr.trip_id];
+          if (linked && linked.trip_status !== 'Delivered') return;
+
           if (!remoteMap.has(lr.id)) {
             // Check overdue for local items
             let currentStatus = lr.status;
@@ -228,7 +231,13 @@ const PaymentRequestsPage = () => {
           }
         });
 
-        setRequests(Array.from(remoteMap.values()));
+        const finalReqs = Array.from(remoteMap.values()).filter(r => {
+          const linked = r.expand?.trip_id || tripMap[r.trip_id] || r.linkedTrip;
+          if (linked && linked.trip_status !== 'Delivered' && r.calculatedStatus !== 'Paid') return false;
+          return true;
+        });
+
+        setRequests(finalReqs);
       } else {
         // Merge mappedReqs with local storage
         let localReqs = [];
@@ -238,6 +247,9 @@ const PaymentRequestsPage = () => {
 
         const remoteMap = new Map(mappedReqs.map(r => [r.id, r]));
         localReqs.forEach(lr => {
+          const linked = lr.expand?.trip_id || tripMap[lr.trip_id];
+          if (linked && linked.trip_status !== 'Delivered') return;
+
           if (!remoteMap.has(lr.id)) {
             let currentStatus = lr.status;
             let daysOverdue = 0;
@@ -255,7 +267,13 @@ const PaymentRequestsPage = () => {
           }
         });
 
-        setRequests(Array.from(remoteMap.values()));
+        const finalReqs = Array.from(remoteMap.values()).filter(r => {
+          const linked = r.expand?.trip_id || tripMap[r.trip_id] || r.linkedTrip;
+          if (linked && linked.trip_status !== 'Delivered' && r.calculatedStatus !== 'Paid') return false;
+          return true;
+        });
+
+        setRequests(finalReqs);
       }
       setClients(cls);
     } catch (err) {
