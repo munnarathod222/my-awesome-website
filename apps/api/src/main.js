@@ -1659,6 +1659,162 @@ const runPocketBase = async () => {
         logger.info("Migrating: shared_folders collection rules set to open access!");
       }
     }
+
+    // 10. Bids collection sqlite registration & table creation
+    const bidsRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='bids'").get();
+    if (!bidsRecordBoot) {
+      logger.info("Migrating: Creating 'bids' table & registration in _collections...");
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS bids (
+          id TEXT PRIMARY KEY,
+          date TEXT,
+          bid_date TEXT,
+          client_name TEXT,
+          counterparty TEXT,
+          role TEXT,
+          underlying_client TEXT,
+          bidding_type TEXT,
+          bid_type TEXT,
+          vehicle_type TEXT,
+          truck_type TEXT,
+          bidding_amount REAL,
+          quoted_amount REAL,
+          quoted_rate REAL,
+          bidding_lost_at REAL,
+          actual_winning_rate REAL,
+          trip_detail TEXT,
+          starting_point TEXT,
+          origin TEXT,
+          ending_point TEXT,
+          destination TEXT,
+          no_of_stops REAL,
+          route_map TEXT,
+          status TEXT,
+          result TEXT,
+          distance_km REAL,
+          payload_tons REAL,
+          trips_count REAL,
+          monthly_trips REAL,
+          contract_ref TEXT,
+          contract_date TEXT,
+          contract_months REAL,
+          dedicated_trucks REAL,
+          load_type TEXT,
+          notes TEXT,
+          created_by TEXT,
+          created TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ', 'now')),
+          updated TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ', 'now'))
+        )
+      `).run();
+
+      const bidsFieldsBoot = [
+        { autogeneratePattern: '[a-z0-9]{15}', hidden: false, id: 'text_id_bids', max: 15, min: 15, name: 'id', pattern: '^[a-z0-9]+$', presentable: false, primaryKey: true, required: true, system: true, type: 'text' },
+        { hidden: false, id: 'text_date', name: 'date', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_bid_date', name: 'bid_date', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_client_name', name: 'client_name', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_counterparty', name: 'counterparty', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_role', name: 'role', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_underlying_client', name: 'underlying_client', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_bidding_type', name: 'bidding_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_bid_type', name: 'bid_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_vehicle_type', name: 'vehicle_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_truck_type', name: 'truck_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'num_bidding_amount', name: 'bidding_amount', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_quoted_amount', name: 'quoted_amount', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_quoted_rate', name: 'quoted_rate', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_bidding_lost_at', name: 'bidding_lost_at', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_actual_winning_rate', name: 'actual_winning_rate', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'text_trip_detail', name: 'trip_detail', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_starting_point', name: 'starting_point', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_origin', name: 'origin', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_ending_point', name: 'ending_point', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_destination', name: 'destination', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'num_no_of_stops', name: 'no_of_stops', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'text_route_map', name: 'route_map', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_status', name: 'status', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_result', name: 'result', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'num_distance_km', name: 'distance_km', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_payload_tons', name: 'payload_tons', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_trips_count', name: 'trips_count', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_monthly_trips', name: 'monthly_trips', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'text_contract_ref', name: 'contract_ref', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_contract_date', name: 'contract_date', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'num_contract_months', name: 'contract_months', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_dedicated_trucks', name: 'dedicated_trucks', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'text_load_type', name: 'load_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_notes', name: 'notes', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_created_by', name: 'created_by', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'autodate_created_bids', name: 'created', onCreate: true, onUpdate: false, presentable: false, system: false, type: 'autodate' },
+        { hidden: false, id: 'autodate_updated_bids', name: 'updated', onCreate: true, onUpdate: true, presentable: false, system: false, type: 'autodate' }
+      ];
+
+      db.prepare(`
+        INSERT INTO _collections (id, system, type, name, fields, indexes, listRule, viewRule, createRule, updateRule, deleteRule, options, created, updated)
+        VALUES ('pbc_bids_live01', 0, 'base', 'bids', ?, '[]', '', '', '', '', '', '{}', datetime('now'), datetime('now'))
+      `).run(JSON.stringify(bidsFieldsBoot));
+      logger.info("Migrating: 'bids' collection & table created successfully!");
+    } else {
+      db.prepare("UPDATE _collections SET listRule = '', viewRule = '', createRule = '', updateRule = '', deleteRule = '' WHERE name = 'bids'").run();
+    }
+
+    // 11. Contracts collection sqlite registration & table creation
+    const contractsRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='contracts'").get();
+    if (!contractsRecordBoot) {
+      logger.info("Migrating: Creating 'contracts' table & registration in _collections...");
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS contracts (
+          id TEXT PRIMARY KEY,
+          contract_ref TEXT,
+          counterparty TEXT,
+          client_name TEXT,
+          role TEXT,
+          underlying_client TEXT,
+          origin TEXT,
+          destination TEXT,
+          truck_type TEXT,
+          rate REAL,
+          monthly_trips REAL,
+          dedicated_trucks REAL,
+          contract_start TEXT,
+          contract_end TEXT,
+          status TEXT,
+          notes TEXT,
+          created_by TEXT,
+          created TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ', 'now')),
+          updated TEXT DEFAULT (strftime('%Y-%m-%d %H:%M:%fZ', 'now'))
+        )
+      `).run();
+
+      const contractsFieldsBoot = [
+        { autogeneratePattern: '[a-z0-9]{15}', hidden: false, id: 'text_id_contracts', max: 15, min: 15, name: 'id', pattern: '^[a-z0-9]+$', presentable: false, primaryKey: true, required: true, system: true, type: 'text' },
+        { hidden: false, id: 'text_c_ref', name: 'contract_ref', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_counterparty', name: 'counterparty', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_client_name', name: 'client_name', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_role', name: 'role', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_underlying_client', name: 'underlying_client', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_origin', name: 'origin', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_destination', name: 'destination', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_truck_type', name: 'truck_type', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'num_c_rate', name: 'rate', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_c_monthly_trips', name: 'monthly_trips', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'num_c_dedicated_trucks', name: 'dedicated_trucks', presentable: false, required: false, system: false, type: 'number' },
+        { hidden: false, id: 'text_c_contract_start', name: 'contract_start', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_contract_end', name: 'contract_end', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_status', name: 'status', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_notes', name: 'notes', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'text_c_created_by', name: 'created_by', presentable: false, required: false, system: false, type: 'text' },
+        { hidden: false, id: 'autodate_created_contracts', name: 'created', onCreate: true, onUpdate: false, presentable: false, system: false, type: 'autodate' },
+        { hidden: false, id: 'autodate_updated_contracts', name: 'updated', onCreate: true, onUpdate: true, presentable: false, system: false, type: 'autodate' }
+      ];
+
+      db.prepare(`
+        INSERT INTO _collections (id, system, type, name, fields, indexes, listRule, viewRule, createRule, updateRule, deleteRule, options, created, updated)
+        VALUES ('pbc_contracts_live01', 0, 'base', 'contracts', ?, '[]', '', '', '', '', '', '{}', datetime('now'), datetime('now'))
+      `).run(JSON.stringify(contractsFieldsBoot));
+      logger.info("Migrating: 'contracts' collection & table created successfully!");
+    } else {
+      db.prepare("UPDATE _collections SET listRule = '', viewRule = '', createRule = '', updateRule = '', deleteRule = '' WHERE name = 'contracts'").run();
+    }
   } catch (migrationErr) {
     logger.error(`❌ Migration failed during boot: ${migrationErr.message}`);
   } finally {
