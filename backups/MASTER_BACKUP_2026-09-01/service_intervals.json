@@ -1,0 +1,52 @@
+[
+  {
+    "component_name": "ENGINE OIL",
+    "created": "2026-07-01 09:22:49.434Z",
+    "id": "xv4y164gfgwt7ur",
+    "last_serviced_odometer": 48000,
+    "target_interval_kms": 60000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-08-17 15:20:30.228Z",
+    "collectionId": "pbc_service_intervals_001"
+  },
+  {
+    "component_name": "OIL FILTER",
+    "created": "2026-08-17 06:59:08.669Z",
+    "id": "38ncl69jluqb3yi",
+    "last_serviced_odometer": 48000,
+    "target_interval_kms": 40000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-08-17 15:20:30.519Z",
+    "collectionId": null
+  },
+  {
+    "component_name": "DIESEL FILTER",
+    "created": "2026-08-17 06:59:08.932Z",
+    "id": "goku4temd2xay2d",
+    "last_serviced_odometer": 48000,
+    "target_interval_kms": 30000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-08-17 15:20:30.796Z",
+    "collectionId": null
+  },
+  {
+    "component_name": "AIR FILTER",
+    "created": "2026-08-17 06:59:09.199Z",
+    "id": "n3v6s08c4ciwu2o",
+    "last_serviced_odometer": 48000,
+    "target_interval_kms": 30000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-08-17 15:20:31.111Z",
+    "collectionId": null
+  },
+  {
+    "component_name": "POWER STEERING FLUID",
+    "created": "2026-08-17 06:59:09.456Z",
+    "id": "kgw189erb7mlr7u",
+    "last_serviced_odometer": 48000,
+    "target_interval_kms": 60000,
+    "truck_id": "gw8rd1l65z797i4",
+    "updated": "2026-08-17 15:20:31.392Z",
+    "collectionId": null
+  }
+]

@@ -1,0 +1,200 @@
+[
+  {
+    "card_id": "zqtgl036331nucs",
+    "created": "2026-07-08 10:39:08.250Z",
+    "full_payment_amount": 0,
+    "id": "zgxs0jm2m77bc30",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 21,
+    "updated": "2026-07-08 10:39:08.250Z",
+    "user_id": "vomu7tmaa889wv8",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "r38odv9c2gppdxa",
+    "created": "2026-07-20 20:58:03.830Z",
+    "full_payment_amount": 0,
+    "id": "ou2woc8nkt65qjj",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 28,
+    "updated": "2026-07-20 20:58:03.830Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "3lqg51umpaquub3",
+    "created": "2026-07-20 21:03:18.035Z",
+    "full_payment_amount": 0,
+    "id": "piwifim57zfumc1",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 9,
+    "updated": "2026-07-20 21:03:18.035Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "zurfba6p2sjh19v",
+    "created": "2026-07-20 21:04:12.472Z",
+    "full_payment_amount": 0,
+    "id": "xjo0tnrwwwhwfv5",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 9,
+    "updated": "2026-07-21 04:04:25.389Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "5wg9ec7xd44cxng",
+    "created": "2026-07-20 21:07:06.912Z",
+    "full_payment_amount": 0,
+    "id": "lslk8fwz3kbuejq",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 26,
+    "updated": "2026-07-20 21:07:06.912Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "vxke7cdkvlcc802",
+    "created": "2026-07-20 21:09:32.662Z",
+    "full_payment_amount": 0,
+    "id": "oecm6on3uj2homr",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 11,
+    "updated": "2026-07-20 21:09:32.662Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "if11foqfagql1n3",
+    "created": "2026-07-20 21:10:57.457Z",
+    "full_payment_amount": 0,
+    "id": "3o8eovunhtrk2nv",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 8,
+    "updated": "2026-07-21 04:04:06.183Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "wlwdlcc0yksvy3v",
+    "created": "2026-07-20 21:18:16.535Z",
+    "full_payment_amount": 0,
+    "id": "x5qvjtj4in9k11d",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 13,
+    "updated": "2026-07-21 04:03:41.944Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "1y2yx6j5y892yqz",
+    "created": "2026-07-20 21:18:46.083Z",
+    "full_payment_amount": 0,
+    "id": "tqw1mxs7d1m0hjp",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 15,
+    "updated": "2026-07-20 21:18:46.083Z",
+    "user_id": "w83c6b562wsr1hb",
+    "collectionId": "pbc_8068410022"
+  },
+  {
+    "card_id": "q7mwvz9kmccoo4i",
+    "created": "2026-08-07 09:51:31.977Z",
+    "full_payment_amount": 0,
+    "id": "hcsevf23670dl0z",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 21,
+    "updated": "2026-08-07 09:51:31.977Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "c08yvssceg3n0ia",
+    "created": "2026-08-10 22:42:58.336Z",
+    "full_payment_amount": 0,
+    "id": "84hr0xvmv3k0sv9",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 13,
+    "updated": "2026-08-10 22:43:24.378Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "cack730nsui52f3",
+    "created": "2026-08-10 22:45:07.530Z",
+    "full_payment_amount": 20541,
+    "id": "b3azjh2be9bjais",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 10,
+    "updated": "2026-08-10 22:45:44.914Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "bp3071q84g6ibb1",
+    "created": "2026-08-10 22:46:51.008Z",
+    "full_payment_amount": 0,
+    "id": "unqjspziixmm42u",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 9,
+    "updated": "2026-08-10 22:47:02.857Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "1s23uwz2q0e40op",
+    "created": "2026-08-10 22:48:47.320Z",
+    "full_payment_amount": 131000,
+    "id": "kl71vsk47o0b49r",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 28,
+    "updated": "2026-08-10 22:48:47.320Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "dz2bbvblzlbl8au",
+    "created": "2026-08-10 22:50:14.800Z",
+    "full_payment_amount": 0,
+    "id": "7of7qz5php13g1i",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 8,
+    "updated": "2026-08-10 22:51:20.445Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "c1hqpjnt1pfppgo",
+    "created": "2026-08-10 22:53:13.804Z",
+    "full_payment_amount": 47647,
+    "id": "pq7z644hznbchjd",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 10,
+    "updated": "2026-08-10 22:53:13.804Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "tt2a4flx5qmwbog",
+    "created": "2026-08-10 22:54:46.652Z",
+    "full_payment_amount": 0,
+    "id": "eoedies2bb63yol",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 11,
+    "updated": "2026-08-10 22:54:46.652Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  },
+  {
+    "card_id": "8a6hkmguke5lslp",
+    "created": "2026-08-10 22:55:41.463Z",
+    "full_payment_amount": 0,
+    "id": "h47pjwys5ofyl45",
+    "minimum_payment_amount": 0,
+    "payment_due_date": 15,
+    "updated": "2026-08-10 22:55:41.463Z",
+    "user_id": "usr_munna_superadmin",
+    "collectionId": null
+  }
+]

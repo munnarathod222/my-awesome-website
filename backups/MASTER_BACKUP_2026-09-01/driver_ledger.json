@@ -1,0 +1,20 @@
+[
+  {
+    "id": "peiazmr5r1tl386",
+    "driver_id": "bpuppzyfbttdf1i",
+    "trip_id": "7ocefhwb7pe2v51",
+    "route_rate": 7100,
+    "advance_paid": 3000,
+    "balance_due": 4100,
+    "status": "Pending POD"
+  },
+  {
+    "id": "1x5oyru11dulx3m",
+    "driver_id": "bpuppzyfbttdf1i",
+    "trip_id": "an25pznrky247ue",
+    "route_rate": 7100,
+    "advance_paid": 3000,
+    "balance_due": 4100,
+    "status": "Pending POD"
+  }
+]

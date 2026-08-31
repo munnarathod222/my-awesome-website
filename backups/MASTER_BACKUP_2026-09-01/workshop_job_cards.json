@@ -1,0 +1,30 @@
+[
+  {
+    "id": "62gc4m3uaqvv6bk",
+    "job_card_number": "JC-768767",
+    "truck_number": "TG12U2637",
+    "driver_name": "suresh",
+    "odometer_reading": 48000,
+    "service_type": "Preventive Scheduled Maintenance",
+    "assigned_mechanic": "alam",
+    "supervisor_name": "Workshop Manager",
+    "status": "Closed",
+    "parts_cost": 16720,
+    "labour_cost": 1800,
+    "tax_amount": 0,
+    "total_cost": 18520,
+    "complaints_list": "engine oil change, air filter change, oil filter change, diesel filter change,centre bolt repair and kamani joint repair,head light glass and indicator change, cabin light repair, mobile charger repair",
+    "notes": "",
+    "entry_date": "2026-08-15 00:00:00.000Z",
+    "completion_date": "",
+    "itemized_items": "[{\"amount\":7650,\"description\":\"Engine Oil Change\",\"qty\":\"18\",\"type\":\"part\",\"unit_price\":\"425\"},{\"amount\":1550,\"description\":\"Oil Filter Replacement\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"1550\"},{\"amount\":250,\"description\":\"diesel filter\",\"qty\":\"2\",\"type\":\"part\",\"unit_price\":\"125\"},{\"amount\":30,\"description\":\"diesel filter glass\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"30\"},{\"amount\":140,\"description\":\"cleaning cloth\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"140\"},{\"amount\":1500,\"description\":\"General Service Labour Charge (mechanic)\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"1500\"},{\"amount\":700,\"description\":\"kamani centre bolt and joint spare parts\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"700\"},{\"amount\":1100,\"description\":\"kamani repair labour\",\"qty\":1,\"type\":\"labour\",\"unit_price\":\"1100\"},{\"amount\":2450,\"description\":\"Air filter\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"2450\"},{\"amount\":1020,\"description\":\"propeller drive shaft - centre bearing\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"1020\"},{\"amount\":300,\"description\":\"1/2 wire roll\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"300\"},{\"amount\":120,\"description\":\"side indicator\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"120\"},{\"amount\":240,\"description\":\"headlight assembly\",\"qty\":1,\"type\":\"part\",\"unit_price\":\"240\"},{\"amount\":700,\"description\":\"electrician \",\"qty\":1,\"type\":\"labour\",\"unit_price\":\"700\"},{\"amount\":320,\"description\":\"Power Steering Fluid \",\"part_key\":\"POWER STEERING FLUID\",\"qty\":\"1\",\"type\":\"part\",\"unit_price\":\"320\"},{\"description\":\"diaphram tube\",\"type\":\"part\",\"qty\":1,\"unit_price\":\"450\",\"amount\":450}]",
+    "bill_url": "",
+    "service_log_id": "t4f356phelt8a6h",
+    "expense_id": "lygmutfkm3xol4f",
+    "cashbook_id": "7srs6a9mars8kto",
+    "maintenance_log_id": "",
+    "bills_json": "[]",
+    "bill": "[]",
+    "bills": "[]"
+  }
+]

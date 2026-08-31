@@ -1,0 +1,1574 @@
+[
+  {
+    "file": "1640988000_aux_init.go",
+    "applied": 1780851027860591
+  },
+  {
+    "file": "1640988000_init.go",
+    "applied": 1780851027930384
+  },
+  {
+    "file": "1717233556_v0.23_migrate.go",
+    "applied": 1780851027930503
+  },
+  {
+    "file": "1717233557_v0.23_migrate2.go",
+    "applied": 1780851027930810
+  },
+  {
+    "file": "1717233558_v0.23_migrate3.go",
+    "applied": 1780851027935912
+  },
+  {
+    "file": "1717233559_v0.23_migrate4.go",
+    "applied": 1780851027936040
+  },
+  {
+    "file": "1763020353_update_default_auth_alert_templates.go",
+    "applied": 1780851027936569
+  },
+  {
+    "file": "1759383931_initial_app_settings.js",
+    "applied": 1780851027945723
+  },
+  {
+    "file": "1764579159_create_superuser.js",
+    "applied": 1780851028055792
+  },
+  {
+    "file": "1769159103_disable_auth_alert_superusers.js",
+    "applied": 1780851028059258
+  },
+  {
+    "file": "1769164585_set_rate_limits.js",
+    "applied": 1780851028123883
+  },
+  {
+    "file": "1775709407_disable_auth_alert_users.js",
+    "applied": 1780851028127595
+  },
+  {
+    "file": "1780851111_001_created_employees.js",
+    "applied": 1780851112868107
+  },
+  {
+    "file": "1780851113_001_created_trucks.js",
+    "applied": 1780851114732048
+  },
+  {
+    "file": "1780851114_001_created_routes.js",
+    "applied": 1780851116628762
+  },
+  {
+    "file": "1780851117_001_created_trip_logs.js",
+    "applied": 1780851119776120
+  },
+  {
+    "file": "1780851119_001_created_expenses_fuel.js",
+    "applied": 1780851121485332
+  },
+  {
+    "file": "1780851121_001_created_expenses_fastag.js",
+    "applied": 1780851123291668
+  },
+  {
+    "file": "1780851123_001_created_expenses_driver_advance.js",
+    "applied": 1780851125170311
+  },
+  {
+    "file": "1780851125_001_created_expenses_maintenance.js",
+    "applied": 1780851126986381
+  },
+  {
+    "file": "1780851127_001_created_expenses_miscellaneous.js",
+    "applied": 1780851128971699
+  },
+  {
+    "file": "1780851129_001_created_fastag_transactions.js",
+    "applied": 1780851130881173
+  },
+  {
+    "file": "1780851131_001_created_attendance.js",
+    "applied": 1780851133085777
+  },
+  {
+    "file": "1780851133_002_add_role_to_users.js",
+    "applied": 1780851134946746
+  },
+  {
+    "file": "1780851135_003_update_rules_for_users.js",
+    "applied": 1780851137139762
+  },
+  {
+    "file": "1780851141_002_update_indexes_for_trucks.js",
+    "applied": 1780851143178998
+  },
+  {
+    "file": "1780851144_002_update_indexes_for_routes.js",
+    "applied": 1780851145739973
+  },
+  {
+    "file": "1780851874_001_create_user_admin_at_jbcargo_com.js",
+    "applied": 1780851876609798
+  },
+  {
+    "file": "1780882659_001_created_cashbooks.js",
+    "applied": 1780882661136119
+  },
+  {
+    "file": "1780882662_002_created_cashbook_transactions.js",
+    "applied": 1780882664372131
+  },
+  {
+    "file": "1780883145_001_created_payroll.js",
+    "applied": 1780883147654512
+  },
+  {
+    "file": "1780883977_001_created_truck_documents.js",
+    "applied": 1780883978773761
+  },
+  {
+    "file": "1780883979_001_created_todos.js",
+    "applied": 1780883980668494
+  },
+  {
+    "file": "1780884412_001_created_employee_documents.js",
+    "applied": 1780884414084009
+  },
+  {
+    "file": "1780884675_001_created_credit_cards.js",
+    "applied": 1780884677232223
+  },
+  {
+    "file": "1780884677_001_created_fuel_payments.js",
+    "applied": 1780884679351778
+  },
+  {
+    "file": "1780884679_001_created_payment_due_dates.js",
+    "applied": 1780884681255839
+  },
+  {
+    "file": "1780884681_001_created_payment_records.js",
+    "applied": 1780884683160603
+  },
+  {
+    "file": "1780885546_001_created_fastag_recharges.js",
+    "applied": 1780885548065814
+  },
+  {
+    "file": "1780885548_002_add_fastag_id_to_trucks.js",
+    "applied": 1780885550052795
+  },
+  {
+    "file": "1780885552_002_add_fastag_provider_to_trucks.js",
+    "applied": 1780885553972512
+  },
+  {
+    "file": "1780885555_002_add_last_recharge_date_to_trucks.js",
+    "applied": 1780885557253906
+  },
+  {
+    "file": "1780885559_002_add_last_recharge_amount_to_trucks.js",
+    "applied": 1780885560965408
+  },
+  {
+    "file": "1780885562_002_add_fastag_status_to_trucks.js",
+    "applied": 1780885564387443
+  },
+  {
+    "file": "1780885566_002_add_vehicle_class_to_trucks.js",
+    "applied": 1780885567870832
+  },
+  {
+    "file": "1780885569_002_add_fastag_notes_to_trucks.js",
+    "applied": 1780885571252732
+  },
+  {
+    "file": "1780886039_001_created_expenses.js",
+    "applied": 1780886041071842
+  },
+  {
+    "file": "1780886392_002_add_photos_to_expenses_fuel.js",
+    "applied": 1780886393628476
+  },
+  {
+    "file": "1780886394_002_add_truck_number_to_expenses_fuel.js",
+    "applied": 1780886395634964
+  },
+  {
+    "file": "1780886396_002_add_notes_to_expenses_fuel.js",
+    "applied": 1780886397745577
+  },
+  {
+    "file": "1780886398_002_update_created_by_in_expenses_fuel.js",
+    "applied": 1780886399582661
+  },
+  {
+    "file": "1780886400_002_add_bill_to_expenses_fastag.js",
+    "applied": 1780886401687515
+  },
+  {
+    "file": "1780886402_002_add_notes_to_expenses_fastag.js",
+    "applied": 1780886403655471
+  },
+  {
+    "file": "1780886404_002_update_payment_mode_in_expenses_fastag.js",
+    "applied": 1780886405639958
+  },
+  {
+    "file": "1780886405_002_update_created_by_in_expenses_fastag.js",
+    "applied": 1780886407568701
+  },
+  {
+    "file": "1780886407_002_remove_recharge_from_expenses_fastag.js",
+    "applied": 1780886409545892
+  },
+  {
+    "file": "1780886409_002_add_bill_to_expenses_driver_advance.js",
+    "applied": 1780886411572011
+  },
+  {
+    "file": "1780886411_002_add_notes_to_expenses_driver_advance.js",
+    "applied": 1780886413579922
+  },
+  {
+    "file": "1780886413_002_update_payment_mode_in_expenses_driver_advance.js",
+    "applied": 1780886415540519
+  },
+  {
+    "file": "1780886416_002_update_created_by_in_expenses_driver_advance.js",
+    "applied": 1780886417562363
+  },
+  {
+    "file": "1780886417_002_add_bill_to_expenses_maintenance.js",
+    "applied": 1780886419534200
+  },
+  {
+    "file": "1780886419_002_add_service_provider_name_to_expenses_maintenance.js",
+    "applied": 1780886421537028
+  },
+  {
+    "file": "1780886421_002_add_notes_to_expenses_maintenance.js",
+    "applied": 1780886423549831
+  },
+  {
+    "file": "1780886423_002_rename_service_type_to_service_in_expenses_maintenance.js",
+    "applied": 1780886425569959
+  },
+  {
+    "file": "1780886425_002_update_payment_mode_in_expenses_maintenance.js",
+    "applied": 1780886427635370
+  },
+  {
+    "file": "1780886428_002_update_created_by_in_expenses_maintenance.js",
+    "applied": 1780886429647123
+  },
+  {
+    "file": "1780886430_002_add_bill_to_expenses_miscellaneous.js",
+    "applied": 1780886431683750
+  },
+  {
+    "file": "1780886432_002_add_notes_to_expenses_miscellaneous.js",
+    "applied": 1780886433747035
+  },
+  {
+    "file": "1780886434_002_rename_expense_type_to_expense_description_in_expenses_miscellaneous.js",
+    "applied": 1780886435862114
+  },
+  {
+    "file": "1780886436_002_update_payment_mode_in_expenses_miscellaneous.js",
+    "applied": 1780886437884485
+  },
+  {
+    "file": "1780886438_002_update_created_by_in_expenses_miscellaneous.js",
+    "applied": 1780886439941813
+  },
+  {
+    "file": "1780886974_001_created_bulk_upload_history.js",
+    "applied": 1780886976176862
+  },
+  {
+    "file": "1780889350_001_created_delivery_proofs.js",
+    "applied": 1780889352079483
+  },
+  {
+    "file": "1780892125_001_created_cashbook.js",
+    "applied": 1780892127088364
+  },
+  {
+    "file": "1780892425_002_remove_employee_name_from_attendance.js",
+    "applied": 1780892426736100
+  },
+  {
+    "file": "1780892427_003_add_staff_member_to_attendance.js",
+    "applied": 1780892428840011
+  },
+  {
+    "file": "1780892429_004_update_status_in_attendance.js",
+    "applied": 1780892430828185
+  },
+  {
+    "file": "1780892431_005_add_check_in_time_to_attendance.js",
+    "applied": 1780892432857780
+  },
+  {
+    "file": "1780892433_006_add_check_out_time_to_attendance.js",
+    "applied": 1780892434978964
+  },
+  {
+    "file": "1780892435_007_add_hours_worked_to_attendance.js",
+    "applied": 1780892437095053
+  },
+  {
+    "file": "1780892437_008_add_marked_by_to_attendance.js",
+    "applied": 1780892439254693
+  },
+  {
+    "file": "1780892439_009_update_rules_for_attendance.js",
+    "applied": 1780892441333902
+  },
+  {
+    "file": "1780944651_001_created_invitations.js",
+    "applied": 1780944653654712
+  },
+  {
+    "file": "1780944654_001_created_user_sessions.js",
+    "applied": 1780944655944253
+  },
+  {
+    "file": "1780944656_001_created_audit_logs.js",
+    "applied": 1780944658474912
+  },
+  {
+    "file": "1780944658_002_add_full_name_to_users.js",
+    "applied": 1780944660728838
+  },
+  {
+    "file": "1780944661_002_add_phone_number_to_users.js",
+    "applied": 1780944662935437
+  },
+  {
+    "file": "1780944663_002_add_status_to_users.js",
+    "applied": 1780944665167864
+  },
+  {
+    "file": "1780944666_002_add_profile_picture_to_users.js",
+    "applied": 1780944667824798
+  },
+  {
+    "file": "1780944668_002_add_last_login_to_users.js",
+    "applied": 1780944669951763
+  },
+  {
+    "file": "1780944670_002_add_created_date_to_users.js",
+    "applied": 1780944672560437
+  },
+  {
+    "file": "1780944673_002_update_role_in_users.js",
+    "applied": 1780944674725160
+  },
+  {
+    "file": "1780944675_002_update_indexes_for_invitations.js",
+    "applied": 1780944676887504
+  },
+  {
+    "file": "1780944677_002_add_user_id_to_trip_logs.js",
+    "applied": 1780944679190533
+  },
+  {
+    "file": "1780944679_002_add_assigned_managers_to_trip_logs.js",
+    "applied": 1780944681467529
+  },
+  {
+    "file": "1780944681_002_add_user_id_to_attendance.js",
+    "applied": 1780944683537667
+  },
+  {
+    "file": "1780944683_002_update_indexes_for_user_sessions.js",
+    "applied": 1780944685684207
+  },
+  {
+    "file": "1780944686_002_update_indexes_for_audit_logs.js",
+    "applied": 1780944687863894
+  },
+  {
+    "file": "1780944688_003_update_rules_for_users.js",
+    "applied": 1780944690052546
+  },
+  {
+    "file": "1780944690_003_update_rules_for_trip_logs.js",
+    "applied": 1780944692341443
+  },
+  {
+    "file": "1780944692_003_update_rules_for_attendance.js",
+    "applied": 1780944694736795
+  },
+  {
+    "file": "1780945329_002_add_route_name_to_routes.js",
+    "applied": 1780945331230496
+  },
+  {
+    "file": "1780945333_002_add_origin_city_to_routes.js",
+    "applied": 1780945335136203
+  },
+  {
+    "file": "1780945337_002_add_destination_city_to_routes.js",
+    "applied": 1780945339336703
+  },
+  {
+    "file": "1780945341_002_add_distance_km_to_routes.js",
+    "applied": 1780945343059853
+  },
+  {
+    "file": "1780945347_002_add_estimated_time_hours_to_routes.js",
+    "applied": 1780945349728927
+  },
+  {
+    "file": "1780945352_002_add_truck_type_to_routes.js",
+    "applied": 1780945354632439
+  },
+  {
+    "file": "1780945356_002_add_capacity_mt_to_routes.js",
+    "applied": 1780945358750863
+  },
+  {
+    "file": "1780945361_002_add_status_to_routes.js",
+    "applied": 1780945363960565
+  },
+  {
+    "file": "1780945366_002_add_description_to_routes.js",
+    "applied": 1780945368928404
+  },
+  {
+    "file": "1780945370_002_add_created_by_to_routes.js",
+    "applied": 1780945373055466
+  },
+  {
+    "file": "1780945374_003_update_rules_for_routes.js",
+    "applied": 1780945376483873
+  },
+  {
+    "file": "1780945379_004_update_indexes_for_routes.js",
+    "applied": 1780945381128039
+  },
+  {
+    "file": "1780945922_001_deleted_routes.js",
+    "applied": 1780945924864698
+  },
+  {
+    "file": "1780945939_002_created_fuel_tracker.js",
+    "applied": 1780945941125670
+  },
+  {
+    "file": "1780945941_002_created_reminders.js",
+    "applied": 1780945943463831
+  },
+  {
+    "file": "1780945943_003_update_rules_for_expenses.js",
+    "applied": 1780945945574397
+  },
+  {
+    "file": "1780945946_003_update_rules_for_payroll.js",
+    "applied": 1780945947672825
+  },
+  {
+    "file": "1780945948_003_update_rules_for_credit_cards.js",
+    "applied": 1780945950446800
+  },
+  {
+    "file": "1780945958_003_update_rules_for_todos.js",
+    "applied": 1780945960855775
+  },
+  {
+    "file": "1780945967_004_add_assigned_to_to_todos.js",
+    "applied": 1780945969242680
+  },
+  {
+    "file": "1780945970_004_add_is_completed_to_todos.js",
+    "applied": 1780945972079955
+  },
+  {
+    "file": "1780945973_004_add_created_by_to_todos.js",
+    "applied": 1780945975060813
+  },
+  {
+    "file": "1780949356_001_created_bills.js",
+    "applied": 1780949357835376
+  },
+  {
+    "file": "1780949692_002_add_expense_id_to_bills.js",
+    "applied": 1780949693782630
+  },
+  {
+    "file": "1780950057_002_add_fuel_tracker_id_to_expenses.js",
+    "applied": 1780950059158807
+  },
+  {
+    "file": "1780950059_002_add_expense_id_to_fuel_tracker.js",
+    "applied": 1780950061875489
+  },
+  {
+    "file": "1780950415_002_add_liters_to_expenses.js",
+    "applied": 1780950417700749
+  },
+  {
+    "file": "1780950939_001_add_credit_card_id_to_expenses.js",
+    "applied": 1780950940986789
+  },
+  {
+    "file": "1780951726_002_add_reminder_type_to_reminders.js",
+    "applied": 1780951727866867
+  },
+  {
+    "file": "1780951728_002_add_priority_to_reminders.js",
+    "applied": 1780951730069931
+  },
+  {
+    "file": "1780951730_002_add_status_to_reminders.js",
+    "applied": 1780951732272652
+  },
+  {
+    "file": "1780951732_002_add_notes_to_reminders.js",
+    "applied": 1780951734471203
+  },
+  {
+    "file": "1780951734_002_add_user_id_to_reminders.js",
+    "applied": 1780951736751897
+  },
+  {
+    "file": "1780951737_002_add_linked_document_id_to_reminders.js",
+    "applied": 1780951738980885
+  },
+  {
+    "file": "1780951739_002_add_linked_card_id_to_reminders.js",
+    "applied": 1780951741062172
+  },
+  {
+    "file": "1780951741_002_add_snooze_until_date_to_reminders.js",
+    "applied": 1780951743189278
+  },
+  {
+    "file": "1780951743_003_update_rules_for_reminders.js",
+    "applied": 1780951745676624
+  },
+  {
+    "file": "1780952358_002_update_document_type_in_truck_documents.js",
+    "applied": 1780952360256476
+  },
+  {
+    "file": "1780952360_002_update_expiry_date_in_truck_documents.js",
+    "applied": 1780952362499193
+  },
+  {
+    "file": "1780952362_002_update_file_in_truck_documents.js",
+    "applied": 1780952364668444
+  },
+  {
+    "file": "1780952365_002_add_document_number_to_truck_documents.js",
+    "applied": 1780952367036644
+  },
+  {
+    "file": "1780952367_002_add_issue_date_to_truck_documents.js",
+    "applied": 1780952369146090
+  },
+  {
+    "file": "1780952369_002_add_notes_to_truck_documents.js",
+    "applied": 1780952371345515
+  },
+  {
+    "file": "1780952371_002_update_rules_for_truck_documents.js",
+    "applied": 1780952373560149
+  },
+  {
+    "file": "1780952374_002_update_document_type_in_employee_documents.js",
+    "applied": 1780952376048034
+  },
+  {
+    "file": "1780952376_002_update_expiry_date_in_employee_documents.js",
+    "applied": 1780952378187042
+  },
+  {
+    "file": "1780952378_002_rename_document_name_to_document_number_in_employee_documents.js",
+    "applied": 1780952380476481
+  },
+  {
+    "file": "1780952380_002_add_notes_to_employee_documents.js",
+    "applied": 1780952382890157
+  },
+  {
+    "file": "1780952383_002_update_rules_for_employee_documents.js",
+    "applied": 1780952384979196
+  },
+  {
+    "file": "1780953824_002_add_photo_to_employees.js",
+    "applied": 1780953826357754
+  },
+  {
+    "file": "1780954174_002_add_reference_id_to_cashbook.js",
+    "applied": 1780954176377688
+  },
+  {
+    "file": "1780954177_002_rename_type_to_transaction_type_in_cashbook.js",
+    "applied": 1780954179103831
+  },
+  {
+    "file": "1780954179_003_update_rules_for_cashbook.js",
+    "applied": 1780954181646130
+  },
+  {
+    "file": "1780954182_004_update_indexes_for_cashbook.js",
+    "applied": 1780954184254708
+  },
+  {
+    "file": "1780955205_001_created_quotes.js",
+    "applied": 1780955207437096
+  },
+  {
+    "file": "1780955210_002_update_indexes_for_quotes.js",
+    "applied": 1780955212027402
+  },
+  {
+    "file": "1780955817_001_created_invoices.js",
+    "applied": 1780955819154558
+  },
+  {
+    "file": "1780955819_002_update_indexes_for_invoices.js",
+    "applied": 1780955821461698
+  },
+  {
+    "file": "1780958187_001_created_advances.js",
+    "applied": 1780958189434935
+  },
+  {
+    "file": "1780958189_001_created_salary_payments.js",
+    "applied": 1780958191623753
+  },
+  {
+    "file": "1780958192_002_add_position_to_employees.js",
+    "applied": 1780958193870350
+  },
+  {
+    "file": "1780958194_002_add_base_salary_to_employees.js",
+    "applied": 1780958196255572
+  },
+  {
+    "file": "1780958196_002_add_salary_billing_cycle_to_employees.js",
+    "applied": 1780958198769842
+  },
+  {
+    "file": "1780958199_002_add_hire_date_to_employees.js",
+    "applied": 1780958201246047
+  },
+  {
+    "file": "1780958208_003_seed_employees_5_records.js",
+    "applied": 1780958210765467
+  },
+  {
+    "file": "1781022519_002_update_rules_for_advances.js",
+    "applied": 1781022521152514
+  },
+  {
+    "file": "1781022521_002_update_rules_for_attendance.js",
+    "applied": 1781022523566344
+  },
+  {
+    "file": "1781024395_002_add_advance_id_to_expenses.js",
+    "applied": 1781024397882267
+  },
+  {
+    "file": "1781024848_002_add_reference_type_to_cashbook.js",
+    "applied": 1781024850491837
+  },
+  {
+    "file": "1781024853_002_add_status_to_cashbook.js",
+    "applied": 1781024855029258
+  },
+  {
+    "file": "1781024857_002_update_transaction_type_in_cashbook.js",
+    "applied": 1781024859037314
+  },
+  {
+    "file": "1781024869_003_update_rules_for_cashbook.js",
+    "applied": 1781024872061391
+  },
+  {
+    "file": "1781026509_001_created_vehicles.js",
+    "applied": 1781026511048971
+  },
+  {
+    "file": "1781026511_001_created_routes.js",
+    "applied": 1781026513452926
+  },
+  {
+    "file": "1781026520_002_update_indexes_for_vehicles.js",
+    "applied": 1781026522465026
+  },
+  {
+    "file": "1781036357_001_created_clients.js",
+    "applied": 1781036359450268
+  },
+  {
+    "file": "1781036359_002_created_client_shipments.js",
+    "applied": 1781036361776048
+  },
+  {
+    "file": "1781036362_002_created_client_invoices.js",
+    "applied": 1781036364072694
+  },
+  {
+    "file": "1781036364_003_created_client_payments.js",
+    "applied": 1781036366474110
+  },
+  {
+    "file": "1781036370_002_update_indexes_for_clients.js",
+    "applied": 1781036372150191
+  },
+  {
+    "file": "1781036372_003_update_indexes_for_client_invoices.js",
+    "applied": 1781036374554495
+  },
+  {
+    "file": "1781121185_001_created_signup_requests.js",
+    "applied": 1781121186994138
+  },
+  {
+    "file": "1781121187_002_update_indexes_for_signup_requests.js",
+    "applied": 1781121189440127
+  },
+  {
+    "file": "1781123769_002_add_client_id_to_trip_logs.js",
+    "applied": 1781123771602624
+  },
+  {
+    "file": "1781124399_001_created_payment_requests.js",
+    "applied": 1781124400958017
+  },
+  {
+    "file": "1781124401_002_add_trip_status_to_trip_logs.js",
+    "applied": 1781124403744784
+  },
+  {
+    "file": "1781124404_003_update_indexes_for_payment_requests.js",
+    "applied": 1781124406256709
+  },
+  {
+    "file": "1781130015_002_add_created_by_to_invitations.js",
+    "applied": 1781130017636033
+  },
+  {
+    "file": "1781130018_002_add_invited_by_name_to_invitations.js",
+    "applied": 1781130019779839
+  },
+  {
+    "file": "1781130020_002_update_status_in_invitations.js",
+    "applied": 1781130021824735
+  },
+  {
+    "file": "1781131322_001_created_maintenance_schedules.js",
+    "applied": 1781131324269410
+  },
+  {
+    "file": "1781131325_001_created_maintenance_records.js",
+    "applied": 1781131327164375
+  },
+  {
+    "file": "1781131977_002_add_employee_id_relation_to_payroll.js",
+    "applied": 1781131979581086
+  },
+  {
+    "file": "1781131980_002_add_daily_rate_to_payroll.js",
+    "applied": 1781131982358335
+  },
+  {
+    "file": "1781131982_002_add_attendance_days_to_payroll.js",
+    "applied": 1781131984464012
+  },
+  {
+    "file": "1781131984_002_add_total_salary_to_payroll.js",
+    "applied": 1781131986651514
+  },
+  {
+    "file": "1781131986_002_add_deductions_breakdown_to_payroll.js",
+    "applied": 1781131988851909
+  },
+  {
+    "file": "1781131989_002_add_allowances_breakdown_to_payroll.js",
+    "applied": 1781131990959427
+  },
+  {
+    "file": "1781131991_002_add_gross_salary_to_payroll.js",
+    "applied": 1781131993426260
+  },
+  {
+    "file": "1781131993_002_add_taxes_to_payroll.js",
+    "applied": 1781131995664098
+  },
+  {
+    "file": "1781131995_002_add_status_to_payroll.js",
+    "applied": 1781131997768546
+  },
+  {
+    "file": "1781131998_002_add_created_date_to_payroll.js",
+    "applied": 1781131999952235
+  },
+  {
+    "file": "1781132000_002_add_updated_date_to_payroll.js",
+    "applied": 1781132002139158
+  },
+  {
+    "file": "1781132002_003_update_rules_for_payroll.js",
+    "applied": 1781132004173598
+  },
+  {
+    "file": "1781132824_002_add_credit_card_id_to_fuel_tracker.js",
+    "applied": 1781132826831943
+  },
+  {
+    "file": "1781193133_002_add_user_id_to_cashbooks.js",
+    "applied": 1781193135752832
+  },
+  {
+    "file": "1781193137_002_add_currency_to_cashbooks.js",
+    "applied": 1781193139493075
+  },
+  {
+    "file": "1781193140_003_update_rules_for_cashbooks.js",
+    "applied": 1781193142470286
+  },
+  {
+    "file": "1781193143_003_update_rules_for_cashbook_transactions.js",
+    "applied": 1781193145750026
+  },
+  {
+    "file": "1781195915_002_add_billing_type_to_clients.js",
+    "applied": 1781195917691811
+  },
+  {
+    "file": "1781195918_002_add_employment_type_to_employees.js",
+    "applied": 1781195920323722
+  },
+  {
+    "file": "1781195920_003_update_clients_by_filter.js",
+    "applied": 1781195922726662
+  },
+  {
+    "file": "1781195923_003_update_employees_by_filter.js",
+    "applied": 1781195925288065
+  },
+  {
+    "file": "1781195925_004_update_indexes_for_clients.js",
+    "applied": 1781195927841395
+  },
+  {
+    "file": "1781195928_004_update_indexes_for_employees.js",
+    "applied": 1781195930164636
+  },
+  {
+    "file": "1781196542_002_add_advance_received_from_client_to_trip_logs.js",
+    "applied": 1781196544873264
+  },
+  {
+    "file": "1781196545_002_add_advance_paid_to_driver_to_trip_logs.js",
+    "applied": 1781196547364978
+  },
+  {
+    "file": "1781196550_003_update_indexes_for_trip_logs.js",
+    "applied": 1781196552154912
+  },
+  {
+    "file": "1781197330_002_update_status_in_cashbooks.js",
+    "applied": 1781197332342526
+  },
+  {
+    "file": "1781197332_003_update_rules_for_cashbooks.js",
+    "applied": 1781197334938193
+  },
+  {
+    "file": "1781198202_001_update_rules_for_cashbooks.js",
+    "applied": 1781198204269752
+  },
+  {
+    "file": "1781198526_001_delete_cashbook_transactions_by_filter.js",
+    "applied": 1781198529045605
+  },
+  {
+    "file": "1781198529_001_delete_cashbooks_by_filter.js",
+    "applied": 1781198531864224
+  },
+  {
+    "file": "1781198543_002_seed_cashbooks_1_records.js",
+    "applied": 1781198545261129
+  },
+  {
+    "file": "1781199002_001_update_rules_for_cashbook.js",
+    "applied": 1781199004477167
+  },
+  {
+    "file": "1781199629_001_delete_cashbooks_by_filter.js",
+    "applied": 1781199631986255
+  },
+  {
+    "file": "1781199632_001_delete_cashbook_transactions_by_filter.js",
+    "applied": 1781199635030667
+  },
+  {
+    "file": "1781199635_002_deleted_cashbook_transactions.js",
+    "applied": 1781199638099717
+  },
+  {
+    "file": "1781199638_002_deleted_cashbooks.js",
+    "applied": 1781199640840837
+  },
+  {
+    "file": "1781199641_003_created_cashbooks.js",
+    "applied": 1781199643664806
+  },
+  {
+    "file": "1781199644_004_created_cashbook_transactions.js",
+    "applied": 1781199646468404
+  },
+  {
+    "file": "1781200130_002_update_category_in_expenses.js",
+    "applied": 1781200132845675
+  },
+  {
+    "file": "1781200133_002_add_subcategory_to_expenses.js",
+    "applied": 1781200135743824
+  },
+  {
+    "file": "1781200136_002_update_credit_card_id_in_expenses.js",
+    "applied": 1781200138170850
+  },
+  {
+    "file": "1781204301_001_update_trip_status_in_trip_logs.js",
+    "applied": 1781204303768953
+  },
+  {
+    "file": "1781205471_002_update_rules_for_routes.js",
+    "applied": 1781205473160199
+  },
+  {
+    "file": "1781205473_003_add_route_code_to_routes.js",
+    "applied": 1781205475697513
+  },
+  {
+    "file": "1781205476_004_add_amount_per_trip_to_routes.js",
+    "applied": 1781205478077614
+  },
+  {
+    "file": "1781205479_005_add_distance_km_to_routes.js",
+    "applied": 1781205481640660
+  },
+  {
+    "file": "1781205482_006_add_created_date_to_routes.js",
+    "applied": 1781205485274769
+  },
+  {
+    "file": "1781205485_007_update_indexes_for_routes.js",
+    "applied": 1781205487373455
+  },
+  {
+    "file": "1781211654_001_created_contacts.js",
+    "applied": 1781211656637060
+  },
+  {
+    "file": "1781212320_002_add_kms_to_fuel_tracker.js",
+    "applied": 1781212322662083
+  },
+  {
+    "file": "1781212323_002_add_liters_to_fuel_tracker.js",
+    "applied": 1781212325930083
+  },
+  {
+    "file": "1781213015_001_update_rules_for_vehicles.js",
+    "applied": 1781213017030725
+  },
+  {
+    "file": "1781361173_001_seed_fuel_tracker_1_records.js",
+    "applied": 1781361175851098
+  },
+  {
+    "file": "1781361251_001_deleted_fuel_tracker.js",
+    "applied": 1781361253078675
+  },
+  {
+    "file": "1781361253_002_created_fuel_tracker.js",
+    "applied": 1781361255433159
+  },
+  {
+    "file": "1774828800_create_integrated_ai_messages.js",
+    "applied": 1781362137136542
+  },
+  {
+    "file": "1774828801_create_integrated_ai_images.js",
+    "applied": 1781362137143659
+  },
+  {
+    "file": "1774828802_enable_batch_api.js",
+    "applied": 1781362137144877
+  },
+  {
+    "file": "1781362247_001_update_gstin_in_contacts.js",
+    "applied": 1781362249144967
+  },
+  {
+    "file": "1781362891_001_created_planned_surcharge_payments.js",
+    "applied": 1781362893308947
+  },
+  {
+    "file": "1781363571_002_add_max_waiver_per_transaction_to_credit_cards.js",
+    "applied": 1781363573985081
+  },
+  {
+    "file": "1781363574_002_add_monthly_waiver_limit_to_credit_cards.js",
+    "applied": 1781363576484884
+  },
+  {
+    "file": "1781363576_002_add_current_month_waiver_used_to_credit_cards.js",
+    "applied": 1781363578882950
+  },
+  {
+    "file": "1781365121_002_update_current_month_waiver_used_in_credit_cards.js",
+    "applied": 1781365123348003
+  },
+  {
+    "file": "1781365124_003_update_credit_cards_by_filter.js",
+    "applied": 1781365126536726
+  },
+  {
+    "file": "1781365369_001_created_tyres.js",
+    "applied": 1781365371140101
+  },
+  {
+    "file": "1781365372_002_update_indexes_for_tyres.js",
+    "applied": 1781365374058005
+  },
+  {
+    "file": "1781367997_002_add_truck_name_to_trucks.js",
+    "applied": 1781367999305754
+  },
+  {
+    "file": "1781367999_002_add_truck_size_to_trucks.js",
+    "applied": 1781368001691988
+  },
+  {
+    "file": "1781368002_002_add_truck_axle_to_trucks.js",
+    "applied": 1781368004083769
+  },
+  {
+    "file": "1781368004_002_add_tyre_count_to_trucks.js",
+    "applied": 1781368006361933
+  },
+  {
+    "file": "1781368006_003_update_rules_for_trucks.js",
+    "applied": 1781368008959883
+  },
+  {
+    "file": "1781368009_004_update_truck_id_in_tyres.js",
+    "applied": 1781368011186423
+  },
+  {
+    "file": "1781368011_004_add_tyre_position_to_tyres.js",
+    "applied": 1781368013491952
+  },
+  {
+    "file": "1781371167_001_update_opening_balance_in_cashbooks.js",
+    "applied": 1781371169384656
+  },
+  {
+    "file": "1781371424_001_created_maintenance_logs.js",
+    "applied": 1781371426737041
+  },
+  {
+    "file": "1781371427_001_created_maintenance_reminders.js",
+    "applied": 1781371429128304
+  },
+  {
+    "file": "1781371429_001_created_parts_installed.js",
+    "applied": 1781371431636685
+  },
+  {
+    "file": "1781371431_001_created_maintenance_problems.js",
+    "applied": 1781371433991188
+  },
+  {
+    "file": "1781372477_001_created_attendance_records.js",
+    "applied": 1781372479358431
+  },
+  {
+    "file": "1781372479_002_add_joining_date_to_employees.js",
+    "applied": 1781372481764165
+  },
+  {
+    "file": "1781372485_003_update_rules_for_attendance_records.js",
+    "applied": 1781372487968655
+  },
+  {
+    "file": "1781378499_001_created_inventory_items.js",
+    "applied": 1781378501627919
+  },
+  {
+    "file": "1781378502_002_created_restock_history.js",
+    "applied": 1781378504662047
+  },
+  {
+    "file": "1781378505_002_created_stock_deductions.js",
+    "applied": 1781378507456884
+  },
+  {
+    "file": "1781378508_002_created_inventory_value_snapshots.js",
+    "applied": 1781378510248478
+  },
+  {
+    "file": "1781537782_002_add_employee_id_to_cashbooks.js",
+    "applied": 1781537784657826
+  },
+  {
+    "file": "1781538380_002_update_amount_in_cashbook.js",
+    "applied": 1781538382869085
+  },
+  {
+    "file": "1781538512_001_update_payment_method_in_expenses.js",
+    "applied": 1781538514890370
+  },
+  {
+    "file": "1781538764_002_add_present_days_to_payroll.js",
+    "applied": 1781538766471525
+  },
+  {
+    "file": "1781538766_002_add_absent_days_to_payroll.js",
+    "applied": 1781538769047112
+  },
+  {
+    "file": "1781538769_002_add_leave_days_to_payroll.js",
+    "applied": 1781538772134368
+  },
+  {
+    "file": "1781538772_002_add_advance_deductions_to_payroll.js",
+    "applied": 1781538774672806
+  },
+  {
+    "file": "1781538775_002_add_advance_ids_to_payroll.js",
+    "applied": 1781538777398734
+  },
+  {
+    "file": "1781538777_002_update_status_in_advances.js",
+    "applied": 1781538779842342
+  },
+  {
+    "file": "1781538780_002_add_expense_id_to_advances.js",
+    "applied": 1781538782405929
+  },
+  {
+    "file": "1781538783_002_add_settled_date_to_advances.js",
+    "applied": 1781538785580912
+  },
+  {
+    "file": "1781538785_002_add_notes_to_advances.js",
+    "applied": 1781538788278701
+  },
+  {
+    "file": "1781538788_002_add_leave_type_to_attendance.js",
+    "applied": 1781538790775700
+  },
+  {
+    "file": "1781538791_003_update_indexes_for_payroll.js",
+    "applied": 1781538793246731
+  },
+  {
+    "file": "1781538793_003_update_indexes_for_attendance.js",
+    "applied": 1781538796025859
+  },
+  {
+    "file": "1781538796_003_update_indexes_for_advances.js",
+    "applied": 1781538798567274
+  },
+  {
+    "file": "1781539872_001_update_opening_balance_in_cashbooks.js",
+    "applied": 1781539875249926
+  },
+  {
+    "file": "1781540106_001_update_amount_in_cashbook_transactions.js",
+    "applied": 1781540108838350
+  },
+  {
+    "file": "1781540115_001_update_amount_in_cashbook_transactions.js",
+    "applied": 1781540117426952
+  },
+  {
+    "file": "1781541227_001_created_loan_profiles.js",
+    "applied": 1781541229648785
+  },
+  {
+    "file": "1781541767_002_add_tyre_image_to_tyres.js",
+    "applied": 1781541769311280
+  },
+  {
+    "file": "1781541769_002_update_axle_position_in_tyres.js",
+    "applied": 1781541772201992
+  },
+  {
+    "file": "1781542983_002_add_trip_id_to_trip_logs.js",
+    "applied": 1781542985253100
+  },
+  {
+    "file": "1781542985_003_update_client_payment_status_in_trip_logs.js",
+    "applied": 1781542987844461
+  },
+  {
+    "file": "1781542988_004_update_indexes_for_trip_logs.js",
+    "applied": 1781542990372695
+  },
+  {
+    "file": "1781543285_002_update_status_in_maintenance_problems.js",
+    "applied": 1781543287480535
+  },
+  {
+    "file": "1781543288_002_add_date_solved_to_maintenance_problems.js",
+    "applied": 1781543290656315
+  },
+  {
+    "file": "1781543290_003_update_maintenance_problems_by_filter.js",
+    "applied": 1781543293537602
+  },
+  {
+    "file": "1781543747_002_add_remaining_balance_to_advances.js",
+    "applied": 1781543749843194
+  },
+  {
+    "file": "1781543750_002_add_advance_deductions_details_to_payroll.js",
+    "applied": 1781543753180595
+  },
+  {
+    "file": "1781550005_add_battery_fields_to_trucks.js",
+    "applied": 1782180869635518
+  },
+  {
+    "file": "1781550010_add_requires_pod_to_clients.js",
+    "applied": 1782180869664896
+  },
+  {
+    "file": "1781550015_add_pod_fields_to_trip_logs.js",
+    "applied": 1782180869705271
+  },
+  {
+    "file": "1781550020_add_date_fields_to_loan_profiles.js",
+    "applied": 1782180869752671
+  },
+  {
+    "file": "1781550025_created_exit_audits.js",
+    "applied": 1782180869765203
+  },
+  {
+    "file": "1781550030_created_driver_accident_reports.js",
+    "applied": 1782180869777527
+  },
+  {
+    "file": "1781550035_created_trip_calculations.js",
+    "applied": 1782180869789473
+  },
+  {
+    "file": "1781550040_update_tyres_fields.js",
+    "applied": 1782180869840838
+  },
+  {
+    "file": "1781550045_created_tyre_rotations.js",
+    "applied": 1782180869852704
+  },
+  {
+    "file": "1781550055_update_fuel_rules.js",
+    "applied": 1782236835131033
+  },
+  {
+    "file": "1781550060_add_assigned_truck_and_route_to_employees.js",
+    "applied": 1782254011868925
+  },
+  {
+    "file": "1781550070_add_body_images_to_trucks.js",
+    "applied": 1782254639660442
+  },
+  {
+    "file": "1781550080_add_is_round_trip_rate_to_routes.js",
+    "applied": 1782255651109803
+  },
+  {
+    "file": "1781550090_update_routes_round_trip_fields.js",
+    "applied": 1782256538398751
+  },
+  {
+    "file": "1781550100_add_tyre_kms_fields.js",
+    "applied": 1782270670320982
+  },
+  {
+    "file": "1781550110_create_company_settings.js",
+    "applied": 1782271262780241
+  },
+  {
+    "file": "1781550120_add_image_urls_to_maintenance_parts_inventory_expenses.js",
+    "applied": 1782272736953904
+  },
+  {
+    "file": "1781550130_create_billing_cycles.js",
+    "applied": 1782273523003229
+  },
+  {
+    "file": "1781550140_add_route_id_to_trip_logs.js",
+    "applied": 1782303487280159
+  },
+  {
+    "file": "1781550150_create_fleet_maintenance.js",
+    "applied": 1782305006429838
+  },
+  {
+    "file": "1781550160_update_reminder_type_values.js",
+    "applied": 1782305375003962
+  },
+  {
+    "file": "1781550165_add_truck_id_to_reminders.js",
+    "applied": 1782305402770908
+  },
+  {
+    "file": "1781550170_add_part_number_to_parts_installed.js",
+    "applied": 1782321753034033
+  },
+  {
+    "file": "1781550180_update_cashbook_reference_type_options.js",
+    "applied": 1782321949728630
+  },
+  {
+    "file": "1781550190_add_fields_to_billing_cycles.js",
+    "applied": 1782792456688268
+  },
+  {
+    "file": "1781550200_add_tds_fields.js",
+    "applied": 1782793419894145
+  },
+  {
+    "file": "1781550300_add_3pl_brokerage_fields.js",
+    "applied": 1782793983044227
+  },
+  {
+    "file": "1781550400_add_reconciliation_fields.js",
+    "applied": 1782794329879899
+  },
+  {
+    "file": "1781550200_add_education_to_employees.js",
+    "applied": 1782805013897972
+  },
+  {
+    "file": "1781600100_add_notes_month_label_to_maintenance_reminders.js",
+    "applied": 1782810579216416
+  },
+  {
+    "file": "1781600200_add_battery_bill_to_trucks.js",
+    "applied": 1782810579269190
+  },
+  {
+    "file": "1781600300_update_contact_type_options.js",
+    "applied": 1782810579314652
+  },
+  {
+    "file": "1781600400_update_trip_status_options.js",
+    "applied": 1782810977819622
+  },
+  {
+    "file": "1781600500_created_user_permission_overrides.js",
+    "applied": 1782828682415756
+  },
+  {
+    "file": "1781600600_clear_test_data.js",
+    "applied": 1782868003782427
+  },
+  {
+    "file": "1781600700_add_manager_id_to_trucks.js",
+    "applied": 1782883627003730
+  },
+  {
+    "file": "1781600800_update_trip_logs_rules.js",
+    "applied": 1782903973003429
+  },
+  {
+    "file": "1781600900_update_battery_image_in_trucks.js",
+    "applied": 1782903973080229
+  },
+  {
+    "file": "1781601000_add_trip_payments_to_cashbook_reference_type.js",
+    "applied": 1783403537066834
+  },
+  {
+    "file": "1781601100_add_badges_to_employees.js",
+    "applied": 1783446992451542
+  },
+  {
+    "file": "1781601200_add_map_fields_to_routes.js",
+    "applied": 1783455354866378
+  },
+  {
+    "file": "1781601300_add_start_end_map_links_to_routes.js",
+    "applied": 1783457911643051
+  },
+  {
+    "file": "1783950691_created_shared_folders.js",
+    "applied": 1783950691442935
+  },
+  {
+    "file": "1783950701_create_munna_user.js",
+    "applied": 1784039521763242
+  },
+  {
+    "file": "1783950715_add_pod_link_to_trip_logs.js",
+    "applied": 1784039521803161
+  },
+  {
+    "file": "1783950700_create_munna_user.js",
+    "applied": 1784153430654006
+  },
+  {
+    "file": "1783950730_add_tds_to_trip_calculations.js",
+    "applied": 1784153430654408
+  },
+  {
+    "file": "1784111000_add_google_maps_url_to_contacts.js",
+    "applied": 1784153430654638
+  },
+  {
+    "file": "1784112000_add_electrician_puncture_shop_to_contact_type.js",
+    "applied": 1784153430761532
+  },
+  {
+    "file": "1784113000_add_truck_brand_to_contacts.js",
+    "applied": 1784153431053256
+  },
+  {
+    "file": "1784114000_update_contacts_rules.js",
+    "applied": 1784153431157642
+  },
+  {
+    "file": "1784115000_fix_driver_ledger_fields.js",
+    "applied": 1784169474309032
+  },
+  {
+    "file": "1784116000_update_trucks_rules_for_managers.js",
+    "applied": 1784206415087875
+  },
+  {
+    "file": "1784117000_update_driver_ledger_rules.js",
+    "applied": 1784206799955850
+  },
+  {
+    "file": "1784260000_add_truck_id_to_loan_profiles.js",
+    "applied": 1784256988408763
+  },
+  {
+    "file": "1784270000_add_fastag_charge_to_routes.js",
+    "applied": 1784257614398203
+  },
+  {
+    "file": "1784280000_reset_superuser_password.js",
+    "applied": 1785784967487906
+  },
+  {
+    "file": "1784300000_increase_rate_limits.js",
+    "applied": 1785784967488808
+  },
+  {
+    "file": "1784310000_open_all_rules_and_enable_deletion.js",
+    "applied": 1785784971082988
+  },
+  {
+    "file": "1784320000_create_vendor_tracker_collections.js",
+    "applied": 1786095722439986
+  },
+  {
+    "file": "1784330000_add_signature_fields_to_company_settings.js",
+    "applied": 1786152425039191
+  },
+  {
+    "file": "1784340000_create_driver_applications_collection.js",
+    "applied": 1786184119507157
+  },
+  {
+    "file": "1784350000_update_munna_superuser_email.js",
+    "applied": 1786197845975870
+  },
+  {
+    "file": "1784360000_add_trip_timeline_fields.js",
+    "applied": 1786487023596859
+  },
+  {
+    "file": "1784400000_add_stop_timestamps_field.js",
+    "applied": 1786503358984470
+  },
+  {
+    "file": "1784500000_add_whatsapp_enabled_field.js",
+    "applied": 1786510200329206
+  },
+  {
+    "file": "1784600000_add_pickup_and_delivery_eta_to_trip_logs.js",
+    "applied": 1786510200829680
+  },
+  {
+    "file": "1786600000_create_driver_remarks.js",
+    "applied": 1786555417642731
+  },
+  {
+    "file": "1786700000_create_sales_leads.js",
+    "applied": 1786568496473531
+  },
+  {
+    "file": "1786800000_add_late_delivery_reason_to_trip_logs.js",
+    "applied": 1786568496971113
+  },
+  {
+    "file": "1786900000_create_workshop_job_cards.js",
+    "applied": 1786589987704236
+  },
+  {
+    "file": "1787000000_create_workshop_parts_inventory.js",
+    "applied": 1786589987892974
+  },
+  {
+    "file": "1787100000_add_dynamic_trip_stops_and_milestones.js",
+    "applied": 1786861931018862
+  },
+  {
+    "file": "1787200000_add_bill_to_workshop_job_cards.js",
+    "applied": 1786941998961456
+  },
+  {
+    "file": "1787300000_open_fleet_maintenance_api_rules.js",
+    "applied": 1786946821493620
+  },
+  {
+    "file": "1787400000_allow_multiple_bills_in_job_cards.js",
+    "applied": 1786967037135408
+  },
+  {
+    "file": "1787500000_add_bills_multi_file_field_to_workshop_job_cards.js",
+    "applied": 1786967037532911
+  },
+  {
+    "file": "1787600000_add_client_trip_id_and_lr_number_to_trip_logs.js",
+    "applied": 1786970789337123
+  },
+  {
+    "file": "1787700000_create_fuel_fraud_and_investigations.js",
+    "applied": 1787027046223300
+  },
+  {
+    "file": "1787800000_add_subcontractor_margin_and_tallying_fields.js",
+    "applied": 1787051294442202
+  },
+  {
+    "file": "1787900000_add_assigned_vendor_id_to_clients.js",
+    "applied": 1787052192002463
+  },
+  {
+    "file": "1788000000_add_systematic_fleet_ownership_and_owner_kyc_fields.js",
+    "applied": 1787053999008195
+  },
+  {
+    "file": "1788100000_ensure_trucks_rules_and_fields.js",
+    "applied": 1787144252071302
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "company_address": "Plot no 3, Patel nagar, Ghatkesar, pin: 501301",
+    "company_email": "operations@jaibhavanicargo.com",
+    "company_gstin": "36DPXPR9171A1Z8",
+    "company_logo": "gemini_generated_image_mkql9fmkql9fmkqlqqq_abca3ut3ny.png",
+    "company_name": "JAI BHAVANI CARGO",
+    "company_phone": "+91 7794072244",
+    "company_website": "www.jaibhavanicargo.com",
+    "created": "2026-06-24 03:21:02.780Z",
+    "id": "companysettings",
+    "updated": "2026-08-14 20:40:03.696Z",
+    "bank_name": "HDFC BANK",
+    "account_name": "JAI BHAVANI CARGO",
+    "account_number": "50200117182677 ",
+    "ifsc_code": "HDFC0004480",
+    "branch_name": "GHATKESAR BRANCH",
+    "pan_number": "DPXPR9171A",
+    "tan_number": "-",
+    "cin_number": "-",
+    "msme_number": "UDYAM-TS-20-0193891",
+    "udyam_number": "UDYAM-TS-20-0193891",
+    "company_docs_json": "[{\"id\":\"doc_1786740004365_sfuok\",\"title\":\"Brand LOGO\",\"category\":\"Other\",\"sub_category\":\"General Document\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/ex4sla5iy0s9755/untitled_14_august_2026_at_00_35_ss7a2u5dp8.40.png\",\"file_name\":\"Untitled - 14 August 2026 at 00.35.40.png\",\"file_size\":\"0.21 MB\",\"notes\":\"\",\"created_at\":\"2026-08-14T20:40:04.365Z\"},{\"id\":\"doc_1786729368853_f9zwc\",\"title\":\"UDYAM-TS-20-0193891\",\"category\":\"Registration & Identity\",\"sub_category\":\"MSME / Udyam Certificate\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/otuvmgewe82fksp/jai_bhavani_cargo_udhyam_annexure_70zsj9y030.pdf\",\"file_name\":\"JAI BHAVANI CARGO - UDHYAM ANNEXURE.pdf\",\"file_size\":\"0.12 MB\",\"notes\":\"\",\"created_at\":\"2026-08-14T17:42:48.853Z\"},{\"id\":\"doc_1786399978466_trb0s\",\"title\":\"Cancelled Cheque\",\"category\":\"Registration & Identity\",\"sub_category\":\"Other License\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/7mn6eye3k9w6iwk/jai_bhavani_cargo_hdfc_cancelled_cheque_3gfuewnsk7.jpeg\",\"file_name\":\"JAI BHAVANI CARGO -HDFC CANCELLED cheque.jpeg\",\"file_size\":\"3.29 MB\",\"notes\":\"\",\"created_at\":\"2026-08-10T22:12:58.466Z\"},{\"id\":\"doc_1785881272058_e6xzj\",\"title\":\"ADHAAR\",\"category\":\"Registration & Identity\",\"sub_category\":\"Other License\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/n1e9pyu4ot0j5kl/vinod_kumar_rathod_adhaar_b9x1626gke.pdf\",\"file_name\":\"VINOD KUMAR RATHOD - ADHAAR.pdf\",\"file_size\":\"0.84 MB\",\"notes\":\"\",\"created_at\":\"2026-08-04T22:07:52.058Z\"},{\"id\":\"doc_1785881167064_0rno5\",\"title\":\"HEAVY DRIVING LICENSE\",\"category\":\"Registration & Identity\",\"sub_category\":\"Other License\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/fg5aawa423yexr4/vinod_kumar_rathod_heacy_driving_license_1_goz1rnqrh7.jpeg\",\"file_name\":\"VINOD KUMAR RATHOD- HEACY DRIVING LICENSE (1).jpeg\",\"file_size\":\"0.09 MB\",\"notes\":\"\",\"created_at\":\"2026-08-04T22:06:07.064Z\"},{\"id\":\"doc_1785881135508_unoin\",\"title\":\"PAN\",\"category\":\"Registration & Identity\",\"sub_category\":\"PAN Card\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/96i4qh1drr2dkc5/vinod_kumar_rathod_pan_card_y1fu4ohh15.jpeg\",\"file_name\":\"VINOD KUMAR RATHOD PAN CARD.jpeg\",\"file_size\":\"0.14 MB\",\"notes\":\"\",\"created_at\":\"2026-08-04T22:05:35.508Z\"},{\"id\":\"doc_1785881067269_h9ijm\",\"title\":\"GST\",\"category\":\"Registration & Identity\",\"sub_category\":\"GST Registration Certificate\",\"financial_year\":\"N/A\",\"file_url\":\"https://www.jaibhavanicargo.com/hcgi/platform/api/files/pbc_9574740198/ljfxcff196787hd/jai_bhavani_cargo_gst_xt9lamef1x.pdf\",\"file_name\":\"JAI BHAVANI CARGO GST.pdf\",\"file_size\":\"0.09 MB\",\"notes\":\"\",\"created_at\":\"2026-08-04T22:04:27.269Z\"}]",
+    "collectionId": "pbc_company_settings",
+    "e_signature": "jai_bhavani_cargo_esign_jfwejxrl7p.png",
+    "signatory_name": "Vinod Kumar Rathod",
+    "signatory_title": "Managing Director"
+  }
+]

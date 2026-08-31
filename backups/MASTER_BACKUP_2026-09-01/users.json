@@ -1,0 +1,23 @@
+[
+  {
+    "avatar": "",
+    "created": "2026-07-30 10:31:37",
+    "email": "munnarathod222@gmail.com",
+    "emailVisibility": 1,
+    "id": "usr_munna_superadmin",
+    "name": "Munna Rathod",
+    "password": ".Ml/8I9MHHmtq/zbKnI3Bee",
+    "tokenKey": "",
+    "updated": "2026-07-30 10:31:37",
+    "verified": 1,
+    "role": "super_admin",
+    "full_name": "Munna Rathod",
+    "phone_number": "",
+    "status": "active",
+    "profile_picture": "",
+    "last_login": "",
+    "created_date": "",
+    "client_id": "",
+    "collectionId": null
+  }
+]

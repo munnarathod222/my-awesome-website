@@ -1,0 +1,74 @@
+[
+  {
+    "content": "[{\"text\":\"Extract business card information as JSON.\",\"type\":\"text\"},{\"image\":\"https://a5cd4a3c-f3b1-4400-ad75-7c0dd4da7b73.app-preview.com/hcgi/platform/api/files/pbc_2232612556/9mlja95a28xgm61/whats_app_image_2026_06_13_at_20_18_duwb7visod.50.jpeg\",\"type\":\"image\"}]",
+    "created": "2026-06-13 14:49:41.914Z",
+    "id": "isihzrl4vbkiwib",
+    "role": "user",
+    "updated": "2026-06-13 14:49:41.914Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"data\":{\"content\":\"{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"phone\\\": \\\"9484500542\\\",\\n  \\\"email\\\": \\\"\\\",\\n  \\\"company\\\": \\\"Si kram\\\",\\n  \\\"job_title\\\": \\\"\\\",\\n  \\\"address\\\": \\\"\\\",\\n  \\\"website\\\": \\\"www.sikaramelectricals.com\\\"\\n}\",\"role\":\"assistant\"},\"metadata\":{\"agent_name\":\"IntegratedAIAgent\"},\"type\":\"content\"}]",
+    "created": "2026-06-13 14:49:41.914Z",
+    "id": "0jud8h8p9hur407",
+    "role": "assistant",
+    "updated": "2026-06-13 14:49:41.914Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"text\":\"Extract business card information as JSON.\",\"type\":\"text\"},{\"image\":\"https://a5cd4a3c-f3b1-4400-ad75-7c0dd4da7b73.app-preview.com/hcgi/platform/api/files/pbc_2232612556/21zp7ehp0gh70a2/whats_app_image_2026_06_13_at_20_18_0jw7s2aspk.50.jpeg\",\"type\":\"image\"}]",
+    "created": "2026-06-13 14:52:02.517Z",
+    "id": "i7wfrd357304srd",
+    "role": "user",
+    "updated": "2026-06-13 14:52:02.517Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"data\":{\"content\":\"{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"phone\\\": \\\"9484500542\\\",\\n  \\\"email\\\": \\\"\\\",\\n  \\\"company\\\": \\\"Si kram\\\",\\n  \\\"job_title\\\": \\\"\\\",\\n  \\\"address\\\": \\\"\\\",\\n  \\\"website\\\": \\\"www.sikaramelectricals.com\\\"\\n}\",\"role\":\"assistant\"},\"metadata\":{\"agent_name\":\"IntegratedAIAgent\"},\"type\":\"content\"}]",
+    "created": "2026-06-13 14:52:02.517Z",
+    "id": "y67jdl8v7zmgo7j",
+    "role": "assistant",
+    "updated": "2026-06-13 14:52:02.517Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"text\":\"You are a business card analysis expert. Carefully analyze the provided business card image and extract ONLY the information that is clearly visible on the card. Do NOT guess, hallucinate, or infer information that is not explicitly shown. Extract the following fields if visible: name (person's full name), phone (contact phone number), email (email address), company (company/organization name), job_title (designation/position), address (office/business address), website (company website). For any field not visible on the card, return an empty string. Return the response as a valid JSON object with these exact field names. Be precise and accurate. Example format: {\\\"name\\\": \\\"John Doe\\\", \\\"phone\\\": \\\"+1-555-0123\\\", \\\"email\\\": \\\"john@company.com\\\", \\\"company\\\": \\\"ABC Corp\\\", \\\"job_title\\\": \\\"Sales Manager\\\", \\\"address\\\": \\\"123 Business St, City\\\", \\\"website\\\": \\\"www.abccorp.com\\\"}\",\"type\":\"text\"},{\"image\":\"https://a5cd4a3c-f3b1-4400-ad75-7c0dd4da7b73.app-preview.com/hcgi/platform/api/files/pbc_2232612556/00unzdfegmeukp8/whats_app_image_2026_06_13_at_20_18_5qz0akc0eb.50.jpeg\",\"type\":\"image\"}]",
+    "created": "2026-06-13 14:56:05.656Z",
+    "id": "gdapl583jjykag3",
+    "role": "user",
+    "updated": "2026-06-13 14:56:05.656Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"data\":{\"content\":\"{\\n  \\\"name\\\": \\\"\\\",\\n  \\\"phone\\\": \\\"9484500542\\\",\\n  \\\"email\\\": \\\"\\\",\\n  \\\"company\\\": \\\"Shiram\\\",\\n  \\\"job_title\\\": \\\"\\\",\\n  \\\"address\\\": \\\"\\\",\\n  \\\"website\\\": \\\"www.sikaramelectricals.com\\\"\\n}\",\"role\":\"assistant\"},\"metadata\":{\"agent_name\":\"IntegratedAIAgent\"},\"type\":\"content\"}]",
+    "created": "2026-06-13 14:56:05.656Z",
+    "id": "ydzfiyq7s8nc99e",
+    "role": "assistant",
+    "updated": "2026-06-13 14:56:05.656Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"text\":\"You are a business card analysis expert. Carefully analyze the provided business card image and extract ONLY the information that is clearly visible on the card. Do NOT guess, hallucinate, or infer information that is not explicitly shown. Extract the following fields if visible: name (person's full name), phone (contact phone number), email (email address), company (company/organization name), job_title (designation/position), address (office/business address), website (company website). For any field not visible on the card, return an empty string. Return the response as a valid JSON object with these exact field names. Be precise and accurate. Example format: {\\\"name\\\": \\\"John Doe\\\", \\\"phone\\\": \\\"+1-555-0123\\\", \\\"email\\\": \\\"john@company.com\\\", \\\"company\\\": \\\"ABC Corp\\\", \\\"job_title\\\": \\\"Sales Manager\\\", \\\"address\\\": \\\"123 Business St, City\\\", \\\"website\\\": \\\"www.abccorp.com\\\"}\",\"type\":\"text\"},{\"image\":\"https://a5cd4a3c-f3b1-4400-ad75-7c0dd4da7b73.app-preview.com/hcgi/platform/api/files/pbc_2232612556/a1rk7pa46jv6fiz/whats_app_image_2026_06_13_at_20_18_xnebvl09pw.50.jpeg\",\"type\":\"image\"}]",
+    "created": "2026-06-13 14:57:54.240Z",
+    "id": "o326fjvq1utembq",
+    "role": "user",
+    "updated": "2026-06-13 14:57:54.240Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  },
+  {
+    "content": "[{\"data\":{\"content\":\"{\\n  \\\"name\\\": \\\"M. Srisailam\\\",\\n  \\\"phone\\\": \\\"98497 35080, 90002 50452\\\",\\n  \\\"email\\\": \\\"\\\",\\n  \\\"company\\\": \\\"Sri Rama Auto Electrical & Battery Services\\\",\\n  \\\"job_title\\\": \\\"\\\",\\n  \\\"address\\\": \\\"Opp. IOC Petrol Pump, Main Road, Ghadekar, Medchal Dist., 501 301.\\\",\\n  \\\"website\\\": \\\"www.sirama-batteries-autoelectricals.com\\\"\\n}\",\"role\":\"assistant\"},\"metadata\":{\"agent_name\":\"IntegratedAIAgent\"},\"type\":\"content\"}]",
+    "created": "2026-06-13 14:57:54.241Z",
+    "id": "ufsopxlh5jssf75",
+    "role": "assistant",
+    "updated": "2026-06-13 14:57:54.241Z",
+    "userId": "vomu7tmaa889wv8",
+    "collectionId": "pbc_1532537174"
+  }
+]
