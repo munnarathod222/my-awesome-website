@@ -3,7 +3,7 @@ services:
     name: jaibhavanicargo
     env: node
     plan: free
-    buildCommand: npm install && node sync_dist_fallbacks.js
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
