@@ -23,6 +23,7 @@ import LoadingSpinner   from '@/components/LoadingSpinner.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import SendMailDialog   from '@/components/SendMailDialog.jsx';
+import { generateDocumentFileName } from '@/lib/fileNamingUtils.js';
 
 const parseImageList = (raw) => {
   if (!raw) return [];
@@ -528,9 +529,13 @@ export default function EmployeeDocsPage() {
         }
       });
       
-      // Append new files
+      // Append new files (auto-renamed with Employee Name and Document Type)
+      const empObj = employees.find(emp => emp.id === formData.employee_id);
+      const empName = empObj ? (empObj.name || empObj.employee_name || '') : '';
+
       selectedFiles.forEach(file => {
-        data.append('files', file);
+        const renamed = generateDocumentFileName(file, formData.document_type, empName);
+        data.append('files', renamed);
       });
 
       // Handle deleted files

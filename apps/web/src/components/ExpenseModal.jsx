@@ -11,8 +11,7 @@ import { toast } from 'sonner';
 import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
 import { recordTollDeduction } from '@/lib/fastagDeductionUtils.js';
 import DocumentFilePreview from './DocumentFilePreview.jsx';
-import apiServerClient from '@/lib/apiServerClient.js';
-
+import { generateExpenseFileName } from '@/lib/fileNamingUtils.js';
 
 export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, trucks: propTrucks }) {
   const { currentUser } = useAuth();
@@ -298,8 +297,18 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         formDataToSend.append('credit_card_id', payload.credit_card_id);
         formDataToSend.append('employee_id', payload.employee_id);
 
-        newFiles.forEach((file) => formDataToSend.append('documents', file));
-        newReceiptFiles.forEach((file) => formDataToSend.append('image_urls', file));
+        const selectedTruck = trucks.find(t => t.id === payload.truck_id);
+        const truckNum = selectedTruck?.truck_number || '';
+        const expIdVal = expense?.id || `EX_${Date.now().toString(36).toUpperCase()}`;
+
+        newFiles.forEach((file) => {
+          const renamed = generateExpenseFileName(file, payload.category, expIdVal, truckNum);
+          formDataToSend.append('documents', renamed);
+        });
+        newReceiptFiles.forEach((file) => {
+          const renamed = generateExpenseFileName(file, `${payload.category}_RECEIPT`, expIdVal, truckNum);
+          formDataToSend.append('image_urls', renamed);
+        });
 
         if (expense) {
           deletedFiles.forEach((filename) => formDataToSend.append('documents.' + filename, ''));

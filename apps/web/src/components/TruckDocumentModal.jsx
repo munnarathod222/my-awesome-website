@@ -8,6 +8,8 @@ import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
 
+import { generateDocumentFileName } from '@/lib/fileNamingUtils.js';
+
 const TruckDocumentModal = ({ isOpen, onClose, document, truckId, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
@@ -62,7 +64,8 @@ const TruckDocumentModal = ({ isOpen, onClose, document, truckId, onSuccess }) =
       data.append('status', calculateStatus(formData.expiry_date));
       
       if (file) {
-        data.append('file', file);
+        const renamedFile = generateDocumentFileName(file, formData.document_type, truckId);
+        data.append('file', renamedFile);
       }
 
       if (document) {
