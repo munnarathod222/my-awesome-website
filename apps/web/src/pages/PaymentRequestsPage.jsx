@@ -90,12 +90,52 @@ const PaymentRequestsPage = () => {
       const tripMap = {};
       allTrips.forEach(t => {
         if (t.id) tripMap[t.id] = t;
-        if (t.trip_id) tripMap[t.trip_id] = t;
+        if (t.trip_id) {
+          tripMap[t.trip_id] = t;
+          tripMap[t.trip_id.trim().toUpperCase()] = t;
+        }
       });
 
       // Calculate dynamic overdue
       const today = new Date();
       today.setHours(0,0,0,0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23,59,59,999);
+
+      const checkIsUpcoming = (reqItem, linkedTripObj) => {
+        const trip = linkedTripObj || reqItem.expand?.trip_id || (reqItem.trip_id ? (tripMap[reqItem.trip_id] || tripMap[String(reqItem.trip_id).trim().toUpperCase()]) : null) || reqItem.linkedTrip;
+        if (trip) {
+          const statusNorm = (trip.trip_status || '').trim().toUpperCase();
+          if (statusNorm === 'UPCOMING' || statusNorm === 'PLANNED' || statusNorm === 'DISPATCHED' || statusNorm === 'IN TRANSIT' || statusNorm === 'IN-TRANSIT') {
+            return true;
+          }
+          if (statusNorm && statusNorm !== 'DELIVERED' && statusNorm !== 'COMPLETED') {
+            return true;
+          }
+          if (trip.date) {
+            const tDate = parseDateSafe(trip.date);
+            if (tDate) {
+              const tDay = new Date(tDate);
+              tDay.setHours(0, 0, 0, 0);
+              if (tDay.getTime() > today.getTime()) {
+                return true;
+              }
+            }
+          }
+        }
+        const reqDateStr = reqItem.actualTripDate || reqItem.request_date;
+        if (reqDateStr) {
+          const rDate = parseDateSafe(reqDateStr);
+          if (rDate) {
+            const rDay = new Date(rDate);
+            rDay.setHours(0, 0, 0, 0);
+            if (rDay.getTime() > today.getTime()) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
 
       const mappedReqs = reqs.map(r => {
         let currentStatus = r.status;
@@ -103,15 +143,18 @@ const PaymentRequestsPage = () => {
         let effectiveAmount = r.amount;
 
         // Sync with linked Trip Log if present (by relation expand or tripMap lookup)
-        const linkedTrip = r.expand?.trip_id || tripMap[r.trip_id];
+        const linkedTrip = r.expand?.trip_id || tripMap[r.trip_id] || (r.trip_id ? tripMap[String(r.trip_id).trim().toUpperCase()] : null);
         const actualTripDate = linkedTrip?.date || r.request_date;
+        const isUpcoming = checkIsUpcoming(r, linkedTrip);
 
         if (linkedTrip) {
           const isTripPaid = (linkedTrip.client_payment_status || '').toLowerCase() === 'received' || (linkedTrip.client_payment_status || '').toLowerCase() === 'paid';
-          const isDelivered = linkedTrip.trip_status === 'Delivered';
+          const isDelivered = (linkedTrip.trip_status === 'Delivered' || linkedTrip.trip_status === 'Completed') && !isUpcoming;
 
           if (isTripPaid) {
             currentStatus = 'Paid';
+          } else if (isUpcoming) {
+            currentStatus = 'Upcoming';
           } else if (!isDelivered) {
             currentStatus = 'In Transit';
           }
@@ -130,9 +173,11 @@ const PaymentRequestsPage = () => {
               status: isTripPaid ? 'Paid' : r.status
             }, { $autoCancel: false }).catch(err => console.warn('Background request sync failed:', err));
           }
+        } else if (isUpcoming && currentStatus !== 'Paid') {
+          currentStatus = 'Upcoming';
         }
 
-        if (currentStatus === 'Pending' && r.due_date) {
+        if (currentStatus === 'Pending' && r.due_date && !isUpcoming) {
           const due = parseDateSafe(r.due_date);
           if (due) {
             due.setHours(0,0,0,0);
@@ -150,21 +195,32 @@ const PaymentRequestsPage = () => {
           calculatedStatus: currentStatus, 
           daysOverdue,
           linkedTrip,
-          actualTripDate
+          actualTripDate,
+          isUpcoming
         };
       });
 
-      // Fetch ONLY DELIVERED unpaid trips to auto-generate requests if they don't exist
+      // Fetch ONLY DELIVERED unpaid trips (on or before today) to auto-generate requests if they don't exist
       const unpaidTrips = await pb.collection('trip_logs').getFullList({
-        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && trip_status = "Delivered" && client_id != ""',
+        filter: '(client_payment_status = "pending" || client_payment_status = "delayed") && (trip_status = "Delivered" || trip_status = "Completed") && client_id != ""',
         $autoCancel: false
       });
 
       const existingTripIds = new Set(reqs.map(r => r.trip_id));
-      const tripsToGenerate = unpaidTrips.filter(t => !existingTripIds.has(t.id));
+      const tripsToGenerate = unpaidTrips.filter(t => {
+        if (existingTripIds.has(t.id) || existingTripIds.has(t.trip_id)) return false;
+        if (t.date) {
+          const parsed = parseDateSafe(t.date);
+          if (parsed) {
+            parsed.setHours(0, 0, 0, 0);
+            if (parsed.getTime() > today.getTime()) return false;
+          }
+        }
+        return true;
+      });
 
       if (tripsToGenerate.length > 0) {
-        console.log(`Auto-generating ${tripsToGenerate.length} payment requests for unpaid trips...`);
+        console.log(`Auto-generating ${tripsToGenerate.length} payment requests for unpaid completed trips...`);
         const generatedRequests = [];
         for (const trip of tripsToGenerate) {
           try {
@@ -190,6 +246,9 @@ const PaymentRequestsPage = () => {
               ...newReq,
               calculatedStatus: 'Pending',
               daysOverdue: 0,
+              linkedTrip: trip,
+              actualTripDate: trip.date,
+              isUpcoming: false,
               expand: {
                 trip_id: trip,
                 client_id: cls.find(c => c.id === trip.client_id)
@@ -200,7 +259,7 @@ const PaymentRequestsPage = () => {
           }
         }
         
-        // Merge with local storage cache (only for delivered trips)
+        // Merge with local storage cache (only for delivered past trips)
         let localReqs = [];
         try {
           localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
@@ -211,13 +270,13 @@ const PaymentRequestsPage = () => {
 
         localReqs.forEach(lr => {
           const linked = lr.expand?.trip_id || tripMap[lr.trip_id];
-          if (linked && linked.trip_status !== 'Delivered') return;
+          const isUpc = checkIsUpcoming(lr, linked);
+          if (isUpc && lr.status !== 'Paid') return;
 
           if (!remoteMap.has(lr.id)) {
-            // Check overdue for local items
             let currentStatus = lr.status;
             let daysOverdue = 0;
-            if (lr.status === 'Pending' && lr.due_date) {
+            if (lr.status === 'Pending' && lr.due_date && !isUpc) {
               const due = parseDateSafe(lr.due_date);
               if (due) {
                 due.setHours(0,0,0,0);
@@ -227,13 +286,32 @@ const PaymentRequestsPage = () => {
                 }
               }
             }
-            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue });
+            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue, isUpcoming: isUpc });
           }
         });
 
         const finalReqs = Array.from(remoteMap.values()).filter(r => {
+          if (r.calculatedStatus === 'Paid' || r.status === 'Paid') return true;
+          if (r.isUpcoming || r.calculatedStatus === 'Upcoming' || r.calculatedStatus === 'In Transit') return false;
           const linked = r.expand?.trip_id || tripMap[r.trip_id] || r.linkedTrip;
-          if (linked && linked.trip_status !== 'Delivered' && r.calculatedStatus !== 'Paid') return false;
+          if (linked) {
+            const statusNorm = (linked.trip_status || '').trim().toUpperCase();
+            if (statusNorm !== 'DELIVERED' && statusNorm !== 'COMPLETED') return false;
+            if (linked.date) {
+              const parsed = parseDateSafe(linked.date);
+              if (parsed) {
+                parsed.setHours(0, 0, 0, 0);
+                if (parsed.getTime() > today.getTime()) return false;
+              }
+            }
+          }
+          if (r.request_date) {
+            const parsed = parseDateSafe(r.request_date);
+            if (parsed) {
+              parsed.setHours(0, 0, 0, 0);
+              if (parsed.getTime() > today.getTime()) return false;
+            }
+          }
           return true;
         });
 
@@ -248,12 +326,13 @@ const PaymentRequestsPage = () => {
         const remoteMap = new Map(mappedReqs.map(r => [r.id, r]));
         localReqs.forEach(lr => {
           const linked = lr.expand?.trip_id || tripMap[lr.trip_id];
-          if (linked && linked.trip_status !== 'Delivered') return;
+          const isUpc = checkIsUpcoming(lr, linked);
+          if (isUpc && lr.status !== 'Paid') return;
 
           if (!remoteMap.has(lr.id)) {
             let currentStatus = lr.status;
             let daysOverdue = 0;
-            if (lr.status === 'Pending' && lr.due_date) {
+            if (lr.status === 'Pending' && lr.due_date && !isUpc) {
               const due = parseDateSafe(lr.due_date);
               if (due) {
                 due.setHours(0,0,0,0);
@@ -263,13 +342,32 @@ const PaymentRequestsPage = () => {
                 }
               }
             }
-            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue });
+            remoteMap.set(lr.id, { ...lr, calculatedStatus: currentStatus, daysOverdue, isUpcoming: isUpc });
           }
         });
 
         const finalReqs = Array.from(remoteMap.values()).filter(r => {
+          if (r.calculatedStatus === 'Paid' || r.status === 'Paid') return true;
+          if (r.isUpcoming || r.calculatedStatus === 'Upcoming' || r.calculatedStatus === 'In Transit') return false;
           const linked = r.expand?.trip_id || tripMap[r.trip_id] || r.linkedTrip;
-          if (linked && linked.trip_status !== 'Delivered' && r.calculatedStatus !== 'Paid') return false;
+          if (linked) {
+            const statusNorm = (linked.trip_status || '').trim().toUpperCase();
+            if (statusNorm !== 'DELIVERED' && statusNorm !== 'COMPLETED') return false;
+            if (linked.date) {
+              const parsed = parseDateSafe(linked.date);
+              if (parsed) {
+                parsed.setHours(0, 0, 0, 0);
+                if (parsed.getTime() > today.getTime()) return false;
+              }
+            }
+          }
+          if (r.request_date) {
+            const parsed = parseDateSafe(r.request_date);
+            if (parsed) {
+              parsed.setHours(0, 0, 0, 0);
+              if (parsed.getTime() > today.getTime()) return false;
+            }
+          }
           return true;
         });
 
@@ -649,9 +747,38 @@ Best Regards,
   };
 
   const isRequestDelivered = (r) => {
+    if (r.calculatedStatus === 'Paid' || r.status === 'Paid') return true;
+    if (r.isUpcoming || r.calculatedStatus === 'Upcoming' || r.calculatedStatus === 'In Transit') return false;
+
     const trip = r.linkedTrip || r.expand?.trip_id;
-    if (!trip) return true;
-    return trip.trip_status === 'Delivered';
+    if (trip) {
+      const statusNorm = (trip.trip_status || '').trim().toUpperCase();
+      if (statusNorm !== 'DELIVERED' && statusNorm !== 'COMPLETED') return false;
+      if (trip.date) {
+        const parsed = parseDateSafe(trip.date);
+        if (parsed) {
+          const tDay = new Date(parsed);
+          tDay.setHours(0, 0, 0, 0);
+          const now0 = new Date();
+          now0.setHours(0, 0, 0, 0);
+          if (tDay.getTime() > now0.getTime()) return false;
+        }
+      }
+    }
+
+    const reqDateStr = r.actualTripDate || r.request_date;
+    if (reqDateStr) {
+      const parsed = parseDateSafe(reqDateStr);
+      if (parsed) {
+        const rDay = new Date(parsed);
+        rDay.setHours(0, 0, 0, 0);
+        const now0 = new Date();
+        now0.setHours(0, 0, 0, 0);
+        if (rDay.getTime() > now0.getTime()) return false;
+      }
+    }
+
+    return true;
   };
 
   const processedData = useMemo(() => {
@@ -704,16 +831,26 @@ Best Regards,
     requests.forEach(r => {
       const isDelivered = isRequestDelivered(r);
       const amt = Number(r.amount) || 0;
-      if (isDelivered && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')) pendingAmt += amt;
-      if (r.calculatedStatus === 'Paid') paidAmt += amt;
+      if (isDelivered && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')) {
+        pendingAmt += amt;
+      }
+      if (r.calculatedStatus === 'Paid') {
+        paidAmt += amt;
+      }
       
       if (isDelivered || r.calculatedStatus === 'Paid') {
-        stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
+        if (stats[r.calculatedStatus] !== undefined) {
+          stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
+        }
       }
 
-      const d = (r?.request_date || '').split('T')[0];
-      if (!timelineObj[d]) timelineObj[d] = 0;
-      timelineObj[d]++;
+      if (isDelivered || r.calculatedStatus === 'Paid') {
+        const d = (r?.request_date || '').split('T')[0];
+        if (d) {
+          if (!timelineObj[d]) timelineObj[d] = 0;
+          timelineObj[d]++;
+        }
+      }
     });
 
     const statusPie = Object.keys(stats).filter(k => stats[k] > 0).map(k => ({
@@ -772,6 +909,9 @@ Best Regards,
   const clientLedgerData = useMemo(() => {
     const map = {};
     requests.forEach(r => {
+      const isDelivered = isRequestDelivered(r);
+      if (!isDelivered && r.calculatedStatus !== 'Paid') return;
+
       const cId = r.client_id || 'unknown';
       const cName = r.expand?.client_id?.client_name || 'Unknown Client';
       if (!map[cId]) {
@@ -971,7 +1111,7 @@ Best Regards,
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1 font-medium">
-                <span className="text-amber-500 font-bold">{requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length}</span> invoices pending collection
+                <span className="text-amber-500 font-bold">{requests.filter(r => isRequestDelivered(r) && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')).length}</span> invoices pending collection
               </p>
             </CardContent>
           </Card>
@@ -999,7 +1139,7 @@ Best Regards,
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Overdue Invoices Risk</p>
                   <h3 className="text-2xl font-extrabold mt-1 text-rose-600 dark:text-rose-400">
-                    ₹{requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString('en-IN')}
+                    ₹{requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').reduce((s, r) => s + (r.amount || 0), 0).toLocaleString('en-IN')}
                   </h3>
                 </div>
                 <div className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl">
@@ -1008,9 +1148,9 @@ Best Regards,
               </div>
               <div className="flex items-center justify-between mt-3">
                 <p className="text-xs text-rose-500 font-bold">
-                  {requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').length} overdue invoices
+                  {requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').length} overdue invoices
                 </p>
-                {requests.filter(r => r.linkedTrip?.trip_status === 'Delivered' && r.calculatedStatus === 'Overdue').length > 0 && (
+                {requests.filter(r => isRequestDelivered(r) && r.calculatedStatus === 'Overdue').length > 0 && (
                   <button
                     onClick={() => {
                       setStatusFilter('Overdue');
