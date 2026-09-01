@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
+import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 
 const CATEGORIES = [
   'All',
@@ -747,10 +748,10 @@ export default function CompanyVaultPage() {
                         variant="outline" 
                         size="sm"
                         className="h-8 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
-                        onClick={() => window.open(doc.file_url, '_blank')}
+                        onClick={() => setPreviewDoc(doc)}
                       >
-                        <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                        View / Open
+                        <Eye className="w-3.5 h-3.5 mr-1.5" />
+                        View / Preview
                       </Button>
                     ) : (
                       <Button variant="outline" size="sm" className="h-8 text-xs" disabled>
@@ -1234,6 +1235,11 @@ export default function CompanyVaultPage() {
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
         defaultAttachment={mailData.attachment}
+      />
+      <DocumentPreviewModal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        document={previewDoc}
       />
     </div>
   );

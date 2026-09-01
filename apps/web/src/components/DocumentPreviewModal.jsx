@@ -18,7 +18,7 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
 
   const helplineNum = document?.helpline_number || document?.insurance_helpline || document?.helpline || '';
 
-  // Extract all document files (front page, back page, files array, file string/array, back_file)
+  // Extract all document files (front page, back page, files array, file string/array, back_file, file_url, url)
   const filesList = React.useMemo(() => {
     if (!document) return [];
     const list = [];
@@ -35,6 +35,14 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
       list.push(document.file);
     }
 
+    if (typeof document.file_url === 'string' && document.file_url) {
+      list.push(document.file_url);
+    }
+
+    if (typeof document.url === 'string' && document.url) {
+      list.push(document.url);
+    }
+
     if (typeof document.back_file === 'string' && document.back_file) {
       list.push(document.back_file);
     }
@@ -48,15 +56,33 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
   useEffect(() => {
     if (filesList.length > 0) {
       setActiveFile(filesList[0]);
+    } else if (document?.file_url || document?.url) {
+      setActiveFile(document.file_url || document.url);
     } else {
       setActiveFile(null);
     }
   }, [document, filesList]);
 
-  const rawUrl = activeFile ? pb.files.getUrl(document, activeFile) : '';
-  const fileExt = activeFile ? activeFile.split('.').pop().toLowerCase() : '';
+  const rawUrl = React.useMemo(() => {
+    if (!activeFile) return document?.file_url || document?.url || '';
+    if (typeof activeFile === 'string' && (activeFile.startsWith('http://') || activeFile.startsWith('https://') || activeFile.startsWith('data:') || activeFile.startsWith('blob:'))) {
+      return activeFile;
+    }
+    if (document && (document.collectionId || document.collectionName) && document.id) {
+      return pb.files.getUrl(document, activeFile);
+    }
+    return document?.file_url || activeFile;
+  }, [document, activeFile]);
+
+  const fileExt = React.useMemo(() => {
+    const fileTarget = activeFile || rawUrl || '';
+    if (!fileTarget) return '';
+    const cleanPath = fileTarget.split('?')[0].split('#')[0];
+    return cleanPath.split('.').pop().toLowerCase();
+  }, [activeFile, rawUrl]);
+
   const isPdf = fileExt === 'pdf';
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt);
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(fileExt) || (!isPdf && !!rawUrl && !rawUrl.endsWith('.pdf'));
 
   // Load PDF.js script dynamically if needed
   useEffect(() => {
