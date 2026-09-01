@@ -3,7 +3,7 @@ import {
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
-  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail
+  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -342,6 +342,33 @@ export default function CompanyVaultPage() {
   const handleShareWhatsApp = () => {
     const encoded = encodeURIComponent(dossierShareText);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
+  const handleShareDocWhatsApp = (doc) => {
+    const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
+    const text = `📄 *${doc.title}* - Jai Bhavani Cargo\n` +
+      `📌 *Category:* ${doc.category || 'Company Document'}\n` +
+      (doc.financial_year && doc.financial_year !== 'N/A' ? `📅 *FY:* ${doc.financial_year}\n` : '') +
+      `🏢 *Company:* ${companyInfo.company_name || 'Jai Bhavani Cargo'}\n` +
+      (doc.file_url ? `🔗 *Direct Download:* ${fullUrl}\n\n` : '\n') +
+      `_Sent via Jai Bhavani Cargo Corporate Vault_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const handleDownloadDoc = (doc) => {
+    if (!doc.file_url) {
+      toast.error('No document file available to download');
+      return;
+    }
+    const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
+    const a = document.createElement('a');
+    a.href = fullUrl;
+    a.download = doc.title || 'Company_Document';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success(`Downloading "${doc.title}"...`);
   };
 
   const handleShareEmail = () => {
@@ -742,38 +769,65 @@ export default function CompanyVaultPage() {
                     <span className="font-mono">{doc.file_size || 'File'}</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    {doc.file_url ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="h-8 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
-                        onClick={() => setPreviewDoc(doc)}
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" />
-                        View / Preview
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" className="h-8 text-xs" disabled>
-                        No Link
-                      </Button>
-                    )}
-
+                  {/* ── Document Quick Action Bar (View, Download, WhatsApp, Copy) ── */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-3 border-t border-border/60">
+                    {/* 1. View / Preview */}
                     <Button 
-                      variant="secondary" 
+                      variant="outline" 
                       size="sm"
-                      className="h-8 text-xs font-medium"
+                      className="h-8 px-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => setPreviewDoc(doc)}
+                      disabled={!doc.file_url}
+                      title="Preview Document"
+                    >
+                      <Eye className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                      <span className="truncate">View</span>
+                    </Button>
+
+                    {/* 2. Download */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-2 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => handleDownloadDoc(doc)}
+                      disabled={!doc.file_url}
+                      title="Download Document"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                      <span className="truncate">Download</span>
+                    </Button>
+
+                    {/* 3. WhatsApp Share */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => handleShareDocWhatsApp(doc)}
+                      disabled={!doc.file_url}
+                      title="Share Document on WhatsApp"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                      <span className="truncate">WhatsApp</span>
+                    </Button>
+
+                    {/* 4. Copy Link */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-2 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => {
                         if (doc.file_url) {
-                          navigator.clipboard.writeText(doc.file_url);
-                          toast.success(`Direct link for "${doc.title}" copied!`);
+                          const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
+                          navigator.clipboard.writeText(fullUrl);
+                          toast.success(`Direct link for "${doc.title}" copied to clipboard!`);
                         } else {
                           toast.error('No URL available to copy');
                         }
                       }}
+                      title="Copy Document Link"
                     >
-                      <Copy className="w-3.5 h-3.5 mr-1.5" />
-                      Copy Link
+                      <Copy className="w-3.5 h-3.5 shrink-0 text-slate-300" />
+                      <span className="truncate">Copy</span>
                     </Button>
                   </div>
                 </CardContent>
