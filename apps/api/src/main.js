@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -24,6 +25,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.set('trust proxy', true);
+
+// ── Bandwidth Protection: Gzip & Brotli HTTP Response Compression ──
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  },
+  threshold: 1024 // Only compress payloads larger than 1KB
+}));
 
 // Enable security headers, CORS, and request body parsing early
 app.use(helmet({
@@ -2901,7 +2911,13 @@ app.use('/hcgi/platform', async (req, res) => {
   };
 
   const proxyReq = http.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    const headers = { ...proxyRes.headers };
+    // Inject aggressive client caching for static files/media to eliminate repeat downloads
+    if (parsedUrl.pathname.includes('/api/files/')) {
+      headers['cache-control'] = 'public, max-age=2592000, stale-while-revalidate=86400';
+      headers['vary'] = 'Accept-Encoding';
+    }
+    res.writeHead(proxyRes.statusCode, headers);
     proxyRes.pipe(res, { end: true });
   });
 
@@ -3658,11 +3674,21 @@ for (const p of possibleWebDirs) {
 if (staticPath) {
   logger.info(`📂 Serving static client assets from: ${staticPath}`);
   app.use(express.static(staticPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) {
+      if (filePath.endsWith('.html') || filePath.endsWith('index.html')) {
+        // HTML entrypoint must always be fresh
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
+      } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
+        // Vite bundle chunks (JS, CSS with hash in filename) -> 1 Year Immutable Cache
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(png|jpe?g|webp|gif|svg|ico|woff2?|ttf|eot)$/i.test(filePath)) {
+        // Static Images, Icons & Web Fonts -> 7 Days Cache with Stale Revalidate
+        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
       }
     }
   }));

@@ -227,8 +227,17 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+    const handleVisibility = () => {
+      if (!document.hidden) fetchMessages();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchMessages();
+    }, 15000);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      clearInterval(interval);
+    };
   }, [activeChannel]);
 
   useEffect(() => {

@@ -309,13 +309,23 @@ export default function Header() {
       fetchPendingNotifications(false);
     }).catch(() => {});
 
-    // Polling interval
+    // Bandwidth Guard: Only poll when tab is visible, and use 60s fallback interval
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchPendingNotifications(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const interval = setInterval(() => {
-      fetchPendingNotifications(false);
-    }, 10000);
+      if (!document.hidden) {
+        fetchPendingNotifications(false);
+      }
+    }, 60000);
 
     return () => {
       window.removeEventListener('jbc_new_quote_submitted', handleNewQuoteEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       try { pb.collection('quotes').unsubscribe('*'); } catch (e) {}
       try { pb.collection('signup_requests').unsubscribe('*'); } catch (e) {}
       if (bc) { bc.close(); }

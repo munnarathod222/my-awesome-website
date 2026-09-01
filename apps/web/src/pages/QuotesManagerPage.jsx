@@ -260,16 +260,24 @@ const QuotesManagerPage = () => {
       } catch (e) {}
     }
 
-    // Live polling every 8 seconds
-    const interval = setInterval(() => {
-      if (activeMainTab === 'quotes') {
+    // Bandwidth Guard: Only poll when tab is visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden && activeMainTab === 'quotes') {
         fetchQuotes();
       }
-    }, 8000);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const interval = setInterval(() => {
+      if (!document.hidden && activeMainTab === 'quotes') {
+        fetchQuotes();
+      }
+    }, 30000);
 
     return () => {
       window.removeEventListener('jbc_new_quote_submitted', handleNewQuote);
       window.removeEventListener('storage', handleNewQuote);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       try { pb.collection('quotes').unsubscribe('*'); } catch (e) {}
       if (bc) { bc.close(); }
       clearInterval(interval);
