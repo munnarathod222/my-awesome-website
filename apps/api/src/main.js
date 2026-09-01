@@ -1653,6 +1653,83 @@ const runPocketBase = async () => {
       db.prepare("UPDATE _collections SET listRule = '', viewRule = '', createRule = '', updateRule = '', deleteRule = '' WHERE name = 'bids'").run();
     }
 
+    // 10.5. Quotes collection schema migration & public rule relaxation
+    try {
+      const quoteCols = db.prepare("PRAGMA table_info(quotes)").all().map(c => c.name);
+      const quoteNewCols = [
+        { name: 'truck_size', type: 'TEXT' },
+        { name: 'custom_vehicle_requirement', type: 'TEXT' },
+        { name: 'service_type', type: 'TEXT' },
+        { name: 'material_type', type: 'TEXT' },
+        { name: 'expected_dispatch_date', type: 'TEXT' },
+        { name: 'details', type: 'TEXT' },
+        { name: 'company_name', type: 'TEXT' }
+      ];
+
+      for (const item of quoteNewCols) {
+        if (!quoteCols.includes(item.name)) {
+          logger.info(`Migrating: Adding column '${item.name}' to 'quotes' table...`);
+          try {
+            db.prepare(`ALTER TABLE quotes ADD COLUMN ${item.name} ${item.type} DEFAULT ''`).run();
+          } catch (alterErr) {
+            logger.warn(`Could not add column ${item.name} to quotes: ${alterErr.message}`);
+          }
+        }
+      }
+
+      const quoteRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='quotes'").get();
+      if (quoteRecordBoot) {
+        let qFields = JSON.parse(quoteRecordBoot.fields);
+        let updatedQuoteFields = false;
+
+        // Make required fields optional
+        qFields.forEach(f => {
+          if (['customer_email', 'destination_zone', 'created_by', 'actual_weight', 'chargeable_weight'].includes(f.name)) {
+            if (f.required) {
+              f.required = false;
+              updatedQuoteFields = true;
+            }
+          }
+          if (f.name === 'container_type' && f.type === 'select') {
+            f.type = 'text';
+            delete f.values;
+            updatedQuoteFields = true;
+          }
+          if (f.name === 'status' && f.type === 'select') {
+            const allStatuses = ['Pending', 'Draft', 'Quoted', 'Sent', 'Accepted', 'Negotiating', 'Rejected'];
+            f.values = Array.from(new Set([...(f.values || []), ...allStatuses]));
+            updatedQuoteFields = true;
+          }
+        });
+
+        // Add missing fields
+        quoteNewCols.forEach(col => {
+          if (!qFields.some(f => f.name === col.name)) {
+            qFields.push({
+              name: col.name,
+              type: 'text',
+              required: false,
+              system: false,
+              hidden: false,
+              id: `quote_${col.name}_field`
+            });
+            updatedQuoteFields = true;
+          }
+        });
+
+        if (updatedQuoteFields) {
+          db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(qFields), quoteRecordBoot.id);
+          logger.info("Migrating: Quotes collection schema fields updated successfully!");
+        }
+
+        // Open rules for public quote submission and dispatch desk access
+        db.prepare("UPDATE _collections SET createRule = '', listRule = '', viewRule = '', updateRule = '', deleteRule = '' WHERE id = ?").run(quoteRecordBoot.id);
+        logger.info("Migrating: Quotes collection rules set to OPEN access for public quote submission!");
+      }
+    } catch (quoteMigrateErr) {
+      logger.warn(`Quotes boot migration warning: ${quoteMigrateErr.message}`);
+    }
+
     // 11. Contracts collection sqlite registration & table creation
     const contractsRecordBoot = db.prepare("SELECT * FROM _collections WHERE name='contracts'").get();
     if (!contractsRecordBoot) {

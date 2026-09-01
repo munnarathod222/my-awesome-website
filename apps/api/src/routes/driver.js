@@ -2948,55 +2948,67 @@ router.post('/submit-public-quote', async (req, res) => {
 
     // Direct SQLite Insertion fallback & WAL checkpoint
     try {
-      let DatabaseSyncMod = null;
+      let DatabaseSync = null;
       try {
-        const mod = await import('node:sqlite');
-        DatabaseSyncMod = mod.DatabaseSync;
+        const sqlite = await import('node:sqlite');
+        DatabaseSync = sqlite.DatabaseSync;
       } catch (e) {}
 
-      if (DatabaseSyncMod) {
-        const possiblePaths = Array.from(new Set([
-          global.dbFilePath,
-          path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-          path.resolve(process.cwd(), 'pb_data/data.db'),
-          '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
-        ])).filter(p => p && fs.existsSync(p));
+      const candidatePaths = [
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        path.resolve(__dirname, '../../../pocketbase/pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ].filter(p => p && fs.existsSync(p));
 
-        const recordId = createdRecord?.id || `qt_${Date.now().toString(36)}`;
-        const nowIso = new Date().toISOString();
+      const recordId = createdRecord?.id || `qt_${Date.now().toString(36)}`;
+      const nowIso = new Date().toISOString();
 
-        for (const dbPath of possiblePaths) {
+      if (DatabaseSync && candidatePaths.length > 0) {
+        for (const dbPath of candidatePaths) {
           let db;
           try {
-            db = new DatabaseSyncMod(dbPath);
+            db = new DatabaseSync(dbPath);
             try { db.exec("ALTER TABLE quotes ADD COLUMN truck_size TEXT DEFAULT '';"); } catch (_) {}
             try { db.exec("ALTER TABLE quotes ADD COLUMN custom_vehicle_requirement TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN service_type TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN material_type TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN expected_dispatch_date TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN details TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN company_name TEXT DEFAULT '';"); } catch (_) {}
 
             db.prepare(`
               INSERT OR REPLACE INTO quotes (
-                id, quote_number, customer_name, customer_email, customer_phone,
+                id, quote_number, customer_name, customer_email, customer_phone, company_name,
                 origin, destination, destination_zone, container_type, truck_size, custom_vehicle_requirement,
+                service_type, material_type, expected_dispatch_date, details,
                 actual_weight, length, width, height, volumetric_weight,
                 chargeable_weight, base_rate_per_kg, zone_distance_multiplier,
                 fuel_surcharge, handling_fees, weight_charge, total_price,
                 status, notes, created_by, created, updated
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
-              recordId, quoteNumber, cleanName, payload.customer_email, cleanPhone,
-              cleanOrigin, cleanDestination, payload.destination_zone, payload.container_type,
+              recordId, quoteNumber, cleanName, payload.customer_email || 'inquiry@jaibhavanicargo.com', cleanPhone, company_name || cleanName,
+              cleanOrigin, cleanDestination, payload.destination_zone || 'North', payload.container_type || cleanTruckSize,
               cleanTruckSize, cleanCustomReq,
+              payload.service_type || 'express', material_type || 'General Cargo', expected_dispatch_date || '', details || '',
               weightNum, lenNum, widNum, hgtNum, volumetricWeight,
               chargeableWeight, 48, 1, 0, 0, estimatedPrice, estimatedPrice,
               'Pending', payload.notes, 'public_inquiry', nowIso, nowIso
             );
-            db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
+            logger.info(`✅ SQLite quote inserted: ${quoteNumber} in ${dbPath}`);
+            try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (_) {}
           } catch (sqErr) {
+            logger.warn(`SQLite quote insert failed on ${dbPath}: ${sqErr.message}`);
           } finally {
-            if (db) { try { db.close(); } catch (c) {} }
+            if (db) { try { db.close(); } catch (_) {} }
           }
         }
       }
-    } catch (sqliteErr) {}
+    } catch (sqliteErr) {
+      logger.warn(`SQLite fallback error: ${sqliteErr.message}`);
+    }
 
     // Cloud Sync
     if (typeof global.uploadDatabaseToSupabase === 'function' && global.dbFilePath) {
@@ -3018,75 +3030,41 @@ router.post('/submit-public-quote', async (req, res) => {
 
 /**
  * POST /api/driver/respond-to-quote
- * Allows Admin to update quote rate, status, notes, and send response
+ * Dispatch desk / admin response to an inquiry
  */
 router.post('/respond-to-quote', async (req, res) => {
   try {
-    const { quoteId, status, quotedAmount, notes, respondedBy } = req.body || {};
-    if (!quoteId) {
-      return res.status(400).json({ success: false, error: 'Quote ID is required.' });
+    const { quote_number, id, quoted_price, notes, status } = req.body;
+    if (!quote_number && !id) {
+      return res.status(400).json({ success: false, error: 'quote_number or id is required' });
     }
 
-    const updateData = {
-      status: status || 'Quoted',
-      notes: notes || ''
-    };
-    if (quotedAmount !== undefined && quotedAmount !== null) {
-      updateData.total_price = Number(quotedAmount);
-    }
-
-    let updated = null;
+    let updatedRecord = null;
     try {
-      updated = await pb.collection('quotes').update(quoteId, updateData, { $autoCancel: false });
-    } catch (e) {
-      logger.warn(`Could not update quote ${quoteId} via SDK: ${e.message}`);
-    }
+      const match = id 
+        ? await pb.collection('quotes').getOne(id, { $autoCancel: false })
+        : await pb.collection('quotes').getFirstListItem(`quote_number = "${sanitize(quote_number)}"`, { $autoCancel: false });
 
-    // Direct SQLite fallback
-    try {
-      let DatabaseSyncMod = null;
-      try {
-        const mod = await import('node:sqlite');
-        DatabaseSyncMod = mod.DatabaseSync;
-      } catch (e) {}
-
-      if (DatabaseSyncMod) {
-        const possiblePaths = Array.from(new Set([
-          global.dbFilePath,
-          path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-          path.resolve(process.cwd(), 'pb_data/data.db'),
-          '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
-        ])).filter(p => p && fs.existsSync(p));
-
-        const nowIso = new Date().toISOString();
-        for (const dbPath of possiblePaths) {
-          let db;
-          try {
-            db = new DatabaseSyncMod(dbPath);
-            db.prepare('UPDATE quotes SET status = ?, total_price = COALESCE(?, total_price), notes = ?, updated = ? WHERE id = ?')
-              .run(updateData.status, updateData.total_price || null, updateData.notes, nowIso, quoteId);
-            db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
-          } catch (sqErr) {
-          } finally {
-            if (db) { try { db.close(); } catch (c) {} }
-          }
-        }
+      if (match) {
+        const updateData = {
+          status: status || 'Quoted',
+          ...(quoted_price !== undefined ? { total_price: Number(quoted_price) } : {}),
+          ...(notes ? { notes: `${match.notes || ''}\nAdmin Response: ${notes}`.trim() } : {})
+        };
+        updatedRecord = await pb.collection('quotes').update(match.id, updateData, { $autoCancel: false });
       }
-    } catch (sqliteErr) {}
-
-    // Cloud Sync
-    if (typeof global.uploadDatabaseToSupabase === 'function' && global.dbFilePath) {
-      global.uploadDatabaseToSupabase(global.dbFilePath).catch(() => {});
+    } catch (pbErr) {
+      logger.warn(`PocketBase quotes.update failed: ${pbErr.message}`);
     }
 
     return res.json({
       success: true,
-      message: 'Quote status and pricing updated successfully.',
-      quote: updated
+      quote: updatedRecord,
+      message: `Quote updated successfully!`
     });
   } catch (err) {
-    logger.error('Error in respond-to-quote:', err);
-    return res.status(500).json({ success: false, error: err.message || 'Failed to respond to quote' });
+    logger.error('Error responding to quote:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to update quote' });
   }
 });
 
@@ -3114,24 +3092,25 @@ router.all('/get-quotes', async (req, res) => {
 
     // 2. Fetch from direct SQLite database
     try {
-      let DatabaseSyncMod = null;
+      let DatabaseSync = null;
       try {
-        const mod = await import('node:sqlite');
-        DatabaseSyncMod = mod.DatabaseSync;
+        const sqlite = await import('node:sqlite');
+        DatabaseSync = sqlite.DatabaseSync;
       } catch (e) {}
 
-      if (DatabaseSyncMod) {
-        const possiblePaths = Array.from(new Set([
-          global.dbFilePath,
-          path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
-          path.resolve(process.cwd(), 'pb_data/data.db'),
-          '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
-        ])).filter(p => p && fs.existsSync(p));
+      const candidatePaths = [
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        path.resolve(__dirname, '../../../pocketbase/pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ].filter(p => p && fs.existsSync(p));
 
-        for (const dbPath of possiblePaths) {
+      if (DatabaseSync && candidatePaths.length > 0) {
+        for (const dbPath of candidatePaths) {
           let db;
           try {
-            db = new DatabaseSyncMod(dbPath);
+            db = new DatabaseSync(dbPath);
             const rows = db.prepare('SELECT * FROM quotes ORDER BY created DESC').all();
             (rows || []).forEach(row => {
               const key = row.quote_number || row.id;
@@ -3140,12 +3119,15 @@ router.all('/get-quotes', async (req, res) => {
               }
             });
           } catch (sqErr) {
+            logger.warn(`SQLite get-quotes error on ${dbPath}: ${sqErr.message}`);
           } finally {
-            if (db) { try { db.close(); } catch (c) {} }
+            if (db) { try { db.close(); } catch (_) {} }
           }
         }
       }
-    } catch (sqliteErr) {}
+    } catch (sqliteErr) {
+      logger.warn(`SQLite fetch quotes error: ${sqliteErr.message}`);
+    }
 
     const allQuotes = Array.from(quotesMap.values()).sort((a, b) => {
       const timeA = new Date(a.created || a.updated || 0).getTime();
