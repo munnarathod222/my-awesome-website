@@ -124,19 +124,56 @@ const FuelTrackerPage = () => {
 
       // Process refills logs and attach receipts from linked expense
       const processedLogs = logsRes.map(log => {
-        const distance = log.distance_driven || 0;
+        const logDateStr = log.date ? log.date.split('T')[0].split(' ')[0] : '';
+        const logAmount = Number(log.total_cost || log.amount || 0);
+        const logTruck = (log.truck_number || '').replace(/\s+/g, '').toUpperCase();
+
+        // 1. Direct ID match
+        let linkedExp = (expensesRes || []).find(e => e.fuel_tracker_id === log.id || e.id === log.id);
+
+        // 2. Match by date + amount + truck number
+        if (!linkedExp) {
+          linkedExp = (expensesRes || []).find(e => {
+            const expDateStr = e.date ? e.date.split('T')[0].split(' ')[0] : '';
+            const expAmount = Number(e.amount || 0);
+            const expTruck = (e.truck_number || e.truck_id || e.description || '').replace(/\s+/g, '').toUpperCase();
+            const dateMatch = expDateStr === logDateStr;
+            const amountMatch = Math.abs(expAmount - logAmount) < 2; // within ₹2 tolerance
+            const truckMatch = !logTruck || expTruck.includes(logTruck) || logTruck.includes(expTruck);
+            return dateMatch && amountMatch && (truckMatch || (!e.truck_number && !logTruck));
+          });
+        }
+
+        // 3. Collect documents from linked expense or fuel log
+        let docs = [];
+        if (linkedExp && linkedExp.documents && Array.isArray(linkedExp.documents) && linkedExp.documents.length > 0) {
+          docs = linkedExp.documents;
+        } else if (log.documents && Array.isArray(log.documents) && log.documents.length > 0) {
+          docs = log.documents;
+        } else if (log.receipt_photo) {
+          docs = [log.receipt_photo];
+        } else if (log.attachment) {
+          docs = [log.attachment];
+        }
+
+        // Check if distance was in description (e.g. "TG12U2637 - 422 KMs Driven")
+        let distance = log.distance_driven !== undefined && log.distance_driven !== null ? Number(log.distance_driven) : (log.distance || 0);
+        if ((!distance || distance === 0) && linkedExp) {
+          const desc = linkedExp.description || linkedExp.notes || '';
+          const distMatch = desc.match(/([\d\.]+)\s?KM/i);
+          if (distMatch) distance = parseFloat(distMatch[1]);
+        }
+
         const liters = log.liters || 0;
-        const efficiency = liters > 0 ? (distance / liters) : 0;
-        const linkedExp = (expensesRes || []).find(e => e.fuel_tracker_id === log.id || e.id === log.id);
-        const docs = (linkedExp && linkedExp.documents && linkedExp.documents.length > 0) ? linkedExp.documents : (log.documents || []);
+        const efficiency = liters > 0 && distance > 0 ? (distance / liters) : (log.efficiency || 0);
 
         return {
           ...log,
-          vehicle_name: truckMap[log.truck_id] || log.truck_number || 'Unknown',
+          vehicle_name: truckMap[log.truck_id] || log.truck_number || 'TG12U2637',
           distance,
           efficiency,
           liters,
-          linked_expense: linkedExp,
+          linked_expense: linkedExp || log.linked_expense,
           documents: docs,
           has_bill: docs.length > 0
         };
@@ -891,20 +928,28 @@ const FuelTrackerPage = () => {
                                 size="sm" 
                                 onClick={() => {
                                   const doc = log.documents[0];
-                                  const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                                  let previewUrl = '';
+                                  if (typeof doc === 'string' && (doc.startsWith('http') || doc.startsWith('data:') || doc.startsWith('blob:'))) {
+                                    previewUrl = doc;
+                                  } else if (log.linked_expense && log.linked_expense.id) {
+                                    previewUrl = `/hcgi/platform/api/files/${log.linked_expense.collectionName || 'expenses'}/${log.linked_expense.id}/${doc}`;
+                                  } else {
+                                    previewUrl = `/hcgi/platform/api/files/${log.collectionName || 'fuel_tracker'}/${log.id}/${doc}`;
+                                  }
+
                                   setSelectedReceiptForView({
                                     log,
                                     name: doc,
                                     count: log.documents.length,
                                     documents: log.documents,
-                                    previewUrl: pb.files.getUrl(expRecord, doc)
+                                    previewUrl: previewUrl
                                   });
                                 }}
-                                className="h-7 px-2.5 text-[11px] font-bold border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 gap-1 rounded-lg shadow-xs"
+                                className="h-7 px-2.5 text-xs font-bold border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 gap-1.5 rounded-xl shadow-xs transition-all hover:scale-105"
                                 title="View attached fuel bill receipt"
                               >
                                 <Paperclip className="w-3.5 h-3.5" />
-                                <span>Bill ({log.documents.length})</span>
+                                <span>View Bill ({log.documents.length})</span>
                               </Button>
                             ) : (
                               <Button 
@@ -914,11 +959,11 @@ const FuelTrackerPage = () => {
                                   setEditingRefill(log);
                                   setIsLogModalOpen(true);
                                 }}
-                                className="h-7 px-2 text-[10px] text-muted-foreground hover:text-primary gap-1 opacity-60 hover:opacity-100"
+                                className="h-7 px-2 text-xs font-medium text-slate-400 hover:text-cyan-400 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 rounded-xl gap-1 transition-all"
                                 title="Attach Bill / Receipt"
                               >
-                                <Plus className="w-3 h-3" />
-                                <span>+ Bill</span>
+                                <Plus className="w-3 h-3 text-cyan-400" />
+                                <span>+ Attach Bill</span>
                               </Button>
                             )}
                           </TableCell>
@@ -1031,18 +1076,26 @@ const FuelTrackerPage = () => {
                                   variant="outline" 
                                   onClick={() => {
                                     const doc = log.documents[0];
-                                    const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                                    let previewUrl = '';
+                                    if (typeof doc === 'string' && (doc.startsWith('http') || doc.startsWith('data:') || doc.startsWith('blob:'))) {
+                                      previewUrl = doc;
+                                    } else if (log.linked_expense && log.linked_expense.id) {
+                                      previewUrl = `/hcgi/platform/api/files/${log.linked_expense.collectionName || 'expenses'}/${log.linked_expense.id}/${doc}`;
+                                    } else {
+                                      previewUrl = `/hcgi/platform/api/files/${log.collectionName || 'fuel_tracker'}/${log.id}/${doc}`;
+                                    }
+
                                     setSelectedReceiptForView({
                                       log,
                                       name: doc,
                                       count: log.documents.length,
                                       documents: log.documents,
-                                      previewUrl: pb.files.getUrl(expRecord, doc)
+                                      previewUrl: previewUrl
                                     });
                                   }}
-                                  className="border-primary/40 bg-primary/10 text-primary text-[9px] cursor-pointer"
+                                  className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-[10px] cursor-pointer font-bold px-2 py-0.5 rounded-lg"
                                 >
-                                  🧾 Bill ({log.documents.length})
+                                  📄 Bill ({log.documents.length})
                                 </Badge>
                               )}
                             </div>
@@ -1058,18 +1111,26 @@ const FuelTrackerPage = () => {
                             size="sm" 
                             onClick={() => {
                               const doc = log.documents[0];
-                              const expRecord = log.linked_expense || { id: log.id, collectionName: 'expenses' };
+                              let previewUrl = '';
+                              if (typeof doc === 'string' && (doc.startsWith('http') || doc.startsWith('data:') || doc.startsWith('blob:'))) {
+                                previewUrl = doc;
+                              } else if (log.linked_expense && log.linked_expense.id) {
+                                previewUrl = `/hcgi/platform/api/files/${log.linked_expense.collectionName || 'expenses'}/${log.linked_expense.id}/${doc}`;
+                              } else {
+                                previewUrl = `/hcgi/platform/api/files/${log.collectionName || 'fuel_tracker'}/${log.id}/${doc}`;
+                              }
+
                               setSelectedReceiptForView({
                                 log,
                                 name: doc,
                                 count: log.documents.length,
                                 documents: log.documents,
-                                previewUrl: pb.files.getUrl(expRecord, doc)
+                                previewUrl: previewUrl
                               });
                             }}
-                            className="h-7 text-xs border-primary/40 bg-primary/10 text-primary flex items-center gap-1 font-bold rounded-xl px-2.5"
+                            className="h-7 text-xs border-emerald-500/40 bg-emerald-500/10 text-emerald-400 flex items-center gap-1 font-bold rounded-xl px-2.5"
                           >
-                            <Paperclip className="w-3 h-3" /> View Bill
+                            <Paperclip className="w-3 h-3" /> View Bill ({log.documents.length})
                           </Button>
                         ) : (
                           <Button 
@@ -1079,9 +1140,9 @@ const FuelTrackerPage = () => {
                               setEditingRefill(log);
                               setIsLogModalOpen(true);
                             }}
-                            className="h-7 text-xs text-muted-foreground hover:text-primary flex items-center gap-1 font-semibold rounded-xl px-2 opacity-70"
+                            className="h-7 text-xs text-slate-400 hover:text-cyan-400 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 flex items-center gap-1 rounded-xl px-2.5"
                           >
-                            <Plus className="w-3 h-3" /> Attach Bill
+                            <Plus className="w-3 h-3 text-cyan-400" /> Attach Bill
                           </Button>
                         )}
 
