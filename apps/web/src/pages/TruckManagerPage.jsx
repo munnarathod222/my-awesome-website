@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, X, User, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator } from 'lucide-react';
+import { 
+  Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, 
+  X, User, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -24,14 +27,22 @@ import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 
 export const parseImageList = (raw) => {
   if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) return raw.filter(Boolean);
   if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
     try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
     } catch(e) {}
-    if (raw.trim().startsWith('[')) return [];
-    return [raw];
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      const clean = trimmed.slice(1, -1);
+      return clean.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    return [trimmed];
   }
   return [];
 };
@@ -46,6 +57,35 @@ export default function TruckManagerPage() {
   const navigate = useNavigate();
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   const [fastagConfig, setFastagConfig] = useState({ isOpen: false, truck: null });
+
+  // Keyboard navigation for image gallery
+  useEffect(() => {
+    if (!galleryConfig.isOpen || !galleryConfig.truck) return;
+
+    const handleKeyDown = (e) => {
+      const imgs = parseImageList(galleryConfig.truck?.body_images);
+      if (imgs.length <= 1) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setGalleryConfig(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex - 1 + imgs.length) % imgs.length
+        }));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setGalleryConfig(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex + 1) % imgs.length
+        }));
+      } else if (e.key === 'Escape') {
+        setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [galleryConfig.isOpen, galleryConfig.truck]);
 
   const fetchTrucks = async () => {
     try {
@@ -208,6 +248,11 @@ export default function TruckManagerPage() {
                         <Truck className="w-5 h-5" />
                       </div>
                     )}
+                    {bodyImgs.length > 1 && (
+                      <span className="absolute top-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-1 rounded font-mono flex items-center gap-0.5 shadow-xs">
+                        📸 {bodyImgs.length}
+                      </span>
+                    )}
                     <span className={`absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-background ${truck.status === 'active' ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
                   </div>
 
@@ -356,6 +401,11 @@ export default function TruckManagerPage() {
                         <Truck className="w-4 h-4" />
                       </div>
                     )}
+                    {bodyImgs.length > 1 && (
+                      <span className="absolute top-0.5 right-0.5 bg-black/80 text-white text-[7.5px] font-bold px-1 rounded font-mono flex items-center gap-0.5 shadow-xs">
+                        📸 {bodyImgs.length}
+                      </span>
+                    )}
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -407,93 +457,170 @@ export default function TruckManagerPage() {
         onSuccess={fetchTrucks}
       />
 
-      {/* Image Gallery Modal */}
+      {/* ── Interactive Multi-Photo Gallery Modal ────────────────────── */}
       {galleryConfig.isOpen && galleryConfig.truck && (
         <Dialog 
           open={galleryConfig.isOpen} 
           onOpenChange={(val) => !val && setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 })}
         >
-          <DialogContent className="sm:max-w-[700px] p-0 bg-black/95 border-0 text-white rounded-2xl overflow-hidden flex flex-col justify-between">
-            <div className="p-4 flex items-center justify-between border-b border-white/10 z-10 bg-black/40 backdrop-blur-md">
-              <div>
-                <h3 className="font-heading font-bold text-lg text-white">
-                  {galleryConfig.truck.truck_name || 'Truck Images'}
-                </h3>
-                <p className="text-xs text-zinc-400 font-mono">{galleryConfig.truck.truck_number}</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="w-8 h-8 rounded-full text-zinc-400 hover:text-white hover:bg-white/10"
-                onClick={() => setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 })}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Main display */}
+          <DialogContent className="max-w-4xl w-[95vw] p-0 bg-slate-950/95 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl">
             {(() => {
               const galleryImgs = parseImageList(galleryConfig.truck?.body_images);
-              const activeImg = galleryImgs[galleryConfig.activeIndex] || galleryImgs[0];
+              const activeIndex = Math.min(Math.max(0, galleryConfig.activeIndex || 0), Math.max(0, galleryImgs.length - 1));
+              const activeImg = galleryImgs[activeIndex] || galleryImgs[0];
+              const activeImgUrl = activeImg ? pb.files.getUrl(galleryConfig.truck, activeImg) : null;
 
               return (
                 <>
-                  <div className="relative flex-1 flex items-center justify-center min-h-[400px] max-h-[550px] p-4 bg-zinc-950">
+                  {/* Top Bar: Truck Info + Photo Counter Badge + Actions */}
+                  <div className="p-4 px-6 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/60">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-heading font-extrabold text-base sm:text-lg text-white tracking-tight">
+                            {galleryConfig.truck.truck_name || 'Commercial Truck'}
+                          </h3>
+                          <Badge className="bg-primary/20 text-primary border-primary/30 font-mono text-xs font-bold px-2">
+                            {galleryConfig.truck.truck_number}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-400">
+                          {galleryConfig.truck.truck_size || '32 FT'} • {galleryConfig.truck.truck_axle || 'SXL'} • {galleryImgs.length} Total {galleryImgs.length === 1 ? 'Photo' : 'Photos'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Photo Counter Pill */}
+                      {galleryImgs.length > 0 && (
+                        <Badge variant="outline" className="bg-slate-800/90 text-slate-200 border-slate-700 text-xs px-2.5 py-1 font-mono">
+                          📸 {activeIndex + 1} / {galleryImgs.length}
+                        </Badge>
+                      )}
+
+                      {/* Download Current Image */}
+                      {activeImgUrl && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-9 h-9 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                          title="Download high-resolution image"
+                          asChild
+                        >
+                          <a href={activeImgUrl} target="_blank" rel="noopener noreferrer" download>
+                            <Download className="w-4 h-4" />
+                          </a>
+                        </Button>
+                      )}
+
+                      {/* Manage / Add More Photos */}
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 text-xs rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/50 flex items-center gap-1.5"
+                        onClick={() => {
+                          const trk = galleryConfig.truck;
+                          setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 });
+                          setModalConfig({ isOpen: true, truck: trk });
+                        }}
+                        title="Upload more photos"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-primary" />
+                        <span className="hidden sm:inline">Manage Photos</span>
+                      </Button>
+
+                      {/* Close */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="w-9 h-9 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"
+                        onClick={() => setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 })}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Main Large Image Stage */}
+                  <div className="relative flex-1 flex items-center justify-center min-h-[380px] max-h-[62vh] p-4 bg-black/80 overflow-hidden select-none">
+                    {/* Previous Button */}
                     {galleryImgs.length > 1 && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="absolute left-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
+                        className="absolute left-4 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 shadow-xl transition-all hover:scale-110 active:scale-95"
                         onClick={() => setGalleryConfig(prev => ({
                           ...prev,
-                          activeIndex: (prev.activeIndex - 1 + galleryImgs.length) % galleryImgs.length
+                          activeIndex: (activeIndex - 1 + galleryImgs.length) % galleryImgs.length
                         }))}
+                        title="Previous Photo (Left Arrow)"
                       >
                         <ChevronLeft className="w-6 h-6" />
                       </Button>
                     )}
 
-                    {activeImg && (
+                    {/* Active Image */}
+                    {activeImgUrl ? (
                       <img 
-                        src={pb.files.getUrl(galleryConfig.truck, activeImg)} 
-                        alt={`Truck body ${galleryConfig.activeIndex + 1}`} 
-                        className="max-w-full max-h-[480px] object-contain rounded-lg shadow-lg"
+                        src={activeImgUrl} 
+                        alt={`${galleryConfig.truck.truck_number} Photo ${activeIndex + 1}`} 
+                        className="max-w-full max-h-[58vh] object-contain rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
                       />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-500 py-16">
+                        <ImageIcon className="w-12 h-12 mb-2 opacity-30" />
+                        <p className="text-sm">No photos uploaded for this truck.</p>
+                      </div>
                     )}
 
+                    {/* Next Button */}
                     {galleryImgs.length > 1 && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="absolute right-4 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/85 text-white border-0"
+                        className="absolute right-4 z-20 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 shadow-xl transition-all hover:scale-110 active:scale-95"
                         onClick={() => setGalleryConfig(prev => ({
                           ...prev,
-                          activeIndex: (prev.activeIndex + 1) % galleryImgs.length
+                          activeIndex: (activeIndex + 1) % galleryImgs.length
                         }))}
+                        title="Next Photo (Right Arrow)"
                       >
                         <ChevronRight className="w-6 h-6" />
                       </Button>
                     )}
                   </div>
 
-                  {/* Thumbnail Navigation */}
+                  {/* Bottom Thumbnail Strip */}
                   {galleryImgs.length > 1 && (
-                    <div className="p-4 bg-black/60 border-t border-white/10 flex justify-center gap-2 overflow-x-auto">
-                      {galleryImgs.map((imgName, idx) => (
-                        <button 
-                          key={idx}
-                          className={`w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                            galleryConfig.activeIndex === idx ? 'border-primary scale-105' : 'border-transparent opacity-60 hover:opacity-100'
-                          }`}
-                          onClick={() => setGalleryConfig(prev => ({ ...prev, activeIndex: idx }))}
-                        >
-                          <img 
-                            src={pb.files.getUrl(galleryConfig.truck, imgName)} 
-                            alt={`Thumbnail ${idx + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
+                    <div className="p-3 px-6 bg-slate-900/90 border-t border-slate-800 flex items-center justify-center gap-2.5 overflow-x-auto">
+                      {galleryImgs.map((imgName, idx) => {
+                        const thumbUrl = pb.files.getUrl(galleryConfig.truck, imgName, { thumb: '120x90' });
+                        const isSelected = activeIndex === idx;
+                        return (
+                          <button 
+                            key={idx}
+                            className={`relative w-16 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0 ${
+                              isSelected 
+                                ? 'border-primary ring-2 ring-primary/40 scale-105 shadow-md shadow-primary/20 opacity-100' 
+                                : 'border-slate-700/60 opacity-50 hover:opacity-100 hover:border-slate-500'
+                            }`}
+                            onClick={() => setGalleryConfig(prev => ({ ...prev, activeIndex: idx }))}
+                            title={`View Photo ${idx + 1}`}
+                          >
+                            <img 
+                              src={thumbUrl} 
+                              alt={`Thumb ${idx + 1}`} 
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute bottom-0 right-0 bg-black/70 text-[9px] font-mono text-white px-1 rounded-tl">
+                              #{idx + 1}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </>

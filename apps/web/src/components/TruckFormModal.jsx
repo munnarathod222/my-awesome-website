@@ -9,6 +9,24 @@ import pb from '@/lib/pocketbaseClient';
 import { toast } from 'sonner';
 import DocumentFilePreview from './DocumentFilePreview';
 
+const parseImageList = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter(Boolean);
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch(e) {}
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  return [];
+};
+
 const AXLE_TYRE_MAP = {
   'SXL': 6,
   '2XL': 10,
@@ -218,7 +236,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           body_width: truck.body_width?.toString() || '',
           body_height: truck.body_height?.toString() || ''
         });
-        const existing = (truck.body_images || []).map((img, idx) => ({
+        const existing = parseImageList(truck.body_images).map((img, idx) => ({
           key: `existing-${idx}-${img}`,
           file: img,
           isNew: false
