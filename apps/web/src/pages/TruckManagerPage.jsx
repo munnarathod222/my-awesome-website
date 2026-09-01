@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, 
-  X, User, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2
+  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,22 +90,28 @@ export default function TruckManagerPage() {
   const fetchTrucks = async () => {
     try {
       setLoading(true);
-      const [trucksRes, driversRes, loanProfilesRes] = await Promise.all([
+      const [trucksRes, empsRes, loanProfilesRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
           expand: 'manager_id',
           $autoCancel: false
         }),
         pb.collection('employees').getFullList({
-          filter: 'employee_type="driver"',
+          sort: 'name',
           $autoCancel: false
         }),
         pb.collection('loan_profiles').getFullList({
           $autoCancel: false
         })
       ]);
+      
+      const driverList = (empsRes || []).filter(e => {
+        const type = (e.employee_type || '').toLowerCase();
+        return type.includes('driver') || (!type.includes('manager') && !type.includes('admin') && !type.includes('accountant'));
+      });
+
       setTrucks(trucksRes);
-      setDrivers(driversRes);
+      setDrivers(driverList);
       setLoanProfiles(loanProfilesRes);
     } catch (err) {
       console.error(err);
@@ -132,31 +138,67 @@ export default function TruckManagerPage() {
     }
   };
 
-  const handleUnlink = async (driver) => {
-    if (!driver) return;
-    if (window.confirm(`Are you sure you want to unlink driver ${driver.name}?`)) {
+  const handleUnlink = async (truck, driver) => {
+    if (!truck) return;
+    const driverName = driver?.name || truck.assigned_driver_name || truck.driver_name || 'Assigned Driver';
+    if (window.confirm(`Are you sure you want to unassign driver ${driverName} from truck ${truck.truck_number}?`)) {
       try {
         setLoading(true);
-        await pb.collection('employees').update(driver.id, { assigned_truck: '' }, { $autoCancel: false });
-        toast.success(`Unlinked driver ${driver.name} successfully`);
+        if (driver?.id) {
+          await pb.collection('employees').update(driver.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+        }
+        // Also unassign any other employee linked to this truck
+        const linkedEmps = drivers.filter(d => d.assigned_truck === truck.id);
+        for (const emp of linkedEmps) {
+          await pb.collection('employees').update(emp.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+        }
+        // Clear fields in truck record
+        await pb.collection('trucks').update(truck.id, {
+          assigned_driver_name: '',
+          assigned_driver_phone: '',
+          driver_name: '',
+          driver_phone: ''
+        }, { $autoCancel: false });
+
+        toast.success(`Unassigned driver from ${truck.truck_number} successfully`);
         await fetchTrucks();
       } catch (err) {
         console.error(err);
-        toast.error('Failed to unlink driver');
+        toast.error('Failed to unassign driver');
       } finally {
         setLoading(false);
       }
     }
   };
 
-  const handleSwap = async (truckId, newDriverId, currentDriver) => {
+  const handleSwap = async (truck, newDriverId, currentDriver) => {
     try {
       setLoading(true);
-      if (currentDriver) {
-        await pb.collection('employees').update(currentDriver.id, { assigned_truck: '' }, { $autoCancel: false });
+      const newDriver = drivers.find(d => d.id === newDriverId);
+      
+      // Unlink previous driver from employee table
+      if (currentDriver?.id) {
+        await pb.collection('employees').update(currentDriver.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
       }
-      await pb.collection('employees').update(newDriverId, { assigned_truck: truckId }, { $autoCancel: false });
-      toast.success('Driver assigned successfully');
+      const existingLinked = drivers.filter(d => d.assigned_truck === truck.id && d.id !== newDriverId);
+      for (const emp of existingLinked) {
+        await pb.collection('employees').update(emp.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+      }
+
+      // Link new driver in employees
+      if (newDriverId && newDriver) {
+        await pb.collection('employees').update(newDriverId, { assigned_truck: truck.id }, { $autoCancel: false });
+      }
+
+      // Update truck record
+      await pb.collection('trucks').update(truck.id, {
+        assigned_driver_name: newDriver ? newDriver.name : '',
+        assigned_driver_phone: newDriver ? (newDriver.phone || '') : '',
+        driver_name: newDriver ? newDriver.name : '',
+        driver_phone: newDriver ? (newDriver.phone || '') : ''
+      }, { $autoCancel: false });
+
+      toast.success(`Driver ${newDriver?.name || ''} assigned to ${truck.truck_number} successfully`);
       await fetchTrucks();
     } catch (err) {
       console.error(err);
@@ -292,12 +334,98 @@ export default function TruckManagerPage() {
                   </div>
                 </div>
 
-                {/* Center: Driver Pill */}
-                <div className="flex items-center gap-2 bg-muted/40 px-2.5 py-1 rounded-lg border border-border/30 shrink-0">
-                  <User className="w-3.5 h-3.5 text-primary opacity-70" />
-                  <span className="text-xs font-semibold text-foreground truncate max-w-[120px]">
-                    {assignedDriver ? assignedDriver.name : <span className="italic text-muted-foreground/60 text-[11px]">Unassigned</span>}
-                  </span>
+                {/* Center: Interactive Driver Assignment Pill / Dropdown */}
+                <div className="shrink-0">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-7 px-2.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                          (assignedDriver || truck.assigned_driver_name || truck.driver_name)
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' 
+                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20 shadow-xs'
+                        }`}
+                        title={assignedDriver ? `Driver: ${assignedDriver.name} (Click to manage)` : 'Assign a driver to this truck'}
+                      >
+                        {(assignedDriver || truck.assigned_driver_name || truck.driver_name) ? (
+                          <>
+                            <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span className="truncate max-w-[110px]">{assignedDriver?.name || truck.assigned_driver_name || truck.driver_name}</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span>+ Assign Driver</span>
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-60 bg-card border border-border shadow-xl z-50">
+                      <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center justify-between pb-1">
+                        <span>Driver • {truck.truck_number}</span>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+
+                      {(assignedDriver || truck.assigned_driver_name || truck.driver_name) && (
+                        <>
+                          <div className="px-2 py-1.5 bg-muted/40 rounded-md mb-1 text-xs">
+                            <p className="font-bold text-foreground">👤 {assignedDriver?.name || truck.assigned_driver_name || truck.driver_name}</p>
+                            {(assignedDriver?.phone || truck.assigned_driver_phone || truck.driver_phone) && (
+                              <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                                📞 {assignedDriver?.phone || truck.assigned_driver_phone || truck.driver_phone}
+                              </p>
+                            )}
+                          </div>
+                          <DropdownMenuItem 
+                            className="text-destructive font-semibold text-xs cursor-pointer focus:bg-destructive/10 flex items-center gap-2"
+                            onSelect={() => handleUnlink(truck, assignedDriver)}
+                          >
+                            <UserX className="w-3.5 h-3.5 text-destructive shrink-0" />
+                            <span>Unassign Driver</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-bold">Switch Driver</DropdownMenuLabel>
+                        </>
+                      )}
+
+                      {!(assignedDriver || truck.assigned_driver_name || truck.driver_name) && (
+                        <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-bold">Assign Driver</DropdownMenuLabel>
+                      )}
+
+                      {drivers.length === 0 ? (
+                        <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">
+                          No drivers registered in fleet
+                        </DropdownMenuItem>
+                      ) : (
+                        drivers.map(d => {
+                          const currentName = assignedDriver?.name || truck.assigned_driver_name || truck.driver_name;
+                          const isCurrentlyAssigned = (assignedDriver?.id === d.id) || (currentName === d.name);
+                          const isBusyElsewhere = Boolean(d.assigned_truck && d.assigned_truck !== truck.id);
+                          return (
+                            <DropdownMenuItem
+                              key={d.id}
+                              disabled={isCurrentlyAssigned}
+                              className={`text-xs cursor-pointer flex items-center justify-between py-1.5 ${isCurrentlyAssigned ? 'font-bold text-primary bg-primary/5' : ''}`}
+                              onSelect={() => handleSwap(truck, d.id, assignedDriver)}
+                            >
+                              <div className="flex items-center gap-1.5 truncate">
+                                <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="truncate">{d.name}</span>
+                              </div>
+                              {isCurrentlyAssigned ? (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">Assigned</Badge>
+                              ) : isBusyElsewhere ? (
+                                <span className="text-[9px] text-muted-foreground">Other truck</span>
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Available</Badge>
+                              )}
+                            </DropdownMenuItem>
+                          );
+                        })
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Right: Quick Action Buttons & Menu */}
@@ -355,20 +483,11 @@ export default function TruckManagerPage() {
                         <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Truck
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {assignedDriver ? (
-                        <DropdownMenuItem className="text-destructive font-medium" onSelect={() => handleUnlink(assignedDriver)}>
-                          Unlink {assignedDriver.name}
+                      {(assignedDriver || truck.assigned_driver_name || truck.driver_name) && (
+                        <DropdownMenuItem className="text-destructive font-medium" onSelect={() => handleUnlink(truck, assignedDriver)}>
+                          <UserX className="w-3.5 h-3.5 mr-2" />
+                          Unassign {assignedDriver?.name || truck.assigned_driver_name || truck.driver_name}
                         </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuLabel>Assign Driver</DropdownMenuLabel>
-                      {availableDrivers.length === 0 ? (
-                        <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">No unassigned drivers</DropdownMenuItem>
-                      ) : (
-                        availableDrivers.map(d => (
-                          <DropdownMenuItem key={d.id} onSelect={() => handleSwap(truck.id, d.id, assignedDriver)}>
-                            {d.name}
-                          </DropdownMenuItem>
-                        ))
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -427,12 +546,85 @@ export default function TruckManagerPage() {
                   </Badge>
                 </div>
 
-                {/* Actions bottom bar */}
+                {/* Actions bottom bar with Driver Assignment */}
                 <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[11px]">
-                  <span className="text-[10px] font-semibold text-muted-foreground truncate max-w-[100px]">
-                    👤 {assignedDriver ? assignedDriver.name : 'Unassigned'}
-                  </span>
-                  <div className="flex items-center gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-6 px-1.5 text-[10px] font-semibold rounded-md flex items-center gap-1 max-w-[130px] truncate ${
+                          (assignedDriver || truck.assigned_driver_name || truck.driver_name)
+                            ? 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10'
+                            : 'text-amber-700 dark:text-amber-400 hover:bg-amber-500/10'
+                        }`}
+                        title="Click to assign or unassign driver"
+                      >
+                        {(assignedDriver || truck.assigned_driver_name || truck.driver_name) ? (
+                          <>
+                            <User className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span className="truncate">{assignedDriver?.name || truck.assigned_driver_name || truck.driver_name}</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3 h-3 text-amber-600 shrink-0" />
+                            <span className="truncate">+ Assign Driver</span>
+                          </>
+                        )}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56 bg-card border border-border shadow-xl z-50">
+                      <DropdownMenuLabel className="text-xs text-muted-foreground pb-1">
+                        Driver • {truck.truck_number}
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+
+                      {(assignedDriver || truck.assigned_driver_name || truck.driver_name) && (
+                        <>
+                          <div className="px-2 py-1 bg-muted/40 rounded text-xs mb-1">
+                            <p className="font-bold text-foreground">👤 {assignedDriver?.name || truck.assigned_driver_name || truck.driver_name}</p>
+                          </div>
+                          <DropdownMenuItem 
+                            className="text-destructive font-semibold text-xs cursor-pointer focus:bg-destructive/10 flex items-center gap-1.5"
+                            onSelect={() => handleUnlink(truck, assignedDriver)}
+                          >
+                            <UserX className="w-3 h-3 text-destructive shrink-0" />
+                            <span>Unassign Driver</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-bold">Switch Driver</DropdownMenuLabel>
+                        </>
+                      )}
+
+                      {!(assignedDriver || truck.assigned_driver_name || truck.driver_name) && (
+                        <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase font-bold">Assign Driver</DropdownMenuLabel>
+                      )}
+
+                      {drivers.length === 0 ? (
+                        <DropdownMenuItem disabled className="text-muted-foreground italic text-xs">
+                          No drivers in fleet
+                        </DropdownMenuItem>
+                      ) : (
+                        drivers.map(d => {
+                          const currentName = assignedDriver?.name || truck.assigned_driver_name || truck.driver_name;
+                          const isCurrentlyAssigned = (assignedDriver?.id === d.id) || (currentName === d.name);
+                          return (
+                            <DropdownMenuItem
+                              key={d.id}
+                              disabled={isCurrentlyAssigned}
+                              className={`text-xs cursor-pointer flex items-center justify-between py-1.5 ${isCurrentlyAssigned ? 'font-bold text-primary' : ''}`}
+                              onSelect={() => handleSwap(truck, d.id, assignedDriver)}
+                            >
+                              <span className="truncate">{d.name}</span>
+                              {isCurrentlyAssigned && <Badge variant="outline" className="text-[8px] px-1 py-0">Assigned</Badge>}
+                            </DropdownMenuItem>
+                          );
+                        })
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <div className="flex items-center gap-1 shrink-0">
                     <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-primary" onClick={() => navigate(`/tyres/${truck.id}`)} title="Tyres">
                       <Settings className="w-3 h-3" />
                     </Button>

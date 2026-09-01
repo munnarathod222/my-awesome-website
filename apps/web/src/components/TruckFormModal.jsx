@@ -66,6 +66,7 @@ import apiServerClient from '@/lib/apiServerClient.js';
 export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [formData, setFormData] = useState({
     truck_name: '',
     truck_number: '',
@@ -76,6 +77,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     base_odometer: 0,
     ownership_type: 'Owned',
     manager_id: 'none',
+    assigned_driver_id: 'none',
     fastag_id: '',
     current_fastag_balance: '',
     payload_capacity: '',
@@ -196,6 +198,38 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         }
       }
 
+      // Handle Dedicated Driver Assignment Synchronization
+      const targetTruckId = truck?.id || updatedRecord?.id;
+      if (targetTruckId) {
+        if (formData.assigned_driver_id && formData.assigned_driver_id !== 'none') {
+          const selectedDriver = drivers.find(d => d.id === formData.assigned_driver_id);
+          if (selectedDriver) {
+            const otherDrivers = drivers.filter(d => d.assigned_truck === targetTruckId && d.id !== selectedDriver.id);
+            for (const od of otherDrivers) {
+              await pb.collection('employees').update(od.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+            }
+            await pb.collection('employees').update(selectedDriver.id, { assigned_truck: targetTruckId }, { $autoCancel: false }).catch(() => {});
+            await pb.collection('trucks').update(targetTruckId, {
+              assigned_driver_name: selectedDriver.name,
+              assigned_driver_phone: selectedDriver.phone || '',
+              driver_name: selectedDriver.name,
+              driver_phone: selectedDriver.phone || ''
+            }, { $autoCancel: false }).catch(() => {});
+          }
+        } else if (formData.assigned_driver_id === 'none') {
+          const otherDrivers = drivers.filter(d => d.assigned_truck === targetTruckId);
+          for (const od of otherDrivers) {
+            await pb.collection('employees').update(od.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+          }
+          await pb.collection('trucks').update(targetTruckId, {
+            assigned_driver_name: '',
+            assigned_driver_phone: '',
+            driver_name: '',
+            driver_phone: ''
+          }, { $autoCancel: false }).catch(() => {});
+        }
+      }
+
       toast.success(truck ? 'Truck updated successfully' : 'Truck created successfully');
       onSuccess();
       onClose();
@@ -209,7 +243,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
 
   useEffect(() => {
     if (isOpen) {
-      // Fetch dynamic user records whose system roles are flagged as "manager" or "dispatcher" (Operations Lead)
+      // Fetch dynamic user records whose system roles are flagged as "manager" or "dispatcher"
       pb.collection('users').getFullList({
         filter: 'role = "manager" || role = "dispatcher"',
         sort: 'full_name',
@@ -217,6 +251,26 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       })
       .then(setManagers)
       .catch(err => console.error('Failed to fetch managers:', err));
+
+      // Fetch drivers from employees table
+      pb.collection('employees').getFullList({
+        sort: 'name',
+        $autoCancel: false
+      })
+      .then(res => {
+        const dList = (res || []).filter(e => {
+          const type = (e.employee_type || '').toLowerCase();
+          return type.includes('driver') || (!type.includes('manager') && !type.includes('admin') && !type.includes('accountant'));
+        });
+        setDrivers(dList);
+        if (truck) {
+          const assigned = dList.find(d => d.assigned_truck === truck.id || (truck.assigned_driver_name && d.name === truck.assigned_driver_name));
+          if (assigned) {
+            setFormData(prev => ({ ...prev, assigned_driver_id: assigned.id }));
+          }
+        }
+      })
+      .catch(err => console.error('Failed to fetch drivers:', err));
 
       if (truck) {
         setFormData({
@@ -229,6 +283,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           base_odometer: truck.base_odometer || 0,
           ownership_type: truck.ownership_type || 'Owned',
           manager_id: truck.manager_id || 'none',
+          assigned_driver_id: 'none',
           fastag_id: truck.fastag_id || '',
           current_fastag_balance: truck.current_fastag_balance?.toString() || '',
           payload_capacity: truck.payload_capacity || '',
@@ -471,19 +526,36 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Assign Fleet Manager</Label>
-            <Select value={formData.manager_id} onValueChange={v => setFormData({...formData, manager_id: v})}>
-              <SelectTrigger><SelectValue placeholder="Select Fleet Manager" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Not assigned</SelectItem>
-                {managers.map(mgr => (
-                  <SelectItem key={mgr.id} value={mgr.id}>
-                    {mgr.full_name || mgr.name} ({mgr.role === 'manager' ? 'Manager' : 'Operations Lead'})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Assign Dedicated Driver</Label>
+              <Select value={formData.assigned_driver_id || 'none'} onValueChange={v => setFormData({...formData, assigned_driver_id: v})}>
+                <SelectTrigger><SelectValue placeholder="Select Driver" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {drivers.map(d => (
+                    <SelectItem key={d.id} value={d.id}>
+                      👤 {d.name} {d.assigned_truck && d.assigned_truck !== truck?.id ? '(On another truck)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Assign Fleet Manager</Label>
+              <Select value={formData.manager_id || 'none'} onValueChange={v => setFormData({...formData, manager_id: v})}>
+                <SelectTrigger><SelectValue placeholder="Select Fleet Manager" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Not assigned</SelectItem>
+                  {managers.map(mgr => (
+                    <SelectItem key={mgr.id} value={mgr.id}>
+                      {mgr.full_name || mgr.name} ({mgr.role === 'manager' ? 'Manager' : 'Operations Lead'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
