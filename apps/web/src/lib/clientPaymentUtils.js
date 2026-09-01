@@ -24,13 +24,30 @@ export const calculateClientMetrics = (clientId, trips = [], billingType = 'Spot
   let paidTripsWithDurationCount = 0;
   let onTimeTripsCount = 0;
 
+  const now = new Date();
+  now.setHours(23, 59, 59, 999);
+
   clientTrips.forEach(trip => {
     const revenue = Number(trip.revenue || trip.total_freight || trip.amount || 0);
     const advance = Number(trip.advance_received_from_client || trip.advance || 0);
-    const isDelivered = !trip.trip_status || trip.trip_status === 'Delivered' || trip.trip_status === 'Completed';
-    const isFullyPaid = trip.client_payment_status === 'received' || trip.payment_status === 'Paid';
 
-    totalInvoiced += revenue;
+    const tripDateStr = trip.date || trip.created || trip.booking_date;
+    let isFutureDate = false;
+    if (tripDateStr) {
+      const parsedDate = new Date(typeof tripDateStr === 'string' && tripDateStr.includes(' ') && !tripDateStr.includes('T') ? tripDateStr.replace(' ', 'T') : tripDateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        isFutureDate = parsedDate.getTime() > now.getTime();
+      }
+    }
+
+    const normStatus = (trip.trip_status || '').trim().toUpperCase();
+    const isUpcoming = isFutureDate || normStatus === 'UPCOMING' || normStatus === 'DISPATCHED' || normStatus === 'IN TRANSIT' || normStatus === 'IN-TRANSIT' || normStatus === 'PLANNED';
+    const isDelivered = (normStatus === 'DELIVERED' || normStatus === 'COMPLETED' || (!normStatus && !isFutureDate)) && !isUpcoming;
+    const isFullyPaid = (trip.client_payment_status || '').toLowerCase() === 'received' || (trip.client_payment_status || '').toLowerCase() === 'paid' || trip.payment_status === 'Paid';
+
+    if (!isUpcoming || isFullyPaid) {
+      totalInvoiced += revenue;
+    }
 
     // Calculate trip age / payment duration days
     const bookingDate = trip.date || trip.created || trip.booking_date;
@@ -54,16 +71,9 @@ export const calculateClientMetrics = (clientId, trips = [], billingType = 'Spot
         lastPaymentDate = trip.date;
       }
     } else {
-      if (isContract) {
-        // Contract: only count delivered trips as outstanding
-        totalReceived += advance;
-        if (isDelivered) {
-          totalPending += Math.max(0, revenue - advance);
-          pendingTripsCount++;
-        }
-      } else {
-        // Spot: deduct advance and show pending balance
-        totalReceived += advance;
+      // For both Contract and Spot: only completed/delivered past/present trips count towards outstanding dues
+      totalReceived += advance;
+      if (isDelivered) {
         totalPending += Math.max(0, revenue - advance);
         pendingTripsCount++;
       }
