@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
-import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail, MessageSquare, Sparkles, CheckCircle2, Clock, PhoneCall } from 'lucide-react';
+import { useSearchParams, useLocation } from 'react-router-dom';
+import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail, MessageSquare, Sparkles, CheckCircle2, Clock, PhoneCall, RefreshCw, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,6 @@ import InvoiceMakerPage from '@/pages/InvoiceMakerPage.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
 import { generateCorporateContractPdf } from '@/lib/contractPdfGenerator.js';
-import { Download } from 'lucide-react';
 import { TRUCK_SIZE_FILTER_OPTIONS } from '@/constants/truckSizes.js';
 
 const statusColors = {
@@ -36,8 +36,10 @@ const statusColors = {
 
 const QuotesManagerPage = () => {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -146,8 +148,10 @@ const QuotesManagerPage = () => {
     setMailOpen(true);
   };
 
-  const fetchQuotes = async () => {
-    setLoading(true);
+  const fetchQuotes = async (isManual = false) => {
+    if (isManual) setIsRefreshing(true);
+    else setLoading(prev => (quotes.length === 0 ? true : prev));
+
     try {
       const quotesMap = new Map();
 
@@ -205,11 +209,26 @@ const QuotesManagerPage = () => {
       });
 
       setQuotes(combined);
+
+      // Check if URL search param targets a specific quote to open
+      const targetNum = searchParams.get('quoteNumber') || searchParams.get('quoteId');
+      if (targetNum) {
+        const match = combined.find(q => q.quote_number === targetNum || q.id === targetNum);
+        if (match) {
+          setSelectedQuote(match);
+          setIsDetailsOpen(true);
+        }
+      }
+
+      if (isManual) {
+        toast.success(`Quotes refreshed! (${combined.length} total)`);
+      }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to load quotes');
+      if (isManual) toast.error('Failed to refresh quotes');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -225,19 +244,37 @@ const QuotesManagerPage = () => {
     window.addEventListener('jbc_new_quote_submitted', handleNewQuote);
     window.addEventListener('storage', handleNewQuote);
 
-    // Live polling every 12 seconds
+    // PocketBase realtime subscription
+    pb.collection('quotes').subscribe('*', (e) => {
+      fetchQuotes();
+    }).catch(() => {});
+
+    // Multi-tab BroadcastChannel listener
+    let bc;
+    if (typeof window.BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('jbc_quotes_channel');
+        bc.onmessage = () => {
+          fetchQuotes();
+        };
+      } catch (e) {}
+    }
+
+    // Live polling every 8 seconds
     const interval = setInterval(() => {
       if (activeMainTab === 'quotes') {
         fetchQuotes();
       }
-    }, 12000);
+    }, 8000);
 
     return () => {
       window.removeEventListener('jbc_new_quote_submitted', handleNewQuote);
       window.removeEventListener('storage', handleNewQuote);
+      try { pb.collection('quotes').unsubscribe('*'); } catch (e) {}
+      if (bc) { bc.close(); }
       clearInterval(interval);
     };
-  }, [activeMainTab]);
+  }, [activeMainTab, searchParams]);
 
   const handleCreateNew = () => {
     setSelectedQuote(null);
@@ -393,6 +430,15 @@ const QuotesManagerPage = () => {
 
         <TabsContent value="quotes" className="space-y-6 m-0 outline-none">
           <div className="flex justify-end items-center gap-3">
+             <Button
+               variant="outline"
+               onClick={() => fetchQuotes(true)}
+               disabled={isRefreshing}
+               className="rounded-xl border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 font-semibold gap-1.5"
+             >
+               <RefreshCw className={cn("w-4 h-4 text-primary", isRefreshing && "animate-spin")} />
+               Refresh
+             </Button>
              <Button 
                variant="outline"
                onClick={() => {

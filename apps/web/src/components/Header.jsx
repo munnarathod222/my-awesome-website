@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext.jsx';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import apiServerClient from '@/lib/apiServerClient.js';
+import { playDispatchChime, triggerBrowserNotification, requestNotificationPermission } from '@/lib/notificationSound.js';
 import ExpenseModal from '@/components/ExpenseModal.jsx';
 import AddTripModal from '@/components/AddTripModal.jsx';
 import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';
@@ -137,13 +138,190 @@ export default function Header() {
   const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
 
+  const [pendingQuotes, setPendingQuotes] = useState([]);
+  const [pendingSignups, setPendingSignups] = useState([]);
+  const lastKnownQuoteIdsRef = React.useRef(new Set());
+
+  const handleLogout = () => { logout(); navigate('/'); };
+
+  const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
+    .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
+
+  // Request browser notification permission once user interacts
   useEffect(() => {
-    if (!isAdmin && !isSuperAdmin) return;
-    pb.collection('signup_requests').getList(1, 1, {
-      filter: 'status = "Pending"',
-      $autoCancel: false,
-    }).then(r => setPendingCount(r.totalItems)).catch(() => {});
-  }, [isAdmin, isSuperAdmin]);
+    if (isAuthenticated) {
+      requestNotificationPermission();
+    }
+  }, [isAuthenticated]);
+
+  const fetchPendingNotifications = React.useCallback(async (isInitial = false) => {
+    if (!isAuthenticated) return;
+
+    // 1. Fetch Signup Requests (Admin only)
+    if (isAdmin || isSuperAdmin) {
+      try {
+        const r = await pb.collection('signup_requests').getList(1, 10, {
+          filter: 'status = "Pending"',
+          sort: '-created',
+          $autoCancel: false,
+        });
+        setPendingCount(r.totalItems || 0);
+        setPendingSignups(r.items || []);
+      } catch (err) {}
+    }
+
+    // 2. Fetch Pending Quotes
+    try {
+      const quotesMap = new Map();
+
+      // Try server API first
+      try {
+        const endpoints = ['/hcgi/api/driver/get-quotes', '/api/driver/get-quotes'];
+        for (const ep of endpoints) {
+          try {
+            const res = await window.fetch(ep);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.success && Array.isArray(data.quotes)) {
+                data.quotes.forEach(q => {
+                  if (q.status === 'Pending' || q.status === 'Draft' || !q.status) {
+                    quotesMap.set(q.quote_number || q.id, q);
+                  }
+                });
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+      } catch (e) {}
+
+      // Try PocketBase SDK
+      try {
+        const pbQuotes = await pb.collection('quotes').getList(1, 15, {
+          filter: 'status = "Pending" || status = "Draft" || status = ""',
+          sort: '-created',
+          $autoCancel: false
+        });
+        (pbQuotes?.items || []).forEach(q => {
+          quotesMap.set(q.quote_number || q.id, q);
+        });
+      } catch (e) {}
+
+      // Try localStorage cache
+      try {
+        const local = JSON.parse(localStorage.getItem('jbc_public_quotes') || '[]');
+        (local || []).forEach(q => {
+          if (q.status === 'Pending' || q.status === 'Draft' || !q.status) {
+            quotesMap.set(q.quote_number || q.id, q);
+          }
+        });
+      } catch (e) {}
+
+      const list = Array.from(quotesMap.values()).sort((a, b) => {
+        const tA = new Date(a.created || a.updated || 0).getTime();
+        const tB = new Date(b.created || b.updated || 0).getTime();
+        return tB - tA;
+      });
+
+      // Detect newly arrived quotes that weren't known before
+      if (!isInitial && list.length > 0) {
+        const newest = list[0];
+        const key = newest.quote_number || newest.id;
+        if (key && !lastKnownQuoteIdsRef.current.has(key)) {
+          // Play Dispatch Chime & Trigger Desktop / Toast Notification
+          playDispatchChime();
+          triggerBrowserNotification(`🚛 New Quote #${newest.quote_number}`, {
+            body: `${newest.customer_name} • ${newest.origin} ➡️ ${newest.destination}\nTruck: ${newest.truck_size || newest.container_type || '32 FT SXL'}`,
+            onClick: () => navigate(`/quotes-manager?quoteNumber=${newest.quote_number}`)
+          });
+          toast.info(`🚛 New Freight Quote Request: #${newest.quote_number}`, {
+            description: `${newest.customer_name} (${newest.origin} ➡️ ${newest.destination}) • ${newest.truck_size || newest.container_type || '32 FT SXL'}`,
+            action: {
+              label: 'Open in Hub',
+              onClick: () => navigate(`/quotes-manager?quoteNumber=${newest.quote_number}`)
+            },
+            duration: 9000
+          });
+        }
+      }
+
+      // Update known quote IDs
+      list.forEach(q => {
+        const k = q.quote_number || q.id;
+        if (k) lastKnownQuoteIdsRef.current.add(k);
+      });
+
+      setPendingQuotes(list);
+    } catch (e) {}
+  }, [isAdmin, isSuperAdmin, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    fetchPendingNotifications(true);
+
+    const handleNewQuoteEvent = (e) => {
+      const q = e?.detail;
+      if (q) {
+        const k = q.quote_number || q.id;
+        if (k && !lastKnownQuoteIdsRef.current.has(k)) {
+          lastKnownQuoteIdsRef.current.add(k);
+          playDispatchChime();
+          triggerBrowserNotification(`🚛 New Quote #${q.quote_number}`, {
+            body: `${q.customer_name} • ${q.origin} ➡️ ${q.destination}\nTruck: ${q.truck_size || q.container_type || '32 FT SXL'}`,
+            onClick: () => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)
+          });
+          toast.info(`🚛 New Freight Quote Request: #${q.quote_number}`, {
+            description: `${q.customer_name} (${q.origin} ➡️ ${q.destination}) • ${q.truck_size || q.container_type || '32 FT SXL'}`,
+            action: {
+              label: 'Open in Hub',
+              onClick: () => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)
+            },
+            duration: 9000
+          });
+        }
+      }
+      fetchPendingNotifications(false);
+    };
+
+    window.addEventListener('jbc_new_quote_submitted', handleNewQuoteEvent);
+    window.addEventListener('storage', () => fetchPendingNotifications(false));
+
+    // Multi-tab BroadcastChannel
+    let bc;
+    if (typeof window.BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('jbc_quotes_channel');
+        bc.onmessage = (msg) => {
+          if (msg?.data?.quote) {
+            handleNewQuoteEvent({ detail: msg.data.quote });
+          } else {
+            fetchPendingNotifications(false);
+          }
+        };
+      } catch (e) {}
+    }
+
+    // Realtime PocketBase subscription
+    pb.collection('quotes').subscribe('*', () => {
+      fetchPendingNotifications(false);
+    }).catch(() => {});
+
+    pb.collection('signup_requests').subscribe('*', () => {
+      fetchPendingNotifications(false);
+    }).catch(() => {});
+
+    // Polling interval
+    const interval = setInterval(() => {
+      fetchPendingNotifications(false);
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('jbc_new_quote_submitted', handleNewQuoteEvent);
+      try { pb.collection('quotes').unsubscribe('*'); } catch (e) {}
+      try { pb.collection('signup_requests').unsubscribe('*'); } catch (e) {}
+      if (bc) { bc.close(); }
+      clearInterval(interval);
+    };
+  }, [fetchPendingNotifications, navigate]);
 
   const [unreadEmails, setUnreadEmails] = useState(0);
 
@@ -444,18 +622,110 @@ export default function Header() {
                 </div>
 
                 {(isAdmin || isSuperAdmin) && (
-                  <button
-                    onClick={() => navigate('/dashboard/users?tab=signup-requests')}
-                    className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-foreground"
-                    title="Signup Requests"
-                  >
-                    <Bell className="w-3.5 h-3.5" />
-                    {pendingCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center">
-                        {pendingCount > 9 ? '9+' : pendingCount}
-                      </span>
-                    )}
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="relative w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.06] text-muted-foreground hover:text-foreground transition-all duration-150"
+                        title="Notifications"
+                      >
+                        <Bell className={cn("w-3.5 h-3.5", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-muted-foreground")} />
+                        {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+                            {(pendingQuotes.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + pendingSignups.length)}
+                          </span>
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-80 bg-slate-900 border border-slate-800 text-slate-100 p-0 shadow-2xl rounded-2xl overflow-hidden font-sans z-50">
+                      <div className="p-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bell className="w-4 h-4 text-amber-400" />
+                          <span className="font-bold text-xs uppercase tracking-wider text-slate-200">Dispatch Notifications</span>
+                        </div>
+                        {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {(pendingQuotes.length + pendingSignups.length)} New
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="max-h-72 overflow-y-auto divide-y divide-slate-800/60">
+                        {/* Section 1: Pending Quotes */}
+                        {pendingQuotes.length > 0 && (
+                          <div className="p-2 space-y-1">
+                            <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-emerald-400">
+                                <Truck className="w-3.5 h-3.5" /> Quote Requests ({pendingQuotes.length})
+                              </span>
+                            </div>
+                            {pendingQuotes.slice(0, 5).map(q => (
+                              <DropdownMenuItem
+                                key={q.id || q.quote_number}
+                                onClick={() => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)}
+                                className="cursor-pointer rounded-xl p-2.5 hover:bg-slate-800/80 transition-colors flex flex-col items-start gap-1 focus:bg-slate-800"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="font-mono font-bold text-xs text-primary">{q.quote_number}</span>
+                                  <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                                    {q.truck_size || q.container_type || '32 FT SXL'}
+                                  </span>
+                                </div>
+                                <div className="text-xs font-bold text-slate-200 truncate max-w-full">
+                                  {q.customer_name}
+                                </div>
+                                <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                                  <span>{q.origin}</span>
+                                  <span>➡️</span>
+                                  <span>{q.destination}</span>
+                                </div>
+                              </DropdownMenuItem>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Section 2: Pending Signup Requests */}
+                        {pendingSignups.length > 0 && (
+                          <div className="p-2 space-y-1">
+                            <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                              <span className="flex items-center gap-1.5 text-blue-400">
+                                <Users className="w-3.5 h-3.5" /> Access Requests ({pendingSignups.length})
+                              </span>
+                            </div>
+                            {pendingSignups.slice(0, 4).map(req => (
+                              <DropdownMenuItem
+                                key={req.id}
+                                onClick={() => navigate('/dashboard/users?tab=signup-requests')}
+                                className="cursor-pointer rounded-xl p-2.5 hover:bg-slate-800/80 transition-colors flex flex-col items-start gap-1 focus:bg-slate-800"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className="font-bold text-xs text-slate-200">{req.name || req.email}</span>
+                                  <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-500/20">
+                                    {req.requested_role || 'Staff'}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-400">{req.email || req.phone}</div>
+                              </DropdownMenuItem>
+                            ))}
+                          </div>
+                        )}
+
+                        {(pendingQuotes.length + pendingSignups.length) === 0 && (
+                          <div className="py-8 text-center text-xs text-slate-500">
+                            No pending quote inquiries or requests.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-2 bg-slate-950/90 border-t border-slate-800 text-center">
+                        <Link
+                          to="/quotes-manager"
+                          className="block w-full py-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Open Quotes & Invoicing Hub ➡️
+                        </Link>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 {isAuthenticated && (
@@ -633,7 +903,55 @@ export default function Header() {
                   </button>
                 )}
               </div>
-          {isAuthenticated && (
+
+          {isAuthenticated && (isAdmin || isSuperAdmin) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="relative w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground"
+                  title="Notifications"
+                >
+                  <Bell className={cn("w-3.5 h-3.5", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
+                  {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
+                      {(pendingQuotes.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + pendingSignups.length)}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72 bg-slate-900 border border-slate-800 text-slate-100 p-0 shadow-2xl rounded-2xl overflow-hidden font-sans z-50">
+                <div className="p-2.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                  <span className="font-bold text-xs uppercase tracking-wider text-slate-200">Notifications</span>
+                  {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {(pendingQuotes.length + pendingSignups.length)} New
+                    </span>
+                  )}
+                </div>
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-800/60 p-1">
+                  {pendingQuotes.slice(0, 4).map(q => (
+                    <DropdownMenuItem
+                      key={q.id || q.quote_number}
+                      onClick={() => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)}
+                      className="p-2 flex flex-col items-start gap-0.5 cursor-pointer rounded-lg hover:bg-slate-800"
+                    >
+                      <span className="font-mono font-bold text-xs text-primary">{q.quote_number}</span>
+                      <span className="text-xs font-bold text-slate-200 truncate w-full">{q.customer_name}</span>
+                      <span className="text-[10px] text-slate-400">{q.origin} ➡️ {q.destination}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {pendingQuotes.length === 0 && (
+                    <div className="py-4 text-center text-xs text-slate-500">No new quote requests.</div>
+                  )}
+                </div>
+                <div className="p-1.5 bg-slate-950/90 border-t border-slate-800 text-center">
+                  <Link to="/quotes-manager" className="text-xs font-bold text-primary block py-1">
+                    Open Quotes Hub ➡️
+                  </Link>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
             <button
               onClick={() => navigate('/business-mail')}
               className="relative w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground"

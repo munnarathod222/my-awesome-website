@@ -193,9 +193,18 @@ const QuotePage = () => {
 
     try {
       const localQuotes = JSON.parse(localStorage.getItem('jbc_public_quotes') || '[]');
-      localQuotes.unshift(confirmedQuote);
-      localStorage.setItem('jbc_public_quotes', JSON.stringify(localQuotes));
+      // Deduplicate by quote_number
+      const filtered = localQuotes.filter(q => q.quote_number !== confirmedQuote.quote_number);
+      filtered.unshift(confirmedQuote);
+      localStorage.setItem('jbc_public_quotes', JSON.stringify(filtered));
+      
+      // Global and multi-tab notification broadcasts
       window.dispatchEvent(new CustomEvent('jbc_new_quote_submitted', { detail: confirmedQuote }));
+      if (typeof window.BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('jbc_quotes_channel');
+        bc.postMessage({ type: 'NEW_QUOTE', quote: confirmedQuote });
+        bc.close();
+      }
     } catch (e) {}
 
     setIsSubmitting(false);
