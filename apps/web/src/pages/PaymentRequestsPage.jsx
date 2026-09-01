@@ -648,17 +648,23 @@ Best Regards,
     }
   };
 
+  const isRequestDelivered = (r) => {
+    const trip = r.linkedTrip || r.expand?.trip_id;
+    if (!trip) return true;
+    return trip.trip_status === 'Delivered';
+  };
+
   const processedData = useMemo(() => {
     let filtered = requests.filter(r => {
-      const isDelivered = !r.linkedTrip || r.linkedTrip.trip_status === 'Delivered';
+      const isDelivered = isRequestDelivered(r);
       if (!isDelivered && r.calculatedStatus !== 'Paid') return false;
 
       const matchStatus = statusFilter === 'all' || r.calculatedStatus === statusFilter;
       const matchClient = clientFilter === 'all' || r.client_id === clientFilter;
       const term = search.toLowerCase();
-      const tripIdVal = r.expand?.trip_id?.trip_id || r.trip_id || '';
+      const tripIdVal = r.expand?.trip_id?.trip_id || r.linkedTrip?.trip_id || r.trip_id || '';
       const matchSearch = !term || (
-        r.expand?.client_id?.client_name?.toLowerCase().includes(term) ||
+        (r.expand?.client_id?.client_name || '').toLowerCase().includes(term) ||
         tripIdVal.toLowerCase().includes(term)
       );
       return matchStatus && matchClient && matchSearch;
@@ -696,9 +702,10 @@ Best Regards,
     const timelineObj = {};
 
     requests.forEach(r => {
-      const isDelivered = r.linkedTrip?.trip_status === 'Delivered';
-      if (isDelivered && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')) pendingAmt += r.amount;
-      if (r.calculatedStatus === 'Paid') paidAmt += r.amount;
+      const isDelivered = isRequestDelivered(r);
+      const amt = Number(r.amount) || 0;
+      if (isDelivered && (r.calculatedStatus === 'Pending' || r.calculatedStatus === 'Overdue')) pendingAmt += amt;
+      if (r.calculatedStatus === 'Paid') paidAmt += amt;
       
       if (isDelivered || r.calculatedStatus === 'Paid') {
         stats[r.calculatedStatus] = (stats[r.calculatedStatus] || 0) + 1;
@@ -728,24 +735,25 @@ Best Regards,
     let bucket60_plus = { count: 0, amount: 0, items: [] };
 
     requests.forEach(r => {
-      const isDelivered = r.linkedTrip?.trip_status === 'Delivered';
+      const isDelivered = isRequestDelivered(r);
       if (!isDelivered || r.calculatedStatus === 'Paid' || r.calculatedStatus === 'Cancelled') return;
       const days = r.daysOverdue || 0;
+      const amt = Number(r.amount) || 0;
       if (days <= 0 || days <= 15) {
         bucket0_15.count++;
-        bucket0_15.amount += r.amount || 0;
+        bucket0_15.amount += amt;
         bucket0_15.items.push(r);
       } else if (days <= 30) {
         bucket16_30.count++;
-        bucket16_30.amount += r.amount || 0;
+        bucket16_30.amount += amt;
         bucket16_30.items.push(r);
       } else if (days <= 60) {
         bucket31_60.count++;
-        bucket31_60.amount += r.amount || 0;
+        bucket31_60.amount += amt;
         bucket31_60.items.push(r);
       } else {
         bucket60_plus.count++;
-        bucket60_plus.amount += r.amount || 0;
+        bucket60_plus.amount += amt;
         bucket60_plus.items.push(r);
       }
     });
