@@ -593,9 +593,30 @@ export default function BiddingSpreadsheetGrid({
 
         {/* Client Tabs */}
         <div className="flex items-center gap-1">
+          {/* Master "All Bids" Tab */}
+          <button
+            type="button"
+            onClick={() => {
+              onSelectClientTab?.('all');
+              onSelectTypeTab?.('all');
+            }}
+            className={cn(
+              "px-3.5 py-1.5 text-xs font-bold rounded-t-lg transition-all border-b-2 flex items-center gap-1.5 whitespace-nowrap",
+              (!activeClientTab || activeClientTab === 'all')
+                ? "bg-slate-950 text-cyan-400 border-cyan-500 shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border-transparent"
+            )}
+          >
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span>All Logs ({bids.length})</span>
+          </button>
+
           {clientTabs.map(clientName => {
             const isContractActive = activeClientTab === clientName && activeTypeTab === 'Contract';
             const isSpotActive = activeClientTab === clientName && activeTypeTab === 'Spot';
+            const clientBids = bids.filter(b => (b.client_name || b.counterparty || '').trim().toLowerCase() === clientName.toLowerCase());
+            const contractCount = clientBids.filter(b => (b.bidding_type || b.bid_type || 'Contract').toLowerCase().includes('contract')).length;
+            const spotCount = clientBids.length - contractCount;
 
             return (
               <React.Fragment key={clientName}>
@@ -614,7 +635,7 @@ export default function BiddingSpreadsheetGrid({
                   )}
                 >
                   <Building2 className="w-3 h-3 text-cyan-400" />
-                  <span>{clientName} Contracts</span>
+                  <span>{clientName} Contracts ({contractCount})</span>
                 </button>
 
                 {/* Spot Tab */}
@@ -632,7 +653,7 @@ export default function BiddingSpreadsheetGrid({
                   )}
                 >
                   <Truck className="w-3 h-3 text-emerald-400" />
-                  <span>{clientName} Load</span>
+                  <span>{clientName} Spot ({spotCount})</span>
                 </button>
               </React.Fragment>
             );

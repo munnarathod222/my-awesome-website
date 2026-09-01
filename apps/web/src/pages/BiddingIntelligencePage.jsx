@@ -80,8 +80,8 @@ export default function BiddingIntelligencePage() {
   const [activeTab, setActiveTab] = useState('grid'); // grid, dashboard, calculator, new-bid, pipeline, history, contracts, routes, parties, trucks, profitability, analytics, reports, settings
 
   // Spreadsheet Grid States (Exact match to reference spreadsheet)
-  const [activeClientTab, setActiveClientTab] = useState('Delhivery');
-  const [activeTypeTab, setActiveTypeTab] = useState('Contract'); // 'Contract' | 'Spot'
+  const [activeClientTab, setActiveClientTab] = useState('all');
+  const [activeTypeTab, setActiveTypeTab] = useState('all'); // 'all' | 'Contract' | 'Spot'
   const [isAddBidModalOpen, setIsAddBidModalOpen] = useState(false);
 
   // Core Data States
@@ -263,19 +263,41 @@ export default function BiddingIntelligencePage() {
   };
 
   useEffect(() => {
+    let isMounted = true;
     fetchData();
 
     // Real-time synchronization across all devices & browser tabs
     const unsubscribe = subscribeBids(async () => {
+      if (!isMounted) return;
       try {
         const updated = await loadBids();
-        setBids(updated);
+        if (isMounted) setBids(updated);
       } catch (err) {
         console.warn('Realtime update fetch error:', err);
       }
     });
 
+    // Multi-device sync: When user opens/switches to tab on iPad or Laptop, auto-refresh
+    const handleFocus = () => {
+      if (isMounted) fetchData();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    const handleCustomSync = (e) => {
+      if (isMounted && e.detail) {
+        setBids(prev => {
+          const map = new Map(prev.map(b => [b.id, b]));
+          map.set(e.detail.id, e.detail);
+          return Array.from(map.values());
+        });
+      }
+    };
+    window.addEventListener('jbc_bids_updated', handleCustomSync);
+
     return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('jbc_bids_updated', handleCustomSync);
       if (typeof unsubscribe === 'function') unsubscribe();
       else unsubscribeBids();
     };

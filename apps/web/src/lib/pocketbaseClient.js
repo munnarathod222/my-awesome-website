@@ -7,6 +7,9 @@ const POCKETBASE_API_URL = import.meta.env?.VITE_POCKETBASE_URL ||
 
 const pocketbaseClient = new Pocketbase(POCKETBASE_API_URL);
 
+// 🛡️ Disable auto-cancellation so concurrent requests across iPad/laptop & background sync never abort each other
+pocketbaseClient.autoCancellation(false);
+
 // 🛡️ Prevent invalid non-JWT tokens from triggering 401 session wipes
 pocketbaseClient.beforeSend = (url, options) => {
   if (options && options.headers && options.headers.Authorization) {

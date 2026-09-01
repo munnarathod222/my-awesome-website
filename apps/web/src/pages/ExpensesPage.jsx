@@ -287,18 +287,33 @@ const ExpensesPage = () => {
 
   useEffect(() => {
     fetchData();
-    pb.collection('expenses').subscribe('*', () => setRefreshTrigger(p => p + 1));
-    pb.collection('advances').subscribe('*', () => setRefreshTrigger(p => p + 1));
+    let isMounted = true;
+
+    pb.collection('expenses').subscribe('*', () => {
+      if (isMounted) fetchData();
+    }).catch(err => console.warn('Expenses realtime sub notice:', err));
+
+    pb.collection('advances').subscribe('*', () => {
+      if (isMounted) fetchData();
+    }).catch(err => console.warn('Advances realtime sub notice:', err));
+
+    // Multi-device sync: When user unlocks iPad or focuses browser window, immediately pull latest data
+    const handleFocus = () => {
+      if (isMounted) fetchData();
+    };
+    window.addEventListener('focus', handleFocus);
     
     return () => {
-      pb.collection('expenses').unsubscribe('*');
-      pb.collection('advances').unsubscribe('*');
+      isMounted = false;
+      window.removeEventListener('focus', handleFocus);
+      pb.collection('expenses').unsubscribe('*').catch(() => {});
+      pb.collection('advances').unsubscribe('*').catch(() => {});
     };
-  }, [currentUser?.id, filters.sortBy, refreshTrigger]);
+  }, [currentUser?.id, filters.sortBy]);
 
   const handleManualRefresh = () => {
     setIsRefreshing(true);
-    setRefreshTrigger(prev => prev + 1);
+    fetchData();
   };
 
   const handleDeleteExpense = async (id) => {
