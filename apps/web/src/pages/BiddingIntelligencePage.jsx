@@ -713,6 +713,7 @@ Thank you for partnering with *${compName}*!`;
               onDeleteBid={handleDeleteBid}
               onBulkDelete={handleBulkDelete}
               onBulkUpdateStatus={handleBulkUpdateStatus}
+              onRefresh={fetchData}
             />
           </div>
         )}

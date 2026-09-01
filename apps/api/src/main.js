@@ -1651,6 +1651,35 @@ const runPocketBase = async () => {
       logger.info("Migrating: 'bids' collection & table created successfully!");
     } else {
       db.prepare("UPDATE _collections SET listRule = '', viewRule = '', createRule = '', updateRule = '', deleteRule = '' WHERE name = 'bids'").run();
+      try {
+        const bidsCols = db.prepare("PRAGMA table_info(bids)").all().map(c => c.name);
+        if (!bidsCols.includes('attachments')) {
+          db.prepare("ALTER TABLE bids ADD COLUMN attachments TEXT DEFAULT '[]'").run();
+        }
+        if (!bidsCols.includes('images')) {
+          db.prepare("ALTER TABLE bids ADD COLUMN images TEXT DEFAULT '[]'").run();
+        }
+
+        const bRec = db.prepare("SELECT * FROM _collections WHERE name='bids'").get();
+        if (bRec) {
+          let bFields = JSON.parse(bRec.fields || '[]');
+          let changed = false;
+          if (!bFields.some(f => f.name === 'attachments')) {
+            bFields.push({ hidden: false, id: 'text_attachments_bids', name: 'attachments', presentable: false, required: false, system: false, type: 'text' });
+            changed = true;
+          }
+          if (!bFields.some(f => f.name === 'images')) {
+            bFields.push({ hidden: false, id: 'text_images_bids', name: 'images', presentable: false, required: false, system: false, type: 'text' });
+            changed = true;
+          }
+          if (changed) {
+            db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(bFields), bRec.id);
+            logger.info("Migrating: Updated 'bids' collection registration in _collections with attachments & images.");
+          }
+        }
+      } catch (e) {
+        logger.warn("Bids schema enhancement notice:", e.message);
+      }
     }
 
     // 10.5. Quotes collection schema migration & public rule relaxation

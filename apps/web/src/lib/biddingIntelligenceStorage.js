@@ -140,69 +140,107 @@ const prepareBidPayload = (bid) => {
 };
 
 /**
- * Load all stored bids across PocketBase and sync local cache
+ * Load all stored bids across Backend API, PocketBase, and sync local device cache
  */
 export const loadBids = async () => {
-  let pbBids = [];
-  let pbSuccess = false;
+  const bidsMap = new Map();
 
+  // 1. Fetch from Central Express Backend API (Superuser & SQLite)
+  try {
+    const endpoints = ['/hcgi/api/bidding/bids', '/api/bidding/bids'];
+    for (const ep of endpoints) {
+      try {
+        const res = await window.fetch(ep);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.bids)) {
+            data.bids.forEach(b => {
+              const norm = normalizeBid(b);
+              if (norm.id) bidsMap.set(norm.id, norm);
+            });
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (apiErr) {}
+
+  // 2. Fetch from PocketBase SDK
   try {
     const records = await pb.collection('bids').getFullList({
       sort: '-created',
       $autoCancel: false
     });
-    pbBids = records.map(normalizeBid);
-    pbSuccess = true;
+    (records || []).forEach(r => {
+      const norm = normalizeBid(r);
+      if (norm.id && !bidsMap.has(norm.id)) {
+        bidsMap.set(norm.id, norm);
+      }
+    });
   } catch (e) {
     console.warn('PocketBase bids fetch notice:', e.message);
   }
 
-  // Cross-Device Sync: If user created bids on this device before backend sync, upload them to PocketBase
+  // 3. Cross-Device Auto-Sync:
+  // If user entered bids on THIS device (e.g. iPad or Laptop) that are in localStorage, upload them to central database!
   try {
     const localRaw = localStorage.getItem(STORAGE_KEYS.BIDS);
     const localBids = localRaw ? JSON.parse(localRaw) : [];
 
     if (Array.isArray(localBids) && localBids.length > 0) {
-      if (pbSuccess) {
-        const pbIdSet = new Set(pbBids.map(b => b.id));
-        const unsynced = localBids.filter(b => !pbIdSet.has(b.id));
+      const unsynced = localBids.filter(b => {
+        if (!b.id) return false;
+        if (bidsMap.has(b.id)) return false;
+        // Check duplicate by route & date
+        const isDuplicate = Array.from(bidsMap.values()).some(
+          eb => eb.date === b.date && eb.starting_point === b.starting_point && eb.ending_point === b.ending_point && eb.client_name === b.client_name
+        );
+        return !isDuplicate;
+      });
 
-        if (unsynced.length > 0) {
-          console.log(`Auto-syncing ${unsynced.length} local bids to centralized database...`);
-          for (const localBid of unsynced) {
-            try {
-              const payload = prepareBidPayload(localBid);
-              const created = await pb.collection('bids').create(payload);
-              pbBids.unshift(normalizeBid(created));
-            } catch (err) {
-              console.warn('Could not sync local bid to PB:', err.message);
-              pbBids.unshift(normalizeBid(localBid));
-            }
+      if (unsynced.length > 0) {
+        console.log(`Auto-syncing ${unsynced.length} device-local bids to central cloud database...`);
+
+        // Send to backend sync endpoint
+        try {
+          await window.fetch('/hcgi/api/bidding/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ localBids: unsynced })
+          });
+        } catch (e) {}
+
+        // Also try PocketBase SDK
+        for (const localBid of unsynced) {
+          try {
+            const payload = prepareBidPayload(localBid);
+            const created = await pb.collection('bids').create(payload, { $autoCancel: false });
+            const normCreated = normalizeBid(created);
+            bidsMap.set(normCreated.id, normCreated);
+          } catch (err) {
+            // Keep in memory
+            const normLocal = normalizeBid(localBid);
+            bidsMap.set(normLocal.id, normLocal);
           }
         }
-      } else {
-        // PB offline, merge local bids
-        const mergedMap = {};
-        pbBids.forEach(b => { mergedMap[b.id] = b; });
-        localBids.forEach(b => { if (!mergedMap[b.id]) mergedMap[b.id] = normalizeBid(b); });
-        pbBids = Object.values(mergedMap);
       }
     }
-
-    // Sort newest to oldest
-    pbBids.sort((a, b) => {
-      const dateA = new Date(a.date || a.bid_date || a.created || 0);
-      const dateB = new Date(b.date || b.bid_date || b.created || 0);
-      return dateB - dateA;
-    });
-
-    // Keep localStorage cache up-to-date with central list
-    localStorage.setItem(STORAGE_KEYS.BIDS, JSON.stringify(pbBids));
-    return pbBids;
   } catch (e) {
-    console.error('Failed to load/sync bids:', e);
-    return pbBids;
+    console.error('Local sync merge error:', e);
   }
+
+  const combined = Array.from(bidsMap.values()).sort((a, b) => {
+    const dateA = new Date(a.date || a.bid_date || a.created || 0).getTime();
+    const dateB = new Date(b.date || b.bid_date || b.created || 0).getTime();
+    return dateB - dateA;
+  });
+
+  // Keep localStorage cache up-to-date with central unified list
+  try {
+    localStorage.setItem(STORAGE_KEYS.BIDS, JSON.stringify(combined));
+  } catch (e) {}
+
+  return combined;
 };
 
 /**
@@ -213,24 +251,39 @@ export const saveBid = async (bidData) => {
   const payload = prepareBidPayload(norm);
   let savedRecord = norm;
 
-  // 1. Save to PocketBase
+  // 1. Save to Central Express Backend API
+  try {
+    const resA = await window.fetch('/hcgi/api/bidding/bids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(norm)
+    });
+    if (resA.ok) {
+      const dataA = await resA.json();
+      if (dataA.success && dataA.bid) {
+        savedRecord = normalizeBid(dataA.bid);
+      }
+    }
+  } catch (e) {}
+
+  // 2. Save to PocketBase
   try {
     const isPbId = norm.id && !norm.id.startsWith('bid_') && norm.id.length === 15;
     if (isPbId) {
-      const res = await pb.collection('bids').update(norm.id, payload);
+      const res = await pb.collection('bids').update(norm.id, payload, { $autoCancel: false });
       savedRecord = normalizeBid(res);
     } else {
-      const res = await pb.collection('bids').create(payload);
+      const res = await pb.collection('bids').create(payload, { $autoCancel: false });
       savedRecord = normalizeBid(res);
     }
   } catch (e) {
-    console.warn('PocketBase bids write notice (caching locally):', e.message);
+    console.warn('PocketBase bids write notice:', e.message);
     if (!savedRecord.id) {
       savedRecord.id = `bid_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     }
   }
 
-  // 2. Update local storage cache
+  // 3. Update local storage cache
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.BIDS);
     const list = raw ? JSON.parse(raw) : [];
@@ -241,6 +294,14 @@ export const saveBid = async (bidData) => {
       list.unshift(savedRecord);
     }
     localStorage.setItem(STORAGE_KEYS.BIDS, JSON.stringify(list));
+
+    // Global & cross-tab notification
+    window.dispatchEvent(new CustomEvent('jbc_bids_updated', { detail: savedRecord }));
+    if (typeof window.BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('jbc_bids_channel');
+      bc.postMessage({ type: 'BID_SAVED', bid: savedRecord });
+      bc.close();
+    }
   } catch (e) {
     console.error('Local cache error on save:', e);
   }

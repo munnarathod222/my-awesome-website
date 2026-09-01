@@ -22,12 +22,14 @@ import userRouter from './user.js';
 import sharedRouter from './shared.js';
 import bandwidthRouter from './bandwidth.js';
 import zohoMailRouter from './zohoMail.js';
-
+import bidsRouter from './bids.js';
 
 const router = Router();
 
 export default () => {
     router.get('/health', healthCheck);
+    router.use('/bidding', bidsRouter);
+    router.use('/api/bidding', bidsRouter);
     router.use('/zoho', zohoMailRouter);
     router.use('/api/zoho', zohoMailRouter);
     router.use('/quotes', quotesRouter);

@@ -3,7 +3,8 @@ import {
   Plus, Search, Filter, Download, Trash2, ExternalLink, 
   CheckCircle, XCircle, Clock, AlertTriangle, ArrowRight, 
   Building2, MapPin, Truck, ChevronRight, Layers, FileSpreadsheet,
-  Paperclip, Image as ImageIcon, Eye, X, Upload, Maximize2, ChevronLeft
+  Paperclip, Image as ImageIcon, Eye, X, Upload, Maximize2, ChevronLeft,
+  RefreshCw, Camera
 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -58,8 +59,10 @@ export default function BiddingSpreadsheetGrid({
   onAddBid,
   onDeleteBid,
   onBulkDelete,
-  onBulkUpdateStatus
+  onBulkUpdateStatus,
+  onRefresh
 }) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -133,11 +136,15 @@ export default function BiddingSpreadsheetGrid({
   // Filter bids for the active client & contract/spot type
   const filteredBids = useMemo(() => {
     return bids.filter(b => {
-      const bClient = (b.client_name || b.counterparty || 'Delhivery').trim().toLowerCase();
-      const matchClient = !activeClientTab || activeClientTab === 'all' || bClient === activeClientTab.trim().toLowerCase();
+      const bClient = (b.client_name || b.counterparty || '').trim().toLowerCase();
+      const targetClient = (activeClientTab || 'Delhivery').trim().toLowerCase();
+      const matchClient = !activeClientTab || targetClient === 'all' || bClient === targetClient || bClient.includes(targetClient) || targetClient.includes(bClient);
       
-      const bType = (b.bidding_type || 'Contract').trim().toLowerCase();
-      const matchType = !activeTypeTab || bType === activeTypeTab.trim().toLowerCase();
+      const bType = (b.bidding_type || b.bid_type || 'Contract').trim().toLowerCase();
+      const targetType = (activeTypeTab || 'Contract').trim().toLowerCase();
+      const isContract = bType.includes('contract');
+      const isTargetContract = targetType.includes('contract');
+      const matchType = !activeTypeTab || (isTargetContract ? isContract : !isContract);
 
       const bStatus = (b.status || 'Not bidded').trim();
       const matchStatus = statusFilter === 'all' || bStatus === statusFilter;
@@ -265,6 +272,27 @@ export default function BiddingSpreadsheetGrid({
               </Button>
             </>
           )}
+
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={async () => {
+              setIsRefreshing(true);
+              try {
+                await onRefresh?.();
+                toast.success('Bidding logs synchronized across all devices');
+              } catch (e) {
+                toast.error('Sync failed');
+              } finally {
+                setTimeout(() => setIsRefreshing(false), 500);
+              }
+            }}
+            className="h-8 text-xs font-semibold border-slate-700 bg-slate-800/80 text-cyan-400 hover:bg-slate-800 hover:text-cyan-300 rounded-xl"
+            title="Sync all logs across devices"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", isRefreshing && "animate-spin text-cyan-300")} />
+            <span>{isRefreshing ? 'Syncing...' : 'Sync Logs'}</span>
+          </Button>
 
           <Button 
             size="sm" 
