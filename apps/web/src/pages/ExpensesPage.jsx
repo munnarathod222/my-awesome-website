@@ -160,12 +160,12 @@ const ExpensesPage = () => {
       const cardsMap = {};
       cardsRecord.forEach(c => cardsMap[c.id] = c);
 
-      const records = await pb.collection('expenses').getList(1, 500, {
-        sort: filters.sortBy,
+      const records = await pb.collection('expenses').getFullList({
+        sort: filters.sortBy || '-date',
         $autoCancel: false
       });
       
-      const mappedExpenses = records.items.map(exp => ({
+      const mappedExpenses = records.map(exp => ({
         ...exp,
         cardContext: exp.credit_card_id ? cardsMap[exp.credit_card_id] : null
       }));

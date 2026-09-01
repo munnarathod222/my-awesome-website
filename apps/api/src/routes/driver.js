@@ -478,6 +478,7 @@ router.post('/create-expense', async (req, res) => {
 
     const record = await pb.collection('expenses').create(payload, { $autoCancel: false });
     logger.info(`Expense created via API: ${record.id} (${record.amount})`);
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
     return res.json({ success: true, record });
   } catch (err) {
     logger.error('Failed to create expense via API:', err?.data || err.message);
@@ -509,6 +510,7 @@ router.post('/update-expense/:id', async (req, res) => {
 
     const record = await pb.collection('expenses').update(id, payload, { $autoCancel: false });
     logger.info(`Expense updated via API: ${record.id}`);
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
     return res.json({ success: true, record });
   } catch (err) {
     logger.error('Failed to update expense via API:', err?.data || err.message);

@@ -561,6 +561,36 @@ const uploadRecruitmentStoreToSupabase = async () => {
 global.uploadDatabaseToSupabase = uploadDatabaseToSupabase;
 global.uploadRecruitmentStoreToSupabase = uploadRecruitmentStoreToSupabase;
 
+// ── Continuous Real-Time Cloud Auto-Sync Engine ──
+let _cloudSyncDebounceTimer = null;
+let _lastCloudSyncMtime = 0;
+let _isCloudSyncing = false;
+
+const triggerDebouncedCloudSync = (delayMs = 5000) => {
+  if (global.isShuttingDown || global.isRestoringBackup) return;
+  if (_cloudSyncDebounceTimer) clearTimeout(_cloudSyncDebounceTimer);
+
+  _cloudSyncDebounceTimer = setTimeout(async () => {
+    if (_isCloudSyncing || !global.dbFilePath || !fs.existsSync(global.dbFilePath)) return;
+    try {
+      _isCloudSyncing = true;
+      const stat = fs.statSync(global.dbFilePath);
+      logger.info(`🔄 Auto-Sync: uploading modified database to Supabase Cloud Storage (${stat.size} bytes)...`);
+      const ok = await uploadDatabaseToSupabase(global.dbFilePath);
+      if (ok) {
+        _lastCloudSyncMtime = stat.mtimeMs;
+        logger.info('✅ Auto-Sync: database backup successfully synchronized to Supabase!');
+      }
+    } catch (syncErr) {
+      logger.warn(`⚠️ Auto-Sync background warning: ${syncErr.message}`);
+    } finally {
+      _isCloudSyncing = false;
+    }
+  }, delayMs);
+};
+
+global.triggerDebouncedCloudSync = triggerDebouncedCloudSync;
+
 // Auto-restore recruitment data store on boot
 downloadRecruitmentStoreFromSupabase().catch(() => {});
 
@@ -590,7 +620,35 @@ let _syncStarted = false;
 const watchAndSyncDatabase = (dbFilePath) => {
   if (_syncStarted) return; // Only register once across PocketBase restarts
   _syncStarted = true;
-  logger.info('👁️ Database sync registered (syncs on graceful shutdown and 12-hour rolling backup)');
+  logger.info('👁️ Continuous Cloud Database Sync registered (real-time debounced + 3-min periodic + shutdown sync)');
+
+  // ── Strategy 1: Active Directory / File Watcher on pb_data ──
+  try {
+    const pbDataDir = path.dirname(dbFilePath);
+    if (fs.existsSync(pbDataDir)) {
+      fs.watch(pbDataDir, (eventType, filename) => {
+        if (!filename) return;
+        if (filename.includes('data.db') || filename.includes('wal') || filename.endsWith('.json')) {
+          triggerDebouncedCloudSync(6000); // Debounce 6 seconds after disk write
+        }
+      });
+      logger.info(`👁️ Active filesystem watcher attached to ${pbDataDir}`);
+    }
+  } catch (watchErr) {
+    logger.warn(`⚠️ Could not attach fs.watch to pb_data: ${watchErr.message}`);
+  }
+
+  // ── Strategy 2: Periodic 3-Minute Cloud Sync Check ──
+  const PERIODIC_SYNC_MS = 3 * 60 * 1000; // 3 minutes
+  setInterval(async () => {
+    try {
+      if (!fs.existsSync(dbFilePath) || global.isShuttingDown || global.isRestoringBackup) return;
+      const stat = fs.statSync(dbFilePath);
+      if (stat.mtimeMs > _lastCloudSyncMtime) {
+        triggerDebouncedCloudSync(1000);
+      }
+    } catch (_) {}
+  }, PERIODIC_SYNC_MS);
 
   // ── Strategy 2.2: Anti-Sleep Self-Ping Heartbeat (Every 8 Minutes) ──
   // Keeps Render web service active so it never spins down due to inactivity!
