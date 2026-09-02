@@ -264,7 +264,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         });
         setDrivers(dList);
         if (truck) {
-          const assigned = dList.find(d => d.assigned_truck === truck.id || (truck.assigned_driver_name && d.name === truck.assigned_driver_name));
+          const tName = (truck.assigned_driver_name || truck.driver_name || '').trim().toLowerCase();
+          const assigned = dList.find(d => d.assigned_truck === truck.id || (tName && d.name?.trim().toLowerCase() === tName));
           if (assigned) {
             setFormData(prev => ({ ...prev, assigned_driver_id: assigned.id }));
           }
@@ -273,7 +274,9 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       .catch(err => console.error('Failed to fetch drivers:', err));
 
       if (truck) {
-        setFormData({
+        const tName = (truck.assigned_driver_name || truck.driver_name || '').trim().toLowerCase();
+        const preAssigned = drivers.find(d => d.assigned_truck === truck.id || (tName && d.name?.trim().toLowerCase() === tName));
+        setFormData(prev => ({
           truck_name: truck.truck_name || '',
           truck_number: truck.truck_number || '',
           truck_size: truck.truck_size || '24 FT',
@@ -283,7 +286,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           base_odometer: truck.base_odometer || 0,
           ownership_type: truck.ownership_type || 'Owned',
           manager_id: truck.manager_id || 'none',
-          assigned_driver_id: 'none',
+          assigned_driver_id: preAssigned ? preAssigned.id : (prev.assigned_driver_id || 'none'),
           fastag_id: truck.fastag_id || '',
           current_fastag_balance: truck.current_fastag_balance?.toString() || '',
           payload_capacity: truck.payload_capacity || '',
