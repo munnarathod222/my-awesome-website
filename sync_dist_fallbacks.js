@@ -2,11 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 function copyDirSync(src, dest) {
-  if (!fs.existsSync(src)) {
-    console.warn(`[sync_dist] Warning: source directory does not exist: ${src}`);
-    return;
-  }
-  fs.rmSync(dest, { recursive: true, force: true });
+  if (!fs.existsSync(src)) return;
   fs.mkdirSync(dest, { recursive: true });
   const entries = fs.readdirSync(src, { withFileTypes: true });
 
@@ -22,12 +18,19 @@ function copyDirSync(src, dest) {
   }
 }
 
-// The freshly built frontend assets from Vite are in apps/web/dist
-const sourceDist = path.resolve(__dirname, 'apps/web/dist');
-const apiDist = path.resolve(__dirname, 'apps/api/dist');
 const rootDist = path.resolve(__dirname, 'dist/apps/web');
+const webDist = path.resolve(__dirname, 'apps/web/dist');
+const apiDist = path.resolve(__dirname, 'apps/api/dist');
 
-console.log('Copying freshly built apps/web/dist to api and root fallback directories...');
-copyDirSync(sourceDist, apiDist);
-copyDirSync(sourceDist, rootDist);
+if (fs.existsSync(rootDist) && fs.existsSync(path.join(rootDist, 'index.html'))) {
+  console.log('Syncing dist/apps/web to apiDist...');
+  copyDirSync(rootDist, apiDist);
+} else if (fs.existsSync(webDist) && fs.existsSync(path.join(webDist, 'index.html'))) {
+  console.log('Syncing apps/web/dist to apiDist and rootDist...');
+  copyDirSync(webDist, apiDist);
+  copyDirSync(webDist, rootDist);
+} else if (fs.existsSync(apiDist) && fs.existsSync(path.join(apiDist, 'index.html'))) {
+  console.log('Syncing apps/api/dist to rootDist...');
+  copyDirSync(apiDist, rootDist);
+}
 console.log('✅ Dist fallbacks synced successfully!');
