@@ -433,6 +433,15 @@ export default function TruckManagerPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted text-primary"
+                    onClick={() => setModalConfig({ isOpen: true, truck })}
+                    title="Edit Truck Details"
+                  >
+                    <Edit className="w-3 h-3 mr-1" /> Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
                     className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted"
                     onClick={() => navigate(`/tyres/${truck.id}`)}
                     title="Tyres"
