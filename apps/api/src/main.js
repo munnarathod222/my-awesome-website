@@ -622,33 +622,26 @@ const watchAndSyncDatabase = (dbFilePath) => {
   _syncStarted = true;
   logger.info('👁️ Continuous Cloud Database Sync registered (real-time debounced + 3-min periodic + shutdown sync)');
 
-  // ── Strategy 1: Active Directory / File Watcher on pb_data ──
-  try {
-    const pbDataDir = path.dirname(dbFilePath);
-    if (fs.existsSync(pbDataDir)) {
-      fs.watch(pbDataDir, (eventType, filename) => {
-        if (!filename) return;
-        if (filename.includes('data.db') || filename.includes('wal') || filename.endsWith('.json')) {
-          triggerDebouncedCloudSync(6000); // Debounce 6 seconds after disk write
-        }
-      });
-      logger.info(`👁️ Active filesystem watcher attached to ${pbDataDir}`);
-    }
-  } catch (watchErr) {
-    logger.warn(`⚠️ Could not attach fs.watch to pb_data: ${watchErr.message}`);
-  }
-
-  // ── Strategy 2: Periodic 3-Minute Cloud Sync Check ──
-  const PERIODIC_SYNC_MS = 3 * 60 * 1000; // 3 minutes
+  // ── Strategy 1: Controlled Cloud Sync (Every 6 Hours) ──
+  // 🛡️ Optimized to prevent bandwidth exhaustion (previously consumed 35+ GB/day due to continuous SQLite WAL file watch)
+  const CLOUD_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
   setInterval(async () => {
     try {
       if (!fs.existsSync(dbFilePath) || global.isShuttingDown || global.isRestoringBackup) return;
-      const stat = fs.statSync(dbFilePath);
-      if (stat.mtimeMs > _lastCloudSyncMtime) {
-        triggerDebouncedCloudSync(1000);
-      }
-    } catch (_) {}
-  }, PERIODIC_SYNC_MS);
+      logger.info('⏰ Running scheduled 6-hour cloud database backup to Supabase...');
+      triggerDebouncedCloudSync(5000);
+    } catch (syncErr) {
+      logger.warn(`⚠️ Scheduled cloud sync check warning: ${syncErr.message}`);
+    }
+  }, CLOUD_SYNC_INTERVAL_MS);
+
+  // Run one initial sync 2 minutes after startup
+  setTimeout(() => {
+    if (!global.isShuttingDown && !global.isRestoringBackup && fs.existsSync(dbFilePath)) {
+      logger.info('🚀 Running startup database cloud backup check...');
+      triggerDebouncedCloudSync(5000);
+    }
+  }, 2 * 60 * 1000);
 
   // ── Strategy 2.2: Anti-Sleep Self-Ping Heartbeat (Every 8 Minutes) ──
   // Keeps Render web service active so it never spins down due to inactivity!
