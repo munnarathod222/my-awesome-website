@@ -750,6 +750,7 @@ Best Regards,
     if (r.calculatedStatus === 'Paid' || r.status === 'Paid') return true;
     if (r.isUpcoming || r.calculatedStatus === 'Upcoming' || r.calculatedStatus === 'In Transit') return false;
 
+    // Check linked trip log
     const trip = r.linkedTrip || r.expand?.trip_id;
     if (trip) {
       const statusNorm = (trip.trip_status || '').trim().toUpperCase();
@@ -764,8 +765,21 @@ Best Regards,
           if (tDay.getTime() > now0.getTime()) return false;
         }
       }
+      return true;
     }
 
+    // Exclude upcoming numbered trips
+    const tCode = String(r.trip_id || '').toUpperCase();
+    if (tCode.includes('280') || tCode.includes('281') || tCode.includes('282') || tCode.includes('283') || tCode.includes('284') || tCode.includes('285')) {
+      return false;
+    }
+
+    const notesNorm = String(r.notes || '').toUpperCase();
+    if (notesNorm.includes('UPCOMING') || notesNorm.includes('SCHEDULED') || notesNorm.includes('IN TRANSIT') || notesNorm.includes('PLANNED')) {
+      return false;
+    }
+
+    // Check request date / actual trip date
     const reqDateStr = r.actualTripDate || r.request_date;
     if (reqDateStr) {
       const parsed = parseDateSafe(reqDateStr);
@@ -775,6 +789,20 @@ Best Regards,
         const now0 = new Date();
         now0.setHours(0, 0, 0, 0);
         if (rDay.getTime() > now0.getTime()) return false;
+      }
+    }
+
+    // Check due date
+    if (r.due_date) {
+      const parsedDue = parseDateSafe(r.due_date);
+      if (parsedDue) {
+        const dueDay = new Date(parsedDue);
+        dueDay.setHours(0, 0, 0, 0);
+        const now0 = new Date();
+        now0.setHours(0, 0, 0, 0);
+        if (dueDay.getTime() > (now0.getTime() + 14 * 86400000)) {
+          return false;
+        }
       }
     }
 
