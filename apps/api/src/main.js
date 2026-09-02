@@ -565,9 +565,11 @@ global.uploadRecruitmentStoreToSupabase = uploadRecruitmentStoreToSupabase;
 let _cloudSyncDebounceTimer = null;
 let _lastCloudSyncMtime = 0;
 let _isCloudSyncing = false;
+let _hasUnsyncedChanges = false;
 
-const triggerDebouncedCloudSync = (delayMs = 5000) => {
+const triggerDebouncedCloudSync = (delayMs = 3000) => {
   if (global.isShuttingDown || global.isRestoringBackup) return;
+  _hasUnsyncedChanges = true;
   if (_cloudSyncDebounceTimer) clearTimeout(_cloudSyncDebounceTimer);
 
   _cloudSyncDebounceTimer = setTimeout(async () => {
@@ -579,7 +581,12 @@ const triggerDebouncedCloudSync = (delayMs = 5000) => {
       const ok = await uploadDatabaseToSupabase(global.dbFilePath);
       if (ok) {
         _lastCloudSyncMtime = stat.mtimeMs;
+        _hasUnsyncedChanges = false;
         logger.info('✅ Auto-Sync: database backup successfully synchronized to Supabase!');
+        // Also sync any newly added storage files (receipts/docs) incrementally
+        if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
+          await uploadNewStorageToSupabase(global.storageDir);
+        }
       }
     } catch (syncErr) {
       logger.warn(`⚠️ Auto-Sync background warning: ${syncErr.message}`);
@@ -622,41 +629,31 @@ const watchAndSyncDatabase = (dbFilePath) => {
   _syncStarted = true;
   logger.info('👁️ Continuous Cloud Database Sync registered (real-time debounced + 3-min periodic + shutdown sync)');
 
-  // ── Strategy 1: Controlled Cloud Sync (Every 6 Hours) ──
-  // 🛡️ Optimized to prevent bandwidth exhaustion (previously consumed 35+ GB/day due to continuous SQLite WAL file watch)
+  // ── Strategy 1: Periodic Fallback Cloud Sync (Every 6 Hours if pending changes) ──
+  // 🛡️ Safe periodic check ensuring database is synced even if an edge case missed a trigger
   const CLOUD_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
   setInterval(async () => {
     try {
       if (!fs.existsSync(dbFilePath) || global.isShuttingDown || global.isRestoringBackup) return;
-      logger.info('⏰ Running scheduled 6-hour cloud database backup to Supabase...');
-      triggerDebouncedCloudSync(5000);
+      if (_hasUnsyncedChanges) {
+        logger.info('⏰ Running fallback cloud database backup to Supabase...');
+        triggerDebouncedCloudSync(1000);
+      }
     } catch (syncErr) {
       logger.warn(`⚠️ Scheduled cloud sync check warning: ${syncErr.message}`);
     }
   }, CLOUD_SYNC_INTERVAL_MS);
 
-  // Run one initial sync 2 minutes after startup
+  // Run one initial safety check 2 minutes after startup if needed
   setTimeout(() => {
-    if (!global.isShuttingDown && !global.isRestoringBackup && fs.existsSync(dbFilePath)) {
+    if (!global.isShuttingDown && !global.isRestoringBackup && fs.existsSync(dbFilePath) && _hasUnsyncedChanges) {
       logger.info('🚀 Running startup database cloud backup check...');
-      triggerDebouncedCloudSync(5000);
+      triggerDebouncedCloudSync(2000);
     }
   }, 2 * 60 * 1000);
 
-  // ── Strategy 2.2: Anti-Sleep Self-Ping Heartbeat (Every 8 Minutes) ──
-  // Keeps Render web service active so it never spins down due to inactivity!
-  const KEEP_ALIVE_INTERVAL_MS = 8 * 60 * 1000; // 8 minutes
-  setInterval(async () => {
-    try {
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
-      if (isProduction) {
-        const domain = process.env.WEBSITE_DOMAIN || 'srv-d91t98m7r5hc738tjdag.onrender.com';
-        const url = domain.startsWith('http') ? domain : `https://${domain}`;
-        await fetch(`${url}/api/health`, { method: 'HEAD' }).catch(() => {});
-        logger.info('💓 Anti-Sleep Keep-Alive heartbeat sent to keep Render awake.');
-      }
-    } catch (e) {}
-  }, KEEP_ALIVE_INTERVAL_MS);
+  // 🛡️ Note: Anti-Sleep Self-Ping Heartbeat has been eliminated to allow Render
+  // to sleep naturally after inactivity, preventing continuous outbound traffic and preserving free quota.
 
   // ── Strategy 2.5: Local Rolling Auto-Backups every 12 hours ──
   const runRollingBackup = () => {
@@ -682,26 +679,27 @@ const watchAndSyncDatabase = (dbFilePath) => {
   const localBackupInterval = setInterval(runRollingBackup, LOCAL_BACKUP_MS);
   if (localBackupInterval.unref) localBackupInterval.unref();
 
-  // ── Strategy 3: Graceful shutdown — stop pocketbase, let WAL flush, then save DB + storage ──
+  // ── Strategy 3: Fast & Bulletproof Graceful Shutdown (Flushes WAL & Uploads DB to Supabase) ──
   const gracefulShutdownSync = async (signal) => {
     logger.info(`🛑 ${signal} received — initiating bulletproof graceful shutdown...`);
     global.isShuttingDown = true;
 
-    // Clear intervals and timers first
-    if (periodicSyncInterval) clearInterval(periodicSyncInterval);
-    if (uploadTimeout) clearTimeout(uploadTimeout);
+    if (_cloudSyncDebounceTimer) {
+      clearTimeout(_cloudSyncDebounceTimer);
+      _cloudSyncDebounceTimer = null;
+    }
 
     // Terminate PocketBase cleanly and wait for it to flush WAL
     if (global.pbProcess) {
       logger.info('🛑 Closing PocketBase process to flush WAL to data.db...');
       global.pbProcess.kill('SIGTERM');
       
-      // Wait up to 3 seconds for PocketBase process to exit and close locks
+      // Wait up to 2 seconds for PocketBase process to exit and close locks
       await new Promise(resolve => {
         const killTimeout = setTimeout(() => {
           logger.warn('⚠️ PocketBase close timeout reached. Forcing shutdown...');
           resolve();
-        }, 3000);
+        }, 2000);
         
         global.pbProcess.on('close', () => {
           clearTimeout(killTimeout);
@@ -711,13 +709,23 @@ const watchAndSyncDatabase = (dbFilePath) => {
       });
     }
 
+    // Direct SQLite WAL checkpoint to ensure all writes are committed to data.db
+    try {
+      const { execSync } = await import('node:child_process');
+      execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE);"`, { stdio: 'pipe' });
+    } catch (_) {}
+
     const storageDir = path.join(path.dirname(dbFilePath), 'storage');
     
-    // Sync final database and files to Supabase
-    await Promise.all([
-      uploadDatabaseToSupabase(dbFilePath),
-      uploadAllStorageToSupabase(storageDir)
-    ]);
+    // Fast final sync: sync database and only new storage files (<2 seconds)
+    try {
+      await Promise.all([
+        uploadDatabaseToSupabase(dbFilePath),
+        uploadNewStorageToSupabase(storageDir)
+      ]);
+    } catch (syncErr) {
+      logger.warn(`⚠️ Graceful shutdown sync warning: ${syncErr.message}`);
+    }
     
     logger.info('✅ Final DB + storage sync complete. Exiting.');
     process.exit(0);
@@ -874,53 +882,61 @@ const getLocalFilesRecursive = (dir, storageDir, files = {}) => {
   return files;
 };
 
-const uploadAllStorageToSupabase = async (storageDir) => {
+const _uploadedStorageFiles = new Set();
+let _storageTrackerInitialized = false;
+
+const initStorageTracker = (storageDir) => {
+  if (_storageTrackerInitialized || !fs.existsSync(storageDir)) return;
+  _storageTrackerInitialized = true;
+  try {
+    const localFiles = getLocalFilesRecursive(storageDir, storageDir);
+    Object.keys(localFiles).forEach(f => _uploadedStorageFiles.add(f));
+    logger.info(`📁 Storage tracker initialized with ${_uploadedStorageFiles.size} existing local files.`);
+  } catch (_) {}
+};
+
+// Incrementally upload only newly added files to Supabase to eliminate bandwidth waste
+const uploadNewStorageToSupabase = async (storageDir) => {
   const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
-  if (!isSyncEnabled) {
-    logger.info('⚠️ Non-production environment. Storage upload to Supabase is disabled.');
+  if (!isSyncEnabled || !fs.existsSync(storageDir)) return;
+
+  if (!_storageTrackerInitialized) {
+    initStorageTracker(storageDir);
     return;
   }
-  if (!fs.existsSync(storageDir)) return;
-  const localFiles = getLocalFilesRecursive(storageDir, storageDir);
-  const filePaths = Object.keys(localFiles);
-  logger.info(`🔄 Storage sync: syncing ${filePaths.length} storage files to Supabase (Parallel concurrency of 15)...`);
-  
-  let synced = 0;
-  const concurrency = 15;
-  const filePathsCopy = [...filePaths];
-  
-  const uploadWorker = async () => {
-    while (filePathsCopy.length > 0) {
-      const relPath = filePathsCopy.shift();
-      if (!relPath) continue;
-      const localFilePath = path.join(storageDir, relPath);
-      const remotePath = `storage/${relPath}`;
-      try {
-        const fileBuffer = fs.readFileSync(localFilePath);
-        const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
-          method: 'POST',
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'x-upsert': 'true'
-          },
-          body: fileBuffer
-        });
-        if (uploadRes.ok) synced++;
-      } catch (e) {
-        // best-effort, ignore
-      }
-    }
-  };
 
-  const workers = [];
-  for (let i = 0; i < Math.min(concurrency, filePaths.length); i++) {
-    workers.push(uploadWorker());
+  const localFiles = getLocalFilesRecursive(storageDir, storageDir);
+  const newFiles = Object.keys(localFiles).filter(f => !_uploadedStorageFiles.has(f));
+
+  if (newFiles.length === 0) return;
+
+  logger.info(`🔄 Incremental Storage Sync: syncing ${newFiles.length} newly added file(s) to Supabase...`);
+  for (const relPath of newFiles) {
+    const localFilePath = path.join(storageDir, relPath);
+    const remotePath = `storage/${relPath}`;
+    try {
+      const fileBuffer = fs.readFileSync(localFilePath);
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'x-upsert': 'true',
+          'Content-Type': 'application/octet-stream'
+        },
+        body: fileBuffer
+      });
+      if (uploadRes.ok) {
+        _uploadedStorageFiles.add(relPath);
+        logger.info(`✓ Uploaded new storage file: ${relPath}`);
+      }
+    } catch (e) {
+      logger.warn(`Storage sync warning for ${relPath}: ${e.message}`);
+    }
   }
-  await Promise.all(workers);
-  logger.info(`✅ Storage sync: successfully synced ${synced}/${filePaths.length} files to Supabase.`);
 };
-global.uploadAllStorageToSupabase = uploadAllStorageToSupabase;
+global.uploadNewStorageToSupabase = uploadNewStorageToSupabase;
+global.uploadAllStorageToSupabase = uploadNewStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
   logger.info('📁 Storage background sync initialized (syncs on demand and shutdown)');
@@ -974,11 +990,16 @@ const runPocketBase = async () => {
   const isFirstBoot = !global._pbStartCount;
   global._pbStartCount = (global._pbStartCount || 0) + 1;
 
-  if (!fs.existsSync(dbFilePath)) {
-    logger.info(`💾 Cold boot: Local database missing. Hydrating from Supabase Storage to ${dbFilePath}...`);
+  // 🛡️ Always download the latest database from Supabase Storage on first cold boot in production!
+  // This ensures recently logged expenses and transactions are never lost across Render spin-downs.
+  if (isFirstBoot && isProd) {
+    logger.info(`💾 Production Cold Boot: Downloading latest production database from Supabase Storage to ${dbFilePath}...`);
+    await downloadDatabaseFromSupabase(dbFilePath, { force: true });
+  } else if (!fs.existsSync(dbFilePath)) {
+    logger.info(`💾 Local database missing. Hydrating from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath, { force: true });
   } else {
-    logger.info(`💾 Using committed master database at ${dbFilePath} (preserving all 1,120 records up to August 31).`);
+    logger.info(`💾 Child process restart: keeping existing local database at ${dbFilePath}.`);
   }
 
   // Run SQLite schema migration on boot
@@ -2968,6 +2989,18 @@ app.use('/hcgi/platform', async (req, res) => {
       headers['cache-control'] = 'public, max-age=2592000, stale-while-revalidate=86400';
       headers['vary'] = 'Accept-Encoding';
     }
+
+    // 🛡️ Mutation Auto-Sync: detect successful data creation/update/deletion (e.g. expenses, cashbook)
+    // and automatically schedule a 3-second debounced cloud backup to Supabase.
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
+        proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
+      const pathname = parsedUrl.pathname;
+      if (!pathname.includes('/auth-with-') && !pathname.includes('/auth-refresh') && !pathname.includes('/api/health')) {
+        logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling debounced cloud backup in 3s...`);
+        triggerDebouncedCloudSync(3000);
+      }
+    }
+
     res.writeHead(proxyRes.statusCode, headers);
     proxyRes.pipe(res, { end: true });
   });
@@ -3695,6 +3728,22 @@ const handleFuelExpenseSync = async (req, res) => {
 
 app.post('/api/fuel/sync-expense', handleFuelExpenseSync);
 app.post('/hcgi/api/fuel/sync-expense', handleFuelExpenseSync);
+
+// Middleware to trigger debounced cloud sync when custom Express mutation endpoints succeed
+app.use(['/api', '/hcgi/api'], (req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        const p = req.originalUrl || req.url;
+        if (!p.includes('/auth') && !p.includes('/health') && !p.includes('/backup') && !p.includes('/ocr-scan')) {
+          logger.info(`📝 Express API mutation detected (${req.method} ${p}) -> scheduling debounced cloud backup in 3s...`);
+          triggerDebouncedCloudSync(3000);
+        }
+      }
+    });
+  }
+  next();
+});
 
 // API Router - Mount under prefixes to handle API calls without hijacking React page routes
 const apiRouter = routes();
