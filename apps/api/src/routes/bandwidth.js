@@ -25,7 +25,7 @@ function saveRenderKey(key) {
   fs.writeFileSync(KEY_FILE, JSON.stringify({ key, savedAt: new Date().toISOString() }));
 }
 
-const RENDER_SERVICE_ID = process.env.RENDER_SERVICE_ID || 'srv-d91t98m7r5hc738tjdag';
+const RENDER_SERVICE_ID = process.env.RENDER_SERVICE_ID || 'srv-daaueuu7bikc73cdgji0';
 
 // ── Collections to count records ──────────────────────────────────────────────
 const ALL_COLLECTIONS = [
