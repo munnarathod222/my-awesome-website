@@ -50,7 +50,20 @@ export const fetchRawAnalyticsData = async (startDate, endDate) => {
     ]);
 
     return { 
-      trips: tripsRes, 
+      // 🛡️ Strict Rule: Only DELIVERED past trips are included in revenue analytics
+      trips: tripsRes.filter(t => {
+        const s = (t.trip_status || '').trim().toLowerCase();
+        if (s !== 'delivered' && s !== 'completed') return false;
+        if (t.date) {
+          const d = new Date(t.date);
+          if (!isNaN(d.getTime())) {
+            const todayEnd = new Date();
+            todayEnd.setHours(23, 59, 59, 999);
+            if (d.getTime() > todayEnd.getTime()) return false;
+          }
+        }
+        return true;
+      }), 
       expenses: expensesRes, 
       trucks: trucksRes, 
       loans: loansRes,
