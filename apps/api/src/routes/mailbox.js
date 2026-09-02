@@ -7,13 +7,13 @@ const router = express.Router();
 // Helper to get SMTP/IMAP configuration from environment
 const getMailConfig = () => {
   return {
-    imapHost: process.env.MAIL_IMAP_HOST || 'imap.hostinger.com',
+    imapHost: process.env.MAIL_IMAP_HOST || 'imap.zoho.in',
     imapPort: parseInt(process.env.MAIL_IMAP_PORT || '993'),
-    smtpHost: process.env.MAIL_HOST || 'smtp.hostinger.com',
+    smtpHost: process.env.MAIL_HOST || 'smtppro.zoho.in',
     smtpPort: parseInt(process.env.MAIL_PORT || '465'),
-    user: process.env.MAIL_USER || '',
-    pass: process.env.MAIL_PASS || '',
-    fromName: process.env.MAIL_FROM_NAME || 'Jaibhavani Cargo'
+    user: process.env.MAIL_USER || 'operations@jaibhavanicargo.com',
+    pass: process.env.MAIL_PASS || 'Munnarathod@25',
+    fromName: process.env.MAIL_FROM_NAME || 'Jai Bhavani Cargo'
   };
 };
 
