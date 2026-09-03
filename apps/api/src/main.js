@@ -637,6 +637,9 @@ const triggerDebouncedCloudSync = (delayMs = 6000) => {
         if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
           await uploadNewStorageToSupabase(global.storageDir);
         }
+        if (typeof uploadRecruitmentStoreToSupabase === 'function') {
+          await uploadRecruitmentStoreToSupabase().catch(() => {});
+        }
       }
     } catch (syncErr) {
       logger.warn(`⚠️ Auto-Sync background warning: ${syncErr.message}`);
@@ -758,7 +761,8 @@ const watchAndSyncDatabase = (dbFilePath) => {
     try {
       await Promise.all([
         uploadDatabaseToSupabase(dbFilePath),
-        uploadNewStorageToSupabase(storageDir)
+        uploadNewStorageToSupabase(storageDir),
+        (typeof uploadRecruitmentStoreToSupabase === 'function' ? uploadRecruitmentStoreToSupabase().catch(() => {}) : Promise.resolve())
       ]);
     } catch (syncErr) {
       logger.warn(`⚠️ Graceful shutdown sync warning: ${syncErr.message}`);
