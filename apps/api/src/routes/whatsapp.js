@@ -1,129 +1,100 @@
-import express from 'express';
-import logger from '../utils/logger.js';
+import { Router } from 'express';
+import { 
+  sendAisensyNotification, 
+  isAisensyConfigured, 
+  formatWhatsAppPhone, 
+  APPROVED_TEMPLATES, 
+  normalizeCampaignName 
+} from '../services/whatsappService.js';
 
-const router = express.Router();
-
-const AISENSY_BASE_URL = 'https://backend.aisensy.com/campaign/t1/api/v2';
-
-/**
- * Clean phone number to format expected by WhatsApp/Aisensy:
- * E.g., "+91 81067 29777" -> "918106729777"
- */
-function cleanPhoneNumber(rawPhone) {
-  if (!rawPhone) return '';
-  let digits = String(rawPhone).replace(/[^0-9]/g, '');
-  if (digits.length === 10) {
-    digits = '91' + digits;
-  }
-  return digits;
-}
+const router = Router();
 
 /**
- * GET /api/whatsapp/status
- * Check configuration status of Aisensy WhatsApp integration
+ * GET /api/whatsapp/status & /api/aisensy/status
+ * Check if Aisensy API Key is set in backend environment
  */
 router.get(['/status', '/api/status'], (req, res) => {
-  const apiKey = process.env.AISENSY_API_KEY || '';
-  const campaignName = process.env.AISENSY_CAMPAIGN_NAME || '';
-  const defaultPhone = process.env.WHATSAPP_PHONE_NUMBER || '+917794072244';
-
-  res.json({
-    configured: Boolean(apiKey && apiKey.length > 5),
+  const configured = isAisensyConfigured();
+  return res.json({
+    success: true,
     provider: 'aisensy',
-    campaignName: campaignName || 'default',
-    defaultPhone,
-    hasApiKey: Boolean(apiKey)
+    configured: configured,
+    templates: APPROVED_TEMPLATES,
+    message: configured 
+      ? 'Aisensy API key is active and configured in backend environment.' 
+      : 'Aisensy API key is not set yet in Render environment variables. You can add AISENSY_API_KEY in Render or use the instant wa.me button.'
   });
 });
 
 /**
- * POST /api/whatsapp/send
- * Dispatch message via Aisensy WhatsApp API
+ * GET /api/whatsapp/templates
+ * List all pre-approved templates
  */
-router.post(['/send', '/message', '/dispatch'], async (req, res) => {
+router.get(['/templates', '/api/templates'], (req, res) => {
+  return res.json({
+    success: true,
+    templates: APPROVED_TEMPLATES
+  });
+});
+
+/**
+ * GET /api/whatsapp/diagnostics
+ * Return latest request and response payloads sent to Aisensy
+ */
+router.get(['/diagnostics', '/api/diagnostics'], (req, res) => {
+  return res.json({
+    success: true,
+    logs: global._whatsappLogs || [],
+    count: (global._whatsappLogs || []).length
+  });
+});
+
+/**
+ * POST /api/whatsapp/send & /api/aisensy/send
+ * Dispatch WhatsApp notification via Aisensy API
+ */
+router.post(['/send', '/api/send', '/message', '/dispatch'], async (req, res) => {
   try {
-    const apiKey = req.body.apiKey || process.env.AISENSY_API_KEY;
+    const destination = req.body.destination || req.body.phone || req.body.recipientPhone || req.body.recipient || '';
+    const rawCampaign = req.body.campaignName || req.body.templateName || req.body.campaign || 'loading_dock_locations';
+    const campaignName = normalizeCampaignName(rawCampaign);
+    const userName = req.body.userName || req.body.recipientName || req.body.clientName || 'Customer';
+    const templateParams = req.body.templateParams || [];
+    
+    let media = req.body.media || null;
+    if (!media && req.body.invoiceUrl) {
+      media = {
+        url: req.body.invoiceUrl,
+        filename: req.body.invoiceFilename || 'Invoice.pdf'
+      };
+    }
+    const clientRecord = req.body.clientRecord || null;
+    const rawText = req.body.rawText || req.body.messageText || req.body.text || '';
 
-    if (!apiKey) {
-      logger.warn('⚠️ Aisensy WhatsApp dispatch failed: AISENSY_API_KEY not configured in environment variables');
-      return res.status(400).json({
-        success: false,
-        error: 'AISENSY_API_KEY is not configured. Please add AISENSY_API_KEY to your Render environment variables.',
-        provider: 'aisensy'
+    if (!destination) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Destination phone number is required.' 
       });
     }
 
-    const {
-      campaignName = process.env.AISENSY_CAMPAIGN_NAME || 'default',
+    const result = await sendAisensyNotification({
+      campaignName,
       destination,
-      phone,
-      recipient,
       userName,
-      name,
-      templateParams = [],
-      tags = [],
-      attributes = {},
-      media = null,
-      buttons = []
-    } = req.body;
-
-    const targetPhone = destination || phone || recipient;
-    const cleanPhone = cleanPhoneNumber(targetPhone);
-
-    if (!cleanPhone) {
-      return res.status(400).json({
-        success: false,
-        error: 'Recipient destination phone number is required.'
-      });
-    }
-
-    // Build payload for Aisensy v2 API
-    const aisensyPayload = {
-      apiKey: apiKey.trim(),
-      campaignName: String(campaignName || '').trim(),
-      destination: cleanPhone,
-      userName: String(userName || name || 'Valued Customer').trim(),
-      templateParams: Array.isArray(templateParams) ? templateParams : [],
-      source: 'api',
-      media: media || undefined,
-      buttons: Array.isArray(buttons) && buttons.length > 0 ? buttons : undefined,
-      tags: Array.isArray(tags) ? tags : undefined,
-      attributes: attributes && typeof attributes === 'object' ? attributes : undefined
-    };
-
-    logger.info(`📤 Forwarding WhatsApp message to Aisensy: Campaign="${aisensyPayload.campaignName}", Destination=${cleanPhone}`);
-
-    const response = await fetch(AISENSY_BASE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(aisensyPayload)
+      templateParams,
+      media,
+      clientRecord,
+      rawText
     });
 
-    const responseData = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      logger.error(`❌ Aisensy API returned HTTP ${response.status}:`, responseData);
-      return res.status(response.status >= 400 && response.status < 500 ? response.status : 502).json({
-        success: false,
-        error: responseData.message || responseData.error || `Aisensy API returned status ${response.status}`,
-        details: responseData
-      });
-    }
-
-    logger.info(`✅ Aisensy WhatsApp message dispatched successfully to ${cleanPhone}:`, responseData);
-
-    return res.json({
-      success: true,
-      message: 'WhatsApp notification dispatched via Aisensy',
-      data: responseData
-    });
-  } catch (err) {
-    logger.error('❌ Unexpected error in /api/whatsapp/send:', err);
-    return res.status(500).json({
-      success: false,
-      error: err.message || 'Internal server error processing WhatsApp message'
+    // Return 200 with result payload so frontend handles errors gracefully without crashing
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[WhatsApp Route Error]', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Internal error processing WhatsApp message' 
     });
   }
 });
