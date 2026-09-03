@@ -179,7 +179,7 @@ const TruckDocsPage = () => {
   const [frontFile, setFrontFile] = useState(null);
   const [backFile, setBackFile] = useState(null);
 
-  const docTypes = ['RC', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
+  const docTypes = ['RC', 'Road Tax', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
 
   const fetchData = async () => {
     setLoading(true);

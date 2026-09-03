@@ -101,6 +101,7 @@ const TruckDocumentModal = ({ isOpen, onClose, document, truckId, onSuccess }) =
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="RC">RC</SelectItem>
+                <SelectItem value="Road Tax">Road Tax</SelectItem>
                 <SelectItem value="Insurance">Insurance</SelectItem>
                 <SelectItem value="Pollution Certificate">Pollution Certificate</SelectItem>
                 <SelectItem value="Fitness Certificate">Fitness Certificate</SelectItem>

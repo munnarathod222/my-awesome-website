@@ -49,6 +49,13 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
     if (typeof document.back_page === 'string' && document.back_page) {
       list.push(document.back_page);
     }
+    if (Array.isArray(document.attached_files)) {
+      document.attached_files.forEach(f => {
+        if (typeof f === 'string') list.push(f);
+        else if (f && f.file_url) list.push(f.file_url);
+        else if (f && f.url) list.push(f.url);
+      });
+    }
 
     return Array.from(new Set(list.filter(Boolean)));
   }, [document]);
