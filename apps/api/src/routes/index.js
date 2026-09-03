@@ -23,12 +23,17 @@ import sharedRouter from './shared.js';
 import bandwidthRouter from './bandwidth.js';
 import zohoMailRouter from './zohoMail.js';
 import bidsRouter from './bids.js';
+import whatsappRouter from './whatsapp.js';
 
 const router = Router();
 
 export default () => {
     router.get('/health', healthCheck);
     router.use('/bidding', bidsRouter);
+    router.use('/whatsapp', whatsappRouter);
+    router.use('/api/whatsapp', whatsappRouter);
+    router.use('/aisensy', whatsappRouter);
+    router.use('/api/aisensy', whatsappRouter);
     router.use('/api/bidding', bidsRouter);
     router.use('/zoho', zohoMailRouter);
     router.use('/api/zoho', zohoMailRouter);
