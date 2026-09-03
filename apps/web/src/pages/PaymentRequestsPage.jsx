@@ -710,6 +710,95 @@ Best Regards,
   const [isBatchDueDateModalOpen, setIsBatchDueDateModalOpen] = useState(false);
   const [modalSelectedDate, setModalSelectedDate] = useState('');
 
+  
+
+  const updateRequestDueDate = async (itemOrId, dueDateVal) => {
+    if (!dueDateVal) return false;
+    const dueIso = new Date(dueDateVal).toISOString();
+    
+    // Find target record from state
+    let target = null;
+    let targetId = typeof itemOrId === 'string' ? itemOrId : itemOrId?.id;
+    if (typeof itemOrId === 'object' && itemOrId !== null) {
+      target = itemOrId;
+    } else {
+      target = requests.find(r => r.id === targetId || r.trip_id === targetId) ||
+               processedData.find(r => r.id === targetId || r.trip_id === targetId);
+    }
+
+    const linkedTripId = target?.trip_id || target?.linkedTrip?.id || (targetId && targetId.length === 15 ? targetId : null);
+    let updated = false;
+
+    // 1. If target is a real payment_requests record, update it directly
+    if (targetId && (target?.collectionName === 'payment_requests' || target?.collectionId)) {
+      try {
+        await pb.collection('payment_requests').update(targetId, { due_date: dueIso }, { $autoCancel: false });
+        updated = true;
+      } catch (err) {
+        console.warn(`Direct update on payment_requests ${targetId} failed, trying upsert...`, err);
+      }
+    }
+
+    // 2. If not updated yet, check if payment_requests record exists by trip_id
+    if (!updated && linkedTripId) {
+      try {
+        const existing = await pb.collection('payment_requests').getFirstListItem(`trip_id="${linkedTripId}"`, { $autoCancel: false }).catch(() => null);
+        if (existing) {
+          await pb.collection('payment_requests').update(existing.id, { due_date: dueIso }, { $autoCancel: false });
+          updated = true;
+        } else {
+          // Create the payment_request record so it's permanently in the DB
+          await pb.collection('payment_requests').create({
+            trip_id: linkedTripId,
+            client_id: target?.client_id || target?.expand?.client_id?.id || '',
+            amount: target?.amount || 0,
+            request_date: target?.actualTripDate || target?.request_date || new Date().toISOString(),
+            due_date: dueIso,
+            status: target?.status || 'Pending',
+            notes: `Auto-generated from Trip Log: ${target?.expand?.trip_id?.trip_id || target?.trip_id || linkedTripId}`
+          }, { $autoCancel: false });
+          updated = true;
+        }
+      } catch (upsertErr) {
+        console.warn('Upsert payment_requests failed:', upsertErr);
+      }
+    }
+
+    // 3. If targetId was passed directly and neither above worked, try direct update on payment_requests
+    if (!updated && targetId) {
+      try {
+        await pb.collection('payment_requests').update(targetId, { due_date: dueIso }, { $autoCancel: false });
+        updated = true;
+      } catch (directErr) {
+        console.warn('Final direct update attempt on payment_requests failed:', directErr);
+      }
+    }
+
+    // 4. Update the linked trip_logs record's client_balance_date so it is also saved on the trip log itself
+    if (linkedTripId) {
+      try {
+        await pb.collection('trip_logs').update(linkedTripId, {
+          client_balance_date: dueIso.split('T')[0]
+        }, { $autoCancel: false });
+      } catch (tErr) {}
+    }
+
+    // 5. Update local state & localStorage cache
+    try {
+      let localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
+      const idx = localReqs.findIndex(lr => lr.id === targetId || (linkedTripId && lr.trip_id === linkedTripId));
+      if (idx !== -1) {
+        localReqs[idx].due_date = dueIso;
+      } else if (target) {
+        localReqs.push({ ...target, due_date: dueIso });
+      }
+      localStorage.setItem('jbc_payment_requests', JSON.stringify(localReqs));
+    } catch (lsErr) {}
+
+    return true;
+  };
+
+
   const handleBulkUpdateDueDate = async (dueDateVal) => {
     if (!dueDateVal) return;
     const idsToUpdate = selectedIds.length > 0 ? selectedIds : processedData.map(r => r.id);
@@ -718,9 +807,8 @@ Best Regards,
     }
     setIsUpdatingDueDate(true);
     try {
-      const dueIso = new Date(dueDateVal).toISOString();
       for (const id of idsToUpdate) {
-        await pb.collection('payment_requests').update(id, { due_date: dueIso }, { $autoCancel: false });
+        await updateRequestDueDate(id, dueDateVal);
       }
       toast.success(`Updated Due Date to ${format(new Date(dueDateVal), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
       setBulkDueDateInput('');
@@ -733,11 +821,10 @@ Best Regards,
     }
   };
 
-  const handleUpdateSingleDueDate = async (reqId, dueDateVal) => {
+  const handleUpdateSingleDueDate = async (reqOrId, dueDateVal) => {
     if (!dueDateVal) return;
     try {
-      const dueIso = new Date(dueDateVal).toISOString();
-      await pb.collection('payment_requests').update(reqId, { due_date: dueIso }, { $autoCancel: false });
+      await updateRequestDueDate(reqOrId, dueDateVal);
       toast.success(`Due date updated to ${format(new Date(dueDateVal), 'dd MMM yyyy')}`);
       await fetchData();
     } catch (err) {
@@ -1463,7 +1550,7 @@ Best Regards,
                                 className="w-6 h-6 p-0 border-0 bg-muted/40 hover:bg-primary/20 cursor-pointer rounded text-transparent font-mono text-xs opacity-60 hover:opacity-100 transition-opacity" 
                                 title="Change Due Date"
                                 value={r.due_date && parseDateSafe(r.due_date) ? parseDateSafe(r.due_date).toISOString().split('T')[0] : ''}
-                                onChange={(e) => handleUpdateSingleDueDate(r.id, e.target.value)}
+                                onChange={(e) => handleUpdateSingleDueDate(r, e.target.value)}
                               />
                             </div>
                           </div>
@@ -2109,15 +2196,15 @@ Best Regards,
                 if (!modalSelectedDate) return toast.error('Please pick a Due Date');
                 setIsUpdatingDueDate(true);
                 try {
-                  const dueIso = new Date(modalSelectedDate).toISOString();
                   for (const id of idsToUpdate) {
-                    await pb.collection('payment_requests').update(id, { due_date: dueIso }, { $autoCancel: false });
+                    await updateRequestDueDate(id, modalSelectedDate);
                   }
                   toast.success(`Updated Due Date to ${format(new Date(modalSelectedDate), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
                   setIsBatchDueDateModalOpen(false);
                   setModalSelectedDate('');
                   await fetchData();
                 } catch (err) {
+                  console.error('Failed batch due date update:', err);
                   toast.error('Failed to update due dates');
                 } finally {
                   setIsUpdatingDueDate(false);
