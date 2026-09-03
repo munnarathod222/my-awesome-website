@@ -80,7 +80,7 @@ app.use(express.urlencoded({ extended: true, limit: BodyLimit }));
 // Supabase Sync Persistence Configurations
 // ----------------------------------------------------
 const supabaseUrl = process.env.SUPABASE_URL || 'https://bwyashgnriarmuhosqov.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
+const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET || '';
 
 // Token verification middleware to secure all backup API endpoints
 const requireBackupAuth = (req, res, next) => {
@@ -402,9 +402,16 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
 
     // 🛡️ Ensure WAL file is fully checkpointed and consolidated into data.db
     try {
-      const { execSync } = await import('node:child_process');
-      execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;"`, { stdio: 'pipe' });
-    } catch (_) {}
+      const { DatabaseSync } = await import('node:sqlite');
+      const _cDb = new DatabaseSync(dbFilePath);
+      _cDb.exec('PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;');
+      _cDb.close();
+    } catch (_wErr) {
+      try {
+        const { execSync } = await import('node:child_process');
+        execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;"`, { stdio: 'pipe' });
+      } catch (_) {}
+    }
 
     fs.copyFileSync(dbFilePath, tempPath);
     const fileBuffer = fs.readFileSync(tempPath);
@@ -734,9 +741,16 @@ const watchAndSyncDatabase = (dbFilePath) => {
 
     // Direct SQLite WAL checkpoint to ensure all writes are committed to data.db
     try {
-      const { execSync } = await import('node:child_process');
-      execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE);"`, { stdio: 'pipe' });
-    } catch (_) {}
+      const { DatabaseSync } = await import('node:sqlite');
+      const _sDb = new DatabaseSync(dbFilePath);
+      _sDb.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+      _sDb.close();
+    } catch (_) {
+      try {
+        const { execSync } = await import('node:child_process');
+        execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE);"`, { stdio: 'pipe' });
+      } catch (_) {}
+    }
 
     const storageDir = path.join(path.dirname(dbFilePath), 'storage');
     
