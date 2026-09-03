@@ -155,9 +155,12 @@ const ProfilePage = () => {
         signatory_title: record.signatory_title || localStorage.getItem('jbc_signatory_title') || ''
       });
       if (record.company_logo) {
-        setCompanyLogoPreview(pb.files.getUrl(record, record.company_logo));
+        const logoUrl = pb.files.getUrl(record, record.company_logo);
+        setCompanyLogoPreview(logoUrl);
+        try { localStorage.setItem('jbc_company_logo', logoUrl); } catch (_) {}
       } else {
-        setCompanyLogoPreview('');
+        const cached = localStorage.getItem('jbc_company_logo');
+        setCompanyLogoPreview(cached || '/logo.png');
       }
 
       if (record.e_signature) {
@@ -1070,7 +1073,15 @@ const ProfilePage = () => {
           <CardContent className="pt-8 flex flex-col items-center text-center">
             <div className="w-36 h-36 rounded-xl overflow-hidden border-4 border-muted mb-5 bg-muted/20 flex items-center justify-center relative group shadow-inner">
               {companyLogoPreview ? (
-                <img src={companyLogoPreview} alt="Company Logo" className="w-full h-full object-contain p-2" />
+                <img 
+                src={companyLogoPreview} 
+                alt="Company Logo" 
+                className="w-full h-full object-contain p-2" 
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/logo.png';
+                }}
+              />
               ) : (
                 <Building className="w-16 h-16 text-muted-foreground/40" />
               )}

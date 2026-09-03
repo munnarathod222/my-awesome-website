@@ -664,7 +664,7 @@ export default function TruckManagerPage() {
           open={galleryConfig.isOpen} 
           onOpenChange={(val) => !val && setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 })}
         >
-          <DialogContent className="max-w-4xl w-[95vw] p-0 bg-slate-950/95 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl">
+          <DialogContent className="max-w-md sm:max-w-lg w-[92vw] h-[88vh] max-h-[850px] p-0 bg-slate-950/95 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl">
             {(() => {
               const galleryImgs = parseImageList(galleryConfig.truck?.body_images);
               const activeIndex = Math.min(Math.max(0, galleryConfig.activeIndex || 0), Math.max(0, galleryImgs.length - 1));
@@ -746,7 +746,7 @@ export default function TruckManagerPage() {
                   </div>
 
                   {/* Main Large Image Stage */}
-                  <div className="relative flex-1 flex items-center justify-center min-h-[380px] max-h-[62vh] p-4 bg-black/80 overflow-hidden select-none">
+                  <div className="relative flex-1 flex items-center justify-center min-h-[460px] p-2 sm:p-4 bg-black/90 overflow-hidden select-none">
                     {/* Previous Button */}
                     {galleryImgs.length > 1 && (
                       <Button 
@@ -768,7 +768,7 @@ export default function TruckManagerPage() {
                       <img 
                         src={activeImgUrl} 
                         alt={`${galleryConfig.truck.truck_number} Photo ${activeIndex + 1}`} 
-                        className="max-w-full max-h-[58vh] object-contain rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
+                        className="w-auto h-full max-h-[66vh] max-w-full object-contain rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-500 py-16">
@@ -803,7 +803,7 @@ export default function TruckManagerPage() {
                         return (
                           <button 
                             key={idx}
-                            className={`relative w-16 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0 ${
+                            className={`relative w-14 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0 ${
                               isSelected 
                                 ? 'border-primary ring-2 ring-primary/40 scale-105 shadow-md shadow-primary/20 opacity-100' 
                                 : 'border-slate-700/60 opacity-50 hover:opacity-100 hover:border-slate-500'
