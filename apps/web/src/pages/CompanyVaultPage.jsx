@@ -452,6 +452,110 @@ export default function CompanyVaultPage() {
         </div>
       </div>
 
+      {/* ── Fleet Vehicle RC Dossier (Financier Hub) ─────────── */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <Truck className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  Fleet Vehicle RC Dossier & Financier Hub
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">
+                    {fleetTrucks.length} Trucks Registered
+                  </Badge>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Consolidated commercial truck registration certificates for banks, equipment financing & loan providers.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="rounded-xl text-xs font-bold border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200"
+              onClick={() => handleOpenUploadModal('Fleet & Vehicle Documents', 'Commercial Vehicle RC Compilation', true)}
+            >
+              <UploadCloud className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+              + Attach Multi-RC Compilation (20-100+ RCs)
+            </Button>
+
+            <Button 
+              size="sm" 
+              className="rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20"
+              onClick={() => setIsFinancierModalOpen(true)}
+            >
+              <Share2 className="w-3.5 h-3.5 mr-1.5" />
+              1-Click Share RCs with Financiers
+            </Button>
+          </div>
+        </div>
+
+        {/* Fleet Trucks Grid with RC status */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+          {fleetTrucks.map(truck => (
+            <div key={truck.id} className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="truncate">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-white text-xs">{truck.truck_number}</span>
+                  {truck.rcFileUrl ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px] py-0">RC Attached</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-[9px] py-0">RC Pending</Badge>
+                  )}
+                </div>
+                <span className="text-[11px] text-slate-400 block truncate">{truck.truck_name} {truck.truck_size ? `(${truck.truck_size})` : ''}</span>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {truck.rcFileUrl ? (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+                      onClick={() => setPreviewDoc({
+                        document_type: 'RC',
+                        document_name: `${truck.truck_number} RC`,
+                        file_url: truck.rcFileUrl,
+                        files: [truck.rcFileUrl]
+                      })}
+                      title="Preview RC"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    <a 
+                      href={truck.rcFileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      download
+                      className="inline-flex items-center justify-center h-8 px-2 text-xs rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                      title="Download RC"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                  </>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 px-2 text-[11px] rounded-lg text-slate-400 hover:text-white"
+                    onClick={() => handleOpenUploadModal('Fleet & Vehicle Documents', 'Commercial Vehicle RC Compilation', true)}
+                  >
+                    Upload RC
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Quick Stats Grid ───────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <Card className="bg-card/40 border-border/80">
