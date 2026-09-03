@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 
 import routes from './routes/index.js';
+import whatsappRouter from './routes/whatsapp.js';
 import { deleteEmployeeRecord } from './routes/driver.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
@@ -3790,6 +3791,12 @@ app.use(['/api', '/hcgi/api'], (req, res, next) => {
 const apiRouter = routes();
 app.use('/hcgi/api', apiRouter);
 app.use('/api', apiRouter);
+app.use('/api/whatsapp', whatsappRouter);
+app.use('/api/aisensy', whatsappRouter);
+app.use('/hcgi/api/whatsapp', whatsappRouter);
+app.use('/hcgi/api/aisensy', whatsappRouter);
+app.use('/whatsapp', whatsappRouter);
+app.use('/aisensy', whatsappRouter);
 
 // ----------------------------------------------------
 // 3. Static Client Hosting (Serve compiled Vite bundle)
