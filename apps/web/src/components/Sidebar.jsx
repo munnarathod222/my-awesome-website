@@ -53,6 +53,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
   const fleetOperationsItems = [
     { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
+    { icon: MapPin,       label: 'GPS',               path: '/gps',                  roles: ['super_admin','admin','dispatcher','manager','supervisor','user'] },
     { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
     { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
     { icon: QrCode,       label: 'Vehicle QR Pass Hub',path: '/truck-docs?view=qr_pass',roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
