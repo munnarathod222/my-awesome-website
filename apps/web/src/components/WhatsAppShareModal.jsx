@@ -57,6 +57,33 @@ export default function WhatsAppShareModal({
     }
   }, [isOpen, defaultTemplate]);
 
+
+  // Helper to extract document download URL for attachments
+  const activeDocumentUrl = useMemo(() => {
+    if (templateType === 'invoice') {
+      return invoice?.file_url || invoice?.pdf_url || (invoice?.id ? `https://www.jaibhavanicargo.com/api/invoices/${invoice.id}/pdf` : (trip?.id ? `https://www.jaibhavanicargo.com/api/invoices/trip/${trip.id}/pdf` : ''));
+    }
+    if (templateType === 'quote') {
+      return quote?.file_url || quote?.pdf_url || (quote?.id ? `https://www.jaibhavanicargo.com/api/quotes/${quote.id}/pdf` : '');
+    }
+    if (templateType === 'pod_proof') {
+      return pod?.file_url || pod?.image_url || trip?.pod_file_url || trip?.pod_image_url || trip?.pod_image || (trip?.trip_id ? `https://www.jaibhavanicargo.com/track/${encodeURIComponent(trip.trip_id)}` : '');
+    }
+    if (templateType === 'booking_confirmation') {
+      return trip?.lr_copy_url || trip?.document_url || (trip?.trip_id ? `https://www.jaibhavanicargo.com/track/${encodeURIComponent(trip.trip_id)}` : '');
+    }
+    return trip?.document_url || trip?.pod_file_url || '';
+  }, [templateType, invoice, quote, pod, trip]);
+
+  const handleDownloadAttachment = () => {
+    if (!activeDocumentUrl) {
+      toast.error('No attached document file found for this record.');
+      return;
+    }
+    window.open(activeDocumentUrl, '_blank');
+    toast.success('Downloading document attachment...');
+  };
+
   const generatedMessage = useMemo(() => {
     const trackingBase = 'https://www.jaibhavanicargo.com';
 
@@ -90,7 +117,10 @@ Your freight trip booking has been confirmed! Here are the vehicle & driver deta
 • Driver Name: *${driverName}*
 • Contact No: *${driverPhone}*
 
-📍 *Live GPS Shipment Tracking:*
+📄 *Attached Booking & Consignment Note:*
+${activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(tripId)}`}
+
+📍 *Live GPS Tracking & Route:*
 ${trackingBase}/track/${encodeURIComponent(tripId)}
 
 Thank you for choosing Jai Bhavani Cargo & Logistics!
@@ -117,6 +147,9 @@ Please find below our official logistics rate quote for your route requirements:
 • Vehicle Required: *${vehicleType}*
 • Quoted Freight Rate: *₹${rate}* (Excl. GST)
 • Rate Validity: *${validTill}*
+
+📄 *Official Quotation PDF:*
+${activeDocumentUrl || 'https://www.jaibhavanicargo.com'}
 
 ✅ *Service Inclusions:*
 • Dedicated GPS Tracking Link
@@ -146,6 +179,9 @@ Please find the details for Invoice *#${invNo}*:
 • Invoice No: *${invNo}*
 • Total Amount Payable: *₹${amount}*
 • Due Date: *${dueDate}*
+
+📄 *Attached Invoice PDF Download:*
+${activeDocumentUrl || `https://www.jaibhavanicargo.com/track/${encodeURIComponent(invNo)}`}
 
 🏦 *Bank Account Details for Payment:*
 • Account Name: Jai Bhavani Cargo & Logistics
@@ -213,8 +249,8 @@ We are pleased to inform you that your shipment under Trip / LR No: *${tripId}* 
 • Status: *DELIVERED & ACKNOWLEDGED*
 • Delivery Timestamp: *${deliveredDate}*
 
-📄 *View Clean Signed POD Copy:*
-${trackingBase}/track/${encodeURIComponent(tripId)}
+📄 *Attached Signed POD Document Copy:*
+${activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(tripId)}`}
 
 Thank you for partnering with Jai Bhavani Cargo & Logistics!
 📞 Customer Care: +91 9876543210`;
@@ -234,7 +270,7 @@ Dear *${clientName}*,
 
 We have successfully received payment for your freight shipment. Here are the transaction details:
 
-📌 *Payment Receipt Details:*
+���� *Payment Receipt Details:*
 • Trip / LR No: *${tripId}*
 • Amount Received: *₹${amountReceived}*
 • Payment Mode: *${paymentMode}*
@@ -370,6 +406,17 @@ Thank you for your business!
           <Button variant="outline" onClick={onClose} className="rounded-xl text-xs border-slate-800 text-slate-300">
             Cancel
           </Button>
+          
+          {activeDocumentUrl && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleDownloadAttachment} 
+              className="rounded-xl text-xs font-bold border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Download Attached File
+            </Button>
+          )}
           <Button variant="outline" onClick={handleCopyText} className="rounded-xl text-xs font-bold border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800">
             <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy Message Text
           </Button>
