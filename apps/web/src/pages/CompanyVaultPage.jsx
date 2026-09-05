@@ -358,7 +358,7 @@ export default function CompanyVaultPage() {
         const backFormData = new FormData();
         backFormData.append('file', selectedBackFile);
         backFormData.append('truck_id', 'COMPANY_VAULT');
-        backFormData.append('document_type', 'Other_Back');
+        backFormData.append('document_type', 'Other');
         backFormData.append('document_name', `${uploadFormData.title.trim()} (Back Side)`);
         backFormData.append('notes', `Company Vault: ${uploadFormData.title} (Back Side)`);
         backFormData.append('status', 'Active');
