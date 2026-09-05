@@ -134,9 +134,13 @@ export default function CompanyVaultPage() {
     sub_category: 'ITR-V (Acknowledgement)',
     financial_year: 'FY 2024-25',
     notes: '',
-    file_url: ''
+    file_url: '',
+    back_file_url: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [hasBackSide, setHasBackSide] = useState(false);
+  const [selectedBackFile, setSelectedBackFile] = useState(null);
+  const [previewSide, setPreviewSide] = useState('front');
 
   // Company Details Edit state
   const [editCompanyData, setEditCompanyData] = useState({ ...companyInfo });
@@ -212,13 +216,16 @@ export default function CompanyVaultPage() {
 
   const handleOpenUploadModal = (presetCategory = 'Tax Returns (ITR)', presetSub = 'ITR-V (Acknowledgement)') => {
     setEditingDocId(null);
+    setHasBackSide(false);
+    setSelectedBackFile(null);
     setUploadFormData({
       title: '',
       category: presetCategory,
       sub_category: presetSub,
       financial_year: presetCategory.includes('ITR') ? 'FY 2024-25' : 'N/A',
       notes: '',
-      file_url: ''
+      file_url: '',
+      back_file_url: ''
     });
     setSelectedFile(null);
     setIsUploadModalOpen(true);
@@ -226,27 +233,16 @@ export default function CompanyVaultPage() {
 
   const handleOpenEditDocModal = (doc) => {
     setEditingDocId(doc.id);
+    setHasBackSide(Boolean(doc.back_file_url));
+    setSelectedBackFile(null);
     setUploadFormData({
       title: doc.title || '',
       category: doc.category || 'Registration & Identity',
       sub_category: doc.sub_category || 'General',
       financial_year: doc.financial_year || 'N/A',
       notes: doc.notes || '',
-      file_url: doc.file_url || ''
-    });
-    setSelectedFile(null);
-    setIsUploadModalOpen(true);
-  };
-
-  const handleOpenEditDocModal = (doc) => {
-    setEditingDocId(doc.id);
-    setUploadFormData({
-      title: doc.title || '',
-      category: doc.category || 'Registration & Identity',
-      sub_category: doc.sub_category || 'General',
-      financial_year: doc.financial_year || 'N/A',
-      notes: doc.notes || '',
-      file_url: doc.file_url || ''
+      file_url: doc.file_url || '',
+      back_file_url: doc.back_file_url || ''
     });
     setSelectedFile(null);
     setIsUploadModalOpen(true);
@@ -357,28 +353,72 @@ export default function CompanyVaultPage() {
         finalFileUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
       }
 
-      const newDoc = {
-        id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-        title: uploadFormData.title.trim(),
-        category: uploadFormData.category,
-        sub_category: uploadFormData.sub_category || 'General',
-        financial_year: uploadFormData.financial_year || 'N/A',
-        file_url: finalFileUrl,
-        file_name: fileName,
-        file_size: fileSize,
-        notes: uploadFormData.notes.trim(),
-        created_at: new Date().toISOString()
-      };
+      let backUrl = uploadFormData.back_file_url ? uploadFormData.back_file_url.trim() : '';
+      if (hasBackSide && selectedBackFile) {
+        const backFormData = new FormData();
+        backFormData.append('file', selectedBackFile);
+        backFormData.append('truck_id', 'COMPANY_VAULT');
+        backFormData.append('document_type', 'Other_Back');
+        backFormData.append('document_name', `${uploadFormData.title.trim()} (Back Side)`);
+        backFormData.append('notes', `Company Vault: ${uploadFormData.title} (Back Side)`);
+        backFormData.append('status', 'Active');
+        backFormData.append('expiry_date', '2099-12-31T00:00:00.000Z');
+        const uploadedBackRec = await pb.collection('truck_documents').create(backFormData, { $autoCancel: false });
+        backUrl = pb.files.getUrl(uploadedBackRec, uploadedBackRec.file);
+      }
 
-      const updatedDocs = [newDoc, ...documents];
+      let updatedDocs;
+      if (editingDocId) {
+        updatedDocs = documents.map(doc => {
+          if (doc.id === editingDocId) {
+            const finalBack = hasBackSide ? (selectedBackFile ? backUrl : (backUrl || doc.back_file_url || '')) : '';
+            return {
+              ...doc,
+              title: uploadFormData.title.trim(),
+              category: uploadFormData.category,
+              sub_category: uploadFormData.sub_category || 'General',
+              financial_year: uploadFormData.financial_year || 'N/A',
+              file_url: selectedFile ? finalFileUrl : (finalFileUrl || doc.file_url),
+              file_name: selectedFile ? fileName : (finalFileUrl ? fileName : doc.file_name),
+              file_size: selectedFile ? fileSize : doc.file_size,
+              back_file_url: finalBack,
+              has_back_side: Boolean(finalBack),
+              notes: uploadFormData.notes.trim(),
+              updated_at: new Date().toISOString()
+            };
+          }
+          return doc;
+        });
+        toast.success(`"${uploadFormData.title}" updated successfully!`);
+      } else {
+        const finalBack = hasBackSide ? backUrl : '';
+        const newDoc = {
+          id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          title: uploadFormData.title.trim(),
+          category: uploadFormData.category,
+          sub_category: uploadFormData.sub_category || 'General',
+          financial_year: uploadFormData.financial_year || 'N/A',
+          file_url: finalFileUrl,
+          file_name: fileName,
+          file_size: fileSize,
+          back_file_url: finalBack,
+          has_back_side: Boolean(finalBack),
+          notes: uploadFormData.notes.trim(),
+          created_at: new Date().toISOString()
+        };
+        updatedDocs = [newDoc, ...documents];
+        toast.success(`"${newDoc.title}" uploaded to Company Vault!`);
+      }
+
       const updatedDocsJson = JSON.stringify(updatedDocs);
-
       await pb.collection('company_settings').update(companyInfo.id, { company_docs_json: updatedDocsJson }, { $autoCancel: false });
 
       setDocuments(updatedDocs);
       setCompanyInfo(prev => ({ ...prev, company_docs_json: updatedDocsJson }));
-      toast.success(`"${newDoc.title}" uploaded to Company Vault!`);
       setIsUploadModalOpen(false);
+      setEditingDocId(null);
+      setHasBackSide(false);
+      setSelectedBackFile(null);
     } catch (err) {
       console.error('Error uploading vault document:', err);
       const detail = err?.data?.message || err?.message || 'Failed to upload document to vault';
@@ -975,6 +1015,11 @@ export default function CompanyVaultPage() {
                             {doc.financial_year}
                           </Badge>
                         )}
+                        {(doc.back_file_url || doc.has_back_side) && (
+                          <Badge variant="outline" className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border-cyan-500/30">
+                            🔄 Front + Back
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="font-bold text-foreground text-sm line-clamp-1 group-hover:text-primary transition-colors">
                         {doc.title}
@@ -1181,7 +1226,7 @@ export default function CompanyVaultPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">{editingDocId ? "Replace File (Optional)" : "{editingDocId ? 'Replace File (Optional)' : 'Select File (PDF, Image, Excel, Zip) *'}"}</Label>
+              <Label className="text-xs font-semibold">{editingDocId ? "Replace Front File (Optional)" : "Select Front File (PDF, Image, Excel, Zip) *"}</Label>
               <Input 
                 type="file"
                 onChange={(e) => setSelectedFile(e.target.files[0])}
@@ -1201,6 +1246,66 @@ export default function CompanyVaultPage() {
                 onChange={(e) => setUploadFormData({ ...uploadFormData, file_url: e.target.value })}
                 className="bg-background h-10 text-xs font-mono"
               />
+            </div>
+
+            {/* Back Side Optional Toggle */}
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
+              <div 
+                className="flex items-center justify-between cursor-pointer select-none" 
+                onClick={() => setHasBackSide(!hasBackSide)}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">🔄</span>
+                  <div>
+                    <p className="text-xs font-bold text-slate-100">Include Back Side (License / ID / RC)</p>
+                    <p className="text-[10px] text-slate-400">Toggle ON to upload reverse side image or PDF</p>
+                  </div>
+                </div>
+                <div className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer ${hasBackSide ? 'bg-emerald-600 justify-end' : 'bg-slate-800 justify-start border border-slate-700'}`}>
+                  <div className="bg-white w-5 h-5 rounded-full shadow-md transition-transform" />
+                </div>
+              </div>
+
+              {hasBackSide && (
+                <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                  {editingDocId && uploadFormData.back_file_url && (
+                    <div className="px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs flex items-center justify-between text-slate-300">
+                      <span className="truncate mr-2 text-[11px]">
+                        Current Back File: <span className="font-mono text-cyan-400 font-bold">{uploadFormData.back_file_url.split('/').pop().slice(0, 30)}</span>
+                      </span>
+                      <a href={uploadFormData.back_file_url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline font-bold text-[11px] shrink-0">
+                        Preview Back ↗
+                      </a>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-200">
+                      {editingDocId ? "Replace Back Side File (Optional)" : "Select Back Side File (Image, PDF) *"}
+                    </Label>
+                    <Input 
+                      type="file" 
+                      accept="image/*,.pdf" 
+                      onChange={(e) => setSelectedBackFile(e.target.files[0])} 
+                      className="bg-background text-xs cursor-pointer" 
+                    />
+                    <p className="text-[10px] text-slate-400">
+                      Upload reverse side of driving license, RC book, ID card, or certificate.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-400">Or Back Side Direct URL (Optional)</Label>
+                    <Input 
+                      type="url" 
+                      placeholder="https://... (Back side file link)" 
+                      value={uploadFormData.back_file_url || ''} 
+                      onChange={(e) => setUploadFormData({ ...uploadFormData, back_file_url: e.target.value })} 
+                      className="bg-background h-9 text-xs font-mono" 
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
