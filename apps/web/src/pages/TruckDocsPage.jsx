@@ -602,7 +602,7 @@ const TruckDocsPage = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card className="border-l-4 border-l-border shadow-sm">
             <CardContent className="p-5 flex flex-col justify-center">
               <p className="text-sm font-medium text-muted-foreground mb-1">Total Documents</p>
@@ -627,6 +627,49 @@ const TruckDocsPage = () => {
               <p className="text-3xl font-bold text-red-600">{stats.expired}</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* ── Quick Multi-Vehicle Operations Banner (Bulk RC Upload & Financier Share) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div 
+            onClick={() => setIsBulkRCOpen(true)}
+            className="p-4 bg-gradient-to-r from-emerald-500/15 via-emerald-500/10 to-transparent border border-emerald-500/30 hover:border-emerald-500/50 rounded-2xl cursor-pointer transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
+          >
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-500/20 rounded-full">
+                ⚡ Multi-Vehicle RC Upload
+              </span>
+              <h4 className="font-bold text-foreground text-sm group-hover:text-emerald-400 transition-colors">
+                Bulk Upload 50+ Truck RC Books
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Drag & drop all RC documents at once. Auto-matches truck numbers.
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl group-hover:scale-110 transition-transform shrink-0 ml-3">
+              <UploadCloud className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setIsFinancierDossierOpen(true)}
+            className="p-4 bg-gradient-to-r from-blue-500/15 via-blue-500/10 to-transparent border border-blue-500/30 hover:border-blue-500/50 rounded-2xl cursor-pointer transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
+          >
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 px-2 py-0.5 bg-blue-500/20 rounded-full">
+                🏛️ Loan & Finance Package
+              </span>
+              <h4 className="font-bold text-foreground text-sm group-hover:text-blue-400 transition-colors">
+                Share Entire Fleet Dossier to Financier
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                1-Click bundle of all vehicle RCs, company GST/PAN, and downloadable ZIP.
+              </p>
+            </div>
+            <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl group-hover:scale-110 transition-transform shrink-0 ml-3">
+              <Building2 className="w-6 h-6" />
+            </div>
+          </div>
         </div>
 
         {/* Filters */}

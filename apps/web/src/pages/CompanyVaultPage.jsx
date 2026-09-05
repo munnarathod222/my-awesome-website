@@ -22,6 +22,7 @@ import { format } from 'date-fns';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
 import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
+import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 
 const CATEGORIES = [
   'All',
@@ -91,6 +92,7 @@ export default function CompanyVaultPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   const [isFinancierDossierOpen, setIsFinancierDossierOpen] = useState(false);
+  const [isBulkRCOpen, setIsBulkRCOpen] = useState(false);
   const [fleetTrucks, setFleetTrucks] = useState([]);
   const [fleetDocs, setFleetDocs] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -520,6 +522,16 @@ export default function CompanyVaultPage() {
           <Button 
             variant="outline" 
             size="sm"
+            className="h-10 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold"
+            onClick={() => setIsBulkRCOpen(true)}
+          >
+            <UploadCloud className="w-4 h-4 mr-2 text-emerald-400" />
+            ⚡ Bulk Upload Fleet RCs
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="sm"
             className="h-10 border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 font-bold"
             onClick={() => setIsFinancierDossierOpen(true)}
           >
@@ -682,8 +694,8 @@ export default function CompanyVaultPage() {
         </CardContent>
       </Card>
 
-      {/* ── Fast Upload Shortcut Banner (ITR & GST Focus) ─────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* ── Fast Upload Shortcut Banner (ITR, GST, RC & Registrations) ─────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div 
           onClick={() => handleOpenUploadModal('Tax Returns (ITR)', 'ITR-V (Acknowledgement)')}
           className="p-4 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition-all duration-200 group"
@@ -700,7 +712,7 @@ export default function CompanyVaultPage() {
                 Upload ITR-V, Computation Sheet, or Form 3CD Audit Report.
               </p>
             </div>
-            <FilePlus className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+            <FilePlus className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
           </div>
         </div>
 
@@ -720,7 +732,7 @@ export default function CompanyVaultPage() {
                 Upload Monthly GSTR-1, GSTR-3B, or Annual GSTR-9 filing.
               </p>
             </div>
-            <FileSpreadsheet className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <FileSpreadsheet className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
           </div>
         </div>
 
@@ -734,13 +746,33 @@ export default function CompanyVaultPage() {
                 ⚡ Quick Action
               </span>
               <h4 className="font-bold text-foreground text-sm group-hover:text-purple-400 transition-colors">
-                Upload Registration Certificate
+                Upload Registration Cert
               </h4>
               <p className="text-xs text-muted-foreground">
                 Upload GST Cert, PAN, COI, MSME / Udyam, or Trade License.
               </p>
             </div>
-            <Building2 className="w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform" />
+            <Building2 className="w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setIsBulkRCOpen(true)}
+          className="p-4 bg-gradient-to-r from-emerald-600/15 via-emerald-500/10 to-transparent border border-emerald-500/30 hover:border-emerald-400 rounded-2xl cursor-pointer transition-all duration-200 group shadow-sm hover:shadow-md"
+        >
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-500/20 rounded-full">
+                ⚡ 50+ Fleet RCs
+              </span>
+              <h4 className="font-bold text-foreground text-sm group-hover:text-emerald-400 transition-colors">
+                Bulk Upload RCs
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Drag & drop multi-vehicle RC PDFs / photos with auto-matching.
+              </p>
+            </div>
+            <UploadCloud className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
           </div>
         </div>
       </div>
@@ -884,13 +916,13 @@ export default function CompanyVaultPage() {
                     <span className="font-mono">{doc.file_size || 'File'}</span>
                   </div>
 
-                  {/* ── Document Quick Action Bar (View, Download, WhatsApp, Copy) ── */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-3 border-t border-border/60">
+                  {/* ── Document Quick Action Bar (View, Edit, Download, WhatsApp, Copy) ── */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-3 border-t border-border/60">
                     {/* 1. View / Preview */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => setPreviewDoc(doc)}
                       disabled={!doc.file_url}
                       title="Preview Document"
@@ -899,11 +931,23 @@ export default function CompanyVaultPage() {
                       <span className="truncate">View</span>
                     </Button>
 
-                    {/* 2. Download */}
+                    {/* 2. Edit Document */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => handleOpenEditDocModal(doc)}
+                      title="Edit Document Details & Replace File"
+                    >
+                      <Pencil className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span className="truncate">Edit</span>
+                    </Button>
+
+                    {/* 3. Download */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => handleDownloadDoc(doc)}
                       disabled={!doc.file_url}
                       title="Download Document"
@@ -912,11 +956,11 @@ export default function CompanyVaultPage() {
                       <span className="truncate">Download</span>
                     </Button>
 
-                    {/* 3. WhatsApp Share */}
+                    {/* 4. WhatsApp Share */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => handleShareDocWhatsApp(doc)}
                       disabled={!doc.file_url}
                       title="Share Document on WhatsApp"
@@ -925,11 +969,11 @@ export default function CompanyVaultPage() {
                       <span className="truncate">WhatsApp</span>
                     </Button>
 
-                    {/* 4. Copy Link */}
+                    {/* 5. Copy Link */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-1.5 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm col-span-2 sm:col-span-1"
                       onClick={() => {
                         if (doc.file_url) {
                           const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
@@ -1570,6 +1614,14 @@ export default function CompanyVaultPage() {
         trucks={fleetTrucks}
         documents={fleetDocs}
         companyInfo={companyInfo}
+      />
+      <BulkRCUploadModal
+        isOpen={isBulkRCOpen}
+        onClose={() => setIsBulkRCOpen(false)}
+        trucks={fleetTrucks}
+        onUploadSuccess={() => {
+          pb.collection('truck_documents').getFullList({ sort: '-created', $autoCancel: false }).then(setFleetDocs).catch(() => {});
+        }}
       />
     </div>
   );
