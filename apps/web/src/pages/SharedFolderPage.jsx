@@ -114,6 +114,181 @@ export default function SharedFolderPage() {
     );
   }
 
+  // Fleet Dossier Multi-Truck View Mode
+  if (data.type === 'fleet_dossier') {
+    const { dossier_title, recipient_name, total_trucks, total_documents, fleet = [] } = data;
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedSize, setSelectedSize] = useState('all');
+
+    const filteredFleet = fleet.filter(t => {
+      const matchSearch = !searchTerm || t.truck_number.toLowerCase().includes(searchTerm.toLowerCase()) || (t.truck_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSize = selectedSize === 'all' || (t.truck_size || '').toLowerCase() === selectedSize.toLowerCase();
+      return matchSearch && matchSize;
+    });
+
+    const totalRCs = fleet.reduce((acc, t) => acc + (t.documents.filter(d => (d.document_type || '').toUpperCase() === 'RC').length > 0 ? 1 : 0), 0);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 pb-16">
+        <Helmet>
+          <title>{dossier_title || 'Fleet Asset & RC Verification Portfolio'} - Jai Bhavani Cargo</title>
+        </Helmet>
+
+        <div className="w-full bg-slate-900/90 border-b border-slate-800 shadow-xl sticky top-0 z-30 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-heading font-extrabold text-white tracking-tight">
+                    JAI BHAVANI CARGO
+                  </h1>
+                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]">
+                    Verified Fleet Portfolio
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {dossier_title} • Prepared for: <strong className="text-slate-200">{recipient_name || 'Financier'}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-slate-800 text-cyan-400 border-cyan-500/30 font-mono text-xs px-3 py-1">
+                🚛 {total_trucks} Fleet Vehicles
+              </Badge>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-mono text-xs px-3 py-1">
+                📄 {totalRCs} RCs Attached
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-1">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Truck className="w-4 h-4 text-cyan-400" /> Commercial Fleet Asset Overview
+              </h2>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
+                This secure portal provides official compliance records, registration certificates (RCs), fitness certifications, and vehicle specifications for commercial financing, asset audit, and credit line appraisal.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search registration no..."
+                className="h-9 px-3 text-xs bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 w-full sm:w-56 font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredFleet.map(truck => {
+              const rcDoc = truck.documents.find(d => (d.document_type || '').toUpperCase() === 'RC');
+              
+              return (
+                <div key={truck.id} className="bg-slate-900/80 border border-slate-800 hover:border-slate-700 rounded-2xl p-4.5 shadow-md flex flex-col justify-between space-y-3.5 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                      <div>
+                        <span className="font-mono font-extrabold text-base text-cyan-400 tracking-wide">
+                          {truck.truck_number}
+                        </span>
+                        <p className="text-xs text-slate-400 truncate">{truck.truck_name || 'Container Truck'}</p>
+                      </div>
+                      <Badge variant="outline" className={rcDoc ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[10px]" : "bg-amber-500/10 text-amber-400 border-amber-500/30 text-[10px]"}>
+                        {rcDoc ? '✓ RC Verified' : '⚠️ RC Pending'}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mt-3 text-[11px] bg-slate-950/60 p-2 rounded-xl border border-slate-800/50">
+                      <div>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase">Size</p>
+                        <p className="font-semibold text-slate-200">{truck.truck_size || '24 FT'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase">Axle</p>
+                        <p className="font-semibold text-slate-200">{truck.truck_axle || 'SXL'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-slate-500 font-bold uppercase">Payload</p>
+                        <p className="font-semibold text-emerald-400">{truck.payload_capacity || '10 Ton'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Available Documents ({truck.documents.length})</p>
+                    {truck.documents.length === 0 ? (
+                      <p className="text-xs italic text-slate-500">No documents attached yet</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {truck.documents.map(doc => {
+                          const activeFile = doc.file || (Array.isArray(doc.files) ? doc.files[0] : doc.files);
+                          const fileUrl = activeFile ? pb.files.getUrl(doc, activeFile) : '';
+
+                          return (
+                            <div key={doc.id} className="flex items-center justify-between p-1.5 bg-slate-950/40 rounded-lg border border-slate-800/60 text-xs">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <FileText className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                <span className="font-semibold text-slate-200 truncate">{doc.document_type}</span>
+                                {doc.expiry_date && (
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    (Exp: {format(new Date(doc.expiry_date), 'dd/MM/yy')})
+                                  </span>
+                                )}
+                              </div>
+                              {fileUrl && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => setPreviewDoc(doc)}
+                                    className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                                    title="View Document"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    onClick={() => handleDownload(doc, activeFile)}
+                                    className="h-6 w-6 p-0 text-emerald-400 hover:text-emerald-300"
+                                    title="Download Document"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {previewDoc && (
+          <DocumentPreviewModal 
+            isOpen={!!previewDoc} 
+            onClose={() => setPreviewDoc(null)} 
+            doc={previewDoc} 
+          />
+        )}
+      </div>
+    );
+  }
+
   const { type, details, documents } = data;
   const entityName = type === 'truck' ? details.truck_number : details.name;
 
@@ -123,7 +298,6 @@ export default function SharedFolderPage() {
         <title>Shared Documents - {entityName}</title>
       </Helmet>
 
-      {/* Top Header Card */}
       <div className="w-full bg-card border-b border-border/40 shadow-sm sticky top-0 z-20 backdrop-blur-md bg-card/90">
         <div className="max-w-md mx-auto px-4 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -147,7 +321,6 @@ export default function SharedFolderPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 mt-6 space-y-4">
-        {/* Helper Note for Mobile Users */}
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex gap-3 text-primary text-xs leading-relaxed">
           <ShieldCheck className="w-4.5 h-4.5 shrink-0 mt-0.5" />
           <p>
@@ -173,7 +346,6 @@ export default function SharedFolderPage() {
               return (
                 <Card key={doc.id} className="rounded-2xl border border-border/40 shadow-sm hover:shadow-md transition-shadow bg-card overflow-hidden">
                   <div className="p-4 space-y-4">
-                    {/* Header: Icon + Type + Status */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl border ${typeColor.bg}`}>
@@ -193,27 +365,25 @@ export default function SharedFolderPage() {
                       </Badge>
                     </div>
 
-                    {/* Dates Row */}
                     <div className="grid grid-cols-2 gap-2 bg-muted/30 p-2.5 rounded-xl border border-border/20 text-xs">
                       <div>
                         <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
                           <Calendar className="w-3 h-3" /> Issue Date
                         </div>
-                        <p className="font-semibold text-foreground mt-0.5">
-                          {doc.issue_date ? format(new Date(doc.issue_date), 'MMM dd, yyyy') : '—'}
+                        <p className="font-medium text-foreground mt-0.5">
+                          {doc.issue_date ? format(new Date(doc.issue_date), 'dd MMM yyyy') : 'N/A'}
                         </p>
                       </div>
                       <div>
                         <div className="flex items-center gap-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">
                           <Clock className="w-3 h-3" /> Expiry Date
                         </div>
-                        <p className="font-semibold text-foreground mt-0.5">
-                          {doc.expiry_date ? format(new Date(doc.expiry_date), 'MMM dd, yyyy') : '—'}
+                        <p className="font-medium text-foreground mt-0.5">
+                          {doc.expiry_date ? format(new Date(doc.expiry_date), 'dd MMM yyyy') : 'No Expiry'}
                         </p>
                       </div>
                     </div>
 
-                    {/* Notes if present */}
                     {doc.notes && (
                       <p className="text-xs text-muted-foreground bg-muted/10 p-2.5 rounded-xl border border-border/10 italic">
                         {doc.notes}

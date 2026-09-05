@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck, Phone, Mail } from 'lucide-react';
+import { FileText, Plus, Search, FilterX, Eye, Edit2, Trash2, Download, AlertCircle, Folder, List, ArrowLeft, Share2, QrCode, ShieldCheck, Phone, Mail, UploadCloud, Building2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,6 +20,8 @@ import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import PrintableQRStickerModal from '@/components/PrintableQRStickerModal.jsx';
 import VehicleScanAnalyticsModal from '@/components/VehicleScanAnalyticsModal.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
+import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
+import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 
 const TruckDocsPage = () => {
   const [searchParams] = useSearchParams();
@@ -49,6 +51,10 @@ const TruckDocsPage = () => {
   const [isQRStickerOpen, setIsQRStickerOpen] = useState(false);
   const [selectedScanAnalyticsTruck, setSelectedScanAnalyticsTruck] = useState(null);
   const [isScanAnalyticsOpen, setIsScanAnalyticsOpen] = useState(false);
+  
+  // Bulk RC Upload & Financier Fleet Dossier
+  const [isBulkRCOpen, setIsBulkRCOpen] = useState(false);
+  const [isFinancierDossierOpen, setIsFinancierDossierOpen] = useState(false);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -179,7 +185,7 @@ const TruckDocsPage = () => {
   const [frontFile, setFrontFile] = useState(null);
   const [backFile, setBackFile] = useState(null);
 
-  const docTypes = ['RC', 'Road Tax', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
+  const docTypes = ['RC', 'Insurance', 'Permit', 'License', 'Fitness Certificate', 'Pollution Certificate', 'Other'];
 
   const fetchData = async () => {
     setLoading(true);
@@ -573,9 +579,25 @@ const TruckDocsPage = () => {
                 QR Verification Pass
               </Button>
             </div>
-            <Button onClick={() => handleOpenForm()} className="shadow-sm">
-              <Plus className="w-4 h-4 mr-2" /> Add Document
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button 
+                onClick={() => setIsBulkRCOpen(true)} 
+                variant="outline" 
+                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold shadow-xs h-9 rounded-xl"
+              >
+                <UploadCloud className="w-4 h-4 mr-1.5" /> Bulk Upload RCs
+              </Button>
+              <Button 
+                onClick={() => setIsFinancierDossierOpen(true)} 
+                variant="outline" 
+                className="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-bold shadow-xs h-9 rounded-xl"
+              >
+                <Building2 className="w-4 h-4 mr-1.5" /> Share to Financier
+              </Button>
+              <Button onClick={() => handleOpenForm()} className="shadow-sm h-9 rounded-xl">
+                <Plus className="w-4 h-4 mr-1.5" /> Add Document
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1036,6 +1058,20 @@ const TruckDocsPage = () => {
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
         defaultAttachment={mailData.attachment}
+      />
+
+      <BulkRCUploadModal
+        isOpen={isBulkRCOpen}
+        onClose={() => setIsBulkRCOpen(false)}
+        trucks={trucks}
+        onSuccess={fetchData}
+      />
+
+      <FinancierFleetDossierModal
+        isOpen={isFinancierDossierOpen}
+        onClose={() => setIsFinancierDossierOpen(false)}
+        trucks={trucks}
+        documents={documents}
       />
     </div>
   );
