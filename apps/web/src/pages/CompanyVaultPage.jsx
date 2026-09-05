@@ -54,6 +54,10 @@ export default function CompanyVaultPage() {
   const [loading, setLoading] = useState(true);
   const [savingCompany, setSavingCompany] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [multiRcFiles, setMultiRcFiles] = useState([]);
+  const [isMultiRcMode, setIsMultiRcMode] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
+
 
   const [companyInfo, setCompanyInfo] = useState({
     id: 'companysettings',
@@ -85,6 +89,32 @@ export default function CompanyVaultPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
+  // Edit Document Modal State
+  const [isEditDocModalOpen, setIsEditDocModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [editDocForm, setEditDocForm] = useState({
+    id: '',
+    title: '',
+    category: '',
+    sub_category: '',
+    financial_year: '',
+    notes: '',
+    file_url: '',
+    back_file_url: '',
+    attached_files: []
+  });
+  const [editReplacementFrontFile, setEditReplacementFrontFile] = useState(null);
+  const [editReplacementBackFile, setEditReplacementBackFile] = useState(null);
+  const [editAdditionalRcFiles, setEditAdditionalRcFiles] = useState([]);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Multi-RC Dossier Gallery Modal State
+  const [viewingRcDossier, setViewingRcDossier] = useState(null);
+  const [activeRcIndex, setActiveRcIndex] = useState(0);
+
+  // 1-Click Financier Share Modal State
+  const [shareDossierDoc, setShareDossierDoc] = useState(null);
+
   const [previewDoc, setPreviewDoc] = useState(null);
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
@@ -193,6 +223,83 @@ export default function CompanyVaultPage() {
   };
 
   const handleUploadDocument = async (e) => {
+    e.preventDefault();
+    if (!uploadFormData.title.trim()) {
+      toast.error('Please enter a document title');
+      return;
+    }
+
+    // MULTI-RC BATCH UPLOAD (50+ TRUCKS)
+    if (isMultiRcMode && multiRcFiles.length > 0) {
+      setUploadingDoc(true);
+      try {
+        toast.info(`Uploading ${multiRcFiles.length} truck RCs... Please wait.`);
+        const attachedFiles = [];
+
+        for (let i = 0; i < multiRcFiles.length; i++) {
+          const fileObj = multiRcFiles[i];
+          setUploadProgressText(`Uploading truck RC ${i + 1} of ${multiRcFiles.length}...`);
+          
+          const formData = new FormData();
+          formData.append('document_file', fileObj);
+          formData.append('document_name', fileObj.name);
+          const uploadRes = await pb.collection('company_documents').create(formData);
+          const fileUrl = pb.files.getURL(uploadRes, uploadRes.document_file);
+
+          const cleanName = fileObj.name.replace(/\.[^/.]+$/, '');
+          const truckMatch = cleanName.match(/([A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4})/i);
+          const truckNumber = truckMatch ? truckMatch[1].toUpperCase() : `Truck ${i + 1}`;
+
+          attachedFiles.push({
+            name: fileObj.name,
+            url: fileUrl,
+            size: (fileObj.size / (1024 * 1024)).toFixed(2) + ' MB',
+            truck_number: truckNumber
+          });
+        }
+
+        const newDoc = {
+          id: 'vault_' + Date.now(),
+          title: uploadFormData.title.trim(),
+          category: uploadFormData.category || 'Fleet & Vehicle Documents',
+          sub_category: uploadFormData.sub_category || 'Commercial Vehicle RC Compilation',
+          financial_year: uploadFormData.financial_year || 'N/A',
+          file_url: attachedFiles[0]?.url || '',
+          file_size: `${attachedFiles.length} Truck RCs (${(multiRcFiles.reduce((a, b) => a + b.size, 0) / (1024 * 1024)).toFixed(1)} MB)`,
+          notes: uploadFormData.notes?.trim() || '',
+          is_multi_file: true,
+          rc_count: attachedFiles.length,
+          attached_files: attachedFiles,
+          created_at: new Date().toISOString()
+        };
+
+        const updatedDocs = [newDoc, ...documents];
+        const settingsRecord = await getCompanySettingsRecord();
+        if (settingsRecord) {
+          await pb.collection('company_settings').update(settingsRecord.id, {
+            company_docs_json: JSON.stringify(updatedDocs)
+          });
+        }
+
+        setDocuments(updatedDocs);
+        try {
+          localStorage.setItem('jbc_company_vault_docs', JSON.stringify(updatedDocs));
+        } catch (e) {}
+
+        setIsUploadModalOpen(false);
+        setMultiRcFiles([]);
+        toast.success(`Successfully bundled ${attachedFiles.length} truck RCs into "${newDoc.title}"!`);
+        return;
+      } catch (err) {
+        console.error('Batch RC upload failed:', err);
+        toast.error('Failed to upload all truck RCs. Please check internet connection.');
+      } finally {
+        setUploadingDoc(false);
+        setUploadProgressText('');
+      }
+      return;
+    }
+
     e.preventDefault();
     if (!uploadFormData.title.trim()) return toast.error('Document title is required');
     if (!selectedFile && !uploadFormData.file_url.trim()) {
@@ -874,7 +981,18 @@ export default function CompanyVaultPage() {
                   </div>
 
                   {/* ── Document Quick Action Bar (View, Download, WhatsApp, Copy) ── */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-3 border-t border-border/60">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-3 border-t border-border/60">
+                    {/* 0. Edit Document */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-2 text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => handleOpenEditDocModal(doc)}
+                      title="Edit Document"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span className="truncate">Edit</span>
+                    </Button>
                     {/* 1. View / Preview */}
                     <Button 
                       variant="outline" 
