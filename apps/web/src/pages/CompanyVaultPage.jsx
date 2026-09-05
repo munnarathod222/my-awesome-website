@@ -3,7 +3,8 @@ import {
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
-  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail, MessageSquare, Truck
+  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail, MessageSquare, Truck,
+  Pencil, Edit3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,7 @@ export default function CompanyVaultPage() {
   const [loading, setLoading] = useState(true);
   const [savingCompany, setSavingCompany] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [updatingDoc, setUpdatingDoc] = useState(false);
 
   const [companyInfo, setCompanyInfo] = useState({
     id: 'companysettings',
@@ -84,6 +86,8 @@ export default function CompanyVaultPage() {
 
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isEditDocModalOpen, setIsEditDocModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   const [isFinancierDossierOpen, setIsFinancierDossierOpen] = useState(false);
@@ -110,6 +114,17 @@ export default function CompanyVaultPage() {
     file_url: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // Edit Form state
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    category: 'Tax Returns (ITR)',
+    sub_category: 'ITR-V (Acknowledgement)',
+    financial_year: 'FY 2024-25',
+    notes: '',
+    file_url: ''
+  });
+  const [editSelectedFile, setEditSelectedFile] = useState(null);
 
   // Company Details Edit state
   const [editCompanyData, setEditCompanyData] = useState({ ...companyInfo });
@@ -254,6 +269,81 @@ export default function CompanyVaultPage() {
       toast.error(`Upload error: ${detail}`);
     } finally {
       setUploadingDoc(false);
+    }
+  };
+
+  const handleOpenEditDocModal = (doc) => {
+    setEditingDoc(doc);
+    setEditFormData({
+      title: doc.title || doc.file_name || '',
+      category: doc.category || 'Tax Returns (ITR)',
+      sub_category: doc.sub_category || 'ITR-V (Acknowledgement)',
+      financial_year: doc.financial_year || 'N/A',
+      notes: doc.notes || '',
+      file_url: doc.file_url || ''
+    });
+    setEditSelectedFile(null);
+    setIsEditDocModalOpen(true);
+  };
+
+  const handleUpdateDocument = async (e) => {
+    e.preventDefault();
+    if (!editFormData.title.trim()) return toast.error('Document title is required');
+    if (!editingDoc) return;
+
+    setUpdatingDoc(true);
+    try {
+      let finalFileUrl = editFormData.file_url.trim() || editingDoc.file_url;
+      let fileName = editSelectedFile ? editSelectedFile.name : (editingDoc.file_name || 'Document');
+      let fileSize = editSelectedFile ? `${(editSelectedFile.size / (1024 * 1024)).toFixed(2)} MB` : (editingDoc.file_size || 'N/A');
+
+      if (editSelectedFile) {
+        const fileData = new FormData();
+        fileData.append('file', editSelectedFile);
+        fileData.append('truck_id', 'COMPANY_VAULT');
+        fileData.append('document_type', 'Other');
+        fileData.append('document_name', editFormData.title.trim());
+        fileData.append('notes', `Company Vault (Updated): ${editFormData.title} (${editFormData.category})`);
+        fileData.append('status', 'Active');
+        fileData.append('expiry_date', '2099-12-31T00:00:00.000Z');
+
+        // Upload new file to PocketBase
+        const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
+        finalFileUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
+      }
+
+      const updatedDocs = documents.map(d => {
+        if (d.id === editingDoc.id) {
+          return {
+            ...d,
+            title: editFormData.title.trim(),
+            category: editFormData.category,
+            sub_category: editFormData.sub_category || 'General',
+            financial_year: editFormData.financial_year || 'N/A',
+            file_url: finalFileUrl,
+            file_name: fileName,
+            file_size: fileSize,
+            notes: editFormData.notes.trim(),
+            updated_at: new Date().toISOString()
+          };
+        }
+        return d;
+      });
+
+      const updatedDocsJson = JSON.stringify(updatedDocs);
+      await pb.collection('company_settings').update(companyInfo.id, { company_docs_json: updatedDocsJson }, { $autoCancel: false });
+
+      setDocuments(updatedDocs);
+      setCompanyInfo(prev => ({ ...prev, company_docs_json: updatedDocsJson }));
+      toast.success(`"${editFormData.title}" updated successfully!`);
+      setIsEditDocModalOpen(false);
+      setEditingDoc(null);
+    } catch (err) {
+      console.error('Error updating vault document:', err);
+      const detail = err?.data?.message || err?.message || 'Failed to update document';
+      toast.error(`Update error: ${detail}`);
+    } finally {
+      setUpdatingDoc(false);
     }
   };
 
@@ -763,6 +853,15 @@ export default function CompanyVaultPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        className="h-8 w-8 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+                        onClick={() => handleOpenEditDocModal(doc)}
+                        title="Edit Document Details & File"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         className="h-8 w-8 text-destructive hover:bg-destructive/10"
                         onClick={() => handleDeleteDocument(doc.id, doc.title)}
                         title="Delete Document"
@@ -976,6 +1075,160 @@ export default function CompanyVaultPage() {
               </Button>
               <Button type="submit" disabled={uploadingDoc} className="font-bold">
                 {uploadingDoc ? 'Uploading to Vault...' : 'Save & Store in Vault'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── MODAL 1.5: Edit Document Modal ────────────────────── */}
+      <Dialog open={isEditDocModalOpen} onOpenChange={setIsEditDocModalOpen}>
+        <DialogContent className="sm:max-w-lg bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-amber-400" />
+              Edit Company Vault Document
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Update document title, category, filing year, notes, or replace with a new file.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleUpdateDocument} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Document Title *</Label>
+              <Input 
+                type="text"
+                placeholder="e.g. ITR-V Acknowledgement FY 2024-25"
+                value={editFormData.title}
+                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                className="bg-background h-10 text-xs"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Category *</Label>
+                <Select 
+                  value={editFormData.category} 
+                  onValueChange={(v) => {
+                    const subs = SUB_CATEGORIES[v] || [];
+                    setEditFormData({ 
+                      ...editFormData, 
+                      category: v, 
+                      sub_category: subs[0] || 'General' 
+                    });
+                  }}
+                >
+                  <SelectTrigger className="bg-background h-10 text-xs">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.filter(c => c !== 'All').map(cat => (
+                      <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Sub-Type / Filing Type</Label>
+                <Select 
+                  value={editFormData.sub_category} 
+                  onValueChange={(v) => setEditFormData({ ...editFormData, sub_category: v })}
+                >
+                  <SelectTrigger className="bg-background h-10 text-xs">
+                    <SelectValue placeholder="Select Sub-type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(SUB_CATEGORIES[editFormData.category] || ['General']).map(sub => (
+                      <SelectItem key={sub} value={sub} className="text-xs">{sub}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Financial Year / Filing Period</Label>
+              <Select 
+                value={editFormData.financial_year} 
+                onValueChange={(v) => setEditFormData({ ...editFormData, financial_year: v })}
+              >
+                <SelectTrigger className="bg-background h-10 text-xs">
+                  <SelectValue placeholder="Select Financial Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FINANCIAL_YEARS.map(fy => (
+                    <SelectItem key={fy} value={fy} className="text-xs">{fy}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Current File Info */}
+            {editingDoc && editingDoc.file_url && (
+              <div className="p-3 bg-muted/40 rounded-xl border border-border/80 flex items-center justify-between text-xs">
+                <div className="space-y-0.5 truncate pr-2">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Current Attached File</span>
+                  <span className="font-semibold text-foreground truncate block">{editingDoc.file_name || 'Attached Document'}</span>
+                  <span className="text-[10px] text-muted-foreground">{editingDoc.file_size || ''}</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-[11px] px-2 text-cyan-400 border-cyan-500/30"
+                    onClick={() => setPreviewDoc(editingDoc)}
+                  >
+                    <Eye className="w-3 h-3 mr-1" /> View
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Replace File (Optional)</Label>
+              <Input 
+                type="file"
+                onChange={(e) => setEditSelectedFile(e.target.files[0])}
+                className="bg-background text-xs cursor-pointer"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Leave empty to keep the existing document file, or choose a new file to replace it.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">File URL (Optional / External Link)</Label>
+              <Input 
+                type="url"
+                placeholder="https://drive.google.com/... or https://..."
+                value={editFormData.file_url}
+                onChange={(e) => setEditFormData({ ...editFormData, file_url: e.target.value })}
+                className="bg-background h-10 text-xs font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Notes / Filing Reference (Optional)</Label>
+              <Textarea 
+                placeholder="e.g. Filed on 28th July 2026, ACK No: 123456789"
+                value={editFormData.notes}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                className="bg-background text-xs resize-none"
+                rows={2}
+              />
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditDocModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updatingDoc} className="font-bold bg-amber-500 hover:bg-amber-600 text-slate-950">
+                {updatingDoc ? 'Saving Changes...' : 'Update Document'}
               </Button>
             </DialogFooter>
           </form>
