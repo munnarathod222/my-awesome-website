@@ -88,7 +88,7 @@ Ke=async s=>{
       const _b=new FormData;
       _b.append("file",selectedBackFile);
       _b.append("truck_id","COMPANY_VAULT");
-      _b.append("document_type","Other_Back");
+      _b.append("document_type","Other");
       _b.append("document_name",`${h.title.trim()} (Back Side)`);
       _b.append("notes",`Company Vault: ${h.title} (Back Side)`);
       _b.append("status","Active");
@@ -139,7 +139,14 @@ Ke=async s=>{
       u.success(`"${C.title}" uploaded to Company Vault!`);
     }
     const U=JSON.stringify(j);
-    await B.collection("company_settings").update(a.id,{company_docs_json:U},{$autoCancel:!1});
+    try{
+      await B.collection("company_settings").update(a.id,{company_docs_json:U},{$autoCancel:!1});
+    }catch(updErr){
+      const rList=await B.collection("company_settings").getList(1,1,{$autoCancel:!1});
+      if(rList.items?.length>0){
+        await B.collection("company_settings").update(rList.items[0].id,{company_docs_json:U},{$autoCancel:!1});
+      }
+    }
     H(j);
     z(_=>({..._,company_docs_json:U}));
     try{localStorage.setItem("jbc_company_vault_docs",U)}catch(e){}
@@ -150,7 +157,8 @@ Ke=async s=>{
     Ae(null);
   }catch(err){
     console.error("Error saving document:",err);
-    u.error("Failed to save document");
+    const msg=err?.data?.message||err?.message||(err?.data?JSON.stringify(err.data):"Failed to save document");
+    u.error(`Failed to save document: ${msg}`);
   }finally{
     V(!1);
   }
