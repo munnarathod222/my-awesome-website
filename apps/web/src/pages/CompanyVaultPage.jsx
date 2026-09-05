@@ -981,76 +981,78 @@ export default function CompanyVaultPage() {
                   </div>
 
                   {/* ── Document Quick Action Bar (View, Download, WhatsApp, Copy) ── */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-3 border-t border-border/60">
-                    {/* 0. Edit Document */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => handleOpenEditDocModal(doc)}
-                      title="Edit Document"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                      <span className="truncate">Edit</span>
-                    </Button>
-                    {/* 1. View / Preview */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => setPreviewDoc(doc)}
-                      disabled={!doc.file_url}
-                      title="Preview Document"
-                    >
-                      <Eye className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
-                      <span className="truncate">View</span>
-                    </Button>
+                  <div className="space-y-1.5 pt-2 border-t border-border/50">
+                    {/* Row 1: Primary Document Access (2 spacious buttons) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-8 text-xs font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        onClick={() => setPreviewDoc(doc)}
+                        disabled={!doc.file_url}
+                        title="View / Preview Document"
+                      >
+                        <Eye className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                        <span>View Document</span>
+                      </Button>
 
-                    {/* 2. Download */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => handleDownloadDoc(doc)}
-                      disabled={!doc.file_url}
-                      title="Download Document"
-                    >
-                      <Download className="w-3.5 h-3.5 shrink-0 text-blue-400" />
-                      <span className="truncate">Download</span>
-                    </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-8 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        onClick={() => handleDownloadDoc(doc)}
+                        disabled={!doc.file_url}
+                        title="Download Document"
+                      >
+                        <Download className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                        <span>Download</span>
+                      </Button>
+                    </div>
 
-                    {/* 3. WhatsApp Share */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => handleShareDocWhatsApp(doc)}
-                      disabled={!doc.file_url}
-                      title="Share Document on WhatsApp"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-                      <span className="truncate">WhatsApp</span>
-                    </Button>
+                    {/* Row 2: Actions & Sharing (3 balanced buttons) */}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-lg flex items-center justify-center gap-1 transition-all"
+                        onClick={() => handleShareDocWhatsApp(doc)}
+                        disabled={!doc.file_url}
+                        title="Share Document on WhatsApp"
+                      >
+                        <MessageSquare className="w-3 h-3 shrink-0 text-emerald-400" />
+                        <span>WhatsApp</span>
+                      </Button>
 
-                    {/* 4. Copy Link */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-2 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => {
-                        if (doc.file_url) {
-                          const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
-                          navigator.clipboard.writeText(fullUrl);
-                          toast.success(`Direct link for "${doc.title}" copied to clipboard!`);
-                        } else {
-                          toast.error('No URL available to copy');
-                        }
-                      }}
-                      title="Copy Document Link"
-                    >
-                      <Copy className="w-3.5 h-3.5 shrink-0 text-slate-300" />
-                      <span className="truncate">Copy</span>
-                    </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-[11px] font-bold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-lg flex items-center justify-center gap-1 transition-all"
+                        onClick={() => handleOpenEditDocModal(doc)}
+                        title="Edit Document Details"
+                      >
+                        <Edit2 className="w-3 h-3 shrink-0 text-amber-400" />
+                        <span>Edit</span>
+                      </Button>
+
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-[11px] font-bold text-slate-300 bg-slate-800/80 hover:bg-slate-700 hover:text-white border-slate-700/60 rounded-lg flex items-center justify-center gap-1 transition-all"
+                        onClick={() => {
+                          if (doc.file_url) {
+                            const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
+                            navigator.clipboard.writeText(fullUrl);
+                            toast.success(`Direct link for "${doc.title}" copied to clipboard!`);
+                          } else {
+                            toast.error('No URL available to copy');
+                          }
+                        }}
+                        title="Copy Document Link"
+                      >
+                        <Copy className="w-3 h-3 shrink-0 text-slate-300" />
+                        <span>Copy</span>
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
