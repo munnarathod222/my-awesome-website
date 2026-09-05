@@ -3,8 +3,7 @@ import {
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
-  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail, MessageSquare, Truck,
-  Pencil, Edit3
+  ArrowUpRight, Info, Check, HelpCircle, FilePlus, MapPin, Mail, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +20,6 @@ import pb from '@/lib/pocketbaseClient.js';
 import { format } from 'date-fns';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
 import DocumentPreviewModal from '@/components/DocumentPreviewModal.jsx';
-import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
-import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 
 const CATEGORIES = [
   'All',
@@ -57,7 +54,10 @@ export default function CompanyVaultPage() {
   const [loading, setLoading] = useState(true);
   const [savingCompany, setSavingCompany] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [updatingDoc, setUpdatingDoc] = useState(false);
+  const [multiRcFiles, setMultiRcFiles] = useState([]);
+  const [isMultiRcMode, setIsMultiRcMode] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
+
 
   const [companyInfo, setCompanyInfo] = useState({
     id: 'companysettings',
@@ -87,14 +87,34 @@ export default function CompanyVaultPage() {
 
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isEditDocModalOpen, setIsEditDocModalOpen] = useState(false);
-  const [editingDoc, setEditingDoc] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
-  const [isFinancierDossierOpen, setIsFinancierDossierOpen] = useState(false);
-  const [isBulkRCOpen, setIsBulkRCOpen] = useState(false);
-  const [fleetTrucks, setFleetTrucks] = useState([]);
-  const [fleetDocs, setFleetDocs] = useState([]);
+  // Edit Document Modal State
+  const [isEditDocModalOpen, setIsEditDocModalOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
+  const [editDocForm, setEditDocForm] = useState({
+    id: '',
+    title: '',
+    category: '',
+    sub_category: '',
+    financial_year: '',
+    notes: '',
+    file_url: '',
+    back_file_url: '',
+    attached_files: []
+  });
+  const [editReplacementFrontFile, setEditReplacementFrontFile] = useState(null);
+  const [editReplacementBackFile, setEditReplacementBackFile] = useState(null);
+  const [editAdditionalRcFiles, setEditAdditionalRcFiles] = useState([]);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Multi-RC Dossier Gallery Modal State
+  const [viewingRcDossier, setViewingRcDossier] = useState(null);
+  const [activeRcIndex, setActiveRcIndex] = useState(0);
+
+  // 1-Click Financier Share Modal State
+  const [shareDossierDoc, setShareDossierDoc] = useState(null);
+
   const [previewDoc, setPreviewDoc] = useState(null);
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
@@ -117,24 +137,11 @@ export default function CompanyVaultPage() {
   });
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // Edit Form state
-  const [editFormData, setEditFormData] = useState({
-    title: '',
-    category: 'Tax Returns (ITR)',
-    sub_category: 'ITR-V (Acknowledgement)',
-    financial_year: 'FY 2024-25',
-    notes: '',
-    file_url: ''
-  });
-  const [editSelectedFile, setEditSelectedFile] = useState(null);
-
   // Company Details Edit state
   const [editCompanyData, setEditCompanyData] = useState({ ...companyInfo });
 
   useEffect(() => {
     fetchCompanyData();
-    pb.collection('trucks').getFullList({ sort: 'truck_number', $autoCancel: false }).then(setFleetTrucks).catch(() => {});
-    pb.collection('truck_documents').getFullList({ sort: '-created', $autoCancel: false }).then(setFleetDocs).catch(() => {});
   }, []);
 
   const fetchCompanyData = async () => {
@@ -217,6 +224,83 @@ export default function CompanyVaultPage() {
 
   const handleUploadDocument = async (e) => {
     e.preventDefault();
+    if (!uploadFormData.title.trim()) {
+      toast.error('Please enter a document title');
+      return;
+    }
+
+    // MULTI-RC BATCH UPLOAD (50+ TRUCKS)
+    if (isMultiRcMode && multiRcFiles.length > 0) {
+      setUploadingDoc(true);
+      try {
+        toast.info(`Uploading ${multiRcFiles.length} truck RCs... Please wait.`);
+        const attachedFiles = [];
+
+        for (let i = 0; i < multiRcFiles.length; i++) {
+          const fileObj = multiRcFiles[i];
+          setUploadProgressText(`Uploading truck RC ${i + 1} of ${multiRcFiles.length}...`);
+          
+          const formData = new FormData();
+          formData.append('document_file', fileObj);
+          formData.append('document_name', fileObj.name);
+          const uploadRes = await pb.collection('company_documents').create(formData);
+          const fileUrl = pb.files.getURL(uploadRes, uploadRes.document_file);
+
+          const cleanName = fileObj.name.replace(/\.[^/.]+$/, '');
+          const truckMatch = cleanName.match(/([A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4})/i);
+          const truckNumber = truckMatch ? truckMatch[1].toUpperCase() : `Truck ${i + 1}`;
+
+          attachedFiles.push({
+            name: fileObj.name,
+            url: fileUrl,
+            size: (fileObj.size / (1024 * 1024)).toFixed(2) + ' MB',
+            truck_number: truckNumber
+          });
+        }
+
+        const newDoc = {
+          id: 'vault_' + Date.now(),
+          title: uploadFormData.title.trim(),
+          category: uploadFormData.category || 'Fleet & Vehicle Documents',
+          sub_category: uploadFormData.sub_category || 'Commercial Vehicle RC Compilation',
+          financial_year: uploadFormData.financial_year || 'N/A',
+          file_url: attachedFiles[0]?.url || '',
+          file_size: `${attachedFiles.length} Truck RCs (${(multiRcFiles.reduce((a, b) => a + b.size, 0) / (1024 * 1024)).toFixed(1)} MB)`,
+          notes: uploadFormData.notes?.trim() || '',
+          is_multi_file: true,
+          rc_count: attachedFiles.length,
+          attached_files: attachedFiles,
+          created_at: new Date().toISOString()
+        };
+
+        const updatedDocs = [newDoc, ...documents];
+        const settingsRecord = await getCompanySettingsRecord();
+        if (settingsRecord) {
+          await pb.collection('company_settings').update(settingsRecord.id, {
+            company_docs_json: JSON.stringify(updatedDocs)
+          });
+        }
+
+        setDocuments(updatedDocs);
+        try {
+          localStorage.setItem('jbc_company_vault_docs', JSON.stringify(updatedDocs));
+        } catch (e) {}
+
+        setIsUploadModalOpen(false);
+        setMultiRcFiles([]);
+        toast.success(`Successfully bundled ${attachedFiles.length} truck RCs into "${newDoc.title}"!`);
+        return;
+      } catch (err) {
+        console.error('Batch RC upload failed:', err);
+        toast.error('Failed to upload all truck RCs. Please check internet connection.');
+      } finally {
+        setUploadingDoc(false);
+        setUploadProgressText('');
+      }
+      return;
+    }
+
+    e.preventDefault();
     if (!uploadFormData.title.trim()) return toast.error('Document title is required');
     if (!selectedFile && !uploadFormData.file_url.trim()) {
       return toast.error('Please upload a file or provide a valid file URL');
@@ -271,81 +355,6 @@ export default function CompanyVaultPage() {
       toast.error(`Upload error: ${detail}`);
     } finally {
       setUploadingDoc(false);
-    }
-  };
-
-  const handleOpenEditDocModal = (doc) => {
-    setEditingDoc(doc);
-    setEditFormData({
-      title: doc.title || doc.file_name || '',
-      category: doc.category || 'Tax Returns (ITR)',
-      sub_category: doc.sub_category || 'ITR-V (Acknowledgement)',
-      financial_year: doc.financial_year || 'N/A',
-      notes: doc.notes || '',
-      file_url: doc.file_url || ''
-    });
-    setEditSelectedFile(null);
-    setIsEditDocModalOpen(true);
-  };
-
-  const handleUpdateDocument = async (e) => {
-    e.preventDefault();
-    if (!editFormData.title.trim()) return toast.error('Document title is required');
-    if (!editingDoc) return;
-
-    setUpdatingDoc(true);
-    try {
-      let finalFileUrl = editFormData.file_url.trim() || editingDoc.file_url;
-      let fileName = editSelectedFile ? editSelectedFile.name : (editingDoc.file_name || 'Document');
-      let fileSize = editSelectedFile ? `${(editSelectedFile.size / (1024 * 1024)).toFixed(2)} MB` : (editingDoc.file_size || 'N/A');
-
-      if (editSelectedFile) {
-        const fileData = new FormData();
-        fileData.append('file', editSelectedFile);
-        fileData.append('truck_id', 'COMPANY_VAULT');
-        fileData.append('document_type', 'Other');
-        fileData.append('document_name', editFormData.title.trim());
-        fileData.append('notes', `Company Vault (Updated): ${editFormData.title} (${editFormData.category})`);
-        fileData.append('status', 'Active');
-        fileData.append('expiry_date', '2099-12-31T00:00:00.000Z');
-
-        // Upload new file to PocketBase
-        const uploadedRec = await pb.collection('truck_documents').create(fileData, { $autoCancel: false });
-        finalFileUrl = pb.files.getUrl(uploadedRec, uploadedRec.file);
-      }
-
-      const updatedDocs = documents.map(d => {
-        if (d.id === editingDoc.id) {
-          return {
-            ...d,
-            title: editFormData.title.trim(),
-            category: editFormData.category,
-            sub_category: editFormData.sub_category || 'General',
-            financial_year: editFormData.financial_year || 'N/A',
-            file_url: finalFileUrl,
-            file_name: fileName,
-            file_size: fileSize,
-            notes: editFormData.notes.trim(),
-            updated_at: new Date().toISOString()
-          };
-        }
-        return d;
-      });
-
-      const updatedDocsJson = JSON.stringify(updatedDocs);
-      await pb.collection('company_settings').update(companyInfo.id, { company_docs_json: updatedDocsJson }, { $autoCancel: false });
-
-      setDocuments(updatedDocs);
-      setCompanyInfo(prev => ({ ...prev, company_docs_json: updatedDocsJson }));
-      toast.success(`"${editFormData.title}" updated successfully!`);
-      setIsEditDocModalOpen(false);
-      setEditingDoc(null);
-    } catch (err) {
-      console.error('Error updating vault document:', err);
-      const detail = err?.data?.message || err?.message || 'Failed to update document';
-      toast.error(`Update error: ${detail}`);
-    } finally {
-      setUpdatingDoc(false);
     }
   };
 
@@ -520,26 +529,6 @@ export default function CompanyVaultPage() {
           </Button>
 
           <Button 
-            variant="outline" 
-            size="sm"
-            className="h-10 border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold"
-            onClick={() => setIsBulkRCOpen(true)}
-          >
-            <UploadCloud className="w-4 h-4 mr-2 text-emerald-400" />
-            ⚡ Bulk Upload Fleet RCs
-          </Button>
-
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="h-10 border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 font-bold"
-            onClick={() => setIsFinancierDossierOpen(true)}
-          >
-            <Truck className="w-4 h-4 mr-2 text-cyan-400" />
-            🏛️ Fleet RC &amp; Financier Dossier
-          </Button>
-
-          <Button 
             variant="secondary"
             size="sm"
             className="h-10 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 font-semibold"
@@ -567,6 +556,110 @@ export default function CompanyVaultPage() {
             <UploadCloud className="w-4 h-4 mr-2" />
             + Upload Vault Document
           </Button>
+        </div>
+      </div>
+
+      {/* ── Fleet Vehicle RC Dossier (Financier Hub) ─────────── */}
+      <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <Truck className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                  Fleet Vehicle RC Dossier & Financier Hub
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">
+                    {fleetTrucks.length} Trucks Registered
+                  </Badge>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Consolidated commercial truck registration certificates for banks, equipment financing & loan providers.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="rounded-xl text-xs font-bold border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200"
+              onClick={() => handleOpenUploadModal('Fleet & Vehicle Documents', 'Commercial Vehicle RC Compilation', true)}
+            >
+              <UploadCloud className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+              + Attach Multi-RC Compilation (20-100+ RCs)
+            </Button>
+
+            <Button 
+              size="sm" 
+              className="rounded-xl text-xs font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20"
+              onClick={() => setIsFinancierModalOpen(true)}
+            >
+              <Share2 className="w-3.5 h-3.5 mr-1.5" />
+              1-Click Share RCs with Financiers
+            </Button>
+          </div>
+        </div>
+
+        {/* Fleet Trucks Grid with RC status */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+          {fleetTrucks.map(truck => (
+            <div key={truck.id} className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800/80 flex items-center justify-between gap-2">
+              <div className="truncate">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-white text-xs">{truck.truck_number}</span>
+                  {truck.rcFileUrl ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px] py-0">RC Attached</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-[9px] py-0">RC Pending</Badge>
+                  )}
+                </div>
+                <span className="text-[11px] text-slate-400 block truncate">{truck.truck_name} {truck.truck_size ? `(${truck.truck_size})` : ''}</span>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {truck.rcFileUrl ? (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-8 px-2 text-xs rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+                      onClick={() => setPreviewDoc({
+                        document_type: 'RC',
+                        document_name: `${truck.truck_number} RC`,
+                        file_url: truck.rcFileUrl,
+                        files: [truck.rcFileUrl]
+                      })}
+                      title="Preview RC"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    <a 
+                      href={truck.rcFileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      download
+                      className="inline-flex items-center justify-center h-8 px-2 text-xs rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                      title="Download RC"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                  </>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 px-2 text-[11px] rounded-lg text-slate-400 hover:text-white"
+                    onClick={() => handleOpenUploadModal('Fleet & Vehicle Documents', 'Commercial Vehicle RC Compilation', true)}
+                  >
+                    Upload RC
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -694,8 +787,8 @@ export default function CompanyVaultPage() {
         </CardContent>
       </Card>
 
-      {/* ── Fast Upload Shortcut Banner (ITR, GST, RC & Registrations) ─────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Fast Upload Shortcut Banner (ITR & GST Focus) ─────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div 
           onClick={() => handleOpenUploadModal('Tax Returns (ITR)', 'ITR-V (Acknowledgement)')}
           className="p-4 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition-all duration-200 group"
@@ -712,7 +805,7 @@ export default function CompanyVaultPage() {
                 Upload ITR-V, Computation Sheet, or Form 3CD Audit Report.
               </p>
             </div>
-            <FilePlus className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+            <FilePlus className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
         </div>
 
@@ -732,7 +825,7 @@ export default function CompanyVaultPage() {
                 Upload Monthly GSTR-1, GSTR-3B, or Annual GSTR-9 filing.
               </p>
             </div>
-            <FileSpreadsheet className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+            <FileSpreadsheet className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
           </div>
         </div>
 
@@ -746,33 +839,13 @@ export default function CompanyVaultPage() {
                 ⚡ Quick Action
               </span>
               <h4 className="font-bold text-foreground text-sm group-hover:text-purple-400 transition-colors">
-                Upload Registration Cert
+                Upload Registration Certificate
               </h4>
               <p className="text-xs text-muted-foreground">
                 Upload GST Cert, PAN, COI, MSME / Udyam, or Trade License.
               </p>
             </div>
-            <Building2 className="w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform shrink-0" />
-          </div>
-        </div>
-
-        <div 
-          onClick={() => setIsBulkRCOpen(true)}
-          className="p-4 bg-gradient-to-r from-emerald-600/15 via-emerald-500/10 to-transparent border border-emerald-500/30 hover:border-emerald-400 rounded-2xl cursor-pointer transition-all duration-200 group shadow-sm hover:shadow-md"
-        >
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-500/20 rounded-full">
-                ⚡ 50+ Fleet RCs
-              </span>
-              <h4 className="font-bold text-foreground text-sm group-hover:text-emerald-400 transition-colors">
-                Bulk Upload RCs
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                Drag & drop multi-vehicle RC PDFs / photos with auto-matching.
-              </p>
-            </div>
-            <UploadCloud className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+            <Building2 className="w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform" />
           </div>
         </div>
       </div>
@@ -885,15 +958,6 @@ export default function CompanyVaultPage() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
-                        onClick={() => handleOpenEditDocModal(doc)}
-                        title="Edit Document Details & File"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
                         className="h-8 w-8 text-destructive hover:bg-destructive/10"
                         onClick={() => handleDeleteDocument(doc.id, doc.title)}
                         title="Delete Document"
@@ -916,13 +980,24 @@ export default function CompanyVaultPage() {
                     <span className="font-mono">{doc.file_size || 'File'}</span>
                   </div>
 
-                  {/* ── Document Quick Action Bar (View, Edit, Download, WhatsApp, Copy) ── */}
+                  {/* ── Document Quick Action Bar (View, Download, WhatsApp, Copy) ── */}
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-3 border-t border-border/60">
+                    {/* 0. Edit Document */}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="h-8 px-2 text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      onClick={() => handleOpenEditDocModal(doc)}
+                      title="Edit Document"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      <span className="truncate">Edit</span>
+                    </Button>
                     {/* 1. View / Preview */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-1.5 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-2 text-xs font-semibold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border-cyan-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => setPreviewDoc(doc)}
                       disabled={!doc.file_url}
                       title="Preview Document"
@@ -931,23 +1006,11 @@ export default function CompanyVaultPage() {
                       <span className="truncate">View</span>
                     </Button>
 
-                    {/* 2. Edit Document */}
+                    {/* 2. Download */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-1.5 text-xs font-semibold text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
-                      onClick={() => handleOpenEditDocModal(doc)}
-                      title="Edit Document Details & Replace File"
-                    >
-                      <Pencil className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                      <span className="truncate">Edit</span>
-                    </Button>
-
-                    {/* 3. Download */}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="h-8 px-1.5 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-2 text-xs font-semibold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => handleDownloadDoc(doc)}
                       disabled={!doc.file_url}
                       title="Download Document"
@@ -956,11 +1019,11 @@ export default function CompanyVaultPage() {
                       <span className="truncate">Download</span>
                     </Button>
 
-                    {/* 4. WhatsApp Share */}
+                    {/* 3. WhatsApp Share */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
+                      className="h-8 px-2 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => handleShareDocWhatsApp(doc)}
                       disabled={!doc.file_url}
                       title="Share Document on WhatsApp"
@@ -969,11 +1032,11 @@ export default function CompanyVaultPage() {
                       <span className="truncate">WhatsApp</span>
                     </Button>
 
-                    {/* 5. Copy Link */}
+                    {/* 4. Copy Link */}
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="h-8 px-1.5 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm col-span-2 sm:col-span-1"
+                      className="h-8 px-2 text-xs font-semibold text-slate-300 bg-slate-800/90 hover:bg-slate-750 hover:text-white border-slate-700/60 rounded-xl transition-all duration-200 hover:scale-[1.03] active:scale-95 flex items-center justify-center gap-1 shadow-sm"
                       onClick={() => {
                         if (doc.file_url) {
                           const fullUrl = doc.file_url?.startsWith('http') ? doc.file_url : `${window.location.origin}${doc.file_url || ''}`;
@@ -1119,160 +1182,6 @@ export default function CompanyVaultPage() {
               </Button>
               <Button type="submit" disabled={uploadingDoc} className="font-bold">
                 {uploadingDoc ? 'Uploading to Vault...' : 'Save & Store in Vault'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── MODAL 1.5: Edit Document Modal ────────────────────── */}
-      <Dialog open={isEditDocModalOpen} onOpenChange={setIsEditDocModalOpen}>
-        <DialogContent className="sm:max-w-lg bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-amber-400" />
-              Edit Company Vault Document
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Update document title, category, filing year, notes, or replace with a new file.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleUpdateDocument} className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">Document Title *</Label>
-              <Input 
-                type="text"
-                placeholder="e.g. ITR-V Acknowledgement FY 2024-25"
-                value={editFormData.title}
-                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                className="bg-background h-10 text-xs"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Category *</Label>
-                <Select 
-                  value={editFormData.category} 
-                  onValueChange={(v) => {
-                    const subs = SUB_CATEGORIES[v] || [];
-                    setEditFormData({ 
-                      ...editFormData, 
-                      category: v, 
-                      sub_category: subs[0] || 'General' 
-                    });
-                  }}
-                >
-                  <SelectTrigger className="bg-background h-10 text-xs">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.filter(c => c !== 'All').map(cat => (
-                      <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Sub-Type / Filing Type</Label>
-                <Select 
-                  value={editFormData.sub_category} 
-                  onValueChange={(v) => setEditFormData({ ...editFormData, sub_category: v })}
-                >
-                  <SelectTrigger className="bg-background h-10 text-xs">
-                    <SelectValue placeholder="Select Sub-type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(SUB_CATEGORIES[editFormData.category] || ['General']).map(sub => (
-                      <SelectItem key={sub} value={sub} className="text-xs">{sub}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">Financial Year / Filing Period</Label>
-              <Select 
-                value={editFormData.financial_year} 
-                onValueChange={(v) => setEditFormData({ ...editFormData, financial_year: v })}
-              >
-                <SelectTrigger className="bg-background h-10 text-xs">
-                  <SelectValue placeholder="Select Financial Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FINANCIAL_YEARS.map(fy => (
-                    <SelectItem key={fy} value={fy} className="text-xs">{fy}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Current File Info */}
-            {editingDoc && editingDoc.file_url && (
-              <div className="p-3 bg-muted/40 rounded-xl border border-border/80 flex items-center justify-between text-xs">
-                <div className="space-y-0.5 truncate pr-2">
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Current Attached File</span>
-                  <span className="font-semibold text-foreground truncate block">{editingDoc.file_name || 'Attached Document'}</span>
-                  <span className="text-[10px] text-muted-foreground">{editingDoc.file_size || ''}</span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-7 text-[11px] px-2 text-cyan-400 border-cyan-500/30"
-                    onClick={() => setPreviewDoc(editingDoc)}
-                  >
-                    <Eye className="w-3 h-3 mr-1" /> View
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">Replace File (Optional)</Label>
-              <Input 
-                type="file"
-                onChange={(e) => setEditSelectedFile(e.target.files[0])}
-                className="bg-background text-xs cursor-pointer"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Leave empty to keep the existing document file, or choose a new file to replace it.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">File URL (Optional / External Link)</Label>
-              <Input 
-                type="url"
-                placeholder="https://drive.google.com/... or https://..."
-                value={editFormData.file_url}
-                onChange={(e) => setEditFormData({ ...editFormData, file_url: e.target.value })}
-                className="bg-background h-10 text-xs font-mono"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">Notes / Filing Reference (Optional)</Label>
-              <Textarea 
-                placeholder="e.g. Filed on 28th July 2026, ACK No: 123456789"
-                value={editFormData.notes}
-                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
-                className="bg-background text-xs resize-none"
-                rows={2}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditDocModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updatingDoc} className="font-bold bg-amber-500 hover:bg-amber-600 text-slate-950">
-                {updatingDoc ? 'Saving Changes...' : 'Update Document'}
               </Button>
             </DialogFooter>
           </form>
@@ -1607,21 +1516,6 @@ export default function CompanyVaultPage() {
         isOpen={!!previewDoc}
         onClose={() => setPreviewDoc(null)}
         document={previewDoc}
-      />
-      <FinancierFleetDossierModal
-        isOpen={isFinancierDossierOpen}
-        onClose={() => setIsFinancierDossierOpen(false)}
-        trucks={fleetTrucks}
-        documents={fleetDocs}
-        companyInfo={companyInfo}
-      />
-      <BulkRCUploadModal
-        isOpen={isBulkRCOpen}
-        onClose={() => setIsBulkRCOpen(false)}
-        trucks={fleetTrucks}
-        onUploadSuccess={() => {
-          pb.collection('truck_documents').getFullList({ sort: '-created', $autoCancel: false }).then(setFleetDocs).catch(() => {});
-        }}
       />
     </div>
   );
