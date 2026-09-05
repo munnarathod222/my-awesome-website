@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
+import { Edit2, 
   ShieldCheck, Building2, FileText, UploadCloud, Share2, Copy, Download, 
   ExternalLink, Trash2, CreditCard, Search, Filter, CheckCircle2, Calendar, 
   FileSpreadsheet, Plus, Eye, Sparkles, RefreshCw, FileCheck, Lock, X, 
@@ -87,6 +87,7 @@ export default function CompanyVaultPage() {
 
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [editingDocId, setEditingDocId] = useState(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditCompanyModalOpen, setIsEditCompanyModalOpen] = useState(false);
   // Edit Document Modal State
@@ -210,6 +211,7 @@ export default function CompanyVaultPage() {
   };
 
   const handleOpenUploadModal = (presetCategory = 'Tax Returns (ITR)', presetSub = 'ITR-V (Acknowledgement)') => {
+    setEditingDocId(null);
     setUploadFormData({
       title: '',
       category: presetCategory,
@@ -217,6 +219,34 @@ export default function CompanyVaultPage() {
       financial_year: presetCategory.includes('ITR') ? 'FY 2024-25' : 'N/A',
       notes: '',
       file_url: ''
+    });
+    setSelectedFile(null);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleOpenEditDocModal = (doc) => {
+    setEditingDocId(doc.id);
+    setUploadFormData({
+      title: doc.title || '',
+      category: doc.category || 'Registration & Identity',
+      sub_category: doc.sub_category || 'General',
+      financial_year: doc.financial_year || 'N/A',
+      notes: doc.notes || '',
+      file_url: doc.file_url || ''
+    });
+    setSelectedFile(null);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleOpenEditDocModal = (doc) => {
+    setEditingDocId(doc.id);
+    setUploadFormData({
+      title: doc.title || '',
+      category: doc.category || 'Registration & Identity',
+      sub_category: doc.sub_category || 'General',
+      financial_year: doc.financial_year || 'N/A',
+      notes: doc.notes || '',
+      file_url: doc.file_url || ''
     });
     setSelectedFile(null);
     setIsUploadModalOpen(true);
@@ -1062,13 +1092,19 @@ export default function CompanyVaultPage() {
       )}
 
       {/* ── MODAL 1: Upload Document Modal ────────────────────── */}
-      <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
+      <Dialog open={isUploadModalOpen} onOpenChange={(open) => { if (!open) setEditingDocId(null); setIsUploadModalOpen(open); }}>
         <DialogContent className="sm:max-w-lg bg-card border-border">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
               <UploadCloud className="w-5 h-5 text-primary" />
-              Upload Company Vault Document
+              {editingDocId ? 'Edit Company Vault Document' : 'Upload Company Vault Document'}
             </DialogTitle>
+          {editingDocId && uploadFormData.file_url && (
+            <div className="px-4 py-2 bg-muted/40 border border-border rounded-xl text-xs flex items-center justify-between my-2">
+              <span className="truncate mr-2 text-muted-foreground">Current File: <span className="font-mono text-foreground font-bold">{uploadFormData.file_url.split('/').pop().slice(0, 35)}</span></span>
+              <a href={uploadFormData.file_url} target="_blank" rel="noreferrer" className="text-primary hover:underline font-bold text-[11px] shrink-0">Preview File ↗</a>
+            </div>
+          )}
           </DialogHeader>
 
           <form onSubmit={handleUploadDocument} className="space-y-4 py-2">
@@ -1145,7 +1181,7 @@ export default function CompanyVaultPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Select File (PDF, Image, Excel, Zip) *</Label>
+              <Label className="text-xs font-semibold">{editingDocId ? "Replace File (Optional)" : "{editingDocId ? 'Replace File (Optional)' : 'Select File (PDF, Image, Excel, Zip) *'}"}</Label>
               <Input 
                 type="file"
                 onChange={(e) => setSelectedFile(e.target.files[0])}
@@ -1179,11 +1215,11 @@ export default function CompanyVaultPage() {
             </div>
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsUploadModalOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => { setEditingDocId(null); setIsUploadModalOpen(false); }}>
                 Cancel
               </Button>
               <Button type="submit" disabled={uploadingDoc} className="font-bold">
-                {uploadingDoc ? 'Uploading to Vault...' : 'Save & Store in Vault'}
+                {uploadingDoc ? (editingDocId ? 'Saving Changes...' : 'Uploading to Vault...') : (editingDocId ? 'Save Changes' : 'Save & Store in Vault')}
               </Button>
             </DialogFooter>
           </form>
