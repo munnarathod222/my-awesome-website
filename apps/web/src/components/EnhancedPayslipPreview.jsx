@@ -28,14 +28,15 @@ export default function EnhancedPayslipPreview({ payroll, employee, advances = [
   const t = (key) => getTranslation(language, key);
   const tr = (text) => transliterateText(text, language);
 
-  const hasAdvance = advances.length > 0;
-  const advanceDeducted = (!payroll ? advances : advances.filter(a => a.status === 'Deducted')).reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
-  const monthName = payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current';
+  const hasAdvance = advances.length > 0 || (payroll?.driver_advances > 0);
+  const advanceDeducted = (payroll?.driver_advances != null ? payroll.driver_advances : (payroll?.advance_deductions != null ? payroll.advance_deductions : advances.reduce((sum, a) => sum + Number((a.remaining_balance ?? a.amount) || 0), 0)));
+  const monthName = payroll?.cycle_range || (payroll?.payroll_year && payroll?.payroll_month ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current');
 
   const basicSalary = payroll?.total_salary || payroll?.base_salary || employee?.salary_amount || employee?.base_salary || 0;
-  const grossSalary = payroll?.gross_salary || (basicSalary + (payroll?.trip_bonus || 0));
-  const totalDeductions = payroll ? ((payroll.gross_salary || 0) - (payroll.net_salary || 0)) : (advanceDeducted + (payroll?.attendance_deduction || 0) + (payroll?.taxes || 0));
-  const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
+  const grossSalary = basicSalary + (payroll?.trip_bonus || 0) + (payroll?.other_allowances || 0);
+  const absentDeduction = payroll?.attendance_deduction || 0;
+  const totalDeductions = advanceDeducted + absentDeduction + (payroll?.taxes || 0);
+  const netSalary = payroll?.net_salary != null ? payroll.net_salary : (grossSalary - totalDeductions);
   
   const getCleanEmployeeId = (emp, pay) => {
     if (emp?.employee_number) return String(emp.employee_number);

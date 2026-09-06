@@ -19,7 +19,7 @@ import PayslipComparison from './PayslipComparison.jsx';
 import EmailPayslipDialog from './EmailPayslipDialog.jsx';
 import PayslipExportDialog from './PayslipExportDialog.jsx';
 
-export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employeeId }) {
+export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employeeId, calculatedPayroll }) {
   const [includeSignature, setIncludeSignature] = useState(true);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -35,7 +35,7 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add('printing-payslip');
-      if (payrollId || employeeId) {
+      if (payrollId || employeeId || calculatedPayroll) {
         setActiveTab('preview');
         fetchData();
       }
@@ -45,26 +45,70 @@ export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employ
     return () => {
       document.body.classList.remove('printing-payslip');
     };
-  }, [isOpen, payrollId, employeeId]);
+  }, [isOpen, payrollId, employeeId, calculatedPayroll]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       let currentPayroll = null;
       let emp = null;
-      let targetEmpId = employeeId;
+      let targetEmpId = (typeof employeeId === 'object' ? (employeeId?.employeeId || employeeId?.id) : employeeId) || calculatedPayroll?.employeeId || calculatedPayroll?.id;
 
       if (payrollId) {
         currentPayroll = await pb.collection('payroll').getOne(payrollId, { expand: 'employee_id_relation', $autoCancel: false });
         targetEmpId = currentPayroll.employee_id;
         emp = currentPayroll.expand?.employee_id_relation;
       } else if (targetEmpId) {
-        emp = await pb.collection('employees').getOne(targetEmpId, { $autoCancel: false });
+        try {
+          emp = await pb.collection('employees').getOne(targetEmpId, { $autoCancel: false });
+        } catch (e) {}
         try {
           currentPayroll = await pb.collection('payroll').getFirstListItem(`employee_id='${targetEmpId}'`, { sort: '-created', $autoCancel: false });
         } catch(e) {
           console.log("No payroll found for employee");
         }
+      }
+
+      const calcObj = calculatedPayroll || (typeof employeeId === 'object' ? employeeId : null);
+      if (calcObj) {
+        const baseSal = Number(calcObj.baseSalary || emp?.salary_amount || emp?.base_salary || 0);
+        const adjSal = Number(calcObj.adjustedBaseSalary != null ? calcObj.adjustedBaseSalary : (calcObj.grossSalary != null ? calcObj.grossSalary : baseSal));
+        const pDays = calcObj.presentDays != null ? calcObj.presentDays : 30;
+        const tDays = calcObj.totalWorkingDays || calcObj.cycleDays || calcObj.activeDays || 30;
+        const advAmt = Number(calcObj.totalAdvances || 0);
+        const absDeduction = Math.max(0, baseSal - adjSal);
+        const netPay = Number(calcObj.netPayout != null ? calcObj.netPayout : (adjSal - advAmt));
+        const cRange = calcObj.cycleInfo?.formattedCycleRange || "Current Cycle";
+        const pDate = calcObj.payDate || calcObj.cycleInfo?.formattedPayDate || null;
+
+        currentPayroll = {
+          id: `calc-${targetEmpId}`,
+          employee_id: targetEmpId,
+          employee_name: emp?.name || calcObj.employeeName || calcObj.name || "Employee",
+          employee_code: emp?.employee_number || emp?.emp_number || calcObj.empCode || "EMP-001",
+          designation: emp?.position || emp?.employee_type || calcObj.role || "Driver",
+          base_salary: baseSal,
+          total_salary: baseSal,
+          attendance_days: pDays,
+          present_days: pDays,
+          total_days: tDays,
+          absent_days: Math.max(0, tDays - pDays),
+          attendance_deduction: absDeduction,
+          gross_salary: baseSal,
+          trip_bonus: 0,
+          other_allowances: 0,
+          driver_advances: advAmt,
+          advance_deductions: advAmt,
+          taxes: 0,
+          net_salary: netPay,
+          payroll_month: calcObj.cycleInfo?.cycleEnd ? (new Date(calcObj.cycleInfo.cycleEnd).getMonth() + 1) : (new Date().getMonth() + 1),
+          payroll_year: calcObj.cycleInfo?.cycleEnd ? new Date(calcObj.cycleInfo.cycleEnd).getFullYear() : new Date().getFullYear(),
+          cycle_range: cRange,
+          period_label: cRange,
+          status: calcObj.statusLabel || calcObj.status || "Pending",
+          payment_status: calcObj.statusLabel || calcObj.status || "Pending",
+          payment_date: pDate
+        };
       }
 
       setEmployee(emp);
