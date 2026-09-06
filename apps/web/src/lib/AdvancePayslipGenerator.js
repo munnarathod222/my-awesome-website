@@ -40,8 +40,8 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       const compEmail = companySettings?.company_email || 'vinod@jaibhavanicargo.com';
       const compGstin = companySettings?.company_gstin || '36AAACJ2230M1Z2';
 
-      const monthName = payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current';
-      const hasAdvance = advances.length > 0;
+      const monthName = payroll?.cycle_range || (payroll ? format(new Date(payroll.payroll_year, payroll.payroll_month - 1), 'MMMM yyyy') : 'Current');
+      const hasAdvance = advances.length > 0 || (payroll?.driver_advances > 0);
       
       const getCleanEmpId = (emp, pay) => {
         if (emp?.employee_number) return String(emp.employee_number);
@@ -56,20 +56,20 @@ export const generateAdvancePayslipPDF = async (payroll, employee, advances = []
       const empId = getCleanEmpId(employee, payroll);
       const rawPos = employee?.position || employee?.employee_type || payroll?.designation || '-';
       const designation = rawPos.toLowerCase().includes('driver') ? t('driverRole') : rawPos;
-      const daysPresent = `${payroll ? `${payroll.attendance_days || 0} ${t('days')}` : `30 ${t('days')}`} / ${monthName}`;
+      const daysPresent = `${payroll ? `${payroll.attendance_days != null ? payroll.attendance_days : (payroll.present_days != null ? payroll.present_days : 0)} ${t('days')}` : `30 ${t('days')}`} / ${monthName}`;
       const rawStat = (payroll?.payment_status || payroll?.status || 'Pending').toUpperCase();
       const paymentStatus = rawStat.includes('PAID') ? t('paid') : t('pending');
       const paymentModeDate = `${t('bankTransfer')} / ${payroll?.payment_date ? format(new Date(payroll.payment_date), 'dd MMM yyyy') : '-'}`;
 
       const basicSalary = payroll?.total_salary || payroll?.base_salary || employee?.salary_amount || employee?.base_salary || 0;
       const tripBonus = payroll?.trip_bonus || 0;
-      const grossSalary = payroll?.gross_salary || (basicSalary + tripBonus);
+      const grossSalary = basicSalary + tripBonus;
 
-      const advanceDeducted = (!payroll ? advances : advances.filter(a => a.status === 'Deducted')).reduce((sum, a) => sum + a.amount, 0) || payroll?.driver_advances || 0;
+      const advanceDeducted = (payroll?.driver_advances != null ? payroll.driver_advances : (payroll?.advance_deductions != null ? payroll.advance_deductions : advances.reduce((sum, a) => sum + Number((a.remaining_balance ?? a.amount) || 0), 0)));
       const absentDeduction = payroll?.attendance_deduction || 0;
       const taxes = payroll?.taxes || 0;
-      const totalDeductions = payroll ? ((payroll.gross_salary || 0) - (payroll.net_salary || 0)) : (advanceDeducted + absentDeduction + taxes);
-      const netSalary = payroll ? (payroll.net_salary || 0) : (grossSalary - totalDeductions);
+      const totalDeductions = advanceDeducted + absentDeduction + taxes;
+      const netSalary = payroll?.net_salary != null ? payroll.net_salary : (grossSalary - totalDeductions);
 
       const contactLine = [
         compPhone ? `Ph: ${compPhone}` : null,

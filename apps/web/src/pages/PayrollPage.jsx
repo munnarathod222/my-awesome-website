@@ -46,6 +46,7 @@ export default function PayrollPage() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [selectedPayrollItem, setSelectedPayrollItem] = useState(null);
   const [advanceModalEmployee, setAdvanceModalEmployee] = useState(null);
   const [isGenerationModalOpen, setIsGenerationModalOpen] = useState(false);
   
@@ -451,7 +452,7 @@ export default function PayrollPage() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => setSelectedEmployeeId(emp.id)} 
+                          onClick={() => { setSelectedEmployeeId(emp.id); setSelectedPayrollItem(emp); }} 
                           className="rounded-xl text-xs font-bold shadow-sm"
                         >
                           Payslip & Details
@@ -649,8 +650,9 @@ export default function PayrollPage() {
       {/* Modals */}
       <AdvancePayslipModal
         isOpen={Boolean(selectedEmployeeId)}
-        onClose={() => setSelectedEmployeeId(null)}
+        onClose={() => { setSelectedEmployeeId(null); setSelectedPayrollItem(null); }}
         employeeId={selectedEmployeeId}
+        calculatedPayroll={selectedPayrollItem || payrollData.find(p => p.id === selectedEmployeeId || p.employeeId === selectedEmployeeId)}
       />
 
       <PayrollGenerationModal
