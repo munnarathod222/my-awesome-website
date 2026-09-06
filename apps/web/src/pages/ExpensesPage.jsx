@@ -968,7 +968,21 @@ const ExpensesPage = () => {
                                       className="w-7 h-7 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-110 transition-transform bg-muted shrink-0 shadow-sm"
                                       title="View Receipt Snapshot"
                                     >
-                                      <img src={url} alt="receipt" className="w-full h-full object-cover" />
+                                      <img 
+                                        src={url} 
+                                        alt="receipt" 
+                                        className="w-full h-full object-cover" 
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          if (e.currentTarget.parentElement) {
+                                            e.currentTarget.parentElement.innerHTML = '<span class="flex items-center justify-center w-full h-full bg-amber-500/20 text-amber-500 font-bold text-[10px]" title="Bill missing - click to re-upload">📷+</span>';
+                                            e.currentTarget.parentElement.onclick = (ev) => {
+                                              ev.stopPropagation();
+                                              triggerDirectFileUpload(expense);
+                                            };
+                                          }
+                                        }}
+                                      />
                                     </div>
                                   );
                                 })}
@@ -1047,7 +1061,21 @@ const ExpensesPage = () => {
                                     className="w-6 h-6 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
                                     title="View Receipt Snapshot"
                                   >
-                                    <img src={url} alt="receipt" className="w-full h-full object-cover" />
+                                    <img 
+                                      src={url} 
+                                      alt="receipt" 
+                                      className="w-full h-full object-cover" 
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.parentElement) {
+                                          e.currentTarget.parentElement.innerHTML = '<span class="flex items-center justify-center w-full h-full bg-amber-500/20 text-amber-500 font-bold text-[9px]" title="Bill missing - click to re-upload">📷+</span>';
+                                          e.currentTarget.parentElement.onclick = (ev) => {
+                                            ev.stopPropagation();
+                                            triggerDirectFileUpload(expense);
+                                          };
+                                        }
+                                      }}
+                                    />
                                   </div>
                                 );
                               })}
