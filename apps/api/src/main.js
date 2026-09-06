@@ -942,11 +942,6 @@ const uploadNewStorageToSupabase = async (storageDir) => {
   const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
   if (!isSyncEnabled || !fs.existsSync(storageDir)) return;
 
-  if (!_storageTrackerInitialized) {
-    initStorageTracker(storageDir);
-    return;
-  }
-
   const localFiles = getLocalFilesRecursive(storageDir, storageDir);
   const newFiles = Object.keys(localFiles).filter(f => !_uploadedStorageFiles.has(f));
 
@@ -1037,6 +1032,14 @@ const runPocketBase = async () => {
   if (isFirstBoot && isProd) {
     logger.info(`💾 Production Cold Boot: Downloading latest production database from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath, { force: true });
+    // 📦 Restore all persistent storage files (bills, documents, receipts) from Supabase on cold boot
+    try {
+      const storDir = path.join(dataDir, 'storage');
+      logger.info(`📥 Production Cold Boot: Restoring all storage documents/bills from Supabase...`);
+      await downloadFolderFromSupabase('storage', storDir);
+    } catch (storErr) {
+      logger.warn(`Storage restoration notice: ${storErr.message}`);
+    }
   } else if (!fs.existsSync(dbFilePath)) {
     logger.info(`💾 Local database missing. Hydrating from Supabase Storage to ${dbFilePath}...`);
     await downloadDatabaseFromSupabase(dbFilePath, { force: true });
@@ -2066,7 +2069,13 @@ const runPocketBase = async () => {
     pbArgs.push('--dev');
   }
 
-  const pbProcess = spawn(pbPath, pbArgs, { stdio: 'pipe' });
+  const pbEnv = {
+    ...process.env,
+    SUPABASE_URL: supabaseUrl,
+    SUPABASE_KEY: supabaseKey,
+    SUPABASE_SECRET: supabaseKey
+  };
+  const pbProcess = spawn(pbPath, pbArgs, { stdio: 'pipe', env: pbEnv });
   global.pbProcess = pbProcess;
 
   // Watch and sync DB + storage (guarded — only registers once across restarts)
@@ -2241,6 +2250,24 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
         success: true,
         message: 'Deleted migration cache records successfully. You can now call run-pb-migrate to re-apply migrations.',
         output
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Diagnostic & recovery endpoint — forces download of all Supabase storage files to local disk
+  app.get('/api/sync-storage-now', requireBackupAuth, async (req, res) => {
+    try {
+      const storDir = global.storageDir || (global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : './pb_data/storage');
+      logger.info('🔄 Manual trigger: restoring all storage files from Supabase...');
+      const allFiles = await listAllSupabaseFiles('storage');
+      await downloadFolderFromSupabase('storage', storDir);
+      res.json({
+        success: true,
+        message: 'Storage files sync complete',
+        supabaseFilesCount: allFiles.length,
+        files: allFiles
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
@@ -2934,17 +2961,17 @@ app.post('/api/admin/users/create-or-approve', async (req, res) => {
 });
 
 // Express Direct File Serving Route Handler (handles both collection name & collection ID)
-const handleDirectFileServe = (req, res, next) => {
+const handleDirectFileServe = async (req, res, next) => {
   const collectionNameOrId = req.params.collection;
   const recordId = req.params.recordId;
   const filename = req.params.filename;
 
   const storageBase = global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage');
 
-  // Candidate 1: direct folder match (e.g. storage/pbc_4061015685/recordId/filename or storage/expenses/recordId/filename)
   let targetPath = path.join(storageBase, collectionNameOrId, recordId, filename);
+  let resolvedColId = collectionNameOrId;
 
-  // Candidate 2: resolve collectionName to collectionId from SQLite if candidate 1 does not exist
+  // Candidate 1: direct folder match or resolve collectionName to collectionId
   if (!fs.existsSync(targetPath)) {
     try {
       const { DatabaseSync } = require('node:sqlite');
@@ -2953,12 +2980,28 @@ const handleDirectFileServe = (req, res, next) => {
       const row = db.prepare("SELECT id FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
       db.close();
       if (row && row.id) {
+        resolvedColId = row.id;
         const resolvedPath = path.join(storageBase, row.id, recordId, filename);
         if (fs.existsSync(resolvedPath)) {
           targetPath = resolvedPath;
         }
       }
     } catch(e) {}
+
+    // Candidate 2: lazy-download from Supabase if missing from local ephemeral disk
+    if (!fs.existsSync(targetPath)) {
+      const remote1 = `storage/${resolvedColId}/${recordId}/${filename}`;
+      const dest1 = path.join(storageBase, resolvedColId, recordId, filename);
+      const ok1 = await downloadFileFromSupabase(remote1, dest1);
+      if (ok1) {
+        targetPath = dest1;
+      } else if (resolvedColId !== collectionNameOrId) {
+        const remote2 = `storage/${collectionNameOrId}/${recordId}/${filename}`;
+        const dest2 = path.join(storageBase, collectionNameOrId, recordId, filename);
+        const ok2 = await downloadFileFromSupabase(remote2, dest2);
+        if (ok2) targetPath = dest2;
+      }
+    }
   }
 
   // Candidate 3: fallback search across all collection folders in storageBase for recordId/filename
