@@ -712,9 +712,29 @@ Best Regards,
 
   
 
+  const parseDateRobust = (val) => {
+    if (!val) return null;
+    if (val instanceof Date && !isNaN(val.getTime())) return val;
+    let s = String(val).trim();
+    let m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (m) {
+      let d = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10), 12, 0, 0);
+      if (!isNaN(d.getTime())) return d;
+    }
+    m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (m) {
+      let d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
+      if (!isNaN(d.getTime())) return d;
+    }
+    let d = new Date(s);
+    return !isNaN(d.getTime()) ? d : null;
+  };
+
   const updateRequestDueDate = async (itemOrId, dueDateVal) => {
     if (!dueDateVal) return false;
-    const dueIso = new Date(dueDateVal).toISOString();
+    const dObj = parseDateRobust(dueDateVal) || new Date();
+    const dueIso = dObj.toISOString();
+    const dueYmd = dueIso.split('T')[0];
     
     // Find target record from state
     let target = null;
@@ -726,16 +746,25 @@ Best Regards,
                processedData.find(r => r.id === targetId || r.trip_id === targetId);
     }
 
-    const linkedTripId = target?.trip_id || target?.linkedTrip?.id || (targetId && targetId.length === 15 ? targetId : null);
+    let linkedTripId = target?.trip_id || target?.linkedTrip?.id || target?.expand?.trip_id?.id;
+    if (!linkedTripId && targetId && String(targetId).length === 15 && !String(targetId).startsWith('virt-') && !String(targetId).startsWith('req-')) {
+      linkedTripId = targetId;
+    }
+
+    let clientId = target?.client_id;
+    if (typeof clientId === 'object' && clientId?.id) clientId = clientId.id;
+    if (!clientId) clientId = target?.expand?.client_id?.id || target?.linkedTrip?.client_id || '';
+
     let updated = false;
 
     // 1. If target is a real payment_requests record, update it directly
-    if (targetId && (target?.collectionName === 'payment_requests' || target?.collectionId)) {
+    const isVirtual = !targetId || String(targetId).startsWith('virt-') || String(targetId).startsWith('req-auto');
+    if (targetId && !isVirtual && (target?.collectionName === 'payment_requests' || target?.collectionId || String(targetId).length === 15)) {
       try {
         await pb.collection('payment_requests').update(targetId, { due_date: dueIso }, { $autoCancel: false });
         updated = true;
       } catch (err) {
-        console.warn(`Direct update on payment_requests ${targetId} failed, trying upsert...`, err);
+        // Direct update failed, try upsert
       }
     }
 
@@ -750,40 +779,30 @@ Best Regards,
           // Create the payment_request record so it's permanently in the DB
           await pb.collection('payment_requests').create({
             trip_id: linkedTripId,
-            client_id: target?.client_id || target?.expand?.client_id?.id || '',
-            amount: target?.amount || 0,
+            client_id: clientId,
+            amount: Number(target?.amount || 0),
             request_date: target?.actualTripDate || target?.request_date || new Date().toISOString(),
             due_date: dueIso,
             status: target?.status || 'Pending',
-            notes: `Auto-generated from Trip Log: ${target?.expand?.trip_id?.trip_id || target?.trip_id || linkedTripId}`
+            notes: target?.notes || `Due date set for ${target?.expand?.trip_id?.trip_id || target?.trip_id || linkedTripId}`
           }, { $autoCancel: false });
           updated = true;
         }
       } catch (upsertErr) {
-        console.warn('Upsert payment_requests failed:', upsertErr);
+        console.warn('Upsert payment_requests notice:', upsertErr);
       }
     }
 
-    // 3. If targetId was passed directly and neither above worked, try direct update on payment_requests
-    if (!updated && targetId) {
-      try {
-        await pb.collection('payment_requests').update(targetId, { due_date: dueIso }, { $autoCancel: false });
-        updated = true;
-      } catch (directErr) {
-        console.warn('Final direct update attempt on payment_requests failed:', directErr);
-      }
-    }
-
-    // 4. Update the linked trip_logs record's client_balance_date so it is also saved on the trip log itself
+    // 3. Update the linked trip_logs record's client_balance_date so it is also saved on the trip log itself
     if (linkedTripId) {
       try {
         await pb.collection('trip_logs').update(linkedTripId, {
-          client_balance_date: dueIso.split('T')[0]
+          client_balance_date: dueYmd
         }, { $autoCancel: false });
       } catch (tErr) {}
     }
 
-    // 5. Update local state & localStorage cache
+    // 4. Update local state & localStorage cache
     try {
       let localReqs = JSON.parse(localStorage.getItem('jbc_payment_requests') || '[]');
       const idx = localReqs.findIndex(lr => lr.id === targetId || (linkedTripId && lr.trip_id === linkedTripId));
@@ -798,7 +817,6 @@ Best Regards,
     return true;
   };
 
-
   const handleBulkUpdateDueDate = async (dueDateVal) => {
     if (!dueDateVal) return;
     const idsToUpdate = selectedIds.length > 0 ? selectedIds : processedData.map(r => r.id);
@@ -807,11 +825,20 @@ Best Regards,
     }
     setIsUpdatingDueDate(true);
     try {
+      let count = 0;
       for (const id of idsToUpdate) {
-        await updateRequestDueDate(id, dueDateVal);
+        try {
+          await updateRequestDueDate(id, dueDateVal);
+          count++;
+        } catch (itemErr) {
+          console.warn('Item due date update warning:', id, itemErr);
+        }
       }
-      toast.success(`Updated Due Date to ${format(new Date(dueDateVal), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
+      const dObj = parseDateRobust(dueDateVal) || new Date();
+      toast.success(`Updated Due Date to ${format(dObj, 'dd MMM yyyy')} for ${count} trips`);
       setBulkDueDateInput('');
+      setIsBatchDueDateModalOpen(false);
+      setModalSelectedDate('');
       await fetchData();
     } catch (err) {
       console.error('Failed to update due dates:', err);
@@ -825,7 +852,8 @@ Best Regards,
     if (!dueDateVal) return;
     try {
       await updateRequestDueDate(reqOrId, dueDateVal);
-      toast.success(`Due date updated to ${format(new Date(dueDateVal), 'dd MMM yyyy')}`);
+      const dObj = parseDateRobust(dueDateVal) || new Date();
+      toast.success(`Due date updated to ${format(dObj, 'dd MMM yyyy')}`);
       await fetchData();
     } catch (err) {
       console.error('Failed to update single due date:', err);
@@ -2192,23 +2220,8 @@ Best Regards,
               variant="default"
               disabled={isUpdatingDueDate || !modalSelectedDate || (selectedIds.length === 0 && processedData.length === 0)}
               onClick={async () => {
-                const idsToUpdate = selectedIds.length > 0 ? selectedIds : processedData.map(r => r.id);
                 if (!modalSelectedDate) return toast.error('Please pick a Due Date');
-                setIsUpdatingDueDate(true);
-                try {
-                  for (const id of idsToUpdate) {
-                    await updateRequestDueDate(id, modalSelectedDate);
-                  }
-                  toast.success(`Updated Due Date to ${format(new Date(modalSelectedDate), 'dd MMM yyyy')} for ${idsToUpdate.length} trips`);
-                  setIsBatchDueDateModalOpen(false);
-                  setModalSelectedDate('');
-                  await fetchData();
-                } catch (err) {
-                  console.error('Failed batch due date update:', err);
-                  toast.error('Failed to update due dates');
-                } finally {
-                  setIsUpdatingDueDate(false);
-                }
+                await handleBulkUpdateDueDate(modalSelectedDate);
               }}
               className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl"
             >
