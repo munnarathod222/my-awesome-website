@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, 
-  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2, UploadCloud, Building2
+  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +24,6 @@ import TruckFormModal from '@/components/TruckFormModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
-import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
-import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 
 export const parseImageList = (raw) => {
   if (!raw) return [];
@@ -52,18 +50,15 @@ export const parseImageList = (raw) => {
 export default function TruckManagerPage() {
   const [trucks, setTrucks] = useState([]);
   const [drivers, setDrivers] = useState([]);
-  const [documents, setDocuments] = useState([]);
   const [loanProfiles, setLoanProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
+  const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
+  const navigate = useNavigate();
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   const [fastagConfig, setFastagConfig] = useState({ isOpen: false, truck: null });
-  const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
-  const [isBulkRCOpen, setIsBulkRCOpen] = useState(false);
-  const [isFinancierDossierOpen, setIsFinancierDossierOpen] = useState(false);
-  const navigate = useNavigate();
 
-  // Keyboard navigation for multi-photo gallery
+  // Keyboard navigation for image gallery
   useEffect(() => {
     if (!galleryConfig.isOpen || !galleryConfig.truck) return;
 
@@ -71,15 +66,17 @@ export default function TruckManagerPage() {
       const imgs = parseImageList(galleryConfig.truck?.body_images);
       if (imgs.length <= 1) return;
 
-      if (e.key === 'ArrowRight') {
-        setGalleryConfig(prev => ({
-          ...prev,
-          activeIndex: (prev.activeIndex + 1) % imgs.length
-        }));
-      } else if (e.key === 'ArrowLeft') {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
         setGalleryConfig(prev => ({
           ...prev,
           activeIndex: (prev.activeIndex - 1 + imgs.length) % imgs.length
+        }));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setGalleryConfig(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex + 1) % imgs.length
         }));
       } else if (e.key === 'Escape') {
         setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 });
@@ -93,7 +90,7 @@ export default function TruckManagerPage() {
   const fetchTrucks = async () => {
     try {
       setLoading(true);
-      const [trucksRes, empsRes, loanProfilesRes, docsRes] = await Promise.all([
+      const [trucksRes, empsRes, loanProfilesRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
           expand: 'manager_id',
@@ -105,11 +102,7 @@ export default function TruckManagerPage() {
         }),
         pb.collection('loan_profiles').getFullList({
           $autoCancel: false
-        }),
-        pb.collection('truck_documents').getFullList({
-          sort: '-created',
-          $autoCancel: false
-        }).catch(() => [])
+        })
       ]);
       
       const driverList = (empsRes || []).filter(e => {
@@ -119,7 +112,6 @@ export default function TruckManagerPage() {
 
       setTrucks(trucksRes);
       setDrivers(driverList);
-      setDocuments(docsRes || []);
       setLoanProfiles(loanProfilesRes);
     } catch (err) {
       console.error(err);
@@ -252,24 +244,6 @@ export default function TruckManagerPage() {
               🔲 Grid Tiles
             </Button>
           </div>
-
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsBulkRCOpen(true)} 
-            className="h-8 rounded-xl border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold"
-          >
-            <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Bulk Upload RCs
-          </Button>
-
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsFinancierDossierOpen(true)} 
-            className="h-8 rounded-xl border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 text-xs font-bold"
-          >
-            <Building2 className="w-3.5 h-3.5 mr-1.5" /> Share to Financier
-          </Button>
 
           <Button variant="outline" size="sm" onClick={() => navigate('/vehicle-tco')} className="h-8 rounded-xl border-primary/20 text-primary text-xs hover:bg-primary/5">
             <Calculator className="w-3.5 h-3.5 mr-1.5" /> TCO Signal
@@ -456,6 +430,15 @@ export default function TruckManagerPage() {
 
                 {/* Right: Quick Action Buttons & Menu */}
                 <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted text-primary"
+                    onClick={() => setModalConfig({ isOpen: true, truck })}
+                    title="Edit Truck Details"
+                  >
+                    <Edit className="w-3 h-3 mr-1" /> Edit
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -681,7 +664,7 @@ export default function TruckManagerPage() {
           open={galleryConfig.isOpen} 
           onOpenChange={(val) => !val && setGalleryConfig({ isOpen: false, truck: null, activeIndex: 0 })}
         >
-          <DialogContent className="max-w-4xl w-[95vw] p-0 bg-slate-950/95 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl">
+          <DialogContent className="max-w-md sm:max-w-lg w-[92vw] h-[88vh] max-h-[850px] p-0 bg-slate-950/95 border border-slate-800 text-white rounded-3xl overflow-hidden shadow-2xl flex flex-col backdrop-blur-xl">
             {(() => {
               const galleryImgs = parseImageList(galleryConfig.truck?.body_images);
               const activeIndex = Math.min(Math.max(0, galleryConfig.activeIndex || 0), Math.max(0, galleryImgs.length - 1));
@@ -763,7 +746,7 @@ export default function TruckManagerPage() {
                   </div>
 
                   {/* Main Large Image Stage */}
-                  <div className="relative flex-1 flex items-center justify-center min-h-[380px] max-h-[62vh] p-4 bg-black/80 overflow-hidden select-none">
+                  <div className="relative flex-1 flex items-center justify-center min-h-[460px] p-2 sm:p-4 bg-black/90 overflow-hidden select-none">
                     {/* Previous Button */}
                     {galleryImgs.length > 1 && (
                       <Button 
@@ -785,7 +768,7 @@ export default function TruckManagerPage() {
                       <img 
                         src={activeImgUrl} 
                         alt={`${galleryConfig.truck.truck_number} Photo ${activeIndex + 1}`} 
-                        className="max-w-full max-h-[58vh] object-contain rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
+                        className="w-auto h-full max-h-[66vh] max-w-full object-contain rounded-xl shadow-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-slate-500 py-16">
@@ -820,7 +803,7 @@ export default function TruckManagerPage() {
                         return (
                           <button 
                             key={idx}
-                            className={`relative w-16 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0 ${
+                            className={`relative w-14 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200 shrink-0 ${
                               isSelected 
                                 ? 'border-primary ring-2 ring-primary/40 scale-105 shadow-md shadow-primary/20 opacity-100' 
                                 : 'border-slate-700/60 opacity-50 hover:opacity-100 hover:border-slate-500'
@@ -866,20 +849,6 @@ export default function TruckManagerPage() {
           onSuccess={fetchTrucks}
         />
       )}
-
-      <BulkRCUploadModal
-        isOpen={isBulkRCOpen}
-        onClose={() => setIsBulkRCOpen(false)}
-        trucks={trucks}
-        onSuccess={fetchTrucks}
-      />
-
-      <FinancierFleetDossierModal
-        isOpen={isFinancierDossierOpen}
-        onClose={() => setIsFinancierDossierOpen(false)}
-        trucks={trucks}
-        documents={documents}
-      />
     </div>
   );
 }
