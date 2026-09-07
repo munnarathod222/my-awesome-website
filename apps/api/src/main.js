@@ -8,6 +8,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 import multer from 'multer';
 
 import routes from './routes/index.js';
@@ -976,7 +978,14 @@ global.uploadNewStorageToSupabase = uploadNewStorageToSupabase;
 global.uploadAllStorageToSupabase = uploadNewStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
-  logger.info('📁 Storage background sync initialized (syncs on demand and shutdown)');
+  logger.info('📁 Continuous storage sync started (runs every 60 seconds)...');
+  setInterval(() => {
+    if (typeof uploadNewStorageToSupabase === 'function') {
+      uploadNewStorageToSupabase(storageDir).catch(e => {
+        logger.warn(`Storage background sync warning: ${e.message}`);
+      });
+    }
+  }, 60000);
 };
 
 // ----------------------------------------------------
@@ -2650,8 +2659,11 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
       if (isAsync) {
         res.json({ success: true, message: 'Database backup triggered in background.' });
         setTimeout(async () => {
-          logger.info('🔄 Real-time sync: database backup triggered in background...');
+          logger.info('⚡ Real-time sync: database & storage backup triggered in background...');
           await uploadDatabaseToSupabase(global.dbFilePath);
+          if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
+            await uploadNewStorageToSupabase(global.storageDir);
+          }
         }, 100);
         return;
       }
@@ -2971,22 +2983,49 @@ const handleDirectFileServe = async (req, res, next) => {
   let targetPath = path.join(storageBase, collectionNameOrId, recordId, filename);
   let resolvedColId = collectionNameOrId;
 
+  const KNOWN_COLLECTIONS = {
+    'expenses': 'pbc_6917388166',
+    'trucks': 'pbc_4061015685',
+    'employees': 'pbc_9297853740',
+    'trip_logs': 'pbc_2315080054',
+    'expenses_fuel': 'pbc_4410989275',
+    'expenses_fastag': 'pbc_8065296939',
+    'expenses_driver_advance': 'pbc_9231073449',
+    'expenses_maintenance': 'pbc_9385472886',
+    'expenses_miscellaneous': 'pbc_9956229931',
+    'truck_documents': 'pbc_9574740198',
+    'employee_documents': 'pbc_5654350664',
+    'bills': 'pbc_5013008537',
+    'invoices': 'pbc_6913307034',
+    'delivery_proofs': 'pbc_7366988480',
+    'workshop_job_cards': 'pbc_2575941366',
+    'company_settings': 'pbc_company_settings'
+  };
+  if (KNOWN_COLLECTIONS[collectionNameOrId]) {
+    resolvedColId = KNOWN_COLLECTIONS[collectionNameOrId];
+  }
+
   // Candidate 1: direct folder match or resolve collectionName to collectionId
   if (!fs.existsSync(targetPath)) {
-    try {
-      const { DatabaseSync } = require('node:sqlite');
-      const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
-      const db = new DatabaseSync(dbPath);
-      const row = db.prepare("SELECT id FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
-      db.close();
-      if (row && row.id) {
-        resolvedColId = row.id;
-        const resolvedPath = path.join(storageBase, row.id, recordId, filename);
-        if (fs.existsSync(resolvedPath)) {
-          targetPath = resolvedPath;
+    const resolvedPath = path.join(storageBase, resolvedColId, recordId, filename);
+    if (fs.existsSync(resolvedPath)) {
+      targetPath = resolvedPath;
+    } else {
+      try {
+        const { DatabaseSync } = require('node:sqlite');
+        const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+        const db = new DatabaseSync(dbPath);
+        const row = db.prepare("SELECT id FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
+        db.close();
+        if (row && row.id) {
+          resolvedColId = row.id;
+          const dbResolvedPath = path.join(storageBase, row.id, recordId, filename);
+          if (fs.existsSync(dbResolvedPath)) {
+            targetPath = dbResolvedPath;
+          }
         }
-      }
-    } catch(e) {}
+      } catch(e) {}
+    }
 
     // Candidate 2: lazy-download from Supabase if missing from local ephemeral disk
     if (!fs.existsSync(targetPath)) {
