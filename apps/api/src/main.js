@@ -606,7 +606,7 @@ let _isCloudSyncing = false;
 let _hasUnsyncedChanges = false;
 
 let _lastSyncTimestamp = 0;
-const MIN_SYNC_COOLDOWN_MS = 25 * 1000; // 25s cooldown between syncs to batch multi-record entry
+const MIN_SYNC_COOLDOWN_MS = 60 * 1000; // 60s minimum cooldown between syncs to strictly conserve outbound bandwidth
 
 const triggerDebouncedCloudSync = (delayMs = 6000) => {
   if (global.isShuttingDown || global.isRestoringBackup) return;
@@ -629,6 +629,16 @@ const triggerDebouncedCloudSync = (delayMs = 6000) => {
     try {
       _isCloudSyncing = true;
       const stat = fs.statSync(global.dbFilePath);
+      
+      // Strict bandwidth guard: if DB mtime hasn't changed and no unsynced changes flag, skip upload completely
+      if (stat.mtimeMs <= _lastCloudSyncMtime && !_hasUnsyncedChanges) {
+        logger.info('ℹ️ Auto-Sync: database unchanged since last sync. Skipping upload to conserve outbound bandwidth.');
+        if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
+          await uploadNewStorageToSupabase(global.storageDir);
+        }
+        return;
+      }
+
       logger.info(`🔄 Auto-Sync: compressing & uploading database to Supabase Cloud Storage (${stat.size} bytes)...`);
       const ok = await uploadDatabaseToSupabase(global.dbFilePath);
       if (ok) {
@@ -636,7 +646,7 @@ const triggerDebouncedCloudSync = (delayMs = 6000) => {
         _lastSyncTimestamp = Date.now();
         _hasUnsyncedChanges = false;
         logger.info('✅ Auto-Sync: database backup successfully synchronized to Supabase!');
-        // Only sync newly added storage files (receipts/docs) incrementally
+        // Only sync newly added storage files (receipts/docs) incrementally (0 bytes if no new files)
         if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
           await uploadNewStorageToSupabase(global.storageDir);
         }
@@ -978,14 +988,8 @@ global.uploadNewStorageToSupabase = uploadNewStorageToSupabase;
 global.uploadAllStorageToSupabase = uploadNewStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
-  logger.info('📁 Continuous storage sync started (runs every 60 seconds)...');
-  setInterval(() => {
-    if (typeof uploadNewStorageToSupabase === 'function') {
-      uploadNewStorageToSupabase(storageDir).catch(e => {
-        logger.warn(`Storage background sync warning: ${e.message}`);
-      });
-    }
-  }, 60000);
+  initStorageTracker(storageDir);
+  logger.info('📁 Storage sync configured: strictly event-driven (zero periodic polling, zero background outbound bandwidth)');
 };
 
 // ----------------------------------------------------
@@ -2657,14 +2661,10 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
 
       const isAsync = req.query.async === 'true';
       if (isAsync) {
-        res.json({ success: true, message: 'Database backup triggered in background.' });
-        setTimeout(async () => {
-          logger.info('⚡ Real-time sync: database & storage backup triggered in background...');
-          await uploadDatabaseToSupabase(global.dbFilePath);
-          if (global.storageDir && fs.existsSync(global.storageDir) && typeof uploadNewStorageToSupabase === 'function') {
-            await uploadNewStorageToSupabase(global.storageDir);
-          }
-        }, 100);
+        res.json({ success: true, message: 'Database backup debounced in background.' });
+        if (typeof global.triggerDebouncedCloudSync === 'function') {
+          global.triggerDebouncedCloudSync(10000); // 10s debounce & 60s cooldown batches all mutations into a single tiny upload
+        }
         return;
       }
 
