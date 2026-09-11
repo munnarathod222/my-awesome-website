@@ -651,6 +651,7 @@ export default function PayrollPage() {
         isOpen={Boolean(selectedEmployeeId)}
         onClose={() => setSelectedEmployeeId(null)}
         employeeId={selectedEmployeeId}
+        calculatedPayroll={getCalculatedPayroll.find(e => e.id === selectedEmployeeId)}
       />
 
       <PayrollGenerationModal

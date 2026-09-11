@@ -1,84 +1,87 @@
-import { format, addDays, differenceInDays, startOfMonth, endOfMonth, isAfter, isBefore, parseISO } from 'date-fns';
+import { format, parseISO, isAfter, isBefore } from 'date-fns';
 
 /**
  * Calculates the exact payroll cycle, processing date, and active working period for an employee.
  * 
- * Rules based on business requirement:
- * 1. Cycle Start Day (1st Date): Default 1 (1st of month)
- * 2. Cycle End Day (Last Date): Default 30 / End of Month
- * 3. Salary Disbursement Day: Processed 10 days after cycle completion (e.g., 10th of following month)
- * 4. Mid-month joiners: Pro-rated base salary calculated from joining_date to cycle_end.
+ * Rules:
+ * 1. Cycle Start Day: 1 to 31 (default 1)
+ * 2. Cycle End Day: 1 to 31 (default 30)
+ * 3. When Start Day <= End Day: same-calendar-month cycle (e.g. 1st to 30th/31st)
+ * 4. When Start Day > End Day: cross-month cycle (e.g. 16th to 15th, 3rd to 2nd, 4th to 3rd)
+ *    Starts on Start Day of previous month and ends on End Day of target month.
  */
 export function getEmployeeCurrentCycle(emp, refDate = new Date()) {
   const now = new Date(refDate);
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-indexed
+  const curY = now.getFullYear();
+  const curM = now.getMonth(); // 0-indexed
+  const curD = now.getDate();
 
-  // Parse employee custom cycle settings or fallbacks
   const startDay = Math.max(1, Math.min(31, parseInt(emp?.payroll_cycle_start_day || 1, 10)));
-  const endDaySetting = parseInt(emp?.payroll_cycle_end_day || 30, 10);
-  const disbursementLagDays = parseInt(emp?.salary_disbursement_day || 10, 10);
+  const endDaySetting = Math.max(1, Math.min(31, parseInt(emp?.payroll_cycle_end_day || 30, 10)));
+  const disbursementDay = Math.max(1, Math.min(31, parseInt(emp?.salary_disbursement_day || 10, 10)));
 
-  // Joining Date parsing
-  let joinDate = null;
-  if (emp?.joining_date) {
-    try {
-      const parsed = typeof emp.joining_date === 'string' ? parseISO(emp.joining_date) : new Date(emp.joining_date);
-      if (!isNaN(parsed.getTime())) {
-        joinDate = parsed;
-      }
-    } catch (e) {
-      console.warn('Invalid joining date:', emp.joining_date);
-    }
-  }
+  // Build cycle period for a given end-month (m) and end-year (y)
+  function buildPeriod(y, m) {
+    let cycleStart, cycleEnd, salaryDisbursementDate;
 
-  // Calculate cycle period for the reference month/previous cycle
-  // Default: Previous closed cycle if today is before disbursement, or current cycle
-  let cycleStart = new Date(currentYear, currentMonth, startDay);
-  let lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  let cycleEndDay = endDaySetting > lastDayOfMonth ? lastDayOfMonth : endDaySetting;
-  let cycleEnd = new Date(currentYear, currentMonth, cycleEndDay, 23, 59, 59);
+    if (startDay <= endDaySetting) {
+      // Same month cycle (e.g. 1st to 30th)
+      const maxDaysInEnd = new Date(y, m + 1, 0).getDate();
+      const actualEnd = Math.min(endDaySetting, maxDaysInEnd);
+      const actualStart = Math.min(startDay, maxDaysInEnd);
+      cycleStart = new Date(y, m, actualStart, 0, 0, 0);
+      cycleEnd = new Date(y, m, actualEnd, 23, 59, 59);
 
-  // If today is within the first 10 days of current month, the salary being processed is for PREVIOUS month!
-  const todayDay = now.getDate();
-  if (todayDay <= disbursementLagDays && currentMonth > 0) {
-    // Show previous month's completed cycle
-    cycleStart = new Date(currentYear, currentMonth - 1, startDay);
-    const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
-    cycleEndDay = endDaySetting > prevMonthLastDay ? prevMonthLastDay : endDaySetting;
-    cycleEnd = new Date(currentYear, currentMonth - 1, cycleEndDay, 23, 59, 59);
-  }
-
-  // Calculate exact Salary Processing / Disbursement Date (Cycle End + 10 Days)
-  const salaryDisbursementDate = addDays(cycleEnd, disbursementLagDays);
-
-  // Total calendar days in this cycle
-  const totalCycleDays = Math.max(1, differenceInDays(cycleEnd, cycleStart) + 1);
-
-  // If employee joined after cycleStart, calculate pro-rated start date
-  let effectiveStartDate = cycleStart;
-  if (joinDate && isAfter(joinDate, cycleStart) && isBefore(joinDate, cycleEnd)) {
-    effectiveStartDate = joinDate;
-  }
-
-  // Days active in this cycle
-  let activeDays = totalCycleDays;
-  if (joinDate && isAfter(joinDate, cycleStart)) {
-    if (isAfter(joinDate, cycleEnd)) {
-      activeDays = 0; // Joined after cycle ended
+      const nextM = m === 11 ? 0 : m + 1;
+      const nextY = m === 11 ? y + 1 : y;
+      const daysInNext = new Date(nextY, nextM + 1, 0).getDate();
+      salaryDisbursementDate = new Date(nextY, nextM, Math.min(disbursementDay, daysInNext), 0, 0, 0);
     } else {
-      activeDays = Math.max(0, differenceInDays(cycleEnd, joinDate) + 1);
+      // Cross-month cycle (e.g. 16th to 15th, 3rd to 2nd, 4th to 3rd)
+      const prevM = m === 0 ? 11 : m - 1;
+      const prevY = m === 0 ? y - 1 : y;
+      const maxDaysInPrev = new Date(prevY, prevM + 1, 0).getDate();
+      const actualStart = Math.min(startDay, maxDaysInPrev);
+
+      const maxDaysInEnd = new Date(y, m + 1, 0).getDate();
+      const actualEnd = Math.min(endDaySetting, maxDaysInEnd);
+
+      cycleStart = new Date(prevY, prevM, actualStart, 0, 0, 0);
+      cycleEnd = new Date(y, m, actualEnd, 23, 59, 59);
+
+      if (disbursementDay > actualEnd && disbursementDay <= maxDaysInEnd) {
+        salaryDisbursementDate = new Date(y, m, disbursementDay, 0, 0, 0);
+      } else {
+        const nextM = m === 11 ? 0 : m + 1;
+        const nextY = m === 11 ? y + 1 : y;
+        const daysInNext = new Date(nextY, nextM + 1, 0).getDate();
+        salaryDisbursementDate = new Date(nextY, nextM, Math.min(disbursementDay, daysInNext), 0, 0, 0);
+      }
     }
+
+    const totalCycleDays = Math.max(1, Math.round((cycleEnd.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24)));
+    return { cycleStart, cycleEnd, salaryDisbursementDate, totalCycleDays };
   }
 
-  // Cycle status calculation
+  // Determine current candidate cycle period:
+  // If current date > disbursementDay, candidate period ends in current month curM.
+  // If current date <= disbursementDay, candidate period ends in previous month curM - 1.
+  const isPastDisburse = curD > disbursementDay;
+  let targetM = isPastDisburse ? curM : (curM === 0 ? 11 : curM - 1);
+  let targetY = isPastDisburse ? curY : (curM === 0 ? curY - 1 : curY);
+
+  let period = buildPeriod(targetY, targetM);
+
+  const { cycleStart, cycleEnd, salaryDisbursementDate, totalCycleDays } = period;
+
+  // Status calculation
   let status = 'active';
-  let statusLabel = `Processing Due on ${format(salaryDisbursementDate, 'dd MMM yyyy')} (${disbursementLagDays} days post-cycle)`;
-  
-  if (isAfter(now, salaryDisbursementDate)) {
+  let statusLabel = `Processing Due on ${format(salaryDisbursementDate, 'dd MMM yyyy')}`;
+
+  if (now > salaryDisbursementDate) {
     status = 'overdue';
     statusLabel = `Disbursement Overdue (Due was ${format(salaryDisbursementDate, 'dd MMM yyyy')})`;
-  } else if (isAfter(now, cycleEnd) && isBefore(now, salaryDisbursementDate)) {
+  } else if (now >= cycleEnd && now <= salaryDisbursementDate) {
     status = 'due_soon';
     statusLabel = `Payable on ${format(salaryDisbursementDate, 'dd MMM yyyy')}`;
   }
@@ -88,11 +91,11 @@ export function getEmployeeCurrentCycle(emp, refDate = new Date()) {
     cycleEnd,
     salaryDisbursementDate,
     totalCycleDays,
-    activeDays,
-    effectiveStartDate,
+    activeDays: totalCycleDays,
+    effectiveStartDate: cycleStart,
     startDay,
-    endDay: cycleEndDay,
-    disbursementLagDays,
+    endDay: endDaySetting,
+    disbursementLagDays: disbursementDay,
     status,
     statusLabel,
     formattedCycleRange: `${format(cycleStart, 'dd MMM')} - ${format(cycleEnd, 'dd MMM yyyy')}`,
@@ -101,7 +104,7 @@ export function getEmployeeCurrentCycle(emp, refDate = new Date()) {
 }
 
 /**
- * Calculates complete payroll details for an employee including attendance, advances, and pro-rata salary.
+ * Calculates complete payroll details for an employee including attendance, advances, and net payout.
  */
 export function calculateCyclePayroll(emp, attendanceRecords = [], advances = [], refDate = new Date()) {
   const cycleInfo = getEmployeeCurrentCycle(emp, refDate);
@@ -112,34 +115,57 @@ export function calculateCyclePayroll(emp, attendanceRecords = [], advances = []
 
   // Filter attendance within cycle
   const empAtts = (attendanceRecords || []).filter(r => {
-    if (r.staff_member !== emp.id && r.employee_id !== emp.id) return false;
+    const id = r.staff_member || r.employee_id || r.employee;
+    return id === emp.id;
+  });
+
+  const inCycle = empAtts.filter(r => {
     const dStr = (r.date || '').split(' ')[0];
     return dStr >= startStr && dStr <= endStr;
   });
 
-  const fullDays = empAtts.filter(r => {
-    const st = (r.status || '').toLowerCase();
-    return st === 'present' || st === 'work from home';
-  }).length;
+  let absentCount = 0;
+  let halfDayCount = 0;
+  let presentCount = 0;
+  let leaveCount = 0;
 
-  const halfDays = empAtts.filter(r => (r.status || '').toLowerCase() === 'half day').length;
-  const presentDays = fullDays + (halfDays * 0.5);
+  inCycle.forEach(r => {
+    const st = (r.status || '').toLowerCase().trim();
+    if (st === 'absent' || st === 'a') absentCount += 1;
+    else if (st === 'half day' || st === 'half-day' || st === 'hd') halfDayCount += 1;
+    else if (st === 'leave' || st === 'paid leave' || st === 'holiday' || st === 'off') leaveCount += 1;
+    else presentCount += 1;
+  });
 
-  // Pro-rata factor for mid-month joining
-  const proRataFactor = cycleInfo.totalCycleDays > 0 ? (cycleInfo.activeDays / cycleInfo.totalCycleDays) : 1;
-  const adjustedBaseSalary = baseSalary * proRataFactor;
+  const totalDays = Math.max(1, cycleInfo.totalCycleDays);
+  const absentDays = absentCount + (halfDayCount * 0.5);
 
-  // Gross Salary based on attendance
-  const grossSalary = cycleInfo.totalCycleDays > 0 
-    ? (adjustedBaseSalary * (presentDays / Math.max(1, cycleInfo.activeDays))) 
-    : 0;
+  let presentDays = 0;
+  if (inCycle.length >= totalDays) {
+    presentDays = presentCount + leaveCount + (halfDayCount * 0.5);
+  } else {
+    // Unrecorded days default to Present. Deductions only for explicit absent/half days.
+    presentDays = Math.max(0, totalDays - absentDays);
+  }
 
-  // Deductions
-  const empAdvances = (advances || []).filter(a => (a.employee_id === emp.id || a.staff_member === emp.id) && a.status === 'Pending');
+  // Pro-rata gross salary
+  let grossSalary = 0;
+  if (baseSalary > 0) {
+    if (presentDays >= totalDays) {
+      grossSalary = baseSalary;
+    } else {
+      grossSalary = Math.round((baseSalary / totalDays) * presentDays);
+    }
+  }
+
+  // Pending Advances
+  const empAdvances = (advances || []).filter(a => {
+    const id = a.employee_id || a.staff_member;
+    return id === emp.id && a.status === 'Pending';
+  });
   const totalAdvances = empAdvances.reduce((sum, a) => sum + (Number(a.remaining_balance ?? a.amount) || 0), 0);
-  const taxDeductions = grossSalary * 0.05; // 5% TDS / statutory reserve
 
-  const netPayout = Math.max(0, grossSalary - taxDeductions - totalAdvances);
+  const netPayout = Math.max(0, grossSalary - totalAdvances);
 
   return {
     employeeId: emp.id,
@@ -149,16 +175,21 @@ export function calculateCyclePayroll(emp, attendanceRecords = [], advances = []
     joiningDate: emp.joining_date || 'N/A',
     cycleInfo,
     baseSalary,
-    adjustedBaseSalary: Number(adjustedBaseSalary.toFixed(2)),
+    adjustedBaseSalary: grossSalary,
     presentDays,
-    totalWorkingDays: cycleInfo.totalCycleDays,
+    totalWorkingDays: totalDays,
     activeDays: cycleInfo.activeDays,
-    grossSalary: Number(grossSalary.toFixed(2)),
-    totalAdvances: Number(totalAdvances.toFixed(2)),
-    taxDeductions: Number(taxDeductions.toFixed(2)),
-    netPayout: Number(netPayout.toFixed(2)),
+    grossSalary,
+    totalAdvances,
+    taxDeductions: 0,
+    netPayout,
     payDate: cycleInfo.formattedPayDate,
     status: cycleInfo.status,
     statusLabel: cycleInfo.statusLabel
   };
 }
+
+export default {
+  getEmployeeCurrentCycle,
+  calculateCyclePayroll
+};
