@@ -105,9 +105,19 @@ export const FuelTrackerPage: React.FC = () => {
   const totalSpent = fuelLogs.reduce((sum, f) => sum + (f.cost || 0), 0);
   const totalLiters = fuelLogs.reduce((sum, f) => sum + (f.liters || 0), 0);
 
-  // Dynamic current month surcharge waiver limit tracking based on fuelLogs
+  // Dynamic current month surcharge waiver limit tracking based on fuelLogs (1st to month end)
   const now = new Date();
-  const curMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const curYear = now.getFullYear();
+  const curMonthIdx = now.getMonth();
+  const curMonthStr = `${curYear}-${String(curMonthIdx + 1).padStart(2, '0')}`;
+
+  const isCurrentMonth = (dateVal?: string) => {
+    if (!dateVal) return false;
+    const s = String(dateVal).trim();
+    if (s.length >= 7 && s.slice(0, 7) === curMonthStr) return true;
+    const dt = new Date(s);
+    return !isNaN(dt.getTime()) && dt.getFullYear() === curYear && dt.getMonth() === curMonthIdx;
+  };
 
   const enrichedCreditCards = creditCards.map(c => {
     const limit = c.monthly_waiver_limit || 20000;
@@ -119,16 +129,16 @@ export const FuelTrackerPage: React.FC = () => {
       );
       if (!matchId && !matchPM) return false;
 
-      const dStr = f.date ? f.date.slice(0, 7) : '';
-      const txTime = f.date ? new Date(f.date).getTime() : 0;
-      return dStr === curMonthStr || (!isNaN(txTime) && txTime > 0 && (Date.now() - txTime) < 32 * 864e5);
+      return isCurrentMonth(f.date);
     });
+
+    matchingLogs.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
     const totalSpend = matchingLogs.reduce((sum, f) => sum + (f.cost || 0), 0);
     const surchargeSaved = Math.round(totalSpend * 0.01);
-    const used = totalSpend > 0 ? totalSpend : (c.current_month_waiver_used || 0);
+    const used = totalSpend; // Strict calendar month spend, resets to 0 on 1st of month
     const avail = Math.max(0, limit - used);
-    const pct = Math.min(Math.round((used / limit) * 100), 100);
+    const pct = limit > 0 ? Math.min(Math.round((used / limit) * 100), 100) : 0;
 
     return {
       ...c,
