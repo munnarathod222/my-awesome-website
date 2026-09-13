@@ -32,7 +32,8 @@ export const FuelTrackerPage: React.FC = () => {
     liters: 50,
     cost: 4750,
     odometer: 145830,
-    payment_method: 'Cash' as const
+    payment_method: 'Cash' as 'Cash' | 'Credit Card' | 'UPI',
+    credit_card_id: ''
   });
 
   const handleScanFuelBill = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,10 +78,16 @@ export const FuelTrackerPage: React.FC = () => {
   const handleAddLog = (e: React.FormEvent) => {
     e.preventDefault();
     const current = dbtabeses.getFuelLogs();
+    const selectedCard = creditCards.find(c => c.id === form.credit_card_id);
+    const notes = form.payment_method === 'Credit Card' && selectedCard
+      ? `Credit Card: ****${selectedCard.card_number_last4}, Name: ${selectedCard.card_name}`
+      : undefined;
+
     const newLog: FuelLog = {
       id: 'fuel-' + Date.now(),
       vehicle_id: 'truck-001',
-      ...form
+      ...form,
+      notes
     };
 
     const updated = [newLog, ...current];
@@ -90,12 +97,55 @@ export const FuelTrackerPage: React.FC = () => {
     cashbookService.recordFuelDebit(newLog);
 
     setModalOpen(false);
-    setNotif(`Fuel fill-up log of ₹${form.cost.toLocaleString('en-IN')} saved & debited to Cashbook!`);
+    const waiverMsg = form.payment_method === 'Credit Card' ? ' (Waiver limit tracking updated!)' : '';
+    setNotif(`Fuel fill-up log of ₹${form.cost.toLocaleString('en-IN')} saved & debited to Cashbook!${waiverMsg}`);
     setTimeout(() => setNotif(''), 3500);
   };
 
   const totalSpent = fuelLogs.reduce((sum, f) => sum + (f.cost || 0), 0);
   const totalLiters = fuelLogs.reduce((sum, f) => sum + (f.liters || 0), 0);
+
+  // Dynamic current month surcharge waiver limit tracking based on fuelLogs
+  const now = new Date();
+  const curMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  const enrichedCreditCards = creditCards.map(c => {
+    const limit = c.monthly_waiver_limit || 20000;
+    const matchingLogs = fuelLogs.filter(f => {
+      const matchId = f.credit_card_id === c.id;
+      const matchPM = (f.payment_method === 'Credit Card' || (f as any).payment_method === 'Credit') && (
+        (c.card_number_last4 && f.notes?.includes(c.card_number_last4)) ||
+        (c.card_name && f.notes?.toLowerCase().includes(c.card_name.toLowerCase()))
+      );
+      if (!matchId && !matchPM) return false;
+
+      const dStr = f.date ? f.date.slice(0, 7) : '';
+      const txTime = f.date ? new Date(f.date).getTime() : 0;
+      return dStr === curMonthStr || (!isNaN(txTime) && txTime > 0 && (Date.now() - txTime) < 32 * 864e5);
+    });
+
+    const totalSpend = matchingLogs.reduce((sum, f) => sum + (f.cost || 0), 0);
+    const surchargeSaved = Math.round(totalSpend * 0.01);
+    const used = totalSpend > 0 ? totalSpend : (c.current_month_waiver_used || 0);
+    const avail = Math.max(0, limit - used);
+    const pct = Math.min(Math.round((used / limit) * 100), 100);
+
+    return {
+      ...c,
+      monthly_waiver_limit: limit,
+      current_month_waiver_used: used,
+      surcharge_saved: surchargeSaved,
+      available: avail,
+      pct,
+      bills_count: matchingLogs.length,
+      matching_logs: matchingLogs.slice(0, 3)
+    };
+  });
+
+  const totalMonthlyLimit = enrichedCreditCards.reduce((acc, c) => acc + c.monthly_waiver_limit, 0);
+  const totalMonthlyUsed = enrichedCreditCards.reduce((acc, c) => acc + c.current_month_waiver_used, 0);
+  const totalSurchargeSaved = enrichedCreditCards.reduce((acc, c) => acc + c.surcharge_saved, 0);
+  const totalAvailableQuota = Math.max(0, totalMonthlyLimit - totalMonthlyUsed);
 
   return (
     <div className="space-y-6">
@@ -217,27 +267,34 @@ export const FuelTrackerPage: React.FC = () => {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl">
-              <span className="text-xs text-slate-400 block font-semibold">TOTAL MONTHLY WAIVER LIMIT</span>
+              <span className="text-xs text-slate-400 block font-semibold uppercase">TOTAL MONTHLY WAIVER LIMIT</span>
               <span className="text-2xl font-black text-white">
-                ₹{creditCards.reduce((acc, c) => acc + (c.monthly_waiver_limit || 20000), 0).toLocaleString('en-IN')}
+                ₹{totalMonthlyLimit.toLocaleString('en-IN')}
               </span>
               <span className="text-[10px] text-slate-500 block mt-1">Combined monthly quota across cards</span>
             </div>
             <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl">
-              <span className="text-xs text-slate-400 block font-semibold">MONTHLY WAIVER UTILIZED</span>
+              <span className="text-xs text-slate-400 block font-semibold uppercase">MONTHLY SPEND UTILIZED</span>
               <span className="text-2xl font-black text-amber-400">
-                ₹{creditCards.reduce((acc, c) => acc + (c.current_month_waiver_used || 0), 0).toLocaleString('en-IN')}
+                ₹{totalMonthlyUsed.toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-slate-500 block mt-1">Surcharge amount waived this month</span>
+              <span className="text-[10px] text-slate-500 block mt-1">Diesel bills on cards this month</span>
             </div>
             <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl">
-              <span className="text-xs text-emerald-400 block font-semibold">AVAILABLE WAIVER QUOTA</span>
+              <span className="text-xs text-emerald-400 block font-semibold uppercase">SURCHARGE WAIVED / SAVED</span>
               <span className="text-2xl font-black text-emerald-400">
-                ₹{creditCards.reduce((acc, c) => acc + Math.max(0, (c.monthly_waiver_limit || 20000) - (c.current_month_waiver_used || 0)), 0).toLocaleString('en-IN')}
+                ₹{totalSurchargeSaved.toLocaleString('en-IN')}
               </span>
-              <span className="text-[10px] text-slate-500 block mt-1">Remaining surcharge headroom for refills</span>
+              <span className="text-[10px] text-slate-500 block mt-1">1% bank surcharge fee savings</span>
+            </div>
+            <div className="p-4 bg-slate-900 border-2 border-slate-800 rounded-2xl">
+              <span className="text-xs text-cyan-400 block font-semibold uppercase">AVAILABLE WAIVER QUOTA</span>
+              <span className="text-2xl font-black text-cyan-400">
+                ₹{totalAvailableQuota.toLocaleString('en-IN')}
+              </span>
+              <span className="text-[10px] text-slate-500 block mt-1">Remaining fee-free headroom</span>
             </div>
           </div>
 
@@ -247,11 +304,11 @@ export const FuelTrackerPage: React.FC = () => {
               <CreditCard className="w-4 h-4 text-amber-400" /> Per-Card Waiver Limit Utilization
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {creditCards.map(c => {
-                const limit = c.monthly_waiver_limit || 20000;
-                const used = c.current_month_waiver_used || 0;
-                const avail = Math.max(0, limit - used);
-                const pct = Math.min((used / limit) * 100, 100);
+              {enrichedCreditCards.map(c => {
+                const limit = c.monthly_waiver_limit;
+                const used = c.current_month_waiver_used;
+                const avail = c.available;
+                const pct = c.pct;
                 const isNear = pct >= 80;
                 const isMax = pct >= 100;
                 const badgeColor = isMax ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : isNear ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
@@ -271,7 +328,7 @@ export const FuelTrackerPage: React.FC = () => {
 
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-slate-400">
-                        <span>Monthly Utilized</span>
+                        <span>Monthly Utilized ({c.bills_count} {c.bills_count === 1 ? 'bill' : 'bills'})</span>
                         <span className="font-semibold text-white">{pct.toFixed(0)}% (₹{used.toLocaleString('en-IN')})</span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
@@ -282,7 +339,7 @@ export const FuelTrackerPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-800/80 text-xs">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs">
                       <div>
                         <span className="text-[10px] text-slate-500 block">Available Waiver</span>
                         <span className={`font-bold ${isMax ? 'text-rose-400' : 'text-emerald-400'}`}>
@@ -290,12 +347,27 @@ export const FuelTrackerPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-slate-500 block">Monthly Limit</span>
-                        <span className="font-semibold text-slate-300">
-                          ₹{limit.toLocaleString('en-IN')}
+                        <span className="text-[10px] text-slate-500 block">Surcharge Saved</span>
+                        <span className="font-bold text-amber-400 font-mono">
+                          ₹{c.surcharge_saved.toLocaleString('en-IN')}
                         </span>
                       </div>
                     </div>
+
+                    {c.matching_logs && c.matching_logs.length > 0 && (
+                      <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                        <span className="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider">Recent Fuel Bills on Card:</span>
+                        {c.matching_logs.map(log => (
+                          <div key={log.id} className="flex justify-between items-center text-[11px] bg-slate-900/60 px-2 py-1 rounded-lg border border-slate-800/40">
+                            <span className="text-slate-300 truncate max-w-[130px]">{log.date?.slice(5, 10)} • {log.vehicle_number}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-emerald-400">+₹{Math.round(log.cost * 0.01)}</span>
+                              <span className="font-bold text-amber-400 font-mono">₹{log.cost.toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -346,6 +418,30 @@ export const FuelTrackerPage: React.FC = () => {
                   </select>
                 </div>
               </div>
+
+              {form.payment_method === 'Credit Card' && (
+                <div className="p-3 bg-amber-950/30 rounded-xl border border-amber-500/30 space-y-1.5">
+                  <label className="block text-xs font-bold text-amber-300">
+                    Select Credit Card (Fuel Surcharge Waiver Tracked)
+                  </label>
+                  <select
+                    value={form.credit_card_id}
+                    onChange={e => setForm({ ...form, credit_card_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-amber-500/50 rounded-xl text-white font-medium text-xs sm:text-sm"
+                    required
+                  >
+                    <option value="">-- Choose Corporate Credit Card --</option>
+                    {creditCards.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.card_name} ({c.bank_name} •• {c.card_number_last4})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-amber-400/80">
+                    1% surcharge waiver limit will be automatically tracked for this card!
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Fill-Up Date</label>
