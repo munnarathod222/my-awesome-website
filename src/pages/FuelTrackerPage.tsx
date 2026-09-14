@@ -119,19 +119,53 @@ export const FuelTrackerPage: React.FC = () => {
     return !isNaN(dt.getTime()) && dt.getFullYear() === curYear && dt.getMonth() === curMonthIdx;
   };
 
+  // 1. De-duplicate fuel bills for the current calendar month
+  const seenDayAmount = new Set<string>();
+  const canonicalFuelBills: typeof fuelLogs = [];
+
+  for (const f of fuelLogs) {
+    if (!isCurrentMonth(f.date)) continue;
+    const isCC = f.payment_method === 'Credit Card' || (f as any).payment_method === 'Credit' || Boolean(f.credit_card_id);
+    if (!isCC) continue;
+
+    const dayStr = String(f.date || '').slice(0, 10);
+    const amtRound = Math.round(f.cost || 0);
+    const key = `${dayStr}_${amtRound}`;
+    if (dayStr && amtRound > 0 && seenDayAmount.has(key)) continue;
+
+    if (dayStr && amtRound > 0) seenDayAmount.add(key);
+    canonicalFuelBills.push(f);
+  }
+
+  // 2. Assign each physical bill to at most ONE card
+  const cardBillsMap = new Map<string, typeof fuelLogs>();
+  creditCards.forEach(c => cardBillsMap.set(c.id, []));
+
+  canonicalFuelBills.forEach(bill => {
+    let matchedCard = creditCards.find(c => c.id === bill.credit_card_id);
+
+    if (!matchedCard) {
+      const notes = String(bill.notes || '').toLowerCase();
+      matchedCard = creditCards.find(c => {
+        const cardName = String(c.card_name || '').toLowerCase().trim();
+        const last4 = String(c.card_number_last4 || '').trim();
+        if (cardName && cardName.length > 5 && notes.includes(cardName)) return true;
+        if (last4 && last4.length === 4 && notes.includes(last4)) {
+          if (c.card_name.toLowerCase().includes('phonepe') && !notes.includes('phonepe')) return false;
+          return true;
+        }
+        return false;
+      });
+    }
+
+    if (matchedCard && cardBillsMap.has(matchedCard.id)) {
+      cardBillsMap.get(matchedCard.id)!.push(bill);
+    }
+  });
+
   const enrichedCreditCards = creditCards.map(c => {
     const limit = c.monthly_waiver_limit || 20000;
-    const matchingLogs = fuelLogs.filter(f => {
-      const matchId = f.credit_card_id === c.id;
-      const matchPM = (f.payment_method === 'Credit Card' || (f as any).payment_method === 'Credit') && (
-        (c.card_number_last4 && f.notes?.includes(c.card_number_last4)) ||
-        (c.card_name && f.notes?.toLowerCase().includes(c.card_name.toLowerCase()))
-      );
-      if (!matchId && !matchPM) return false;
-
-      return isCurrentMonth(f.date);
-    });
-
+    const matchingLogs = cardBillsMap.get(c.id) || [];
     matchingLogs.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
     const totalSpend = matchingLogs.reduce((sum, f) => sum + (f.cost || 0), 0);
