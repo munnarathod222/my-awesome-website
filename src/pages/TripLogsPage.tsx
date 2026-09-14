@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, CheckCircle, AlertCircle, Filter, ArrowUpRight, FileCheck, Edit, ShieldCheck, X } from 'lucide-react';
+import { Truck, Plus, CheckCircle, AlertCircle, Filter, ArrowUpRight, FileCheck, Edit, ShieldCheck, X, FileText, Camera, Eye } from 'lucide-react';
 import { dbtabeses } from '../db/store';
 import { cashbookService } from '../services/cashbookService';
-import { TripLog, Truck as TruckType, ClientProfile, Employee } from '../types';
+import { TripLog, Truck as TruckType, ClientProfile, Employee, LorryReceipt, PodRecord } from '../types';
+import { LorryReceiptViewModal } from '../components/documents/LorryReceiptViewModal';
+import { LorryReceiptFormModal } from '../components/documents/LorryReceiptFormModal';
+import { PodViewModal } from '../components/documents/PodViewModal';
+import { DriverPodCaptureModal } from '../components/documents/DriverPodCaptureModal';
 
 export const TripLogsPage: React.FC = () => {
   const [trips, setTrips] = useState<TripLog[]>(dbtabeses.getTrips());
   const [trucks] = useState<TruckType[]>(dbtabeses.getTrucks());
   const [clients] = useState<ClientProfile[]>(dbtabeses.getClients());
   const [employees] = useState<Employee[]>(dbtabeses.getEmployees());
+  const [lrs, setLrs] = useState<LorryReceipt[]>(dbtabeses.getLorryReceipts());
+  const [pods, setPods] = useState<PodRecord[]>(dbtabeses.getPodRecords());
 
   const [editTrip, setEditTrip] = useState<TripLog | null>(null);
   const [addModal, setAddModal] = useState(false);
   const [successNotif, setSuccessNotif] = useState('');
+
+  // Document modals
+  const [viewingLr, setViewingLr] = useState<LorryReceipt | null>(null);
+  const [generatingLrForTrip, setGeneratingLrForTrip] = useState<TripLog | null>(null);
+  const [viewingPod, setViewingPod] = useState<PodRecord | null>(null);
+  const [capturingPodForTrip, setCapturingPodForTrip] = useState<{ trip: TripLog; lr?: LorryReceipt } | null>(null);
 
   // New trip form state
   const [newTripNumber, setNewTripNumber] = useState(`TRIP-${Math.floor(100 + Math.random() * 900)}`);
@@ -29,7 +41,11 @@ export const TripLogsPage: React.FC = () => {
   const [newPaymentStatus, setNewPaymentStatus] = useState<'Pending' | 'Paid' | 'Delayed'>('Pending');
 
   useEffect(() => {
-    const handle = () => setTrips(dbtabeses.getTrips());
+    const handle = () => {
+      setTrips(dbtabeses.getTrips());
+      setLrs(dbtabeses.getLorryReceipts());
+      setPods(dbtabeses.getPodRecords());
+    };
     window.addEventListener('jc-store-update', handle);
     return () => window.removeEventListener('jc-store-update', handle);
   }, []);
@@ -137,48 +153,111 @@ export const TripLogsPage: React.FC = () => {
                 <th className="p-3.5">Distance</th>
                 <th className="p-3.5">Revenue</th>
                 <th className="p-3.5">Trip Status</th>
-                <th className="p-3.5">Payment Status</th>
+                <th className="p-3.5">Payment</th>
+                <th className="p-3.5">Documents (LR &amp; POD)</th>
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {trips.map(t => (
-                <tr key={t.id} className="hover:bg-slate-800/40 transition">
-                  <td className="p-3.5">
-                    <p className="font-bold text-white">{t.trip_number}</p>
-                    <p className="text-xs text-slate-400">{t.start_date}</p>
-                  </td>
-                  <td className="p-3.5">
-                    <p className="font-semibold text-orange-400">{t.truck_number}</p>
-                    <p className="text-xs text-slate-400">{t.driver_name}</p>
-                  </td>
-                  <td className="p-3.5">
-                    <p className="font-medium text-white">{t.client_name}</p>
-                    <p className="text-xs text-slate-400">{t.origin} → {t.destination}</p>
-                  </td>
-                  <td className="p-3.5 font-mono text-slate-300">{t.distance_kms} KMs</td>
-                  <td className="p-3.5 font-bold text-emerald-400">₹{t.revenue.toLocaleString('in-IN')}</td>
-                  <td className="p-3.5">
-                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${t.status === 'Completed' || t.status === 'Delivered' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (t.status === 'In Transit' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30')}`}>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5">
-                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${t.clientPaymentStatus === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : (t.clientPaymentStatus === 'Delayed' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400')}`}>
-                      {t.clientPaymentStatus}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-right">
-                    <button
-                      onClick={() => setEditTrip(t)}
-                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
-                      title="Edit Trip & Payment Status"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {trips.map(t => {
+                const linkedLr = lrs.find(l => l.trip_id === t.id || l.trip_number === t.trip_number);
+                const linkedPod = linkedLr?.pod_id 
+                  ? pods.find(p => p.id === linkedLr.pod_id || p.pod_number === linkedLr.pod_number) 
+                  : pods.find(p => p.trip_id === t.id || p.trip_number === t.trip_number);
+
+                return (
+                  <tr key={t.id} className="hover:bg-slate-800/40 transition">
+                    <td className="p-3.5">
+                      <p className="font-bold text-white">{t.trip_number}</p>
+                      <p className="text-xs text-slate-400">{t.start_date}</p>
+                    </td>
+                    <td className="p-3.5">
+                      <p className="font-semibold text-orange-400">{t.truck_number}</p>
+                      <p className="text-xs text-slate-400">{t.driver_name}</p>
+                    </td>
+                    <td className="p-3.5">
+                      <p className="font-medium text-white">{t.client_name}</p>
+                      <p className="text-xs text-slate-400">{t.origin} → {t.destination}</p>
+                    </td>
+                    <td className="p-3.5 font-mono text-slate-300">{t.distance_kms} KMs</td>
+                    <td className="p-3.5 font-bold text-emerald-400">₹{t.revenue.toLocaleString('in-IN')}</td>
+                    <td className="p-3.5">
+                      <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${t.status === 'Completed' || t.status === 'Delivered' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : (t.status === 'In Transit' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-purple-500/20 text-purple-400 border border-purple-500/30')}`}>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
+                      <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${t.clientPaymentStatus === 'Paid' ? 'bg-emerald-500/20 text-emerald-400' : (t.clientPaymentStatus === 'Delayed' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400')}`}>
+                        {t.clientPaymentStatus}
+                      </span>
+                    </td>
+                    {/* Documents Column */}
+                    <td className="p-3.5">
+                      {linkedLr ? (
+                        <div className="space-y-1">
+                          <button
+                            onClick={() => setViewingLr(linkedLr)}
+                            className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 hover:bg-orange-500/30 transition cursor-pointer"
+                            title="View / Print Official Lorry Receipt"
+                          >
+                            <FileText className="w-3 h-3" />
+                            <span>{linkedLr.lr_number}</span>
+                          </button>
+
+                          {linkedPod ? (
+                            <button
+                              onClick={() => setViewingPod(linkedPod)}
+                              className="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 hover:bg-emerald-500/30 transition cursor-pointer"
+                              title="View Verified POD"
+                            >
+                              <FileCheck className="w-3 h-3" />
+                              <span>{linkedPod.pod_number}</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setCapturingPodForTrip({ trip: t, lr: linkedLr })}
+                              className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 hover:bg-emerald-600/30 transition cursor-pointer"
+                              title="Driver / Receiver Delivery Handover"
+                            >
+                              <Camera className="w-3 h-3" />
+                              <span>Capture POD</span>
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setGeneratingLrForTrip(t)}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/40 flex items-center gap-1 transition cursor-pointer"
+                          title="Generate Lorry Receipt pre-populated from this trip"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Generate LR</span>
+                        </button>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {linkedLr && (
+                          <button
+                            onClick={() => setViewingLr(linkedLr)}
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-orange-400 rounded-lg transition"
+                            title="View LR"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setEditTrip(t)}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition"
+                          title="Edit Trip & Payment Status"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -323,6 +402,64 @@ export const TripLogsPage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* VIEW LR MODAL */}
+      {viewingLr && (
+        <LorryReceiptViewModal
+          lr={viewingLr}
+          isOpen={!!viewingLr}
+          onClose={() => setViewingLr(null)}
+          onGeneratePod={(lrObj) => {
+            const tr = trips.find(t => t.id === lrObj.trip_id || t.trip_number === lrObj.trip_number);
+            setViewingLr(null);
+            if (tr) setCapturingPodForTrip({ trip: tr, lr: lrObj });
+          }}
+          onStatusChange={(updated) => {
+            setViewingLr(updated);
+            setLrs(dbtabeses.getLorryReceipts());
+          }}
+        />
+      )}
+
+      {/* GENERATE LR FOR TRIP MODAL */}
+      {generatingLrForTrip && (
+        <LorryReceiptFormModal
+          isOpen={!!generatingLrForTrip}
+          onClose={() => setGeneratingLrForTrip(null)}
+          fromTrip={generatingLrForTrip}
+          onSuccess={(newLr) => {
+            setLrs(dbtabeses.getLorryReceipts());
+            setSuccessNotif(`Lorry Receipt ${newLr.lr_number} generated for ${newLr.trip_number}!`);
+            setTimeout(() => setSuccessNotif(''), 3500);
+          }}
+        />
+      )}
+
+      {/* VIEW POD MODAL */}
+      {viewingPod && (
+        <PodViewModal
+          pod={viewingPod}
+          isOpen={!!viewingPod}
+          onClose={() => setViewingPod(null)}
+        />
+      )}
+
+      {/* CAPTURE POD MODAL */}
+      {capturingPodForTrip && (
+        <DriverPodCaptureModal
+          isOpen={!!capturingPodForTrip}
+          onClose={() => setCapturingPodForTrip(null)}
+          trip={capturingPodForTrip.trip}
+          lr={capturingPodForTrip.lr}
+          onSuccess={(newPod) => {
+            setPods(dbtabeses.getPodRecords());
+            setLrs(dbtabeses.getLorryReceipts());
+            setTrips(dbtabeses.getTrips());
+            setSuccessNotif(`Proof of Delivery ${newPod.pod_number} captured! Trip marked as Delivered.`);
+            setTimeout(() => setSuccessNotif(''), 3500);
+          }}
+        />
       )}
     </div>
   );

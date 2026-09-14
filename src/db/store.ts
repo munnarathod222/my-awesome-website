@@ -1,5 +1,5 @@
-import { employeesData, trucksData, tyresData, routesData, clientsData, tripsData, cashbookData, fuelLogsData, billingCyclesData, creditCardsData, inventoryData, remindersData, expenseCategoriesData, expensesData } from './seedData';
-import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem } from '../types';
+import { employeesData, trucksData, tyresData, routesData, clientsData, tripsData, cashbookData, fuelLogsData, billingCyclesData, creditCardsData, inventoryData, remindersData, expenseCategoriesData, expensesData, initialCompanySettings, lorryReceiptsData, podRecordsData, documentSequencesData } from './seedData';
+import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem, LorryReceipt, PodRecord, DocumentSequence, DocumentAuditLog } from '../types';
 
 const TODAY_DATE = '2026-09-02';
 
@@ -33,7 +33,10 @@ function setItem(key: string, value: any) {
 export const dbtabeses = {
   getItem,
   setItem,
-  getCompanySettings: () => getItem('jc_company_settings', { opening_balance: 50000, current_balance: 50000 }),
+  getCompanySettings: () => {
+    const saved = getItem('jc_company_settings', {});
+    return { ...initialCompanySettings, ...saved };
+  },
   setCompanySettings: (settings: any) => setItem('jc_company_settings', settings),
   getEmployees: () => getItem('jc_employees', employeesData),
   setEmployees: (data: any) => setItem('jc_employees', data),
@@ -124,5 +127,13 @@ export const dbtabeses = {
   getExpenseCategories: (): ExpenseCategoryItem[] => getItem('jc_expense_categories', expenseCategoriesData),
   setExpenseCategories: (data: any) => setItem('jc_expense_categories', data),
   getExpenses: (): Expense[] => getItem('jc_expenses', expensesData),
-  setExpenses: (data: any) => setItem('jc_expenses', data)
+  setExpenses: (data: any) => setItem('jc_expenses', data),
+  getLorryReceipts: (): LorryReceipt[] => getItem('jc_lorry_receipts', lorryReceiptsData),
+  setLorryReceipts: (data: LorryReceipt[]) => setItem('jc_lorry_receipts', data),
+  getPodRecords: (): PodRecord[] => getItem('jc_pod_records', podRecordsData),
+  setPodRecords: (data: PodRecord[]) => setItem('jc_pod_records', data),
+  getDocumentSequences: (): DocumentSequence[] => getItem('jc_document_sequences', documentSequencesData),
+  setDocumentSequences: (data: DocumentSequence[]) => setItem('jc_document_sequences', data),
+  getAuditLogs: (): DocumentAuditLog[] => getItem('jc_document_audit_logs', []),
+  setAuditLogs: (data: DocumentAuditLog[]) => setItem('jc_document_audit_logs', data)
 };
