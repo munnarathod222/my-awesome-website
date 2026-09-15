@@ -8,8 +8,8 @@
 // 3-second background sync can fire.
 // ──────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://bwyashgnriarmuhosqov.supabase.co';
-const SUPABASE_KEY = 'process.env.SUPABASE_SECRET';
+const SUPABASE_URL = $os.getenv('SUPABASE_URL') || 'https://bwyashgnriarmuhosqov.supabase.co';
+const SUPABASE_KEY = $os.getenv('SUPABASE_KEY') || $os.getenv('SUPABASE_SECRET') || $os.getenv('SUPABASE_SERVICE_ROLE_KEY') || 'sb_secret_Oay759_VoPC2O_ifxAfcSA_09LkApAM';
 // Reference for verify_backup: uploadSingleFileToSupabase
 
 // Upload a single file to Supabase storage backup bucket
