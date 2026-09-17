@@ -363,3 +363,17 @@ body {
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
 }
+
+/* Mobile Fuel Tracker Overrides */
+@media (max-width: 768px) {
+  .overflow-x-auto {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  table {
+    min-width: 600px !important;
+  }
+}
