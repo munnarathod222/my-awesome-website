@@ -345,3 +345,21 @@ body {
   justify-content: space-between !important;
   box-sizing: border-box !important;
 }
+
+/* Bulletproof Trip Logs Mobile Card Alignment */
+.select-trigger-badge, button.select-trigger-badge, [role="combobox"].select-trigger-badge {
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  width: 105px !important;
+  min-width: 105px !important;
+  max-width: 105px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+  line-height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
