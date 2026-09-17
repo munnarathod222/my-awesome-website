@@ -159,3 +159,172 @@ html, body, #root {
     max-height: 92vh !important;
   }
 }
+
+/* ==========================================================================
+   BULLETPROOF HIGH-DENSITY MOBILE OVERHAUL (ZERO 4-WAY SCROLLING)
+   ========================================================================== */
+
+/* Universal Layout & Root Constraints */
+html {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  -webkit-text-size-adjust: 100% !important;
+  touch-action: manipulation;
+}
+
+body {
+  overflow-x: hidden !important;
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root, #root > div, main {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+  /* Prevent any element from forcing 2D / 4-way viewport stretch */
+  *, *::before, *::after {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Reset hardcoded min-widths on mobile */
+  [class*="min-w-["] {
+    min-width: 0 !important;
+  }
+
+  /* Hide oversized background aurora blur blobs on mobile */
+  .blur-\[150px\], .blur-\[120px\], .blur-[130px\],
+  [class*="blur-[150px]"], [class*="blur-[120px]"], [class*="blur-[130px]"] {
+    display: none !important;
+  }
+
+  /* Prevent Header from pushing screen width */
+  header.md\:hidden {
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  /* CRITICAL: Prevent iOS Safari from zooming in when inputs/selects are focused */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea,
+  button[role="combobox"] {
+    font-size: 16px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Compact container padding across all pages */
+  .max-w-7xl, .max-w-6xl, .max-w-5xl, .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 5.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Card padding reduction: ultra-clean, compact, stylish */
+  .p-8, .p-6, .p-5 {
+    padding: 0.625rem !important;
+  }
+  .px-8, .px-6 {
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+  }
+  .py-8, .py-6 {
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+  }
+
+  /* Border radius optimization */
+  .rounded-3xl, .rounded-2xl {
+    border-radius: 0.75rem !important;
+  }
+  [class*="bg-card"], [class*="Card"], .card {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 0.75rem !important;
+  }
+
+  /* Typography: stylish, crisp, proportional mobile headings */
+  .text-4xl {
+    font-size: 1.35rem !important;
+    line-height: 1.55rem !important;
+    letter-spacing: -0.02em !important;
+  }
+  .text-3xl {
+    font-size: 1.2rem !important;
+    line-height: 1.4rem !important;
+    letter-spacing: -0.015em !important;
+  }
+  .text-2xl {
+    font-size: 1.05rem !important;
+    line-height: 1.3rem !important;
+  }
+  .text-xl {
+    font-size: 0.95rem !important;
+    line-height: 1.2rem !important;
+  }
+
+  /* Spacing: eliminates empty blank height on mobile */
+  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.625rem !important;
+  }
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem !important;
+  }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.375rem !important;
+  }
+
+  .gap-8 { gap: 0.5rem !important; }
+  .gap-6 { gap: 0.375rem !important; }
+  .gap-4 { gap: 0.25rem !important; }
+
+  /* Tables: wrap safely so they never force page body horizontal scroll */
+  table {
+    display: block !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Virtual credit cards */
+  .aspect-video, .aspect-\[1\.75\/1\] {
+    max-width: 320px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Responsive dialogs and sheets */
+  [role="dialog"] {
+    max-width: 95vw !important;
+    padding: 0.75rem !important;
+    border-radius: 0.875rem !important;
+    max-height: 92vh !important;
+  }
+
+  /* Safe horizontal scrolling containers */
+  .overflow-x-auto {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
