@@ -83,7 +83,15 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     payload_capacity: '',
     body_length: '',
     body_width: '',
-    body_height: ''
+    body_height: '',
+    owner_name: '',
+    owner_phone: '',
+    owner_pan: '',
+    owner_bank_name: '',
+    owner_account_number: '',
+    owner_ifsc: '',
+    commission_type: 'zero',
+    commission_rate: 0
   });
 
   const [bodyImagesList, setBodyImagesList] = useState([]);
@@ -117,6 +125,13 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         body_length: parseFloat(formData.body_length) || 0,
         body_width: parseFloat(formData.body_width) || 0,
         body_height: parseFloat(formData.body_height) || 0,
+        owner_name: formData.owner_name || '',
+        owner_phone: formData.owner_phone || '',
+        owner_pan: formData.owner_pan || '',
+        owner_bank_name: formData.owner_bank_name || '',
+        owner_account_number: formData.owner_account_number || '',
+        owner_ifsc: formData.owner_ifsc || '',
+        subcontractor_name: formData.ownership_type === 'AttachedFamily' ? (formData.owner_name || 'Family Owner') : ''
       };
 
       const newItems = bodyImagesList.filter(item => item.isNew);
@@ -149,11 +164,18 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           formDataToSend.append(key, String(payload[key]));
         });
 
-        // Separate existing files that are not deleted (for form data compatibility)
         const existingItems = bodyImagesList.filter(item => !item.isNew);
-        existingItems.forEach((item) => {
-          formDataToSend.append('body_images', item.file);
-        });
+
+        // Handle deleted files in PocketBase
+        if (truck?.id) {
+          deletedFiles.forEach((filename) => {
+            formDataToSend.append('body_images.-', filename);
+            formDataToSend.append('body_images.' + filename, '');
+          });
+          if (existingItems.length === 0 && newItems.length === 0) {
+            formDataToSend.append('body_images', '');
+          }
+        }
 
         // Append actual new File objects
         newItems.forEach((item) => {
@@ -161,12 +183,6 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
             formDataToSend.append('body_images', item.file);
           }
         });
-
-        if (truck?.id) {
-          deletedFiles.forEach((filename) => {
-            formDataToSend.append('body_images.' + filename, '');
-          });
-        }
 
         let updatedRecord;
         if (truck?.id) {
@@ -264,8 +280,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         });
         setDrivers(dList);
         if (truck) {
-          const tName = (truck.assigned_driver_name || truck.driver_name || '').trim().toLowerCase();
-          const assigned = dList.find(d => d.assigned_truck === truck.id || (tName && d.name?.trim().toLowerCase() === tName));
+          const assigned = dList.find(d => d.assigned_truck === truck.id || (truck.assigned_driver_name && d.name === truck.assigned_driver_name));
           if (assigned) {
             setFormData(prev => ({ ...prev, assigned_driver_id: assigned.id }));
           }
@@ -274,9 +289,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       .catch(err => console.error('Failed to fetch drivers:', err));
 
       if (truck) {
-        const tName = (truck.assigned_driver_name || truck.driver_name || '').trim().toLowerCase();
-        const preAssigned = drivers.find(d => d.assigned_truck === truck.id || (tName && d.name?.trim().toLowerCase() === tName));
-        setFormData(prev => ({
+        setFormData({
           truck_name: truck.truck_name || '',
           truck_number: truck.truck_number || '',
           truck_size: truck.truck_size || '24 FT',
@@ -286,13 +299,21 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           base_odometer: truck.base_odometer || 0,
           ownership_type: truck.ownership_type || 'Owned',
           manager_id: truck.manager_id || 'none',
-          assigned_driver_id: preAssigned ? preAssigned.id : (prev.assigned_driver_id || 'none'),
+          assigned_driver_id: 'none',
           fastag_id: truck.fastag_id || '',
           current_fastag_balance: truck.current_fastag_balance?.toString() || '',
           payload_capacity: truck.payload_capacity || '',
           body_length: truck.body_length?.toString() || '',
           body_width: truck.body_width?.toString() || '',
-          body_height: truck.body_height?.toString() || ''
+          body_height: truck.body_height?.toString() || '',
+          owner_name: truck.owner_name || '',
+          owner_phone: truck.owner_phone || '',
+          owner_pan: truck.owner_pan || '',
+          owner_bank_name: truck.owner_bank_name || '',
+          owner_account_number: truck.owner_account_number || '',
+          owner_ifsc: truck.owner_ifsc || '',
+          commission_type: truck.commission_type || 'zero',
+          commission_rate: truck.commission_rate || 0
         });
         const existing = parseImageList(truck.body_images).map((img, idx) => ({
           key: `existing-${idx}-${img}`,
@@ -317,7 +338,15 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           payload_capacity: '',
           body_length: '',
           body_width: '',
-          body_height: ''
+          body_height: '',
+          owner_name: '',
+          owner_phone: '',
+          owner_pan: '',
+          owner_bank_name: '',
+          owner_account_number: '',
+          owner_ifsc: '',
+          commission_type: 'zero',
+          commission_rate: 0
         });
         setBodyImagesList([]);
         setDeletedFiles([]);
@@ -420,11 +449,95 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
             <Select value={formData.ownership_type} onValueChange={v => setFormData({...formData, ownership_type: v})}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Owned">Owned Vehicle (Type A)</SelectItem>
-                <SelectItem value="Attached">Attached Vehicle (Type B - Brokerage)</SelectItem>
+                <SelectItem value="Owned">Owned Vehicle (Type A - 100% Company Fleet)</SelectItem>
+                <SelectItem value="AttachedFamily">Attached - Family / Partner Vehicle (Type C - Net Settlement)</SelectItem>
+                <SelectItem value="Attached">Attached Vehicle (Type B - Market Brokerage)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {formData.ownership_type === 'AttachedFamily' && (
+            <div className="p-3.5 rounded-xl border border-primary/30 bg-primary/5 space-y-3 animate-in fade-in">
+              <div className="flex items-start gap-2.5">
+                <span className="text-lg">🤝</span>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Family / Partner Vehicle Net Settlement Policy</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Jai Bhavani Cargo pays all operating expenses upfront (Diesel, FASTag, Advances, Repairs). Net surplus (Revenue - Expenses) is disbursed to the Owner upon client billing and is <strong>strictly excluded from Company Profit</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <Label className="text-xs">Vehicle Owner Name <span className="text-destructive">*</span></Label>
+                  <Input 
+                    required={formData.ownership_type === 'AttachedFamily'}
+                    value={formData.owner_name} 
+                    onChange={e => setFormData({...formData, owner_name: e.target.value})} 
+                    placeholder="e.g. Ramesh Rathod" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Owner Phone Number</Label>
+                  <Input 
+                    value={formData.owner_phone} 
+                    onChange={e => setFormData({...formData, owner_phone: e.target.value})} 
+                    placeholder="e.g. +91 98765 43210" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Owner PAN</Label>
+                  <Input 
+                    value={formData.owner_pan} 
+                    onChange={e => setFormData({...formData, owner_pan: e.target.value.toUpperCase()})} 
+                    placeholder="ABCDE1234F" 
+                    className="h-8 text-xs font-mono uppercase bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank Name</Label>
+                  <Input 
+                    value={formData.owner_bank_name} 
+                    onChange={e => setFormData({...formData, owner_bank_name: e.target.value})} 
+                    placeholder="e.g. SBI / HDFC" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank IFSC</Label>
+                  <Input 
+                    value={formData.owner_ifsc} 
+                    onChange={e => setFormData({...formData, owner_ifsc: e.target.value.toUpperCase()})} 
+                    placeholder="SBIN0001234" 
+                    className="h-8 text-xs font-mono uppercase bg-background"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Bank Account Number</Label>
+                <Input 
+                  value={formData.owner_account_number} 
+                  onChange={e => setFormData({...formData, owner_account_number: e.target.value})} 
+                  placeholder="e.g. 50100456789012" 
+                  className="h-8 text-xs font-mono bg-background"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-primary/20 flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground font-medium">Company Service Margin:</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  0% Pass-Through (100% Net to Owner)
+                </span>
+              </div>
+            </div>
+          )}
           {/* ── Truck Configuration Section ── */}
           <div className="pt-2 pb-1">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">Truck Configuration</p>
