@@ -328,3 +328,20 @@ body {
     -webkit-overflow-scrolling: touch !important;
   }
 }
+
+/* Compact Select Trigger Badges in cards */
+.select-trigger-badge, button.select-trigger-badge, [role="combobox"].select-trigger-badge {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  width: auto !important;
+  min-width: 90px !important;
+  max-width: 125px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+  line-height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+}
