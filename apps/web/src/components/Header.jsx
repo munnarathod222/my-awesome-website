@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
   ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
-  QrCode, Navigation, HardDrive, RefreshCw, Receipt
+  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -141,11 +141,6 @@ export default function Header() {
   const [pendingQuotes, setPendingQuotes] = useState([]);
   const [pendingSignups, setPendingSignups] = useState([]);
   const lastKnownQuoteIdsRef = React.useRef(new Set());
-
-  const handleLogout = () => { logout(); navigate('/'); };
-
-  const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
-    .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
 
   // Request browser notification permission once user interacts
   useEffect(() => {
@@ -611,6 +606,66 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
+                    {/* FASTag Management */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/fastag"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Wallet className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        FASTag Management
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Attendance */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/dashboard/attendance"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <CalendarDays className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Staff & Driver Attendance
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Track Shipment */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/tracking"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Navigation className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Track Shipment & GPS
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Quotes Hub */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/quotes-manager"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Quotes & Invoicing
+                      </TooltipContent>
+                    </Tooltip>
+
                     {/* Backup Data (Admins only) */}
                     {(isAdmin || isSuperAdmin) && (
                       <Tooltip>
@@ -630,6 +685,8 @@ export default function Header() {
                     )}
                   </TooltipProvider>
                 </div>
+
+                <LangSelector compact={true} language={language} setLanguage={setLanguage} />
 
                 {(isAdmin || isSuperAdmin) && (
                   <DropdownMenu>
@@ -831,99 +888,39 @@ export default function Header() {
             </Sheet>
           )}
 
-          <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-sm">
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-sm shrink-0">
               JB
             </div>
             {pageLabel ? (
-              <span className="text-xs font-extrabold text-foreground truncate max-w-[150px]">{pageLabel}</span>
+              <span className="text-xs font-black text-foreground truncate">{pageLabel}</span>
             ) : (
-              <span className="text-xs font-extrabold text-foreground">Jai Bhavani</span>
+              <span className="text-xs font-black text-foreground truncate">Jai Bhavani Cargo</span>
             )}
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5">
-              {/* Mobile Quick Access Shortcuts (Tan styled, scrollable) */}
-              <div className="flex items-center gap-1 p-0.5 bg-slate-950/80 border border-slate-800/80 rounded-xl max-w-[130px] xs:max-w-[170px] sm:max-w-xs overflow-x-auto scrollbar-none no-print shrink-0">
-                {/* Dashboard */}
-                <Link
-                  to="/dashboard"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                </Link>
-
-                {/* QR Pass Scanner */}
-                <Link
-                  to="/qr-scanner"
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                </Link>
-
-                {/* Add Expense */}
-                <button
-                  onClick={() => setIsExpenseOpen(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                >
-                  <Receipt className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Dispatch Trip */}
-                <button
-                  onClick={() => setIsTripOpen(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                >
-                  <Truck className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Record Advance */}
-                <button
-                  onClick={() => setIsAdvanceOpen(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Log Maintenance */}
-                <button
-                  onClick={() => setIsMaintenanceOpen(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                >
-                  <Wrench className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Log Fuel */}
-                <button
-                  onClick={() => setIsFuelOpen(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                >
-                  <Droplet className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Backup (Admins only) */}
-                {(isAdmin || isSuperAdmin) && (
-                  <button
-                    onClick={handleBackup}
-                    disabled={backingUp}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
-                  >
-                    {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
-                  </button>
-                )}
-              </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isAuthenticated && (
+            <Link
+              to="/qr-scanner"
+              className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all shrink-0"
+              title="QR Pass Scanner"
+            >
+              <QrCode className="w-4 h-4" />
+            </Link>
+          )}
 
           {isAuthenticated && (isAdmin || isSuperAdmin) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="relative w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground"
+                  className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
                   title="Notifications"
                 >
-                  <Bell className={cn("w-3.5 h-3.5", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
+                  <Bell className={cn("w-4 h-4", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
                   {(pendingQuotes.length + pendingSignups.length) > 0 && (
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
                       {(pendingQuotes.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + pendingSignups.length)}
                     </span>
                   )}
@@ -962,26 +959,29 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {isAuthenticated && (
             <button
               onClick={() => navigate('/business-mail')}
-              className="relative w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground"
+              className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
               title="Business Mail"
             >
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
+              <Mail className="w-4 h-4 text-slate-400" />
               {unreadEmails > 0 && (
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
                   {unreadEmails > 9 ? '9+' : unreadEmails}
                 </span>
               )}
             </button>
           )}
+
           {isAuthenticated && (
             <button
               onClick={handleLogout}
-              className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400"
+              className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 active:scale-95 transition-all shrink-0"
               title="Logout"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-4 w-4" />
             </button>
           )}
         </div>
