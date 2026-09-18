@@ -362,6 +362,7 @@ body {
   justify-content: space-between !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
+  flex-basis: 105px !important;
 }
 
 /* Mobile Fuel Tracker Overrides */
