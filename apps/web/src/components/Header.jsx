@@ -901,14 +901,84 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Mobile Quick Access Shortcuts (Tan styled, scrollable) */}
           {isAuthenticated && (
-            <Link
-              to="/qr-scanner"
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all shrink-0"
-              title="QR Pass Scanner"
-            >
-              <QrCode className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-1 p-0.5 bg-slate-950/80 border border-slate-800/80 rounded-xl max-w-[130px] xs:max-w-[170px] sm:max-w-xs overflow-x-auto scrollbar-none no-print shrink-0">
+              {/* Dashboard */}
+              <Link
+                to="/dashboard"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                title="Dashboard"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+              </Link>
+
+              {/* QR Pass Scanner */}
+              <Link
+                to="/qr-scanner"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                title="QR Pass Scanner"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+              </Link>
+
+              {/* Add Expense */}
+              <button
+                onClick={() => setIsExpenseOpen(true)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                title="Add Expense"
+              >
+                <Receipt className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Dispatch Trip */}
+              <button
+                onClick={() => setIsTripOpen(true)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                title="Dispatch Trip"
+              >
+                <Truck className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Record Advance */}
+              <button
+                onClick={() => setIsAdvanceOpen(true)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                title="Record Advance"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Log Maintenance */}
+              <button
+                onClick={() => setIsMaintenanceOpen(true)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                title="Log Maintenance"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Log Fuel */}
+              <button
+                onClick={() => setIsFuelOpen(true)}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                title="Log Fuel"
+              >
+                <Droplet className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Backup (Admins only) */}
+              {(isAdmin || isSuperAdmin) && (
+                <button
+                  onClick={handleBackup}
+                  disabled={backingUp}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 disabled:opacity-50"
+                  title="Backup Data"
+                >
+                  {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
           )}
 
           {isAuthenticated && (isAdmin || isSuperAdmin) && (
