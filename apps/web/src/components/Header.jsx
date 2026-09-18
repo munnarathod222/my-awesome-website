@@ -149,6 +149,19 @@ export default function Header() {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const handleOpenTripModal = (e) => {
+      if (e?.detail?.clientId) {
+        try {
+          sessionStorage.setItem('jbc_quick_book_client_id', e.detail.clientId);
+        } catch (err) {}
+      }
+      setIsTripOpen(true);
+    };
+    window.addEventListener('jbc-open-trip-modal', handleOpenTripModal);
+    return () => window.removeEventListener('jbc-open-trip-modal', handleOpenTripModal);
+  }, []);
+
   const fetchPendingNotifications = React.useCallback(async (isInitial = false) => {
     if (!isAuthenticated) return;
 

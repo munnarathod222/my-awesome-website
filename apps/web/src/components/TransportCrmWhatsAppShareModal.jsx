@@ -30,7 +30,7 @@ export default function TransportCrmWhatsAppShareModal({ isOpen, onClose, select
     } else if (templateType === 'rate_offer') {
       return `🚚 *JAI BHAVANI CARGO - EXCLUSIVE FREIGHT RATE QUOTE*\n\nDear *${name}* (${company}),\n\nWe are pleased to offer dedicated container & truck rates for your logistics routes with instant GPS tracking & zero-delay dispatch.\n\nContact us for contract bookings.\n\n*Jai Bhavani Cargo Operations*`;
     } else if (templateType === 'company_dossier') {
-      return `🏢 *JAI BHAVANI CARGO - CORPORATE DOSSIER*\n\nGSTIN: 36DPXPR9171A1Z8\nPAN: DPXPR9171A\nBank: HDFC Bank | A/C: 50200012345678 | IFSC: HDFC0001234\n\nFor bookings & dispatch: +91 9876543210`;
+      return `🏢 *JAI BHAVANI CARGO - CORPORATE DOSSIER*\n\nGSTIN: 36DPXPR9171A1Z8\nAddress: Plot no 3, Patel nagar, Ghatkesar, Hyderabad - 501301\nBank: HDFC BANK | A/C: 50200117182677 | IFSC: HDFC0004480 | Branch: GHATKESAR\n\nFor bookings & dispatch: +91 7794072244 / +91 8106729777`;
     } else {
       return customText || `Hello *${name}* (${company}), message from Jai Bhavani Cargo.`;
     }

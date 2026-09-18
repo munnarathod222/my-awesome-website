@@ -135,8 +135,14 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   const resetForm = () => {
+    let prefillId = '';
+    try {
+      prefillId = sessionStorage.getItem('jbc_quick_book_client_id') || '';
+      if (prefillId) sessionStorage.removeItem('jbc_quick_book_client_id');
+    } catch (e) {}
+
     setFormData({
-      client_id: '',
+      client_id: prefillId || '',
       date: format(new Date(), 'yyyy-MM-dd'),
       selected_route_id: 'custom',
       route: '',
@@ -237,6 +243,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
 
   const selectedTruckObj = trucks.find(t => t.truck_number === formData.truck_number);
   const ownershipType = selectedTruckObj?.ownership_type || 'Owned';
+  const isAttachedFamily = ownershipType === 'AttachedFamily';
   const isAttached = ownershipType === 'Attached';
 
   const isValid = 
@@ -254,37 +261,47 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       : (formData.advance_paid_to_driver === '' || Number(formData.advance_paid_to_driver) >= 0)
     );
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isValid) return;
 
     setLoading(true);
     try {
+      const grossRev = parseFloat(formData.amount) || 0;
+      const driverAdv = parseFloat(formData.advance_paid_to_driver) || 0;
+      const tollDed = parseFloat(formData.toll_deduction) || 0;
+      const familyNetSettlement = Math.max(0, grossRev - driverAdv - tollDed);
+
       const payload = {
         trip_id: generatedTripId,
         client_id: formData.client_id,
         date: formData.date,
         route: formData.route,
         cycle: formData.description || '',
-        revenue: parseFloat(formData.amount) || 0,
+        revenue: grossRev,
         kms: parseFloat(formData.kms) || 0,
         advance_received_from_client: parseFloat(formData.advance_received_from_client) || 0,
-        advance_paid_to_driver: isAttached ? 0 : (parseFloat(formData.advance_paid_to_driver) || 0),
+        advance_paid_to_driver: isAttached ? 0 : driverAdv,
+        toll_deduction: tollDed,
         client_payment_status: formData.client_payment_status,
         trip_status: formData.trip_status,
         driver_name: formData.driver_name,
         truck_number: formData.truck_number,
         created_by: currentUser?.id,
         user_id: currentUser?.id,
-        ownership_type: isAttached ? 'Attached' : 'Owned',
-        payment_model: isAttached ? formData.payment_model : 'Model1',
-        vendor_payout: isAttached 
-          ? (formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.amount) || 0) - 500) : (parseFloat(formData.vendor_payout) || 0))
-          : 0,
-        brokerage_margin: isAttached
-          ? (formData.payment_model === 'Model3' ? 500 : (parseFloat(formData.amount) || 0) - (parseFloat(formData.vendor_payout) || 0))
-          : 0
+        ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
+        payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),
+        vendor_payout: isAttachedFamily
+          ? familyNetSettlement
+          : (isAttached 
+              ? (formData.payment_model === 'Model3' ? Math.max(0, grossRev - 500) : (parseFloat(formData.vendor_payout) || 0))
+              : 0),
+        brokerage_margin: isAttachedFamily
+          ? 0
+          : (isAttached
+              ? (formData.payment_model === 'Model3' ? 500 : grossRev - (parseFloat(formData.vendor_payout) || 0))
+              : 0),
+        subcontractor_settlement_status: isAttachedFamily ? 'Pending' : (isAttached ? 'Pending' : '')
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });
@@ -564,7 +581,73 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                 </div>
               </div>
 
-              {ownershipType === 'Attached' ? (
+              {ownershipType === 'AttachedFamily' ? (
+                <div className="p-3.5 rounded-xl border border-primary/30 bg-primary/5 space-y-3 animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🤝</span>
+                      <span className="text-xs font-bold text-foreground">
+                        Family Attached Net Settlement ({selectedTruckObj?.owner_name || 'Family Owner'})
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold border border-emerald-500/30 text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      0% Pass-Through
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Advance from Client (₹)</Label>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={formData.advance_received_from_client} 
+                        onChange={e => setFormData({...formData, advance_received_from_client: e.target.value})} 
+                        className="bg-background h-9 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Driver Advance (Paid by Company) (₹)</Label>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        value={formData.advance_paid_to_driver} 
+                        onChange={e => setFormData({...formData, advance_paid_to_driver: e.target.value})} 
+                        className="bg-background h-9 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Real-time settlement breakdown */}
+                  <div className="p-2.5 rounded-lg bg-background/80 border border-border/60 text-xs space-y-1 font-mono">
+                    <div className="flex justify-between text-muted-foreground text-[11px]">
+                      <span>Gross Freight Billed:</span>
+                      <span className="text-foreground font-semibold">₹{(parseFloat(formData.amount) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-rose-500/90 text-[11px]">
+                      <span>Less Trip Driver Advance:</span>
+                      <span>-₹{(parseFloat(formData.advance_paid_to_driver) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between text-rose-500/90 text-[11px]">
+                      <span>Less Toll Deduction:</span>
+                      <span>-₹{(parseFloat(formData.toll_deduction) || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="pt-1 border-t border-border flex justify-between font-bold text-xs">
+                      <span className="text-foreground">Est. Trip Owner Net Payout:</span>
+                      <span className="text-emerald-500 font-extrabold text-sm">
+                        ₹{Math.max(0, (parseFloat(formData.amount) || 0) - (parseFloat(formData.advance_paid_to_driver) || 0) - (parseFloat(formData.toll_deduction) || 0)).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    * Company pays operating expenses upfront. Net surplus is paid to owner upon client billing and excluded from company profit.
+                  </p>
+                </div>
+              ) : ownershipType === 'Attached' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Brokerage Payment Model</Label>

@@ -442,7 +442,14 @@ export default function TransportCrmPage() {
         customer={selectedCustomer}
         onQuickBook={(cust) => {
           setIsDetailOpen(false);
-          toast.success(`Opening 1-Click Trip Dispatcher for ${cust.company_name}`);
+          try {
+            sessionStorage.setItem('jbc_quick_book_client_id', cust.id);
+            sessionStorage.setItem('jbc_quick_book_client_name', cust.company_name);
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('jbc-open-trip-modal', {
+            detail: { clientId: cust.id, clientName: cust.company_name }
+          }));
+          toast.success(`1-Click Dispatch: Ready for ${cust.company_name}`);
         }}
       />
 
