@@ -2961,51 +2961,87 @@ app.post('/api/admin/users/create-or-approve', async (req, res) => {
   }
 });
 
-// Express Direct File Serving Route Handler (handles both collection name & collection ID)
-const handleDirectFileServe = (req, res, next) => {
+// Express Direct File Serving Route Handler (handles both collection name & collection ID with multi-path fallback & Supabase lazy-download)
+const handleDirectFileServe = async (req, res, next) => {
   const collectionNameOrId = req.params.collection;
   const recordId = req.params.recordId;
   const filename = req.params.filename;
 
-  const storageBase = global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage');
+  const storageBase = global.storageDir || (global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage'));
+  const candidateBases = [
+    storageBase,
+    path.resolve(__dirname, '../../pocketbase/pb_data/storage'),
+    path.resolve(__dirname, '../../../pocketbase/pb_data/storage'),
+    path.resolve(__dirname, '../../apps/pocketbase/pb_data/storage'),
+    path.resolve(__dirname, '../../../apps/pocketbase/pb_data/storage'),
+    path.resolve('/opt/render/project/src/apps/pocketbase/pb_data/storage'),
+    path.resolve('/opt/render/project/src/pocketbase/pb_data/storage')
+  ];
 
-  // Candidate 1: direct folder match (e.g. storage/pbc_4061015685/recordId/filename or storage/expenses/recordId/filename)
-  let targetPath = path.join(storageBase, collectionNameOrId, recordId, filename);
+  let targetPath = null;
+  let resolvedColId = collectionNameOrId;
 
-  // Candidate 2: resolve collectionName to collectionId from SQLite if candidate 1 does not exist
-  if (!fs.existsSync(targetPath)) {
-    try {
-      const { DatabaseSync } = require('node:sqlite');
-      const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+  // Resolve collectionName to collectionId from SQLite if possible
+  try {
+    const { DatabaseSync } = require('node:sqlite');
+    const dbPath = global.dbFilePath || path.resolve(__dirname, '../../pocketbase/pb_data/data.db');
+    if (fs.existsSync(dbPath)) {
       const db = new DatabaseSync(dbPath);
       const row = db.prepare("SELECT id FROM _collections WHERE name = ? OR id = ?").get(collectionNameOrId, collectionNameOrId);
       db.close();
       if (row && row.id) {
-        const resolvedPath = path.join(storageBase, row.id, recordId, filename);
-        if (fs.existsSync(resolvedPath)) {
-          targetPath = resolvedPath;
-        }
+        resolvedColId = row.id;
       }
-    } catch(e) {}
-  }
+    }
+  } catch(e) {}
 
-  // Candidate 3: fallback search across all collection folders in storageBase for recordId/filename
-  if (!fs.existsSync(targetPath)) {
+  // Check across all candidate base storage directories
+  for (const base of candidateBases) {
+    if (!fs.existsSync(base)) continue;
+
+    // 1. Direct match with requested collection name/id
+    const p1 = path.join(base, collectionNameOrId, recordId, filename);
+    if (fs.existsSync(p1) && fs.statSync(p1).isFile()) { targetPath = p1; break; }
+
+    // 2. Direct match with resolved collection id
+    if (resolvedColId !== collectionNameOrId) {
+      const p2 = path.join(base, resolvedColId, recordId, filename);
+      if (fs.existsSync(p2) && fs.statSync(p2).isFile()) { targetPath = p2; break; }
+    }
+
+    // 3. Fallback search across all collection subfolders in this base
     try {
-      if (fs.existsSync(storageBase)) {
-        const folders = fs.readdirSync(storageBase);
-        for (const folder of folders) {
-          const checkPath = path.join(storageBase, folder, recordId, filename);
-          if (fs.existsSync(checkPath)) {
-            targetPath = checkPath;
-            break;
-          }
+      const folders = fs.readdirSync(base);
+      for (const folder of folders) {
+        const p3 = path.join(base, folder, recordId, filename);
+        if (fs.existsSync(p3) && fs.statSync(p3).isFile()) {
+          targetPath = p3;
+          break;
         }
       }
-    } catch(e) {}
+      if (targetPath) break;
+    } catch (_) {}
   }
 
-  if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+  // Candidate 4: lazy-download from Supabase if missing from local ephemeral disk
+  if (!targetPath && typeof downloadFileFromSupabase === 'function') {
+    try {
+      const dest1 = path.join(storageBase, resolvedColId, recordId, filename);
+      const remote1 = `storage/${resolvedColId}/${recordId}/${filename}`;
+      const ok1 = await downloadFileFromSupabase(remote1, dest1);
+      if (ok1 && fs.existsSync(dest1)) {
+        targetPath = dest1;
+      } else if (resolvedColId !== collectionNameOrId) {
+        const dest2 = path.join(storageBase, collectionNameOrId, recordId, filename);
+        const remote2 = `storage/${collectionNameOrId}/${recordId}/${filename}`;
+        const ok2 = await downloadFileFromSupabase(remote2, dest2);
+        if (ok2 && fs.existsSync(dest2)) targetPath = dest2;
+      }
+    } catch (_) {}
+  }
+
+  if (targetPath && fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+    res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
     return res.sendFile(targetPath);
   }
   next();
@@ -3013,6 +3049,33 @@ const handleDirectFileServe = (req, res, next) => {
 
 app.get('/api/files/:collection/:recordId/:filename', handleDirectFileServe);
 app.get('/hcgi/platform/api/files/:collection/:recordId/:filename', handleDirectFileServe);
+
+// Secure Dynamic Storage File Sync & Upload API
+app.post('/api/storage/sync-file', requireBackupAuth, express.json({ limit: '50mb' }), async (req, res) => {
+  try {
+    const { collection, recordId, filename, base64Data } = req.body;
+    if (!collection || !recordId || !filename || !base64Data) {
+      return res.status(400).json({ success: false, error: 'Missing required parameters: collection, recordId, filename, base64Data' });
+    }
+
+    const storageBase = global.storageDir || (global.dbFilePath ? path.join(path.dirname(global.dbFilePath), 'storage') : path.resolve(__dirname, '../../pocketbase/pb_data/storage'));
+    const fileDir = path.join(storageBase, collection, recordId);
+    fs.mkdirSync(fileDir, { recursive: true });
+    const targetPath = path.join(fileDir, filename);
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(targetPath, buffer);
+
+    if (typeof uploadSingleFileToSupabase === 'function') {
+      await uploadSingleFileToSupabase(targetPath, storageBase);
+    }
+
+    logger.info(`✓ Successfully synced storage file via API: ${collection}/${recordId}/${filename} (${buffer.length} bytes)`);
+    return res.json({ success: true, path: targetPath, size: buffer.length });
+  } catch (err) {
+    logger.error('Error in /api/storage/sync-file:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ----------------------------------------------------
 // 2. HTTP Proxy Middleware for PocketBase (/hcgi/platform)
