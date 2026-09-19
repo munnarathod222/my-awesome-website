@@ -1264,6 +1264,22 @@ const runPocketBase = async () => {
       }
     }
 
+    // 2.8 Ensure 'Road Tax' is in document_type allowed values for truck_documents collection
+    try {
+      const truckDocCol = db.prepare("SELECT * FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198'").get();
+      if (truckDocCol && truckDocCol.fields) {
+        const tdFields = JSON.parse(truckDocCol.fields);
+        const docTypeField = tdFields.find(f => f.name === 'document_type');
+        if (docTypeField && Array.isArray(docTypeField.values) && !docTypeField.values.includes('Road Tax')) {
+          logger.info("Migrating: Appending 'Road Tax' to 'document_type' select values in 'truck_documents' schema...");
+          docTypeField.values.push('Road Tax');
+          db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(tdFields), truckDocCol.id);
+        }
+      }
+    } catch (docTypeErr) {
+      logger.warn(`Could not migrate truck_documents document_type: ${docTypeErr.message}`);
+    }
+
     // 3. Migrate users schema fields to support client credentials creation
     const usersRecord = db.prepare("SELECT * FROM _collections WHERE name='users'").get();
     if (usersRecord) {
@@ -2272,6 +2288,50 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
       });
     } catch (err) {
       res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // Diagnostic & Fix endpoint — ensures 'Road Tax' is in truck_documents schema and restarts PocketBase
+  app.get('/api/fix-truck-documents-schema', requireBackupAuth, async (req, res) => {
+    try {
+      const dbPath = global.dbFilePath;
+      if (!dbPath || !fs.existsSync(dbPath)) {
+        return res.status(500).json({ success: false, error: 'Database file not found' });
+      }
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+      const truckDocCol = db.prepare("SELECT * FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198'").get();
+      if (!truckDocCol) {
+        db.close();
+        return res.status(404).json({ success: false, error: 'truck_documents collection not found' });
+      }
+      const fields = JSON.parse(truckDocCol.fields);
+      const docTypeField = fields.find(f => f.name === 'document_type');
+      let modified = false;
+      if (docTypeField && Array.isArray(docTypeField.values)) {
+        if (!docTypeField.values.includes('Road Tax')) {
+          docTypeField.values.push('Road Tax');
+          modified = true;
+        }
+      }
+      if (modified) {
+        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), truckDocCol.id);
+        db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
+      }
+      db.close();
+
+      if (global.pbProcess) {
+        logger.info("Restarting PocketBase to reload truck_documents schema with Road Tax...");
+        global.pbProcess.kill();
+      }
+
+      if (typeof uploadDatabaseToSupabase === 'function') {
+        await uploadDatabaseToSupabase(dbPath);
+      }
+
+      return res.json({ success: true, modified, values: docTypeField?.values });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
     }
   });
 
