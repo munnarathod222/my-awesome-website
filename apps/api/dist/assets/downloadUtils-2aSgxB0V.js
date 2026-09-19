@@ -1,4 +1,4 @@
-import{E as le,a as P}from"./vendor-pdf-DtmgLs_2.js";import{utils as A,write as re}from"./xlsx-CNerDvZX.js";import{aS as se,p as I}from"./index-DLxf9dwO.js";let a=null,z=null,T=null;const q=o=>new Promise(s=>{try{const i=document.createElement("img");i.crossOrigin="Anonymous",i.onload=()=>{try{const e=document.createElement("canvas");e.width=i.width||100,e.height=i.height||100,e.getContext("2d").drawImage(i,0,0);const S=e.toDataURL("image/png");s(S)}catch{s(o)}},i.onerror=()=>s(o),i.src=o}catch{s(o)}}),ce=async()=>{try{const o=await I.collection("company_settings").getOne("companysettings",{$autoCancel:!1});if(a=o,o&&o.company_logo){const s=I.files.getUrl(o,o.company_logo);z=await q(s).catch(()=>null)}else z=null;if(o&&o.e_signature){const s=I.files.getUrl(o,o.e_signature);T=await q(s).catch(()=>null)}else T=localStorage.getItem("jbc_e_signature")||null;return o}catch(o){return console.error("Failed to pre-fetch company settings:",o),null}};ce().catch(()=>{});const pe=(o,s)=>{try{const i=window.URL.createObjectURL(o),e=document.createElement("a");e.href=i,e.download=s,document.body.appendChild(e),e.click(),document.body.removeChild(e),window.URL.revokeObjectURL(i)}catch(i){throw console.error("Download failed:",i),new Error("Failed to download file")}},ue=(o,s,i={})=>{try{const e=new le,{type:g="generic",invoiceObj:S=null,quoteObj:w=null,title:v="Report",columns:p=[],totals:N=null,companyInfo:Y=a?.company_name||"Jai Bhavani Cargo"}=i,R=t=>{if(!t)return null;if(t instanceof Date)return isNaN(t.getTime())?null:t;if(typeof t=="number")return new Date(t);if(typeof t=="string"){const n=t.trim();if(!n)return null;const r=n.includes(" ")&&!n.includes("T")?n.replace(" ","T"):n,h=new Date(r);return isNaN(h.getTime())?null:h}return null};if((g==="invoice"||g==="payment_request")&&S){
+import{E as le,a as P}from"./vendor-pdf-DtmgLs_2.js";import{utils as A,write as re}from"./xlsx-CNerDvZX.js";import{aS as se,p as I}from"./index-DLxf9dwO.js";let a=null,z=null,T=null;const q=o=>new Promise(s=>{try{const i=document.createElement("img");i.crossOrigin="Anonymous",i.onload=()=>{try{const e=document.createElement("canvas"),w=i.naturalWidth||i.width||100,h=i.naturalHeight||i.height||100;e.width=w,e.height=h,e.getContext("2d").drawImage(i,0,0);const S=e.toDataURL("image/png");s({data:S,width:w,height:h,ratio:w/(h||1)})}catch{s({data:o,width:787,height:494,ratio:787/494})}},i.onerror=()=>s(null),i.src=o}catch{s(null)}}),ce=async()=>{try{const o=await I.collection("company_settings").getOne("companysettings",{$autoCancel:!1});if(a=o,o&&o.company_logo){const s=I.files.getUrl(o,o.company_logo);z=await q(s).catch(()=>null)}else z=null;if(o&&o.e_signature){const s=I.files.getUrl(o,o.e_signature);T=await q(s).catch(()=>null)}else T=localStorage.getItem("jbc_e_signature")||null;return o}catch(o){return console.error("Failed to pre-fetch company settings:",o),null}};ce().catch(()=>{});const pe=(o,s)=>{try{const i=window.URL.createObjectURL(o),e=document.createElement("a");e.href=i,e.download=s,document.body.appendChild(e),e.click(),document.body.removeChild(e),window.URL.revokeObjectURL(i)}catch(i){throw console.error("Download failed:",i),new Error("Failed to download file")}},ue=(o,s,i={})=>{try{const e=new le,{type:g="generic",invoiceObj:S=null,quoteObj:w=null,title:v="Report",columns:p=[],totals:N=null,companyInfo:Y=a?.company_name||"Jai Bhavani Cargo"}=i,R=t=>{if(!t)return null;if(t instanceof Date)return isNaN(t.getTime())?null:t;if(typeof t=="number")return new Date(t);if(typeof t=="string"){const n=t.trim();if(!n)return null;const r=n.includes(" ")&&!n.includes("T")?n.replace(" ","T"):n,h=new Date(r);return isNaN(h.getTime())?null:h}return null};if((g==="invoice"||g==="payment_request")&&S){
   const t=S;
   const n=g==="payment_request"||t.invoice_number?.startsWith("REQ-")||t.invoice_number?.startsWith("PR-");
   const r=[15,23,42];  // #0F172A
@@ -22,13 +22,18 @@ import{E as le,a as P}from"./vendor-pdf-DtmgLs_2.js";import{utils as A,write as 
 
   // Top Left: Logo & Company Address (Logo not stretched, no redundant header text)
   if(z) {
-    // Proportional logo bounds maxW=36, maxH=15
-    e.addImage(z,"PNG",14,11,36,15);
+    const logoData = (typeof z === "object" && z.data) ? z.data : z;
+    const ratio = (typeof z === "object" && z.ratio && z.ratio > 0) ? z.ratio : (787 / 494);
+    const maxW = 30, maxH = 15;
+    let logoW = maxH * ratio, logoH = maxH;
+    if (logoW > maxW) { logoW = maxW; logoH = maxW / ratio; }
+    const logoX = 14, logoY = 10 + (maxH - logoH) / 2;
+    e.addImage(logoData, "PNG", logoX, logoY, logoW, logoH);
     e.setFont("helvetica","normal");
     e.setFontSize(7.8);
     e.setTextColor(...c);
-    e.text(F,14,28,{maxWidth:100});
-    e.text(`Phone: ${b} | Email: ${_} | GSTIN: ${U}`,14,33);
+    e.text(F, 14, 28, {maxWidth: 100});
+    e.text(`Phone: ${b} | Email: ${_} | GSTIN: ${U}`, 14, 33);
   } else {
     e.setFont("helvetica","bold");
     e.setFontSize(16);
@@ -223,8 +228,18 @@ import{E as le,a as P}from"./vendor-pdf-DtmgLs_2.js";import{utils as A,write as 
   const ne=a?.signatory_name||l.signatory_name||"Vinod Kumar Rathod";
   const ae=a?.signatory_title||l.signatory_title||"Managing Director";
 
-  if(T) {
-    try { e.addImage(T,"PNG",e.internal.pageSize.width-55,d+2,35,12); } catch(err){}
+  let includeSig = i.includeSignature;
+  if(includeSig === undefined && (g === "invoice" || g === "payment_request")) {
+    includeSig = (typeof window !== "undefined" && window.confirm) ? window.confirm("Do you need signature on the invoice?\n\nClick [OK] for With Signature\nClick [Cancel] for Without Signature") : true;
+  }
+  if(T && includeSig !== false) {
+    try {
+      const sigData = (typeof T === "object" && T.data) ? T.data : T;
+      const sigRatio = (typeof T === "object" && T.ratio && T.ratio > 0) ? T.ratio : (1118 / 484);
+      const sigH = 14;
+      const sigW = Math.min(36, sigH * sigRatio);
+      e.addImage(sigData, "PNG", e.internal.pageSize.width - 14 - sigW, d - 1, sigW, sigH);
+    } catch(err){}
   }
   e.line(e.internal.pageSize.width-65,d+16,e.internal.pageSize.width-14,d+16);
   e.setFont("helvetica","bold");
