@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
   ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
-  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet
+  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet, Camera, Calendar
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -514,7 +514,7 @@ export default function Header() {
                 {/* Desktop Quick Access Header Shortcuts (Tan styled) */}
                 <div className="flex items-center gap-1 p-1 bg-slate-950/80 border border-slate-800/80 rounded-xl mr-2.5 no-print">
                   <TooltipProvider delayDuration={0}>
-                    {/* Dashboard */}
+                    {/* 1. Dashboard */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Link
@@ -529,7 +529,22 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* QR Pass Scanner */}
+                    {/* 2. Attendance / Calendar */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/dashboard/attendance"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Staff & Driver Attendance
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* 3. QR Pass Scanner */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Link
@@ -544,7 +559,27 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* Add Expense */}
+                    {/* 4. Recruitment Portal */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/recruitment"
+                          className="relative w-8 h-8 rounded-lg flex items-center justify-center text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 hover:border-amber-500/30 border border-transparent transition-all duration-150"
+                        >
+                          <UserPlus className="w-4 h-4 text-amber-400" />
+                          {pendingSignups.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-slate-950 rounded-full text-[8px] font-black flex items-center justify-center animate-pulse shadow-sm">
+                              {pendingSignups.length > 9 ? '9+' : pendingSignups.length}
+                            </span>
+                          )}
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
+                        Recruitment Portal {pendingSignups.length > 0 ? `(${pendingSignups.length} Pending)` : ''}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* 5. Add Expense */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -559,7 +594,7 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* Dispatch Trip */}
+                    {/* 6. Dispatch Trip */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -574,7 +609,7 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* Record Advance */}
+                    {/* 7. Record Advance */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -589,7 +624,7 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* Log Maintenance */}
+                    {/* 8. Log Maintenance */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -604,82 +639,22 @@ export default function Header() {
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* Log Fuel */}
+                    {/* 9. Scan Diesel / Camera */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => setIsFuelOpen(true)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150 focus:outline-none"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/15 hover:border-emerald-500/30 border border-transparent transition-all duration-150 focus:outline-none"
                         >
-                          <Droplet className="w-4 h-4" />
+                          <Camera className="w-4 h-4 text-emerald-400" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
-                        Log Fuel
+                      <TooltipContent className="bg-slate-900 border border-slate-800 text-emerald-300 text-xs font-bold font-sans">
+                        Scan Diesel Bill
                       </TooltipContent>
                     </Tooltip>
 
-                    {/* FASTag Management */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          to="/fastag"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
-                        >
-                          <Wallet className="w-4 h-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
-                        FASTag Management
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Attendance */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          to="/dashboard/attendance"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
-                        >
-                          <CalendarDays className="w-4 h-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
-                        Staff & Driver Attendance
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Track Shipment */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          to="/tracking"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
-                        >
-                          <Navigation className="w-4 h-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
-                        Track Shipment & GPS
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Quotes Hub */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          to="/quotes-manager"
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#d2b48c] hover:bg-[#d2b48c]/10 hover:border-[#d2b48c]/25 border border-transparent transition-all duration-150"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-slate-900 border border-slate-800 text-slate-200 text-xs font-bold font-sans">
-                        Quotes & Invoicing
-                      </TooltipContent>
-                    </Tooltip>
-
-                    {/* Backup Data (Admins only) */}
+                    {/* 10. Backup Data */}
                     {(isAdmin || isSuperAdmin) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -846,228 +821,252 @@ export default function Header() {
       </header>
 
       {/* Authenticated & Mobile Top Bar with Navigation Drawer */}
-      <header className="md:hidden sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#070a13]/90 backdrop-blur-xl px-3 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {isAuthenticated && (
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 px-2 rounded-xl border-slate-800 bg-slate-900 text-slate-200 hover:text-white">
-                  <Menu className="w-4 h-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] bg-[#090a0f] border-slate-800 text-slate-100 p-0 overflow-y-auto font-sans">
-                <SheetHeader className="p-4 border-b border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
-                  <SheetTitle className="text-left font-extrabold text-sm text-white flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-md">
-                      JB
-                    </div>
-                    Jai Bhavani Cargo Portal
-                  </SheetTitle>
-                  <SheetDescription className="sr-only">Mobile Menu</SheetDescription>
-                </SheetHeader>
-
-                <div className="p-3 space-y-4">
-                  {mobileNavGroups.map((group, gIdx) => (
-                    <div key={gIdx} className="space-y-1">
-                      <div className="px-2 text-[10px] font-black tracking-widest text-slate-500 uppercase">
-                        {group.title}
+      <header className="md:hidden sticky top-0 z-50 w-full border-b border-white/[0.05] bg-[#070a13]/95 backdrop-blur-xl">
+        {/* Row 1: Brand, Menu Drawer, and Top-level Actions */}
+        <div className="flex items-center justify-between px-3.5 py-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {isAuthenticated && (
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 px-2 rounded-xl border-slate-800 bg-slate-900 text-slate-200 hover:text-white">
+                    <Menu className="w-4 h-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] bg-[#090a0f] border-slate-800 text-slate-100 p-0 overflow-y-auto font-sans">
+                  <SheetHeader className="p-4 border-b border-slate-800/80 bg-slate-950/60 flex items-center justify-between">
+                    <SheetTitle className="text-left font-extrabold text-sm text-white flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-md">
+                        JB
                       </div>
-                      <div className="space-y-0.5">
-                        {group.items.filter(item => hasRoleAccess(item.roles)).map((item, iIdx) => {
-                          const isActive = location.pathname === item.path;
-                          const ItemIcon = item.icon;
-                          return (
-                            <Link
-                              key={iIdx}
-                              to={item.path}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={cn(
-                                'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
-                                isActive 
-                                  ? 'bg-primary/10 text-primary border border-primary/20 font-bold'
-                                  : 'text-slate-300 hover:bg-slate-900 hover:text-white'
-                              )}
-                            >
-                              <ItemIcon className={cn('w-4 h-4', isActive ? 'text-primary' : 'text-slate-400')} />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
+                      Jai Bhavani Cargo Portal
+                    </SheetTitle>
+                    <SheetDescription className="sr-only">Mobile Menu</SheetDescription>
+                  </SheetHeader>
 
-          <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2 min-w-0 flex-1">
-            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-sm shrink-0">
-              JB
-            </div>
-            {pageLabel ? (
-              <span className="text-xs font-black text-foreground truncate">{pageLabel}</span>
-            ) : (
-              <span className="text-xs font-black text-foreground truncate">Jai Bhavani Cargo</span>
+                  <div className="p-3 space-y-4">
+                    {mobileNavGroups.map((group, gIdx) => (
+                      <div key={gIdx} className="space-y-1">
+                        <div className="px-2 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+                          {group.title}
+                        </div>
+                        <div className="space-y-0.5">
+                          {group.items.filter(item => hasRoleAccess(item.roles)).map((item, iIdx) => {
+                            const isActive = location.pathname === item.path;
+                            const ItemIcon = item.icon;
+                            return (
+                              <Link
+                                key={iIdx}
+                                to={item.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={cn(
+                                  'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
+                                  isActive 
+                                    ? 'bg-primary/10 text-primary border border-primary/20 font-bold'
+                                    : 'text-slate-300 hover:bg-slate-900 hover:text-white'
+                                )}
+                              >
+                                <ItemIcon className={cn('w-4 h-4', isActive ? 'text-primary' : 'text-slate-400')} />
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
-          </Link>
+
+            <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-blue-600 flex items-center justify-center text-primary-foreground font-black text-xs shadow-sm shrink-0">
+                JB
+              </div>
+              <span className="text-xs font-black text-foreground truncate">{pageLabel || 'Jai Bhavani Cargo'}</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {isAuthenticated && (isAdmin || isSuperAdmin) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
+                    title="Notifications"
+                  >
+                    <Bell className={cn("w-4 h-4", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
+                    {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+                        {(pendingQuotes.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + pendingSignups.length)}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72 bg-slate-900 border border-slate-800 text-slate-100 p-0 shadow-2xl rounded-2xl overflow-hidden font-sans z-50">
+                  <div className="p-2.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-200">Notifications</span>
+                    {(pendingQuotes.length + pendingSignups.length) > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {(pendingQuotes.length + pendingSignups.length)} New
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-slate-800/60 p-1">
+                    {pendingQuotes.slice(0, 4).map(q => (
+                      <DropdownMenuItem
+                        key={q.id || q.quote_number}
+                        onClick={() => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)}
+                        className="p-2 flex flex-col items-start gap-0.5 cursor-pointer rounded-lg hover:bg-slate-800"
+                      >
+                        <span className="font-mono font-bold text-xs text-primary">{q.quote_number}</span>
+                        <span className="text-xs font-bold text-slate-200 truncate w-full">{q.customer_name}</span>
+                        <span className="text-[10px] text-slate-400">{q.origin} ➡️ {q.destination}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {pendingQuotes.length === 0 && (
+                      <div className="py-4 text-center text-xs text-slate-500">No new quote requests.</div>
+                    )}
+                  </div>
+                  <div className="p-1.5 bg-slate-950/90 border-t border-slate-800 text-center">
+                    <Link to="/quotes-manager" className="text-xs font-bold text-primary block py-1">
+                      Open Quotes Hub ➡️
+                    </Link>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {isAuthenticated && (
+              <button
+                onClick={() => navigate('/business-mail')}
+                className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
+                title="Business Mail"
+              >
+                <Mail className="w-4 h-4 text-slate-400" />
+                {unreadEmails > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
+                    {unreadEmails > 9 ? '9+' : unreadEmails}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 active:scale-95 transition-all shrink-0"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Mobile Quick Access Shortcuts (Tan styled, scrollable) */}
-          {isAuthenticated && (
-            <div className="flex items-center gap-1 p-0.5 bg-slate-950/80 border border-slate-800/80 rounded-xl max-w-[130px] xs:max-w-[170px] sm:max-w-xs overflow-x-auto scrollbar-none no-print shrink-0">
-              {/* Dashboard */}
+        {/* Row 2: Full-width Quick Access Shortcuts (Exact 10 icons matching desktop) */}
+        {isAuthenticated && (
+          <div className="px-3 pb-2 pt-0.5">
+            <div className="flex items-center justify-between gap-1 p-1 bg-slate-950/90 border border-slate-800/80 rounded-2xl overflow-x-auto scrollbar-none shadow-inner no-print">
+              {/* 1. Dashboard */}
               <Link
                 to="/dashboard"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
                 title="Dashboard"
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
+                <LayoutDashboard className="w-4 h-4" />
               </Link>
 
-              {/* QR Pass Scanner */}
+              {/* 2. Staff & Driver Attendance */}
+              <Link
+                to="/dashboard/attendance"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                title="Staff & Driver Attendance"
+              >
+                <Calendar className="w-4 h-4" />
+              </Link>
+
+              {/* 3. QR Pass Scanner */}
               <Link
                 to="/qr-scanner"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0"
                 title="QR Pass Scanner"
               >
-                <QrCode className="w-3.5 h-3.5" />
+                <QrCode className="w-4 h-4" />
               </Link>
 
-              {/* Add Expense */}
+              {/* 4. Recruitment Portal */}
+              <Link
+                to="/recruitment"
+                className="relative w-8 h-8 rounded-xl flex items-center justify-center text-amber-400 active:text-amber-300 active:bg-amber-400/10 shrink-0"
+                title="Recruitment Portal"
+              >
+                <UserPlus className="w-4 h-4 text-amber-400" />
+                {pendingSignups.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-slate-950 rounded-full text-[8px] font-black flex items-center justify-center animate-pulse shadow-sm">
+                    {pendingSignups.length > 9 ? '9+' : pendingSignups.length}
+                  </span>
+                )}
+              </Link>
+
+              {/* 5. Add Expense */}
               <button
                 onClick={() => setIsExpenseOpen(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 title="Add Expense"
               >
-                <Receipt className="w-3.5 h-3.5" />
+                <Receipt className="w-4 h-4" />
               </button>
 
-              {/* Dispatch Trip */}
+              {/* 6. Dispatch Trip */}
               <button
                 onClick={() => setIsTripOpen(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 title="Dispatch Trip"
               >
-                <Truck className="w-3.5 h-3.5" />
+                <Truck className="w-4 h-4" />
               </button>
 
-              {/* Record Advance */}
+              {/* 7. Record Advance */}
               <button
                 onClick={() => setIsAdvanceOpen(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 title="Record Advance"
               >
-                <CreditCard className="w-3.5 h-3.5" />
+                <CreditCard className="w-4 h-4" />
               </button>
 
-              {/* Log Maintenance */}
+              {/* 8. Log Maintenance */}
               <button
                 onClick={() => setIsMaintenanceOpen(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
                 title="Log Maintenance"
               >
-                <Wrench className="w-3.5 h-3.5" />
+                <Wrench className="w-4 h-4" />
               </button>
 
-              {/* Log Fuel */}
+              {/* 9. Scan Diesel Bill */}
               <button
                 onClick={() => setIsFuelOpen(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none"
-                title="Log Fuel"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-emerald-400 active:text-emerald-300 active:bg-emerald-500/15 shrink-0 focus:outline-none"
+                title="Scan Diesel Bill"
               >
-                <Droplet className="w-3.5 h-3.5" />
+                <Camera className="w-4 h-4 text-emerald-400" />
               </button>
 
-              {/* Backup (Admins only) */}
+              {/* 10. Backup Data */}
               {(isAdmin || isSuperAdmin) && (
                 <button
                   onClick={handleBackup}
                   disabled={backingUp}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 disabled:opacity-50"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 active:text-[#d2b48c] active:bg-[#d2b48c]/10 shrink-0 focus:outline-none disabled:opacity-50"
                   title="Backup Data"
                 >
-                  {backingUp ? <RefreshCw className="w-3 h-3 animate-spin" /> : <HardDrive className="w-3.5 h-3.5" />}
+                  {backingUp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <HardDrive className="w-4 h-4" />}
                 </button>
               )}
             </div>
-          )}
-
-          {isAuthenticated && (isAdmin || isSuperAdmin) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
-                  title="Notifications"
-                >
-                  <Bell className={cn("w-4 h-4", (pendingQuotes.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
-                  {(pendingQuotes.length + pendingSignups.length) > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
-                      {(pendingQuotes.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + pendingSignups.length)}
-                    </span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72 bg-slate-900 border border-slate-800 text-slate-100 p-0 shadow-2xl rounded-2xl overflow-hidden font-sans z-50">
-                <div className="p-2.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-                  <span className="font-bold text-xs uppercase tracking-wider text-slate-200">Notifications</span>
-                  {(pendingQuotes.length + pendingSignups.length) > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      {(pendingQuotes.length + pendingSignups.length)} New
-                    </span>
-                  )}
-                </div>
-                <div className="max-h-60 overflow-y-auto divide-y divide-slate-800/60 p-1">
-                  {pendingQuotes.slice(0, 4).map(q => (
-                    <DropdownMenuItem
-                      key={q.id || q.quote_number}
-                      onClick={() => navigate(`/quotes-manager?quoteNumber=${q.quote_number}`)}
-                      className="p-2 flex flex-col items-start gap-0.5 cursor-pointer rounded-lg hover:bg-slate-800"
-                    >
-                      <span className="font-mono font-bold text-xs text-primary">{q.quote_number}</span>
-                      <span className="text-xs font-bold text-slate-200 truncate w-full">{q.customer_name}</span>
-                      <span className="text-[10px] text-slate-400">{q.origin} ➡️ {q.destination}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  {pendingQuotes.length === 0 && (
-                    <div className="py-4 text-center text-xs text-slate-500">No new quote requests.</div>
-                  )}
-                </div>
-                <div className="p-1.5 bg-slate-950/90 border-t border-slate-800 text-center">
-                  <Link to="/quotes-manager" className="text-xs font-bold text-primary block py-1">
-                    Open Quotes Hub ➡️
-                  </Link>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {isAuthenticated && (
-            <button
-              onClick={() => navigate('/business-mail')}
-              className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-foreground active:scale-95 transition-all shrink-0"
-              title="Business Mail"
-            >
-              <Mail className="w-4 h-4 text-slate-400" />
-              {unreadEmails > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md">
-                  {unreadEmails > 9 ? '9+' : unreadEmails}
-                </span>
-              )}
-            </button>
-          )}
-
-          {isAuthenticated && (
-            <button
-              onClick={handleLogout}
-              className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 active:scale-95 transition-all shrink-0"
-              title="Logout"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </header>
       {isExpenseOpen && (
         <ExpenseModal
