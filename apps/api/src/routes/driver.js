@@ -2183,14 +2183,32 @@ router.post('/advances', resolveDriver, async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const RECRUITMENT_FILE_PATH = path.join(process.cwd(), 'driver_applications_store.json');
+const DELETED_RECRUITMENT_FILE_PATH = path.join(process.cwd(), 'deleted_driver_applications.json');
+
+function getDeletedIdsSet() {
+  if (typeof global.getDeletedApplicationIds === 'function') {
+    try {
+      return global.getDeletedApplicationIds();
+    } catch (e) {}
+  }
+  try {
+    if (fs.existsSync(DELETED_RECRUITMENT_FILE_PATH)) {
+      const raw = fs.readFileSync(DELETED_RECRUITMENT_FILE_PATH, 'utf8');
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) return new Set(list);
+    }
+  } catch (e) {}
+  return new Set();
+}
 
 function getStoredApplications() {
   try {
     if (fs.existsSync(RECRUITMENT_FILE_PATH)) {
       const raw = fs.readFileSync(RECRUITMENT_FILE_PATH, 'utf8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        const deletedIds = getDeletedIdsSet();
+        return parsed.filter(r => r && r.id && !deletedIds.has(String(r.id).trim()));
       }
     }
   } catch (e) {
@@ -2199,12 +2217,14 @@ function getStoredApplications() {
   return [];
 }
 
-function saveStoredApplications(list) {
+function saveStoredApplications(list, force = false) {
   try {
     if (!Array.isArray(list)) return;
-    fs.writeFileSync(RECRUITMENT_FILE_PATH, JSON.stringify(list, null, 2), 'utf8');
-    if (typeof global.uploadRecruitmentStoreToSupabase === 'function' && list.length > 0) {
-      global.uploadRecruitmentStoreToSupabase().catch(() => {});
+    const deletedIds = getDeletedIdsSet();
+    const cleanList = list.filter(r => r && r.id && !deletedIds.has(String(r.id).trim()));
+    fs.writeFileSync(RECRUITMENT_FILE_PATH, JSON.stringify(cleanList, null, 2), 'utf8');
+    if (typeof global.uploadRecruitmentStoreToSupabase === 'function') {
+      global.uploadRecruitmentStoreToSupabase({ force }).catch(() => {});
     }
   } catch (e) {
     logger.error('Failed to write driver_applications_store.json:', e.message);
@@ -2217,12 +2237,13 @@ function saveStoredApplications(list) {
  */
 router.get('/applications', async (req, res) => {
   try {
+    const deletedIds = getDeletedIdsSet();
     let diskStore = getStoredApplications();
 
-    // If disk store is empty, attempt to download cloud backup immediately
-    if (diskStore.length === 0 && typeof global.uploadRecruitmentStoreToSupabase === 'function') {
+    // Only attempt initial cloud download if local store file does not exist at all
+    if (!fs.existsSync(RECRUITMENT_FILE_PATH) && typeof global.downloadRecruitmentStoreFromSupabase === 'function') {
       try {
-        const { downloadRecruitmentStoreFromSupabase } = await import('../main.js').catch(() => ({}));
+        await global.downloadRecruitmentStoreFromSupabase();
       } catch (e) {}
       diskStore = getStoredApplications();
     }
@@ -2233,8 +2254,8 @@ router.get('/applications', async (req, res) => {
     }).catch(() => []);
 
     const mergedMap = new Map();
-    diskStore.forEach(r => { if (r && r.id) mergedMap.set(r.id, r); });
-    pbList.forEach(r => { if (r && r.id) mergedMap.set(r.id, r); });
+    diskStore.forEach(r => { if (r && r.id && !deletedIds.has(String(r.id).trim())) mergedMap.set(r.id, r); });
+    pbList.forEach(r => { if (r && r.id && !deletedIds.has(String(r.id).trim())) mergedMap.set(r.id, r); });
 
     const allApps = Array.from(mergedMap.values()).sort((a, b) => {
       return new Date(b.applied_date || b.created || 0) - new Date(a.applied_date || a.created || 0);
@@ -2389,32 +2410,7 @@ router.post('/apply', uploadRecruitmentDocs, async (req, res) => {
   }
 });
 
-/**
- * GET /api/driver/applications
- * Returns all driver & staff recruitment applications for the admin portal.
- */
-router.get('/applications', async (req, res) => {
-  try {
-    const diskStore = getStoredApplications();
-    const pbList = await pb.collection('driver_applications').getFullList({
-      sort: '-created',
-      $autoCancel: false
-    }).catch(() => []);
 
-    const mergedMap = new Map();
-    diskStore.forEach(r => { if (r && r.id) mergedMap.set(r.id, r); });
-    pbList.forEach(r => { if (r && r.id) mergedMap.set(r.id, r); });
-
-    const allApps = Array.from(mergedMap.values()).sort((a, b) => {
-      return new Date(b.applied_date || b.created || 0) - new Date(a.applied_date || a.created || 0);
-    });
-
-    return res.json({ success: true, applications: allApps });
-  } catch (err) {
-    logger.error('Error fetching driver applications:', err);
-    return res.status(500).json({ success: false, error: 'Failed to fetch applications' });
-  }
-});
 
 /**
  * PATCH /api/driver/applications/:id
@@ -2546,21 +2542,35 @@ router.post('/applications/:id/hire', async (req, res) => {
 
 /**
  * DELETE /api/driver/applications/:id
- * Deletes an application record and instantly syncs deletion to cloud backup.
+ * Deletes an application record, marks tombstone, and instantly syncs deletion to cloud backup.
  */
 router.delete('/applications/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const cleanId = String(id).trim();
 
+    // 1. Record in persistent tombstone file immediately
+    if (typeof global.addDeletedApplicationId === 'function') {
+      global.addDeletedApplicationId(cleanId);
+    } else {
+      try {
+        const deletedSet = getDeletedIdsSet();
+        deletedSet.add(cleanId);
+        fs.writeFileSync(DELETED_RECRUITMENT_FILE_PATH, JSON.stringify(Array.from(deletedSet), null, 2), 'utf8');
+      } catch (e) {}
+    }
+
+    // 2. Filter disk store & save with force=true
     const diskStore = getStoredApplications();
-    const filteredList = diskStore.filter(r => r.id !== id);
-    saveStoredApplications(filteredList);
+    const filteredList = diskStore.filter(r => r.id !== cleanId);
+    saveStoredApplications(filteredList, true);
 
+    // 3. Delete from PocketBase
     try {
-      await pb.collection('driver_applications').delete(id, { $autoCancel: false });
+      await pb.collection('driver_applications').delete(cleanId, { $autoCancel: false });
     } catch (e) {}
 
-    // Instant Cloud Persistence Sync on Deletion
+    // 4. Instant Cloud Persistence Sync on Deletion (force: true bypasses empty guard)
     if (typeof global.uploadRecruitmentStoreToSupabase === 'function') {
       global.uploadRecruitmentStoreToSupabase({ force: true }).catch(() => {});
     }
@@ -2568,7 +2578,7 @@ router.delete('/applications/:id', async (req, res) => {
       global.uploadDatabaseToSupabase(global.dbFilePath).catch(() => {});
     }
 
-    logger.info(`🗑️ Deleted application ${id} and synced deletion to cloud backup.`);
+    logger.info(`🗑️ Deleted application ${cleanId} and synced deletion to cloud backup.`);
     return res.json({ success: true, message: 'Application deleted and cloud sync updated' });
   } catch (err) {
     logger.error(`Error deleting driver application ${req.params.id}:`, err);

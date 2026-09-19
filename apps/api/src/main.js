@@ -500,6 +500,30 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   }
 };
 
+const DELETED_RECRUITMENT_FILE_PATH = path.join(process.cwd(), 'deleted_driver_applications.json');
+
+const getDeletedApplicationIds = () => {
+  try {
+    if (fs.existsSync(DELETED_RECRUITMENT_FILE_PATH)) {
+      const raw = fs.readFileSync(DELETED_RECRUITMENT_FILE_PATH, 'utf8');
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) return new Set(list);
+    }
+  } catch (e) {}
+  return new Set();
+};
+
+const addDeletedApplicationId = (id) => {
+  try {
+    const set = getDeletedApplicationIds();
+    set.add(String(id).trim());
+    fs.writeFileSync(DELETED_RECRUITMENT_FILE_PATH, JSON.stringify(Array.from(set), null, 2), 'utf8');
+  } catch (e) {}
+};
+
+global.getDeletedApplicationIds = getDeletedApplicationIds;
+global.addDeletedApplicationId = addDeletedApplicationId;
+
 const downloadRecruitmentStoreFromSupabase = async () => {
   const storePath = path.join(process.cwd(), 'driver_applications_store.json');
   try {
@@ -515,7 +539,7 @@ const downloadRecruitmentStoreFromSupabase = async () => {
       let remoteList = [];
       try { remoteList = JSON.parse(text); } catch (e) {}
 
-      if (Array.isArray(remoteList) && remoteList.length > 0) {
+      if (Array.isArray(remoteList)) {
         let localList = [];
         if (fs.existsSync(storePath)) {
           try {
@@ -523,10 +547,12 @@ const downloadRecruitmentStoreFromSupabase = async () => {
           } catch (e) {}
         }
 
-        // Merge local & remote records cleanly without losing data
+        const deletedIds = getDeletedApplicationIds();
+
+        // Merge local & remote records cleanly without resurrecting deleted applications
         const mergedMap = new Map();
         [...remoteList, ...localList].forEach(item => {
-          if (item && item.id) {
+          if (item && item.id && !deletedIds.has(item.id)) {
             const existing = mergedMap.get(item.id);
             mergedMap.set(item.id, { ...(existing || {}), ...item });
           }
@@ -544,7 +570,7 @@ const downloadRecruitmentStoreFromSupabase = async () => {
   return false;
 };
 
-const uploadRecruitmentStoreToSupabase = async () => {
+const uploadRecruitmentStoreToSupabase = async (options = {}) => {
   const storePath = path.join(process.cwd(), 'driver_applications_store.json');
   try {
     if (!fs.existsSync(storePath)) return false;
@@ -552,10 +578,12 @@ const uploadRecruitmentStoreToSupabase = async () => {
     let localList = [];
     try { localList = JSON.parse(rawContent); } catch (e) {}
 
-    // 🛡️ ANTI-WIPEOUT GUARD: Never overwrite cloud backup with empty local list
-    if (!Array.isArray(localList) || localList.length === 0) {
-      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local recruitment store has 0 items. Aborting cloud upload to preserve backup! Attempting restore...`);
-      await downloadRecruitmentStoreFromSupabase();
+    const deletedIds = getDeletedApplicationIds();
+    localList = (Array.isArray(localList) ? localList : []).filter(item => item && item.id && !deletedIds.has(item.id));
+
+    // Allow upload if options.force is true (explicit deletion), otherwise safeguard
+    if ((!Array.isArray(localList) || localList.length === 0) && !options?.force) {
+      logger.warn(`🛑 ANTI-WIPEOUT GUARD: Local recruitment store has 0 items. Aborting cloud upload to preserve backup!`);
       return false;
     }
 
