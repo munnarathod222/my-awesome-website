@@ -97,15 +97,26 @@ export const PaymentRequestsPage: React.FC = () => {
     [upcomingTrips]
   );
 
+  const parseDueDate = (d: string) => {
+    if (!d) return '';
+    const s = String(d).trim();
+    const dmy = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (dmy) {
+      return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    }
+    return s;
+  };
+
   // Update single trip payment due date
   const handleUpdateDueDate = (tripId: string, newDate: string) => {
     if (!newDate) return;
+    const normalized = parseDueDate(newDate);
     const allTrips = dbtabeses.getTrips();
     const index = allTrips.findIndex(t => t.id === tripId);
     if (index !== -1) {
-      allTrips[index].due_date = newDate;
+      allTrips[index].due_date = normalized;
       dbtabeses.setTrips(allTrips);
-      setActionSuccess(`Due date updated to ${newDate} for ${allTrips[index].trip_number}!`);
+      setActionSuccess(`Due date updated to ${normalized} for ${allTrips[index].trip_number}!`);
       setTimeout(() => setActionSuccess(''), 3500);
     }
   };
@@ -115,17 +126,18 @@ export const PaymentRequestsPage: React.FC = () => {
     e.preventDefault();
     if (selectedIds.length === 0 || !bulkDueDateInput) return;
 
+    const normalized = parseDueDate(bulkDueDateInput);
     const allTrips = dbtabeses.getTrips();
     allTrips.forEach(t => {
       if (selectedIds.includes(t.id)) {
-        t.due_date = bulkDueDateInput;
+        t.due_date = normalized;
       }
     });
 
     dbtabeses.setTrips(allTrips);
     setBulkDueDateModal(false);
     setSelectedIds([]);
-    setActionSuccess(`Payment due date updated to ${bulkDueDateInput} for ${selectedIds.length} request(s)!`);
+    setActionSuccess(`Payment due date updated to ${normalized} for ${selectedIds.length} request(s)!`);
     setTimeout(() => setActionSuccess(''), 3500);
   };
 
