@@ -26,11 +26,16 @@ const server = http.createServer((req, res) => {
   let filePath = path.join(DIST, reqPath === '/' ? 'index.html' : reqPath);
   const ext = path.extname(filePath).toLowerCase();
 
-  // If request has an asset file extension but file does not exist, return 404
+  // If request has an asset file extension but file does not exist, check apps/web/dist fallback
   if (ext && ext !== '.html') {
     if (!fs.existsSync(filePath)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      return res.end('404 Not Found');
+      const fallbackPath = path.join(__dirname, 'apps/web/dist', reqPath);
+      if (fs.existsSync(fallbackPath)) {
+        filePath = fallbackPath;
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        return res.end('404 Not Found');
+      }
     }
   } else {
     // For page navigation (HTML or routes without extension), fallback to dist/index.html
