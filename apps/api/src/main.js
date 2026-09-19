@@ -2037,6 +2037,27 @@ const runPocketBase = async () => {
     }
   }
 
+  // 🛡️ Ensure 'Road Tax' is in document_type allowed values for truck_documents collection
+  try {
+    const { execSync } = await import('node:child_process');
+    const jsonStr = execSync(`sqlite3 "${dbFilePath}" "SELECT fields FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198';"`, { encoding: 'utf8' }).trim();
+    if (jsonStr) {
+      const fields = JSON.parse(jsonStr);
+      const docTypeField = fields.find(f => f.name === 'document_type');
+      if (docTypeField && Array.isArray(docTypeField.values) && !docTypeField.values.includes('Road Tax')) {
+        docTypeField.values.push('Road Tax');
+        const tmpSql = path.join(path.dirname(dbFilePath), 'road_tax_boot.sql');
+        const escaped = JSON.stringify(fields).replace(/'/g, "''");
+        fs.writeFileSync(tmpSql, `UPDATE _collections SET fields='${escaped}' WHERE name='truck_documents' OR id='pbc_9574740198';\nPRAGMA wal_checkpoint(TRUNCATE);\n`);
+        execSync(`sqlite3 "${dbFilePath}" < "${tmpSql}"`, { stdio: 'pipe' });
+        try { fs.unlinkSync(tmpSql); } catch (_) {}
+        logger.info("✓ Boot migration (sqlite3 CLI): Added 'Road Tax' to truck_documents allowed values!");
+      }
+    }
+  } catch (cliErr) {
+    logger.warn(`sqlite3 CLI boot migration notice: ${cliErr.message}`);
+  }
+
   // Run PocketBase migrations automatically on boot
   try {
     const { spawnSync } = await import('node:child_process');
@@ -2298,14 +2319,20 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
       if (!dbPath || !fs.existsSync(dbPath)) {
         return res.status(500).json({ success: false, error: 'Database file not found' });
       }
-      const { DatabaseSync } = await import('node:sqlite');
-      const db = new DatabaseSync(dbPath);
-      const truckDocCol = db.prepare("SELECT * FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198'").get();
-      if (!truckDocCol) {
-        db.close();
-        return res.status(404).json({ success: false, error: 'truck_documents collection not found' });
+
+      const { execSync } = await import('node:child_process');
+      let jsonStr = '';
+      try {
+        jsonStr = execSync(`sqlite3 "${dbPath}" "SELECT fields FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198';"`, { encoding: 'utf8' }).trim();
+      } catch (e) {
+        return res.status(500).json({ success: false, error: 'sqlite3 query failed: ' + e.message });
       }
-      const fields = JSON.parse(truckDocCol.fields);
+
+      if (!jsonStr) {
+        return res.status(404).json({ success: false, error: 'truck_documents collection not found in _collections' });
+      }
+
+      const fields = JSON.parse(jsonStr);
       const docTypeField = fields.find(f => f.name === 'document_type');
       let modified = false;
       if (docTypeField && Array.isArray(docTypeField.values)) {
@@ -2314,11 +2341,14 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
           modified = true;
         }
       }
+
       if (modified) {
-        db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), truckDocCol.id);
-        db.exec("PRAGMA wal_checkpoint(TRUNCATE);");
+        const tmpSql = path.join(path.dirname(dbPath), 'update_road_tax.sql');
+        const escaped = JSON.stringify(fields).replace(/'/g, "''");
+        fs.writeFileSync(tmpSql, `UPDATE _collections SET fields='${escaped}' WHERE name='truck_documents' OR id='pbc_9574740198';\nPRAGMA wal_checkpoint(TRUNCATE);\n`);
+        execSync(`sqlite3 "${dbPath}" < "${tmpSql}"`, { stdio: 'pipe' });
+        try { fs.unlinkSync(tmpSql); } catch (_) {}
       }
-      db.close();
 
       if (global.pbProcess) {
         logger.info("Restarting PocketBase to reload truck_documents schema with Road Tax...");
