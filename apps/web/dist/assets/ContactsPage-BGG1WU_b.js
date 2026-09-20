@@ -13,4 +13,395 @@ ${H}`:H}f&&(T=T?`${T}
 🗺️ *Google Maps:* ${m}`:""}${_}
 
 _Sent via Jai Bhavani Cargo Dispatch Desk_`},O=async()=>{d(!0);const v=M();let w=C.replace(/\D/g,"");w.length===10&&(w=`91${w}`);try{const B={contact:t,recipientPhone:w,recipientName:N||"Staff Member",customNote:y,channel:"whatsapp"};let o=!1,a="";try{const _=await window.fetch("/hcgi/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}if(!o)try{const _=await window.fetch("/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}a||(a=w?`https://api.whatsapp.com/send?phone=${w}&text=${encodeURIComponent(v)}`:`https://api.whatsapp.com/send?text=${encodeURIComponent(v)}`),window.open(a,"_blank"),S.success(`Contact card for "${t.company_name}" sent via WhatsApp API!`),p()}catch(B){console.error(B),S.error("Failed to send contact via API")}finally{d(!1)}},L=()=>{navigator.clipboard.writeText(M()),S.success("Contact card copied to clipboard!")};return e.jsx(le,{open:r,onOpenChange:p,children:e.jsxs(oe,{className:"sm:max-w-[500px] bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl",children:[e.jsxs(he,{className:"pb-3 border-b border-slate-800",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(pe,{className:"text-lg font-bold text-white flex items-center gap-2",children:[e.jsx(Ee,{className:"w-5 h-5 text-emerald-400"}),"1-Click Send Contact via API"]}),e.jsx(ne,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold",children:"API Instant"})]}),e.jsx(ba,{className:"text-xs text-slate-400 mt-1",children:"Dispatch contact details, phone number & Google Maps location directly to drivers or fleet managers with 1 click."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"font-bold text-sm text-white",children:t.company_name}),e.jsx(ne,{variant:"outline",className:"text-[11px] font-semibold bg-primary/10 text-primary border-primary/30",children:t.contact_type})]}),e.jsxs("div",{className:"text-xs text-slate-300 flex items-center gap-2",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-400"}),e.jsx("span",{className:"font-mono font-bold text-emerald-400",children:t.phone_number||"N/A"})]}),t.physical_address&&e.jsxs("div",{className:"text-xs text-slate-400 truncate flex items-center gap-1.5",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-rose-400 shrink-0"}),e.jsx("span",{className:"truncate",children:t.physical_address})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Select Recipient Staff / Driver"}),e.jsxs(Y,{value:b,onValueChange:v=>{if(u(v),v!=="custom"){const w=I.find(B=>B.id===v);w&&(j(w.phone||""),c(w.name||""))}else j(""),c("")},children:[e.jsx(K,{className:"bg-slate-950 border-slate-800 text-xs text-slate-200",children:e.jsx(J,{placeholder:"Choose recipient"})}),e.jsxs(Z,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(n,{value:"custom",children:"✏️ Enter Custom Phone Number"}),I.map(v=>e.jsxs(n,{value:v.id,children:["👤 ",v.name," ",v.phone?`(${v.phone})`:""]},v.id))]})]})]}),b==="custom"&&e.jsxs("div",{className:"space-y-1.5 animate-in fade-in duration-200",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Recipient WhatsApp Phone Number *"}),e.jsx(k,{value:C,onChange:v=>j(v.target.value),placeholder:"e.g. 9848012345 (10-digit mobile number)",className:"bg-slate-950 border-slate-800 text-xs font-mono font-bold text-emerald-400"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Optional Dispatch Note (Added to message)"}),e.jsx(ke,{value:y,onChange:v=>x(v.target.value),placeholder:"e.g. Truck MH12-AB-1234 breakdown, reach this mechanic immediately...",className:"bg-slate-950 border-slate-800 text-xs min-h-[60px] text-slate-200"})]})]}),e.jsxs(ue,{className:"pt-2 border-t border-slate-800 flex items-center justify-between gap-2",children:[e.jsxs(P,{type:"button",variant:"outline",size:"sm",onClick:L,className:"border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold text-xs",children:[e.jsx(we,{className:"w-3.5 h-3.5 mr-1"})," Copy Card"]}),e.jsxs(P,{type:"button",onClick:O,disabled:s,className:"bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl shadow-lg shadow-emerald-900/30",children:[s?e.jsx(me,{className:"w-4 h-4 mr-1 animate-spin"}):e.jsx(ye,{className:"w-4 h-4 mr-1"}),"1-Click Send via API"]})]})]})})}const be=[{id:"all",label:"All Contacts",icon:de,types:null},{id:"tyre_shop",label:"Tyre Shop",icon:je,types:["Tyre Shop"]},{id:"puncher_shop",label:"Puncher Shop",icon:je,types:["Puncher Shop","Puncture Shop"]},{id:"truck_broker",label:"Truck Broker",icon:aa,types:["Truck Broker","Broker"]},{id:"electrician",label:"Electrician",icon:sa,types:["Electrician"]},{id:"washing_centre",label:"Washing Centre",icon:Ee,types:["Washing Centre"]},{id:"mechanic",label:"Mechanic",icon:_e,types:["Mechanic"]},{id:"welding_bodywork",label:"Welding / Body Work",icon:Te,types:["Welding / Body Work","Bodywork / Welding"]},{id:"rto_agent",label:"RTO Agent",icon:ve,types:["RTO Agent"]},{id:"fastag",label:"FASTag",icon:ta,types:["FASTag","FASTag Agent"]},{id:"truck_sales",label:"Truck Sales Exec (Showroom)",icon:ee,types:["Truck Sales Executive (Showroom)","Showroom Sales Executive","Showroom"]},{id:"truck_fabricator",label:"Truck Fabricator",icon:Te,types:["Truck Fabricator","Fabricator"]},{id:"key_maker",label:"Key Maker",icon:ra,types:["Key Maker","Locksmith"]},{id:"parking",label:"Parking",icon:na,types:["Parking","Truck Parking / Yard"]},{id:"fuel_station",label:"Fuel Station",icon:Le,types:["Fuel Station","Petrol Pump"]},{id:"truck_owner",label:"Truck Owner & Transporter",icon:Ce,types:["Truck Owner","Transporter"]},{id:"client",label:"Corporate Client",icon:ee,types:["Client","Corporate"]},{id:"warehouse",label:"Warehouse",icon:ve,types:["Warehouse"]},{id:"driver_staff",label:"Drivers & Staff",icon:de,types:["Driver","Employee","Supervisor","Manager"]},{id:"crane_towing",label:"Crane / Towing",icon:Ce,types:["Crane / Tow Truck"]},{id:"spare_parts",label:"Spare Parts",icon:la,types:["Spare Parts"]},{id:"banking_finance",label:"Banking & Finance",icon:Me,types:["Banking","Loan Agent"]},{id:"other",label:"Other Vendors",icon:$e,types:["Vendor","Other"]}],Pa=[{key:"All",label:"All Contacts",icon:de,types:null},{key:"Tyres",label:"Tyres & Puncher",icon:je,types:["Tyre Shop","Puncher Shop","Puncture Shop"]},{key:"Maintenance",label:"Workshop & Mechanics",icon:_e,types:["Mechanic","Electrician","Welding / Body Work","Bodywork / Welding","Truck Fabricator","Key Maker","Spare Parts","Hydraulics","Crane / Tow Truck"]},{key:"Brokers",label:"Brokers & Transporters",icon:Ce,types:["Truck Broker","Broker","Truck Owner","Transporter"]},{key:"Highway",label:"Fuel, Parking & Washing",icon:Le,types:["Fuel Station","Petrol Pump","Parking","Truck Parking / Yard","Washing Centre"]},{key:"RTO_FASTag",label:"RTO & FASTag",icon:ve,types:["RTO Agent","FASTag","FASTag Agent"]},{key:"Showroom",label:"Showroom & Sales",icon:ee,types:["Truck Sales Executive (Showroom)","Showroom Sales Executive","Showroom","Truck Fabricator"]},{key:"Client",label:"Corporate Clients",icon:ee,types:["Client","Corporate","Warehouse"]},{key:"Employee",label:"Drivers & Staff",icon:de,types:["Driver","Employee","Supervisor","Manager"]},{key:"Finance",label:"Finance & Banking",icon:Me,types:["Banking","Loan Agent"]},{key:"Other",label:"Other Contacts & Vendors",icon:$e,types:["Other","Vendor"]}],Ba={"Tyre Shop":"bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold","Puncher Shop":"bg-orange-500/15 text-orange-400 border-orange-500/30 font-bold","Puncture Shop":"bg-orange-500/15 text-orange-400 border-orange-500/30 font-bold","Truck Broker":"bg-indigo-500/15 text-indigo-400 border-indigo-500/30 font-bold",Broker:"bg-indigo-500/15 text-indigo-400 border-indigo-500/30 font-bold",Electrician:"bg-yellow-500/15 text-yellow-400 border-yellow-500/30 font-bold","Washing Centre":"bg-cyan-500/15 text-cyan-400 border-cyan-500/30 font-bold",Mechanic:"bg-red-500/15 text-red-400 border-red-500/30 font-bold","Welding / Body Work":"bg-rose-500/15 text-rose-400 border-rose-500/30 font-bold","Bodywork / Welding":"bg-rose-500/15 text-rose-400 border-rose-500/30 font-bold","RTO Agent":"bg-emerald-500/15 text-emerald-400 border-emerald-500/30 font-bold",FASTag:"bg-teal-500/15 text-teal-400 border-teal-500/30 font-bold","FASTag Agent":"bg-teal-500/15 text-teal-400 border-teal-500/30 font-bold","Truck Sales Executive (Showroom)":"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold","Showroom Sales Executive":"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold",Showroom:"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold","Truck Fabricator":"bg-amber-600/15 text-amber-300 border-amber-600/30 font-bold",Fabricator:"bg-amber-600/15 text-amber-300 border-amber-600/30 font-bold","Key Maker":"bg-lime-500/15 text-lime-400 border-lime-500/30 font-bold",Locksmith:"bg-lime-500/15 text-lime-400 border-lime-500/30 font-bold",Parking:"bg-blue-500/15 text-blue-400 border-blue-500/30 font-bold","Truck Parking / Yard":"bg-blue-500/15 text-blue-400 border-blue-500/30 font-bold","Fuel Station":"bg-green-500/15 text-green-400 border-green-500/30 font-bold","Petrol Pump":"bg-green-500/15 text-green-400 border-green-500/30 font-bold","Truck Owner":"bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold",Transporter:"bg-indigo-500/10 text-indigo-400 border-indigo-500/30 font-bold",Client:"bg-primary/10 text-primary border-primary/25",Corporate:"bg-primary/10 text-primary border-primary/25",Warehouse:"bg-amber-500/10 text-amber-400 border-amber-500/25",Driver:"bg-emerald-500/10 text-emerald-500 border-emerald-500/25",Employee:"bg-teal-500/10 text-teal-400 border-teal-500/25","Spare Parts":"bg-orange-500/10 text-orange-400 border-orange-500/25","Crane / Tow Truck":"bg-blue-500/10 text-blue-400 border-blue-500/25",Banking:"bg-green-500/10 text-green-400 border-green-500/25","Loan Agent":"bg-lime-500/10 text-lime-400 border-lime-500/25",Vendor:"bg-indigo-500/10 text-indigo-400 border-indigo-500/25",Other:"bg-slate-500/10 text-slate-300 border-slate-500/25"},Da=r=>e.jsx(ne,{variant:"outline",className:`rounded-lg font-bold shadow-sm ${Ba[r]||"border-border/50 bg-muted/40 text-foreground"}`,children:r||"Unknown"});function Ea({active:r,onClick:p,icon:t,label:b,count:u,accent:C}){return e.jsxs("button",{onClick:p,className:`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 whitespace-nowrap
-        ${r?"bg-primary text-primary-foreground shadow-md scale-105":"text-muted-foreground hover:text-foreground hover:bg-muted/60 bg-background border border-border/50"}`,children:[e.jsx(t,{className:`w-3.5 h-3.5 ${r?"":C||"text-muted-foreground"}`}),b,u!==void 0&&e.jsx("span",{className:`text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5 ${r?"bg-white/20 text-white":"bg-muted text-muted-foreground"}`,children:u})]})}function Va(){const[r,p]=h.useState([]),[t,b]=h.useState(!0),[u,C]=h.useState(""),[j,N]=h.useState("All"),[c,y]=h.useState("all"),[x,s]=h.useState(!1),[d,I]=h.useState(!1),[i,m]=h.useState(!1),[M,O]=h.useState(!1),[L,v]=h.useState(!1),[w,B]=h.useState(!1),[o,a]=h.useState(null),[_,f]=h.useState(null),F=l=>{a(l),B(!0)},[T,E]=h.useState([]),$=async()=>{b(!0);try{const l=await W.collection("contacts").getFullList({sort:"-created",$autoCancel:!1});p(l||[])}catch(l){console.error("Failed to fetch contacts:",l),S.error("Failed to load contacts")}finally{b(!1)}};h.useEffect(()=>{$()},[]);const H=h.useMemo(()=>{const l={};return be.forEach(A=>{A.id==="all"?l[A.id]=r.length:l[A.id]=r.filter(Q=>{const U=Q.contact_type||"";return A.types&&A.types.some(V=>V.toLowerCase()===U.toLowerCase())}).length}),l},[r]),R=h.useMemo(()=>r.filter(l=>{const A=u.toLowerCase();if(!(!A||l.company_name?.toLowerCase().includes(A)||l.phone_number?.toLowerCase().includes(A)||l.physical_address?.toLowerCase().includes(A)||l.contact_type?.toLowerCase().includes(A)||l.gstin?.toLowerCase().includes(A)||l.truck_brand?.toLowerCase().includes(A)))return!1;if(c!=="all"){const U=be.find(V=>V.id===c);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}if(j!=="All"){const U=Pa.find(V=>V.key===j);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}return!0}),[r,u,c,j]),re=()=>{f(null),s(!0)},ie=l=>{f(l),s(!0)},z=l=>{f(l),I(!0)},Se=async l=>{if(window.confirm(`Delete contact "${l.company_name}"?`))try{await W.collection("contacts").delete(l.id,{$autoCancel:!1}),S.success("Contact deleted"),$()}catch{S.error("Failed to delete contact")}},D=l=>{E(A=>A.includes(l)?A.filter(Q=>Q!==l):[...A,l])},Ge=()=>{T.length===R.length&&R.length>0?E([]):E(R.map(l=>l.id))};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0",children:[e.jsx(oa,{children:e.jsx("title",{children:"Contacts Directory | Jai Bhavani Cargo"})}),e.jsxs("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(ia,{className:"w-8 h-8 text-primary"})," Contacts Directory"]}),e.jsx("p",{className:"text-muted-foreground text-sm",children:"Categorized directory of tyre shops, mechanics, electricians, truck brokers, RTO agents, FASTag, showrooms, fabricators, parking & fuel stations."})]}),e.jsxs("div",{className:"flex items-center gap-2.5 flex-wrap",children:[e.jsxs(P,{variant:"outline",onClick:()=>O(!0),className:"rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm",children:[e.jsx(De,{className:"w-4 h-4"})," Scan Visiting Card"]}),e.jsxs(P,{variant:"outline",onClick:()=>m(!0),className:"rounded-xl text-xs font-bold gap-1.5",children:[e.jsx(Be,{className:"w-4 h-4"})," Export Contacts"]}),e.jsxs(P,{onClick:re,className:"rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20",children:[e.jsx(ca,{className:"w-4 h-4"})," Add New Contact"]})]})]}),e.jsxs("div",{className:"bg-card/70 border border-border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-3",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(da,{className:"w-4 h-4 text-primary"}),e.jsx("h3",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Directory Categories"})]}),e.jsxs("span",{className:"text-xs text-muted-foreground",children:["Showing ",R.length," of ",r.length]})]}),e.jsx("div",{className:"flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin",children:be.map(l=>e.jsx(Ea,{active:c===l.id,onClick:()=>{y(l.id),N("All")},icon:l.icon,label:l.label,count:H[l.id]},l.id))})]}),e.jsxs(fa,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(ya,{className:"bg-muted/30 border-b border-border p-4",children:e.jsxs("div",{className:"flex flex-col sm:flex-row gap-3 items-center justify-between",children:[e.jsxs("div",{className:"relative w-full sm:w-80",children:[e.jsx(ma,{className:"absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(k,{placeholder:"Search by name, phone, city, GSTIN...",value:u,onChange:l=>C(l.target.value),className:"pl-9 bg-background rounded-xl text-xs h-9"})]}),T.length>0&&e.jsxs("div",{className:"flex items-center gap-2 text-xs",children:[e.jsxs("span",{className:"font-bold text-primary",children:[T.length," Selected"]}),e.jsxs(P,{size:"sm",variant:"outline",onClick:()=>v(!0),className:"h-8 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold gap-1",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share Selected on WhatsApp"]})]})]})}),e.jsxs(ja,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(va,{children:[e.jsx(Ca,{className:"bg-muted/10",children:e.jsxs(ce,{children:[e.jsx(X,{className:"w-[40px] text-center",children:e.jsx("button",{onClick:Ge,className:"flex items-center justify-center",children:T.length>0&&T.length===R.length?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsx(X,{className:"min-w-[200px]",children:"Contact / Company"}),e.jsx(X,{className:"min-w-[150px]",children:"Category"}),e.jsx(X,{className:"min-w-[150px]",children:"Phone & Contact"}),e.jsx(X,{className:"min-w-[200px]",children:"Address & Location"}),e.jsx(X,{className:"min-w-[120px]",children:"GSTIN"}),e.jsx(X,{className:"text-right w-[140px]",children:"Actions"})]})}),e.jsx(Na,{children:t?e.jsx(ce,{children:e.jsx(q,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"Loading contacts directory..."})}):R.length===0?e.jsx(ce,{children:e.jsxs(q,{colSpan:7,className:"text-center py-16 text-muted-foreground",children:[e.jsx("p",{className:"font-semibold",children:"No contacts found in this category."}),e.jsx("p",{className:"text-xs mt-1",children:'Click "Add New Contact" or "Scan Visiting Card" to create one.'})]})}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs(ce,{className:`hover:bg-muted/40 transition-colors ${A?"bg-primary/5":""}`,children:[e.jsx(q,{className:"text-center",children:e.jsx("button",{onClick:()=>D(l.id),children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsxs(q,{children:[e.jsx("div",{className:"font-bold text-foreground",children:l.company_name}),l.truck_brand&&e.jsxs("div",{className:"text-[11px] text-amber-400 font-semibold mt-0.5",children:["🔧 Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[220px] mt-0.5",children:l.notes})]}),e.jsx(q,{children:Da(l.contact_type)}),e.jsxs(q,{children:[e.jsx("div",{className:"flex items-center gap-1.5",children:e.jsxs("a",{href:`tel:${l.phone_number?.replace(/\D/g,"")}`,className:"font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-primary"})," ",l.phone_number]})}),l.email&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[150px] mt-0.5",children:l.email})]}),e.jsxs(q,{children:[e.jsx("div",{className:"text-xs text-foreground truncate max-w-[250px]",children:l.physical_address||"-"}),Q&&e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 mt-0.5",children:[e.jsx(se,{className:"w-3 h-3"})," View on Google Maps"]})]}),e.jsx(q,{className:"font-mono text-xs text-muted-foreground",children:l.gstin||"URD"}),e.jsx(q,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",title:"1-Click Send Contact Card via WhatsApp API",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Send API"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})})]},l.id)})})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:t?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading contacts..."}):R.length===0?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"No contacts found."}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs("div",{key:l.id,className:"p-3 space-y-2.5 transition-colors "+(A?"bg-primary/5 border-l-2 border-primary":"hover:bg-muted/5"),children:[e.jsxs("div",{className:"flex items-start justify-between gap-2",children:[e.jsxs("div",{className:"flex items-center gap-2 min-w-0 flex-1",children:[e.jsx("button",{onClick:()=>D(l.id),className:"p-1 rounded-md shrink-0",children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})}),e.jsxs("div",{className:"min-w-0 flex-1",children:[e.jsx("h3",{className:"font-bold text-sm text-foreground truncate",children:l.company_name}),l.truck_brand&&e.jsxs("span",{className:"text-[10px] text-amber-400 font-semibold block truncate",children:["Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("p",{className:"text-[10px] text-muted-foreground truncate",children:l.notes})]})]}),e.jsx("div",{className:"shrink-0",children:Da(l.contact_type)})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/20",children:[l.phone_number?e.jsxs("a",{href:"tel:"+l.phone_number,className:"font-bold text-primary flex items-center gap-1 hover:underline text-xs",children:[e.jsx(ae,{className:"w-3.5 h-3.5"})," ",l.phone_number]}):e.jsx("span",{className:"text-muted-foreground text-[11px]",children:"No phone"}),l.physical_address?(Q?e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"text-[11px] font-bold text-emerald-400 flex items-center gap-1 hover:underline truncate max-w-[140px]",children:[e.jsx(se,{className:"w-3 h-3 shrink-0"})," Map Location"]}):e.jsx("span",{className:"text-[10px] text-muted-foreground truncate max-w-[130px]",children:l.physical_address})):null]}),e.jsxs("div",{className:"flex items-center justify-between gap-1.5 pt-1 border-t border-border/10",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 flex-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm flex items-center justify-center",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share / WhatsApp"]}),l.phone_number&&e.jsxs("a",{href:"tel:"+l.phone_number,className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 flex items-center gap-1",children:[e.jsx(ae,{className:"w-3 h-3"})," Call"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})]})})})]})]}),e.jsx(ka,{isOpen:x,onClose:()=>s(!1),contact:_,onSuccess:()=>{s(!1),$()}}),e.jsx(Sa,{isOpen:d,onClose:()=>I(!1),contact:_,onEdit:l=>{I(!1),ie(l)}}),e.jsx(Aa,{isOpen:i,onClose:()=>m(!1),contacts:r}),e.jsx(Oa,{isOpen:M,onClose:()=>O(!1),onSuccess:()=>{O(!1),$()}}),e.jsx(Fa,{isOpen:w,onClose:()=>B(!1),contact:o}),e.jsx(wa,{isOpen:L,onClose:()=>v(!1),contacts:r.filter(l=>T.includes(l.id))})]})}export{be as CATEGORY_FILTERS,Pa as MAIN_GROUPS,Va as default};
+        ${r?"bg-primary text-primary-foreground shadow-md scale-105":"text-muted-foreground hover:text-foreground hover:bg-muted/60 bg-background border border-border/50"}`,children:[e.jsx(t,{className:`w-3.5 h-3.5 ${r?"":C||"text-muted-foreground"}`}),b,u!==void 0&&e.jsx("span",{className:`text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5 ${r?"bg-white/20 text-white":"bg-muted text-muted-foreground"}`,children:u})]})}function Va(){const[currentView,setCurrentView]=h.useState("contacts"),[isSosOpen,setIsSosOpen]=h.useState(!1);const[r,p]=h.useState([]),[t,b]=h.useState(!0),[u,C]=h.useState(""),[j,N]=h.useState("All"),[c,y]=h.useState("all"),[x,s]=h.useState(!1),[d,I]=h.useState(!1),[i,m]=h.useState(!1),[M,O]=h.useState(!1),[L,v]=h.useState(!1),[w,B]=h.useState(!1),[o,a]=h.useState(null),[_,f]=h.useState(null),F=l=>{a(l),B(!0)},[T,E]=h.useState([]),$=async()=>{b(!0);try{const l=await W.collection("contacts").getFullList({sort:"-created",$autoCancel:!1});p(l||[])}catch(l){console.error("Failed to fetch contacts:",l),S.error("Failed to load contacts")}finally{b(!1)}};h.useEffect(()=>{$()},[]);const H=h.useMemo(()=>{const l={};return be.forEach(A=>{A.id==="all"?l[A.id]=r.length:l[A.id]=r.filter(Q=>{const U=Q.contact_type||"";return A.types&&A.types.some(V=>V.toLowerCase()===U.toLowerCase())}).length}),l},[r]),R=h.useMemo(()=>r.filter(l=>{const A=u.toLowerCase();if(!(!A||l.company_name?.toLowerCase().includes(A)||l.phone_number?.toLowerCase().includes(A)||l.physical_address?.toLowerCase().includes(A)||l.contact_type?.toLowerCase().includes(A)||l.gstin?.toLowerCase().includes(A)||l.truck_brand?.toLowerCase().includes(A)))return!1;if(c!=="all"){const U=be.find(V=>V.id===c);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}if(j!=="All"){const U=Pa.find(V=>V.key===j);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}return!0}),[r,u,c,j]),re=()=>{f(null),s(!0)},ie=l=>{f(l),s(!0)},z=l=>{f(l),I(!0)},Se=async l=>{if(window.confirm(`Delete contact "${l.company_name}"?`))try{await W.collection("contacts").delete(l.id,{$autoCancel:!1}),S.success("Contact deleted"),$()}catch{S.error("Failed to delete contact")}},D=l=>{E(A=>A.includes(l)?A.filter(Q=>Q!==l):[...A,l])},Ge=()=>{T.length===R.length&&R.length>0?E([]):E(R.map(l=>l.id))};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0",children:[e.jsx(oa,{children:e.jsx("title",{children:"Contacts Directory | Jai Bhavani Cargo"})}),e.jsxs("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(ia,{className:"w-8 h-8 text-primary"})," Contacts Directory"]}),e.jsx("p",{className:"text-muted-foreground text-sm",children:"Categorized directory of tyre shops, mechanics, electricians, truck brokers, RTO agents, FASTag, showrooms, fabricators, parking & fuel stations."})]}),e.jsxs("div",{className:"flex items-center gap-2.5 flex-wrap",children:[e.jsxs(P,{variant:"outline",onClick:()=>setIsSosOpen(!0),className:"rounded-xl border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-black text-xs gap-1.5 shadow-sm animate-pulse",children:[e.jsx("span",{children:"🚨"})," NEED HELP (SOS)"]}),e.jsxs("div",{className:"flex items-center bg-muted/60 p-1 rounded-xl border border-border/60 text-xs font-bold",children:[e.jsx("button",{type:"button",onClick:()=>setCurrentView("contacts"),className:"px-3 py-1.5 rounded-lg transition-all "+(currentView==="contacts"?"bg-background text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:"📇 All Contacts"}),e.jsxs("button",{type:"button",onClick:()=>setCurrentView("regional_breakdown"),className:"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 "+(currentView==="regional_breakdown"?"bg-background text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:["🗺️ Regional Network Hub",e.jsx("span",{className:"px-1.5 py-0.2 rounded-full text-[10px] font-black bg-primary/20 text-primary",children:"3 Hubs"})]})]}),e.jsxs(P,{variant:"outline",onClick:()=>O(!0),className:"rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm",children:[e.jsx(De,{className:"w-4 h-4"})," Scan Visiting Card"]}),e.jsxs(P,{variant:"outline",onClick:()=>m(!0),className:"rounded-xl text-xs font-bold gap-1.5",children:[e.jsx(Be,{className:"w-4 h-4"})," Export Contacts"]}),e.jsxs(P,{onClick:re,className:"rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20",children:[e.jsx(ca,{className:"w-4 h-4"})," Add New Contact"]})]})]}),currentView==="regional_breakdown"?e.jsx(RegionalNetworkHubView,{contacts:r,onRefreshContacts:$,onOpenSos:()=>setIsSosOpen(!0)}):e.jsxs("div",{className:"bg-card/70 border border-border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-3",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(da,{className:"w-4 h-4 text-primary"}),e.jsx("h3",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Directory Categories"})]}),e.jsxs("span",{className:"text-xs text-muted-foreground",children:["Showing ",R.length," of ",r.length]})]}),e.jsx("div",{className:"flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin",children:be.map(l=>e.jsx(Ea,{active:c===l.id,onClick:()=>{y(l.id),N("All")},icon:l.icon,label:l.label,count:H[l.id]},l.id))})]}),e.jsxs(fa,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(ya,{className:"bg-muted/30 border-b border-border p-4",children:e.jsxs("div",{className:"flex flex-col sm:flex-row gap-3 items-center justify-between",children:[e.jsxs("div",{className:"relative w-full sm:w-80",children:[e.jsx(ma,{className:"absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(k,{placeholder:"Search by name, phone, city, GSTIN...",value:u,onChange:l=>C(l.target.value),className:"pl-9 bg-background rounded-xl text-xs h-9"})]}),T.length>0&&e.jsxs("div",{className:"flex items-center gap-2 text-xs",children:[e.jsxs("span",{className:"font-bold text-primary",children:[T.length," Selected"]}),e.jsxs(P,{size:"sm",variant:"outline",onClick:()=>v(!0),className:"h-8 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold gap-1",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share Selected on WhatsApp"]})]})]})}),e.jsxs(ja,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(va,{children:[e.jsx(Ca,{className:"bg-muted/10",children:e.jsxs(ce,{children:[e.jsx(X,{className:"w-[40px] text-center",children:e.jsx("button",{onClick:Ge,className:"flex items-center justify-center",children:T.length>0&&T.length===R.length?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsx(X,{className:"min-w-[200px]",children:"Contact / Company"}),e.jsx(X,{className:"min-w-[150px]",children:"Category"}),e.jsx(X,{className:"min-w-[150px]",children:"Phone & Contact"}),e.jsx(X,{className:"min-w-[200px]",children:"Address & Location"}),e.jsx(X,{className:"min-w-[120px]",children:"GSTIN"}),e.jsx(X,{className:"text-right w-[140px]",children:"Actions"})]})}),e.jsx(Na,{children:t?e.jsx(ce,{children:e.jsx(q,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"Loading contacts directory..."})}):R.length===0?e.jsx(ce,{children:e.jsxs(q,{colSpan:7,className:"text-center py-16 text-muted-foreground",children:[e.jsx("p",{className:"font-semibold",children:"No contacts found in this category."}),e.jsx("p",{className:"text-xs mt-1",children:'Click "Add New Contact" or "Scan Visiting Card" to create one.'})]})}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs(ce,{className:`hover:bg-muted/40 transition-colors ${A?"bg-primary/5":""}`,children:[e.jsx(q,{className:"text-center",children:e.jsx("button",{onClick:()=>D(l.id),children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsxs(q,{children:[e.jsx("div",{className:"font-bold text-foreground",children:l.company_name}),l.truck_brand&&e.jsxs("div",{className:"text-[11px] text-amber-400 font-semibold mt-0.5",children:["🔧 Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[220px] mt-0.5",children:l.notes})]}),e.jsx(q,{children:Da(l.contact_type)}),e.jsxs(q,{children:[e.jsx("div",{className:"flex items-center gap-1.5",children:e.jsxs("a",{href:`tel:${l.phone_number?.replace(/\D/g,"")}`,className:"font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-primary"})," ",l.phone_number]})}),l.email&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[150px] mt-0.5",children:l.email})]}),e.jsxs(q,{children:[e.jsx("div",{className:"text-xs text-foreground truncate max-w-[250px]",children:l.physical_address||"-"}),Q&&e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 mt-0.5",children:[e.jsx(se,{className:"w-3 h-3"})," View on Google Maps"]})]}),e.jsx(q,{className:"font-mono text-xs text-muted-foreground",children:l.gstin||"URD"}),e.jsx(q,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",title:"1-Click Send Contact Card via WhatsApp API",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Send API"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})})]},l.id)})})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:t?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading contacts..."}):R.length===0?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"No contacts found."}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs("div",{key:l.id,className:"p-3 space-y-2.5 transition-colors "+(A?"bg-primary/5 border-l-2 border-primary":"hover:bg-muted/5"),children:[e.jsxs("div",{className:"flex items-start justify-between gap-2",children:[e.jsxs("div",{className:"flex items-center gap-2 min-w-0 flex-1",children:[e.jsx("button",{onClick:()=>D(l.id),className:"p-1 rounded-md shrink-0",children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})}),e.jsxs("div",{className:"min-w-0 flex-1",children:[e.jsx("h3",{className:"font-bold text-sm text-foreground truncate",children:l.company_name}),l.truck_brand&&e.jsxs("span",{className:"text-[10px] text-amber-400 font-semibold block truncate",children:["Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("p",{className:"text-[10px] text-muted-foreground truncate",children:l.notes})]})]}),e.jsx("div",{className:"shrink-0",children:Da(l.contact_type)})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/20",children:[l.phone_number?e.jsxs("a",{href:"tel:"+l.phone_number,className:"font-bold text-primary flex items-center gap-1 hover:underline text-xs",children:[e.jsx(ae,{className:"w-3.5 h-3.5"})," ",l.phone_number]}):e.jsx("span",{className:"text-muted-foreground text-[11px]",children:"No phone"}),l.physical_address?(Q?e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"text-[11px] font-bold text-emerald-400 flex items-center gap-1 hover:underline truncate max-w-[140px]",children:[e.jsx(se,{className:"w-3 h-3 shrink-0"})," Map Location"]}):e.jsx("span",{className:"text-[10px] text-muted-foreground truncate max-w-[130px]",children:l.physical_address})):null]}),e.jsxs("div",{className:"flex items-center justify-between gap-1.5 pt-1 border-t border-border/10",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 flex-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm flex items-center justify-center",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share / WhatsApp"]}),l.phone_number&&e.jsxs("a",{href:"tel:"+l.phone_number,className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 flex items-center gap-1",children:[e.jsx(ae,{className:"w-3 h-3"})," Call"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})]})})})]})]}),e.jsx(ka,{isOpen:x,onClose:()=>s(!1),contact:_,onSuccess:()=>{s(!1),$()}}),e.jsx(Sa,{isOpen:d,onClose:()=>I(!1),contact:_,onEdit:l=>{I(!1),ie(l)}}),e.jsx(Aa,{isOpen:i,onClose:()=>m(!1),contacts:r}),e.jsx(Oa,{isOpen:M,onClose:()=>O(!1),onSuccess:()=>{O(!1),$()}}),e.jsx(Fa,{isOpen:w,onClose:()=>B(!1),contact:o}),e.jsx(wa,{isOpen:L,onClose:()=>v(!1),contacts:r.filter(l=>T.includes(l.id))}),e.jsx(EmergencySosModal,{isOpen:isSosOpen,onClose:()=>setIsSosOpen(!1),regions:[{id:"reg_hyd",name:"HYDERABAD"},{id:"reg_kurnool",name:"KURNOOL"},{id:"reg_atp",name:"ANANTAPUR"}]})]})}function RegionalNetworkHubView({ contacts, onRefreshContacts, onOpenSos }) {
+  const [regions, setRegions] = h.useState([]);
+  const [loading, setLoading] = h.useState(true);
+  const [selectedRegionId, setSelectedRegionId] = h.useState("reg_hyd");
+  const [assigningCategory, setAssigningCategory] = h.useState(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = h.useState(false);
+  const [contactSearch, setContactSearch] = h.useState("");
+  const fetchBreakdownNetwork = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/driver/breakdown-network");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.regions)) {
+        setRegions(data.regions);
+        if (data.regions.length > 0 && !selectedRegionId) {
+          setSelectedRegionId(data.regions[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load breakdown network:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  h.useEffect(() => {
+    fetchBreakdownNetwork();
+  }, []);
+  const selectedRegion = regions.find((r) => r.id === selectedRegionId) || regions[0] || null;
+  const handleAssignContact = async (contact) => {
+    if (!assigningCategory || !selectedRegion) return;
+    try {
+      const payload = {
+        regionId: selectedRegion.id,
+        category: assigningCategory.categoryKey,
+        isPrimary: assigningCategory.isPrimary,
+        contact: contact ? {
+          id: contact.id,
+          company_name: contact.company_name || contact.name,
+          contact_name: contact.contact_name || contact.company_name,
+          phone_number: contact.phone_number || contact.phone,
+          contact_type: contact.contact_type,
+          physical_address: contact.physical_address || contact.address,
+          google_maps_url: contact.google_maps_url || contact.location_url,
+          truck_brand: contact.truck_brand
+        } : null
+      };
+      const res = await fetch("/api/driver/breakdown-network/assign", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        S.success(contact ? "Contact assigned to " + selectedRegion.name + "!" : "Contact unassigned");
+        setIsAssignModalOpen(false);
+        setAssigningCategory(null);
+        fetchBreakdownNetwork();
+      } else {
+        S.error(data.error || "Failed to update assignment");
+      }
+    } catch (e2) {
+      S.error("Error saving assignment");
+    }
+  };
+  const handleQuickCall = (phone) => {
+    if (!phone) {
+      S.error("No phone number registered");
+      return;
+    }
+    window.open("tel:" + phone, "_self");
+  };
+  const handleWhatsApp = (phone, name, regionName, categoryName) => {
+    if (!phone) {
+      S.error("No phone number registered");
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, "");
+    const formattedPhone = cleanPhone.length === 10 ? "91" + cleanPhone : cleanPhone;
+    const msg = "Namaste " + (name || "Partner") + ", Greetings from Jai Bhavani Cargo. Regarding transport operations / emergency support in " + regionName + " (" + (categoryName || "Assigned Partner") + "). Are you available for assistance?";
+    window.open("https://api.whatsapp.com/send?phone=" + formattedPhone + "&text=" + encodeURIComponent(msg), "_blank");
+  };
+  const categoryConfigs = [
+    { key: "mechanic", label: "Mechanic", icon: "\u{1F527}", color: "text-rose-400 bg-rose-500/10 border-rose-500/30", types: ["Mechanic", "Workshop"] },
+    { key: "tyre_shop", label: "Tyre shop", icon: "\u{1F6DE}", color: "text-amber-400 bg-amber-500/10 border-amber-500/30", types: ["Tyre Shop", "Puncher Shop", "Puncture Shop"] },
+    { key: "towing", label: "Towing", icon: "\u{1F3D7}\uFE0F", color: "text-blue-400 bg-blue-500/10 border-blue-500/30", types: ["Crane / Tow Truck", "Towing"] },
+    { key: "electrical", label: "Electrical", icon: "\u26A1", color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30", types: ["Electrician", "Auto Electrician"] }
+  ];
+  return /* @__PURE__ */ e.jsx("div", { className: "space-y-5 animate-in fade-in duration-300" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-4 rounded-2xl border border-slate-800 shadow-md" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xl" }, "\u{1F5FA}\uFE0F"), /* @__PURE__ */ e.jsx("h2", { className: "text-base sm:text-lg font-bold text-white" }, "Regional Network Hub & Breakdown Emergency System"), /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/40 uppercase" }, "Feature 86")), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-400 mt-1" }, "1-Click find assigned contact persons & emergency breakdown vendors across key highway regions & corridors.")), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: onOpenSos,
+      className: "w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-rose-950/40 border border-rose-500/40 animate-pulse transition-all"
+    },
+    /* @__PURE__ */ e.jsx("span", { className: "text-base" }, "\u{1F6A8}"),
+    " NEED HELP (SOS)"
+  )), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin" }, regions.map((r) => {
+    const isSelected = selectedRegion && selectedRegion.id === r.id;
+    const isFullyCovered = r.coverage_score === 100;
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: r.id,
+        type: "button",
+        onClick: () => setSelectedRegionId(r.id),
+        className: "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border " + (isSelected ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]" : "bg-card text-foreground hover:bg-muted border-border/70")
+      },
+      /* @__PURE__ */ e.jsx("span", { className: "font-mono" }, r.name),
+      /* @__PURE__ */ e.jsx("span", { className: "px-1.5 py-0.2 rounded-full text-[10px] font-black " + (isFullyCovered ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300") }, isFullyCovered ? "\u2713 100%" : r.coverage_score + "%")
+    );
+  })), selectedRegion && /* @__PURE__ */ e.jsx("div", { className: "space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 sm:p-5 rounded-2xl bg-card border-2 border-primary/30 shadow-md space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/60 pb-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-bold text-primary uppercase tracking-wider" }, "\u{1F4CD} ", selectedRegion.name, " REGIONAL HUB \u2022 ", selectedRegion.highway_corridor), /* @__PURE__ */ e.jsx("h3", { className: "text-base sm:text-lg font-black text-foreground mt-0.5" }, "Primary Area Contact Person")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2.5 py-1 rounded-full font-bold border " + (selectedRegion.coverage_score === 100 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-amber-500/15 text-amber-400 border-amber-500/30") }, selectedRegion.coverage_score === 100 ? "\u2713 Full Emergency Coverage" : "\u26A0\uFE0F Incomplete Coverage (" + selectedRegion.coverage_score + "%)"))), /* @__PURE__ */ e.jsx("div", { className: "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-muted/30 p-3.5 rounded-xl border border-border/50" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "w-11 h-11 rounded-xl bg-primary/20 text-primary font-black flex items-center justify-center text-lg border border-primary/30 shrink-0" }, "\u{1F464}"), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "font-extrabold text-foreground text-sm flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", null, selectedRegion.primary_contact?.name || "Unassigned"), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground font-semibold" }, selectedRegion.primary_contact?.role || "Station In-Charge")), /* @__PURE__ */ e.jsx("div", { className: "text-xs text-primary font-mono font-bold mt-0.5 flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE} ", selectedRegion.primary_contact?.phone || "No phone registered"), selectedRegion.primary_contact?.notes && /* @__PURE__ */ e.jsx("span", { className: "text-muted-foreground text-[11px] font-normal truncate max-w-[280px]" }, "\u2022 ", selectedRegion.primary_contact.notes)))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 w-full md:w-auto justify-end" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleQuickCall(selectedRegion.primary_contact?.phone),
+      className: "px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"),
+    " Call"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleWhatsApp(selectedRegion.primary_contact?.phone, selectedRegion.primary_contact?.name, selectedRegion.name, "Primary Station Coordinator"),
+      className: "px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 font-bold text-xs flex items-center gap-1 shadow-sm"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    " WhatsApp"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setAssigningCategory({ regionId: selectedRegion.id, categoryKey: null, isPrimary: true });
+        setIsAssignModalOpen(true);
+      },
+      className: "px-2.5 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground font-semibold text-xs border border-border/70"
+    },
+    "Change"
+  )))), /* @__PURE__ */ e.jsx("div", { className: "space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ e.jsx("h4", { className: "text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F527}"), " Emergency Breakdown Network & Assigned Vendors"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-muted-foreground" }, "Linked directly with Contacts Directory")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4" }, categoryConfigs.map((cat) => {
+    const assignedVendor = selectedRegion.categories && selectedRegion.categories[cat.key];
+    const isCovered = !!(assignedVendor && assignedVendor.phone_number);
+    return /* @__PURE__ */ e.jsx(
+      "div",
+      {
+        key: cat.key,
+        className: "p-4 rounded-xl border transition-all " + (isCovered ? "bg-card border-border/70 shadow-sm" : "bg-card/50 border-dashed border-amber-500/40 hover:border-amber-500/70")
+      },
+      /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-start gap-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-lg p-1.5 rounded-lg bg-muted/60" }, cat.icon), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", { className: "font-extrabold text-xs text-foreground uppercase tracking-wide" }, cat.label), isCovered ? /* @__PURE__ */ e.jsx("span", { className: "text-xs font-black text-emerald-400" }, "\u2713") : /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300" }, "Missing")), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground mt-0.5" }, isCovered ? assignedVendor.company_name || assignedVendor.contact_name : "No vendor assigned in this corridor"))), isCovered ? /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, "Active \u2713") : /* @__PURE__ */ e.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setAssigningCategory({ regionId: selectedRegion.id, categoryKey: cat.key, isPrimary: false, types: cat.types });
+            setIsAssignModalOpen(true);
+          },
+          className: "px-2.5 py-1 text-[11px] font-bold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+        },
+        "+ Assign Contact"
+      )),
+      isCovered && /* @__PURE__ */ e.jsx("div", { className: "mt-3 pt-3 border-t border-border/50 space-y-2 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-slate-300" }, /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-emerald-400" }, "\u{1F4DE} ", assignedVendor.phone_number), assignedVendor.contact_name && assignedVendor.contact_name !== assignedVendor.company_name && /* @__PURE__ */ e.jsx("span", { className: "text-muted-foreground text-[11px]" }, "\u{1F464} ", assignedVendor.contact_name)), assignedVendor.physical_address && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground truncate flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4CD}"), " ", /* @__PURE__ */ e.jsx("span", { className: "truncate" }, assignedVendor.physical_address)), /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between pt-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleQuickCall(assignedVendor.phone_number),
+          className: "px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] flex items-center gap-1"
+        },
+        /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"),
+        " Call"
+      ), /* @__PURE__ */ e.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => handleWhatsApp(assignedVendor.phone_number, assignedVendor.contact_name || assignedVendor.company_name, selectedRegion.name, cat.label),
+          className: "px-2.5 py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold text-[11px] flex items-center gap-1 border border-emerald-500/30"
+        },
+        /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+        " WhatsApp"
+      ), assignedVendor.google_maps_url && /* @__PURE__ */ e.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => window.open(assignedVendor.google_maps_url, "_blank"),
+          className: "px-2 rounded bg-muted hover:bg-muted/80 text-foreground text-[11px] py-1 font-semibold",
+          title: "Open Google Maps Location"
+        },
+        "\u{1F5FA}\uFE0F"
+      )), /* @__PURE__ */ e.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setAssigningCategory({ regionId: selectedRegion.id, categoryKey: cat.key, isPrimary: false, types: cat.types });
+            setIsAssignModalOpen(true);
+          },
+          className: "text-[11px] text-muted-foreground hover:text-foreground underline"
+        },
+        "Reassign"
+      )))
+    );
+  })))), isAssignModalOpen && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "bg-card border border-border/80 rounded-2xl max-w-xl w-full p-4 sm:p-5 shadow-2xl space-y-4 my-auto max-h-[85vh] overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center border-b border-border/60 pb-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("h3", { className: "text-base font-black text-foreground" }, "Assign Contact to ", selectedRegion?.name), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground mt-0.5" }, "Category: ", /* @__PURE__ */ e.jsx("strong", { className: "text-primary uppercase" }, assigningCategory?.isPrimary ? "Primary Area Contact" : assigningCategory?.categoryKey))), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setIsAssignModalOpen(false);
+        setAssigningCategory(null);
+      },
+      className: "w-7 h-7 rounded-full bg-muted text-muted-foreground hover:text-foreground text-xs font-bold"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "text",
+      placeholder: "Search by vendor name, phone, or area...",
+      value: contactSearch,
+      onChange: (e2) => setContactSearch(e2.target.value),
+      className: "w-full h-9 px-3 text-xs rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "max-h-[340px] overflow-y-auto divide-y divide-border/40 border border-border/60 rounded-xl" }, contacts.filter((c) => {
+    const s = contactSearch.toLowerCase();
+    const matchesSearch = !s || (c.company_name || "").toLowerCase().includes(s) || (c.phone_number || "").includes(s) || (c.physical_address || "").toLowerCase().includes(s);
+    if (!matchesSearch) return false;
+    if (assigningCategory?.types && assigningCategory.types.length > 0 && !contactSearch) {
+      const cType = (c.contact_type || "").toLowerCase();
+      return assigningCategory.types.some((t) => t.toLowerCase() === cType);
+    }
+    return true;
+  }).map((c) => /* @__PURE__ */ e.jsx("div", { key: c.id, className: "p-3 hover:bg-muted/30 flex items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-foreground" }, c.company_name), /* @__PURE__ */ e.jsx("div", { className: "text-primary font-mono text-[11px]" }, c.phone_number || "No phone"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px] truncate max-w-[280px]" }, c.contact_type, " \u2022 ", c.physical_address || "No address")), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleAssignContact(c),
+      className: "px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-sm shrink-0"
+    },
+    "Assign"
+  )))), /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center pt-2" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => handleAssignContact(null),
+      className: "text-xs text-rose-400 hover:underline"
+    },
+    "Clear / Remove Current"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setIsAssignModalOpen(false);
+        setAssigningCategory(null);
+      },
+      className: "px-4 py-1.5 rounded-lg bg-muted text-foreground text-xs font-bold"
+    },
+    "Close"
+  )))));
+}
+function EmergencySosModal({ isOpen, onClose, regions }) {
+  const [selectedRegionName, setSelectedRegionName] = h.useState("HYDERABAD");
+  const [selectedCategory, setSelectedCategory] = h.useState("mechanic");
+  const [truckNumber, setTruckNumber] = h.useState("");
+  const [locationLandmark, setLocationLandmark] = h.useState("");
+  const [issueNote, setIssueNote] = h.useState("");
+  const [isSending, setIsSending] = h.useState(false);
+  if (!isOpen) return null;
+  const currentRegion = (regions || []).find((r) => (r.name || "").toUpperCase() === selectedRegionName.toUpperCase()) || regions[0] || null;
+  const assignedVendor = currentRegion && currentRegion.categories ? currentRegion.categories[selectedCategory] : null;
+  const handleDispatchSos = async () => {
+    if (!assignedVendor || !assignedVendor.phone_number) {
+      S.error("No emergency vendor assigned for " + selectedCategory + " in " + selectedRegionName + "! Please assign one or call station manager.");
+      return;
+    }
+    setIsSending(true);
+    try {
+      const payload = {
+        regionName: selectedRegionName,
+        category: selectedCategory,
+        vehicleNumber: truckNumber || "Truck en route",
+        locationDetails: locationLandmark || selectedRegionName + " Corridor",
+        issueDescription: issueNote || "Emergency " + selectedCategory + " breakdown",
+        vendorPhone: assignedVendor.phone_number,
+        vendorName: assignedVendor.company_name || assignedVendor.contact_name
+      };
+      const res = await fetch("/api/driver/breakdown-sos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success && data.directWhatsappUrl) {
+        window.open(data.directWhatsappUrl, "_blank");
+        S.success("Emergency SOS dispatched via WhatsApp API!");
+        onClose();
+      } else {
+        S.error("Failed to generate SOS dispatch");
+      }
+    } catch (e2) {
+      S.error("Network error sending SOS");
+    } finally {
+      setIsSending(false);
+    }
+  };
+  return /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900 border-2 border-rose-500/50 rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto text-slate-100 max-h-[92vh] overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-start border-b border-slate-800 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-3xl p-1 bg-rose-500/20 rounded-xl border border-rose-500/40 animate-pulse" }, "\u{1F6A8}"), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("h3", { className: "text-lg font-black text-white" }, "Emergency Breakdown SOS Dispatch"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-rose-300" }, "Fast 1-Click highway rescue coordination for drivers & dispatchers"))), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: onClose,
+      className: "w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white text-xs font-bold"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-4 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "font-bold text-slate-300 uppercase tracking-wider text-[11px]" }, "1. Where is the Truck Stranded? (Select Region)"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-3 gap-2" }, (regions || []).map((r) => /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      key: r.id,
+      type: "button",
+      onClick: () => setSelectedRegionName(r.name),
+      className: "py-2 px-2.5 rounded-xl font-bold text-xs border transition-all text-center " + (selectedRegionName.toUpperCase() === r.name.toUpperCase() ? "bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-950/50 scale-[1.02]" : "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700")
+    },
+    r.name
+  )))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "font-bold text-slate-300 uppercase tracking-wider text-[11px]" }, "2. What is the Emergency Breakdown Need?"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2" }, [
+    { key: "mechanic", label: "Mechanic", icon: "\u{1F527}" },
+    { key: "tyre_shop", label: "Tyre Burst", icon: "\u{1F6DE}" },
+    { key: "towing", label: "Crane / Tow", icon: "\u{1F3D7}\uFE0F" },
+    { key: "electrical", label: "Electrical", icon: "\u26A1" }
+  ].map((cat) => /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      key: cat.key,
+      type: "button",
+      onClick: () => setSelectedCategory(cat.key),
+      className: "py-2.5 px-2 rounded-xl font-bold text-xs border transition-all flex flex-col items-center gap-1 text-center " + (selectedCategory === cat.key ? "bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-md scale-[1.02]" : "bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700")
+    },
+    /* @__PURE__ */ e.jsx("span", { className: "text-base" }, cat.icon),
+    /* @__PURE__ */ e.jsx("span", null, cat.label)
+  )))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-slate-400 font-semibold mb-1" }, "Truck Vehicle Number"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "text",
+      placeholder: "e.g. AP02-TE-1234 or MH12-AB-5678",
+      value: truckNumber,
+      onChange: (e2) => setTruckNumber(e2.target.value.toUpperCase()),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono font-bold text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-slate-400 font-semibold mb-1" }, "Exact Landmark / Milepost / GPS"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "text",
+      placeholder: "e.g. Near Toll Plaza, NH44 KM 182",
+      value: locationLandmark,
+      onChange: (e2) => setLocationLandmark(e2.target.value),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2" }, /* @__PURE__ */ e.jsx("label", { className: "block text-slate-400 font-semibold mb-1" }, "Breakdown Problem Description"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "text",
+      placeholder: "e.g. Front right tyre burst with rim damage / Clutch wire snapped",
+      value: issueNote,
+      onChange: (e2) => setIssueNote(e2.target.value),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-semibold text-[11px] uppercase tracking-wider" }, "Assigned Emergency Rescue Partner"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-amber-400 font-bold" }, selectedRegionName, " \u2022 ", selectedCategory.toUpperCase())), assignedVendor && assignedVendor.phone_number ? /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between gap-3 pt-1" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "font-extrabold text-white text-sm" }, assignedVendor.company_name || assignedVendor.contact_name), /* @__PURE__ */ e.jsx("div", { className: "text-emerald-400 font-mono font-bold text-xs mt-0.5" }, "\u{1F4DE} ", assignedVendor.phone_number), /* @__PURE__ */ e.jsx("div", { className: "text-slate-400 text-[11px] truncate max-w-[260px]" }, "\u{1F4CD} ", assignedVendor.physical_address || "On-site highway dispatch")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ e.jsx(
+    "a",
+    {
+      href: "tel:" + assignedVendor.phone_number,
+      className: "px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"),
+    " Call Now"
+  ))) : /* @__PURE__ */ e.jsx("div", { className: "py-3 text-center text-amber-400 font-medium text-xs bg-amber-500/10 rounded-lg border border-amber-500/20" }, "\u26A0\uFE0F No specific ", selectedCategory, " is assigned yet for ", selectedRegionName, ".", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-slate-300 text-[11px]" }, "You can call the primary area station coordinator: ", currentRegion?.primary_contact?.name || "Local In-charge", " (", currentRegion?.primary_contact?.phone || "N/A", ")"))), /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center border-t border-slate-800 pt-3" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: onClose,
+      className: "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+    },
+    "Cancel"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleDispatchSos,
+      disabled: isSending || !assignedVendor || !assignedVendor.phone_number,
+      className: "px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 disabled:opacity-50"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    " 1-Click WhatsApp SOS API"
+  )))));
+}
+
+export{be as CATEGORY_FILTERS,Pa as MAIN_GROUPS,Va as default};
