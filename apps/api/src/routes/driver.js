@@ -2913,7 +2913,10 @@ router.post('/submit-public-quote', async (req, res) => {
     const hgtNum = Number(height) || 8.5;
     const volumetricWeight = Math.round((lenNum * widNum * hgtNum) / 5000 * 100) / 100;
     const chargeableWeight = Math.max(weightNum, volumetricWeight);
-    const estimatedPrice = service_type === 'specialized' ? 32000 : 28000;
+    const clientPrice = Number(req.body.total_price) || 0;
+    const estimatedPrice = clientPrice > 0 ? clientPrice : (service_type === 'specialized' ? 32000 : 28000);
+    const pickup_maps_url = String(req.body.pickup_maps_url || req.body.origin_maps_url || '').trim();
+    const drop_maps_url = String(req.body.drop_maps_url || req.body.destination_maps_url || '').trim();
 
     const payload = {
       quote_number: quoteNumber,
@@ -2924,6 +2927,8 @@ router.post('/submit-public-quote', async (req, res) => {
       origin: cleanOrigin,
       destination: cleanDestination,
       destination_zone: destination_zone || 'North',
+      pickup_maps_url,
+      drop_maps_url,
       truck_size: cleanTruckSize,
       custom_vehicle_requirement: cleanCustomReq,
       container_type: '',
@@ -2949,6 +2954,8 @@ router.post('/submit-public-quote', async (req, res) => {
         cleanCustomReq ? `Vehicle Requirement: ${cleanCustomReq}` : '',
         company_name ? `Company: ${company_name}` : '',
         material_type ? `Material: ${material_type}` : '',
+        pickup_maps_url ? `Pickup Google Maps: ${pickup_maps_url}` : '',
+        drop_maps_url ? `Drop Google Maps: ${drop_maps_url}` : '',
         expected_dispatch_date ? `Dispatch Date: ${expected_dispatch_date}` : '',
         details ? `Requirements: ${details}` : '',
         notes ? `Notes: ${notes}` : ''
@@ -3030,6 +3037,8 @@ router.post('/submit-public-quote', async (req, res) => {
             try { db.exec("ALTER TABLE quotes ADD COLUMN expected_dispatch_date TEXT DEFAULT '';"); } catch (_) {}
             try { db.exec("ALTER TABLE quotes ADD COLUMN details TEXT DEFAULT '';"); } catch (_) {}
             try { db.exec("ALTER TABLE quotes ADD COLUMN company_name TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN pickup_maps_url TEXT DEFAULT '';"); } catch (_) {}
+            try { db.exec("ALTER TABLE quotes ADD COLUMN drop_maps_url TEXT DEFAULT '';"); } catch (_) {}
 
             db.prepare(`
               INSERT OR REPLACE INTO quotes (
@@ -3039,8 +3048,8 @@ router.post('/submit-public-quote', async (req, res) => {
                 actual_weight, length, width, height, volumetric_weight,
                 chargeable_weight, base_rate_per_kg, zone_distance_multiplier,
                 fuel_surcharge, handling_fees, weight_charge, total_price,
-                status, notes, created_by, created, updated
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                status, notes, created_by, created, updated, pickup_maps_url, drop_maps_url
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
               recordId, quoteNumber, cleanName, payload.customer_email || 'inquiry@jaibhavanicargo.com', cleanPhone, company_name || cleanName,
               cleanOrigin, cleanDestination, payload.destination_zone || 'North', '',
@@ -3048,7 +3057,7 @@ router.post('/submit-public-quote', async (req, res) => {
               payload.service_type || 'express', material_type || 'General Cargo', expected_dispatch_date || '', details || '',
               weightNum, lenNum, widNum, hgtNum, volumetricWeight,
               chargeableWeight, 48, 1, 0, 0, estimatedPrice, estimatedPrice,
-              'Draft', payload.notes, 'public_inquiry', nowIso, nowIso
+              'Draft', payload.notes, 'public_inquiry', nowIso, nowIso, pickup_maps_url, drop_maps_url
             );
             logger.info(`✅ SQLite quote inserted: ${quoteNumber} in ${dbPath}`);
             try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (_) {}
@@ -3131,6 +3140,172 @@ router.post('/respond-to-quote', async (req, res) => {
   } catch (err) {
     logger.error('Error responding to quote:', err);
     return res.status(500).json({ success: false, error: err.message || 'Failed to update quote' });
+  }
+});
+
+/**
+ * POST /api/driver/convert-quote-to-trip
+ * 1-Click Convert Quote to Trip
+ */
+router.post('/convert-quote-to-trip', async (req, res) => {
+  try {
+    const { quote_id, quote_number } = req.body;
+    if (!quote_id && !quote_number) {
+      return res.status(400).json({ success: false, error: 'quote_id or quote_number is required' });
+    }
+
+    let quote = null;
+    try {
+      if (quote_id && !String(quote_id).startsWith('qt_')) {
+        quote = await pb.collection('quotes').getOne(quote_id, { $autoCancel: false });
+      } else if (quote_number) {
+        quote = await pb.collection('quotes').getFirstListItem(`quote_number = "${sanitize(quote_number)}"`, { $autoCancel: false });
+      }
+    } catch (e) {}
+
+    if (!quote) {
+      const qList = getQuotesStore();
+      quote = qList.find(q => (quote_id && q.id === quote_id) || (quote_number && q.quote_number === quote_number));
+    }
+
+    if (!quote) {
+      return res.status(404).json({ success: false, error: 'Quote not found' });
+    }
+
+    // Determine next trip ID (TRIP-XXX)
+    let maxNum = 280;
+    try {
+      const lastTrips = await pb.collection('trip_logs').getList(1, 50, { sort: '-created', $autoCancel: false });
+      for (const t of (lastTrips.items || [])) {
+        const m = (t.trip_id || '').match(/TRIP-(\d+)/i);
+        if (m) {
+          const val = parseInt(m[1], 10);
+          if (val > maxNum) maxNum = val;
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to calculate max trip_id suffix: ${err.message}`);
+    }
+    const nextTripId = `TRIP-${(maxNum + 1).toString().padStart(3, '0')}`;
+
+    const routeStr = `${quote.origin || 'Origin'} to ${quote.destination || 'Destination'}`;
+    const pickupMap = quote.pickup_maps_url || (quote.origin ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(quote.origin)}` : '');
+    const dropMap = quote.drop_maps_url || (quote.destination ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(quote.destination)}` : '');
+
+    const tripPayload = {
+      trip_id: nextTripId,
+      date: quote.expected_dispatch_date ? `${quote.expected_dispatch_date} 12:00:00.000Z` : new Date().toISOString(),
+      driver_name: 'Unassigned',
+      truck_number: quote.truck_size || quote.container_type || '32 FT SXL',
+      route: routeStr,
+      kms: Number(quote.distance_km || quote.zone_distance_multiplier) || 500,
+      mileage: 0,
+      revenue: Number(quote.total_price) || 0,
+      trip_status: 'Upcoming',
+      user_id: '',
+      created_by: 'quote_conversion',
+      client_id: quote.company_name || quote.customer_name || 'Direct Client',
+      notes: [
+        `Converted from Quote #${quote.quote_number}`,
+        `Client: ${quote.customer_name} (${quote.customer_phone || quote.customer_email || ''})`,
+        quote.company_name ? `Company: ${quote.company_name}` : '',
+        `Material: ${quote.material_type || 'General Cargo'}`,
+        `Weight: ${quote.actual_weight || 0} kg`,
+        pickupMap ? `Pickup Map: ${pickupMap}` : '',
+        dropMap ? `Drop Map: ${dropMap}` : '',
+        quote.notes ? `Quote Notes: ${quote.notes}` : ''
+      ].filter(Boolean).join('\n')
+    };
+
+    let newTrip = null;
+    try {
+      newTrip = await pb.collection('trip_logs').create(tripPayload, { $autoCancel: false });
+      logger.info(`✅ PocketBase trip created from quote: ${nextTripId}`);
+    } catch (pbErr) {
+      logger.warn(`PocketBase trip create notice: ${pbErr.message}`);
+    }
+
+    const nowIso = new Date().toISOString();
+    const tripRecordId = newTrip?.id || `tr_${Date.now().toString(36)}`;
+    const finalTrip = newTrip || {
+      id: tripRecordId,
+      ...tripPayload,
+      created: nowIso,
+      updated: nowIso
+    };
+
+    // Direct SQLite trip insertion
+    try {
+      let DatabaseSync = null;
+      try {
+        const sqlite = await import('node:sqlite');
+        DatabaseSync = sqlite.DatabaseSync;
+      } catch (e) {}
+
+      const candidatePaths = [
+        global.dbFilePath,
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+        path.resolve(process.cwd(), 'pb_data/data.db'),
+        path.resolve(__dirname, '../../../pocketbase/pb_data/data.db'),
+        '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+      ].filter(p => p && fs.existsSync(p));
+
+      if (DatabaseSync && candidatePaths.length > 0) {
+        for (const dbPath of candidatePaths) {
+          let db;
+          try {
+            db = new DatabaseSync(dbPath);
+            db.prepare(`
+              INSERT OR REPLACE INTO trip_logs (
+                id, trip_id, date, driver_name, truck_number, route, kms, mileage, revenue, trip_status, client_id, notes, created, updated
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+              finalTrip.id, finalTrip.trip_id, finalTrip.date, finalTrip.driver_name, finalTrip.truck_number,
+              finalTrip.route, finalTrip.kms, 0, finalTrip.revenue, 'Upcoming', finalTrip.client_id,
+              finalTrip.notes, nowIso, nowIso
+            );
+            try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (_) {}
+          } catch (sqErr) {
+            logger.warn(`SQLite trip insert error on ${dbPath}: ${sqErr.message}`);
+          } finally {
+            if (db) { try { db.close(); } catch (_) {} }
+          }
+        }
+      }
+    } catch (sqliteErr) {
+      logger.warn(`SQLite trip fallback error: ${sqliteErr.message}`);
+    }
+
+    // Update Quote status to Approved / Converted
+    const quoteUpdate = {
+      status: 'Approved',
+      notes: (quote.notes ? quote.notes + '\n\n' : '') + `[Converted to Trip]: #${finalTrip.trip_id}`
+    };
+
+    try {
+      if (quote.id && !String(quote.id).startsWith('qt_')) {
+        await pb.collection('quotes').update(quote.id, quoteUpdate, { $autoCancel: false }).catch(() => {});
+      }
+    } catch (e) {}
+
+    try {
+      const qList = getQuotesStore();
+      const idx = qList.findIndex(q => (quote.quote_number && q.quote_number === quote.quote_number) || (quote.id && q.id === quote.id));
+      if (idx >= 0) {
+        qList[idx] = { ...qList[idx], ...quoteUpdate, updated: nowIso };
+        saveQuotesStore(qList);
+      }
+    } catch (e) {}
+
+    return res.json({
+      success: true,
+      message: `Quote #${quote.quote_number} successfully converted to Trip #${finalTrip.trip_id}!`,
+      trip: finalTrip,
+      tripId: finalTrip.trip_id
+    });
+  } catch (err) {
+    logger.error('Error converting quote to trip:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to convert quote to trip' });
   }
 });
 
