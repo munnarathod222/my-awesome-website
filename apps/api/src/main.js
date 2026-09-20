@@ -51,6 +51,8 @@ app.use(helmet({
     },
   },
   crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
 }));
 
 const defaultOrigins = [
@@ -729,17 +731,43 @@ const syncBidsListToSQLite = async (list) => {
 
 const downloadBidsStoreFromSupabase = async () => {
   try {
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const list = JSON.parse(text);
-      if (Array.isArray(list) && list.length > 0) {
-        saveBidsStore(list);
-        logger.info(`✅ Restored ${list.length} bidding logs from Supabase cloud backup!`);
-        syncBidsListToSQLite(list);
+    let remoteList = [];
+    try {
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+      });
+      if (res.ok) {
+        const text = await res.text();
+        remoteList = JSON.parse(text);
       }
+    } catch (e) {}
+
+    const localList = getBidsStore();
+    let sqliteList = [];
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+      if (dbPath && fs.existsSync(dbPath)) {
+        const db = new DatabaseSync(dbPath);
+        sqliteList = db.prepare('SELECT * FROM bids').all();
+      }
+    } catch (e) {}
+
+    // Three-way merge: Supabase cloud + local bids_store.json + SQLite bids
+    const map = new Map();
+    [...(Array.isArray(sqliteList) ? sqliteList : []),
+     ...(Array.isArray(localList) ? localList : []),
+     ...(Array.isArray(remoteList) ? remoteList : [])].forEach(item => {
+      if (item && item.id) {
+        map.set(item.id, { ...(map.get(item.id) || {}), ...item });
+      }
+    });
+
+    const merged = Array.from(map.values());
+    if (merged.length > 0) {
+      saveBidsStore(merged);
+      await syncBidsListToSQLite(merged);
+      logger.info(`✅ Bidding Intelligence persistence verified: ${merged.length} bids loaded into memory, disk, and SQLite!`);
     }
   } catch (e) {
     logger.warn(`Bids cloud download notice: ${e.message}`);
@@ -748,26 +776,50 @@ const downloadBidsStoreFromSupabase = async () => {
 
 const downloadBiddingCompaniesFromSupabase = async () => {
   try {
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const list = JSON.parse(text);
-      if (Array.isArray(list) && list.length > 0) {
-        saveBiddingCompaniesStore(list);
-        logger.info(`✅ Restored ${list.length} custom bidding companies from Supabase cloud backup!`);
+    let remoteList = [];
+    try {
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+      });
+      if (res.ok) {
+        const text = await res.text();
+        remoteList = JSON.parse(text);
       }
-    }
+    } catch (e) {}
+
+    const localList = getBiddingCompaniesStore();
+    const merged = Array.from(new Set([
+      ...["Delhivery", "Amazon", "Flipkart", "DHL", "FR8"],
+      ...(Array.isArray(localList) ? localList : []),
+      ...(Array.isArray(remoteList) ? remoteList : [])
+    ])).filter(Boolean);
+
+    saveBiddingCompaniesStore(merged);
+    logger.info(`✅ Custom bidding companies verified: ${merged.length} companies active!`);
   } catch (e) {}
 };
 
 const uploadBidsStoreToSupabase = async () => {
   try {
-    const list = getBidsStore();
+    let list = getBidsStore();
+    // Also include any records in SQLite
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+      if (dbPath && fs.existsSync(dbPath)) {
+        const db = new DatabaseSync(dbPath);
+        const sq = db.prepare('SELECT * FROM bids').all();
+        const map = new Map();
+        [...sq, ...list].forEach(b => { if (b && b.id) map.set(b.id, { ...(map.get(b.id) || {}), ...b }); });
+        list = Array.from(map.values());
+        saveBidsStore(list);
+      }
+    } catch (e) {}
+
     if (!list || list.length === 0) return false;
     const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
-    await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
+
+    let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
       method: 'POST',
       headers: {
         'apikey': supabaseKey,
@@ -777,7 +829,24 @@ const uploadBidsStoreToSupabase = async () => {
       },
       body: buf
     });
-    return true;
+
+    if (!res.ok) {
+      res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
+        method: 'PUT',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: buf
+      });
+    }
+
+    if (res.ok) {
+      logger.info(`✅ Bidding logs (${list.length} bids) securely backed up to Supabase Cloud Storage!`);
+      return true;
+    }
+    return false;
   } catch (e) {
     return false;
   }
@@ -787,7 +856,7 @@ const uploadBiddingCompaniesToSupabase = async () => {
   try {
     const list = getBiddingCompaniesStore();
     const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
-    await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
+    let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
       method: 'POST',
       headers: {
         'apikey': supabaseKey,
@@ -797,7 +866,18 @@ const uploadBiddingCompaniesToSupabase = async () => {
       },
       body: buf
     });
-    return true;
+    if (!res.ok) {
+      res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
+        method: 'PUT',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: buf
+      });
+    }
+    return res.ok;
   } catch (e) {
     return false;
   }
@@ -3324,6 +3404,9 @@ const handleDirectFileServe = async (req, res, next) => {
 
   if (targetPath && fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
     res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     return res.sendFile(targetPath);
   }
   next();
@@ -3402,6 +3485,9 @@ app.use('/hcgi/platform', async (req, res) => {
     // Inject aggressive client caching for static files/media to eliminate repeat downloads
     if (parsedUrl.pathname.includes('/api/files/')) {
       headers['cache-control'] = 'public, max-age=2592000, stale-while-revalidate=86400';
+      headers['access-control-allow-origin'] = '*';
+      headers['access-control-allow-methods'] = 'GET, HEAD, OPTIONS';
+      headers['cross-origin-resource-policy'] = 'cross-origin';
       headers['vary'] = 'Accept-Encoding';
     }
 
