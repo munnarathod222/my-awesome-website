@@ -2844,10 +2844,28 @@ router.post('/delete-user', async (req, res) => {
   }
 });
 
+const QUOTES_STORE_PATH = path.join(process.cwd(), 'quotes_store.json');
+
+const getQuotesStore = () => {
+  try {
+    if (fs.existsSync(QUOTES_STORE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(QUOTES_STORE_PATH, 'utf8'));
+      if (Array.isArray(data)) return data;
+    }
+  } catch (e) {}
+  return [];
+};
+
+const saveQuotesStore = (list) => {
+  try {
+    fs.writeFileSync(QUOTES_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {}
+};
+
 /**
  * POST /api/driver/submit-public-quote
  * Receives public quote inquiries from the landing page, creates the quote record
- * in PocketBase & SQLite, logs the sales lead, and triggers automated cloud sync.
+ * in PocketBase, SQLite, & quotes_store.json, logs the sales lead, and triggers automated cloud sync.
  */
 router.post('/submit-public-quote', async (req, res) => {
   try {
@@ -2902,12 +2920,17 @@ router.post('/submit-public-quote', async (req, res) => {
       customer_name: cleanName,
       customer_email: cleanEmail || 'inquiry@jaibhavanicargo.com',
       customer_phone: cleanPhone,
+      company_name: company_name || cleanName,
       origin: cleanOrigin,
       destination: cleanDestination,
       destination_zone: destination_zone || 'North',
       truck_size: cleanTruckSize,
       custom_vehicle_requirement: cleanCustomReq,
-      container_type: cleanCustomReq ? `${cleanTruckSize} - ${cleanCustomReq}` : cleanTruckSize,
+      container_type: '',
+      service_type: service_type || 'express',
+      material_type: material_type || 'General Cargo',
+      expected_dispatch_date: expected_dispatch_date || '',
+      details: details || '',
       actual_weight: weightNum,
       length: lenNum,
       width: widNum,
@@ -2920,7 +2943,7 @@ router.post('/submit-public-quote', async (req, res) => {
       handling_fees: 0,
       weight_charge: estimatedPrice,
       total_price: estimatedPrice,
-      status: 'Pending',
+      status: 'Draft',
       notes: [
         `Truck Size: ${cleanTruckSize}`,
         cleanCustomReq ? `Vehicle Requirement: ${cleanCustomReq}` : '',
@@ -2940,7 +2963,7 @@ router.post('/submit-public-quote', async (req, res) => {
       createdRecord = await pb.collection('quotes').create(payload, { $autoCancel: false });
       logger.info(`✅ PocketBase quote created: ID=${createdRecord.id}`);
     } catch (pbErr) {
-      logger.warn(`PocketBase quotes.create failed: ${pbErr.message}. Falling back to SQLite...`);
+      logger.warn(`PocketBase quotes.create notice: ${pbErr.message}. Storing to SQLite and JSON store...`);
     }
 
     // Also register in sales_leads for transport CRM & sales pipeline
@@ -2958,6 +2981,27 @@ router.post('/submit-public-quote', async (req, res) => {
       }, { $autoCancel: false }).catch(() => {});
     } catch (leadErr) {}
 
+    const recordId = createdRecord?.id || `qt_${Date.now().toString(36)}`;
+    const nowIso = new Date().toISOString();
+    const finalQuoteObj = {
+      id: recordId,
+      ...payload,
+      created: nowIso,
+      updated: nowIso
+    };
+
+    // Save to persistent quotes_store.json immediately
+    try {
+      const qList = getQuotesStore();
+      const idx = qList.findIndex(q => (q.quote_number && q.quote_number === quoteNumber) || (q.id && q.id === recordId));
+      if (idx >= 0) qList[idx] = { ...qList[idx], ...finalQuoteObj };
+      else qList.unshift(finalQuoteObj);
+      saveQuotesStore(qList);
+      logger.info(`💾 Quote saved to quotes_store.json (${qList.length} total stored)`);
+    } catch (storeErr) {
+      logger.warn(`Quotes store save notice: ${storeErr.message}`);
+    }
+
     // Direct SQLite Insertion fallback & WAL checkpoint
     try {
       let DatabaseSync = null;
@@ -2973,9 +3017,6 @@ router.post('/submit-public-quote', async (req, res) => {
         path.resolve(__dirname, '../../../pocketbase/pb_data/data.db'),
         '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
       ].filter(p => p && fs.existsSync(p));
-
-      const recordId = createdRecord?.id || `qt_${Date.now().toString(36)}`;
-      const nowIso = new Date().toISOString();
 
       if (DatabaseSync && candidatePaths.length > 0) {
         for (const dbPath of candidatePaths) {
@@ -3002,12 +3043,12 @@ router.post('/submit-public-quote', async (req, res) => {
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
               recordId, quoteNumber, cleanName, payload.customer_email || 'inquiry@jaibhavanicargo.com', cleanPhone, company_name || cleanName,
-              cleanOrigin, cleanDestination, payload.destination_zone || 'North', payload.container_type || cleanTruckSize,
+              cleanOrigin, cleanDestination, payload.destination_zone || 'North', '',
               cleanTruckSize, cleanCustomReq,
               payload.service_type || 'express', material_type || 'General Cargo', expected_dispatch_date || '', details || '',
               weightNum, lenNum, widNum, hgtNum, volumetricWeight,
               chargeableWeight, 48, 1, 0, 0, estimatedPrice, estimatedPrice,
-              'Pending', payload.notes, 'public_inquiry', nowIso, nowIso
+              'Draft', payload.notes, 'public_inquiry', nowIso, nowIso
             );
             logger.info(`✅ SQLite quote inserted: ${quoteNumber} in ${dbPath}`);
             try { db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run(); } catch (_) {}
@@ -3030,7 +3071,7 @@ router.post('/submit-public-quote', async (req, res) => {
     return res.json({
       success: true,
       quoteNumber: quoteNumber,
-      quote: createdRecord || { id: 'qt_' + Date.now(), ...payload },
+      quote: createdRecord || finalQuoteObj,
       estimatedPrice: estimatedPrice,
       message: `Quote request #${quoteNumber} submitted successfully!`
     });
@@ -3042,7 +3083,6 @@ router.post('/submit-public-quote', async (req, res) => {
 
 /**
  * POST /api/driver/respond-to-quote
- * Dispatch desk / admin response to an inquiry
  */
 router.post('/respond-to-quote', async (req, res) => {
   try {
@@ -3053,7 +3093,7 @@ router.post('/respond-to-quote', async (req, res) => {
 
     let updatedRecord = null;
     try {
-      const match = id 
+      const match = id
         ? await pb.collection('quotes').getOne(id, { $autoCancel: false })
         : await pb.collection('quotes').getFirstListItem(`quote_number = "${sanitize(quote_number)}"`, { $autoCancel: false });
 
@@ -3061,13 +3101,27 @@ router.post('/respond-to-quote', async (req, res) => {
         const updateData = {
           status: status || 'Quoted',
           ...(quoted_price !== undefined ? { total_price: Number(quoted_price) } : {}),
-          ...(notes ? { notes: `${match.notes || ''}\nAdmin Response: ${notes}`.trim() } : {})
+          ...(notes ? { notes: (match.notes ? match.notes + '\n\n' : '') + `[Response]: ${notes}` } : {})
         };
         updatedRecord = await pb.collection('quotes').update(match.id, updateData, { $autoCancel: false });
       }
     } catch (pbErr) {
       logger.warn(`PocketBase quotes.update failed: ${pbErr.message}`);
     }
+
+    try {
+      const qList = getQuotesStore();
+      const idx = qList.findIndex(q => (quote_number && q.quote_number === quote_number) || (id && q.id === id));
+      if (idx >= 0) {
+        qList[idx] = {
+          ...qList[idx],
+          status: status || 'Quoted',
+          ...(quoted_price !== undefined ? { total_price: Number(quoted_price) } : {}),
+          updated: new Date().toISOString()
+        };
+        saveQuotesStore(qList);
+      }
+    } catch (e) {}
 
     return res.json({
       success: true,
@@ -3082,7 +3136,7 @@ router.post('/respond-to-quote', async (req, res) => {
 
 /**
  * GET /api/driver/get-quotes & POST /api/driver/get-quotes
- * Bulletproof quotes fetcher querying both PocketBase SDK and direct SQLite
+ * Bulletproof quotes fetcher querying PocketBase SDK, direct SQLite, and quotes_store.json
  */
 router.all('/get-quotes', async (req, res) => {
   try {
@@ -3140,6 +3194,17 @@ router.all('/get-quotes', async (req, res) => {
     } catch (sqliteErr) {
       logger.warn(`SQLite fetch quotes error: ${sqliteErr.message}`);
     }
+
+    // 3. Fetch from disk quotes_store.json
+    try {
+      const storeList = getQuotesStore();
+      (storeList || []).forEach(q => {
+        const key = q.quote_number || q.id;
+        if (!quotesMap.has(key)) {
+          quotesMap.set(key, q);
+        }
+      });
+    } catch (storeErr) {}
 
     const allQuotes = Array.from(quotesMap.values()).sort((a, b) => {
       const timeA = new Date(a.created || a.updated || 0).getTime();
