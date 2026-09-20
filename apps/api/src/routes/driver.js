@@ -522,7 +522,7 @@ router.post('/update-expense/:id', async (req, res) => {
  * POST /api/driver/update-truck/:id
  * Update a truck record (including FASTag balance & details) via superuser PocketBase client.
  */
-router.post(['/update-truck/:id', '/trucks/save/:id?'], async (req, res) => {
+const handleTruckSave = async (req, res) => {
   try {
     const id = req.params.id || req.body?.id;
     if (!id) {
@@ -599,7 +599,12 @@ router.post(['/update-truck/:id', '/trucks/save/:id?'], async (req, res) => {
     logger.error('Failed to update truck via API:', err?.data || err.message);
     return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
   }
-});
+};
+
+router.post('/update-truck/:id', handleTruckSave);
+router.post('/update-truck', handleTruckSave);
+router.post('/trucks/save/:id', handleTruckSave);
+router.post('/trucks/save', handleTruckSave);
 
 /**
  * POST /api/driver/recharge-fastag
