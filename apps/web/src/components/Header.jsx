@@ -480,25 +480,11 @@ export default function Header() {
           <div className="flex items-center gap-2 ml-auto shrink-0">
             {!isAuthenticated ? (
               <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-amber-500/40 text-amber-400 hover:bg-amber-500/10 font-bold gap-1.5 shadow-sm">
-                      <UserPlus className="w-3.5 h-3.5" /> Apply Now <ChevronDown className="w-3 h-3 opacity-60" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 rounded-xl text-slate-100 p-1.5 shadow-2xl">
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-2 flex items-center gap-2 text-xs hover:bg-slate-800">
-                      <Link to="/apply/driver" className="flex items-center gap-2 w-full text-amber-400 font-bold">
-                        <Truck className="w-4 h-4" /> Driver Recruitment Portal
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg p-2 flex items-center gap-2 text-xs hover:bg-slate-800">
-                      <Link to="/signup-request" className="flex items-center gap-2 w-full text-blue-400 font-bold">
-                        <Users className="w-4 h-4" /> Employee & Staff Portal
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button asChild size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 font-semibold gap-1.5 shadow-sm">
+                  <Link to="/tracking">
+                    <Navigation className="w-3.5 h-3.5" /> Track Shipment
+                  </Link>
+                </Button>
 
                 <Button asChild size="sm" variant="outline" className="rounded-lg text-[12px] h-8 px-3 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 font-semibold gap-1.5">
                   <Link to="/client-login">
