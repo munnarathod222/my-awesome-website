@@ -3451,6 +3451,186 @@ router.all('/get-quotes', async (req, res) => {
 });
 
 /**
+ * DELETE /api/driver/quotes/:id
+ * POST /api/driver/delete-quote
+ * Permanently delete a quote from PocketBase, SQLite, and quotes_store.json
+ */
+const handleDeleteQuoteHandler = async (req, res) => {
+  try {
+    const rawTarget = req.params?.id || req.body?.quote_id || req.body?.quote_number || req.body?.id || req.query?.id;
+    if (!rawTarget) {
+      return res.status(400).json({ success: false, error: 'quote id or quote_number is required' });
+    }
+    const target = String(rawTarget).trim();
+    logger.info(`🗑️ Requested deletion of quote: ${target}`);
+
+    let pbDeleted = false;
+    let sqliteDeleted = false;
+    let storeDeleted = false;
+
+    // 1. Try PocketBase
+    try {
+      if (pb) {
+        let match = null;
+        if (!target.startsWith('qt_') && target.length === 15) {
+          try {
+            match = await pb.collection('quotes').getOne(target, { $autoCancel: false });
+          } catch (_) {}
+        }
+        if (!match) {
+          try {
+            match = await pb.collection('quotes').getFirstListItem(`quote_number = "${sanitize(target)}" || id = "${sanitize(target)}"`, { $autoCancel: false });
+          } catch (_) {}
+        }
+        if (match && match.id) {
+          await pb.collection('quotes').delete(match.id, { $autoCancel: false });
+          pbDeleted = true;
+          logger.info(`✅ PocketBase quote deleted: ${match.id} (${match.quote_number})`);
+        } else {
+          try {
+            await pb.collection('quotes').delete(target, { $autoCancel: false });
+            pbDeleted = true;
+          } catch (_) {}
+        }
+      }
+    } catch (pbErr) {
+      logger.warn(`PB quote delete notice: ${pbErr.message}`);
+    }
+
+    // 2. Try SQLite
+    try {
+      const dbPaths = [
+        path.join(process.cwd(), 'data', 'sqlite', 'app.db'),
+        path.join(process.cwd(), '..', 'data', 'sqlite', 'app.db'),
+        path.join(__dirname, '..', '..', '..', 'data', 'sqlite', 'app.db'),
+        path.join(__dirname, '..', '..', 'data', 'sqlite', 'app.db')
+      ];
+      for (const dbPath of dbPaths) {
+        if (fs.existsSync(dbPath)) {
+          let db;
+          try {
+            db = new Database(dbPath);
+            const info = db.prepare("DELETE FROM quotes WHERE id = ? OR quote_number = ?").run(target, target);
+            if (info.changes > 0) sqliteDeleted = true;
+          } catch (sqErr) {
+            logger.warn(`SQLite delete quote error on ${dbPath}: ${sqErr.message}`);
+          } finally {
+            if (db) { try { db.close(); } catch (_) {} }
+          }
+        }
+      }
+    } catch (sqErr) {
+      logger.warn(`SQLite quote delete error: ${sqErr.message}`);
+    }
+
+    // 3. Remove from quotes_store.json
+    try {
+      const qList = getQuotesStore();
+      const initialLen = qList.length;
+      const filtered = qList.filter(q => q.id !== target && q.quote_number !== target);
+      if (filtered.length !== initialLen) {
+        saveQuotesStore(filtered);
+        storeDeleted = true;
+        logger.info(`💾 Removed quote from quotes_store.json: ${target}`);
+      }
+    } catch (storeErr) {
+      logger.warn(`quotes_store delete error: ${storeErr.message}`);
+    }
+
+    return res.json({
+      success: true,
+      message: `Quote ${target} deleted successfully`,
+      deleted: { pb: pbDeleted, sqlite: sqliteDeleted, store: storeDeleted }
+    });
+  } catch (err) {
+    logger.error('Error deleting quote:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to delete quote' });
+  }
+};
+
+router.delete('/quotes/:id', handleDeleteQuoteHandler);
+router.post('/delete-quote', handleDeleteQuoteHandler);
+
+/**
+ * DELETE /api/driver/invoices/:id
+ * POST /api/driver/delete-invoice
+ * Permanently delete an invoice using superuser PocketBase
+ */
+const handleDeleteInvoiceHandler = async (req, res) => {
+  try {
+    const rawTarget = req.params?.id || req.body?.invoice_id || req.body?.invoice_number || req.body?.id || req.query?.id;
+    if (!rawTarget) {
+      return res.status(400).json({ success: false, error: 'invoice id or invoice_number is required' });
+    }
+    const target = String(rawTarget).trim();
+    logger.info(`🗑️ Requested deletion of invoice: ${target}`);
+
+    let pbDeleted = false;
+
+    // 1. Try PocketBase
+    try {
+      if (pb) {
+        let match = null;
+        if (target.length === 15) {
+          try {
+            match = await pb.collection('invoices').getOne(target, { $autoCancel: false });
+          } catch (_) {}
+        }
+        if (!match) {
+          try {
+            match = await pb.collection('invoices').getFirstListItem(`invoice_number = "${sanitize(target)}" || id = "${sanitize(target)}"`, { $autoCancel: false });
+          } catch (_) {}
+        }
+        if (match && match.id) {
+          await pb.collection('invoices').delete(match.id, { $autoCancel: false });
+          pbDeleted = true;
+          logger.info(`✅ PocketBase invoice deleted: ${match.id} (${match.invoice_number})`);
+        } else {
+          await pb.collection('invoices').delete(target, { $autoCancel: false });
+          pbDeleted = true;
+        }
+      }
+    } catch (pbErr) {
+      logger.warn(`PB invoice delete notice: ${pbErr.message}`);
+    }
+
+    // 2. Try SQLite if table exists
+    try {
+      const dbPaths = [
+        path.join(process.cwd(), 'data', 'sqlite', 'app.db'),
+        path.join(process.cwd(), '..', 'data', 'sqlite', 'app.db'),
+        path.join(__dirname, '..', '..', '..', 'data', 'sqlite', 'app.db'),
+        path.join(__dirname, '..', '..', 'data', 'sqlite', 'app.db')
+      ];
+      for (const dbPath of dbPaths) {
+        if (fs.existsSync(dbPath)) {
+          let db;
+          try {
+            db = new Database(dbPath);
+            db.prepare("DELETE FROM invoices WHERE id = ? OR invoice_number = ?").run(target, target);
+          } catch (_) {
+          } finally {
+            if (db) { try { db.close(); } catch (_) {} }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: `Invoice ${target} deleted successfully`,
+      deleted: { pb: pbDeleted }
+    });
+  } catch (err) {
+    logger.error('Error deleting invoice:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to delete invoice' });
+  }
+};
+
+router.delete('/invoices/:id', handleDeleteInvoiceHandler);
+router.post('/delete-invoice', handleDeleteInvoiceHandler);
+
+/**
  * POST /api/driver/send-contact-api
  * One-click send contact card via WhatsApp API / SMS / Dispatch Link
  */
