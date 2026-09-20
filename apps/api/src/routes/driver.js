@@ -3442,5 +3442,257 @@ router.post('/send-contact-api', async (req, res) => {
   }
 });
 
+// ==========================================
+// 💼 B2B CONTRACT & AGREEMENT MANAGEMENT API
+// ==========================================
+
+const CONTRACTS_STORE_PATH = path.join(process.cwd(), 'contracts_store.json');
+
+const getContractsStore = () => {
+  try {
+    if (fs.existsSync(CONTRACTS_STORE_PATH)) {
+      const raw = fs.readFileSync(CONTRACTS_STORE_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {
+    logger.warn(`Contracts store read error: ${e.message}`);
+  }
+  return [
+    {
+      id: "ctr_amz_01",
+      contract_number: "AGR-2025-AMZ-01",
+      client_name: "Amazon Transportation Services Pvt Ltd",
+      client_contact: "Suresh Nair (+91 98201 54321)",
+      client_email: "suresh.nair@amazon.com",
+      status: "Expiring Soon",
+      contract_start: "2025-10-17",
+      contract_end: "2026-10-17",
+      payment_terms: "Net 30 Days from submission of verified physical POD",
+      minimum_guarantee: "25 trips / month (Shortfall billing: ₹12,000 per unplaced truck)",
+      detention_terms: "Free 12 hours for loading & unloading; ₹2,000/day detention per vehicle thereafter",
+      penalties: "Placement delay >4h: ₹1,000 deduction per incident; Transit delay: ₹500/day",
+      escalation_clause: "Diesel baseline ₹92.50/L (IOCL Hyderabad). ₹0.35/km revision per ₹1.50/L variation",
+      notes: "Primary corridor: Hyderabad ➔ Bangalore & Chennai fulfillment centers",
+      rate_cards: [
+        { origin: "Hyderabad", destination: "Bangalore", vehicle_type: "32 FT Multi-Axle (15T)", rate: 42000, trip_type: "One-Way", transit_hours: 18 },
+        { origin: "Hyderabad", destination: "Chennai", vehicle_type: "32 FT Multi-Axle (15T)", rate: 46500, trip_type: "One-Way", transit_hours: 20 },
+        { origin: "Hyderabad", destination: "Pune", vehicle_type: "32 FT Single-Axle (7T)", rate: 38000, trip_type: "One-Way", transit_hours: 16 }
+      ],
+      created: "2025-10-17T10:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    },
+    {
+      id: "ctr_itc_02",
+      contract_number: "AGR-2026-ITC-04",
+      client_name: "ITC Limited - Packaging & Agri Division",
+      client_contact: "Rajesh Sharma (+91 97412 88990)",
+      client_email: "r.sharma@itc.in",
+      status: "Active",
+      contract_start: "2026-03-01",
+      contract_end: "2027-02-28",
+      payment_terms: "Net 21 Days via NEFT against scanned e-POD",
+      minimum_guarantee: "40 trips / month committed (Dedicated 8 fleet units)",
+      detention_terms: "Free 8 hours; ₹2,500/day detention beyond free window",
+      penalties: "Late arrival penalty ₹1,500 per trip; Driver hygiene violation ₹500",
+      escalation_clause: "Quarterly diesel price adjustment linked to HPCL retail price",
+      notes: "Dedicated corrugated packaging movement across South & West India",
+      rate_cards: [
+        { origin: "Secunderabad", destination: "Coimbatore", vehicle_type: "32 FT Multi-Axle (15T)", rate: 58000, trip_type: "One-Way", transit_hours: 24 },
+        { origin: "Secunderabad", destination: "Nagpur", vehicle_type: "24 FT Container", rate: 32000, trip_type: "One-Way", transit_hours: 14 }
+      ],
+      created: "2026-03-01T09:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    },
+    {
+      id: "ctr_tata_03",
+      contract_number: "AGR-2026-TATA-02",
+      client_name: "Tata Steel Downstream Products Ltd",
+      client_contact: "Vikram Sen (+91 94330 11223)",
+      client_email: "vikram.sen@tatasteel.com",
+      status: "Active",
+      contract_start: "2026-01-01",
+      contract_end: "2026-12-31",
+      payment_terms: "Net 45 Days with bank verification",
+      minimum_guarantee: "15 trips / month heavy steel coil transport",
+      detention_terms: "Free 24 hours at factory yard; ₹3,500/day trailer detention",
+      penalties: "Safety violation ₹5,000; Unsecured lashing ₹2,500",
+      escalation_clause: "Monthly review if diesel increases/decreases by >3%",
+      notes: "Flatbed 40ft trailers and heavy multi-axle trucks only",
+      rate_cards: [
+        { origin: "Jamshedpur", destination: "Hyderabad", vehicle_type: "40 FT Flatbed Trailer (30T)", rate: 84000, trip_type: "One-Way", transit_hours: 36 },
+        { origin: "Hyderabad", destination: "Visakhapatnam", vehicle_type: "32 FT Multi-Axle (15T)", rate: 45000, trip_type: "One-Way", transit_hours: 18 }
+      ],
+      created: "2026-01-01T11:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    }
+  ];
+};
+
+const saveContractsStore = (list) => {
+  try {
+    fs.writeFileSync(CONTRACTS_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {
+    logger.error('Failed to write contracts_store.json:', e);
+  }
+};
+
+const enrichContractWithExpiry = (c) => {
+  const now = new Date();
+  const endDate = c.contract_end ? new Date(c.contract_end) : null;
+  let daysRemaining = null;
+  let status = c.status || 'Active';
+
+  if (endDate && !isNaN(endDate.getTime())) {
+    const diffMs = endDate.getTime() - now.getTime();
+    daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysRemaining < 0) {
+      status = 'Expired';
+    } else if (daysRemaining <= 30) {
+      status = 'Expiring Soon';
+    } else {
+      status = 'Active';
+    }
+  }
+
+  return {
+    ...c,
+    days_remaining: daysRemaining,
+    status
+  };
+};
+
+// GET /api/driver/contracts - Fetch all contracts with live computed expiry alerts
+router.get('/contracts', async (req, res) => {
+  try {
+    const rawList = getContractsStore();
+    const enriched = rawList.map(enrichContractWithExpiry);
+    const expiringSoon = enriched.filter(c => c.days_remaining !== null && c.days_remaining >= 0 && c.days_remaining <= 30);
+
+    return res.json({
+      success: true,
+      count: enriched.length,
+      contracts: enriched,
+      alerts: expiringSoon
+    });
+  } catch (err) {
+    logger.error('Error fetching contracts:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to fetch contracts' });
+  }
+});
+
+// POST /api/driver/contracts - Create new B2B contract agreement
+router.post('/contracts', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    if (!payload.client_name) {
+      return res.status(400).json({ success: false, error: 'client_name is required' });
+    }
+
+    const list = getContractsStore();
+    const contractId = payload.id || `ctr_${Date.now().toString(36)}`;
+    const contractNum = payload.contract_number || `AGR-${new Date().getFullYear()}-${payload.client_name.substring(0, 3).toUpperCase()}-${String(list.length + 1).padStart(2, '0')}`;
+    const nowIso = new Date().toISOString();
+
+    const newContract = {
+      id: contractId,
+      contract_number: contractNum,
+      client_name: payload.client_name.trim(),
+      client_contact: payload.client_contact || '',
+      client_email: payload.client_email || '',
+      contract_start: payload.contract_start || nowIso.split('T')[0],
+      contract_end: payload.contract_end || '',
+      payment_terms: payload.payment_terms || 'Net 30 Days',
+      minimum_guarantee: payload.minimum_guarantee || 'None',
+      detention_terms: payload.detention_terms || 'Free 12h, ₹2,000/day thereafter',
+      penalties: payload.penalties || 'Standard transit SLA',
+      escalation_clause: payload.escalation_clause || 'Fuel index linked quarterly',
+      notes: payload.notes || '',
+      rate_cards: Array.isArray(payload.rate_cards) ? payload.rate_cards : [],
+      created: nowIso,
+      updated: nowIso
+    };
+
+    list.unshift(newContract);
+    saveContractsStore(list);
+
+    const enriched = enrichContractWithExpiry(newContract);
+    logger.info(`💼 B2B Contract created: ${contractNum} for ${payload.client_name}`);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Contract agreement created successfully',
+      contract: enriched
+    });
+  } catch (err) {
+    logger.error('Error creating contract:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to create contract' });
+  }
+});
+
+// PUT /api/driver/contracts/:id - Update or extend contract agreement
+router.put('/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payload = req.body || {};
+    const list = getContractsStore();
+    const idx = list.findIndex(c => c.id === id || c.contract_number === id);
+
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: 'Contract not found' });
+    }
+
+    const updated = {
+      ...list[idx],
+      ...payload,
+      id: list[idx].id,
+      updated: new Date().toISOString()
+    };
+
+    list[idx] = updated;
+    saveContractsStore(list);
+
+    const enriched = enrichContractWithExpiry(updated);
+    logger.info(`💼 B2B Contract updated: ${updated.contract_number}`);
+
+    return res.json({
+      success: true,
+      message: 'Contract agreement updated successfully',
+      contract: enriched
+    });
+  } catch (err) {
+    logger.error('Error updating contract:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to update contract' });
+  }
+});
+
+// DELETE /api/driver/contracts/:id - Remove contract
+router.delete('/contracts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    let list = getContractsStore();
+    const initialLen = list.length;
+    list = list.filter(c => c.id !== id && c.contract_number !== id);
+
+    if (list.length === initialLen) {
+      return res.status(404).json({ success: false, error: 'Contract not found' });
+    }
+
+    saveContractsStore(list);
+    logger.info(`🗑️ B2B Contract deleted: ${id}`);
+
+    return res.json({
+      success: true,
+      message: 'Contract deleted successfully',
+      deleted_id: id
+    });
+  } catch (err) {
+    logger.error('Error deleting contract:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to delete contract' });
+  }
+});
+
 export default router;
+
 
