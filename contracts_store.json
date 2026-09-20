@@ -1,0 +1,69 @@
+[
+  {
+    "id": "ctr_amz_01",
+    "contract_number": "AGR-2025-AMZ-01",
+    "client_name": "Amazon Transportation Services Pvt Ltd",
+    "client_contact": "Suresh Nair (+91 98201 54321)",
+    "client_email": "suresh.nair@amazon.com",
+    "status": "Expiring Soon",
+    "contract_start": "2025-10-17",
+    "contract_end": "2026-10-17",
+    "payment_terms": "Net 30 Days from submission of verified physical POD",
+    "minimum_guarantee": "25 trips / month (Shortfall billing: ₹12,000 per unplaced truck)",
+    "detention_terms": "Free 12 hours for loading & unloading; ₹2,000/day detention per vehicle thereafter",
+    "penalties": "Placement delay >4h: ₹1,000 deduction per incident; Transit delay: ₹500/day",
+    "escalation_clause": "Diesel baseline ₹92.50/L (IOCL Hyderabad). ₹0.35/km revision per ₹1.50/L variation",
+    "notes": "Primary corridor: Hyderabad ➔ Bangalore & Chennai fulfillment centers",
+    "rate_cards": [
+      { "origin": "Hyderabad", "destination": "Bangalore", "vehicle_type": "32 FT Multi-Axle (15T)", "rate": 42000, "trip_type": "One-Way", "transit_hours": 18 },
+      { "origin": "Hyderabad", "destination": "Chennai", "vehicle_type": "32 FT Multi-Axle (15T)", "rate": 46500, "trip_type": "One-Way", "transit_hours": 20 },
+      { "origin": "Hyderabad", "destination": "Pune", "vehicle_type": "32 FT Single-Axle (7T)", "rate": 38000, "trip_type": "One-Way", "transit_hours": 16 }
+    ],
+    "created": "2025-10-17T10:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  },
+  {
+    "id": "ctr_itc_02",
+    "contract_number": "AGR-2026-ITC-04",
+    "client_name": "ITC Limited - Packaging & Agri Division",
+    "client_contact": "Rajesh Sharma (+91 97412 88990)",
+    "client_email": "r.sharma@itc.in",
+    "status": "Active",
+    "contract_start": "2026-03-01",
+    "contract_end": "2027-02-28",
+    "payment_terms": "Net 21 Days via NEFT against scanned e-POD",
+    "minimum_guarantee": "40 trips / month committed (Dedicated 8 fleet units)",
+    "detention_terms": "Free 8 hours; ₹2,500/day detention beyond free window",
+    "penalties": "Late arrival penalty ₹1,500 per trip; Driver hygiene violation ₹500",
+    "escalation_clause": "Quarterly diesel price adjustment linked to HPCL retail price",
+    "notes": "Dedicated corrugated packaging movement across South & West India",
+    "rate_cards": [
+      { "origin": "Secunderabad", "destination": "Coimbatore", "vehicle_type": "32 FT Multi-Axle (15T)", "rate": 58000, "trip_type": "One-Way", "transit_hours": 24 },
+      { "origin": "Secunderabad", "destination": "Nagpur", "vehicle_type": "24 FT Container", "rate": 32000, "trip_type": "One-Way", "transit_hours": 14 }
+    ],
+    "created": "2026-03-01T09:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  },
+  {
+    "id": "ctr_tata_03",
+    "contract_number": "AGR-2026-TATA-02",
+    "client_name": "Tata Steel Downstream Products Ltd",
+    "client_contact": "Vikram Sen (+91 94330 11223)",
+    "client_email": "vikram.sen@tatasteel.com",
+    "status": "Active",
+    "contract_start": "2026-01-01",
+    "contract_end": "2026-12-31",
+    "payment_terms": "Net 45 Days with bank verification",
+    "minimum_guarantee": "15 trips / month heavy steel coil transport",
+    "detention_terms": "Free 24 hours at factory yard; ₹3,500/day trailer detention",
+    "penalties": "Safety violation ₹5,000; Unsecured lashing ₹2,500",
+    "escalation_clause": "Monthly review if diesel increases/decreases by >3%",
+    "notes": "Flatbed 40ft trailers and heavy multi-axle trucks only",
+    "rate_cards": [
+      { "origin": "Jamshedpur", "destination": "Hyderabad", "vehicle_type": "40 FT Flatbed Trailer (30T)", "rate": 84000, "trip_type": "One-Way", "transit_hours": 36 },
+      { "origin": "Hyderabad", "destination": "Visakhapatnam", "vehicle_type": "32 FT Multi-Axle (15T)", "rate": 45000, "trip_type": "One-Way", "transit_hours": 18 }
+    ],
+    "created": "2026-01-01T11:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  }
+]
