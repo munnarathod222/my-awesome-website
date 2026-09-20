@@ -632,12 +632,44 @@ global.uploadRecruitmentStoreToSupabase = uploadRecruitmentStoreToSupabase;
 // ----------------------------------------------------
 const BIDS_STORE_PATH = path.join(process.cwd(), 'bids_store.json');
 const BIDDING_COMPANIES_PATH = path.join(process.cwd(), 'bidding_companies.json');
+const DELETED_BIDS_PATH = path.join(process.cwd(), 'deleted_bids.json');
+
+const getDeletedBidsStore = () => {
+  try {
+    if (fs.existsSync(DELETED_BIDS_PATH)) {
+      const data = JSON.parse(fs.readFileSync(DELETED_BIDS_PATH, 'utf8'));
+      if (Array.isArray(data)) return new Set(data.map(String));
+    }
+  } catch (e) {}
+  return new Set();
+};
+
+const saveDeletedBidsStore = (setOrArr) => {
+  try {
+    const arr = Array.from(setOrArr).map(String);
+    fs.writeFileSync(DELETED_BIDS_PATH, JSON.stringify(arr, null, 2), 'utf8');
+  } catch (e) {}
+};
+
+const syncDeletedBidsToSQLite = async (id) => {
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+    if (!dbPath || !fs.existsSync(dbPath)) return;
+    const db = new DatabaseSync(dbPath);
+    db.exec(`CREATE TABLE IF NOT EXISTS deleted_bids (id TEXT PRIMARY KEY, deleted_at TEXT)`);
+    db.prepare(`INSERT OR REPLACE INTO deleted_bids (id, deleted_at) VALUES (?, datetime('now'))`).run(String(id));
+  } catch (e) {}
+};
 
 const getBidsStore = () => {
   try {
+    const deletedSet = getDeletedBidsStore();
     if (fs.existsSync(BIDS_STORE_PATH)) {
       const data = JSON.parse(fs.readFileSync(BIDS_STORE_PATH, 'utf8'));
-      if (Array.isArray(data)) return data;
+      if (Array.isArray(data)) {
+        return data.filter(b => b && b.id && !deletedSet.has(String(b.id)));
+      }
     }
   } catch (e) {}
   return [];
@@ -645,7 +677,9 @@ const getBidsStore = () => {
 
 const saveBidsStore = (list) => {
   try {
-    fs.writeFileSync(BIDS_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
+    const deletedSet = getDeletedBidsStore();
+    const clean = Array.isArray(list) ? list.filter(b => b && b.id && !deletedSet.has(String(b.id))) : [];
+    fs.writeFileSync(BIDS_STORE_PATH, JSON.stringify(clean, null, 2), 'utf8');
   } catch (e) {}
 };
 
@@ -671,6 +705,7 @@ const syncBidsListToSQLite = async (list) => {
     const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
     if (!dbPath || !fs.existsSync(dbPath)) return;
     const db = new DatabaseSync(dbPath);
+    db.exec(`CREATE TABLE IF NOT EXISTS deleted_bids (id TEXT PRIMARY KEY, deleted_at TEXT)`);
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO bids (
         id, date, bid_date, client_name, counterparty, role, underlying_client,
@@ -688,8 +723,9 @@ const syncBidsListToSQLite = async (list) => {
         ?, ?, ?, ?, datetime('now')
       )
     `);
+    const deletedSet = getDeletedBidsStore();
     for (const b of list) {
-      if (!b || !b.id) continue;
+      if (!b || !b.id || deletedSet.has(String(b.id))) continue;
       try {
         stmt.run(
           String(b.id),
@@ -742,6 +778,35 @@ const downloadBidsStoreFromSupabase = async () => {
       }
     } catch (e) {}
 
+    // Also download remote deleted_bids.json
+    let remoteDeleted = [];
+    try {
+      const resDel = await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+      });
+      if (resDel.ok) {
+        const textDel = await resDel.text();
+        remoteDeleted = JSON.parse(textDel);
+      }
+    } catch (e) {}
+
+    const deletedSet = getDeletedBidsStore();
+    if (Array.isArray(remoteDeleted)) {
+      remoteDeleted.forEach(id => id && deletedSet.add(String(id)));
+    }
+
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+      if (dbPath && fs.existsSync(dbPath)) {
+        const db = new DatabaseSync(dbPath);
+        db.exec(`CREATE TABLE IF NOT EXISTS deleted_bids (id TEXT PRIMARY KEY, deleted_at TEXT)`);
+        const delRows = db.prepare('SELECT id FROM deleted_bids').all();
+        delRows.forEach(r => r && r.id && deletedSet.add(String(r.id)));
+      }
+    } catch (e) {}
+    saveDeletedBidsStore(deletedSet);
+
     const localList = getBidsStore();
     let sqliteList = [];
     try {
@@ -754,21 +819,20 @@ const downloadBidsStoreFromSupabase = async () => {
     } catch (e) {}
 
     // Three-way merge: Supabase cloud + local bids_store.json + SQLite bids
+    // Always filter out any deleted bids
     const map = new Map();
     [...(Array.isArray(sqliteList) ? sqliteList : []),
      ...(Array.isArray(localList) ? localList : []),
      ...(Array.isArray(remoteList) ? remoteList : [])].forEach(item => {
-      if (item && item.id) {
+      if (item && item.id && !deletedSet.has(String(item.id))) {
         map.set(item.id, { ...(map.get(item.id) || {}), ...item });
       }
     });
 
     const merged = Array.from(map.values());
-    if (merged.length > 0) {
-      saveBidsStore(merged);
-      await syncBidsListToSQLite(merged);
-      logger.info(`✅ Bidding Intelligence persistence verified: ${merged.length} bids loaded into memory, disk, and SQLite!`);
-    }
+    saveBidsStore(merged);
+    await syncBidsListToSQLite(merged);
+    logger.info(`✅ Bidding Intelligence persistence verified: ${merged.length} active bids (${deletedSet.size} deleted filtered out)`);
   } catch (e) {
     logger.warn(`Bids cloud download notice: ${e.message}`);
   }
@@ -801,8 +865,9 @@ const downloadBiddingCompaniesFromSupabase = async () => {
 
 const uploadBidsStoreToSupabase = async () => {
   try {
-    let list = getBidsStore();
-    // Also include any records in SQLite
+    const deletedSet = getDeletedBidsStore();
+    let list = getBidsStore().filter(b => b && b.id && !deletedSet.has(String(b.id)));
+    // Also include any records in SQLite that are not deleted
     try {
       const { DatabaseSync } = await import('node:sqlite');
       const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
@@ -810,13 +875,16 @@ const uploadBidsStoreToSupabase = async () => {
         const db = new DatabaseSync(dbPath);
         const sq = db.prepare('SELECT * FROM bids').all();
         const map = new Map();
-        [...sq, ...list].forEach(b => { if (b && b.id) map.set(b.id, { ...(map.get(b.id) || {}), ...b }); });
+        [...sq, ...list].forEach(b => {
+          if (b && b.id && !deletedSet.has(String(b.id))) {
+            map.set(b.id, { ...(map.get(b.id) || {}), ...b });
+          }
+        });
         list = Array.from(map.values());
         saveBidsStore(list);
       }
     } catch (e) {}
 
-    if (!list || list.length === 0) return false;
     const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
 
     let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
@@ -842,8 +910,34 @@ const uploadBidsStoreToSupabase = async () => {
       });
     }
 
+    // Upload deleted_bids.json
+    try {
+      const delBuf = Buffer.from(JSON.stringify(Array.from(deletedSet), null, 2), 'utf8');
+      let delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'x-upsert': 'true'
+        },
+        body: delBuf
+      });
+      if (!delRes.ok) {
+        await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+          method: 'PUT',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: delBuf
+        });
+      }
+    } catch (e) {}
+
     if (res.ok) {
-      logger.info(`✅ Bidding logs (${list.length} bids) securely backed up to Supabase Cloud Storage!`);
+      logger.info(`✅ Bidding logs (${list.length} active bids, ${deletedSet.size} deleted) backed up to Supabase!`);
       return true;
     }
     return false;
@@ -4233,6 +4327,7 @@ app.post('/hcgi/api/fuel/sync-expense', handleFuelExpenseSync);
 // Express Route Handlers
 const handleGetBids = async (req, res) => {
   try {
+    const deletedSet = getDeletedBidsStore();
     let list = [];
     try {
       const { DatabaseSync } = await import('node:sqlite');
@@ -4246,7 +4341,9 @@ const handleGetBids = async (req, res) => {
     const fileList = getBidsStore();
     const map = new Map();
     [...list, ...fileList].forEach(b => {
-      if (b && b.id) map.set(b.id, { ...(map.get(b.id) || {}), ...b });
+      if (b && b.id && !deletedSet.has(String(b.id))) {
+        map.set(b.id, { ...(map.get(b.id) || {}), ...b });
+      }
     });
     const merged = Array.from(map.values());
     res.json({ success: true, bids: merged });
@@ -4261,9 +4358,24 @@ const handleSaveBid = async (req, res) => {
     if (!b) return res.status(400).json({ success: false, error: 'No bid data provided' });
     if (!b.id) b.id = 'bid_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
+    // If previously deleted, unmark since user explicitly saved it
+    const deletedSet = getDeletedBidsStore();
+    if (deletedSet.has(String(b.id))) {
+      deletedSet.delete(String(b.id));
+      saveDeletedBidsStore(deletedSet);
+      try {
+        const { DatabaseSync } = await import('node:sqlite');
+        const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+        if (dbPath && fs.existsSync(dbPath)) {
+          const db = new DatabaseSync(dbPath);
+          db.prepare('DELETE FROM deleted_bids WHERE id = ?').run(String(b.id));
+        }
+      } catch (e) {}
+    }
+
     syncBidsListToSQLite([b]);
 
-    const list = getBidsStore();
+    const list = getBidsStore().filter(item => !deletedSet.has(String(item.id)));
     const idx = list.findIndex(item => item.id === b.id);
     if (idx >= 0) list[idx] = { ...list[idx], ...b };
     else list.unshift(b);
@@ -4283,22 +4395,42 @@ const handleSaveBid = async (req, res) => {
 const handleDeleteBid = async (req, res) => {
   try {
     const id = req.params.id;
+    if (!id) return res.status(400).json({ success: false, error: 'No ID provided' });
+
+    // 1. Add to permanent deleted tombstones
+    const deletedSet = getDeletedBidsStore();
+    deletedSet.add(String(id));
+    saveDeletedBidsStore(deletedSet);
+    await syncDeletedBidsToSQLite(id);
+
+    // 2. Remove from SQLite bids table
     try {
       const { DatabaseSync } = await import('node:sqlite');
       const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
       if (dbPath && fs.existsSync(dbPath)) {
         const db = new DatabaseSync(dbPath);
-        db.prepare('DELETE FROM bids WHERE id = ?').run(id);
+        db.prepare('DELETE FROM bids WHERE id = ?').run(String(id));
       }
     } catch (e) {}
 
-    const list = getBidsStore().filter(b => b.id !== id);
+    // 3. Remove from bids_store.json
+    const list = getBidsStore().filter(b => String(b.id) !== String(id));
     saveBidsStore(list);
+
+    // 4. Also delete from PocketBase if available
+    try {
+      const pb = global.pbAdminClient;
+      if (pb) {
+        await pb.collection('bids').delete(String(id), { $autoCancel: false }).catch(() => {});
+      }
+    } catch (e) {}
+
+    // 5. Upload updated active bids + deleted tombstones to Supabase
     uploadBidsStoreToSupabase().catch(() => {});
     if (typeof triggerDebouncedCloudSync === 'function') {
       triggerDebouncedCloudSync(2000);
     }
-    res.json({ success: true, message: 'Bid deleted' });
+    res.json({ success: true, message: 'Bid deleted', id });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
