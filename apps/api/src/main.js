@@ -625,6 +625,190 @@ const uploadRecruitmentStoreToSupabase = async (options = {}) => {
 global.uploadDatabaseToSupabase = uploadDatabaseToSupabase;
 global.uploadRecruitmentStoreToSupabase = uploadRecruitmentStoreToSupabase;
 
+// ----------------------------------------------------
+// Production Bidding Intelligence & Companies Persistence Engine
+// ----------------------------------------------------
+const BIDS_STORE_PATH = path.join(process.cwd(), 'bids_store.json');
+const BIDDING_COMPANIES_PATH = path.join(process.cwd(), 'bidding_companies.json');
+
+const getBidsStore = () => {
+  try {
+    if (fs.existsSync(BIDS_STORE_PATH)) {
+      const data = JSON.parse(fs.readFileSync(BIDS_STORE_PATH, 'utf8'));
+      if (Array.isArray(data)) return data;
+    }
+  } catch (e) {}
+  return [];
+};
+
+const saveBidsStore = (list) => {
+  try {
+    fs.writeFileSync(BIDS_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {}
+};
+
+const getBiddingCompaniesStore = () => {
+  try {
+    if (fs.existsSync(BIDDING_COMPANIES_PATH)) {
+      const data = JSON.parse(fs.readFileSync(BIDDING_COMPANIES_PATH, 'utf8'));
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {}
+  return ["Delhivery", "Amazon", "Flipkart", "DHL"];
+};
+
+const saveBiddingCompaniesStore = (list) => {
+  try {
+    fs.writeFileSync(BIDDING_COMPANIES_PATH, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {}
+};
+
+const syncBidsListToSQLite = async (list) => {
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+    if (!dbPath || !fs.existsSync(dbPath)) return;
+    const db = new DatabaseSync(dbPath);
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO bids (
+        id, date, bid_date, client_name, counterparty, role, underlying_client,
+        bidding_type, bid_type, vehicle_type, truck_type, bidding_amount,
+        quoted_amount, quoted_rate, bidding_lost_at, actual_winning_rate,
+        trip_detail, starting_point, origin, ending_point, destination,
+        no_of_stops, route_map, status, result, distance_km, payload_tons,
+        trips_count, monthly_trips, contract_ref, notes, updated
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, datetime('now')
+      )
+    `);
+    for (const b of list) {
+      if (!b || !b.id) continue;
+      try {
+        stmt.run(
+          String(b.id),
+          b.date || b.bid_date || '',
+          b.bid_date || b.date || '',
+          b.client_name || b.counterparty || 'Delhivery',
+          b.counterparty || b.client_name || 'Delhivery',
+          b.role || 'Partner',
+          b.underlying_client || '',
+          b.bidding_type || b.bid_type || 'Contract',
+          b.bid_type || b.bidding_type || 'Contract',
+          b.vehicle_type || b.truck_type || '32FTSXL',
+          b.truck_type || b.vehicle_type || '32FTSXL',
+          Number(b.bidding_amount) || 0,
+          Number(b.quoted_amount || b.bidding_amount) || 0,
+          Number(b.quoted_rate || b.quoted_amount || b.bidding_amount) || 0,
+          Number(b.bidding_lost_at) || 0,
+          Number(b.actual_winning_rate) || 0,
+          b.trip_detail || '1 Way',
+          b.starting_point || b.origin || '',
+          b.origin || b.starting_point || '',
+          b.ending_point || b.destination || '',
+          b.destination || b.ending_point || '',
+          Number(b.no_of_stops) || 1,
+          b.route_map || '',
+          b.status || b.result || 'Not bidded',
+          b.result || b.status || 'Not bidded',
+          Number(b.distance_km) || 0,
+          Number(b.payload_tons) || 6,
+          Number(b.trips_count) || 1,
+          Number(b.monthly_trips || b.trips_count) || 1,
+          b.contract_ref || '',
+          b.notes || ''
+        );
+      } catch (err) {}
+    }
+  } catch (e) {}
+};
+
+const downloadBidsStoreFromSupabase = async () => {
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const list = JSON.parse(text);
+      if (Array.isArray(list) && list.length > 0) {
+        saveBidsStore(list);
+        logger.info(`✅ Restored ${list.length} bidding logs from Supabase cloud backup!`);
+        syncBidsListToSQLite(list);
+      }
+    }
+  } catch (e) {
+    logger.warn(`Bids cloud download notice: ${e.message}`);
+  }
+};
+
+const downloadBiddingCompaniesFromSupabase = async () => {
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const list = JSON.parse(text);
+      if (Array.isArray(list) && list.length > 0) {
+        saveBiddingCompaniesStore(list);
+        logger.info(`✅ Restored ${list.length} custom bidding companies from Supabase cloud backup!`);
+      }
+    }
+  } catch (e) {}
+};
+
+const uploadBidsStoreToSupabase = async () => {
+  try {
+    const list = getBidsStore();
+    if (!list || list.length === 0) return false;
+    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
+    await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: buf
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+const uploadBiddingCompaniesToSupabase = async () => {
+  try {
+    const list = getBiddingCompaniesStore();
+    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
+    await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: buf
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+global.downloadBidsStoreFromSupabase = downloadBidsStoreFromSupabase;
+global.downloadBiddingCompaniesFromSupabase = downloadBiddingCompaniesFromSupabase;
+global.uploadBidsStoreToSupabase = uploadBidsStoreToSupabase;
+global.uploadBiddingCompaniesToSupabase = uploadBiddingCompaniesToSupabase;
+
+
 // ── Continuous Real-Time Cloud Auto-Sync Engine ──
 let _cloudSyncDebounceTimer = null;
 let _lastCloudSyncMtime = 0;
@@ -688,8 +872,8 @@ global.triggerDebouncedCloudSync = triggerDebouncedCloudSync;
 
 // Auto-restore recruitment & bidding data stores on boot
 downloadRecruitmentStoreFromSupabase().catch(() => {});
-if (typeof downloadBidsStoreFromSupabase === 'function') downloadBidsStoreFromSupabase().catch(() => {});
-if (typeof downloadBiddingCompaniesFromSupabase === 'function') downloadBiddingCompaniesFromSupabase().catch(() => {});
+downloadBidsStoreFromSupabase().catch(() => {});
+downloadBiddingCompaniesFromSupabase().catch(() => {});
 
 const pruneOldLocalBackups = (dbFilePath) => {
   try {
@@ -3959,189 +4143,6 @@ const handleFuelExpenseSync = async (req, res) => {
 
 app.post('/api/fuel/sync-expense', handleFuelExpenseSync);
 app.post('/hcgi/api/fuel/sync-expense', handleFuelExpenseSync);
-
-// ----------------------------------------------------
-// Production Bidding Intelligence & Companies Persistence Engine
-// ----------------------------------------------------
-const BIDS_STORE_PATH = path.join(process.cwd(), 'bids_store.json');
-const BIDDING_COMPANIES_PATH = path.join(process.cwd(), 'bidding_companies.json');
-
-const getBidsStore = () => {
-  try {
-    if (fs.existsSync(BIDS_STORE_PATH)) {
-      const data = JSON.parse(fs.readFileSync(BIDS_STORE_PATH, 'utf8'));
-      if (Array.isArray(data)) return data;
-    }
-  } catch (e) {}
-  return [];
-};
-
-const saveBidsStore = (list) => {
-  try {
-    fs.writeFileSync(BIDS_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
-  } catch (e) {}
-};
-
-const getBiddingCompaniesStore = () => {
-  try {
-    if (fs.existsSync(BIDDING_COMPANIES_PATH)) {
-      const data = JSON.parse(fs.readFileSync(BIDDING_COMPANIES_PATH, 'utf8'));
-      if (Array.isArray(data) && data.length > 0) return data;
-    }
-  } catch (e) {}
-  return ["Delhivery", "Amazon", "Flipkart", "DHL"];
-};
-
-const saveBiddingCompaniesStore = (list) => {
-  try {
-    fs.writeFileSync(BIDDING_COMPANIES_PATH, JSON.stringify(list, null, 2), 'utf8');
-  } catch (e) {}
-};
-
-const syncBidsListToSQLite = async (list) => {
-  try {
-    const { DatabaseSync } = await import('node:sqlite');
-    const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
-    if (!dbPath || !fs.existsSync(dbPath)) return;
-    const db = new DatabaseSync(dbPath);
-    const stmt = db.prepare(`
-      INSERT OR REPLACE INTO bids (
-        id, date, bid_date, client_name, counterparty, role, underlying_client,
-        bidding_type, bid_type, vehicle_type, truck_type, bidding_amount,
-        quoted_amount, quoted_rate, bidding_lost_at, actual_winning_rate,
-        trip_detail, starting_point, origin, ending_point, destination,
-        no_of_stops, route_map, status, result, distance_km, payload_tons,
-        trips_count, monthly_trips, contract_ref, notes, updated
-      ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?,
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, datetime('now')
-      )
-    `);
-    for (const b of list) {
-      if (!b || !b.id) continue;
-      try {
-        stmt.run(
-          String(b.id),
-          b.date || b.bid_date || '',
-          b.bid_date || b.date || '',
-          b.client_name || b.counterparty || 'Delhivery',
-          b.counterparty || b.client_name || 'Delhivery',
-          b.role || 'Partner',
-          b.underlying_client || '',
-          b.bidding_type || b.bid_type || 'Contract',
-          b.bid_type || b.bidding_type || 'Contract',
-          b.vehicle_type || b.truck_type || '32FTSXL',
-          b.truck_type || b.vehicle_type || '32FTSXL',
-          Number(b.bidding_amount) || 0,
-          Number(b.quoted_amount || b.bidding_amount) || 0,
-          Number(b.quoted_rate || b.quoted_amount || b.bidding_amount) || 0,
-          Number(b.bidding_lost_at) || 0,
-          Number(b.actual_winning_rate) || 0,
-          b.trip_detail || '1 Way',
-          b.starting_point || b.origin || '',
-          b.origin || b.starting_point || '',
-          b.ending_point || b.destination || '',
-          b.destination || b.ending_point || '',
-          Number(b.no_of_stops) || 1,
-          b.route_map || '',
-          b.status || b.result || 'Not bidded',
-          b.result || b.status || 'Not bidded',
-          Number(b.distance_km) || 0,
-          Number(b.payload_tons) || 6,
-          Number(b.trips_count) || 1,
-          Number(b.monthly_trips || b.trips_count) || 1,
-          b.contract_ref || '',
-          b.notes || ''
-        );
-      } catch (err) {}
-    }
-  } catch (e) {}
-};
-
-const downloadBidsStoreFromSupabase = async () => {
-  try {
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const list = JSON.parse(text);
-      if (Array.isArray(list) && list.length > 0) {
-        saveBidsStore(list);
-        logger.info(`✅ Restored ${list.length} bidding logs from Supabase cloud backup!`);
-        syncBidsListToSQLite(list);
-      }
-    }
-  } catch (e) {
-    logger.warn(`Bids cloud download notice: ${e.message}`);
-  }
-};
-
-const downloadBiddingCompaniesFromSupabase = async () => {
-  try {
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
-      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-    });
-    if (res.ok) {
-      const text = await res.text();
-      const list = JSON.parse(text);
-      if (Array.isArray(list) && list.length > 0) {
-        saveBiddingCompaniesStore(list);
-        logger.info(`✅ Restored ${list.length} custom bidding companies from Supabase cloud backup!`);
-      }
-    }
-  } catch (e) {}
-};
-
-const uploadBidsStoreToSupabase = async () => {
-  try {
-    const list = getBidsStore();
-    if (!list || list.length === 0) return false;
-    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
-    await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true'
-      },
-      body: buf
-    });
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-const uploadBiddingCompaniesToSupabase = async () => {
-  try {
-    const list = getBiddingCompaniesStore();
-    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
-    await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true'
-      },
-      body: buf
-    });
-    return true;
-  } catch (e) {
-    return false;
-  }
-};
-
-global.downloadBidsStoreFromSupabase = downloadBidsStoreFromSupabase;
-global.downloadBiddingCompaniesFromSupabase = downloadBiddingCompaniesFromSupabase;
-global.uploadBidsStoreToSupabase = uploadBidsStoreToSupabase;
-global.uploadBiddingCompaniesToSupabase = uploadBiddingCompaniesToSupabase;
 
 // Express Route Handlers
 const handleGetBids = async (req, res) => {
