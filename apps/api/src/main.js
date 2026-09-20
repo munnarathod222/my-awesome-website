@@ -12,7 +12,7 @@ import multer from 'multer';
 
 import routes from './routes/index.js';
 import whatsappRouter from './routes/whatsapp.js';
-import { deleteEmployeeRecord } from './routes/driver.js';
+import driverRouter, { deleteEmployeeRecord } from './routes/driver.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
@@ -3559,6 +3559,11 @@ const handleDirectFileServe = async (req, res, next) => {
     } catch (_) {}
   }
 
+  // If a thumbnail is requested (?thumb=100x100), pass to PocketBase image processor to serve the lightweight thumbnail instead of the 25MB raw image
+  if (req.query && (req.query.thumb || req.query.thumbnail)) {
+    return next();
+  }
+
   if (targetPath && fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
     res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -4570,6 +4575,10 @@ app.use(['/api', '/hcgi/api'], (req, res, next) => {
 const apiRouter = routes();
 app.use('/hcgi/api', apiRouter);
 app.use('/api', apiRouter);
+app.use('/api/driver', driverRouter);
+app.use('/hcgi/api/driver', driverRouter);
+app.use('/api/trucks', driverRouter);
+app.use('/hcgi/api/trucks', driverRouter);
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/aisensy', whatsappRouter);
 app.use('/hcgi/api/whatsapp', whatsappRouter);

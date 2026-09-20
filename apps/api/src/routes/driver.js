@@ -522,22 +522,31 @@ router.post('/update-expense/:id', async (req, res) => {
  * POST /api/driver/update-truck/:id
  * Update a truck record (including FASTag balance & details) via superuser PocketBase client.
  */
-router.post('/update-truck/:id', async (req, res) => {
+router.post(['/update-truck/:id', '/trucks/save/:id?'], async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id || req.body?.id;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Truck ID is required' });
+    }
     const data = req.body || {};
     const payload = {};
     const allowedFields = [
       'truck_name', 'truck_number', 'truck_size', 'truck_axle', 'tyre_count',
-      'status', 'base_odometer', 'ownership_type', 'manager_id', 'fastag_id',
+      'status', 'base_odometer', 'expected_mileage', 'ownership_type', 'manager_id', 'fastag_id',
       'current_fastag_balance', 'payload_capacity', 'body_length', 'body_width', 'body_height',
-      'last_recharge_date', 'last_recharge_amount'
+      'last_recharge_date', 'last_recharge_amount', 'subcontractor_id', 'subcontractor_name',
+      'owner_name', 'owner_phone', 'owner_pan', 'owner_aadhaar', 'owner_bank_name', 'owner_account_number', 'owner_ifsc',
+      'assigned_driver_id', 'assigned_driver_name', 'assigned_driver_phone',
+      'driver_name', 'driver_phone', 'driver_dl_number',
+      'loan_id', 'financier_name', 'hypothecation_details'
     ];
     for (const key of allowedFields) {
       if (data[key] !== undefined && data[key] !== null) {
         if (key === 'current_fastag_balance' || key === 'base_odometer' || key === 'tyre_count' || key === 'last_recharge_amount' || key === 'body_length' || key === 'body_width' || key === 'body_height') {
           payload[key] = Number(data[key]) || 0;
-        } else if (key === 'manager_id' && (data[key] === 'none' || data[key] === '')) {
+        } else if (key === 'expected_mileage') {
+          payload[key] = parseFloat(data[key]) || 5.8;
+        } else if ((key === 'manager_id' || key === 'assigned_driver_id') && (data[key] === 'none' || data[key] === '')) {
           payload[key] = '';
         } else {
           payload[key] = data[key];
@@ -545,7 +554,45 @@ router.post('/update-truck/:id', async (req, res) => {
       }
     }
 
+    // Keep driver_name and assigned_driver_name in sync
+    if (payload.assigned_driver_name && !payload.driver_name) {
+      payload.driver_name = payload.assigned_driver_name;
+    }
+    if (payload.assigned_driver_phone && !payload.driver_phone) {
+      payload.driver_phone = payload.assigned_driver_phone;
+    }
+
     const record = await pb.collection('trucks').update(id, payload, { $autoCancel: false });
+
+    // Synchronize driver assignment with employees collection
+    try {
+      let targetDriverId = payload.assigned_driver_id;
+      if (!targetDriverId && payload.assigned_driver_name) {
+        const emps = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
+        const matched = emps.find(e => (e.name || '').trim().toLowerCase() === (payload.assigned_driver_name || '').trim().toLowerCase());
+        if (matched) targetDriverId = matched.id;
+      }
+
+      // Unassign any driver currently assigned to this truck who is not targetDriverId
+      const currentAssigned = await pb.collection('employees').getFullList({
+        filter: `assigned_truck = "${id}"`,
+        $autoCancel: false
+      }).catch(() => []);
+
+      for (const emp of currentAssigned) {
+        if (emp.id !== targetDriverId) {
+          await pb.collection('employees').update(emp.id, { assigned_truck: '' }, { $autoCancel: false }).catch(() => {});
+        }
+      }
+
+      // Assign new driver if specified
+      if (targetDriverId) {
+        await pb.collection('employees').update(targetDriverId, { assigned_truck: id }, { $autoCancel: false }).catch(() => {});
+      }
+    } catch (empSyncErr) {
+      logger.warn(`Driver sync warning: ${empSyncErr.message}`);
+    }
+
     logger.info(`Truck updated via API: ${record.id} (${record.truck_number})`);
     return res.json({ success: true, record });
   } catch (err) {

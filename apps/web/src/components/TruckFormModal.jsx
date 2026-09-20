@@ -131,7 +131,12 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         owner_bank_name: formData.owner_bank_name || '',
         owner_account_number: formData.owner_account_number || '',
         owner_ifsc: formData.owner_ifsc || '',
-        subcontractor_name: formData.ownership_type === 'AttachedFamily' ? (formData.owner_name || 'Family Owner') : ''
+        subcontractor_name: formData.ownership_type === 'AttachedFamily' ? (formData.owner_name || 'Family Owner') : '',
+        assigned_driver_id: formData.assigned_driver_id === 'none' ? '' : (formData.assigned_driver_id || ''),
+        assigned_driver_name: formData.assigned_driver_name || '',
+        assigned_driver_phone: formData.assigned_driver_phone || '',
+        driver_name: formData.assigned_driver_name || '',
+        driver_phone: formData.assigned_driver_phone || ''
       };
 
       const newItems = bodyImagesList.filter(item => item.isNew);
