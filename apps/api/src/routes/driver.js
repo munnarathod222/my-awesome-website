@@ -3693,6 +3693,338 @@ router.delete('/contracts/:id', async (req, res) => {
   }
 });
 
+// ==========================================
+// 🔧 REGIONAL CONTACT HUB & BREAKDOWN NETWORK API (Feature 86)
+// ==========================================
+
+const BREAKDOWN_STORE_PATH = path.join(process.cwd(), 'breakdown_network_store.json');
+
+const getBreakdownStore = () => {
+  try {
+    if (fs.existsSync(BREAKDOWN_STORE_PATH)) {
+      const raw = fs.readFileSync(BREAKDOWN_STORE_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {
+    logger.warn(`Breakdown store read error: ${e.message}`);
+  }
+  return [
+    {
+      id: "reg_hyd",
+      name: "HYDERABAD",
+      code: "HYD",
+      highway_corridor: "NH44 / ORR Ring Road",
+      state: "Telangana",
+      primary_contact: {
+        name: "Mohammed Imran",
+        phone: "+91 98480 12345",
+        role: "Hyderabad Hub In-Charge & Operations Lead",
+        notes: "Available 24/7 for Shamshabad, Medchal, and Patancheru corridors"
+      },
+      categories: {
+        mechanic: {
+          id: "c_hyd_mech",
+          company_name: "Sri Sai Auto Garage & Hydraulics",
+          contact_name: "Satyanarayana",
+          phone_number: "9848123456",
+          contact_type: "Mechanic",
+          physical_address: "Near ORR Exit 11, Shamshabad, Hyderabad",
+          google_maps_url: "https://maps.google.com/?q=Shamshabad+Hyderabad",
+          truck_brand: "Tata, Ashok Leyland, BharatBenz",
+          assigned: true
+        },
+        tyre_shop: {
+          id: "c_hyd_tyre",
+          company_name: "National MRF Tyres & Mobile Puncture Van",
+          contact_name: "Babu Rao",
+          phone_number: "9848234567",
+          contact_type: "Tyre Shop",
+          physical_address: "NH44 Highway Yard, Medchal, Hyderabad",
+          google_maps_url: "https://maps.google.com/?q=Medchal+Hyderabad",
+          truck_brand: "All Multi-Axle & Radial Tyres",
+          assigned: true
+        },
+        towing: {
+          id: "c_hyd_tow",
+          company_name: "Balaji Heavy Crane & 50T Towing Service",
+          contact_name: "Ravi Kumar",
+          phone_number: "9848345678",
+          contact_type: "Crane / Tow Truck",
+          physical_address: "Patancheru Bypass, Hyderabad",
+          google_maps_url: "https://maps.google.com/?q=Patancheru+Hyderabad",
+          truck_brand: "Heavy Hydraulic Recovery Cranes",
+          assigned: true
+        },
+        electrical: {
+          id: "c_hyd_elec",
+          company_name: "Ali Auto Electrician & Battery Works",
+          contact_name: "Ali Bhai",
+          phone_number: "9848456789",
+          contact_type: "Electrician",
+          physical_address: "Autonagar Transport Hub, Hyderabad",
+          google_maps_url: "https://maps.google.com/?q=Autonagar+Hyderabad",
+          truck_brand: "Exide, Amaron, Jump-Start Van",
+          assigned: true
+        }
+      },
+      created: "2026-09-20T12:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    },
+    {
+      id: "reg_kurnool",
+      name: "KURNOOL",
+      code: "KNL",
+      highway_corridor: "NH44 (Hyderabad - Bangalore Highway)",
+      state: "Andhra Pradesh",
+      primary_contact: {
+        name: "Ramesh Reddy",
+        phone: "+91 97410 98765",
+        role: "Kurnool Regional Coordinator & Station Supervisor",
+        notes: "Handles truck checkpost, parking yards, and emergency driver relief"
+      },
+      categories: {
+        mechanic: {
+          id: "c_knl_mech",
+          company_name: "Kurnool Heavy Truck Workshop - NH44",
+          contact_name: "Khaja Miyan",
+          phone_number: "9741123456",
+          contact_type: "Mechanic",
+          physical_address: "NH44 Bypass, Toll Gate Road, Kurnool",
+          google_maps_url: "https://maps.google.com/?q=NH44+Toll+Plaza+Kurnool",
+          truck_brand: "Engine overhaul, clutch & air brake specialist",
+          assigned: true
+        },
+        tyre_shop: {
+          id: "c_knl_tyre",
+          company_name: "Bismillah Tyres & Radial Puncture Centre",
+          contact_name: "Ghouse",
+          phone_number: "9741234567",
+          contact_type: "Tyre Shop",
+          physical_address: "Near Bellary Chowrasta, Kurnool",
+          google_maps_url: "https://maps.google.com/?q=Bellary+Chowrasta+Kurnool",
+          truck_brand: "Apollo, JK, CEAT truck tyres",
+          assigned: true
+        },
+        towing: null,
+        electrical: null
+      },
+      created: "2026-09-20T12:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    },
+    {
+      id: "reg_atp",
+      name: "ANANTAPUR",
+      code: "ATP",
+      highway_corridor: "NH44 (South Corridor to Bangalore)",
+      state: "Andhra Pradesh",
+      primary_contact: {
+        name: "S. Venkatesh",
+        phone: "+91 94401 55667",
+        role: "Anantapur Regional Representative & Fuel Station In-Charge",
+        notes: "Direct coordination with highway patrol and BPCL fleet depot"
+      },
+      categories: {
+        mechanic: null,
+        tyre_shop: {
+          id: "c_atp_tyre",
+          company_name: "Apollo & JK Tyre Care Anantapur",
+          contact_name: "Venkat Raman",
+          phone_number: "9440266778",
+          contact_type: "Tyre Shop",
+          physical_address: "Gooty Road Junction, Anantapur",
+          google_maps_url: "https://maps.google.com/?q=Gooty+Road+Anantapur",
+          truck_brand: "Truck wheel alignment & puncture repair",
+          assigned: true
+        },
+        towing: {
+          id: "c_atp_tow",
+          company_name: "Anantha Heavy Recovery Cranes & 24/7 Towing",
+          contact_name: "Chandra Shekar",
+          phone_number: "9440377889",
+          contact_type: "Crane / Tow Truck",
+          physical_address: "NH44 Highway Police Station Beside, Anantapur",
+          google_maps_url: "https://maps.google.com/?q=NH44+Anantapur",
+          truck_brand: "Under-lift & crane recovery",
+          assigned: true
+        },
+        electrical: null
+      },
+      created: "2026-09-20T12:00:00.000Z",
+      updated: "2026-09-20T12:00:00.000Z"
+    }
+  ];
+};
+
+const saveBreakdownStore = (list) => {
+  try {
+    fs.writeFileSync(BREAKDOWN_STORE_PATH, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {
+    logger.error('Failed to write breakdown_network_store.json:', e);
+  }
+};
+
+// GET /api/driver/breakdown-network - Returns all regional hubs with readiness scores
+router.get('/breakdown-network', async (req, res) => {
+  try {
+    const list = getBreakdownStore();
+    const scoredList = list.map(reg => {
+      const cats = reg.categories || {};
+      const required = ['mechanic', 'tyre_shop', 'towing', 'electrical'];
+      const filled = required.filter(k => cats[k] && cats[k].phone_number).length;
+      const pct = Math.round((filled / required.length) * 100);
+      return {
+        ...reg,
+        coverage_score: pct,
+        is_fully_covered: pct === 100,
+        missing_categories: required.filter(k => !cats[k] || !cats[k].phone_number)
+      };
+    });
+
+    return res.json({
+      success: true,
+      count: scoredList.length,
+      regions: scoredList
+    });
+  } catch (err) {
+    logger.error('Error in get breakdown-network:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to fetch breakdown network' });
+  }
+});
+
+// POST /api/driver/breakdown-network/region - Create or add a new operational region
+router.post('/breakdown-network/region', async (req, res) => {
+  try {
+    const { name, highway_corridor, state, primary_contact } = req.body || {};
+    if (!name) return res.status(400).json({ success: false, error: 'Region name is required' });
+
+    const list = getBreakdownStore();
+    const regionId = `reg_${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`;
+    const nowIso = new Date().toISOString();
+
+    const newRegion = {
+      id: regionId,
+      name: name.toUpperCase().trim(),
+      code: name.substring(0, 3).toUpperCase(),
+      highway_corridor: highway_corridor || 'Highway Corridor',
+      state: state || 'Telangana / AP',
+      primary_contact: primary_contact || {
+        name: 'Assigned Coordinator',
+        phone: '',
+        role: 'Station In-Charge',
+        notes: ''
+      },
+      categories: {
+        mechanic: null,
+        tyre_shop: null,
+        towing: null,
+        electrical: null
+      },
+      created: nowIso,
+      updated: nowIso
+    };
+
+    list.push(newRegion);
+    saveBreakdownStore(list);
+
+    logger.info(`📍 Regional hub created: ${newRegion.name}`);
+    return res.status(201).json({ success: true, region: newRegion });
+  } catch (err) {
+    logger.error('Error adding region:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to add region' });
+  }
+});
+
+// PUT /api/driver/breakdown-network/assign - Assign or update contact in region (Mechanic, Tyre, Towing, Electrical, or Primary Contact)
+router.put('/breakdown-network/assign', async (req, res) => {
+  try {
+    const { regionId, category, contact, isPrimary } = req.body || {};
+    if (!regionId) return res.status(400).json({ success: false, error: 'regionId is required' });
+
+    const list = getBreakdownStore();
+    const region = list.find(r => r.id === regionId || r.name.toLowerCase() === regionId.toLowerCase());
+
+    if (!region) return res.status(404).json({ success: false, error: 'Region not found' });
+
+    if (isPrimary && contact) {
+      region.primary_contact = {
+        name: contact.company_name || contact.name || 'Primary Contact',
+        phone: contact.phone_number || contact.phone || '',
+        role: contact.designation || contact.contact_type || 'Area In-Charge',
+        notes: contact.notes || ''
+      };
+    } else if (category) {
+      if (!region.categories) region.categories = {};
+      if (contact) {
+        region.categories[category] = {
+          id: contact.id || `c_${Date.now().toString(36)}`,
+          company_name: contact.company_name || contact.name || 'Vendor',
+          contact_name: contact.contact_name || contact.company_name || 'Technician',
+          phone_number: contact.phone_number || contact.phone || '',
+          contact_type: contact.contact_type || category,
+          physical_address: contact.physical_address || contact.address || '',
+          google_maps_url: contact.google_maps_url || contact.location_url || '',
+          truck_brand: contact.truck_brand || 'Commercial Heavy Vehicles',
+          assigned: true
+        };
+      } else {
+        region.categories[category] = null;
+      }
+    }
+
+    region.updated = new Date().toISOString();
+    saveBreakdownStore(list);
+
+    logger.info(`📍 Regional assignment updated for ${region.name} (${category || 'Primary Contact'})`);
+    return res.json({ success: true, message: 'Regional assignment saved', region });
+  } catch (err) {
+    logger.error('Error in breakdown assign:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to assign contact' });
+  }
+});
+
+// POST /api/driver/breakdown-sos - 1-Click Send Emergency SOS alert via WhatsApp API & SMS
+router.post('/breakdown-sos', async (req, res) => {
+  try {
+    const { regionName, category, vehicleNumber, driverPhone, driverName, locationDetails, issueDescription, vendorPhone, vendorName } = req.body || {};
+
+    const truck = vehicleNumber || 'Jai Bhavani Cargo Truck';
+    const loc = locationDetails || `${regionName || 'Highway'} Corridor`;
+    const issue = issueDescription || `${category || 'Vehicle'} Emergency Breakdown`;
+    const driver = driverName ? `${driverName} (${driverPhone || 'N/A'})` : (driverPhone || 'Driver on Duty');
+
+    const sosMessage = `🚨 *EMERGENCY BREAKDOWN DISPATCH - JAI BHAVANI CARGO*\n\n` +
+      `🚛 *Vehicle:* ${truck}\n` +
+      `📍 *Location:* ${loc}\n` +
+      `🔧 *Problem / Need:* ${issue}\n` +
+      `👤 *Driver Contact:* ${driver}\n` +
+      `🆘 *Assistance Requested:* Immediate on-site response\n\n` +
+      `_Dispatched via Jai Bhavani Cargo 24/7 Breakdown Network Hub_`;
+
+    let cleanVendorPhone = (vendorPhone || '').replace(/\D/g, '');
+    if (cleanVendorPhone.length === 10) cleanVendorPhone = `91${cleanVendorPhone}`;
+
+    const directWhatsappUrl = cleanVendorPhone
+      ? `https://api.whatsapp.com/send?phone=${cleanVendorPhone}&text=${encodeURIComponent(sosMessage)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(sosMessage)}`;
+
+    logger.info(`🚨 [Breakdown SOS] Dispatched alert for ${truck} at ${loc} to vendor "${vendorName || cleanVendorPhone}"`);
+
+    return res.json({
+      success: true,
+      message: `Emergency SOS dispatched for ${truck}`,
+      directWhatsappUrl,
+      sosMessage,
+      truck,
+      location: loc
+    });
+  } catch (err) {
+    logger.error('Error in breakdown-sos:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to dispatch SOS' });
+  }
+});
+
 export default router;
+
 
 

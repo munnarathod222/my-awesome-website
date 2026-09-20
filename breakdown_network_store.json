@@ -1,0 +1,145 @@
+[
+  {
+    "id": "reg_hyd",
+    "name": "HYDERABAD",
+    "code": "HYD",
+    "highway_corridor": "NH44 / ORR Ring Road",
+    "state": "Telangana",
+    "primary_contact": {
+      "name": "Mohammed Imran",
+      "phone": "+91 98480 12345",
+      "role": "Hyderabad Hub In-Charge & Operations Lead",
+      "notes": "Available 24/7 for Shamshabad, Medchal, and Patancheru corridors"
+    },
+    "categories": {
+      "mechanic": {
+        "id": "c_hyd_mech",
+        "company_name": "Sri Sai Auto Garage & Hydraulics",
+        "contact_name": "Satyanarayana",
+        "phone_number": "9848123456",
+        "contact_type": "Mechanic",
+        "physical_address": "Near ORR Exit 11, Shamshabad, Hyderabad",
+        "google_maps_url": "https://maps.google.com/?q=Shamshabad+Hyderabad",
+        "truck_brand": "Tata, Ashok Leyland, BharatBenz",
+        "assigned": true
+      },
+      "tyre_shop": {
+        "id": "c_hyd_tyre",
+        "company_name": "National MRF Tyres & Mobile Puncture Van",
+        "contact_name": "Babu Rao",
+        "phone_number": "9848234567",
+        "contact_type": "Tyre Shop",
+        "physical_address": "NH44 Highway Yard, Medchal, Hyderabad",
+        "google_maps_url": "https://maps.google.com/?q=Medchal+Hyderabad",
+        "truck_brand": "All Multi-Axle & Radial Tyres",
+        "assigned": true
+      },
+      "towing": {
+        "id": "c_hyd_tow",
+        "company_name": "Balaji Heavy Crane & 50T Towing Service",
+        "contact_name": "Ravi Kumar",
+        "phone_number": "9848345678",
+        "contact_type": "Crane / Tow Truck",
+        "physical_address": "Patancheru Bypass, Hyderabad",
+        "google_maps_url": "https://maps.google.com/?q=Patancheru+Hyderabad",
+        "truck_brand": "Heavy Hydraulic Recovery Cranes",
+        "assigned": true
+      },
+      "electrical": {
+        "id": "c_hyd_elec",
+        "company_name": "Ali Auto Electrician & Battery Works",
+        "contact_name": "Ali Bhai",
+        "phone_number": "9848456789",
+        "contact_type": "Electrician",
+        "physical_address": "Autonagar Transport Hub, Hyderabad",
+        "google_maps_url": "https://maps.google.com/?q=Autonagar+Hyderabad",
+        "truck_brand": "Exide, Amaron, Jump-Start Van",
+        "assigned": true
+      }
+    },
+    "created": "2026-09-20T12:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  },
+  {
+    "id": "reg_kurnool",
+    "name": "KURNOOL",
+    "code": "KNL",
+    "highway_corridor": "NH44 (Hyderabad - Bangalore Highway)",
+    "state": "Andhra Pradesh",
+    "primary_contact": {
+      "name": "Ramesh Reddy",
+      "phone": "+91 97410 98765",
+      "role": "Kurnool Regional Coordinator & Station Supervisor",
+      "notes": "Handles truck checkpost, parking yards, and emergency driver relief"
+    },
+    "categories": {
+      "mechanic": {
+        "id": "c_knl_mech",
+        "company_name": "Kurnool Heavy Truck Workshop - NH44",
+        "contact_name": "Khaja Miyan",
+        "phone_number": "9741123456",
+        "contact_type": "Mechanic",
+        "physical_address": "NH44 Bypass, Toll Gate Road, Kurnool",
+        "google_maps_url": "https://maps.google.com/?q=NH44+Toll+Plaza+Kurnool",
+        "truck_brand": "Engine overhaul, clutch & air brake specialist",
+        "assigned": true
+      },
+      "tyre_shop": {
+        "id": "c_knl_tyre",
+        "company_name": "Bismillah Tyres & Radial Puncture Centre",
+        "contact_name": "Ghouse",
+        "phone_number": "9741234567",
+        "contact_type": "Tyre Shop",
+        "physical_address": "Near Bellary Chowrasta, Kurnool",
+        "google_maps_url": "https://maps.google.com/?q=Bellary+Chowrasta+Kurnool",
+        "truck_brand": "Apollo, JK, CEAT truck tyres",
+        "assigned": true
+      },
+      "towing": null,
+      "electrical": null
+    },
+    "created": "2026-09-20T12:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  },
+  {
+    "id": "reg_atp",
+    "name": "ANANTAPUR",
+    "code": "ATP",
+    "highway_corridor": "NH44 (South Corridor to Bangalore)",
+    "state": "Andhra Pradesh",
+    "primary_contact": {
+      "name": "S. Venkatesh",
+      "phone": "+91 94401 55667",
+      "role": "Anantapur Regional Representative & Fuel Station In-Charge",
+      "notes": "Direct coordination with highway patrol and BPCL fleet depot"
+    },
+    "categories": {
+      "mechanic": null,
+      "tyre_shop": {
+        "id": "c_atp_tyre",
+        "company_name": "Apollo & JK Tyre Care Anantapur",
+        "contact_name": "Venkat Raman",
+        "phone_number": "9440266778",
+        "contact_type": "Tyre Shop",
+        "physical_address": "Gooty Road Junction, Anantapur",
+        "google_maps_url": "https://maps.google.com/?q=Gooty+Road+Anantapur",
+        "truck_brand": "Truck wheel alignment & puncture repair",
+        "assigned": true
+      },
+      "towing": {
+        "id": "c_atp_tow",
+        "company_name": "Anantha Heavy Recovery Cranes & 24/7 Towing",
+        "contact_name": "Chandra Shekar",
+        "phone_number": "9440377889",
+        "contact_type": "Crane / Tow Truck",
+        "physical_address": "NH44 Highway Police Station Beside, Anantapur",
+        "google_maps_url": "https://maps.google.com/?q=NH44+Anantapur",
+        "truck_brand": "Under-lift & crane recovery",
+        "assigned": true
+      },
+      "electrical": null
+    },
+    "created": "2026-09-20T12:00:00.000Z",
+    "updated": "2026-09-20T12:00:00.000Z"
+  }
+]
