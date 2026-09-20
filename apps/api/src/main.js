@@ -977,10 +977,69 @@ const uploadBiddingCompaniesToSupabase = async () => {
   }
 };
 
+const uploadQuotesStoreToSupabase = async () => {
+  try {
+    const qPath = path.join(process.cwd(), 'quotes_store.json');
+    if (!fs.existsSync(qPath)) return false;
+    const buf = fs.readFileSync(qPath);
+    let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/quotes_store.json`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true'
+      },
+      body: buf
+    });
+    if (!res.ok) {
+      await fetch(`${supabaseUrl}/storage/v1/object/backups/quotes_store.json`, {
+        method: 'PUT',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: buf
+      });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+const downloadQuotesStoreFromSupabase = async () => {
+  try {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/backups/quotes_store.json`, {
+      headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const remoteList = JSON.parse(text);
+      if (Array.isArray(remoteList) && remoteList.length > 0) {
+        const qPath = path.join(process.cwd(), 'quotes_store.json');
+        let localList = [];
+        try {
+          if (fs.existsSync(qPath)) localList = JSON.parse(fs.readFileSync(qPath, 'utf8'));
+        } catch (e) {}
+        const map = new Map();
+        [...localList, ...remoteList].forEach(q => {
+          if (q && (q.quote_number || q.id)) map.set(q.quote_number || q.id, q);
+        });
+        fs.writeFileSync(qPath, JSON.stringify(Array.from(map.values()), null, 2), 'utf8');
+        logger.info(`✅ Quotes persistence verified: ${map.size} quotes synchronized from Supabase!`);
+      }
+    }
+  } catch (e) {}
+};
+
 global.downloadBidsStoreFromSupabase = downloadBidsStoreFromSupabase;
 global.downloadBiddingCompaniesFromSupabase = downloadBiddingCompaniesFromSupabase;
 global.uploadBidsStoreToSupabase = uploadBidsStoreToSupabase;
 global.uploadBiddingCompaniesToSupabase = uploadBiddingCompaniesToSupabase;
+global.uploadQuotesStoreToSupabase = uploadQuotesStoreToSupabase;
+global.downloadQuotesStoreFromSupabase = downloadQuotesStoreFromSupabase;
 
 
 // ── Continuous Real-Time Cloud Auto-Sync Engine ──
@@ -1033,6 +1092,9 @@ const triggerDebouncedCloudSync = (delayMs = 6000) => {
         if (typeof uploadBiddingCompaniesToSupabase === 'function') {
           await uploadBiddingCompaniesToSupabase().catch(() => {});
         }
+        if (typeof uploadQuotesStoreToSupabase === 'function') {
+          await uploadQuotesStoreToSupabase().catch(() => {});
+        }
       }
     } catch (syncErr) {
       logger.warn(`⚠️ Auto-Sync background warning: ${syncErr.message}`);
@@ -1044,10 +1106,11 @@ const triggerDebouncedCloudSync = (delayMs = 6000) => {
 
 global.triggerDebouncedCloudSync = triggerDebouncedCloudSync;
 
-// Auto-restore recruitment & bidding data stores on boot
+// Auto-restore recruitment & bidding & quotes data stores on boot
 downloadRecruitmentStoreFromSupabase().catch(() => {});
 downloadBidsStoreFromSupabase().catch(() => {});
 downloadBiddingCompaniesFromSupabase().catch(() => {});
+downloadQuotesStoreFromSupabase().catch(() => {});
 
 const pruneOldLocalBackups = (dbFilePath) => {
   try {
