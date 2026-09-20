@@ -4330,8 +4330,8 @@ if (staticPath) {
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
       } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
-        // Vite bundle chunks (JS, CSS with hash in filename) -> 1 Year Immutable Cache
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        // Vite bundle chunks -> Revalidate with server (ETag) so updates load immediately without cache lock
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
       } else if (/\.(png|jpe?g|webp|gif|svg|ico|woff2?|ttf|eot)$/i.test(filePath)) {
         // Static Images, Icons & Web Fonts -> 7 Days Cache with Stale Revalidate
         res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
