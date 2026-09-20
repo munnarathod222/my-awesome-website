@@ -47,8 +47,14 @@ import{r as C,j as e,ad as Se,at as gt,aj as Nt,bG as bt,a2 as Ze,ag as qe,cg as
     const locArr=loc?JSON.parse(loc):[];
     const map={};
     list.forEach(b=>{map[b.id]=b});
-    locArr.forEach(b=>{if(!map[b.id])map[b.id]=b});
+    const missing=[];
+    locArr.forEach(b=>{if(!map[b.id]){map[b.id]=b;missing.push(b);}});
     list=Object.values(map);
+    if(missing.length>0){
+      missing.forEach(mb=>{
+        fetch("/api/bidding/bids",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(mb)}).catch(()=>{});
+      });
+    }
   }catch(e){}
   try{localStorage.setItem(ue.BIDS,JSON.stringify(list));}catch(e){}
   return list.sort((a,b)=>new Date(b.bid_date||b.date||b.created||0)-new Date(a.bid_date||a.date||a.created||0));
