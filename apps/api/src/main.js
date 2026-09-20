@@ -4300,8 +4300,8 @@ app.use('/aisensy', whatsappRouter);
 // 3. Static Client Hosting (Serve compiled Vite bundle)
 // ----------------------------------------------------
 const possibleWebDirs = [
-  path.resolve(process.cwd(), 'dist/apps/web'),
   path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), 'dist/apps/web'),
   path.resolve(__dirname, '../../dist/apps/web'),
   path.resolve(__dirname, '../../apps/web/dist'),
   path.resolve(process.cwd(), '../dist/apps/web'),
