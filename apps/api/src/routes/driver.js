@@ -3631,6 +3631,347 @@ router.delete('/invoices/:id', handleDeleteInvoiceHandler);
 router.post('/delete-invoice', handleDeleteInvoiceHandler);
 
 /**
+ * GET & POST /api/driver/alerts
+ * Real-time operational alerts aggregator covering all 5 core operational domains:
+ * 1. Active Driver Documents Expiring / Expired
+ * 2. Truck Documents Expiring / Expired
+ * 3. Credit Card Bills Due / Overdue
+ * 4. Quote Requests Received (Pending)
+ * 5. Pending Reminders Scheduled on Specific Dates
+ */
+router.all('/alerts', async (req, res) => {
+  try {
+    const alerts = [];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const counts = {
+      total: 0,
+      driver_docs: 0,
+      truck_docs: 0,
+      credit_cards: 0,
+      quotes: 0,
+      reminders: 0
+    };
+
+    // ── 1. Active Driver Documents Expiring / Expired ──────────────────────────
+    try {
+      if (pb) {
+        let emps = [];
+        try {
+          emps = await pb.collection('employees').getFullList({
+            filter: 'status = "Active" || status = ""',
+            $autoCancel: false
+          });
+        } catch (_) {
+          try {
+            emps = await pb.collection('employees').getFullList({ $autoCancel: false });
+          } catch (_) {}
+        }
+
+        const empMap = new Map();
+        (emps || []).forEach(e => {
+          if (e.id) empMap.set(e.id, e);
+          const checkDirectDoc = (docType, dateVal) => {
+            if (!dateVal) return;
+            const expDate = new Date(dateVal);
+            if (isNaN(expDate.getTime())) return;
+            const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 30) {
+              const isExpired = daysLeft < 0;
+              alerts.push({
+                id: `emp_direct_${e.id}_${docType.replace(/\s+/g, '_')}`,
+                category: 'driver_docs',
+                title: `${docType} ${isExpired ? 'Expired' : 'Expiring'}`,
+                subject: e.name || e.full_name || 'Active Driver',
+                details: `${docType} of ${e.name || 'Driver'} ${isExpired ? `expired ${Math.abs(daysLeft)}d ago` : `expires in ${daysLeft}d`}`,
+                expiryDate: expDate.toISOString(),
+                daysLeft,
+                severity: isExpired ? 'critical' : (daysLeft <= 7 ? 'critical' : 'warning'),
+                link: '/employee-docs'
+              });
+              counts.driver_docs++;
+            }
+          };
+
+          checkDirectDoc('Driving License', e.license_expiry || e.driving_license_expiry);
+          checkDirectDoc('Medical Certificate', e.medical_expiry);
+          checkDirectDoc('Police Verification', e.police_verification_expiry);
+        });
+
+        try {
+          const empDocs = await pb.collection('employee_documents').getFullList({ $autoCancel: false });
+          (empDocs || []).forEach(doc => {
+            if (!doc || !doc.expiry_date) return;
+            const empId = doc.employee || doc.employee_id;
+            const emp = empId ? empMap.get(empId) : null;
+            if (emp && emp.status && emp.status !== 'Active') return;
+
+            const expDate = new Date(doc.expiry_date);
+            if (isNaN(expDate.getTime())) return;
+            const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 30) {
+              const isExpired = daysLeft < 0;
+              const empName = emp ? (emp.name || emp.full_name) : (doc.employee_name || 'Active Driver');
+              alerts.push({
+                id: `emp_doc_${doc.id}`,
+                category: 'driver_docs',
+                title: `${doc.document_type || 'Driver Document'} ${isExpired ? 'Expired' : 'Expiring'}`,
+                subject: empName,
+                details: `${doc.document_type || 'Document'} of ${empName} ${isExpired ? `expired ${Math.abs(daysLeft)}d ago` : `expires in ${daysLeft}d`}`,
+                expiryDate: expDate.toISOString(),
+                daysLeft,
+                severity: isExpired ? 'critical' : (daysLeft <= 7 ? 'critical' : 'warning'),
+                link: '/employee-docs'
+              });
+              counts.driver_docs++;
+            }
+          });
+        } catch (_) {}
+      }
+    } catch (err) {
+      logger.warn(`Driver doc alert notice: ${err.message}`);
+    }
+
+    // ── 2. Truck Documents Expiring / Expired ──────────────────────────────────
+    try {
+      if (pb) {
+        let trucks = [];
+        try {
+          trucks = await pb.collection('trucks').getFullList({ $autoCancel: false });
+        } catch (_) {}
+
+        const truckMap = new Map();
+        (trucks || []).forEach(t => {
+          if (t.id) truckMap.set(t.id, t);
+          if (t.truck_number) truckMap.set(t.truck_number, t);
+
+          const checkTruckDoc = (docType, dateVal) => {
+            if (!dateVal) return;
+            const expDate = new Date(dateVal);
+            if (isNaN(expDate.getTime())) return;
+            const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 30) {
+              const isExpired = daysLeft < 0;
+              alerts.push({
+                id: `truck_direct_${t.id}_${docType.replace(/\s+/g, '_')}`,
+                category: 'truck_docs',
+                title: `${docType} ${isExpired ? 'Expired' : 'Expiring'}`,
+                subject: t.truck_number || 'Truck',
+                details: `${docType} for ${t.truck_number} ${isExpired ? `expired ${Math.abs(daysLeft)}d ago` : `expires in ${daysLeft}d`}`,
+                expiryDate: expDate.toISOString(),
+                daysLeft,
+                severity: isExpired ? 'critical' : (daysLeft <= 7 ? 'critical' : 'warning'),
+                link: '/truck-docs'
+              });
+              counts.truck_docs++;
+            }
+          };
+
+          checkTruckDoc('Fitness Certificate', t.fitness_expiry);
+          checkTruckDoc('Insurance Policy', t.insurance_expiry);
+          checkTruckDoc('National Permit', t.national_permit_expiry);
+          checkTruckDoc('Pollution PUC', t.puc_expiry);
+          checkTruckDoc('Road Tax', t.tax_expiry);
+        });
+
+        try {
+          const truckDocs = await pb.collection('truck_documents').getFullList({ $autoCancel: false });
+          (truckDocs || []).forEach(doc => {
+            if (!doc || !doc.expiry_date) return;
+            const expDate = new Date(doc.expiry_date);
+            if (isNaN(expDate.getTime())) return;
+            const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 30) {
+              const isExpired = daysLeft < 0;
+              const truckObj = truckMap.get(doc.truck_id) || truckMap.get(doc.truck) || truckMap.get(doc.truck_number);
+              const tNum = truckObj ? truckObj.truck_number : (doc.truck_number || 'Fleet Vehicle');
+              alerts.push({
+                id: `truck_doc_${doc.id}`,
+                category: 'truck_docs',
+                title: `${doc.document_type || 'Vehicle Document'} ${isExpired ? 'Expired' : 'Expiring'}`,
+                subject: tNum,
+                details: `${doc.document_type || 'Document'} for ${tNum} ${isExpired ? `expired ${Math.abs(daysLeft)}d ago` : `expires in ${daysLeft}d`}`,
+                expiryDate: expDate.toISOString(),
+                daysLeft,
+                severity: isExpired ? 'critical' : (daysLeft <= 7 ? 'critical' : 'warning'),
+                link: '/truck-docs'
+              });
+              counts.truck_docs++;
+            }
+          });
+        } catch (_) {}
+      }
+    } catch (err) {
+      logger.warn(`Truck doc alert notice: ${err.message}`);
+    }
+
+    // ── 3. Credit Card Bills Due / Overdue ─────────────────────────────────────
+    try {
+      if (pb) {
+        let cards = [];
+        try {
+          cards = await pb.collection('credit_cards').getFullList({
+            filter: 'status = "Active" || status = ""',
+            $autoCancel: false
+          });
+        } catch (_) {}
+
+        let dueDates = [];
+        try {
+          dueDates = await pb.collection('payment_due_dates').getFullList({ $autoCancel: false });
+        } catch (_) {}
+
+        const dueMap = new Map();
+        (dueDates || []).forEach(d => {
+          if (d.card_id) dueMap.set(d.card_id, d);
+        });
+
+        (cards || []).forEach(card => {
+          const pdd = dueMap.get(card.id);
+          const rawDue = pdd ? pdd.payment_due_date : card.payment_due_date;
+          if (rawDue === undefined || rawDue === null || rawDue === '') return;
+
+          let targetDueDate;
+          if (typeof rawDue === 'number' || (!isNaN(rawDue) && !String(rawDue).includes('-'))) {
+            const dueDay = parseInt(rawDue, 10);
+            targetDueDate = new Date(now.getFullYear(), now.getMonth(), dueDay);
+          } else {
+            targetDueDate = new Date(rawDue);
+          }
+
+          if (isNaN(targetDueDate.getTime())) return;
+
+          const daysLeft = Math.ceil((targetDueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 5 && daysLeft >= -20) {
+            const isOverdue = daysLeft < 0;
+            const isDueToday = daysLeft === 0;
+            const cardTitle = `${card.card_name || card.bank_name || 'Credit Card'} (**${card.card_number_last4 || 'Card'})`;
+            const billAmount = (pdd && (pdd.full_payment_amount || pdd.minimum_payment_amount))
+              ? `₹${Number(pdd.full_payment_amount || pdd.minimum_payment_amount).toLocaleString('en-IN')}`
+              : '';
+
+            alerts.push({
+              id: `card_due_${card.id}`,
+              category: 'credit_cards',
+              title: isOverdue ? 'Credit Card Bill Overdue' : (isDueToday ? 'Credit Card Bill Due Today' : 'Credit Card Bill Due Soon'),
+              subject: cardTitle,
+              details: `${billAmount ? `${billAmount} ` : ''}due ${isOverdue ? `${Math.abs(daysLeft)}d overdue` : (isDueToday ? 'today' : `in ${daysLeft}d`)}`,
+              expiryDate: targetDueDate.toISOString(),
+              daysLeft,
+              severity: (isOverdue || isDueToday) ? 'critical' : 'warning',
+              link: '/credit-cards'
+            });
+            counts.credit_cards++;
+          }
+        });
+      }
+    } catch (err) {
+      logger.warn(`Credit card alert notice: ${err.message}`);
+    }
+
+    // ── 4. Quote Requests Received (Pending) ──────────────────────────────────
+    try {
+      const quotesMap = new Map();
+      try {
+        const storeList = getQuotesStore();
+        (storeList || []).forEach(q => {
+          if (q.status === 'Pending' || q.status === 'Draft' || !q.status) {
+            quotesMap.set(q.quote_number || q.id, q);
+          }
+        });
+      } catch (_) {}
+
+      if (pb) {
+        try {
+          const pbQuotes = await pb.collection('quotes').getList(1, 20, {
+            filter: 'status = "Pending" || status = "Draft" || status = ""',
+            sort: '-created',
+            $autoCancel: false
+          });
+          (pbQuotes?.items || []).forEach(q => {
+            quotesMap.set(q.quote_number || q.id, q);
+          });
+        } catch (_) {}
+      }
+
+      Array.from(quotesMap.values()).forEach(q => {
+        alerts.push({
+          id: `quote_${q.quote_number || q.id}`,
+          category: 'quotes',
+          title: `Quote Request #${q.quote_number || q.id}`,
+          subject: q.customer_name || 'Customer Inquiry',
+          details: `${q.origin || 'Origin'} ➡️ ${q.destination || 'Destination'} • ${q.truck_size || q.container_type || '32 FT SXL'}`,
+          createdDate: q.created,
+          daysLeft: 0,
+          severity: 'info',
+          link: `/quotes-manager?quoteNumber=${q.quote_number || q.id}`
+        });
+        counts.quotes++;
+      });
+    } catch (err) {
+      logger.warn(`Quote alert notice: ${err.message}`);
+    }
+
+    // ── 5. Pending Reminders Scheduled on Specific Dates ──────────────────────
+    try {
+      if (pb) {
+        const rems = await pb.collection('reminders').getFullList({
+          filter: 'status = "Pending" || status = ""',
+          sort: 'reminder_date',
+          $autoCancel: false
+        });
+
+        (rems || []).forEach(r => {
+          if (!r.reminder_date) return;
+          const remDate = new Date(r.reminder_date);
+          if (isNaN(remDate.getTime())) return;
+
+          const daysLeft = Math.ceil((remDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysLeft <= 2) {
+            const isOverdue = daysLeft < 0;
+            const isToday = daysLeft === 0;
+            alerts.push({
+              id: `reminder_${r.id}`,
+              category: 'reminders',
+              title: isOverdue ? `Overdue: ${r.title}` : (isToday ? `Due Today: ${r.title}` : `Upcoming: ${r.title}`),
+              subject: r.title || 'Scheduled Reminder',
+              details: r.description ? (r.description.slice(0, 70) + (r.description.length > 70 ? '...' : '')) : (isToday ? 'Scheduled for today' : `Due in ${daysLeft}d`),
+              expiryDate: remDate.toISOString(),
+              daysLeft,
+              severity: (isOverdue || isToday) ? 'critical' : 'warning',
+              link: '/reminders'
+            });
+            counts.reminders++;
+          }
+        });
+      }
+    } catch (err) {
+      logger.warn(`Reminder alert notice: ${err.message}`);
+    }
+
+    counts.total = alerts.length;
+
+    const severityOrder = { critical: 1, warning: 2, info: 3 };
+    alerts.sort((a, b) => {
+      const sDiff = (severityOrder[a.severity] || 99) - (severityOrder[b.severity] || 99);
+      if (sDiff !== 0) return sDiff;
+      return (a.daysLeft || 0) - (b.daysLeft || 0);
+    });
+
+    return res.json({
+      success: true,
+      timestamp: now.toISOString(),
+      counts,
+      alerts
+    });
+  } catch (err) {
+    logger.error('Error in alerts aggregator:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to aggregate alerts' });
+  }
+});
+
+/**
  * POST /api/driver/send-contact-api
  * One-click send contact card via WhatsApp API / SMS / Dispatch Link
  */
