@@ -1,0 +1,130 @@
+{
+  "updated_at": "2026-09-25T01:25:00.000Z",
+  "pricing_mode": "progressive",
+  "slabs_definition": [
+    { "id": "below_100", "label": "0 - 100 km", "min_km": 0, "max_km": 100, "is_base": true },
+    { "id": "100_200", "label": "100 - 200 km", "min_km": 100, "max_km": 200, "is_base": false },
+    { "id": "200_300", "label": "200 - 300 km", "min_km": 200, "max_km": 300, "is_base": false },
+    { "id": "300_400", "label": "300 - 400 km", "min_km": 300, "max_km": 400, "is_base": false },
+    { "id": "above_400", "label": "400+ km", "min_km": 400, "max_km": 99999, "is_base": false }
+  ],
+  "vehicles": [
+    {
+      "id": "32ftsxl",
+      "name": "32 FT SXL Single Axle Container",
+      "short": "32 FT SXL",
+      "capacity": "6 - 9 MT",
+      "maxMT": 9,
+      "base_rate_under_100": 10000,
+      "rate_100_200": 60,
+      "rate_200_300": 54,
+      "rate_300_400": 50,
+      "rate_above_400": 48,
+      "description": "Flagship 32ft SXL high-cube container for corporate logistics (6 to 9 Tons)."
+    },
+    {
+      "id": "32ft_single_axle",
+      "name": "32 FT Single Axle High Cube",
+      "short": "32 FT Single Axle",
+      "capacity": "7 - 9 MT",
+      "maxMT": 9,
+      "base_rate_under_100": 10000,
+      "rate_100_200": 60,
+      "rate_200_300": 54,
+      "rate_300_400": 50,
+      "rate_above_400": 48,
+      "description": "Single-axle high volume 32ft freight container (7 to 9 Tons)."
+    },
+    {
+      "id": "32ft_multi_axle",
+      "name": "32 FT Multi Axle Container (MXL)",
+      "short": "32 FT Multi Axle",
+      "capacity": "14 - 18 MT",
+      "maxMT": 18,
+      "base_rate_under_100": 12000,
+      "rate_100_200": 70,
+      "rate_200_300": 64,
+      "rate_300_400": 58,
+      "rate_above_400": 56,
+      "description": "Multi-axle heavy container for maximum tonnage transport (14 to 18 Tons)."
+    },
+    {
+      "id": "24ftsxl",
+      "name": "24 FT SXL Single Axle Container",
+      "short": "24 FT SXL",
+      "capacity": "7 - 10 MT",
+      "maxMT": 10,
+      "base_rate_under_100": 8500,
+      "rate_100_200": 55,
+      "rate_200_300": 50,
+      "rate_300_400": 48,
+      "rate_above_400": 46,
+      "description": "Single-axle 24ft container for heavy industrial loads (7 to 10 Tons)."
+    },
+    {
+      "id": "22ftsxl",
+      "name": "22 FT SXL Single Axle Container",
+      "short": "22 FT SXL",
+      "capacity": "7 - 9.5 MT",
+      "maxMT": 9.5,
+      "base_rate_under_100": 8000,
+      "rate_100_200": 52,
+      "rate_200_300": 48,
+      "rate_300_400": 45,
+      "rate_above_400": 44,
+      "description": "Single-axle 22ft container for volumetric goods (7 to 9.5 Tons)."
+    },
+    {
+      "id": "20ftsxl",
+      "name": "20 FT SXL Single Axle Container",
+      "short": "20 FT SXL",
+      "capacity": "6 - 8.5 MT",
+      "maxMT": 8.5,
+      "base_rate_under_100": 7500,
+      "rate_100_200": 50,
+      "rate_200_300": 46,
+      "rate_300_400": 43,
+      "rate_above_400": 42,
+      "description": "Single-axle 20ft container for industrial freight (6 to 8.5 Tons)."
+    },
+    {
+      "id": "17ft",
+      "name": "17 FT Closed Container / Open Body",
+      "short": "17 FT",
+      "capacity": "4 - 5.5 MT",
+      "maxMT": 5.5,
+      "base_rate_under_100": 6000,
+      "rate_100_200": 44,
+      "rate_200_300": 40,
+      "rate_300_400": 38,
+      "rate_above_400": 36,
+      "description": "Commercial cargo vehicle for regional light cargo (4 to 5.5 Tons)."
+    },
+    {
+      "id": "14ft",
+      "name": "14 FT Closed Container / Open Body",
+      "short": "14 FT",
+      "capacity": "3 - 4.5 MT",
+      "maxMT": 4.5,
+      "base_rate_under_100": 5000,
+      "rate_100_200": 40,
+      "rate_200_300": 36,
+      "rate_300_400": 34,
+      "rate_above_400": 32,
+      "description": "Suitable for intra-city and express consignments (3 to 4.5 Tons)."
+    },
+    {
+      "id": "other",
+      "name": "Other / Not Sure (Custom Vehicle Requirement)",
+      "short": "Other / Not Sure",
+      "capacity": "Custom Capacity",
+      "maxMT": 25,
+      "base_rate_under_100": 10000,
+      "rate_100_200": 58,
+      "rate_200_300": 52,
+      "rate_300_400": 48,
+      "rate_above_400": 46,
+      "description": "Custom vehicle specification or expert vehicle placement assistance."
+    }
+  ]
+}

@@ -4543,6 +4543,86 @@ const handleSaveCompanies = async (req, res) => {
   }
 };
 
+const getQuotationRatesStore = () => {
+  const candidates = [
+    path.join(process.cwd(), 'quotation_rates.json'),
+    path.join(__dirname, '../../quotation_rates.json'),
+    path.join(__dirname, '../dist/quotation_rates.json'),
+    path.join(process.cwd(), 'dist/quotation_rates.json')
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+      }
+    } catch (e) {}
+  }
+  return null;
+};
+
+const saveQuotationRatesStore = (data) => {
+  const candidates = [
+    path.join(process.cwd(), 'quotation_rates.json'),
+    path.join(process.cwd(), 'public/quotation_rates.json'),
+    path.join(process.cwd(), 'dist/quotation_rates.json'),
+    path.join(__dirname, '../../quotation_rates.json'),
+    path.join(__dirname, '../../public/quotation_rates.json')
+  ];
+  const payload = JSON.stringify(data, null, 2);
+  candidates.forEach(p => {
+    try {
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(p, payload, 'utf8');
+    } catch (e) {}
+  });
+};
+
+const handleGetQuotationRates = (req, res) => {
+  const data = getQuotationRatesStore();
+  if (data) {
+    return res.json({ success: true, rates: data });
+  }
+  return res.status(404).json({ success: false, error: 'Rates not found' });
+};
+
+const handleSaveQuotationRates = async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data || !Array.isArray(data.vehicles)) {
+      return res.status(400).json({ success: false, error: 'Invalid rates payload: vehicles array required' });
+    }
+    data.updated_at = new Date().toISOString();
+    saveQuotationRatesStore(data);
+
+    try {
+      const pb = global.pbAdminClient;
+      if (pb) {
+        await pb.collection('company_settings').update('companysettings', {
+          quotation_rates_json: JSON.stringify(data)
+        }, { $autoCancel: false }).catch(() => {});
+      }
+    } catch (e) {}
+
+    try {
+      const buf = Buffer.from(JSON.stringify(data, null, 2));
+      await fetch(`${supabaseUrl}/storage/v1/object/backups/quotation_rates.json`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'x-upsert': 'true'
+        },
+        body: buf
+      }).catch(() => {});
+    } catch (e) {}
+
+    res.json({ success: true, message: 'Rates updated successfully', rates: data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 app.get('/api/bidding/bids', handleGetBids);
 app.get('/hcgi/api/bidding/bids', handleGetBids);
 app.post('/api/bidding/bids', handleSaveBid);
@@ -4554,6 +4634,11 @@ app.get('/api/bidding/companies', handleGetCompanies);
 app.get('/hcgi/api/bidding/companies', handleGetCompanies);
 app.post('/api/bidding/companies', handleSaveCompanies);
 app.post('/hcgi/api/bidding/companies', handleSaveCompanies);
+
+app.get('/api/quotation/rates', handleGetQuotationRates);
+app.get('/hcgi/api/quotation/rates', handleGetQuotationRates);
+app.post('/api/quotation/rates', handleSaveQuotationRates);
+app.post('/hcgi/api/quotation/rates', handleSaveQuotationRates);
 
 // Middleware to trigger debounced cloud sync when custom Express mutation endpoints succeed
 app.use(['/api', '/hcgi/api'], (req, res, next) => {

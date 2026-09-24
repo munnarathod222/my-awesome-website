@@ -25,6 +25,49 @@ const mimeTypes = {
 
 const server = http.createServer((req, res) => {
   const reqPath = req.url.split('?')[0];
+
+  // API handler for quotation rates
+  if (reqPath === '/api/quotation/rates' || reqPath === '/hcgi/api/quotation/rates') {
+    const qRateCandidates = [
+      path.join(__dirname, 'quotation_rates.json'),
+      path.join(__dirname, 'public/quotation_rates.json'),
+      path.join(__dirname, 'dist/quotation_rates.json')
+    ];
+    if (req.method === 'GET') {
+      for (const p of qRateCandidates) {
+        if (fs.existsSync(p)) {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+          return res.end(fs.readFileSync(p, 'utf8'));
+        }
+      }
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: 'Rates not found' }));
+    }
+    if (req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(b);
+          parsed.updated_at = new Date().toISOString();
+          const str = JSON.stringify(parsed, null, 2);
+          qRateCandidates.forEach(p => {
+            try {
+              fs.mkdirSync(path.dirname(p), { recursive: true });
+              fs.writeFileSync(p, str, 'utf8');
+            } catch (e) {}
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, rates: parsed }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+  }
+
   let filePath = path.join(DIST, reqPath === '/' ? 'index.html' : reqPath);
   const ext = path.extname(filePath).toLowerCase();
 
