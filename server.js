@@ -15,6 +15,8 @@ const mimeTypes = {
   '.json': 'application/json',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.pdf': 'application/pdf',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
@@ -26,13 +28,24 @@ const server = http.createServer((req, res) => {
   let filePath = path.join(DIST, reqPath === '/' ? 'index.html' : reqPath);
   const ext = path.extname(filePath).toLowerCase();
 
-  // If request has an asset file extension but file does not exist, check apps/web/dist fallback
+  // If request has an asset file extension but file does not exist, check fallback locations
   if (ext && ext !== '.html') {
     if (!fs.existsSync(filePath)) {
-      const fallbackPath = path.join(__dirname, 'apps/web/dist', reqPath);
-      if (fs.existsSync(fallbackPath)) {
-        filePath = fallbackPath;
-      } else {
+      const candidates = [
+        path.join(__dirname, 'public', reqPath),
+        path.join(__dirname, 'apps/web/dist', reqPath),
+        path.join(__dirname, 'dist/apps/web', reqPath),
+        path.join(__dirname, 'apps/api/dist', reqPath)
+      ];
+      let found = false;
+      for (const cand of candidates) {
+        if (fs.existsSync(cand)) {
+          filePath = cand;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         return res.end('404 Not Found');
       }

@@ -4628,6 +4628,38 @@ if (staticPath) {
       }
     }
   }));
+
+  // Dedicated handler for Company Vault & static documents
+  app.get('/assets/docs/:filename', (req, res, next) => {
+    const filename = path.basename(req.params.filename);
+    const candidates = [
+      path.resolve(process.cwd(), 'public/assets/docs', filename),
+      path.resolve(process.cwd(), 'dist/assets/docs', filename),
+      path.resolve(process.cwd(), 'apps/web/dist/assets/docs', filename),
+      path.resolve(__dirname, '../../public/assets/docs', filename),
+      path.resolve(__dirname, '../../dist/assets/docs', filename),
+      path.resolve(__dirname, '../../apps/web/dist/assets/docs', filename),
+      path.resolve(__dirname, '../dist/assets/docs', filename),
+      path.resolve(staticPath || '', 'assets/docs', filename)
+    ];
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        const ext = path.extname(c).toLowerCase();
+        if (ext === '.pdf') {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', 'inline; filename="' + filename + '"');
+        } else if (ext === '.jpg' || ext === '.jpeg') {
+          res.setHeader('Content-Type', 'image/jpeg');
+        } else if (ext === '.png') {
+          res.setHeader('Content-Type', 'image/png');
+        }
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return res.sendFile(c);
+      }
+    }
+    return next();
+  });
+
   app.get(/.*/, (req, res, next) => {
     // If it's an API route or PocketBase route, pass to next handlers
     if (req.path.startsWith('/hcgi/') || req.path.startsWith('/api/')) {
