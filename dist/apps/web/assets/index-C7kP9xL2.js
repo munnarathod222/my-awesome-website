@@ -239,7 +239,7 @@ ${ze}`:ze,Tt=Number(ce?.expected_mileage||5.8),Kt=ie>0&&je>0?ie/je:0,Pt=Tt>0&&Kt
           0%, 100% { transform: scaleY(1); opacity: 0.5; }
           50%       { transform: scaleY(1.8); opacity: 1; }
         }
-      `})]})}function ej(){const[s,t]=h.useState(typeof navigator<"u"?navigator.onLine:!0),[a,r]=h.useState(!1);return h.useEffect(()=>{const n=()=>{t(!0),r(!0);const o=setTimeout(()=>r(!1),3500);return()=>clearTimeout(o)},i=()=>{t(!1),r(!1)};return window.addEventListener("online",n),window.addEventListener("offline",i),()=>{window.removeEventListener("online",n),window.removeEventListener("offline",i)}},[]),s&&!a?null:e.jsx("div",{className:`fixed top-0 left-0 right-0 z-50 transition-all duration-300 transform ${s?"bg-emerald-600/95 text-white shadow-md":"bg-amber-600/95 text-white shadow-lg"} px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-top))]`,role:"alert",children:s?e.jsxs(e.Fragment,{children:[e.jsx(qm,{className:"w-4 h-4 shrink-0"}),e.jsx("span",{children:"Connection restored! Fleet & database synced."})]}):e.jsxs(e.Fragment,{children:[e.jsx(zm,{className:"w-4 h-4 animate-pulse shrink-0"}),e.jsx("span",{children:"You are currently offline. Changes will sync automatically when back online."})]})})}function tj(){const[s,t]=h.useState(!1),[a,r]=h.useState(""),n=es(),i=ii(),{isAuthenticated:o}=xt();if(o||!["/","/services","/about","/contact","/quote","/tracking","/track","/track-shipment"].includes(n.pathname))return null;const m=(i.company_phone||i.phone||"9346298466").replace(/\D/g,""),u=m.length===10?`91${m}`:m,x=i.company_name||"Jai Bhavani Cargo",p=[{label:"🚛 Book a Truck / Freight Quote",text:`Hello ${x}, I would like to get a freight transport quote for a truck.`},{label:"📦 Track My Shipment",text:`Hello ${x}, I would like to track my ongoing shipment.`},{label:"👤 Driver & Jobs Inquiry",text:`Hello ${x}, I am interested in driver / job opportunities.`}],f=v=>{const g=v||a||`Hello ${x}, I have an inquiry.`,y=encodeURIComponent(g);window.open(`https://wa.me/${u}?text=${y}`,"_blank","noopener,noreferrer"),t(!1)};return e.jsxs("div",{className:"fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end pointer-events-auto",children:[s&&e.jsxs("div",{className:"mb-3 w-[320px] sm:w-[360px] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200",children:[e.jsxs("div",{className:"bg-gradient-to-r from-emerald-600 to-teal-700 p-4 text-white flex items-center justify-between relative",children:[e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsxs("div",{className:"relative",children:[e.jsx("div",{className:"w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center font-bold text-white shadow-inner overflow-hidden",children:i.company_logo?e.jsx("img",{src:i.company_logo,alt:x,className:"w-full h-full object-contain p-1"}):e.jsx(Ve,{className:"w-5 h-5 text-white"})}),e.jsx("span",{className:"absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full"})]}),e.jsxs("div",{children:[e.jsxs("h4",{className:"font-bold text-sm leading-tight flex items-center gap-1.5 truncate max-w-[190px]",children:[x,e.jsx(bt,{className:"w-3.5 h-3.5 text-emerald-200 shrink-0"})]}),e.jsxs("p",{className:"text-[11px] text-emerald-100/90 font-medium",children:["Online • ",i.company_phone||"+91 7794072244"]})]})]}),e.jsx("button",{onClick:()=>t(!1),className:"p-1.5 rounded-xl bg-black/10 hover:bg-black/20 text-white/90 hover:text-white transition-colors","aria-label":"Close WhatsApp chat",children:e.jsx(oa,{className:"w-4 h-4"})})]}),e.jsxs("div",{className:"p-4 bg-slate-950/90 space-y-3",children:[e.jsxs("div",{className:"bg-slate-900 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-200 leading-relaxed shadow-sm",children:[e.jsx("p",{className:"font-semibold text-white mb-1",children:"Namaste! 👋"}),e.jsx("p",{children:"How can we assist your logistics and transportation needs today?"})]}),e.jsxs("div",{className:"space-y-1.5 pt-1",children:[e.jsx("p",{className:"text-[10px] font-semibold tracking-wider text-slate-400 uppercase",children:"Quick Inquiries"}),p.map((v,g)=>e.jsxs("button",{onClick:()=>f(v.text),className:"w-full text-left text-xs bg-slate-900/60 hover:bg-emerald-950/40 hover:border-emerald-500/40 border border-slate-800 rounded-xl p-2.5 text-slate-300 hover:text-emerald-300 transition-all flex items-center justify-between group",children:[e.jsx("span",{className:"truncate",children:v.label}),e.jsx(Ga,{className:"w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 shrink-0 ml-1"})]},g))]}),e.jsxs("form",{onSubmit:v=>{v.preventDefault(),f(a)},className:"pt-2 flex items-center gap-2",children:[e.jsx("input",{type:"text",placeholder:"Type a message on WhatsApp...",value:a,onChange:v=>r(v.target.value),className:"flex-1 bg-slate-900 border border-slate-800 focus:border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition-colors"}),e.jsx("button",{type:"submit",className:"p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-transform active:scale-95 shrink-0 flex items-center justify-center","aria-label":"Send WhatsApp message",children:e.jsx(Xa,{className:"w-3.5 h-3.5"})})]})]})]}),e.jsxs("button",{onClick:()=>t(!s),className:`relative flex items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 ${s?"bg-slate-800 text-white border border-slate-700":"bg-[#25D366] text-white hover:bg-[#20ba59] shadow-emerald-500/30"}`,"aria-label":"Open WhatsApp live chat",children:[!s&&e.jsxs("span",{className:"absolute -top-1 -right-1 flex h-3.5 w-3.5",children:[e.jsx("span",{className:"animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"}),e.jsx("span",{className:"relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-300"})]}),s?e.jsx(oa,{className:"w-6 h-6"}):e.jsx(Hm,{className:"w-7 h-7 fill-white text-[#25D366]"})]})]})}const rm=h.forwardRef(({className:s,...t},a)=>e.jsx(Nc,{ref:a,className:ge("grid place-content-center peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",s),...t,children:e.jsx(Wm,{className:ge("grid place-content-center text-current"),children:e.jsx(Ka,{className:"h-4 w-4"})})}));rm.displayName=Nc.displayName;const Oa=[{id:"14ft",value:"14 FT",name:"14 FT Closed Container / Open Body",short:"14 FT",capacity:"3 - 4.5 MT",maxMT:4.5,dimensions:"14ft × 6ft × 6.5ft",volume:"~15.5 CBM",ratePerKm:32,baseCharge:1500,description:"Suitable for intra-city and express consignments (3 to 4.5 Tons)."},{id:"17ft",value:"17 FT",name:"17 FT Closed Container / Open Body",short:"17 FT",capacity:"4 - 5.5 MT",maxMT:5.5,dimensions:"17ft × 6.5ft × 7ft",volume:"~21.8 CBM",ratePerKm:36,baseCharge:1800,description:"Commercial cargo vehicle for regional light cargo (4 to 5.5 Tons)."},{id:"20ftsxl",value:"20 FT SXL",name:"20 FT SXL Single Axle Container",short:"20 FT SXL",capacity:"6 - 8.5 MT",maxMT:8.5,dimensions:"20ft × 8ft × 8ft",volume:"~36.2 CBM",ratePerKm:42,baseCharge:2e3,description:"Single-axle 20ft container for industrial freight (6 to 8.5 Tons)."},{id:"22ftsxl",value:"22 FT SXL",name:"22 FT SXL Single Axle Container",short:"22 FT SXL",capacity:"7 - 9.5 MT",maxMT:9.5,dimensions:"22ft × 8ft × 8ft",volume:"~39.8 CBM",ratePerKm:44,baseCharge:2e3,description:"Single-axle 22ft container for volumetric goods (7 to 9.5 Tons)."},{id:"24ftsxl",value:"24 FT SXL",name:"24 FT SXL Single Axle Container",short:"24 FT SXL",capacity:"7 - 10 MT",maxMT:10,dimensions:"24ft × 8ft × 8.5ft",volume:"~46.1 CBM",ratePerKm:46,baseCharge:2e3,description:"Single-axle 24ft container for heavy industrial loads (7 to 10 Tons)."},{id:"32ftsxl",value:"32 FT SXL",name:"32 FT SXL Single Axle Container",short:"32 FT SXL",capacity:"6 - 9 MT",maxMT:9,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:48,baseCharge:2e3,description:"Flagship 32ft SXL high-cube container for corporate logistics (6 to 9 Tons)."},{id:"32ft_single_axle",value:"32 FT Single Axle",name:"32 FT Single Axle High Cube",short:"32 FT Single Axle",capacity:"7 - 9 MT",maxMT:9,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:48,baseCharge:2e3,description:"Single-axle high volume 32ft freight container (7 to 9 Tons)."},{id:"32ft_multi_axle",value:"32 FT Multi Axle",name:"32 FT Multi Axle Container (MXL)",short:"32 FT Multi Axle",capacity:"14 - 18 MT",maxMT:18,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:56,baseCharge:3e3,description:"Multi-axle heavy container for maximum tonnage transport (14 to 18 Tons)."},{id:"other",value:"Other / Not Sure",name:"Other / Not Sure (Custom Vehicle Requirement)",short:"Other / Not Sure",capacity:"Custom Capacity",maxMT:25,dimensions:"As per requirement",volume:"Custom Volume",ratePerKm:46,baseCharge:2e3,description:"Custom vehicle specification or expert vehicle placement assistance."}],kN=["All","14 FT","17 FT","20 FT SXL","22 FT SXL","24 FT SXL","32 FT SXL","32 FT Single Axle","32 FT Multi Axle","Other / Not Sure"];function Rl(s){if(!s)return Oa.find(r=>r.value==="32 FT SXL");const t=String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");return Oa.find(r=>{const n=r.value.toLowerCase().replace(/[^a-z0-9]/g,""),i=r.id.toLowerCase().replace(/[^a-z0-9]/g,""),o=r.name.toLowerCase().replace(/[^a-z0-9]/g,"");return n===t||i===t||o===t||t.includes(n)})||Oa.find(r=>r.value==="32 FT SXL")}const xn=Oa.map(s=>({...s,rateKM:s.ratePerKm})),El=[{id:"fragile",label:"Fragile / Delicate Cargo",cost:1e3},{id:"temp",label:"Weather Sealed / Double Lock",cost:1500},{id:"haz",label:"Industrial Machinery",cost:2e3},{id:"heavy",label:"Multi-point Loading / Unloading",cost:2500}],Ll=()=>{/* jbc_unified_quote_v16 */
+      `})]})}function ej(){const[s,t]=h.useState(typeof navigator<"u"?navigator.onLine:!0),[a,r]=h.useState(!1);return h.useEffect(()=>{const n=()=>{t(!0),r(!0);const o=setTimeout(()=>r(!1),3500);return()=>clearTimeout(o)},i=()=>{t(!1),r(!1)};return window.addEventListener("online",n),window.addEventListener("offline",i),()=>{window.removeEventListener("online",n),window.removeEventListener("offline",i)}},[]),s&&!a?null:e.jsx("div",{className:`fixed top-0 left-0 right-0 z-50 transition-all duration-300 transform ${s?"bg-emerald-600/95 text-white shadow-md":"bg-amber-600/95 text-white shadow-lg"} px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 backdrop-blur-md pb-[max(0.5rem,env(safe-area-inset-top))]`,role:"alert",children:s?e.jsxs(e.Fragment,{children:[e.jsx(qm,{className:"w-4 h-4 shrink-0"}),e.jsx("span",{children:"Connection restored! Fleet & database synced."})]}):e.jsxs(e.Fragment,{children:[e.jsx(zm,{className:"w-4 h-4 animate-pulse shrink-0"}),e.jsx("span",{children:"You are currently offline. Changes will sync automatically when back online."})]})})}function tj(){const[s,t]=h.useState(!1),[a,r]=h.useState(""),n=es(),i=ii(),{isAuthenticated:o}=xt();if(o||!["/","/services","/about","/contact","/quote","/tracking","/track","/track-shipment"].includes(n.pathname))return null;const m=(i.company_phone||i.phone||"9346298466").replace(/\D/g,""),u=m.length===10?`91${m}`:m,x=i.company_name||"Jai Bhavani Cargo",p=[{label:"🚛 Book a Truck / Freight Quote",text:`Hello ${x}, I would like to get a freight transport quote for a truck.`},{label:"📦 Track My Shipment",text:`Hello ${x}, I would like to track my ongoing shipment.`},{label:"👤 Driver & Jobs Inquiry",text:`Hello ${x}, I am interested in driver / job opportunities.`}],f=v=>{const g=v||a||`Hello ${x}, I have an inquiry.`,y=encodeURIComponent(g);window.open(`https://wa.me/${u}?text=${y}`,"_blank","noopener,noreferrer"),t(!1)};return e.jsxs("div",{className:"fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 flex flex-col items-end pointer-events-auto",children:[s&&e.jsxs("div",{className:"mb-3 w-[320px] sm:w-[360px] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200",children:[e.jsxs("div",{className:"bg-gradient-to-r from-emerald-600 to-teal-700 p-4 text-white flex items-center justify-between relative",children:[e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsxs("div",{className:"relative",children:[e.jsx("div",{className:"w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center font-bold text-white shadow-inner overflow-hidden",children:i.company_logo?e.jsx("img",{src:i.company_logo,alt:x,className:"w-full h-full object-contain p-1"}):e.jsx(Ve,{className:"w-5 h-5 text-white"})}),e.jsx("span",{className:"absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-900 rounded-full"})]}),e.jsxs("div",{children:[e.jsxs("h4",{className:"font-bold text-sm leading-tight flex items-center gap-1.5 truncate max-w-[190px]",children:[x,e.jsx(bt,{className:"w-3.5 h-3.5 text-emerald-200 shrink-0"})]}),e.jsxs("p",{className:"text-[11px] text-emerald-100/90 font-medium",children:["Online • ",i.company_phone||"+91 7794072244"]})]})]}),e.jsx("button",{onClick:()=>t(!1),className:"p-1.5 rounded-xl bg-black/10 hover:bg-black/20 text-white/90 hover:text-white transition-colors","aria-label":"Close WhatsApp chat",children:e.jsx(oa,{className:"w-4 h-4"})})]}),e.jsxs("div",{className:"p-4 bg-slate-950/90 space-y-3",children:[e.jsxs("div",{className:"bg-slate-900 border border-slate-800/80 rounded-2xl p-3 text-xs text-slate-200 leading-relaxed shadow-sm",children:[e.jsx("p",{className:"font-semibold text-white mb-1",children:"Namaste! 👋"}),e.jsx("p",{children:"How can we assist your logistics and transportation needs today?"})]}),e.jsxs("div",{className:"space-y-1.5 pt-1",children:[e.jsx("p",{className:"text-[10px] font-semibold tracking-wider text-slate-400 uppercase",children:"Quick Inquiries"}),p.map((v,g)=>e.jsxs("button",{onClick:()=>f(v.text),className:"w-full text-left text-xs bg-slate-900/60 hover:bg-emerald-950/40 hover:border-emerald-500/40 border border-slate-800 rounded-xl p-2.5 text-slate-300 hover:text-emerald-300 transition-all flex items-center justify-between group",children:[e.jsx("span",{className:"truncate",children:v.label}),e.jsx(Ga,{className:"w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 shrink-0 ml-1"})]},g))]}),e.jsxs("form",{onSubmit:v=>{v.preventDefault(),f(a)},className:"pt-2 flex items-center gap-2",children:[e.jsx("input",{type:"text",placeholder:"Type a message on WhatsApp...",value:a,onChange:v=>r(v.target.value),className:"flex-1 bg-slate-900 border border-slate-800 focus:border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition-colors"}),e.jsx("button",{type:"submit",className:"p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-md transition-transform active:scale-95 shrink-0 flex items-center justify-center","aria-label":"Send WhatsApp message",children:e.jsx(Xa,{className:"w-3.5 h-3.5"})})]})]})]}),e.jsxs("button",{onClick:()=>t(!s),className:`relative flex items-center justify-center w-14 h-14 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 ${s?"bg-slate-800 text-white border border-slate-700":"bg-[#25D366] text-white hover:bg-[#20ba59] shadow-emerald-500/30"}`,"aria-label":"Open WhatsApp live chat",children:[!s&&e.jsxs("span",{className:"absolute -top-1 -right-1 flex h-3.5 w-3.5",children:[e.jsx("span",{className:"animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"}),e.jsx("span",{className:"relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-300"})]}),s?e.jsx(oa,{className:"w-6 h-6"}):e.jsx(Hm,{className:"w-7 h-7 fill-white text-[#25D366]"})]})]})}const rm=h.forwardRef(({className:s,...t},a)=>e.jsx(Nc,{ref:a,className:ge("grid place-content-center peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",s),...t,children:e.jsx(Wm,{className:ge("grid place-content-center text-current"),children:e.jsx(Ka,{className:"h-4 w-4"})})}));rm.displayName=Nc.displayName;const Oa=[{id:"14ft",value:"14 FT",name:"14 FT Closed Container / Open Body",short:"14 FT",capacity:"3 - 4.5 MT",maxMT:4.5,dimensions:"14ft × 6ft × 6.5ft",volume:"~15.5 CBM",ratePerKm:32,baseCharge:1500,description:"Suitable for intra-city and express consignments (3 to 4.5 Tons)."},{id:"17ft",value:"17 FT",name:"17 FT Closed Container / Open Body",short:"17 FT",capacity:"4 - 5.5 MT",maxMT:5.5,dimensions:"17ft × 6.5ft × 7ft",volume:"~21.8 CBM",ratePerKm:36,baseCharge:1800,description:"Commercial cargo vehicle for regional light cargo (4 to 5.5 Tons)."},{id:"20ftsxl",value:"20 FT SXL",name:"20 FT SXL Single Axle Container",short:"20 FT SXL",capacity:"6 - 8.5 MT",maxMT:8.5,dimensions:"20ft × 8ft × 8ft",volume:"~36.2 CBM",ratePerKm:42,baseCharge:2e3,description:"Single-axle 20ft container for industrial freight (6 to 8.5 Tons)."},{id:"22ftsxl",value:"22 FT SXL",name:"22 FT SXL Single Axle Container",short:"22 FT SXL",capacity:"7 - 9.5 MT",maxMT:9.5,dimensions:"22ft × 8ft × 8ft",volume:"~39.8 CBM",ratePerKm:44,baseCharge:2e3,description:"Single-axle 22ft container for volumetric goods (7 to 9.5 Tons)."},{id:"24ftsxl",value:"24 FT SXL",name:"24 FT SXL Single Axle Container",short:"24 FT SXL",capacity:"7 - 10 MT",maxMT:10,dimensions:"24ft × 8ft × 8.5ft",volume:"~46.1 CBM",ratePerKm:46,baseCharge:2e3,description:"Single-axle 24ft container for heavy industrial loads (7 to 10 Tons)."},{id:"32ftsxl",value:"32 FT SXL",name:"32 FT SXL Single Axle Container",short:"32 FT SXL",capacity:"6 - 9 MT",maxMT:9,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:48,baseCharge:2e3,description:"Flagship 32ft SXL high-cube container for corporate logistics (6 to 9 Tons)."},{id:"32ft_single_axle",value:"32 FT Single Axle",name:"32 FT Single Axle High Cube",short:"32 FT Single Axle",capacity:"7 - 9 MT",maxMT:9,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:48,baseCharge:2e3,description:"Single-axle high volume 32ft freight container (7 to 9 Tons)."},{id:"32ft_multi_axle",value:"32 FT Multi Axle",name:"32 FT Multi Axle Container (MXL)",short:"32 FT Multi Axle",capacity:"14 - 18 MT",maxMT:18,dimensions:"32ft × 8ft × 8.5ft",volume:"~61.5 CBM",ratePerKm:56,baseCharge:3e3,description:"Multi-axle heavy container for maximum tonnage transport (14 to 18 Tons)."},{id:"other",value:"Other / Not Sure",name:"Other / Not Sure (Custom Vehicle Requirement)",short:"Other / Not Sure",capacity:"Custom Capacity",maxMT:25,dimensions:"As per requirement",volume:"Custom Volume",ratePerKm:46,baseCharge:2e3,description:"Custom vehicle specification or expert vehicle placement assistance."}],kN=["All","14 FT","17 FT","20 FT SXL","22 FT SXL","24 FT SXL","32 FT SXL","32 FT Single Axle","32 FT Multi Axle","Other / Not Sure"];function Rl(s){if(!s)return Oa.find(r=>r.value==="32 FT SXL");const t=String(s).trim().toLowerCase().replace(/[^a-z0-9]/g,"");return Oa.find(r=>{const n=r.value.toLowerCase().replace(/[^a-z0-9]/g,""),i=r.id.toLowerCase().replace(/[^a-z0-9]/g,""),o=r.name.toLowerCase().replace(/[^a-z0-9]/g,"");return n===t||i===t||o===t||t.includes(n)})||Oa.find(r=>r.value==="32 FT SXL")}const xn=Oa.map(s=>({...s,rateKM:s.ratePerKm})),El=[{id:"fragile",label:"Fragile / Delicate Cargo",cost:1e3},{id:"temp",label:"Weather Sealed / Double Lock",cost:1500},{id:"haz",label:"Industrial Machinery",cost:2e3},{id:"heavy",label:"Multi-point Loading / Unloading",cost:2500}],Ll=()=>{/* jbc_unified_quote_v17_slabs */
 const compSettings=ii()||{},
 compPhone=compSettings.company_phone||"+91 7794072244",
 compEmail=compSettings.company_email||"operations@jaibhavanicargo.com",
@@ -267,32 +267,137 @@ s=ls(),
 [b_cargoMaterial,setCargoMaterial]=h.useState(""),
 [b_customVehicle,setCustomVehicle]=h.useState(""),
 [b_submitErr,setSubmitErr]=h.useState(""),
-P=xn.find(b=>b.id===t||b.value===t)||xn[5],
+[b_rateSlabs,setRateSlabs]=h.useState(()=>{
+  try{
+    const saved=localStorage.getItem("jbc_quotation_rate_slabs");
+    if(saved)return JSON.parse(saved);
+  }catch(_){}
+  return window.__JBC_RATE_SLABS||null;
+});
+
+h.useEffect(()=>{
+  const handleUpdate=ev=>{
+    const rt=ev.detail||ev.data?.rates;
+    if(rt&&Array.isArray(rt.vehicles))setRateSlabs(rt);
+  };
+  window.addEventListener("jbc_rate_slabs_updated",handleUpdate);
+  let bc;
+  try{
+    bc=new BroadcastChannel("jbc_rate_slabs_channel");
+    bc.onmessage=ev=>{if(ev.data?.rates)setRateSlabs(ev.data.rates);};
+  }catch(_){}
+  const endpoints=["/api/quotation/rates","/hcgi/api/quotation/rates","/quotation_rates.json"];
+  (async()=>{
+    for(const ep of endpoints){
+      try{
+        const res=await fetch(ep+"?t="+Date.now());
+        if(res.ok){
+          const dt=await res.json();
+          const pl=dt.rates||dt;
+          if(pl&&Array.isArray(pl.vehicles)){
+            setRateSlabs(pl);
+            window.__JBC_RATE_SLABS=pl;
+            try{localStorage.setItem("jbc_quotation_rate_slabs",JSON.stringify(pl));}catch(_){}
+            break;
+          }
+        }
+      }catch(_){}
+    }
+  })();
+  return()=>{
+    window.removeEventListener("jbc_rate_slabs_updated",handleUpdate);
+    if(bc)bc.close();
+  };
+},[]);
+
+const P=xn.find(b=>b.id===t||b.value===t)||xn[5],
 w=h.useMemo(()=>l&&parseFloat(l)>0?parseFloat(l):r&&i?(Math.abs(r.length-i.length)+1)*120+250:0,[l,r,i]),
 k=h.useMemo(()=>{
   const b=parseFloat(d)||0,N=b/1e3,D=w;
   let j=!1;
   N>P.maxMT&&(j=!0);
-  const E=u==="specialized"?1.15:1,
-  ae=Math.round(P.rateKM*E),
-  ue=D*ae,
-  B=P.baseCharge;
+  const E=u==="specialized"?1.15:1;
+
+  // Rate Slabs calculation
+  const vehList=b_rateSlabs?.vehicles||[];
+  const configuredVeh=vehList.find(x=>x.id===t||x.id===P.id||(x.short&&(x.short===P.short||x.name===P.name)));
+  
+  const baseRateUnder100=configuredVeh?Number(configuredVeh.base_rate_under_100):(t.includes("32ft")?10000:(P.baseCharge?P.baseCharge+3000:6000));
+  const r100_200=configuredVeh?Number(configuredVeh.rate_100_200):Math.round(P.rateKM*1.25);
+  const r200_300=configuredVeh?Number(configuredVeh.rate_200_300):Math.round(P.rateKM*1.12);
+  const r300_400=configuredVeh?Number(configuredVeh.rate_300_400):Math.round(P.rateKM*1.04);
+  const rAbove400=configuredVeh?Number(configuredVeh.rate_above_400):Math.round(P.rateKM*1.0);
+
+  const mode=b_rateSlabs?.pricing_mode||"progressive";
+
+  let distanceCharge=0;
+  let appliedSlabLabel="";
+  let effectiveRateKM=0;
+  let isUnder100=!1;
+
+  if(D<=100){
+    distanceCharge=Math.round(baseRateUnder100*E);
+    appliedSlabLabel=`Below 100 km (Base Rate ₹${baseRateUnder100.toLocaleString("en-IN")})`;
+    effectiveRateKM=D>0?Math.round(distanceCharge/D):0;
+    isUnder100=!0;
+  }else if(mode==="flat_min"){
+    let rate=rAbove400;
+    let slabTitle="400+ km Long Haul";
+    if(D<=200){rate=r100_200;slabTitle="100 - 200 km Slab";}
+    else if(D<=300){rate=r200_300;slabTitle="200 - 300 km Slab";}
+    else if(D<=400){rate=r300_400;slabTitle="300 - 400 km Slab";}
+    const adjRate=Math.round(rate*E);
+    const raw=D*adjRate;
+    distanceCharge=Math.max(Math.round(baseRateUnder100*E),Math.round(raw));
+    appliedSlabLabel=`${slabTitle} (₹${adjRate}/km)`;
+    effectiveRateKM=adjRate;
+  }else{
+    const adj100_200=Math.round(r100_200*E);
+    const adj200_300=Math.round(r200_300*E);
+    const adj300_400=Math.round(r300_400*E);
+    const adjAbove400=Math.round(rAbove400*E);
+
+    let tot=baseRateUnder100*E;
+    if(D<=200){
+      const extra=D-100;
+      tot+=extra*adj100_200;
+      appliedSlabLabel=`100 - 200 km Slab (₹${adj100_200}/km)`;
+      effectiveRateKM=adj100_200;
+    }else if(D<=300){
+      tot+=(100*adj100_200)+((D-200)*adj200_300);
+      appliedSlabLabel=`200 - 300 km Slab (₹${adj200_300}/km)`;
+      effectiveRateKM=adj200_300;
+    }else if(D<=400){
+      tot+=(100*adj100_200)+(100*adj200_300)+((D-300)*adj300_400);
+      appliedSlabLabel=`300 - 400 km Slab (₹${adj300_400}/km)`;
+      effectiveRateKM=adj300_400;
+    }else{
+      tot+=(100*adj100_200)+(100*adj200_300)+(100*adj300_400)+((D-400)*adjAbove400);
+      appliedSlabLabel=`Above 400 km (₹${adjAbove400}/km)`;
+      effectiveRateKM=adjAbove400;
+    }
+    distanceCharge=Math.round(tot);
+  }
+
   let Z=0;
   Object.keys(v).forEach(L=>{if(v[L]){const J=El.find(Q=>Q.id===L);J&&(Z+=J.cost)}});
-  let te=ue+B+Z;
-  const U=P.baseCharge+3e3;
-  return te>0&&te<U&&(te=U),{
-    distanceCharge:Math.round(ue),
-    baseCharge:Math.round(B),
+
+  let te=distanceCharge+Z;
+
+  return{
+    distanceCharge:Math.round(distanceCharge),
+    baseCharge:Math.round(baseRateUnder100),
     reqCharge:Z,
     total:Math.round(te),
-    effectiveRateKM:ae,
-    minApplied:te===U&&ue>0,
+    effectiveRateKM:effectiveRateKM,
+    appliedSlabLabel:appliedSlabLabel,
+    isUnder100:isUnder100,
+    minApplied:isUnder100,
     isValid:D>0&&b>0&&!j,
     isCapacityExceeded:j,
     maxMT:P.maxMT
-  }
-},[w,d,P,u,v]),
+  };
+},[w,d,P,u,v,b_rateSlabs,t]),
 O=(b,N)=>{g(D=>({...D,[b]:N}))};
 
 h.useEffect(()=>{
@@ -337,105 +442,97 @@ const handleQuoteSubmit=async J=>{
     pickup_maps_url:b_pickupMaps.trim(),
     drop_maps_url:b_dropMaps.trim(),
     service_type:u,
-    material_type:b_cargoMaterial.trim()||"General Commercial Cargo",
-    truck_size:P.name,
-    custom_vehicle_requirement:b_customVehicle.trim(),
-    container_type:P.name,
+    truck_size:t==="other"&&b_customVehicle.trim()?`Other / Not Sure - ${b_customVehicle.trim()}`:P.short,
+    custom_vehicle_requirement:t==="other"?b_customVehicle.trim():"",
+    container_type:"",
     actual_weight:Q,
-    length:32,width:8,height:8.5,
-    distance_km:w,
-    total_price:k.total||0,
-    notes:[
-      `Truck: ${P.name} (${P.capacity})`,
-      b_customVehicle.trim()?`Custom Spec: ${b_customVehicle.trim()}`:"",
-      `Distance: ${w} KM`,
-      `Service: ${u==="specialized"?"Specialized Heavy Transport":"Express Delivery"}`,
-      b_cargoMaterial.trim()?`Material: ${b_cargoMaterial.trim()}`:"",
-      b_pickupMaps.trim()?`Pickup Google Maps: ${b_pickupMaps.trim()}`:"",
-      b_dropMaps.trim()?`Drop Google Maps: ${b_dropMaps.trim()}`:"",
-      p.l||p.w||p.h?`Dimensions: ${p.l||"-"}x${p.w||"-"}x${p.h||"-"} cm`:""
-    ].filter(Boolean).join("\n")
+    length:32,
+    width:8,
+    height:8.5,
+    volumetric_weight:Math.round(43.519999999999996)/100,
+    chargeable_weight:Q,
+    base_rate_per_kg:0,
+    zone_distance_multiplier:1,
+    fuel_surcharge:0,
+    handling_fees:k.reqCharge,
+    weight_charge:k.distanceCharge,
+    total_price:k.total||(k.distanceCharge+k.reqCharge),
+    notes:`Online Inquiry from Welcome Page. Distance: ${w} KM. Applied Slab: ${k.appliedSlabLabel}.${b_cargoMaterial.trim()?` Material: ${b_cargoMaterial.trim()}.`:""}${b_pickupMaps.trim()?` Pickup Map: ${b_pickupMaps.trim()}`:""}${b_dropMaps.trim()?` Drop Map: ${b_dropMaps.trim()}`:""}`,
+    status:"Pending"
   };
-  let pe=null;
   try{
-    const fe=await window.fetch("/hcgi/api/driver/submit-public-quote",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ee)}),F=await fe.json().catch(()=>({}));
-    fe.ok&&F.success&&(pe=F.quote||{...ee,quote_number:F.quoteNumber});
-  }catch{}
-  if(!pe)try{
-    const fe=await window.fetch("/api/driver/submit-public-quote",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ee)}),F=await fe.json().catch(()=>({}));
-    fe.ok&&F.success&&(pe=F.quote||{...ee,quote_number:F.quoteNumber});
-  }catch{}
-  if(!pe)try{
-    pe=await $.collection("quotes").create({...ee,status:"Draft"},{$autoCancel:!1});
-  }catch{}
-  pe||(pe={...ee,id:`qt_${Date.now()}`,status:"Draft",created:new Date().toISOString()});
-  try{
-    const fe=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]");
-    fe.unshift(pe);
-    localStorage.setItem("jbc_public_quotes",JSON.stringify(fe));
+    let pe=null;
+    const endpts=["/hcgi/api/driver/submit-public-quote","/api/driver/submit-public-quote"];
+    for(const ep of endpts){
+      try{
+        const res=await window.fetch(ep,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(ee)
+        });
+        const resJson=await res.json().catch(()=>({}));
+        if(res.ok&&resJson.success){
+          pe=resJson.quote||ee;
+          break;
+        }
+      }catch(_){}
+    }
+    if(!pe){
+      try{
+        const pbRes=await pb.collection("quotes").create(ee,{$autoCancel:!1});
+        pe=pbRes;
+      }catch(_){}
+    }
+    if(!pe){
+      pe={...ee,id:`local_${Date.now()}`,created:new Date().toISOString()};
+      try{
+        const localList=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]");
+        localList.unshift(pe);
+        localStorage.setItem("jbc_public_quotes",JSON.stringify(localList.slice(0,50)));
+      }catch(_){}
+    }
+    setSubmittedQuote(pe);
+    X.success(`Quote request #${pe.quote_number||ne} submitted successfully! Our dispatch team will contact you shortly.`);
     window.dispatchEvent(new CustomEvent("jbc_new_quote_submitted",{detail:pe}));
-    try{const bc=new BroadcastChannel("jbc_quotes_channel");bc.postMessage({quote:pe});setTimeout(()=>bc.close(),1e3)}catch{}
-  }catch{}
-  setSubmitting(!1);
-  setSubmittedQuote(pe);
-  X.success(`Quote Request #${pe.quote_number} Submitted Successfully!`);
+    try{const bc=new BroadcastChannel("jbc_quotes_channel");bc.postMessage({quote:pe});setTimeout(()=>bc.close(),1000);}catch(_){}
+  }catch(err){
+    console.error("Quote submission error:",err);
+    setSubmitErr("Failed to submit request. Please call or WhatsApp us directly.");
+    X.error("Submission failed. Please call our team directly.");
+  }finally{
+    setSubmitting(!1);
+  }
 };
 
-const getWhatsAppUrl=()=>{
-  if(!b_submitted)return`https://wa.me/${waPhone}`;
-  const msg=`Hello Jai Bhavani Cargo,\n\nI just requested a quote on your website:\n\n📄 Quote Ref: ${b_submitted.quote_number}\n📍 Route: ${b_submitted.origin} to ${b_submitted.destination}\n🚛 Truck Size: ${b_submitted.truck_size}\n📦 Weight: ${b_submitted.actual_weight} KG\n💰 Estimated Freight: ₹${Number(b_submitted.total_price||0).toLocaleString("en-IN")}${b_submitted.pickup_maps_url?(`\n📍 Pickup Map: `+b_submitted.pickup_maps_url):""}${b_submitted.drop_maps_url?(`\n📍 Drop Map: `+b_submitted.drop_maps_url):""}\n👤 Contact: ${b_submitted.customer_name} (${b_submitted.customer_phone})\n\nPlease confirm truck availability and vehicle placement.`;
-  return`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
-};
-
-if(b_submitted)return e.jsx("div",{className:"max-w-2xl mx-auto py-6 animate-in fade-in-50 duration-300",children:e.jsxs(Ne,{className:"bg-slate-900 border-slate-800 text-white shadow-2xl overflow-hidden rounded-3xl",children:[
-  e.jsxs("div",{className:"bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 p-6 text-center text-white",children:[
-    e.jsx("div",{className:"w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md",children:e.jsx(Ds,{className:"w-10 h-10 text-white"})}),
-    e.jsx("h2",{className:"text-2xl font-black tracking-tight",children:"Quote Request Submitted!"}),
-    e.jsx("p",{className:"text-emerald-100 text-sm mt-1",children:"Our dispatch desk has received your request and is reviewing vehicle placement."})
-  ]}),
-  e.jsxs(dt,{className:"p-6 sm:p-8 space-y-6",children:[
-    e.jsxs("div",{className:"bg-slate-950/80 border border-slate-800 rounded-2xl p-5 space-y-3",children:[
-      e.jsxs("div",{className:"flex justify-between items-center border-b border-slate-800/80 pb-2.5",children:[
-        e.jsx("span",{className:"text-slate-400 text-xs font-bold uppercase tracking-wider",children:"Quote Reference"}),
-        e.jsx("span",{className:"text-emerald-400 font-mono font-black text-base",children:b_submitted.quote_number})
+if(b_submitted){
+  return e.jsx("div",{className:"max-w-2xl mx-auto py-12 px-4 animate-in fade-in zoom-in-95 duration-300",children:
+    e.jsxs(Ne,{className:"bg-card border-emerald-500/40 shadow-2xl rounded-3xl overflow-hidden",children:[
+      e.jsxs("div",{className:"bg-emerald-600 p-8 text-white text-center relative overflow-hidden",children:[
+        e.jsx("div",{className:"w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl",children:"✓"}),
+        e.jsx("h2",{className:"text-2xl font-black mb-2",children:"Freight Quote Request Received!"}),
+        e.jsxs("p",{className:"text-emerald-100 text-sm",children:["Quote Reference: ",e.jsx("strong",{className:"text-white font-mono",children:b_submitted.quote_number})]})
       ]}),
-      e.jsxs("div",{className:"flex justify-between items-center border-b border-slate-800/80 pb-2.5 text-sm",children:[
-        e.jsx("span",{className:"text-slate-400",children:"Route:"}),
-        e.jsxs("span",{className:"font-semibold text-slate-200",children:[b_submitted.origin," → ",b_submitted.destination]})
-      ]}),
-      (b_submitted.pickup_maps_url||b_submitted.drop_maps_url)&&e.jsxs("div",{className:"flex flex-col gap-1 border-b border-slate-800/80 pb-2.5 text-xs",children:[
-        b_submitted.pickup_maps_url&&e.jsxs("a",{href:b_submitted.pickup_maps_url,target:"_blank",rel:"noopener noreferrer",className:"text-emerald-400 hover:underline flex items-center gap-1 font-semibold",children:[e.jsx(ht,{className:"w-3.5 h-3.5 text-emerald-400 shrink-0"})," Pickup Google Maps Link"]}),
-        b_submitted.drop_maps_url&&e.jsxs("a",{href:b_submitted.drop_maps_url,target:"_blank",rel:"noopener noreferrer",className:"text-emerald-400 hover:underline flex items-center gap-1 font-semibold",children:[e.jsx(ht,{className:"w-3.5 h-3.5 text-emerald-400 shrink-0"})," Drop Google Maps Link"]})
-      ]}),
-      e.jsxs("div",{className:"flex justify-between items-center border-b border-slate-800/80 pb-2.5 text-sm",children:[
-        e.jsx("span",{className:"text-slate-400",children:"Truck Size:"}),
-        e.jsx("span",{className:"font-bold text-emerald-400",children:b_submitted.truck_size})
-      ]}),
-      b_submitted.custom_vehicle_requirement&&e.jsxs("div",{className:"flex justify-between items-center border-b border-slate-800/80 pb-2.5 text-sm",children:[
-        e.jsx("span",{className:"text-slate-400",children:"Vehicle Requirement:"}),
-        e.jsx("span",{className:"font-semibold text-amber-300",children:b_submitted.custom_vehicle_requirement})
-      ]}),
-      e.jsxs("div",{className:"flex justify-between items-center border-b border-slate-800/80 pb-2.5 text-sm",children:[
-        e.jsx("span",{className:"text-slate-400",children:"Estimated Total Freight:"}),
-        e.jsxs("span",{className:"font-mono font-black text-emerald-400 text-lg",children:["₹",Number(b_submitted.total_price||0).toLocaleString("en-IN")]})
-      ]}),
-      e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
-        e.jsx("span",{className:"text-slate-400",children:"Status:"}),
-        e.jsx("span",{className:"px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30",children:"In Review by Dispatch Desk"})
+      e.jsxs(dt,{className:"p-6 sm:p-8 space-y-6",children:[
+        e.jsxs("div",{className:"bg-muted/40 p-4 rounded-2xl border border-border/60 space-y-3 text-sm",children:[
+          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Route:"}),e.jsxs("span",{className:"font-bold",children:[b_submitted.origin," ➡️ ",b_submitted.destination]})]}),
+          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Vehicle:"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:b_submitted.truck_size})]}),
+          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Distance / Weight:"}),e.jsxs("span",{className:"font-semibold",children:[w," KM • ",d||(P.maxMT*1e3)," KG"]})]}),
+          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Pricing Slab:"}),e.jsx("span",{className:"font-semibold text-amber-400",children:k.appliedSlabLabel})]}),
+          e.jsxs("div",{className:"flex justify-between border-t border-border pt-2 text-base font-bold",children:[e.jsx("span",{children:"Estimated Total:"}),e.jsxs("span",{className:"text-emerald-400 font-mono",children:["₹",Number(b_submitted.total_price).toLocaleString("en-IN")]})]})
+        ]}),
+        e.jsxs("div",{className:"flex flex-col sm:flex-row gap-3 pt-2",children:[
+          e.jsxs("a",{href:`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello Jai Bhavani Cargo, I have submitted Quote #${b_submitted.quote_number} for ${b_submitted.origin} to ${b_submitted.destination}. Estimated: ₹${Number(b_submitted.total_price).toLocaleString("en-IN")}. Please confirm vehicle dispatch.`)}`,target:"_blank",rel:"noopener noreferrer",className:"flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg",children:[e.jsx(oa,{className:"w-4 h-4"})," Confirm on WhatsApp"]}),
+          e.jsx(q,{variant:"outline",onClick:()=>setSubmittedQuote(null),className:"flex-1",children:"Calculate Another Quote"})
+        ]})
       ]})
-    ]}),
-    e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2",children:[
-      e.jsxs("a",{href:getWhatsAppUrl(),target:"_blank",rel:"noopener noreferrer",className:"flex items-center justify-center gap-2 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all hover:scale-105",children:[e.jsx(Cs,{className:"w-4 h-4"})," Message on WhatsApp"]}),
-      e.jsxs("a",{href:`tel:${telPhone}`,className:"flex items-center justify-center gap-2 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition-all hover:scale-105",children:[e.jsx(nh,{className:"w-4 h-4 text-primary"}),` Call ${compPhone}`]})
-    ]}),
-    e.jsx("div",{className:"text-center pt-2",children:e.jsxs(q,{variant:"ghost",onClick:()=>setSubmittedQuote(null),className:"text-xs text-slate-400 hover:text-white",children:[e.jsx(kt,{className:"w-3.5 h-3.5 mr-1"})," Request Another Quote"]})})
-  ]})
-]})});
+    ]})
+  });
+}
 
 return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-start",children:[
   e.jsxs("div",{className:"lg:col-span-7 space-y-6",children:[
-    e.jsxs("div",{className:"bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-md flex flex-col sm:flex-row gap-5 items-center sm:items-start animate-in fade-in duration-200",children:[
-      e.jsx("div",{className:"w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0",children:e.jsx(Ve,{className:"w-8 h-8 text-primary"})}),
+    e.jsxs("div",{className:"bg-card border-border shadow-md rounded-2xl p-6 sm:p-8 flex items-start gap-4",children:[
+      e.jsx("div",{className:"p-3 bg-primary/10 rounded-2xl text-primary shrink-0",children:e.jsx(Ve,{className:"w-8 h-8"})}),
       e.jsxs("div",{className:"flex-1",children:[
         e.jsxs("div",{className:"flex items-center gap-2 mb-1",children:[
           e.jsxs("h3",{className:"text-lg font-bold text-slate-100",children:["Fleet Specification: ",P.short]}),
@@ -544,11 +641,19 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
           e.jsx("h4",{className:"font-semibold text-foreground border-b border-border pb-2",children:"Cost Breakdown"}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Vehicle Selected"}),e.jsx("span",{className:"font-bold text-foreground",children:P.short})]}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Capacity"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:P.capacity})]}),
-          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Rate Per KM"}),e.jsxs("span",{className:"font-mono font-bold text-foreground",children:["₹",k.effectiveRateKM," / KM"]})]}),
+          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
+            e.jsx("span",{className:"text-muted-foreground",children:"Distance Slabs Applied"}),
+            e.jsx("span",{className:"font-semibold text-amber-400 text-xs sm:text-sm text-right",children:k.appliedSlabLabel||(w<=100?"Below 100 km (Base Rate)":"Tiered Slab")})
+          ]}),
           e.jsx("div",{className:"border-t border-border/50 my-2"}),
-          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Base Vehicle Charge"}),e.jsxs("span",{className:"font-medium",children:["₹",k.isValid?P.baseCharge.toLocaleString("en-IN"):(P.baseCharge?P.baseCharge.toLocaleString("en-IN"):"0")]})]}),
-          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsxs("span",{className:"text-muted-foreground",children:[`Distance Transit (${w} KM @ ₹${k.effectiveRateKM}/KM)`]}),e.jsxs("span",{className:"font-medium",children:["₹",k.isValid?k.distanceCharge.toLocaleString("en-IN"):(k.distanceCharge?k.distanceCharge.toLocaleString("en-IN"):"0")]})]}),
-          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Special Handling Options"}),e.jsxs("span",{className:"font-medium",children:[k.reqCharge>0?"+":"","₹",k.isValid?k.reqCharge.toLocaleString("en-IN"):(k.reqCharge?k.reqCharge.toLocaleString("en-IN"):"0")]})]})
+          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
+            e.jsxs("span",{className:"text-muted-foreground",children:[`Freight Transit (${w} KM)`]}),
+            e.jsxs("span",{className:"font-bold text-foreground font-mono",children:["₹",k.isValid?k.distanceCharge.toLocaleString("en-IN"):(k.distanceCharge?k.distanceCharge.toLocaleString("en-IN"):"0")]})
+          ]}),
+          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
+            e.jsx("span",{className:"text-muted-foreground",children:"Special Handling Options"}),
+            e.jsxs("span",{className:"font-medium",children:[k.reqCharge>0?"+":"","₹",k.isValid?k.reqCharge.toLocaleString("en-IN"):(k.reqCharge?k.reqCharge.toLocaleString("en-IN"):"0")]})
+          ]})
         ]}),
         e.jsxs("div",{className:"space-y-3 pt-4",children:[
           e.jsxs(q,{size:"lg",className:"w-full bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-base py-6 shadow-xl transition-all hover:scale-[1.01]",onClick:handleQuoteSubmit,disabled:b_submitting||k.isCapacityExceeded,children:[
@@ -568,13 +673,13 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
         e.jsx($a,{className:"w-6 h-6 text-secondary flex-shrink-0 mt-0.5"}),
         e.jsxs("div",{children:[
           e.jsx("h4",{className:"font-bold text-lg tracking-tight",children:"⚠️ ESTIMATE NOTICE"}),
-          e.jsxs("p",{className:"text-sm mt-1 opacity-90 leading-relaxed",children:["Pricing estimated for ",P.name," (",P.capacity,") starting @ ₹",P.rateKM,"/KM."]})
+          e.jsxs("p",{className:"text-sm mt-1 opacity-90 leading-relaxed",children:["Pricing estimated for ",P.name," (",P.capacity,") starting with ₹10,000 base for 32 FT (<100km) and tiered distance slabs."]})
         ]})
       ]}),
       e.jsxs("ul",{className:"list-disc pl-10 text-sm space-y-1.5 opacity-90 mb-4 marker:text-secondary",children:[
-        e.jsx("li",{children:"Current diesel rates & toll routes"}),
-        e.jsx("li",{children:"Guaranteed vehicle placement with live GPS"}),
-        e.jsx("li",{children:"Zero hidden charges with digital POD"})
+        e.jsx("li",{children:"Below 100 KM guaranteed base rate placement"}),
+        e.jsx("li",{children:"Tiered long-haul rates (100-200, 200-300, 300-400, 400+ KM)"}),
+        e.jsx("li",{children:"Live GPS tracking & digital proof of delivery (POD)"})
       ]}),
       e.jsxs("div",{className:"bg-black/5 dark:bg-black/20 p-3 rounded-lg text-sm border border-black/5 dark:border-white/5",children:[
         e.jsx("p",{className:"font-semibold mb-1",children:"For instant dispatch confirmation, reach our team:"}),
