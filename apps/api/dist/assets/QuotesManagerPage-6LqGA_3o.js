@@ -587,8 +587,8 @@ function ContractEditModal({ contract, onClose, onSave }) {
 }
 
 
-// --- SUPER ADMIN DYNAMIC RATE ENGINE & SLABS MANAGER ---
-const DEFAULT_SLABS_DATA = {
+const { useState, useEffect, useMemo } = c;
+export const DEFAULT_SLABS_DATA = {
   pricing_mode: "progressive",
   // "progressive" or "flat_min"
   slabs_definition: [
@@ -927,8 +927,7 @@ function calculateQuotePrice(vehicle, distance, options = {}) {
   };
 }
 function RateSlabsManagerTab() {
-  const { useState: useState2, useEffect, useMemo } = c;
-  const [ratesData, setRatesData] = useState2(() => {
+  const [ratesData, setRatesData] = useState(() => {
     try {
       const saved = localStorage.getItem("jbc_quotation_rate_slabs");
       if (saved) return JSON.parse(saved);
@@ -936,16 +935,16 @@ function RateSlabsManagerTab() {
     }
     return DEFAULT_SLABS_DATA;
   });
-  const [activeSubTab, setActiveSubTab] = useState2("vehicles");
-  const [editingVehicle, setEditingVehicle] = useState2(null);
-  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState2(false);
-  const [saving, setSaving] = useState2(false);
-  const [saveStatus, setSaveStatus] = useState2(null);
-  const [testVehicleId, setTestVehicleId] = useState2("32ftsxl");
-  const [testDistance, setTestDistance] = useState2(150);
-  const [testTripType, setTestTripType] = useState2("one_way");
-  const [testTenure, setTestTenure] = useState2("spot");
-  const [testPayload, setTestPayload] = useState2("standard");
+  const [activeSubTab, setActiveSubTab] = useState("vehicles");
+  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
+  const [testVehicleId, setTestVehicleId] = useState("32ftsxl");
+  const [testDistance, setTestDistance] = useState(150);
+  const [testTripType, setTestTripType] = useState("one_way");
+  const [testTenure, setTestTenure] = useState("spot");
+  const [testPayload, setTestPayload] = useState("standard");
   useEffect(() => {
     const fetchLive = async () => {
       try {
@@ -1132,7 +1131,18 @@ function RateSlabsManagerTab() {
     },
     /* @__PURE__ */ c.createElement("span", null, "\u2795"),
     " Add Vehicle Category"
-  )), /* @__PURE__ */ c.createElement("div", { className: "border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-500/10 border-x border-amber-500/20 text-amber-300 font-black" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/90" }, "Base Flat Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 1 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 2 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 3 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Long Haul")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60" }, ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors" }, /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs sm:text-sm" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-400" }, v.short || v.id), /* @__PURE__ */ c.createElement("span", null, "\u2022"), /* @__PURE__ */ c.createElement("span", null, "Capacity: ", v.capacity || `${v.maxMT} MT`))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-500/5 border-x border-amber-500/15" }, /* @__PURE__ */ c.createElement("div", { className: "font-black text-amber-300 text-sm" }, "\u20B9", Number(v.base_rate_under_100 || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-[10px] text-amber-400/70 font-semibold" }, "Min Base <100km")), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_100_200, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_200_300, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_300_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-emerald-400" }, "\u20B9", v.rate_above_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", { className: "border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-500/10 border-x border-amber-500/20 text-amber-300 font-black" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/90" }, "Base Flat Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 1 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 2 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 3 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Long Haul")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60" }, ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors" }, /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs sm:text-sm" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-400" }, v.short || v.id), /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setEditingVehicle(v),
+      className: "px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 font-mono text-[10px] flex items-center gap-1 transition-colors",
+      title: "Click to edit payload capacity"
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u2696\uFE0F Payload:"),
+    /* @__PURE__ */ c.createElement("span", { className: "underline decoration-dashed" }, v.capacity || `${v.maxMT} MT`),
+    /* @__PURE__ */ c.createElement("span", { className: "text-[9px] text-emerald-500" }, "\u270F\uFE0F")
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-500/5 border-x border-amber-500/15" }, /* @__PURE__ */ c.createElement("div", { className: "font-black text-amber-300 text-sm" }, "\u20B9", Number(v.base_rate_under_100 || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-[10px] text-amber-400/70 font-semibold" }, "Min Base <100km")), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_100_200, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_200_300, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_300_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-emerald-400" }, "\u20B9", v.rate_above_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1361,7 +1371,26 @@ function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
       onChange: (e) => setForm({ ...form, maxMT: parseFloat(e.target.value) || 0 }),
       className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
     }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+  ))), /* @__PURE__ */ c.createElement("div", { className: "space-y-1.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-amber-300" }, "Payload Range (Capacity Display) *"), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-slate-500 font-mono" }, "e.g. 6 - 9 MT or 7 - 8.5 MT")), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "text",
+      required: true,
+      value: form.capacity || "",
+      onChange: (e) => setForm({ ...form, capacity: e.target.value }),
+      placeholder: "e.g. 6 - 9 MT, 7 - 10 MT, 14 - 18 MT",
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, ["2.5 - 3.5 MT", "3 - 4.5 MT", "4 - 5.5 MT", "6 - 8.5 MT", "7 - 9.5 MT", "7 - 10 MT", "6 - 9 MT", "7 - 9 MT", "14 - 18 MT", "18 - 25 MT", "25 - 32 MT"].map((preset) => /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      key: preset,
+      type: "button",
+      onClick: () => setForm({ ...form, capacity: preset }),
+      className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${form.capacity === preset ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400 hover:text-white"}`
+    },
+    preset
+  )))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
@@ -1446,7 +1475,26 @@ function NewVehicleModal({ onClose, onAdd }) {
       onChange: (e) => setForm({ ...form, short: e.target.value }),
       className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
     }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+  ))), /* @__PURE__ */ c.createElement("div", { className: "space-y-1.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-amber-300" }, "Payload Range (Capacity Display) *"), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-slate-500 font-mono" }, "e.g. 6 - 9 MT or 7 - 10 MT")), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "text",
+      required: true,
+      value: form.capacity || "",
+      onChange: (e) => setForm({ ...form, capacity: e.target.value }),
+      placeholder: "e.g. 6 - 9 MT",
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, ["2.5 - 3.5 MT", "3 - 4.5 MT", "4 - 5.5 MT", "6 - 8.5 MT", "7 - 9.5 MT", "7 - 10 MT", "6 - 9 MT", "7 - 9 MT", "14 - 18 MT", "18 - 25 MT"].map((preset) => /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      key: preset,
+      type: "button",
+      onClick: () => setForm({ ...form, capacity: preset }),
+      className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${form.capacity === preset ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400 hover:text-white"}`
+    },
+    preset
+  )))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
@@ -1494,6 +1542,5 @@ function NewVehicleModal({ onClose, onAdd }) {
     }
   ))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Add Vehicle")))));
 }
-
 
 export{Gt as default};
