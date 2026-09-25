@@ -153,7 +153,9 @@ Kindly reply to confirm this vehicle booking.
 Regards,
 Vinod Kumar Rathod
 Jai Bhavani Cargo Ltd
-Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{N(!0);try{const s=new Map;try{const A=["/hcgi/api/driver/get-quotes","/api/driver/get-quotes"];for(const T of A)try{const F=await window.fetch(T);if(F.ok){const q=await F.json();if(q.success&&Array.isArray(q.quotes)){q.quotes.forEach(be=>{const te=be.quote_number||be.id;s.set(te,be)});break}}}catch{}}catch{}try{(await K.collection("quotes").getFullList({sort:"-created",$autoCancel:!1})||[]).forEach(T=>{const F=T.quote_number||T.id;(!s.has(F)||!s.get(F).customer_name)&&s.set(F,T)})}catch(A){console.warn("PocketBase fetch quotes warning:",A)}try{(JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]")||[]).forEach(T=>{const F=T.quote_number||T.id;s.has(F)||s.set(F,T)})}catch{}const J=Array.from(s.values()).sort((A,T)=>{const F=new Date(A.created||A.updated||0).getTime();return new Date(T.created||T.updated||0).getTime()-F});t(J)}catch(s){console.error(s),v.error("Failed to load quotes")}finally{N(!1)}};c.useEffect(()=>{y==="quotes"&&L();const s=()=>{L()};window.addEventListener("jbc_new_quote_submitted",s),window.addEventListener("storage",s);const J=setInterval(()=>{y==="quotes"&&L()},12e3);return()=>{window.removeEventListener("jbc_new_quote_submitted",s),window.removeEventListener("storage",s),clearInterval(J)}},[y]);const O=()=>{z(null),p(!0)},U=s=>{z(s),p(!0)},R=s=>{z(s),o(!0)},X=s=>{l(s),E("invoices")},handleDeleteQuote=async s=>{if(!s)return;const qNum=s.quote_number||s.id||"";if(!window.confirm(`Are you sure you want to permanently delete Quote #${qNum}? This action cannot be undone.`))return;try{v.info(`Deleting quote #${qNum}...`);let deleted=!1;const endpts=[`/hcgi/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`,`/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`];for(const ep of endpts)try{const r=await window.fetch(ep,{method:"DELETE"}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}if(!deleted){const postEndpts=["/hcgi/api/driver/delete-quote","/api/driver/delete-quote"];for(const ep of postEndpts)try{const r=await window.fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number,id:s.id})}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}}if(s.id&&!String(s.id).startsWith("qt_"))try{await K.collection("quotes").delete(s.id,{$autoCancel:!1}),deleted=!0}catch(_){}try{const local=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),filtered=local.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number);localStorage.setItem("jbc_public_quotes",JSON.stringify(filtered))}catch(_){}t(prev=>prev.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number)),v.success(`Quote #${qNum} deleted successfully`),window.dispatchEvent(new CustomEvent("jbc_quote_deleted",{detail:{quote_number:qNum,id:s.id}}))}catch(err){v.error(err.message||"Failed to delete quote")}},handleConvertToTrip=async s=>{/* jbc_convert_to_trip_v1 */if(!s)return;try{v.info(`Converting Quote #${s.quote_number} to Trip...`);let res=null,data=null;try{res=await window.fetch("/hcgi/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(!res||!res.ok||!data?.success)try{res=await window.fetch("/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(data&&data.success){v.success(data.message||`Quote converted to Trip #${data.tripId} successfully!`);try{const c=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),u=c.map(q=>(q.id===s.id||q.quote_number===s.quote_number)?{...q,status:"Approved"}:q);localStorage.setItem("jbc_public_quotes",JSON.stringify(u))}catch{}Oe&&Oe();try{const bc=new BroadcastChannel("jbc_trips_channel");bc.postMessage({type:"trip_created",trip:data.trip});setTimeout(()=>bc.close(),1e3)}catch{}}else v.error(data?.error||"Failed to convert quote to trip")}catch(err){v.error(err.message||"Failed to convert quote to trip")}},Y=a.filter(s=>{const J=(s.quote_number||"").toLowerCase(),A=(s.customer_name||"").toLowerCase(),T=(s.origin||"").toLowerCase(),F=(s.destination||"").toLowerCase(),q=(s.truck_size||s.container_type||"").toLowerCase(),be=(s.custom_vehicle_requirement||"").toLowerCase(),te=x.toLowerCase();if(!(J.includes(te)||A.includes(te)||T.includes(te)||F.includes(te)||q.includes(te)||be.includes(te)))return!1;if(S!=="All"){if(S==="Pending"){if(s.status!=="Pending"&&s.status!=="Draft"&&s.status)return!1}else if(s.status!==S)return!1}if(n!=="All"){const Me=n.toLowerCase();if(Me==="other / not sure"){if(!(q.includes("other")||q.includes("not sure")||!!s.custom_vehicle_requirement))return!1}else{const Qe=q.replace(/[^a-z0-9]/g,""),lt=Me.replace(/[^a-z0-9]/g,"");if(!Qe.includes(lt))return!1}}return!0}),G=ft.useMemo(()=>{const s=a.length,J=a.filter(F=>F.status==="Pending"||F.status==="Draft"||!F.status).length,A=a.filter(F=>F.status==="Quoted"||F.status==="Sent").length,T=a.filter(F=>F.status==="Accepted").length;return{total:s,pending:J,quoted:A,accepted:T}},[a]),Oe=s=>{s?(t(J=>J.map(A=>A.id===s.id||A.quote_number===s.quote_number?s:A)),z(s)):L()};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-8 animate-in fade-in duration-500 overflow-x-hidden min-w-0",children:[e.jsx(jt,{children:e.jsx("title",{children:"Quotes & Invoices | Dashboard"})}),e.jsx("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(Te,{className:"w-5 h-5 sm:w-8 sm:h-8 text-primary"})," Quotes & Invoicing Hub"]}),e.jsx("p",{className:"text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none",children:"Manage landing page inquiries, dispatch rate negotiations, and generate B2B invoices."})]})}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4",children:[e.jsx(oe,{className:"bg-card/60 border-border",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-bold uppercase",children:"Total Inquiries"}),e.jsx("p",{className:"text-lg sm:text-2xl font-black mt-0.5",children:G.total})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary",children:e.jsx(pe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-amber-500/30 bg-amber-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsxs("p",{className:"text-xs text-amber-400 font-bold uppercase flex items-center gap-1",children:[e.jsx(yt,{className:"w-3 h-3"})," Pending Inquiries"]}),e.jsx("p",{className:"text-2xl font-black text-amber-400 mt-0.5",children:G.pending})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400",children:e.jsx(He,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-blue-500/30 bg-blue-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-blue-400 font-bold uppercase",children:"Quoted / Sent"}),e.jsx("p",{className:"text-2xl font-black text-blue-400 mt-0.5",children:G.quoted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400",children:e.jsx(fe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-emerald-500/30 bg-emerald-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-emerald-400 font-bold uppercase",children:"Accepted Orders"}),e.jsx("p",{className:"text-2xl font-black text-emerald-400 mt-0.5",children:G.accepted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400",children:e.jsx(Nt,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})})]}),e.jsxs(Re,{value:y,onValueChange:E,className:"w-full space-y-6",children:[e.jsxs(Ee,{className:"bg-muted/50 p-0.5 sm:p-1 w-full sm:w-auto inline-flex h-9 sm:h-12 text-xs",children:[e.jsxs(ae,{value:"quotes",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Te,{className:"w-4 h-4"})," Quotes ",G.pending>0&&e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:G.pending})]}),e.jsxs(ae,{value:"invoices",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Se,{className:"w-4 h-4"})," Invoices"]}),e.jsxs(ae,{value:"contracts",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"💼"})," B2B Contracts",e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:"3"})]}),e.jsxs(ae,{value:"rate_slabs",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"⚙️"})," Distance & Rate Slabs"]})]}),e.jsxs(re,{value:"quotes",className:"space-y-6 m-0 outline-none",children:[e.jsxs("div",{className:"flex flex-wrap sm:flex-nowrap justify-end items-center gap-2",children:[e.jsx(g,{variant:"outline",onClick:()=>E("rate_slabs"),className:"h-9 px-3 rounded-xl border-amber-500/40 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 font-bold text-xs flex items-center gap-1 cursor-pointer",children:["⚙️ Rate Slabs & Distance Pricing"]}),e.jsxs(g,{variant:"outline",onClick:()=>{try{const s=Ot({clientName:"Valued Corporate Partner"}),J=new Blob([s],{type:"application/pdf"}),A=window.URL.createObjectURL(J),T=document.createElement("a");T.href=A,T.download="B2B_Transport_Contract_LOI.pdf",document.body.appendChild(T),T.click(),document.body.removeChild(T),window.URL.revokeObjectURL(A),v.success("B2B Transport Contract & Rate LOI exported!")}catch{v.error("Failed to export contract PDF")}},className:"rounded-lg sm:rounded-xl border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-semibold gap-1.5 sm:gap-2 text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(qe,{className:"w-4 h-4"})," B2B Contract LOI (PDF)"]}),e.jsxs(g,{onClick:O,className:"shadow-sm rounded-lg sm:rounded-xl text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(et,{className:"w-4 h-4 mr-2"})," Create Custom Quote"]})]}),e.jsxs(oe,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(Ct,{className:"bg-muted/30 border-b border-border pb-4 space-y-4",children:e.jsxs("div",{className:"flex flex-col md:flex-row gap-4 items-end md:items-center justify-between",children:[e.jsxs(St,{className:"text-xl flex items-center gap-2",children:[e.jsx(pe,{className:"w-5 h-5 text-primary"})," Quotes & Landing Inquiries"]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-3 w-full md:w-auto",children:[e.jsxs("div",{className:"relative flex-1 md:w-60 min-w-[200px]",children:[e.jsx(Ye,{className:"absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(j,{placeholder:"Search quote #, customer, route, truck...",className:"pl-9 bg-background",value:x,onChange:s=>w(s.target.value)})]}),e.jsxs(me,{value:S,onValueChange:h,children:[e.jsx(ue,{className:"w-[140px] bg-background",children:e.jsx(xe,{placeholder:"Status"})}),e.jsxs(he,{children:[e.jsx(Q,{value:"All",children:"All Statuses"}),e.jsx(Q,{value:"Pending",children:"Pending (Inquiries)"}),e.jsx(Q,{value:"Quoted",children:"Quoted"}),e.jsx(Q,{value:"Negotiating",children:"Negotiating"}),e.jsx(Q,{value:"Accepted",children:"Accepted"}),e.jsx(Q,{value:"Rejected",children:"Rejected"})]})]}),e.jsxs(me,{value:n,onValueChange:D,children:[e.jsx(ue,{className:"w-[160px] bg-background",children:e.jsx(xe,{placeholder:"Truck Size"})}),e.jsx(he,{className:"max-h-[300px]",children:kt.map(s=>e.jsx(Q,{value:s,children:s==="All"?"All Truck Sizes":s},s))})]})]})]})}),e.jsxs(ce,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(st,{children:[e.jsx(at,{className:"bg-muted/10",children:e.jsxs(ne,{children:[e.jsx(B,{className:"w-[130px]",children:"Quote #"}),e.jsx(B,{children:"Customer & Route"}),e.jsx(B,{children:"Truck Size / Cargo"}),e.jsx(B,{className:"text-right",children:"Weight"}),e.jsx(B,{className:"text-right",children:"Quoted Price"}),e.jsx(B,{className:"text-center w-[130px]",children:"Status"}),e.jsx(B,{className:"w-[110px]",children:"Date"}),e.jsx(B,{className:"text-right w-[180px]",children:"Quick Action"})]})}),e.jsx(rt,{children:f?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-8",children:"Loading quotes..."})}):Y.length===0?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-12 text-muted-foreground",children:"No quotes found matching your filter."})}):Y.map(s=>e.jsxs(ne,{className:"hover:bg-muted/40 transition-colors",children:[e.jsx(M,{className:"font-semibold text-primary font-mono text-xs",children:s.quote_number}),e.jsxs(M,{children:[e.jsx("div",{className:"font-bold text-foreground",children:s.customer_name}),e.jsxs("div",{className:"text-xs text-muted-foreground flex items-center gap-1 mt-0.5",children:[e.jsx("span",{children:s.origin}),e.jsx("span",{children:"➡️"}),e.jsx("span",{children:s.destination})]}),s.customer_phone&&e.jsxs("div",{className:"text-[11px] text-slate-400 mt-0.5",children:["📞 ",s.customer_phone]})]}),e.jsxs(M,{className:"text-xs",children:[e.jsx("div",{className:"font-bold text-slate-200",children:s.truck_size||s.container_type||"32 FT SXL"}),s.custom_vehicle_requirement?e.jsxs("div",{className:"text-amber-400 font-medium text-[11px] truncate max-w-[170px]",title:s.custom_vehicle_requirement,children:["Req: ",s.custom_vehicle_requirement]}):s.material_type?e.jsx("div",{className:"text-muted-foreground text-[11px] truncate max-w-[150px]",children:s.material_type}):null]}),e.jsx(M,{className:"text-right text-xs tabular-nums",children:s.actual_weight?`${Number(s.actual_weight).toLocaleString()} kg`:"1,000 kg"}),e.jsxs(M,{className:"text-right font-extrabold tabular-nums text-emerald-400",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]}),e.jsx(M,{className:"text-center",children:e.jsx(le,{variant:"outline",className:ie("text-xs font-bold px-2.5 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})}),e.jsx(M,{className:"text-xs text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd"):"Recent"}),e.jsx(M,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-8 px-2.5 rounded-xl bg-primary hover:bg-primary/90 font-bold text-xs gap-1 shadow-sm",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-8 px-2 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"Send WhatsApp Quote",children:e.jsx(fe,{className:"w-3.5 h-3.5 text-emerald-400 fill-emerald-500/20"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleConvertToTrip(s),className:"h-8 px-2.5 rounded-xl border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"1-Click Convert Quote to Trip",children:[e.jsx(ot,{className:"w-3.5 h-3.5 mr-0.5"}),"+Trip"]}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-8 px-2 rounded-xl border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 font-bold text-xs gap-1 shadow-sm cursor-pointer",title:"Delete Quote",children:"🗑️"}),e.jsxs(ve,{children:[e.jsx(we,{asChild:!0,children:e.jsxs(g,{variant:"ghost",className:"h-8 w-8 p-0",children:[e.jsx("span",{className:"sr-only",children:"Open menu"}),e.jsx(Fe,{className:"h-4 w-4"})]})}),e.jsxs(Ce,{align:"end",children:[e.jsx(H,{onClick:()=>R(s),className:"font-bold text-primary",children:"Respond & Negotiate"}),e.jsxs(H,{onClick:()=>W(s),className:"text-emerald-400 font-bold",children:[e.jsx(fe,{className:"w-4 h-4 mr-2 text-emerald-400"}),"Share WhatsApp API"]}),e.jsxs(H,{onClick:()=>u(s),children:[e.jsx(Xe,{className:"w-4 h-4 mr-2"})," Email Quote"]}),e.jsx(H,{onClick:()=>handleConvertToTrip(s),className:"text-emerald-400 font-bold flex items-center gap-1.5 cursor-pointer",children:[e.jsx(ot,{className:"w-4 h-4 mr-2 text-emerald-400"})," 🚚 Convert to Trip (1-Click)"]}),e.jsx(H,{onClick:()=>U(s),children:"Edit Quote Form"}),e.jsx(H,{onClick:()=>X(s),children:"Convert to Invoice"}),e.jsx(H,{onClick:()=>handleDeleteQuote(s),className:"text-destructive focus:bg-destructive/10 focus:text-destructive font-bold cursor-pointer",children:"🗑️ Delete Quote"})]})]})]})})]},s.id||s.quote_number))})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:f?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading quotes..."}):Y.length===0?e.jsx("div",{className:"text-center py-12 text-sm text-muted-foreground",children:"No quotes found."}):Y.map(s=>e.jsxs("div",{className:"p-4 space-y-3 hover:bg-muted/5 transition-colors",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"font-bold text-xs text-primary font-mono",children:s.quote_number}),e.jsx(le,{variant:"outline",className:ie("text-[10px] font-bold px-2 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"font-bold text-sm text-foreground",children:s.customer_name}),e.jsxs("p",{className:"text-xs text-muted-foreground mt-0.5",children:[s.origin," ➡️ ",s.destination]})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Truck Size"}),e.jsx("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:s.truck_size||s.container_type||"32 FT SXL"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Weight"}),e.jsxs("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:[s.actual_weight||1e3," kg"]})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Quoted"}),e.jsxs("p",{className:"font-extrabold text-emerald-400 mt-0.5 truncate",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]})]})]}),s.custom_vehicle_requirement&&e.jsxs("div",{className:"text-[11px] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md text-amber-300",children:[e.jsx("span",{className:"font-bold",children:"Req: "}),s.custom_vehicle_requirement]}),e.jsxs("div",{className:"flex items-center justify-between pt-2 border-t border-border/20",children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd, yyyy"):"Recent"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-7 text-xs font-bold rounded-lg bg-primary hover:bg-primary/90",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1",children:e.jsx(fe,{className:"w-3.5 h-3.5"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 gap-1 cursor-pointer",title:"Delete Quote",children:"🗑️"})]})]})]},s.id||s.quote_number))})]})]})]}),e.jsx(re,{value:"invoices",className:"m-0 outline-none",children:e.jsx($t,{initialQuote:r})}),e.jsx(re,{value:"contracts",className:"m-0 outline-none",children:e.jsx(ContractManagerTab,{})}),e.jsx(re,{value:"rate_slabs",className:"m-0 outline-none",children:e.jsx(RateSlabsManagerTab,{})})]}),e.jsx(At,{isOpen:I,onClose:()=>p(!1),quote:k,onSuccess:Oe}),e.jsx(Pt,{isOpen:C,onClose:()=>o(!1),quote:k,onUpdate:Oe,onEdit:U,onConvertToInvoice:X,onConvertToTrip:handleConvertToTrip,onDeleteQuote:handleDeleteQuote,onTriggerEmail:u}),e.jsx(it,{isOpen:d,onClose:()=>_(!1),initialRecipient:P.recipient,initialSubject:P.subject,initialBody:P.body,initialHtml:P.html,documentLabel:P.label}),e.jsx(tt,{isOpen:Z,onClose:()=>ge(!1),quote:ee,defaultTemplate:"quote",overridePhone:ee?.customer_phone||ee?.phone||""})]})};function ContractManagerTab() {
+Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{N(!0);try{const s=new Map;try{const A=["/hcgi/api/driver/get-quotes","/api/driver/get-quotes"];for(const T of A)try{const F=await window.fetch(T);if(F.ok){const q=await F.json();if(q.success&&Array.isArray(q.quotes)){q.quotes.forEach(be=>{const te=be.quote_number||be.id;s.set(te,be)});break}}}catch{}}catch{}try{(await K.collection("quotes").getFullList({sort:"-created",$autoCancel:!1})||[]).forEach(T=>{const F=T.quote_number||T.id;(!s.has(F)||!s.get(F).customer_name)&&s.set(F,T)})}catch(A){console.warn("PocketBase fetch quotes warning:",A)}try{(JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]")||[]).forEach(T=>{const F=T.quote_number||T.id;s.has(F)||s.set(F,T)})}catch{}const J=Array.from(s.values()).sort((A,T)=>{const F=new Date(A.created||A.updated||0).getTime();return new Date(T.created||T.updated||0).getTime()-F});t(J)}catch(s){console.error(s),v.error("Failed to load quotes")}finally{N(!1)}};c.useEffect(()=>{y==="quotes"&&L();const s=()=>{L()};window.addEventListener("jbc_new_quote_submitted",s),window.addEventListener("storage",s);const J=setInterval(()=>{y==="quotes"&&L()},12e3);return()=>{window.removeEventListener("jbc_new_quote_submitted",s),window.removeEventListener("storage",s),clearInterval(J)}},[y]);const O=()=>{z(null),p(!0)},U=s=>{z(s),p(!0)},R=s=>{z(s),o(!0)},X=s=>{l(s),E("invoices")},handleDeleteQuote=async s=>{if(!s)return;const qNum=s.quote_number||s.id||"";if(!window.confirm(`Are you sure you want to permanently delete Quote #${qNum}? This action cannot be undone.`))return;try{v.info(`Deleting quote #${qNum}...`);let deleted=!1;const endpts=[`/hcgi/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`,`/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`];for(const ep of endpts)try{const r=await window.fetch(ep,{method:"DELETE"}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}if(!deleted){const postEndpts=["/hcgi/api/driver/delete-quote","/api/driver/delete-quote"];for(const ep of postEndpts)try{const r=await window.fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number,id:s.id})}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}}if(s.id&&!String(s.id).startsWith("qt_"))try{await K.collection("quotes").delete(s.id,{$autoCancel:!1}),deleted=!0}catch(_){}try{const local=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),filtered=local.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number);localStorage.setItem("jbc_public_quotes",JSON.stringify(filtered))}catch(_){}t(prev=>prev.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number)),v.success(`Quote #${qNum} deleted successfully`),window.dispatchEvent(new CustomEvent("jbc_quote_deleted",{detail:{quote_number:qNum,id:s.id}}))}catch(err){v.error(err.message||"Failed to delete quote")}},handleConvertToTrip=async s=>{/* jbc_convert_to_trip_v1 */if(!s)return;try{v.info(`Converting Quote #${s.quote_number} to Trip...`);let res=null,data=null;try{res=await window.fetch("/hcgi/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(!res||!res.ok||!data?.success)try{res=await window.fetch("/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(data&&data.success){v.success(data.message||`Quote converted to Trip #${data.tripId} successfully!`);try{const c=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),u=c.map(q=>(q.id===s.id||q.quote_number===s.quote_number)?{...q,status:"Approved"}:q);localStorage.setItem("jbc_public_quotes",JSON.stringify(u))}catch{}Oe&&Oe();try{const bc=new BroadcastChannel("jbc_trips_channel");bc.postMessage({type:"trip_created",trip:data.trip});setTimeout(()=>bc.close(),1e3)}catch{}}else v.error(data?.error||"Failed to convert quote to trip")}catch(err){v.error(err.message||"Failed to convert quote to trip")}},Y=a.filter(s=>{const J=(s.quote_number||"").toLowerCase(),A=(s.customer_name||"").toLowerCase(),T=(s.origin||"").toLowerCase(),F=(s.destination||"").toLowerCase(),q=(s.truck_size||s.container_type||"").toLowerCase(),be=(s.custom_vehicle_requirement||"").toLowerCase(),te=x.toLowerCase();if(!(J.includes(te)||A.includes(te)||T.includes(te)||F.includes(te)||q.includes(te)||be.includes(te)))return!1;if(S!=="All"){if(S==="Pending"){if(s.status!=="Pending"&&s.status!=="Draft"&&s.status)return!1}else if(s.status!==S)return!1}if(n!=="All"){const Me=n.toLowerCase();if(Me==="other / not sure"){if(!(q.includes("other")||q.includes("not sure")||!!s.custom_vehicle_requirement))return!1}else{const Qe=q.replace(/[^a-z0-9]/g,""),lt=Me.replace(/[^a-z0-9]/g,"");if(!Qe.includes(lt))return!1}}return!0}),G=ft.useMemo(()=>{const s=a.length,J=a.filter(F=>F.status==="Pending"||F.status==="Draft"||!F.status).length,A=a.filter(F=>F.status==="Quoted"||F.status==="Sent").length,T=a.filter(F=>F.status==="Accepted").length;return{total:s,pending:J,quoted:A,accepted:T}},[a]),Oe=s=>{s?(t(J=>J.map(A=>A.id===s.id||A.quote_number===s.quote_number?s:A)),z(s)):L()};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-8 animate-in fade-in duration-500 overflow-x-hidden min-w-0",children:[e.jsx(jt,{children:e.jsx("title",{children:"Quotes & Invoices | Dashboard"})}),e.jsx("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(Te,{className:"w-5 h-5 sm:w-8 sm:h-8 text-primary"})," Quotes & Invoicing Hub"]}),e.jsx("p",{className:"text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none",children:"Manage landing page inquiries, dispatch rate negotiations, and generate B2B invoices."})]})}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4",children:[e.jsx(oe,{className:"bg-card/60 border-border",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-bold uppercase",children:"Total Inquiries"}),e.jsx("p",{className:"text-lg sm:text-2xl font-black mt-0.5",children:G.total})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary",children:e.jsx(pe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-amber-500/30 bg-amber-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsxs("p",{className:"text-xs text-amber-400 font-bold uppercase flex items-center gap-1",children:[e.jsx(yt,{className:"w-3 h-3"})," Pending Inquiries"]}),e.jsx("p",{className:"text-2xl font-black text-amber-400 mt-0.5",children:G.pending})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400",children:e.jsx(He,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-blue-500/30 bg-blue-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-blue-400 font-bold uppercase",children:"Quoted / Sent"}),e.jsx("p",{className:"text-2xl font-black text-blue-400 mt-0.5",children:G.quoted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400",children:e.jsx(fe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-emerald-500/30 bg-emerald-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-emerald-400 font-bold uppercase",children:"Accepted Orders"}),e.jsx("p",{className:"text-2xl font-black text-emerald-400 mt-0.5",children:G.accepted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400",children:e.jsx(Nt,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})})]}),e.jsxs(Re,{value:y,onValueChange:E,className:"w-full space-y-6",children:[e.jsxs(Ee,{className:"bg-muted/50 p-0.5 sm:p-1 w-full sm:w-auto inline-flex h-9 sm:h-12 text-xs",children:[e.jsxs(ae,{value:"quotes",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Te,{className:"w-4 h-4"})," Quotes ",G.pending>0&&e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:G.pending})]}),e.jsxs(ae,{value:"invoices",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Se,{className:"w-4 h-4"})," Invoices"]}),e.jsxs(ae,{value:"contracts",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"💼"})," B2B Contracts",e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:"3"})]}),e.jsxs(ae,{value:"rate_slabs",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"⚙️"})," Distance & Rate Slabs"]})]}),e.jsxs(re,{value:"quotes",className:"space-y-6 m-0 outline-none",children:[e.jsxs("div",{className:"flex flex-wrap sm:flex-nowrap justify-end items-center gap-2",children:[e.jsx(g,{variant:"outline",onClick:()=>E("rate_slabs"),className:"h-9 px-3 rounded-xl border-amber-500/40 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 font-bold text-xs flex items-center gap-1 cursor-pointer",children:["⚙️ Rate Slabs & Distance Pricing"]}),e.jsxs(g,{variant:"outline",onClick:()=>{try{const s=Ot({clientName:"Valued Corporate Partner"}),J=new Blob([s],{type:"application/pdf"}),A=window.URL.createObjectURL(J),T=document.createElement("a");T.href=A,T.download="B2B_Transport_Contract_LOI.pdf",document.body.appendChild(T),T.click(),document.body.removeChild(T),window.URL.revokeObjectURL(A),v.success("B2B Transport Contract & Rate LOI exported!")}catch{v.error("Failed to export contract PDF")}},className:"rounded-lg sm:rounded-xl border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-semibold gap-1.5 sm:gap-2 text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(qe,{className:"w-4 h-4"})," B2B Contract LOI (PDF)"]}),e.jsxs(g,{onClick:O,className:"shadow-sm rounded-lg sm:rounded-xl text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(et,{className:"w-4 h-4 mr-2"})," Create Custom Quote"]})]}),e.jsxs(oe,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(Ct,{className:"bg-muted/30 border-b border-border pb-4 space-y-4",children:e.jsxs("div",{className:"flex flex-col md:flex-row gap-4 items-end md:items-center justify-between",children:[e.jsxs(St,{className:"text-xl flex items-center gap-2",children:[e.jsx(pe,{className:"w-5 h-5 text-primary"})," Quotes & Landing Inquiries"]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-3 w-full md:w-auto",children:[e.jsxs("div",{className:"relative flex-1 md:w-60 min-w-[200px]",children:[e.jsx(Ye,{className:"absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(j,{placeholder:"Search quote #, customer, route, truck...",className:"pl-9 bg-background",value:x,onChange:s=>w(s.target.value)})]}),e.jsxs(me,{value:S,onValueChange:h,children:[e.jsx(ue,{className:"w-[140px] bg-background",children:e.jsx(xe,{placeholder:"Status"})}),e.jsxs(he,{children:[e.jsx(Q,{value:"All",children:"All Statuses"}),e.jsx(Q,{value:"Pending",children:"Pending (Inquiries)"}),e.jsx(Q,{value:"Quoted",children:"Quoted"}),e.jsx(Q,{value:"Negotiating",children:"Negotiating"}),e.jsx(Q,{value:"Accepted",children:"Accepted"}),e.jsx(Q,{value:"Rejected",children:"Rejected"})]})]}),e.jsxs(me,{value:n,onValueChange:D,children:[e.jsx(ue,{className:"w-[160px] bg-background",children:e.jsx(xe,{placeholder:"Truck Size"})}),e.jsx(he,{className:"max-h-[300px]",children:kt.map(s=>e.jsx(Q,{value:s,children:s==="All"?"All Truck Sizes":s},s))})]})]})]})}),e.jsxs(ce,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(st,{children:[e.jsx(at,{className:"bg-muted/10",children:e.jsxs(ne,{children:[e.jsx(B,{className:"w-[130px]",children:"Quote #"}),e.jsx(B,{children:"Customer & Route"}),e.jsx(B,{children:"Truck Size / Cargo"}),e.jsx(B,{className:"text-right",children:"Weight"}),e.jsx(B,{className:"text-right",children:"Quoted Price"}),e.jsx(B,{className:"text-center w-[130px]",children:"Status"}),e.jsx(B,{className:"w-[110px]",children:"Date"}),e.jsx(B,{className:"text-right w-[180px]",children:"Quick Action"})]})}),e.jsx(rt,{children:f?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-8",children:"Loading quotes..."})}):Y.length===0?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-12 text-muted-foreground",children:"No quotes found matching your filter."})}):Y.map(s=>e.jsxs(ne,{className:"hover:bg-muted/40 transition-colors",children:[e.jsx(M,{className:"font-semibold text-primary font-mono text-xs",children:s.quote_number}),e.jsxs(M,{children:[e.jsx("div",{className:"font-bold text-foreground",children:s.customer_name}),e.jsxs("div",{className:"text-xs text-muted-foreground flex items-center gap-1 mt-0.5",children:[e.jsx("span",{children:s.origin}),e.jsx("span",{children:"➡️"}),e.jsx("span",{children:s.destination})]}),s.customer_phone&&e.jsxs("div",{className:"text-[11px] text-slate-400 mt-0.5",children:["📞 ",s.customer_phone]})]}),e.jsxs(M,{className:"text-xs",children:[e.jsx("div",{className:"font-bold text-slate-200",children:s.truck_size||s.container_type||"32 FT SXL"}),s.custom_vehicle_requirement?e.jsxs("div",{className:"text-amber-400 font-medium text-[11px] truncate max-w-[170px]",title:s.custom_vehicle_requirement,children:["Req: ",s.custom_vehicle_requirement]}):s.material_type?e.jsx("div",{className:"text-muted-foreground text-[11px] truncate max-w-[150px]",children:s.material_type}):null]}),e.jsx(M,{className:"text-right text-xs tabular-nums",children:s.actual_weight?`${Number(s.actual_weight).toLocaleString()} kg`:"1,000 kg"}),e.jsxs(M,{className:"text-right font-extrabold tabular-nums text-emerald-400",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]}),e.jsx(M,{className:"text-center",children:e.jsx(le,{variant:"outline",className:ie("text-xs font-bold px-2.5 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})}),e.jsx(M,{className:"text-xs text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd"):"Recent"}),e.jsx(M,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-8 px-2.5 rounded-xl bg-primary hover:bg-primary/90 font-bold text-xs gap-1 shadow-sm",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-8 px-2 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"Send WhatsApp Quote",children:e.jsx(fe,{className:"w-3.5 h-3.5 text-emerald-400 fill-emerald-500/20"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleConvertToTrip(s),className:"h-8 px-2.5 rounded-xl border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"1-Click Convert Quote to Trip",children:[e.jsx(ot,{className:"w-3.5 h-3.5 mr-0.5"}),"+Trip"]}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-8 px-2 rounded-xl border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 font-bold text-xs gap-1 shadow-sm cursor-pointer",title:"Delete Quote",children:"🗑️"}),e.jsxs(ve,{children:[e.jsx(we,{asChild:!0,children:e.jsxs(g,{variant:"ghost",className:"h-8 w-8 p-0",children:[e.jsx("span",{className:"sr-only",children:"Open menu"}),e.jsx(Fe,{className:"h-4 w-4"})]})}),e.jsxs(Ce,{align:"end",children:[e.jsx(H,{onClick:()=>R(s),className:"font-bold text-primary",children:"Respond & Negotiate"}),e.jsxs(H,{onClick:()=>W(s),className:"text-emerald-400 font-bold",children:[e.jsx(fe,{className:"w-4 h-4 mr-2 text-emerald-400"}),"Share WhatsApp API"]}),e.jsxs(H,{onClick:()=>u(s),children:[e.jsx(Xe,{className:"w-4 h-4 mr-2"})," Email Quote"]}),e.jsx(H,{onClick:()=>handleConvertToTrip(s),className:"text-emerald-400 font-bold flex items-center gap-1.5 cursor-pointer",children:[e.jsx(ot,{className:"w-4 h-4 mr-2 text-emerald-400"})," 🚚 Convert to Trip (1-Click)"]}),e.jsx(H,{onClick:()=>U(s),children:"Edit Quote Form"}),e.jsx(H,{onClick:()=>X(s),children:"Convert to Invoice"}),e.jsx(H,{onClick:()=>handleDeleteQuote(s),className:"text-destructive focus:bg-destructive/10 focus:text-destructive font-bold cursor-pointer",children:"🗑️ Delete Quote"})]})]})]})})]},s.id||s.quote_number))})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:f?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading quotes..."}):Y.length===0?e.jsx("div",{className:"text-center py-12 text-sm text-muted-foreground",children:"No quotes found."}):Y.map(s=>e.jsxs("div",{className:"p-4 space-y-3 hover:bg-muted/5 transition-colors",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"font-bold text-xs text-primary font-mono",children:s.quote_number}),e.jsx(le,{variant:"outline",className:ie("text-[10px] font-bold px-2 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"font-bold text-sm text-foreground",children:s.customer_name}),e.jsxs("p",{className:"text-xs text-muted-foreground mt-0.5",children:[s.origin," ➡️ ",s.destination]})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Truck Size"}),e.jsx("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:s.truck_size||s.container_type||"32 FT SXL"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Weight"}),e.jsxs("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:[s.actual_weight||1e3," kg"]})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Quoted"}),e.jsxs("p",{className:"font-extrabold text-emerald-400 mt-0.5 truncate",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]})]})]}),s.custom_vehicle_requirement&&e.jsxs("div",{className:"text-[11px] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md text-amber-300",children:[e.jsx("span",{className:"font-bold",children:"Req: "}),s.custom_vehicle_requirement]}),e.jsxs("div",{className:"flex items-center justify-between pt-2 border-t border-border/20",children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd, yyyy"):"Recent"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-7 text-xs font-bold rounded-lg bg-primary hover:bg-primary/90",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1",children:e.jsx(fe,{className:"w-3.5 h-3.5"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 gap-1 cursor-pointer",title:"Delete Quote",children:"🗑️"})]})]})]},s.id||s.quote_number))})]})]})]}),e.jsx(re,{value:"invoices",className:"m-0 outline-none",children:e.jsx($t,{initialQuote:r})}),e.jsx(re,{value:"contracts",className:"m-0 outline-none",children:e.jsx(ContractManagerTab,{})}),e.jsx(re,{value:"rate_slabs",className:"m-0 outline-none",children:e.jsx(RateSlabsManagerTab,{})})]}),e.jsx(At,{isOpen:I,onClose:()=>p(!1),quote:k,onSuccess:Oe}),e.jsx(Pt,{isOpen:C,onClose:()=>o(!1),quote:k,onUpdate:Oe,onEdit:U,onConvertToInvoice:X,onConvertToTrip:handleConvertToTrip,onDeleteQuote:handleDeleteQuote,onTriggerEmail:u}),e.jsx(it,{isOpen:d,onClose:()=>_(!1),initialRecipient:P.recipient,initialSubject:P.subject,initialBody:P.body,initialHtml:P.html,documentLabel:P.label}),e.jsx(tt,{isOpen:Z,onClose:()=>ge(!1),quote:ee,defaultTemplate:"quote",overridePhone:ee?.customer_phone||ee?.phone||""})]})};
+// --- B2B CONTRACT MANAGER TAB ---
+function ContractManagerTab() {
   const [contracts, setContracts] = c.useState([]);
   const [loading, setLoading] = c.useState(true);
   const [search, setSearch] = c.useState("");
@@ -189,7 +191,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       } else {
         v.error(data.error || "Failed to delete contract");
       }
-    } catch (e2) {
+    } catch (e) {
       v.error("Failed to delete contract");
     }
   };
@@ -212,12 +214,12 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       } else {
         v.error(data.error || "Failed to save contract");
       }
-    } catch (e2) {
+    } catch (e) {
       v.error("Network error saving contract");
     }
   };
   const handleWhatsAppClient = (ctr) => {
-    const phone = (ctr.client_contact || "").replace(/\D/g, "");
+    const phone = (ctr.client_contact || "").replace(/\\D/g, "");
     const cleanPhone = phone.length === 10 ? "91" + phone : phone;
     const msg = "Namaste " + ctr.client_name + ", Greetings from Jai Bhavani Cargo. Regarding Agreement " + ctr.contract_number + " (Valid: " + ctr.contract_start + " to " + ctr.contract_end + "). Notice: Days remaining: " + (ctr.days_remaining !== null ? ctr.days_remaining + " days" : "Active") + ". Please let us know if you need freight placement or renewal review.";
     const url = cleanPhone ? "https://api.whatsapp.com/send?phone=" + cleanPhone + "&text=" + encodeURIComponent(msg) : "https://api.whatsapp.com/send?text=" + encodeURIComponent(msg);
@@ -233,7 +235,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
     return true;
   });
   const totalRateCards = contracts.reduce((acc, c2) => acc + (Array.isArray(c2.rate_cards) ? c2.rate_cards.length : 0), 0);
-  return /* @__PURE__ */ e.jsx("div", { className: "space-y-6" }, expiringAlerts.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border-2 border-amber-500/40 text-amber-200 shadow-lg animate-in fade-in duration-300" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-start gap-3.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-3xl p-1 bg-amber-500/20 rounded-xl" }, "\u26A0\uFE0F"), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "font-extrabold text-sm sm:text-base text-amber-300 uppercase tracking-wide" }, "Alert: Contract expires in ", expiringAlerts[0].days_remaining, " days"), /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse" }, "Action Required")), /* @__PURE__ */ e.jsx("p", { className: "text-xs sm:text-sm text-slate-300 mt-1" }, "Agreement ", /* @__PURE__ */ e.jsx("strong", { className: "text-white font-mono" }, expiringAlerts[0].contract_number), " with ", /* @__PURE__ */ e.jsx("strong", { className: "text-amber-300" }, expiringAlerts[0].client_name), " expires on ", expiringAlerts[0].contract_end, ". Minimum Guarantee & Rate Card escalation terms require immediate renewal discussion."))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 self-end md:self-center" }, /* @__PURE__ */ e.jsx(
+  return /* @__PURE__ */ c.createElement("div", { className: "space-y-6" }, expiringAlerts.length > 0 && /* @__PURE__ */ c.createElement("div", { className: "p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-amber-500/15 border-2 border-amber-500/40 text-amber-200 shadow-lg animate-in fade-in duration-300" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-start gap-3.5" }, /* @__PURE__ */ c.createElement("span", { className: "text-3xl p-1 bg-amber-500/20 rounded-xl" }, "\u26A0\uFE0F"), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "font-extrabold text-sm sm:text-base text-amber-300 uppercase tracking-wide" }, "Alert: Contract expires in ", expiringAlerts[0].days_remaining, " days"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse" }, "Action Required")), /* @__PURE__ */ c.createElement("p", { className: "text-xs sm:text-sm text-slate-300 mt-1" }, "Agreement ", /* @__PURE__ */ c.createElement("strong", { className: "text-white font-mono" }, expiringAlerts[0].contract_number), " with ", /* @__PURE__ */ c.createElement("strong", { className: "text-amber-300" }, expiringAlerts[0].client_name), " expires on ", expiringAlerts[0].contract_end, ". Minimum Guarantee & Rate Card escalation terms require immediate renewal discussion."))), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 self-end md:self-center" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -241,25 +243,25 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       className: "px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-sm"
     },
     "Review All 8 Terms"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
       onClick: () => handleWhatsAppClient(expiringAlerts[0]),
       className: "px-3 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1.5 shadow-sm"
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F4AC}"),
     " WhatsApp Client"
-  )))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Active Agreements"), /* @__PURE__ */ e.jsx("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-2xl font-black text-foreground" }, contracts.filter((c2) => c2.status === "Active" || c2.days_remaining > 30).length), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Client Portfolios"))), /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-xl bg-card border border-amber-500/30 bg-amber-500/5 shadow-sm" }, /* @__PURE__ */ e.jsx("p", { className: "text-xs text-amber-400 font-bold uppercase" }, "Expiring in \u2264 30 Days"), /* @__PURE__ */ e.jsx("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-2xl font-black text-amber-400" }, expiringAlerts.length), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black" }, "Renewal Alert"))), /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Min Guarantee Commitments"), /* @__PURE__ */ e.jsx("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-2xl font-black text-primary" }, "80+"), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold" }, "Trips / Month"))), /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Active Rate Cards"), /* @__PURE__ */ e.jsx("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-2xl font-black text-emerald-400" }, totalRateCards), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Locked Corridors")))), /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-card p-3 rounded-xl border border-border/60" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ c.createElement("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Active Agreements"), /* @__PURE__ */ c.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-2xl font-black text-foreground" }, contracts.filter((c2) => c2.status === "Active" || c2.days_remaining > 30).length), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Client Portfolios"))), /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-card border border-amber-500/30 bg-amber-500/5 shadow-sm" }, /* @__PURE__ */ c.createElement("p", { className: "text-xs text-amber-400 font-bold uppercase" }, "Expiring in \u2264 30 Days"), /* @__PURE__ */ c.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-2xl font-black text-amber-400" }, expiringAlerts.length), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-black" }, "Renewal Alert"))), /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ c.createElement("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Min Guarantee Commitments"), /* @__PURE__ */ c.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-2xl font-black text-primary" }, "80+"), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold" }, "Trips / Month"))), /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-card border border-border/60 shadow-sm" }, /* @__PURE__ */ c.createElement("p", { className: "text-xs text-muted-foreground font-semibold uppercase" }, "Active Rate Cards"), /* @__PURE__ */ c.createElement("div", { className: "flex items-baseline justify-between mt-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-2xl font-black text-emerald-400" }, totalRateCards), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Locked Corridors")))), /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-card p-3 rounded-xl border border-border/60" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "Search agreement #, client, or terms...",
       value: search,
-      onChange: (e2) => setSearch(e2.target.value),
+      onChange: (e) => setSearch(e.target.value),
       className: "h-9 px-3 text-xs rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground w-full sm:w-64 focus:outline-none focus:ring-1 focus:ring-primary"
     }
-  ), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1 bg-muted/40 p-1 rounded-lg text-xs" }, ["all", "active", "expiring", "expired"].map((tab) => /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-1 bg-muted/40 p-1 rounded-lg text-xs" }, ["all", "active", "expiring", "expired"].map((tab) => /* @__PURE__ */ c.createElement(
     "button",
     {
       key: tab,
@@ -268,7 +270,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       className: "px-2.5 py-1 rounded-md capitalize font-semibold transition-all " + (filter === tab ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")
     },
     tab === "expiring" ? "Expiring Soon (" + expiringAlerts.length + ")" : tab
-  )))), /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -278,12 +280,12 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       },
       className: "h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all"
     },
-    /* @__PURE__ */ e.jsx("span", null, "+"),
+    /* @__PURE__ */ c.createElement("span", null, "+"),
     " New Contract Agreement"
-  )), /* @__PURE__ */ e.jsx("div", { className: "bg-card rounded-xl border border-border/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto" }, /* @__PURE__ */ e.jsx("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ e.jsx("thead", { className: "bg-muted/30 text-muted-foreground font-bold border-b border-border/60" }, /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("th", { className: "py-3 px-4" }, "Agreement # & Client"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3" }, "Contract Validity"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3" }, "Expiry Status"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3" }, "Minimum Guarantee"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3" }, "Payment Terms"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3" }, "Rate Cards"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-border/30" }, loading ? /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("td", { colSpan: 7, className: "py-10 text-center text-muted-foreground font-medium" }, "Loading B2B contracts & agreements...")) : filteredContracts.length === 0 ? /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("td", { colSpan: 7, className: "py-12 text-center text-muted-foreground" }, "No contract agreements found matching your search.")) : filteredContracts.map((c2) => {
+  )), /* @__PURE__ */ c.createElement("div", { className: "bg-card rounded-xl border border-border/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-muted/30 text-muted-foreground font-bold border-b border-border/60" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Agreement # & Client"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3" }, "Contract Validity"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3" }, "Expiry Status"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3" }, "Minimum Guarantee"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3" }, "Payment Terms"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3" }, "Rate Cards"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-border/30" }, loading ? /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("td", { colSpan: 7, className: "py-10 text-center text-muted-foreground font-medium" }, "Loading B2B contracts & agreements...")) : filteredContracts.length === 0 ? /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("td", { colSpan: 7, className: "py-12 text-center text-muted-foreground" }, "No contract agreements found matching your search.")) : filteredContracts.map((c2) => {
     const isExpiring = c2.days_remaining !== null && c2.days_remaining >= 0 && c2.days_remaining <= 30;
     const isExpired = c2.days_remaining !== null && c2.days_remaining < 0;
-    return /* @__PURE__ */ e.jsx("tr", { key: c2.id || c2.contract_number, className: "hover:bg-muted/30 transition-colors " + (isExpiring ? "bg-amber-500/5" : "") }, /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ e.jsx("div", { className: "font-mono font-bold text-primary text-xs" }, c2.contract_number), /* @__PURE__ */ e.jsx("div", { className: "font-bold text-foreground text-sm mt-0.5" }, c2.client_name), c2.client_contact && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground mt-0.5" }, "\u{1F464} ", c2.client_contact)), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-3" }, /* @__PURE__ */ e.jsx("div", { className: "font-medium text-foreground" }, c2.contract_start), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground" }, "to ", c2.contract_end)), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-3" }, isExpiring ? /* @__PURE__ */ e.jsx("div", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40" }, /* @__PURE__ */ e.jsx("span", null, "\u26A0\uFE0F"), " Expires in ", c2.days_remaining, "d") : isExpired ? /* @__PURE__ */ e.jsx("span", { className: "inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40" }, "Expired") : /* @__PURE__ */ e.jsx("div", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, /* @__PURE__ */ e.jsx("span", null, "\u2713"), " ", c2.days_remaining ? c2.days_remaining + "d left" : "Active")), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-3 max-w-[180px]" }, /* @__PURE__ */ e.jsx("div", { className: "font-semibold text-foreground truncate", title: c2.minimum_guarantee }, c2.minimum_guarantee), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground truncate", title: c2.detention_terms }, "Detention: ", c2.detention_terms)), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-3 max-w-[150px]" }, /* @__PURE__ */ e.jsx("div", { className: "font-semibold text-foreground truncate", title: c2.payment_terms }, c2.payment_terms), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground truncate", title: c2.escalation_clause }, c2.escalation_clause)), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-3" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md font-bold text-xs bg-muted text-foreground" }, Array.isArray(c2.rate_cards) ? c2.rate_cards.length + " Corridors" : "0")), /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-4 text-right" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ c2.createElement("tr", { key: c2.id || c2.contract_number, className: "hover:bg-muted/30 transition-colors " + (isExpiring ? "bg-amber-500/5" : "") }, /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ c2.createElement("div", { className: "font-mono font-bold text-primary text-xs" }, c2.contract_number), /* @__PURE__ */ c2.createElement("div", { className: "font-bold text-foreground text-sm mt-0.5" }, c2.client_name), c2.client_contact && /* @__PURE__ */ c2.createElement("div", { className: "text-[11px] text-muted-foreground mt-0.5" }, "\u{1F464} ", c2.client_contact)), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-3" }, /* @__PURE__ */ c2.createElement("div", { className: "font-medium text-foreground" }, c2.contract_start), /* @__PURE__ */ c2.createElement("div", { className: "text-[11px] text-muted-foreground" }, "to ", c2.contract_end)), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-3" }, isExpiring ? /* @__PURE__ */ c2.createElement("div", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40" }, /* @__PURE__ */ c2.createElement("span", null, "\u26A0\uFE0F"), " Expires in ", c2.days_remaining, "d") : isExpired ? /* @__PURE__ */ c2.createElement("span", { className: "inline-block px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40" }, "Expired") : /* @__PURE__ */ c2.createElement("div", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, /* @__PURE__ */ c2.createElement("span", null, "\u2713"), " ", c2.days_remaining ? c2.days_remaining + "d left" : "Active")), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-3 max-w-[180px]" }, /* @__PURE__ */ c2.createElement("div", { className: "font-semibold text-foreground truncate", title: c2.minimum_guarantee }, c2.minimum_guarantee), /* @__PURE__ */ c2.createElement("div", { className: "text-[11px] text-muted-foreground truncate", title: c2.detention_terms }, "Detention: ", c2.detention_terms)), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-3 max-w-[150px]" }, /* @__PURE__ */ c2.createElement("div", { className: "font-semibold text-foreground truncate", title: c2.payment_terms }, c2.payment_terms), /* @__PURE__ */ c2.createElement("div", { className: "text-[11px] text-muted-foreground truncate", title: c2.escalation_clause }, c2.escalation_clause)), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-3" }, /* @__PURE__ */ c2.createElement("span", { className: "px-2 py-0.5 rounded-md font-bold text-xs bg-muted text-foreground" }, Array.isArray(c2.rate_cards) ? c2.rate_cards.length + " Corridors" : "0")), /* @__PURE__ */ c2.createElement("td", { className: "py-3.5 px-4 text-right" }, /* @__PURE__ */ c2.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c2.createElement(
       "button",
       {
         type: "button",
@@ -292,7 +294,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
         title: "View all 8 Contract Terms & Rate Card"
       },
       "View Terms"
-    ), /* @__PURE__ */ e.jsx(
+    ), /* @__PURE__ */ c2.createElement(
       "button",
       {
         type: "button",
@@ -301,7 +303,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
         title: "WhatsApp Client"
       },
       "\u{1F4AC}"
-    ), /* @__PURE__ */ e.jsx(
+    ), /* @__PURE__ */ c2.createElement(
       "button",
       {
         type: "button",
@@ -313,7 +315,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
         title: "Edit Contract Agreement"
       },
       "\u270F\uFE0F"
-    ), /* @__PURE__ */ e.jsx(
+    ), /* @__PURE__ */ c2.createElement(
       "button",
       {
         type: "button",
@@ -323,7 +325,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       },
       "\u{1F5D1}\uFE0F"
     ))));
-  }))))), selectedContract && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "bg-card border border-border/80 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-start border-b border-border/60 pb-4" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "font-mono text-xs font-black px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30" }, selectedContract.contract_number), selectedContract.days_remaining !== null && selectedContract.days_remaining <= 30 && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse" }, "Alert: Expires in ", selectedContract.days_remaining, " days")), /* @__PURE__ */ e.jsx("h3", { className: "text-xl font-black text-foreground mt-1" }, selectedContract.client_name), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground mt-0.5" }, "\u{1F464} ", selectedContract.client_contact || "N/A", " \u2022 \u2709\uFE0F ", selectedContract.client_email || "N/A")), /* @__PURE__ */ e.jsx(
+  }))))), selectedContract && /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-card border border-border/80 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-5 my-auto max-h-[90vh] overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-start border-b border-border/60 pb-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-xs font-black px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30" }, selectedContract.contract_number), selectedContract.days_remaining !== null && selectedContract.days_remaining <= 30 && /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded-full text-xs font-black bg-rose-500 text-white animate-pulse" }, "Alert: Expires in ", selectedContract.days_remaining, " days")), /* @__PURE__ */ c.createElement("h3", { className: "text-xl font-black text-foreground mt-1" }, selectedContract.client_name), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-muted-foreground mt-0.5" }, "\u{1F464} ", selectedContract.client_contact || "N/A", " \u2022 \u2709\uFE0F ", selectedContract.client_email || "N/A")), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -331,16 +333,16 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       className: "w-8 h-8 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-sm font-bold flex items-center justify-center transition-colors"
     },
     "\u2715"
-  )), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4C5} Contract Start / End"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold text-sm" }, selectedContract.contract_start, " \u2192 ", selectedContract.contract_end), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, selectedContract.days_remaining !== null ? selectedContract.days_remaining >= 0 ? selectedContract.days_remaining + " days remaining before expiration" : "Expired" : "Active open-ended")), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4E6} Minimum Guarantee (MG)"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold" }, selectedContract.minimum_guarantee || "None"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, "Contractual volume & shortfall compensation terms")), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4B3} Payment Terms & POD Rules"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold" }, selectedContract.payment_terms || "Net 30 Days"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, "Billing cycle and mandatory documentation requirement")), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u23F1\uFE0F Detention Terms"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold" }, selectedContract.detention_terms || "Free 12h, \u20B92,000/day thereafter"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, "Free loading/unloading window & demurrage charges")), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u26A0\uFE0F Penalties & Placement SLA"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold" }, selectedContract.penalties || "Standard delay SLA"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, "Indent confirmation delay or driver violation deductions")), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u26FD Escalation Clause (Fuel Index)"), /* @__PURE__ */ e.jsx("div", { className: "text-foreground font-semibold" }, selectedContract.escalation_clause || "Quarterly diesel revision formula"), /* @__PURE__ */ e.jsx("div", { className: "text-muted-foreground text-[11px]" }, "Protects margins when diesel market price fluctuates"))), /* @__PURE__ */ e.jsx("div", { className: "space-y-2 border-t border-border/60 pt-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-sm text-foreground flex items-center gap-1.5" }, "\u{1F6E3}\uFE0F Agreed Corridor Rate Cards (", Array.isArray(selectedContract.rate_cards) ? selectedContract.rate_cards.length : 0, ")"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-muted-foreground font-mono" }, "Dispute-Free Fixed Rates")), /* @__PURE__ */ e.jsx("div", { className: "border border-border/60 rounded-xl overflow-hidden" }, /* @__PURE__ */ e.jsx("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ e.jsx("thead", { className: "bg-muted/40 text-muted-foreground font-bold" }, /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("th", { className: "py-2.5 px-3" }, "Route Corridor"), /* @__PURE__ */ e.jsx("th", { className: "py-2.5 px-3" }, "Vehicle Requirement"), /* @__PURE__ */ e.jsx("th", { className: "py-2.5 px-3 text-right" }, "Agreed Rate"), /* @__PURE__ */ e.jsx("th", { className: "py-2.5 px-3 text-right" }, "Transit SLA"))), /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-border/40 font-medium" }, Array.isArray(selectedContract.rate_cards) && selectedContract.rate_cards.length > 0 ? selectedContract.rate_cards.map((rc, idx) => /* @__PURE__ */ e.jsx("tr", { key: idx, className: "hover:bg-muted/20" }, /* @__PURE__ */ e.jsx("td", { className: "py-2.5 px-3 font-semibold text-foreground" }, rc.origin, " \u2192 ", rc.destination), /* @__PURE__ */ e.jsx("td", { className: "py-2.5 px-3 text-muted-foreground" }, rc.vehicle_type), /* @__PURE__ */ e.jsx("td", { className: "py-2.5 px-3 text-right font-black text-emerald-400" }, "\u20B9", Number(rc.rate || 0).toLocaleString("en-IN")), /* @__PURE__ */ e.jsx("td", { className: "py-2.5 px-3 text-right text-muted-foreground" }, rc.transit_hours ? rc.transit_hours + " hrs" : "Standard"))) : /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("td", { colSpan: 4, className: "py-4 text-center text-muted-foreground" }, "No custom corridor rate cards registered for this agreement.")))))), /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center border-t border-border/60 pt-4" }, /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4C5} Contract Start / End"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold text-sm" }, selectedContract.contract_start, " \u2192 ", selectedContract.contract_end), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, selectedContract.days_remaining !== null ? selectedContract.days_remaining >= 0 ? selectedContract.days_remaining + " days remaining before expiration" : "Expired" : "Active open-ended")), /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4E6} Minimum Guarantee (MG)"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold" }, selectedContract.minimum_guarantee || "None"), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, "Contractual volume & shortfall compensation terms")), /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u{1F4B3} Payment Terms & POD Rules"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold" }, selectedContract.payment_terms || "Net 30 Days"), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, "Billing cycle and mandatory documentation requirement")), /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u23F1\uFE0F Detention Terms"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold" }, selectedContract.detention_terms || "Free 12h, \u20B92,000/day thereafter"), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, "Free loading/unloading window & demurrage charges")), /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u26A0\uFE0F Penalties & Placement SLA"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold" }, selectedContract.penalties || "Standard delay SLA"), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, "Indent confirmation delay or driver violation deductions")), /* @__PURE__ */ c.createElement("div", { className: "p-3.5 rounded-xl bg-muted/20 border border-border/40 space-y-1" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider text-[11px]" }, "\u26FD Escalation Clause (Fuel Index)"), /* @__PURE__ */ c.createElement("div", { className: "text-foreground font-semibold" }, selectedContract.escalation_clause || "Quarterly diesel revision formula"), /* @__PURE__ */ c.createElement("div", { className: "text-muted-foreground text-[11px]" }, "Protects margins when diesel market price fluctuates"))), /* @__PURE__ */ c.createElement("div", { className: "space-y-2 border-t border-border/60 pt-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-sm text-foreground flex items-center gap-1.5" }, "\u{1F6E3}\uFE0F Agreed Corridor Rate Cards (", Array.isArray(selectedContract.rate_cards) ? selectedContract.rate_cards.length : 0, ")"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] text-muted-foreground font-mono" }, "Dispute-Free Fixed Rates")), /* @__PURE__ */ c.createElement("div", { className: "border border-border/60 rounded-xl overflow-hidden" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-muted/40 text-muted-foreground font-bold" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-2.5 px-3" }, "Route Corridor"), /* @__PURE__ */ c.createElement("th", { className: "py-2.5 px-3" }, "Vehicle Requirement"), /* @__PURE__ */ c.createElement("th", { className: "py-2.5 px-3 text-right" }, "Agreed Rate"), /* @__PURE__ */ c.createElement("th", { className: "py-2.5 px-3 text-right" }, "Transit SLA"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-border/40 font-medium" }, Array.isArray(selectedContract.rate_cards) && selectedContract.rate_cards.length > 0 ? selectedContract.rate_cards.map((rc, idx) => /* @__PURE__ */ c.createElement("tr", { key: idx, className: "hover:bg-muted/20" }, /* @__PURE__ */ c.createElement("td", { className: "py-2.5 px-3 font-semibold text-foreground" }, rc.origin, " \u2192 ", rc.destination), /* @__PURE__ */ c.createElement("td", { className: "py-2.5 px-3 text-muted-foreground" }, rc.vehicle_type), /* @__PURE__ */ c.createElement("td", { className: "py-2.5 px-3 text-right font-black text-emerald-400" }, "\u20B9", Number(rc.rate || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("td", { className: "py-2.5 px-3 text-right text-muted-foreground" }, rc.transit_hours ? rc.transit_hours + " hrs" : "Standard"))) : /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("td", { colSpan: 4, className: "py-4 text-center text-muted-foreground" }, "No custom corridor rate cards registered for this agreement.")))))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-t border-border/60 pt-4" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
       onClick: () => handleWhatsAppClient(selectedContract),
       className: "px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors shadow-sm"
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F4AC}"),
     " WhatsApp Client Agreement Summary"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -348,7 +350,7 @@ Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{
       className: "px-4 py-2 text-xs font-bold rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
     },
     "Close"
-  )))), isFormOpen && /* @__PURE__ */ e.jsx(
+  )))), isFormOpen && /* @__PURE__ */ c.createElement(
     ContractEditModal,
     {
       contract: editingContract,
@@ -397,15 +399,15 @@ function ContractEditModal({ contract, onClose, onSave }) {
       rate_cards: formData.rate_cards.filter((_, i) => i !== idx)
     });
   };
-  const handleSubmit = (e2) => {
-    e2.preventDefault();
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!formData.client_name.trim()) {
       alert("Client Legal Name is required");
       return;
     }
     onSave(formData);
   };
-  return /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "bg-card border border-border/80 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] overflow-y-auto" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center border-b border-border/60 pb-3" }, /* @__PURE__ */ e.jsx("h3", { className: "text-lg font-black text-foreground" }, isEdit ? "Edit B2B Agreement: " + contract.contract_number : "Create New B2B Contract Agreement"), /* @__PURE__ */ e.jsx(
+  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-card border border-border/80 rounded-2xl max-w-3xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-border/60 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-lg font-black text-foreground" }, isEdit ? "Edit B2B Agreement: " + contract.contract_number : "Create New B2B Contract Agreement"), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -413,106 +415,106 @@ function ContractEditModal({ contract, onClose, onSave }) {
       className: "w-7 h-7 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-bold"
     },
     "\u2715"
-  )), /* @__PURE__ */ e.jsx("form", { onSubmit: handleSubmit, className: "space-y-4 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Legal Name *"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("form", { onSubmit: handleSubmit, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Legal Name *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       required: true,
       placeholder: "e.g. Amazon Transportation Services Pvt Ltd",
       value: formData.client_name,
-      onChange: (e2) => setFormData({ ...formData, client_name: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, client_name: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Agreement / Contract #"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Agreement / Contract #"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. AGR-2025-AMZ-01 (Auto-generated if empty)",
       value: formData.contract_number,
-      onChange: (e2) => setFormData({ ...formData, contract_number: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, contract_number: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Contact Person & Phone"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Contact Person & Phone"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. Suresh Nair (+91 98201 54321)",
       value: formData.client_contact,
-      onChange: (e2) => setFormData({ ...formData, client_contact: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, client_contact: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Billing Email"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Client Billing Email"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "email",
       placeholder: "e.g. logistics@client.com",
       value: formData.client_email,
-      onChange: (e2) => setFormData({ ...formData, client_email: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, client_email: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Contract Start Date"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Contract Start Date"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "date",
       value: formData.contract_start,
-      onChange: (e2) => setFormData({ ...formData, contract_start: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, contract_start: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Contract End Date *"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Contract End Date *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "date",
       required: true,
       value: formData.contract_end,
-      onChange: (e2) => setFormData({ ...formData, contract_end: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, contract_end: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Minimum Guarantee (MG)"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Minimum Guarantee (MG)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. 25 trips / month (Shortfall \u20B912,000/truck)",
       value: formData.minimum_guarantee,
-      onChange: (e2) => setFormData({ ...formData, minimum_guarantee: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, minimum_guarantee: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Payment Terms"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Payment Terms"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. Net 30 Days from submission of POD",
       value: formData.payment_terms,
-      onChange: (e2) => setFormData({ ...formData, payment_terms: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, payment_terms: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Detention Terms"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Detention Terms"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. Free 12 hours; \u20B92,000/day thereafter",
       value: formData.detention_terms,
-      onChange: (e2) => setFormData({ ...formData, detention_terms: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, detention_terms: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Penalties & SLAs"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Penalties & SLAs"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. Placement delay >4h: \u20B91,000; Transit delay: \u20B9500/day",
       value: formData.penalties,
-      onChange: (e2) => setFormData({ ...formData, penalties: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, penalties: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2" }, /* @__PURE__ */ e.jsx("label", { className: "block font-bold text-muted-foreground mb-1" }, "Diesel Escalation Clause"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", { className: "sm:col-span-2" }, /* @__PURE__ */ c.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Diesel Escalation Clause"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "e.g. Diesel baseline \u20B992.50/L; \u20B90.35/km revision per \u20B91.50/L variation",
       value: formData.escalation_clause,
-      onChange: (e2) => setFormData({ ...formData, escalation_clause: e2.target.value }),
+      onChange: (e) => setFormData({ ...formData, escalation_clause: e.target.value }),
       className: "w-full h-8 px-3 rounded-lg bg-background border border-border text-foreground text-xs"
     }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "border-t border-border/60 pt-3 space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-xs text-foreground" }, "Corridor Rate Cards"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("div", { className: "border-t border-border/60 pt-3 space-y-2" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-xs text-foreground" }, "Corridor Rate Cards"), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -520,43 +522,43 @@ function ContractEditModal({ contract, onClose, onSave }) {
       className: "px-2.5 py-1 text-[11px] font-bold rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30"
     },
     "+ Add Corridor"
-  )), formData.rate_cards.map((rc, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "grid grid-cols-12 gap-2 items-center bg-muted/20 p-2 rounded-lg border border-border/40" }, /* @__PURE__ */ e.jsx(
+  )), formData.rate_cards.map((rc, idx) => /* @__PURE__ */ c.createElement("div", { key: idx, className: "grid grid-cols-12 gap-2 items-center bg-muted/20 p-2 rounded-lg border border-border/40" }, /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "Origin (e.g. Hyderabad)",
       value: rc.origin,
-      onChange: (e2) => handleRateCardChange(idx, "origin", e2.target.value),
+      onChange: (e) => handleRateCardChange(idx, "origin", e.target.value),
       className: "col-span-3 h-7 px-2 text-xs rounded bg-background border border-border text-foreground"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "Destination (e.g. Bangalore)",
       value: rc.destination,
-      onChange: (e2) => handleRateCardChange(idx, "destination", e2.target.value),
+      onChange: (e) => handleRateCardChange(idx, "destination", e.target.value),
       className: "col-span-3 h-7 px-2 text-xs rounded bg-background border border-border text-foreground"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "Vehicle (e.g. 32 FT Multi-Axle)",
       value: rc.vehicle_type,
-      onChange: (e2) => handleRateCardChange(idx, "vehicle_type", e2.target.value),
+      onChange: (e) => handleRateCardChange(idx, "vehicle_type", e.target.value),
       className: "col-span-3 h-7 px-2 text-xs rounded bg-background border border-border text-foreground"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       placeholder: "Rate \u20B9",
       value: rc.rate,
-      onChange: (e2) => handleRateCardChange(idx, "rate", Number(e2.target.value)),
+      onChange: (e) => handleRateCardChange(idx, "rate", Number(e.target.value)),
       className: "col-span-2 h-7 px-2 text-xs rounded bg-background border border-border text-emerald-400 font-bold"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -564,7 +566,7 @@ function ContractEditModal({ contract, onClose, onSave }) {
       className: "col-span-1 h-7 text-rose-400 hover:text-rose-300 font-bold"
     },
     "\u2715"
-  )))), /* @__PURE__ */ e.jsx("div", { className: "flex justify-end gap-2 border-t border-border/60 pt-3" }, /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-border/60 pt-3" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -572,7 +574,7 @@ function ContractEditModal({ contract, onClose, onSave }) {
       className: "px-4 py-2 rounded-lg bg-muted text-foreground font-semibold"
     },
     "Cancel"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "submit",
@@ -582,7 +584,8 @@ function ContractEditModal({ contract, onClose, onSave }) {
   )))));
 }
 
-const { useState, useEffect, useMemo } = c;
+
+// --- DISTANCE & RATE SLABS MANAGER TAB ---
 const DEFAULT_SLABS_DATA = {
   pricing_mode: "progressive",
   // "progressive" or "flat_min"
@@ -794,11 +797,12 @@ function calculateQuotePrice(vehicle, distance, mode = "progressive") {
   };
 }
 function RateSlabsManagerTab() {
+  const { useState, useEffect, useMemo } = c;
   const [ratesData, setRatesData] = useState(() => {
     try {
       const saved = localStorage.getItem("jbc_quotation_rate_slabs");
       if (saved) return JSON.parse(saved);
-    } catch (e2) {
+    } catch (e) {
     }
     return DEFAULT_SLABS_DATA;
   });
@@ -826,10 +830,10 @@ function RateSlabsManagerTab() {
                 break;
               }
             }
-          } catch (e2) {
+          } catch (e) {
           }
         }
-      } catch (e2) {
+      } catch (e) {
       }
     }
     loadRemote();
@@ -860,7 +864,7 @@ function RateSlabsManagerTab() {
         const bc = new BroadcastChannel("jbc_rate_slabs_channel");
         bc.postMessage({ type: "RATES_UPDATED", rates: payload });
         setTimeout(() => bc.close(), 1e3);
-      } catch (e2) {
+      } catch (e) {
       }
       window.dispatchEvent(new CustomEvent("jbc_rate_slabs_updated", { detail: payload }));
       const endpoints = ["/api/quotation/rates", "/hcgi/api/quotation/rates"];
@@ -876,7 +880,7 @@ function RateSlabsManagerTab() {
             apiSuccess = true;
             break;
           }
-        } catch (e2) {
+        } catch (e) {
         }
       }
       setSaveStatus({
@@ -903,24 +907,24 @@ function RateSlabsManagerTab() {
       (v) => (v.name || "").toLowerCase().includes(q) || (v.short || "").toLowerCase().includes(q) || (v.capacity || "").toLowerCase().includes(q)
     );
   }, [ratesData.vehicles, searchFilter]);
-  return /* @__PURE__ */ e.jsx("div", { className: "space-y-6 animate-in fade-in duration-300" }, /* @__PURE__ */ e.jsx("div", { className: "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-xl" }, "\u2699\uFE0F"), /* @__PURE__ */ e.jsx("h2", { className: "text-lg sm:text-xl font-black text-white tracking-tight" }, "Quotation Distance & Rate Slabs"), /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), "Connected to Welcome Page")), /* @__PURE__ */ e.jsx("p", { className: "text-xs sm:text-sm text-slate-300 max-w-2xl" }, "Configure base minimum pricing for trips below 100 km (e.g. \u20B910k for 32 FT), and tiered per-KM rates for 100-200 km, 200-300 km, 300-400 km, and 400+ km across all vehicle categories.")), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ e.jsx(
+  return /* @__PURE__ */ c.createElement("div", { className: "space-y-6 animate-in fade-in duration-300" }, /* @__PURE__ */ c.createElement("div", { className: "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-xl" }, "\u2699\uFE0F"), /* @__PURE__ */ c.createElement("h2", { className: "text-lg sm:text-xl font-black text-white tracking-tight" }, "Quotation Distance & Rate Slabs"), /* @__PURE__ */ c.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" }, /* @__PURE__ */ c.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), "Connected to Welcome Page")), /* @__PURE__ */ c.createElement("p", { className: "text-xs sm:text-sm text-slate-300 max-w-2xl" }, "Configure base minimum pricing for trips below 100 km (e.g. \u20B910k for 32 FT), and tiered per-KM rates for 100-200 km, 200-300 km, 300-400 km, and 400+ km across all vehicle categories.")), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       onClick: () => setIsAddModalOpen(true),
       className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/60 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u2795"),
+    /* @__PURE__ */ c.createElement("span", null, "\u2795"),
     " Add Vehicle Category"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       onClick: handleSaveAll,
       disabled: saving,
       className: `px-5 py-2 rounded-xl text-xs font-black text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer ${saving ? "bg-emerald-800 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 active:scale-95"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, saving ? "\u23F3" : "\u{1F4BE}"),
-    /* @__PURE__ */ e.jsx("span", null, saving ? "Saving & Syncing..." : "Save & Sync Live")
-  ))), saveStatus && /* @__PURE__ */ e.jsx("div", { className: `mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${saveStatus.type === "success" ? "bg-emerald-950/80 text-emerald-200 border-emerald-500/40" : "bg-rose-950/80 text-rose-200 border-rose-500/40"}` }, /* @__PURE__ */ e.jsx("span", null, saveStatus.type === "success" ? "\u2705" : "\u274C"), /* @__PURE__ */ e.jsx("span", null, saveStatus.msg)), /* @__PURE__ */ e.jsx("div", { className: "mt-5 pt-4 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 text-slate-300 font-semibold" }, /* @__PURE__ */ e.jsx("span", null, "Pricing Calculation Mode:")), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ c.createElement("span", null, saving ? "\u23F3" : "\u{1F4BE}"),
+    /* @__PURE__ */ c.createElement("span", null, saving ? "Saving & Syncing..." : "Save & Sync Live")
+  ))), saveStatus && /* @__PURE__ */ c.createElement("div", { className: `mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${saveStatus.type === "success" ? "bg-emerald-950/80 text-emerald-200 border-emerald-500/40" : "bg-rose-950/80 text-rose-200 border-rose-500/40"}` }, /* @__PURE__ */ c.createElement("span", null, saveStatus.type === "success" ? "\u2705" : "\u274C"), /* @__PURE__ */ c.createElement("span", null, saveStatus.msg)), /* @__PURE__ */ c.createElement("div", { className: "mt-5 pt-4 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 text-slate-300 font-semibold" }, /* @__PURE__ */ c.createElement("span", null, "Pricing Calculation Mode:")), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -928,7 +932,7 @@ function RateSlabsManagerTab() {
       className: `px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${ratesData.pricing_mode === "progressive" ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/20" : "bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-800"}`
     },
     "\u2B50 Progressive Slabs (0-100km Base + Per-KM Extra)"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -936,26 +940,26 @@ function RateSlabsManagerTab() {
       className: `px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${ratesData.pricing_mode === "flat_min" ? "bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-sm shadow-blue-500/20" : "bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-800"}`
     },
     "Distance \xD7 Slab Rate (Min Base Guarantee)"
-  )))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ e.jsx("span", { className: "text-base" }, "\u{1F9EA}"), /* @__PURE__ */ e.jsx("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Live Calculation Preview & Simulator"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400" }, "(Test how welcome page customers will see prices)")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 sm:p-4" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Select Vehicle"), /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ c.createElement("span", { className: "text-base" }, "\u{1F9EA}"), /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Live Calculation Preview & Simulator"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] text-slate-400" }, "(Test how welcome page customers will see prices)")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 sm:p-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Select Vehicle"), /* @__PURE__ */ c.createElement(
     "select",
     {
       value: selectedVehicleId,
-      onChange: (e2) => setSelectedVehicleId(e2.target.value),
+      onChange: (e) => setSelectedVehicleId(e.target.value),
       className: "w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500"
     },
-    ratesData.vehicles.map((v) => /* @__PURE__ */ e.jsx("option", { key: v.id, value: v.id }, v.short || v.name, " (", v.capacity, ")"))
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Enter Distance (KMs)"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(
+    ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("option", { key: v.id, value: v.id }, v.short || v.name, " (", v.capacity, ")"))
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Enter Distance (KMs)"), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "1",
       max: "5000",
       value: testDistance,
-      onChange: (e2) => setTestDistance(e2.target.value),
+      onChange: (e) => setTestDistance(e.target.value),
       className: "w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500",
       placeholder: "e.g. 85"
     }
-  ), /* @__PURE__ */ e.jsx("div", { className: "flex gap-1" }, [65, 140, 260, 480].map((km) => /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement("div", { className: "flex gap-1" }, [65, 140, 260, 480].map((km) => /* @__PURE__ */ c.createElement(
     "button",
     {
       key: km,
@@ -965,66 +969,66 @@ function RateSlabsManagerTab() {
     },
     km,
     "k"
-  ))))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-center" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-bold text-slate-400" }, "Total Calculated Price:"), /* @__PURE__ */ e.jsx("span", { className: "text-lg sm:text-xl font-black text-emerald-400" }, "\u20B9", testCalcResult.total.toLocaleString("en-IN"))), /* @__PURE__ */ e.jsx("div", { className: "mt-1 flex items-center justify-between text-[11px]" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400" }, "Active Slab:"), /* @__PURE__ */ e.jsx("span", { className: "font-bold text-amber-300" }, testCalcResult.appliedSlab)), /* @__PURE__ */ e.jsx("p", { className: "mt-1 text-[10px] text-slate-400 truncate", title: testCalcResult.breakdown }, testCalcResult.breakdown)))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-base" }, "\u{1F4CB}"), /* @__PURE__ */ e.jsx("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Vehicle Rate Slabs (", filteredVehicles.length, " Categories)")), /* @__PURE__ */ e.jsx("div", { className: "w-full sm:w-64" }, /* @__PURE__ */ e.jsx(
+  ))))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ c.createElement("span", { className: "text-[11px] font-bold text-slate-400" }, "Total Calculated Price:"), /* @__PURE__ */ c.createElement("span", { className: "text-lg sm:text-xl font-black text-emerald-400" }, "\u20B9", testCalcResult.total.toLocaleString("en-IN"))), /* @__PURE__ */ c.createElement("div", { className: "mt-1 flex items-center justify-between text-[11px]" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400" }, "Active Slab:"), /* @__PURE__ */ c.createElement("span", { className: "font-bold text-amber-300" }, testCalcResult.appliedSlab)), /* @__PURE__ */ c.createElement("p", { className: "mt-1 text-[10px] text-slate-400 truncate", title: testCalcResult.breakdown }, testCalcResult.breakdown)))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "text-base" }, "\u{1F4CB}"), /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Vehicle Rate Slabs (", filteredVehicles.length, " Categories)")), /* @__PURE__ */ c.createElement("div", { className: "w-full sm:w-64" }, /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       placeholder: "Search vehicle...",
       value: searchFilter,
-      onChange: (e2) => setSearchFilter(e2.target.value),
+      onChange: (e) => setSearchFilter(e.target.value),
       className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
     }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto" }, /* @__PURE__ */ e.jsx("table", { className: "w-full text-left text-xs text-slate-300" }, /* @__PURE__ */ e.jsx("thead", { className: "bg-slate-950/80 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800 font-bold" }, /* @__PURE__ */ e.jsx("tr", null, /* @__PURE__ */ e.jsx("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3 text-center bg-amber-950/20 text-amber-300 border-x border-slate-800" }, "0 - 100 KM", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-normal text-amber-400/80" }, "(Base Rate \u20B9)")), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ e.jsx("br", null), /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ e.jsx("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-medium" }, filteredVehicles.map((v) => /* @__PURE__ */ e.jsx("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors group" }, /* @__PURE__ */ e.jsx("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs leading-tight" }, v.name), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-slate-400 mt-0.5 flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "font-semibold text-amber-400/90" }, v.short || v.value), /* @__PURE__ */ e.jsx("span", null, "\u2022"), /* @__PURE__ */ e.jsx("span", null, "Capacity: ", v.capacity || `${v.maxMT} MT`))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-3 text-center bg-amber-950/10 border-x border-slate-800/60" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-left text-xs text-slate-300" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800 font-bold" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-950/20 text-amber-300 border-x border-slate-800" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/80" }, "(Base Rate \u20B9)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60 font-medium" }, filteredVehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors group" }, /* @__PURE__ */ c.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs leading-tight" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 mt-0.5 flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "font-semibold text-amber-400/90" }, v.short || v.value), /* @__PURE__ */ c.createElement("span", null, "\u2022"), /* @__PURE__ */ c.createElement("span", null, "Capacity: ", v.capacity || `${v.maxMT} MT`))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-950/10 border-x border-slate-800/60" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "0",
       step: "500",
       value: v.base_rate_under_100,
-      onChange: (e2) => handleUpdateVehicleField(v.id, "base_rate_under_100", e2.target.value),
+      onChange: (e) => handleUpdateVehicleField(v.id, "base_rate_under_100", e.target.value),
       className: "w-20 bg-slate-950 border border-amber-500/40 focus:border-amber-400 rounded-lg px-2 py-1 text-center font-bold text-amber-300 text-xs outline-none shadow-inner"
     }
-  ))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "0",
       step: "1",
       value: v.rate_100_200,
-      onChange: (e2) => handleUpdateVehicleField(v.id, "rate_100_200", e2.target.value),
+      onChange: (e) => handleUpdateVehicleField(v.id, "rate_100_200", e.target.value),
       className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
     }
-  ))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "0",
       step: "1",
       value: v.rate_200_300,
-      onChange: (e2) => handleUpdateVehicleField(v.id, "rate_200_300", e2.target.value),
+      onChange: (e) => handleUpdateVehicleField(v.id, "rate_200_300", e.target.value),
       className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
     }
-  ))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "0",
       step: "1",
       value: v.rate_300_400,
-      onChange: (e2) => handleUpdateVehicleField(v.id, "rate_300_400", e2.target.value),
+      onChange: (e) => handleUpdateVehicleField(v.id, "rate_300_400", e.target.value),
       className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
     }
-  ))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       min: "0",
       step: "1",
       value: v.rate_above_400,
-      onChange: (e2) => handleUpdateVehicleField(v.id, "rate_above_400", e2.target.value),
+      onChange: (e) => handleUpdateVehicleField(v.id, "rate_above_400", e.target.value),
       className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
     }
-  ))), /* @__PURE__ */ e.jsx("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1036,7 +1040,7 @@ function RateSlabsManagerTab() {
       className: "px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold border border-slate-700 cursor-pointer"
     },
     "\u26A1 Test"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1045,7 +1049,7 @@ function RateSlabsManagerTab() {
       className: "px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30 cursor-pointer"
     },
     "\u270F\uFE0F Edit"
-  )))))))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-slate-950/60 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", null, "\u{1F4A1} "), /* @__PURE__ */ e.jsx("strong", { className: "text-slate-300" }, "Quick Tip:"), " Edits to rates in the table are applied when you click", /* @__PURE__ */ e.jsx("span", { className: "text-emerald-400 font-bold" }, ' "Save & Sync Live"'), " at the top."), /* @__PURE__ */ e.jsx(
+  )))))))), /* @__PURE__ */ c.createElement("div", { className: "p-4 bg-slate-950/60 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("span", null, "\u{1F4A1} "), /* @__PURE__ */ c.createElement("strong", { className: "text-slate-300" }, "Quick Tip:"), " Edits to rates in the table are applied when you click", /* @__PURE__ */ c.createElement("span", { className: "text-emerald-400 font-bold" }, ' "Save & Sync Live"'), " at the top."), /* @__PURE__ */ c.createElement(
     "button",
     {
       onClick: handleSaveAll,
@@ -1053,78 +1057,78 @@ function RateSlabsManagerTab() {
       className: "px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all self-end cursor-pointer"
     },
     saving ? "\u23F3 Saving..." : "\u{1F4BE} Save All Changes"
-  ))), editingVehicle && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ e.jsx("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", null, "\u270F\uFE0F"), " Edit Vehicle: ", editingVehicle.short || editingVehicle.name), /* @__PURE__ */ e.jsx(
+  ))), editingVehicle && /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ c.createElement("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u270F\uFE0F"), " Edit Vehicle: ", editingVehicle.short || editingVehicle.name), /* @__PURE__ */ c.createElement(
     "button",
     {
       onClick: () => setEditingVehicle(null),
       className: "text-slate-400 hover:text-white p-1 rounded-lg"
     },
     "\u2715"
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-3 text-xs" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Full Name"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", { className: "space-y-3 text-xs" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Full Name"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       value: editingVehicle.name,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, name: e2.target.value }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, name: e.target.value }),
       className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Label"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Label"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       value: editingVehicle.short,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, short: e2.target.value }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, short: e.target.value }),
       className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Capacity (Tonnage)"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Capacity (Tonnage)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
       value: editingVehicle.capacity,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, capacity: e2.target.value }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, capacity: e.target.value }),
       className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
     }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-1" }, "Distance Slab Pricing (\u20B9)"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM (Base Rate)"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-1" }, "Distance Slab Pricing (\u20B9)"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM (Base Rate)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       value: editingVehicle.base_rate_under_100,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, base_rate_under_100: Number(e2.target.value) || 0 }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, base_rate_under_100: Number(e.target.value) || 0 }),
       className: "w-full bg-slate-900 border border-amber-500/50 rounded-lg px-2.5 py-1.5 text-amber-300 font-bold text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       value: editingVehicle.rate_100_200,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, rate_100_200: Number(e2.target.value) || 0 }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_100_200: Number(e.target.value) || 0 }),
       className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       value: editingVehicle.rate_200_300,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, rate_200_300: Number(e2.target.value) || 0 }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_200_300: Number(e.target.value) || 0 }),
       className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       value: editingVehicle.rate_300_400,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, rate_300_400: Number(e2.target.value) || 0 }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_300_400: Number(e.target.value) || 0 }),
       className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
     }
-  ))), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       value: editingVehicle.rate_above_400,
-      onChange: (e2) => setEditingVehicle({ ...editingVehicle, rate_above_400: Number(e2.target.value) || 0 }),
+      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_above_400: Number(e.target.value) || 0 }),
       className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
     }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1132,7 +1136,7 @@ function RateSlabsManagerTab() {
       className: "px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
     },
     "Cancel"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1146,19 +1150,19 @@ function RateSlabsManagerTab() {
       className: "px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md cursor-pointer"
     },
     "Apply Changes"
-  )))), isAddModalOpen && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ e.jsx("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ e.jsx(
+  )))), isAddModalOpen && /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ c.createElement("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ c.createElement(
     "button",
     {
       onClick: () => setIsAddModalOpen(false),
       className: "text-slate-400 hover:text-white p-1 rounded-lg"
     },
     "\u2715"
-  )), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ c.createElement(
     "form",
     {
-      onSubmit: (e2) => {
-        e2.preventDefault();
-        const formData = new FormData(e2.target);
+      onSubmit: (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
         const name = formData.get("name");
         const short = formData.get("short") || name;
         const capacity = formData.get("capacity") || "Custom";
@@ -1184,7 +1188,7 @@ function RateSlabsManagerTab() {
       },
       className: "space-y-3 text-xs"
     },
-    /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Vehicle Name *"), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Vehicle Name *"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "name",
@@ -1193,14 +1197,14 @@ function RateSlabsManagerTab() {
         className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
       }
     )),
-    /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Display Label"), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Display Label"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "short",
         placeholder: "e.g. 40 FT Trailer",
         className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
       }
-    )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Payload Capacity (MT)"), /* @__PURE__ */ e.jsx(
+    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Payload Capacity (MT)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "capacity",
@@ -1208,7 +1212,7 @@ function RateSlabsManagerTab() {
         className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
       }
     ))),
-    /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-emerald-400 text-[11px] uppercase tracking-wider mb-1" }, "Default Slabs for this Vehicle"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM Base (\u20B9)"), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ c.createElement("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-emerald-400 text-[11px] uppercase tracking-wider mb-1" }, "Default Slabs for this Vehicle"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM Base (\u20B9)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "base_rate_under_100",
@@ -1216,7 +1220,7 @@ function RateSlabsManagerTab() {
         defaultValue: 1e4,
         className: "w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-emerald-300 font-bold text-xs"
       }
-    )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "rate_100_200",
@@ -1224,7 +1228,7 @@ function RateSlabsManagerTab() {
         defaultValue: 60,
         className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
       }
-    )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "rate_200_300",
@@ -1232,7 +1236,7 @@ function RateSlabsManagerTab() {
         defaultValue: 54,
         className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
       }
-    )), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "rate_300_400",
@@ -1240,7 +1244,7 @@ function RateSlabsManagerTab() {
         defaultValue: 50,
         className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
       }
-    ))), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ e.jsx(
+    ))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
       "input",
       {
         name: "rate_above_400",
@@ -1249,7 +1253,7 @@ function RateSlabsManagerTab() {
         className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
       }
     ))),
-    /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ c.createElement(
       "button",
       {
         type: "button",
@@ -1257,7 +1261,7 @@ function RateSlabsManagerTab() {
         className: "px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
       },
       "Cancel"
-    ), /* @__PURE__ */ e.jsx(
+    ), /* @__PURE__ */ c.createElement(
       "button",
       {
         type: "submit",
@@ -1267,5 +1271,6 @@ function RateSlabsManagerTab() {
     ))
   ))));
 }
+
 
 export{Gt as default};
