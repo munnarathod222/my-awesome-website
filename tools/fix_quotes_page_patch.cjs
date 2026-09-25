@@ -33,6 +33,7 @@ quotePageFiles.forEach(file => {
   if (saveIdx !== -1) {
     const closeIdx = content.indexOf('}', saveIdx);
     content = content.slice(0, closeIdx + 1) + '\n\n' + newTabCode + '\nexport{Gt as default};\n';
+    content = content.replace(/c2\.createElement/g, 'c.createElement');
     fs.writeFileSync(file, content, 'utf8');
     console.log('✓ Cleanly replaced RateSlabsManagerTab in', file);
   } else {
