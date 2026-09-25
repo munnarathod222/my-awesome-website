@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-25T08:40:46.099Z",
+  "updated_at": "2026-09-25T09:16:47.556Z",
   "pricing_mode": "slab_whole",
   "slabs_definition": [
     {
@@ -64,44 +64,44 @@
       "short": "Adhoc / Spot",
       "multiplier": 1,
       "discount_percent": 0,
-      "badge": "Instant Market Rate",
+      "badge": "Instant Adhoc Slabs",
       "description": "Single-indent on-demand market rate"
     },
     "contract_1m": {
       "id": "contract_1m",
       "label": "1 Month Contract",
       "short": "1 Month",
-      "multiplier": 0.95,
-      "discount_percent": 5,
-      "badge": "5% Volume Discount",
-      "description": "Monthly commitment (5% volume discount)"
+      "multiplier": 1,
+      "discount_percent": 0,
+      "badge": "Dedicated Contract Slabs",
+      "description": "Monthly dedicated contract slab rates"
     },
     "contract_3m": {
       "id": "contract_3m",
       "label": "3 Months Contract",
       "short": "3 Months",
-      "multiplier": 0.92,
-      "discount_percent": 8,
-      "badge": "8% Quarterly Discount",
-      "description": "Quarterly agreement (8% volume discount)"
+      "multiplier": 0.95,
+      "discount_percent": 5,
+      "badge": "5% Quarterly Volume Discount",
+      "description": "Quarterly agreement (5% volume discount)"
     },
     "contract_6m": {
       "id": "contract_6m",
       "label": "6 Months Contract",
       "short": "6 Months",
-      "multiplier": 0.88,
-      "discount_percent": 12,
-      "badge": "12% Half-Yearly Discount",
-      "description": "Half-yearly contract (12% volume discount)"
+      "multiplier": 0.92,
+      "discount_percent": 8,
+      "badge": "8% Half-Yearly Volume Discount",
+      "description": "Half-yearly agreement (8% volume discount)"
     },
     "contract_1y": {
       "id": "contract_1y",
       "label": "1 Year Contract",
       "short": "1 Year",
-      "multiplier": 0.85,
-      "discount_percent": 15,
-      "badge": "15% Annual Enterprise Discount",
-      "description": "Annual enterprise contract (15% volume discount)"
+      "multiplier": 0.88,
+      "discount_percent": 12,
+      "badge": "12% Annual Enterprise Discount",
+      "description": "Annual enterprise contract (12% volume discount)"
     }
   },
   "weight_payload_rules": {
@@ -135,7 +135,17 @@
       "rate_200_300": 54,
       "rate_300_400": 50,
       "rate_above_400": 48,
-      "description": "Flagship 32ft SXL high-cube container for corporate logistics (6 to 9 Tons)."
+      "description": "Flagship 32ft SXL high-cube container for corporate logistics (6 to 9 Tons).",
+      "adhoc_base_rate_under_100": 10000,
+      "adhoc_rate_100_200": 60,
+      "adhoc_rate_200_300": 54,
+      "adhoc_rate_300_400": 50,
+      "adhoc_rate_above_400": 48,
+      "contract_base_rate_under_100": 8500,
+      "contract_rate_100_200": 52,
+      "contract_rate_200_300": 46,
+      "contract_rate_300_400": 42,
+      "contract_rate_above_400": 40
     },
     {
       "id": "32ft_single_axle",
@@ -148,7 +158,17 @@
       "rate_200_300": 54,
       "rate_300_400": 50,
       "rate_above_400": 48,
-      "description": "Single-axle high volume 32ft freight container (7 to 9 Tons)."
+      "description": "Single-axle high volume 32ft freight container (7 to 9 Tons).",
+      "adhoc_base_rate_under_100": 10000,
+      "adhoc_rate_100_200": 60,
+      "adhoc_rate_200_300": 54,
+      "adhoc_rate_300_400": 50,
+      "adhoc_rate_above_400": 48,
+      "contract_base_rate_under_100": 8500,
+      "contract_rate_100_200": 52,
+      "contract_rate_200_300": 46,
+      "contract_rate_300_400": 42,
+      "contract_rate_above_400": 40
     },
     {
       "id": "32ft_multi_axle",
@@ -161,7 +181,17 @@
       "rate_200_300": 64,
       "rate_300_400": 58,
       "rate_above_400": 56,
-      "description": "Multi-axle heavy container for maximum tonnage transport (14 to 18 Tons)."
+      "description": "Multi-axle heavy container for maximum tonnage transport (14 to 18 Tons).",
+      "adhoc_base_rate_under_100": 12000,
+      "adhoc_rate_100_200": 70,
+      "adhoc_rate_200_300": 64,
+      "adhoc_rate_300_400": 58,
+      "adhoc_rate_above_400": 56,
+      "contract_base_rate_under_100": 10500,
+      "contract_rate_100_200": 60,
+      "contract_rate_200_300": 54,
+      "contract_rate_300_400": 50,
+      "contract_rate_above_400": 48
     },
     {
       "id": "24ftsxl",
@@ -174,7 +204,17 @@
       "rate_200_300": 50,
       "rate_300_400": 48,
       "rate_above_400": 46,
-      "description": "Single-axle 24ft container for heavy industrial loads (7 to 10 Tons)."
+      "description": "Single-axle 24ft container for heavy industrial loads (7 to 10 Tons).",
+      "adhoc_base_rate_under_100": 8500,
+      "adhoc_rate_100_200": 55,
+      "adhoc_rate_200_300": 50,
+      "adhoc_rate_300_400": 48,
+      "adhoc_rate_above_400": 46,
+      "contract_base_rate_under_100": 7200,
+      "contract_rate_100_200": 47,
+      "contract_rate_200_300": 42,
+      "contract_rate_300_400": 40,
+      "contract_rate_above_400": 38
     },
     {
       "id": "22ftsxl",
@@ -187,7 +227,17 @@
       "rate_200_300": 48,
       "rate_300_400": 45,
       "rate_above_400": 44,
-      "description": "Single-axle 22ft container for volumetric goods (7 to 9.5 Tons)."
+      "description": "Single-axle 22ft container for volumetric goods (7 to 9.5 Tons).",
+      "adhoc_base_rate_under_100": 8000,
+      "adhoc_rate_100_200": 52,
+      "adhoc_rate_200_300": 48,
+      "adhoc_rate_300_400": 45,
+      "adhoc_rate_above_400": 44,
+      "contract_base_rate_under_100": 6800,
+      "contract_rate_100_200": 44,
+      "contract_rate_200_300": 40,
+      "contract_rate_300_400": 38,
+      "contract_rate_above_400": 36
     },
     {
       "id": "20ftsxl",
@@ -200,7 +250,17 @@
       "rate_200_300": 46,
       "rate_300_400": 43,
       "rate_above_400": 42,
-      "description": "Single-axle 20ft container for industrial freight (6 to 8.5 Tons)."
+      "description": "Single-axle 20ft container for industrial freight (6 to 8.5 Tons).",
+      "adhoc_base_rate_under_100": 7500,
+      "adhoc_rate_100_200": 50,
+      "adhoc_rate_200_300": 46,
+      "adhoc_rate_300_400": 43,
+      "adhoc_rate_above_400": 42,
+      "contract_base_rate_under_100": 6200,
+      "contract_rate_100_200": 42,
+      "contract_rate_200_300": 38,
+      "contract_rate_300_400": 36,
+      "contract_rate_above_400": 34
     },
     {
       "id": "17ft",
@@ -213,7 +273,17 @@
       "rate_200_300": 40,
       "rate_300_400": 38,
       "rate_above_400": 36,
-      "description": "Commercial cargo vehicle for regional light cargo (4 to 5.5 Tons)."
+      "description": "Commercial cargo vehicle for regional light cargo (4 to 5.5 Tons).",
+      "adhoc_base_rate_under_100": 6000,
+      "adhoc_rate_100_200": 44,
+      "adhoc_rate_200_300": 40,
+      "adhoc_rate_300_400": 38,
+      "adhoc_rate_above_400": 36,
+      "contract_base_rate_under_100": 5000,
+      "contract_rate_100_200": 37,
+      "contract_rate_200_300": 33,
+      "contract_rate_300_400": 31,
+      "contract_rate_above_400": 29
     },
     {
       "id": "14ft",
@@ -226,7 +296,17 @@
       "rate_200_300": 36,
       "rate_300_400": 34,
       "rate_above_400": 32,
-      "description": "Suitable for intra-city and express consignments (3 to 4.5 Tons)."
+      "description": "Suitable for intra-city and express consignments (3 to 4.5 Tons).",
+      "adhoc_base_rate_under_100": 5000,
+      "adhoc_rate_100_200": 40,
+      "adhoc_rate_200_300": 36,
+      "adhoc_rate_300_400": 34,
+      "adhoc_rate_above_400": 32,
+      "contract_base_rate_under_100": 4200,
+      "contract_rate_100_200": 33,
+      "contract_rate_200_300": 30,
+      "contract_rate_300_400": 28,
+      "contract_rate_above_400": 26
     },
     {
       "id": "other",
@@ -239,7 +319,17 @@
       "rate_200_300": 52,
       "rate_300_400": 48,
       "rate_above_400": 46,
-      "description": "Custom vehicle specification or expert vehicle placement assistance."
+      "description": "Custom vehicle specification or expert vehicle placement assistance.",
+      "adhoc_base_rate_under_100": 10000,
+      "adhoc_rate_100_200": 58,
+      "adhoc_rate_200_300": 52,
+      "adhoc_rate_300_400": 48,
+      "adhoc_rate_above_400": 46,
+      "contract_base_rate_under_100": 8500,
+      "contract_rate_100_200": 49,
+      "contract_rate_200_300": 44,
+      "contract_rate_300_400": 40,
+      "contract_rate_above_400": 38
     }
   ]
 }

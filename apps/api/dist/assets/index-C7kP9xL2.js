@@ -322,13 +322,25 @@ k=h.useMemo(()=>{
   const vehList=b_rateSlabs?.vehicles||[];
   const configuredVeh=vehList.find(x=>x.id===t||x.id===P.id||(x.short&&(x.short===P.short||x.name===P.name)));
   
-  const baseRateUnder100=configuredVeh?Number(configuredVeh.base_rate_under_100):(t.includes("32ft")?10000:(P.baseCharge?P.baseCharge+3000:6000));
-  const r100_200=configuredVeh?Number(configuredVeh.rate_100_200):Math.round(P.rateKM*1.25);
-  const r200_300=configuredVeh?Number(configuredVeh.rate_200_300):Math.round(P.rateKM*1.12);
-  const r300_400=configuredVeh?Number(configuredVeh.rate_300_400):Math.round(P.rateKM*1.04);
-  const rAbove400=configuredVeh?Number(configuredVeh.rate_above_400):Math.round(P.rateKM*1.0);
+  const isContractTenure=Boolean(b_contractTenure&&b_contractTenure!=="spot"&&b_contractTenure!=="adhoc");
+  const rateTypeTag=isContractTenure?"Contract":"Adhoc";
 
-  const mode=b_rateSlabs?.pricing_mode||"progressive";
+  let baseRateUnder100,r100_200,r200_300,r300_400,rAbove400;
+  if(isContractTenure){
+    baseRateUnder100=configuredVeh?Number(configuredVeh.contract_base_rate_under_100||Math.round((configuredVeh.base_rate_under_100||10000)*0.85)):(t.includes("32ft")?8500:(P.baseCharge?P.baseCharge+2000:5000));
+    r100_200=configuredVeh?Number(configuredVeh.contract_rate_100_200||Math.round((configuredVeh.rate_100_200||60)*0.88)):Math.round(P.rateKM*1.10);
+    r200_300=configuredVeh?Number(configuredVeh.contract_rate_200_300||Math.round((configuredVeh.rate_200_300||54)*0.88)):Math.round(P.rateKM*0.98);
+    r300_400=configuredVeh?Number(configuredVeh.contract_rate_300_400||Math.round((configuredVeh.rate_300_400||50)*0.88)):Math.round(P.rateKM*0.92);
+    rAbove400=configuredVeh?Number(configuredVeh.contract_rate_above_400||Math.round((configuredVeh.rate_above_400||48)*0.88)):Math.round(P.rateKM*0.88);
+  }else{
+    baseRateUnder100=configuredVeh?Number(configuredVeh.adhoc_base_rate_under_100||configuredVeh.base_rate_under_100||10000):(t.includes("32ft")?10000:(P.baseCharge?P.baseCharge+3000:6000));
+    r100_200=configuredVeh?Number(configuredVeh.adhoc_rate_100_200||configuredVeh.rate_100_200||60):Math.round(P.rateKM*1.25);
+    r200_300=configuredVeh?Number(configuredVeh.adhoc_rate_200_300||configuredVeh.rate_200_300||54):Math.round(P.rateKM*1.12);
+    r300_400=configuredVeh?Number(configuredVeh.adhoc_rate_300_400||configuredVeh.rate_300_400||50):Math.round(P.rateKM*1.04);
+    rAbove400=configuredVeh?Number(configuredVeh.adhoc_rate_above_400||configuredVeh.rate_above_400||48):Math.round(P.rateKM*1.0);
+  }
+
+  const mode=b_rateSlabs?.pricing_mode||"slab_whole";
 
   let distanceCharge=0;
   let appliedSlabLabel="";
@@ -337,7 +349,7 @@ k=h.useMemo(()=>{
 
   if(D<=100){
     distanceCharge=Math.round(baseRateUnder100*E);
-    appliedSlabLabel=`Below 100 km (Flat Base ₹${baseRateUnder100.toLocaleString("en-IN")})`;
+    appliedSlabLabel=`Below 100 km (${rateTypeTag} Flat Base ₹${baseRateUnder100.toLocaleString("en-IN")})`;
     effectiveRateKM=D>0?Math.round(distanceCharge/D):0;
     isUnder100=!0;
   }else{
@@ -348,7 +360,7 @@ k=h.useMemo(()=>{
     else if(D<=400){rate=r300_400;slabTitle="300 - 400 km Slab";}
     const adjRate=Math.round(rate*E);
     distanceCharge=Math.round(D*adjRate);
-    appliedSlabLabel=`${slabTitle} (₹${adjRate}/km applies to whole ${D} KM)`;
+    appliedSlabLabel=`${slabTitle} (${rateTypeTag} ₹${adjRate}/km applies to whole ${D} KM)`;
     effectiveRateKM=adjRate;
     isUnder100=!1;
   }
@@ -587,11 +599,11 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
     e.jsxs("div",{className:"space-y-1.5",children:[
       e.jsx("label",{className:"text-[11px] font-bold uppercase tracking-wider text-slate-400",children:"Engagement Model / Contract Tenure:"}),
       e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-5 gap-2",children:[
-        {id:"spot",name:"Spot / Adhoc",sub:"Standard Rate",icon:"⚡"},
-        {id:"contract_1m",name:"1 Month",sub:"-5% Volume",icon:"📄"},
-        {id:"contract_3m",name:"3 Months",sub:"-8% Quarterly",icon:"📊"},
-        {id:"contract_6m",name:"6 Months",sub:"-12% Semi-Yr",icon:"💼"},
-        {id:"contract_1y",name:"1 Year",sub:"-15% Annual",icon:"🏆"}
+        {id:"spot",name:"Spot / Adhoc",sub:"Adhoc Slab Rates",icon:"⚡"},
+        {id:"contract_1m",name:"1 Month",sub:"Contract Slab Rates",icon:"📄"},
+        {id:"contract_3m",name:"3 Months",sub:"Contract (-5% Vol)",icon:"📊"},
+        {id:"contract_6m",name:"6 Months",sub:"Contract (-8% Vol)",icon:"💼"},
+        {id:"contract_1y",name:"1 Year",sub:"Contract (-12% Vol)",icon:"🏆"}
       ].map(item=>e.jsxs("button",{key:item.id,type:"button",onClick:()=>setContractTenure(item.id),className:`p-2 rounded-xl text-left transition-all ${b_contractTenure===item.id?"bg-slate-800 text-white border border-amber-500/60 shadow-md shadow-amber-500/10":"bg-slate-950/70 border border-slate-800/80 text-slate-400 hover:text-slate-200 hover:border-slate-700"}`,children:[
         e.jsxs("div",{className:"flex items-center justify-between text-xs font-bold text-white",children:[
           e.jsx("span",{children:item.name}),

@@ -234,11 +234,25 @@ export function calculateQuotePrice(vehicle, distance, options = {}) {
     };
   }
 
-  const baseRate = Number(vehicle.base_rate_under_100) || 10000;
-  const r100_200 = Number(vehicle.rate_100_200) || 60;
-  const r200_300 = Number(vehicle.rate_200_300) || 54;
-  const r300_400 = Number(vehicle.rate_300_400) || 50;
-  const rAbove400 = Number(vehicle.rate_above_400) || 48;
+  const isContract = contractTenure && contractTenure !== "spot" && contractTenure !== "adhoc";
+  let baseRate, r100_200, r200_300, r300_400, rAbove400;
+  let rateTypeLabel = "";
+
+  if (isContract) {
+    baseRate = Number(vehicle.contract_base_rate_under_100 || Math.round((vehicle.base_rate_under_100 || 10000) * 0.85));
+    r100_200 = Number(vehicle.contract_rate_100_200 || Math.round((vehicle.rate_100_200 || 60) * 0.88));
+    r200_300 = Number(vehicle.contract_rate_200_300 || Math.round((vehicle.rate_200_300 || 54) * 0.88));
+    r300_400 = Number(vehicle.contract_rate_300_400 || Math.round((vehicle.rate_300_400 || 50) * 0.88));
+    rAbove400 = Number(vehicle.contract_rate_above_400 || Math.round((vehicle.rate_above_400 || 48) * 0.88));
+    rateTypeLabel = "Contract";
+  } else {
+    baseRate = Number(vehicle.adhoc_base_rate_under_100 || vehicle.base_rate_under_100 || 10000);
+    r100_200 = Number(vehicle.adhoc_rate_100_200 || vehicle.rate_100_200 || 60);
+    r200_300 = Number(vehicle.adhoc_rate_200_300 || vehicle.rate_200_300 || 54);
+    r300_400 = Number(vehicle.adhoc_rate_300_400 || vehicle.rate_300_400 || 50);
+    rAbove400 = Number(vehicle.adhoc_rate_above_400 || vehicle.rate_above_400 || 48);
+    rateTypeLabel = "Adhoc";
+  }
 
   let baseDistanceCost = 0;
   let activeSlab = "";
@@ -251,10 +265,10 @@ export function calculateQuotePrice(vehicle, distance, options = {}) {
   // If distance > 100 km, the applicable slab rate applies to the WHOLE distance (all kms).
   if (distance <= 100) {
     baseDistanceCost = baseRate;
-    activeSlab = `Below 100 km (Flat Base ₹${baseRate.toLocaleString('en-IN')})`;
+    activeSlab = `Below 100 km (${rateTypeLabel} Flat Base ₹${baseRate.toLocaleString('en-IN')})`;
     slabRateStr = `₹${baseRate.toLocaleString('en-IN')} Base`;
     isBase = true;
-    breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat base rate ₹${baseRate.toLocaleString('en-IN')}`);
+    breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat ${rateTypeLabel} base ₹${baseRate.toLocaleString('en-IN')}`);
   } else {
     let rate = rAbove400;
     let slabLabel = "400+ km Long Haul";
@@ -264,10 +278,10 @@ export function calculateQuotePrice(vehicle, distance, options = {}) {
 
     const raw = distance * rate;
     baseDistanceCost = Math.round(raw);
-    activeSlab = `${slabLabel} (₹${rate}/km)`;
+    activeSlab = `${slabLabel} (${rateTypeLabel} ₹${rate}/km)`;
     slabRateStr = `₹${rate}/km`;
     isBase = false;
-    breakdownParts.push(`${distance} km × ₹${rate}/km (${slabLabel} applies to whole kms) = ₹${baseDistanceCost.toLocaleString('en-IN')}`);
+    breakdownParts.push(`${distance} km × ₹${rate}/km (${slabLabel} ${rateTypeLabel} applies to whole kms) = ₹${baseDistanceCost.toLocaleString('en-IN')}`);
   }
 
   // 1. Trip Type Multiplier
@@ -313,6 +327,7 @@ export default function RateSlabsManagerTab() {
   });
 
   const [activeSubTab, setActiveSubTab] = useState("vehicles"); // "vehicles", "trip_types", "contracts", "payload", "tester"
+  const [ratePricingView, setRatePricingView] = useState("adhoc"); // "adhoc" | "contract"
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -566,17 +581,36 @@ export default function RateSlabsManagerTab() {
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Below 100 kms uses flat base rate (₹10,000 for 32ft). Above 100km, the applicable slab rate applies to the whole distance.
+                Configure distinct rates per km for Adhoc / Spot loads vs Corporate Contracts.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsNewCategoryOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
-            >
-              <span>➕</span> Add Vehicle Category
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setRatePricingView("adhoc")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ratePricingView === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`}
+                >
+                  <span>⚡ Adhoc / Spot Slabs</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRatePricingView("contract")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ratePricingView === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`}
+                >
+                  <span>📜 Contract Slabs</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsNewCategoryOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
+              >
+                <span>➕</span> Add Vehicle
+              </button>
+            </div>
           </div>
 
           {/* Slabs Table */}
@@ -586,18 +620,26 @@ export default function RateSlabsManagerTab() {
                 <thead className="bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800">
                   <tr>
                     <th className="py-3 px-4">Vehicle Category</th>
-                    <th className="py-3 px-3 text-center bg-amber-500/10 border-x border-amber-500/20 text-amber-300 font-black">
-                      0 - 100 KM<br/><span className="text-[9px] font-normal text-amber-400/90">Base Flat Rate</span>
+                    <th className={`py-3 px-3 text-center border-x font-black ${ratePricingView === 'adhoc' ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : 'bg-amber-400/10 border-amber-400/20 text-amber-300'}`}>
+                      0 - 100 KM<br/><span className="text-[9px] font-normal opacity-90">{ratePricingView === 'adhoc' ? '⚡ Adhoc Base Flat' : '📜 Contract Base Flat'}</span>
                     </th>
-                    <th className="py-3 px-3 text-center">100 - 200 KM<br/><span className="text-[9px] font-normal text-slate-500">Tier 1 Rate</span></th>
-                    <th className="py-3 px-3 text-center">200 - 300 KM<br/><span className="text-[9px] font-normal text-slate-500">Tier 2 Rate</span></th>
-                    <th className="py-3 px-3 text-center">300 - 400 KM<br/><span className="text-[9px] font-normal text-slate-500">Tier 3 Rate</span></th>
-                    <th className="py-3 px-3 text-center">400+ KM<br/><span className="text-[9px] font-normal text-slate-500">Long Haul</span></th>
+                    <th className="py-3 px-3 text-center">100 - 200 KM<br/><span className="text-[9px] font-normal text-slate-500">{ratePricingView === 'adhoc' ? '⚡ Adhoc Rate' : '📜 Contract Rate'}</span></th>
+                    <th className="py-3 px-3 text-center">200 - 300 KM<br/><span className="text-[9px] font-normal text-slate-500">{ratePricingView === 'adhoc' ? '⚡ Adhoc Rate' : '📜 Contract Rate'}</span></th>
+                    <th className="py-3 px-3 text-center">300 - 400 KM<br/><span className="text-[9px] font-normal text-slate-500">{ratePricingView === 'adhoc' ? '⚡ Adhoc Rate' : '📜 Contract Rate'}</span></th>
+                    <th className="py-3 px-3 text-center">400+ KM<br/><span className="text-[9px] font-normal text-slate-500">{ratePricingView === 'adhoc' ? '⚡ Adhoc Rate' : '📜 Contract Rate'}</span></th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
-                  {ratesData.vehicles.map((v) => (
+                  {ratesData.vehicles.map((v) => {
+                    const isAdhoc = ratePricingView === 'adhoc';
+                    const baseVal = isAdhoc ? (v.adhoc_base_rate_under_100 ?? v.base_rate_under_100) : (v.contract_base_rate_under_100 ?? Math.round((v.base_rate_under_100||10000)*0.85));
+                    const r1 = isAdhoc ? (v.adhoc_rate_100_200 ?? v.rate_100_200) : (v.contract_rate_100_200 ?? Math.round((v.rate_100_200||60)*0.88));
+                    const r2 = isAdhoc ? (v.adhoc_rate_200_300 ?? v.rate_200_300) : (v.contract_rate_200_300 ?? Math.round((v.rate_200_300||54)*0.88));
+                    const r3 = isAdhoc ? (v.adhoc_rate_300_400 ?? v.rate_300_400) : (v.contract_rate_300_400 ?? Math.round((v.rate_300_400||50)*0.88));
+                    const r4 = isAdhoc ? (v.adhoc_rate_above_400 ?? v.rate_above_400) : (v.contract_rate_above_400 ?? Math.round((v.rate_above_400||48)*0.88));
+                    
+                    return (
                     <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-bold text-white text-xs sm:text-sm">{v.name}</div>
@@ -616,24 +658,24 @@ export default function RateSlabsManagerTab() {
                         </div>
                       </td>
 
-                      <td className="py-3 px-3 text-center bg-amber-500/5 border-x border-amber-500/15">
+                      <td className={`py-3 px-3 text-center border-x ${isAdhoc ? 'bg-amber-500/5 border-amber-500/15' : 'bg-amber-400/5 border-amber-400/15'}`}>
                         <div className="font-black text-amber-300 text-sm">
-                          ₹{Number(v.base_rate_under_100 || 0).toLocaleString('en-IN')}
+                          ₹{Number(baseVal || 0).toLocaleString('en-IN')}
                         </div>
-                        <div className="text-[10px] text-amber-400/70 font-semibold">Min Base &lt;100km</div>
+                        <div className="text-[10px] text-slate-400 font-semibold">{isAdhoc ? '⚡ Adhoc Base' : '📜 Contract Base'}</div>
                       </td>
 
                       <td className="py-3 px-3 text-center font-bold text-slate-200">
-                        ₹{v.rate_100_200}/km
+                        ₹{r1}/km
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-slate-200">
-                        ₹{v.rate_200_300}/km
+                        ₹{r2}/km
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-slate-200">
-                        ₹{v.rate_300_400}/km
+                        ₹{r3}/km
                       </td>
                       <td className="py-3 px-3 text-center font-bold text-emerald-400">
-                        ₹{v.rate_above_400}/km
+                        ₹{r4}/km
                       </td>
 
                       <td className="py-3 px-4 text-right">
@@ -658,7 +700,8 @@ export default function RateSlabsManagerTab() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1080,7 +1123,42 @@ export default function RateSlabsManagerTab() {
 }
 
 function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
-  const [form, setForm] = useState({ ...vehicle });
+  const [form, setForm] = useState({
+    ...vehicle,
+    adhoc_base_rate_under_100: vehicle.adhoc_base_rate_under_100 ?? vehicle.base_rate_under_100 ?? 10000,
+    adhoc_rate_100_200: vehicle.adhoc_rate_100_200 ?? vehicle.rate_100_200 ?? 60,
+    adhoc_rate_200_300: vehicle.adhoc_rate_200_300 ?? vehicle.rate_200_300 ?? 54,
+    adhoc_rate_300_400: vehicle.adhoc_rate_300_400 ?? vehicle.rate_300_400 ?? 50,
+    adhoc_rate_above_400: vehicle.adhoc_rate_above_400 ?? vehicle.rate_above_400 ?? 48,
+    contract_base_rate_under_100: vehicle.contract_base_rate_under_100 ?? Math.round((vehicle.base_rate_under_100 || 10000) * 0.85),
+    contract_rate_100_200: vehicle.contract_rate_100_200 ?? Math.round((vehicle.rate_100_200 || 60) * 0.88),
+    contract_rate_200_300: vehicle.contract_rate_200_300 ?? Math.round((vehicle.rate_200_300 || 54) * 0.88),
+    contract_rate_300_400: vehicle.contract_rate_300_400 ?? Math.round((vehicle.rate_300_400 || 50) * 0.88),
+    contract_rate_above_400: vehicle.contract_rate_above_400 ?? Math.round((vehicle.rate_above_400 || 48) * 0.88)
+  });
+  const [rateTab, setRateTab] = useState("adhoc"); // "adhoc" | "contract"
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      ...form,
+      base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      rate_100_200: Number(form.adhoc_rate_100_200),
+      rate_200_300: Number(form.adhoc_rate_200_300),
+      rate_300_400: Number(form.adhoc_rate_300_400),
+      rate_above_400: Number(form.adhoc_rate_above_400),
+      adhoc_base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      adhoc_rate_100_200: Number(form.adhoc_rate_100_200),
+      adhoc_rate_200_300: Number(form.adhoc_rate_200_300),
+      adhoc_rate_300_400: Number(form.adhoc_rate_300_400),
+      adhoc_rate_above_400: Number(form.adhoc_rate_above_400),
+      contract_base_rate_under_100: Number(form.contract_base_rate_under_100),
+      contract_rate_100_200: Number(form.contract_rate_100_200),
+      contract_rate_200_300: Number(form.contract_rate_200_300),
+      contract_rate_300_400: Number(form.contract_rate_300_400),
+      contract_rate_above_400: Number(form.contract_rate_above_400)
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -1092,7 +1170,7 @@ function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
           <button type="button" onClick={onClose} className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold">✕</button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-400 mb-1">Vehicle Name</label>
@@ -1145,63 +1223,143 @@ function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1">
-            <label className="block text-xs font-bold text-amber-300">
-              0 - 100 KM Flat Base Rate (₹) *
-            </label>
-            <input
-              type="number"
-              required
-              min="1000"
-              value={form.base_rate_under_100}
-              onChange={e => setForm({ ...form, base_rate_under_100: Number(e.target.value) })}
-              className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
-            />
-            <span className="text-[10px] text-amber-400/80 block">For trips &lt; 100 km, this flat rate applies as minimum charge.</span>
+          {/* Adhoc vs Contract Switcher inside Modal */}
+          <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setRateTab("adhoc")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`}
+            >
+              <span>⚡ Adhoc / Spot Load Slabs</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRateTab("contract")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`}
+            >
+              <span>📜 Contract Slabs</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">100 - 200 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_100_200}
-                onChange={e => setForm({ ...form, rate_100_200: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
+          {rateTab === "adhoc" ? (
+            <div className="space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-500/30">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-amber-300">
+                  0 - 100 KM Adhoc Flat Base Rate (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1000"
+                  value={form.adhoc_base_rate_under_100}
+                  onChange={e => setForm({ ...form, adhoc_base_rate_under_100: Number(e.target.value) })}
+                  className="w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-500/50 text-amber-300 font-bold font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">100 - 200 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_100_200}
+                    onChange={e => setForm({ ...form, adhoc_rate_100_200: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">200 - 300 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_200_300}
+                    onChange={e => setForm({ ...form, adhoc_rate_200_300: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">300 - 400 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_300_400}
+                    onChange={e => setForm({ ...form, adhoc_rate_300_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">400+ KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_above_400}
+                    onChange={e => setForm({ ...form, adhoc_rate_above_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-amber-300 font-mono font-bold"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">200 - 300 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_200_300}
-                onChange={e => setForm({ ...form, rate_200_300: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
+          ) : (
+            <div className="space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-400/30">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-amber-300">
+                  0 - 100 KM Contract Flat Base Rate (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1000"
+                  value={form.contract_base_rate_under_100}
+                  onChange={e => setForm({ ...form, contract_base_rate_under_100: Number(e.target.value) })}
+                  className="w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-400/50 text-amber-300 font-bold font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">100 - 200 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_100_200}
+                    onChange={e => setForm({ ...form, contract_rate_100_200: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">200 - 300 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_200_300}
+                    onChange={e => setForm({ ...form, contract_rate_200_300: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">300 - 400 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_300_400}
+                    onChange={e => setForm({ ...form, contract_rate_300_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">400+ KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_above_400}
+                    onChange={e => setForm({ ...form, contract_rate_above_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-mono font-bold"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">300 - 400 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_300_400}
-                onChange={e => setForm({ ...form, rate_300_400: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">400+ KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_above_400}
-                onChange={e => setForm({ ...form, rate_above_400: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-2 border-t border-slate-800 pt-3">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold">Cancel</button>
@@ -1225,8 +1383,41 @@ function NewVehicleModal({ onClose, onAdd }) {
     rate_200_300: 50,
     rate_300_400: 46,
     rate_above_400: 44,
+    adhoc_base_rate_under_100: 9000,
+    adhoc_rate_100_200: 55,
+    adhoc_rate_200_300: 50,
+    adhoc_rate_300_400: 46,
+    adhoc_rate_above_400: 44,
+    contract_base_rate_under_100: 7600,
+    contract_rate_100_200: 48,
+    contract_rate_200_300: 44,
+    contract_rate_300_400: 40,
+    contract_rate_above_400: 38,
     description: "Custom commercial transport vehicle"
   });
+  const [rateTab, setRateTab] = useState("adhoc");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onAdd({
+      ...form,
+      base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      rate_100_200: Number(form.adhoc_rate_100_200),
+      rate_200_300: Number(form.adhoc_rate_200_300),
+      rate_300_400: Number(form.adhoc_rate_300_400),
+      rate_above_400: Number(form.adhoc_rate_above_400),
+      adhoc_base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      adhoc_rate_100_200: Number(form.adhoc_rate_100_200),
+      adhoc_rate_200_300: Number(form.adhoc_rate_200_300),
+      adhoc_rate_300_400: Number(form.adhoc_rate_300_400),
+      adhoc_rate_above_400: Number(form.adhoc_rate_above_400),
+      contract_base_rate_under_100: Number(form.contract_base_rate_under_100),
+      contract_rate_100_200: Number(form.contract_rate_100_200),
+      contract_rate_200_300: Number(form.contract_rate_200_300),
+      contract_rate_300_400: Number(form.contract_rate_300_400),
+      contract_rate_above_400: Number(form.contract_rate_above_400)
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -1238,7 +1429,7 @@ function NewVehicleModal({ onClose, onAdd }) {
           <button type="button" onClick={onClose} className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold">✕</button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); onAdd(form); }} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-400 mb-1">Vehicle Full Name *</label>
@@ -1293,62 +1484,143 @@ function NewVehicleModal({ onClose, onAdd }) {
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1">
-            <label className="block text-xs font-bold text-amber-300">
-              0 - 100 KM Flat Base Rate (₹) *
-            </label>
-            <input
-              type="number"
-              required
-              min="1000"
-              value={form.base_rate_under_100}
-              onChange={e => setForm({ ...form, base_rate_under_100: Number(e.target.value) })}
-              className="w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
-            />
+          {/* Adhoc vs Contract Switcher inside Modal */}
+          <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setRateTab("adhoc")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`}
+            >
+              <span>⚡ Adhoc / Spot Load Slabs</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRateTab("contract")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`}
+            >
+              <span>📜 Contract Slabs</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">100 - 200 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_100_200}
-                onChange={e => setForm({ ...form, rate_100_200: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
+          {rateTab === "adhoc" ? (
+            <div className="space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-500/30">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-amber-300">
+                  0 - 100 KM Adhoc Flat Base Rate (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1000"
+                  value={form.adhoc_base_rate_under_100}
+                  onChange={e => setForm({ ...form, adhoc_base_rate_under_100: Number(e.target.value) })}
+                  className="w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-500/50 text-amber-300 font-bold font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">100 - 200 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_100_200}
+                    onChange={e => setForm({ ...form, adhoc_rate_100_200: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">200 - 300 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_200_300}
+                    onChange={e => setForm({ ...form, adhoc_rate_200_300: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">300 - 400 KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_300_400}
+                    onChange={e => setForm({ ...form, adhoc_rate_300_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">400+ KM Adhoc (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.adhoc_rate_above_400}
+                    onChange={e => setForm({ ...form, adhoc_rate_above_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-amber-300 font-mono font-bold"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">200 - 300 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_200_300}
-                onChange={e => setForm({ ...form, rate_200_300: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
+          ) : (
+            <div className="space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-400/30">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-amber-300">
+                  0 - 100 KM Contract Flat Base Rate (₹) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1000"
+                  value={form.contract_base_rate_under_100}
+                  onChange={e => setForm({ ...form, contract_base_rate_under_100: Number(e.target.value) })}
+                  className="w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-400/50 text-amber-300 font-bold font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">100 - 200 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_100_200}
+                    onChange={e => setForm({ ...form, contract_rate_100_200: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">200 - 300 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_200_300}
+                    onChange={e => setForm({ ...form, contract_rate_200_300: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">300 - 400 KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_300_400}
+                    onChange={e => setForm({ ...form, contract_rate_300_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 font-bold mb-0.5">400+ KM Contract (₹/km)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.contract_rate_above_400}
+                    onChange={e => setForm({ ...form, contract_rate_above_400: Number(e.target.value) })}
+                    className="w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-mono font-bold"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">300 - 400 KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_300_400}
-                onChange={e => setForm({ ...form, rate_300_400: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 font-bold mb-1">400+ KM Rate (₹/km)</label>
-              <input
-                type="number"
-                required
-                value={form.rate_above_400}
-                onChange={e => setForm({ ...form, rate_above_400: Number(e.target.value) })}
-                className="w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
-              />
-            </div>
-          </div>
+          )}
 
           <div className="flex justify-end gap-2 border-t border-slate-800 pt-3">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold">Cancel</button>

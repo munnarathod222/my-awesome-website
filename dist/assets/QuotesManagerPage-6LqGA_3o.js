@@ -818,11 +818,24 @@ function calculateQuotePrice(vehicle, distance, options = {}) {
       multipliers: { trip: 1, payload: 1, tenure: 1 }
     };
   }
-  const baseRate = Number(vehicle.base_rate_under_100) || 1e4;
-  const r100_200 = Number(vehicle.rate_100_200) || 60;
-  const r200_300 = Number(vehicle.rate_200_300) || 54;
-  const r300_400 = Number(vehicle.rate_300_400) || 50;
-  const rAbove400 = Number(vehicle.rate_above_400) || 48;
+  const isContract = contractTenure && contractTenure !== "spot" && contractTenure !== "adhoc";
+  let baseRate, r100_200, r200_300, r300_400, rAbove400;
+  let rateTypeLabel = "";
+  if (isContract) {
+    baseRate = Number(vehicle.contract_base_rate_under_100 || Math.round((vehicle.base_rate_under_100 || 1e4) * 0.85));
+    r100_200 = Number(vehicle.contract_rate_100_200 || Math.round((vehicle.rate_100_200 || 60) * 0.88));
+    r200_300 = Number(vehicle.contract_rate_200_300 || Math.round((vehicle.rate_200_300 || 54) * 0.88));
+    r300_400 = Number(vehicle.contract_rate_300_400 || Math.round((vehicle.rate_300_400 || 50) * 0.88));
+    rAbove400 = Number(vehicle.contract_rate_above_400 || Math.round((vehicle.rate_above_400 || 48) * 0.88));
+    rateTypeLabel = "Contract";
+  } else {
+    baseRate = Number(vehicle.adhoc_base_rate_under_100 || vehicle.base_rate_under_100 || 1e4);
+    r100_200 = Number(vehicle.adhoc_rate_100_200 || vehicle.rate_100_200 || 60);
+    r200_300 = Number(vehicle.adhoc_rate_200_300 || vehicle.rate_200_300 || 54);
+    r300_400 = Number(vehicle.adhoc_rate_300_400 || vehicle.rate_300_400 || 50);
+    rAbove400 = Number(vehicle.adhoc_rate_above_400 || vehicle.rate_above_400 || 48);
+    rateTypeLabel = "Adhoc";
+  }
   let baseDistanceCost = 0;
   let activeSlab = "";
   let slabRateStr = "";
@@ -830,10 +843,10 @@ function calculateQuotePrice(vehicle, distance, options = {}) {
   let breakdownParts = [];
   if (distance <= 100) {
     baseDistanceCost = baseRate;
-    activeSlab = `Below 100 km (Flat Base \u20B9${baseRate.toLocaleString("en-IN")})`;
+    activeSlab = `Below 100 km (${rateTypeLabel} Flat Base \u20B9${baseRate.toLocaleString("en-IN")})`;
     slabRateStr = `\u20B9${baseRate.toLocaleString("en-IN")} Base`;
     isBase = true;
-    breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat base rate \u20B9${baseRate.toLocaleString("en-IN")}`);
+    breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat ${rateTypeLabel} base \u20B9${baseRate.toLocaleString("en-IN")}`);
   } else {
     let rate = rAbove400;
     let slabLabel = "400+ km Long Haul";
@@ -849,10 +862,10 @@ function calculateQuotePrice(vehicle, distance, options = {}) {
     }
     const raw = distance * rate;
     baseDistanceCost = Math.round(raw);
-    activeSlab = `${slabLabel} (\u20B9${rate}/km)`;
+    activeSlab = `${slabLabel} (${rateTypeLabel} \u20B9${rate}/km)`;
     slabRateStr = `\u20B9${rate}/km`;
     isBase = false;
-    breakdownParts.push(`${distance} km \xD7 \u20B9${rate}/km (${slabLabel} applies to whole kms) = \u20B9${baseDistanceCost.toLocaleString("en-IN")}`);
+    breakdownParts.push(`${distance} km \xD7 \u20B9${rate}/km (${slabLabel} ${rateTypeLabel} applies to whole kms) = \u20B9${baseDistanceCost.toLocaleString("en-IN")}`);
   }
   const tripCfg = config?.trip_types?.[tripType] || (tripType === "round_trip" ? { multiplier: 1.85, label: "Two-Way / Round Trip" } : { multiplier: 1, label: "One-Way" });
   const tripMultiplier = Number(tripCfg.multiplier) || 1;
@@ -890,6 +903,7 @@ function RateSlabsManagerTab() {
     return DEFAULT_SLABS_DATA;
   });
   const [activeSubTab, setActiveSubTab] = useState("vehicles");
+  const [ratePricingView, setRatePricingView] = useState("adhoc");
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1076,7 +1090,23 @@ function RateSlabsManagerTab() {
       className: `px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === tab.id ? "bg-amber-500 text-slate-950 shadow-md font-black" : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"}`
     },
     tab.label
-  ))), activeSubTab === "vehicles" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "Distance Rate Slabs by Vehicle Category"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" }, ratesData.vehicles.length, " Categories")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Below 100 kms uses flat base rate (\u20B910,000 for 32ft). Above 100km, the applicable slab rate applies to the whole distance.")), /* @__PURE__ */ c.createElement(
+  ))), activeSubTab === "vehicles" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "Distance Rate Slabs by Vehicle Category"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" }, ratesData.vehicles.length, " Categories")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Configure distinct rates per km for Adhoc / Spot loads vs Corporate Contracts.")), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-2.5" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-1 p-1 rounded-xl bg-slate-950 border border-slate-800" }, /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRatePricingView("adhoc"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ratePricingView === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u26A1 Adhoc / Spot Slabs")
+  ), /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRatePricingView("contract"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${ratePricingView === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F4DC} Contract Slabs")
+  )), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
@@ -1084,36 +1114,44 @@ function RateSlabsManagerTab() {
       className: "px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
     },
     /* @__PURE__ */ c.createElement("span", null, "\u2795"),
-    " Add Vehicle Category"
-  )), /* @__PURE__ */ c.createElement("div", { className: "border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-500/10 border-x border-amber-500/20 text-amber-300 font-black" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/90" }, "Base Flat Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 1 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 2 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 3 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Long Haul")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60" }, ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors" }, /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs sm:text-sm" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-400" }, v.short || v.id), /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setEditingVehicle(v),
-      className: "px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 font-mono text-[10px] flex items-center gap-1 transition-colors",
-      title: "Click to edit payload capacity"
-    },
-    /* @__PURE__ */ c.createElement("span", null, "\u2696\uFE0F Payload:"),
-    /* @__PURE__ */ c.createElement("span", { className: "underline decoration-dashed" }, v.capacity || `${v.maxMT} MT`),
-    /* @__PURE__ */ c.createElement("span", { className: "text-[9px] text-emerald-500" }, "\u270F\uFE0F")
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-500/5 border-x border-amber-500/15" }, /* @__PURE__ */ c.createElement("div", { className: "font-black text-amber-300 text-sm" }, "\u20B9", Number(v.base_rate_under_100 || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-[10px] text-amber-400/70 font-semibold" }, "Min Base <100km")), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_100_200, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_200_300, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_300_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-emerald-400" }, "\u20B9", v.rate_above_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setEditingVehicle(v),
-      className: "px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold transition-colors"
-    },
-    "\u270F\uFE0F Edit Slabs"
-  ), ratesData.vehicles.length > 1 && /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => handleDeleteVehicle(v.id),
-      className: "px-2 py-1 rounded-lg hover:bg-rose-500/20 text-rose-400 text-xs transition-colors",
-      title: "Delete vehicle category"
-    },
-    "\u{1F5D1}\uFE0F"
-  )))))))))), activeSubTab === "trip_types" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F504} Trip Type Directionality Pricing"), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Live Synced")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Configure multipliers and return leg discounts when a client books a One-Way vs Two-Way (Round Trip). Round trip pricing automatically applies the return discount.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u27A1\uFE0F"), " One-Way Trip"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold" }, "Standard Baseline")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Single leg destination drop point. Standard calculated rate."), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Pricing Multiplier"), /* @__PURE__ */ c.createElement(
+    " Add Vehicle"
+  ))), /* @__PURE__ */ c.createElement("div", { className: "border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: `py-3 px-3 text-center border-x font-black ${ratePricingView === "adhoc" ? "bg-amber-500/10 border-amber-500/20 text-amber-300" : "bg-amber-400/10 border-amber-400/20 text-amber-300"}` }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal opacity-90" }, ratePricingView === "adhoc" ? "\u26A1 Adhoc Base Flat" : "\u{1F4DC} Contract Base Flat")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, ratePricingView === "adhoc" ? "\u26A1 Adhoc Rate" : "\u{1F4DC} Contract Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, ratePricingView === "adhoc" ? "\u26A1 Adhoc Rate" : "\u{1F4DC} Contract Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, ratePricingView === "adhoc" ? "\u26A1 Adhoc Rate" : "\u{1F4DC} Contract Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, ratePricingView === "adhoc" ? "\u26A1 Adhoc Rate" : "\u{1F4DC} Contract Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60" }, ratesData.vehicles.map((v) => {
+    const isAdhoc = ratePricingView === "adhoc";
+    const baseVal = isAdhoc ? v.adhoc_base_rate_under_100 ?? v.base_rate_under_100 : v.contract_base_rate_under_100 ?? Math.round((v.base_rate_under_100 || 1e4) * 0.85);
+    const r1 = isAdhoc ? v.adhoc_rate_100_200 ?? v.rate_100_200 : v.contract_rate_100_200 ?? Math.round((v.rate_100_200 || 60) * 0.88);
+    const r2 = isAdhoc ? v.adhoc_rate_200_300 ?? v.rate_200_300 : v.contract_rate_200_300 ?? Math.round((v.rate_200_300 || 54) * 0.88);
+    const r3 = isAdhoc ? v.adhoc_rate_300_400 ?? v.rate_300_400 : v.contract_rate_300_400 ?? Math.round((v.rate_300_400 || 50) * 0.88);
+    const r4 = isAdhoc ? v.adhoc_rate_above_400 ?? v.rate_above_400 : v.contract_rate_above_400 ?? Math.round((v.rate_above_400 || 48) * 0.88);
+    return /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors" }, /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs sm:text-sm" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-400" }, v.short || v.id), /* @__PURE__ */ c.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setEditingVehicle(v),
+        className: "px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 font-mono text-[10px] flex items-center gap-1 transition-colors",
+        title: "Click to edit payload capacity"
+      },
+      /* @__PURE__ */ c.createElement("span", null, "\u2696\uFE0F Payload:"),
+      /* @__PURE__ */ c.createElement("span", { className: "underline decoration-dashed" }, v.capacity || `${v.maxMT} MT`),
+      /* @__PURE__ */ c.createElement("span", { className: "text-[9px] text-emerald-500" }, "\u270F\uFE0F")
+    ))), /* @__PURE__ */ c.createElement("td", { className: `py-3 px-3 text-center border-x ${isAdhoc ? "bg-amber-500/5 border-amber-500/15" : "bg-amber-400/5 border-amber-400/15"}` }, /* @__PURE__ */ c.createElement("div", { className: "font-black text-amber-300 text-sm" }, "\u20B9", Number(baseVal || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-[10px] text-slate-400 font-semibold" }, isAdhoc ? "\u26A1 Adhoc Base" : "\u{1F4DC} Contract Base")), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", r1, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", r2, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", r3, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-emerald-400" }, "\u20B9", r4, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setEditingVehicle(v),
+        className: "px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold transition-colors"
+      },
+      "\u270F\uFE0F Edit Slabs"
+    ), ratesData.vehicles.length > 1 && /* @__PURE__ */ c.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => handleDeleteVehicle(v.id),
+        className: "px-2 py-1 rounded-lg hover:bg-rose-500/20 text-rose-400 text-xs transition-colors",
+        title: "Delete vehicle category"
+      },
+      "\u{1F5D1}\uFE0F"
+    ))));
+  })))))), activeSubTab === "trip_types" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F504} Trip Type Directionality Pricing"), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Live Synced")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Configure multipliers and return leg discounts when a client books a One-Way vs Two-Way (Round Trip). Round trip pricing automatically applies the return discount.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u27A1\uFE0F"), " One-Way Trip"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold" }, "Standard Baseline")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Single leg destination drop point. Standard calculated rate."), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Pricing Multiplier"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
@@ -1303,11 +1341,42 @@ function RateSlabsManagerTab() {
   ));
 }
 function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
-  const [form, setForm] = useState({ ...vehicle });
-  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u270F\uFE0F"), " Edit Slabs: ", form.name), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: (e) => {
+  const [form, setForm] = useState({
+    ...vehicle,
+    adhoc_base_rate_under_100: vehicle.adhoc_base_rate_under_100 ?? vehicle.base_rate_under_100 ?? 1e4,
+    adhoc_rate_100_200: vehicle.adhoc_rate_100_200 ?? vehicle.rate_100_200 ?? 60,
+    adhoc_rate_200_300: vehicle.adhoc_rate_200_300 ?? vehicle.rate_200_300 ?? 54,
+    adhoc_rate_300_400: vehicle.adhoc_rate_300_400 ?? vehicle.rate_300_400 ?? 50,
+    adhoc_rate_above_400: vehicle.adhoc_rate_above_400 ?? vehicle.rate_above_400 ?? 48,
+    contract_base_rate_under_100: vehicle.contract_base_rate_under_100 ?? Math.round((vehicle.base_rate_under_100 || 1e4) * 0.85),
+    contract_rate_100_200: vehicle.contract_rate_100_200 ?? Math.round((vehicle.rate_100_200 || 60) * 0.88),
+    contract_rate_200_300: vehicle.contract_rate_200_300 ?? Math.round((vehicle.rate_200_300 || 54) * 0.88),
+    contract_rate_300_400: vehicle.contract_rate_300_400 ?? Math.round((vehicle.rate_300_400 || 50) * 0.88),
+    contract_rate_above_400: vehicle.contract_rate_above_400 ?? Math.round((vehicle.rate_above_400 || 48) * 0.88)
+  });
+  const [rateTab, setRateTab] = useState("adhoc");
+  const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(form);
-  }, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Name"), /* @__PURE__ */ c.createElement(
+    onSave({
+      ...form,
+      base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      rate_100_200: Number(form.adhoc_rate_100_200),
+      rate_200_300: Number(form.adhoc_rate_200_300),
+      rate_300_400: Number(form.adhoc_rate_300_400),
+      rate_above_400: Number(form.adhoc_rate_above_400),
+      adhoc_base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      adhoc_rate_100_200: Number(form.adhoc_rate_100_200),
+      adhoc_rate_200_300: Number(form.adhoc_rate_200_300),
+      adhoc_rate_300_400: Number(form.adhoc_rate_300_400),
+      adhoc_rate_above_400: Number(form.adhoc_rate_above_400),
+      contract_base_rate_under_100: Number(form.contract_base_rate_under_100),
+      contract_rate_100_200: Number(form.contract_rate_100_200),
+      contract_rate_200_300: Number(form.contract_rate_200_300),
+      contract_rate_300_400: Number(form.contract_rate_300_400),
+      contract_rate_above_400: Number(form.contract_rate_above_400)
+    });
+  };
+  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u270F\uFE0F"), " Edit Slabs: ", form.name), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: handleSubmit, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Name"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
@@ -1344,53 +1413,115 @@ function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
       className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${form.capacity === preset ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400 hover:text-white"}`
     },
     preset
-  )))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex rounded-xl bg-slate-950 p-1 border border-slate-800" }, /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRateTab("adhoc"),
+      className: `flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u26A1 Adhoc / Spot Load Slabs")
+  ), /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRateTab("contract"),
+      className: `flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F4DC} Contract Slabs")
+  )), rateTab === "adhoc" ? /* @__PURE__ */ c.createElement("div", { className: "space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-500/30" }, /* @__PURE__ */ c.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Adhoc Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
       min: "1000",
-      value: form.base_rate_under_100,
-      onChange: (e) => setForm({ ...form, base_rate_under_100: Number(e.target.value) }),
-      className: "w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
+      value: form.adhoc_base_rate_under_100,
+      onChange: (e) => setForm({ ...form, adhoc_base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-500/50 text-amber-300 font-bold font-mono"
     }
-  ), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-amber-400/80 block" }, "For trips < 100 km, this flat rate applies as minimum charge.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "100 - 200 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "100 - 200 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_100_200,
-      onChange: (e) => setForm({ ...form, rate_100_200: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_100_200,
+      onChange: (e) => setForm({ ...form, adhoc_rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "200 - 300 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "200 - 300 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_200_300,
-      onChange: (e) => setForm({ ...form, rate_200_300: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_200_300,
+      onChange: (e) => setForm({ ...form, adhoc_rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "300 - 400 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "300 - 400 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_300_400,
-      onChange: (e) => setForm({ ...form, rate_300_400: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_300_400,
+      onChange: (e) => setForm({ ...form, adhoc_rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "400+ KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "400+ KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_above_400,
-      onChange: (e) => setForm({ ...form, rate_above_400: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
+      value: form.adhoc_rate_above_400,
+      onChange: (e) => setForm({ ...form, adhoc_rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-amber-300 font-mono font-bold"
     }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Save Slabs")))));
+  )))) : /* @__PURE__ */ c.createElement("div", { className: "space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-400/30" }, /* @__PURE__ */ c.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Contract Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      min: "1000",
+      value: form.contract_base_rate_under_100,
+      onChange: (e) => setForm({ ...form, contract_base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-400/50 text-amber-300 font-bold font-mono"
+    }
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "100 - 200 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_100_200,
+      onChange: (e) => setForm({ ...form, contract_rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "200 - 300 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_200_300,
+      onChange: (e) => setForm({ ...form, contract_rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "300 - 400 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_300_400,
+      onChange: (e) => setForm({ ...form, contract_rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "400+ KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_above_400,
+      onChange: (e) => setForm({ ...form, contract_rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-mono font-bold"
+    }
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Save Slabs")))));
 }
 function NewVehicleModal({ onClose, onAdd }) {
   const [form, setForm] = useState({
@@ -1404,12 +1535,41 @@ function NewVehicleModal({ onClose, onAdd }) {
     rate_200_300: 50,
     rate_300_400: 46,
     rate_above_400: 44,
+    adhoc_base_rate_under_100: 9e3,
+    adhoc_rate_100_200: 55,
+    adhoc_rate_200_300: 50,
+    adhoc_rate_300_400: 46,
+    adhoc_rate_above_400: 44,
+    contract_base_rate_under_100: 7600,
+    contract_rate_100_200: 48,
+    contract_rate_200_300: 44,
+    contract_rate_300_400: 40,
+    contract_rate_above_400: 38,
     description: "Custom commercial transport vehicle"
   });
-  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: (e) => {
+  const [rateTab, setRateTab] = useState("adhoc");
+  const handleSubmit = (e) => {
     e.preventDefault();
-    onAdd(form);
-  }, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Full Name *"), /* @__PURE__ */ c.createElement(
+    onAdd({
+      ...form,
+      base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      rate_100_200: Number(form.adhoc_rate_100_200),
+      rate_200_300: Number(form.adhoc_rate_200_300),
+      rate_300_400: Number(form.adhoc_rate_300_400),
+      rate_above_400: Number(form.adhoc_rate_above_400),
+      adhoc_base_rate_under_100: Number(form.adhoc_base_rate_under_100),
+      adhoc_rate_100_200: Number(form.adhoc_rate_100_200),
+      adhoc_rate_200_300: Number(form.adhoc_rate_200_300),
+      adhoc_rate_300_400: Number(form.adhoc_rate_300_400),
+      adhoc_rate_above_400: Number(form.adhoc_rate_above_400),
+      contract_base_rate_under_100: Number(form.contract_base_rate_under_100),
+      contract_rate_100_200: Number(form.contract_rate_100_200),
+      contract_rate_200_300: Number(form.contract_rate_200_300),
+      contract_rate_300_400: Number(form.contract_rate_300_400),
+      contract_rate_above_400: Number(form.contract_rate_above_400)
+    });
+  };
+  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: handleSubmit, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Full Name *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "text",
@@ -1448,53 +1608,115 @@ function NewVehicleModal({ onClose, onAdd }) {
       className: `px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-colors ${form.capacity === preset ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-400 hover:text-white"}`
     },
     preset
-  )))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex rounded-xl bg-slate-950 p-1 border border-slate-800" }, /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRateTab("adhoc"),
+      className: `flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "adhoc" ? "bg-amber-500 text-slate-950 font-black shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u26A1 Adhoc / Spot Load Slabs")
+  ), /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setRateTab("contract"),
+      className: `flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${rateTab === "contract" ? "bg-amber-400/20 text-amber-300 font-black border border-amber-500/40 shadow" : "text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F4DC} Contract Slabs")
+  )), rateTab === "adhoc" ? /* @__PURE__ */ c.createElement("div", { className: "space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-500/30" }, /* @__PURE__ */ c.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Adhoc Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
       min: "1000",
-      value: form.base_rate_under_100,
-      onChange: (e) => setForm({ ...form, base_rate_under_100: Number(e.target.value) }),
-      className: "w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
+      value: form.adhoc_base_rate_under_100,
+      onChange: (e) => setForm({ ...form, adhoc_base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-500/50 text-amber-300 font-bold font-mono"
     }
-  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "100 - 200 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "100 - 200 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_100_200,
-      onChange: (e) => setForm({ ...form, rate_100_200: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_100_200,
+      onChange: (e) => setForm({ ...form, adhoc_rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "200 - 300 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "200 - 300 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_200_300,
-      onChange: (e) => setForm({ ...form, rate_200_300: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_200_300,
+      onChange: (e) => setForm({ ...form, adhoc_rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "300 - 400 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "300 - 400 KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_300_400,
-      onChange: (e) => setForm({ ...form, rate_300_400: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+      value: form.adhoc_rate_300_400,
+      onChange: (e) => setForm({ ...form, adhoc_rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
     }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "400+ KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "400+ KM Adhoc (\u20B9/km)"), /* @__PURE__ */ c.createElement(
     "input",
     {
       type: "number",
       required: true,
-      value: form.rate_above_400,
-      onChange: (e) => setForm({ ...form, rate_above_400: Number(e.target.value) }),
-      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
+      value: form.adhoc_rate_above_400,
+      onChange: (e) => setForm({ ...form, adhoc_rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-amber-300 font-mono font-bold"
     }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Add Vehicle")))));
+  )))) : /* @__PURE__ */ c.createElement("div", { className: "space-y-3 p-3 rounded-xl bg-slate-950/60 border border-amber-400/30" }, /* @__PURE__ */ c.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Contract Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      min: "1000",
+      value: form.contract_base_rate_under_100,
+      onChange: (e) => setForm({ ...form, contract_base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-8 px-3 rounded-lg bg-slate-900 border border-amber-400/50 text-amber-300 font-bold font-mono"
+    }
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "100 - 200 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_100_200,
+      onChange: (e) => setForm({ ...form, contract_rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "200 - 300 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_200_300,
+      onChange: (e) => setForm({ ...form, contract_rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "300 - 400 KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_300_400,
+      onChange: (e) => setForm({ ...form, contract_rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-0.5" }, "400+ KM Contract (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.contract_rate_above_400,
+      onChange: (e) => setForm({ ...form, contract_rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2 rounded bg-slate-900 border border-slate-700 text-emerald-400 font-mono font-bold"
+    }
+  )))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Add Vehicle")))));
 }
 
 export{Gt as default};
