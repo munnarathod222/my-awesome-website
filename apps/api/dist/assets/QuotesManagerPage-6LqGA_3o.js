@@ -586,9 +586,8 @@ function ContractEditModal({ contract, onClose, onSave }) {
   )))));
 }
 
-
 const { useState, useEffect, useMemo } = c;
-export const DEFAULT_SLABS_DATA = {
+const DEFAULT_SLABS_DATA = {
   pricing_mode: "progressive",
   // "progressive" or "flat_min"
   slabs_definition: [
@@ -831,74 +830,29 @@ function calculateQuotePrice(vehicle, distance, options = {}) {
   let breakdownParts = [];
   if (distance <= 100) {
     baseDistanceCost = baseRate;
-    activeSlab = "Below 100 km (Flat Base)";
+    activeSlab = `Below 100 km (Flat Base \u20B9${baseRate.toLocaleString("en-IN")})`;
     slabRateStr = `\u20B9${baseRate.toLocaleString("en-IN")} Base`;
     isBase = true;
     breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat base rate \u20B9${baseRate.toLocaleString("en-IN")}`);
-  } else if (mode === "flat_min") {
+  } else {
     let rate = rAbove400;
-    let slabLabel = "Above 400 km";
+    let slabLabel = "400+ km Long Haul";
     if (distance <= 200) {
       rate = r100_200;
-      slabLabel = "100 - 200 km";
+      slabLabel = "100 - 200 km Slab";
     } else if (distance <= 300) {
       rate = r200_300;
-      slabLabel = "200 - 300 km";
+      slabLabel = "200 - 300 km Slab";
     } else if (distance <= 400) {
       rate = r300_400;
-      slabLabel = "300 - 400 km";
+      slabLabel = "300 - 400 km Slab";
     }
     const raw = distance * rate;
-    baseDistanceCost = Math.max(baseRate, Math.round(raw));
+    baseDistanceCost = Math.round(raw);
     activeSlab = `${slabLabel} (\u20B9${rate}/km)`;
     slabRateStr = `\u20B9${rate}/km`;
-    isBase = baseDistanceCost === baseRate;
-    breakdownParts.push(`${distance} km \xD7 \u20B9${rate}/km = \u20B9${Math.round(raw).toLocaleString("en-IN")}`);
-  } else {
-    let tot = baseRate;
-    breakdownParts.push(`0 - 100 km: \u20B9${baseRate.toLocaleString("en-IN")}`);
-    if (distance <= 200) {
-      const extra = distance - 100;
-      const extraCost = extra * r100_200;
-      tot += extraCost;
-      breakdownParts.push(`+ ${extra} km @ \u20B9${r100_200}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-      activeSlab = `100 - 200 km (\u20B9${r100_200}/km)`;
-      slabRateStr = `\u20B9${r100_200}/km`;
-    } else if (distance <= 300) {
-      const c100_200 = 100 * r100_200;
-      const extra = distance - 200;
-      const extraCost = extra * r200_300;
-      tot += c100_200 + extraCost;
-      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ ${extra} km @ \u20B9${r200_300}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-      activeSlab = `200 - 300 km (\u20B9${r200_300}/km)`;
-      slabRateStr = `\u20B9${r200_300}/km`;
-    } else if (distance <= 400) {
-      const c100_200 = 100 * r100_200;
-      const c200_300 = 100 * r200_300;
-      const extra = distance - 300;
-      const extraCost = extra * r300_400;
-      tot += c100_200 + c200_300 + extraCost;
-      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(c200_300).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ ${extra} km @ \u20B9${r300_400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-      activeSlab = `300 - 400 km (\u20B9${r300_400}/km)`;
-      slabRateStr = `\u20B9${r300_400}/km`;
-    } else {
-      const c100_200 = 100 * r100_200;
-      const c200_300 = 100 * r200_300;
-      const c300_400 = 100 * r300_400;
-      const extra = distance - 400;
-      const extraCost = extra * rAbove400;
-      tot += c100_200 + c200_300 + c300_400 + extraCost;
-      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(c200_300).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ 100 km @ \u20B9${r300_400}/km = \u20B9${Math.round(c300_400).toLocaleString("en-IN")}`);
-      breakdownParts.push(`+ ${extra} km @ \u20B9${rAbove400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-      activeSlab = `Above 400 km (\u20B9${rAbove400}/km)`;
-      slabRateStr = `\u20B9${rAbove400}/km`;
-    }
-    baseDistanceCost = Math.round(tot);
+    isBase = false;
+    breakdownParts.push(`${distance} km \xD7 \u20B9${rate}/km (${slabLabel} applies to whole kms) = \u20B9${baseDistanceCost.toLocaleString("en-IN")}`);
   }
   const tripCfg = config?.trip_types?.[tripType] || (tripType === "round_trip" ? { multiplier: 1.85, label: "Two-Way / Round Trip" } : { multiplier: 1, label: "One-Way" });
   const tripMultiplier = Number(tripCfg.multiplier) || 1;
@@ -1122,7 +1076,7 @@ function RateSlabsManagerTab() {
       className: `px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === tab.id ? "bg-amber-500 text-slate-950 shadow-md font-black" : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"}`
     },
     tab.label
-  ))), activeSubTab === "vehicles" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "Distance Rate Slabs by Vehicle Category"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" }, ratesData.vehicles.length, " Categories")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Below 100 kms uses flat base rate (\u20B910,000 for 32ft). Above 100km follows progressive marginal slabs.")), /* @__PURE__ */ c.createElement(
+  ))), activeSubTab === "vehicles" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "Distance Rate Slabs by Vehicle Category"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" }, ratesData.vehicles.length, " Categories")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Below 100 kms uses flat base rate (\u20B910,000 for 32ft). Above 100km, the applicable slab rate applies to the whole distance.")), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",

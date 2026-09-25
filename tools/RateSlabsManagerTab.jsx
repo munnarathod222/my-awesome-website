@@ -246,72 +246,28 @@ export function calculateQuotePrice(vehicle, distance, options = {}) {
   let isBase = false;
   let breakdownParts = [];
 
-  // Distance Slab Calculation
+  // Distance Slab Calculation:
+  // If distance <= 100 km, flat base rate applies.
+  // If distance > 100 km, the applicable slab rate applies to the WHOLE distance (all kms).
   if (distance <= 100) {
     baseDistanceCost = baseRate;
-    activeSlab = "Below 100 km (Flat Base)";
+    activeSlab = `Below 100 km (Flat Base ₹${baseRate.toLocaleString('en-IN')})`;
     slabRateStr = `₹${baseRate.toLocaleString('en-IN')} Base`;
     isBase = true;
     breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat base rate ₹${baseRate.toLocaleString('en-IN')}`);
-  } else if (mode === "flat_min") {
+  } else {
     let rate = rAbove400;
-    let slabLabel = "Above 400 km";
-    if (distance <= 200) { rate = r100_200; slabLabel = "100 - 200 km"; }
-    else if (distance <= 300) { rate = r200_300; slabLabel = "200 - 300 km"; }
-    else if (distance <= 400) { rate = r300_400; slabLabel = "300 - 400 km"; }
+    let slabLabel = "400+ km Long Haul";
+    if (distance <= 200) { rate = r100_200; slabLabel = "100 - 200 km Slab"; }
+    else if (distance <= 300) { rate = r200_300; slabLabel = "200 - 300 km Slab"; }
+    else if (distance <= 400) { rate = r300_400; slabLabel = "300 - 400 km Slab"; }
 
     const raw = distance * rate;
-    baseDistanceCost = Math.max(baseRate, Math.round(raw));
+    baseDistanceCost = Math.round(raw);
     activeSlab = `${slabLabel} (₹${rate}/km)`;
     slabRateStr = `₹${rate}/km`;
-    isBase = baseDistanceCost === baseRate;
-    breakdownParts.push(`${distance} km × ₹${rate}/km = ₹${Math.round(raw).toLocaleString('en-IN')}`);
-  } else {
-    // Progressive Slabs
-    let tot = baseRate;
-    breakdownParts.push(`0 - 100 km: ₹${baseRate.toLocaleString('en-IN')}`);
-    if (distance <= 200) {
-      const extra = distance - 100;
-      const extraCost = extra * r100_200;
-      tot += extraCost;
-      breakdownParts.push(`+ ${extra} km @ ₹${r100_200}/km = ₹${Math.round(extraCost).toLocaleString('en-IN')}`);
-      activeSlab = `100 - 200 km (₹${r100_200}/km)`;
-      slabRateStr = `₹${r100_200}/km`;
-    } else if (distance <= 300) {
-      const c100_200 = 100 * r100_200;
-      const extra = distance - 200;
-      const extraCost = extra * r200_300;
-      tot += c100_200 + extraCost;
-      breakdownParts.push(`+ 100 km @ ₹${r100_200}/km = ₹${Math.round(c100_200).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ ${extra} km @ ₹${r200_300}/km = ₹${Math.round(extraCost).toLocaleString('en-IN')}`);
-      activeSlab = `200 - 300 km (₹${r200_300}/km)`;
-      slabRateStr = `₹${r200_300}/km`;
-    } else if (distance <= 400) {
-      const c100_200 = 100 * r100_200;
-      const c200_300 = 100 * r200_300;
-      const extra = distance - 300;
-      const extraCost = extra * r300_400;
-      tot += c100_200 + c200_300 + extraCost;
-      breakdownParts.push(`+ 100 km @ ₹${r100_200}/km = ₹${Math.round(c100_200).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ 100 km @ ₹${r200_300}/km = ₹${Math.round(c200_300).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ ${extra} km @ ₹${r300_400}/km = ₹${Math.round(extraCost).toLocaleString('en-IN')}`);
-      activeSlab = `300 - 400 km (₹${r300_400}/km)`;
-      slabRateStr = `₹${r300_400}/km`;
-    } else {
-      const c100_200 = 100 * r100_200;
-      const c200_300 = 100 * r200_300;
-      const c300_400 = 100 * r300_400;
-      const extra = distance - 400;
-      const extraCost = extra * rAbove400;
-      tot += c100_200 + c200_300 + c300_400 + extraCost;
-      breakdownParts.push(`+ 100 km @ ₹${r100_200}/km = ₹${Math.round(c100_200).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ 100 km @ ₹${r200_300}/km = ₹${Math.round(c200_300).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ 100 km @ ₹${r300_400}/km = ₹${Math.round(c300_400).toLocaleString('en-IN')}`);
-      breakdownParts.push(`+ ${extra} km @ ₹${rAbove400}/km = ₹${Math.round(extraCost).toLocaleString('en-IN')}`);
-      activeSlab = `Above 400 km (₹${rAbove400}/km)`;
-      slabRateStr = `₹${rAbove400}/km`;
-    }
-    baseDistanceCost = Math.round(tot);
+    isBase = false;
+    breakdownParts.push(`${distance} km × ₹${rate}/km (${slabLabel} applies to whole kms) = ₹${baseDistanceCost.toLocaleString('en-IN')}`);
   }
 
   // 1. Trip Type Multiplier
@@ -610,7 +566,7 @@ export default function RateSlabsManagerTab() {
                 </span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Below 100 kms uses flat base rate (₹10,000 for 32ft). Above 100km follows progressive marginal slabs.
+                Below 100 kms uses flat base rate (₹10,000 for 32ft). Above 100km, the applicable slab rate applies to the whole distance.
               </p>
             </div>
 

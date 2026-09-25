@@ -337,48 +337,21 @@ k=h.useMemo(()=>{
 
   if(D<=100){
     distanceCharge=Math.round(baseRateUnder100*E);
-    appliedSlabLabel=`Below 100 km (Base Rate ₹${baseRateUnder100.toLocaleString("en-IN")})`;
+    appliedSlabLabel=`Below 100 km (Flat Base ₹${baseRateUnder100.toLocaleString("en-IN")})`;
     effectiveRateKM=D>0?Math.round(distanceCharge/D):0;
     isUnder100=!0;
-  }else if(mode==="flat_min"){
+  }else{
     let rate=rAbove400;
     let slabTitle="400+ km Long Haul";
     if(D<=200){rate=r100_200;slabTitle="100 - 200 km Slab";}
     else if(D<=300){rate=r200_300;slabTitle="200 - 300 km Slab";}
     else if(D<=400){rate=r300_400;slabTitle="300 - 400 km Slab";}
     const adjRate=Math.round(rate*E);
-    const raw=D*adjRate;
-    distanceCharge=Math.max(Math.round(baseRateUnder100*E),Math.round(raw));
-    appliedSlabLabel=`${slabTitle} (₹${adjRate}/km)`;
+    distanceCharge=Math.round(D*adjRate);
+    appliedSlabLabel=`${slabTitle} (₹${adjRate}/km applies to whole ${D} KM)`;
     effectiveRateKM=adjRate;
-  }else{
-    const adj100_200=Math.round(r100_200*E);
-    const adj200_300=Math.round(r200_300*E);
-    const adj300_400=Math.round(r300_400*E);
-    const adjAbove400=Math.round(rAbove400*E);
-
-    let tot=baseRateUnder100*E;
-    if(D<=200){
-      const extra=D-100;
-      tot+=extra*adj100_200;
-      appliedSlabLabel=`100 - 200 km Slab (₹${adj100_200}/km)`;
-      effectiveRateKM=adj100_200;
-    }else if(D<=300){
-      tot+=(100*adj100_200)+((D-200)*adj200_300);
-      appliedSlabLabel=`200 - 300 km Slab (₹${adj200_300}/km)`;
-      effectiveRateKM=adj200_300;
-    }else if(D<=400){
-      tot+=(100*adj100_200)+(100*adj200_300)+((D-300)*adj300_400);
-      appliedSlabLabel=`300 - 400 km Slab (₹${adj300_400}/km)`;
-      effectiveRateKM=adj300_400;
-    }else{
-      tot+=(100*adj100_200)+(100*adj200_300)+(100*adj300_400)+((D-400)*adjAbove400);
-      appliedSlabLabel=`Above 400 km (₹${adjAbove400}/km)`;
-      effectiveRateKM=adjAbove400;
-    }
-    distanceCharge=Math.round(tot);
+    isUnder100=!1;
   }
-
   let Z=0;
   Object.keys(v).forEach(L=>{if(v[L]){const J=El.find(Q=>Q.id===L);J&&(Z+=J.cost)}});
 

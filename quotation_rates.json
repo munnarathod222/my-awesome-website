@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-25T06:52:59.361Z",
-  "pricing_mode": "progressive",
+  "updated_at": "2026-09-25T08:40:46.099Z",
+  "pricing_mode": "slab_whole",
   "slabs_definition": [
     {
       "id": "below_100",
