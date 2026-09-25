@@ -267,7 +267,7 @@ s=ls(),
 [b_cargoMaterial,setCargoMaterial]=h.useState(""),
 [b_customVehicle,setCustomVehicle]=h.useState(""),
 [b_submitErr,setSubmitErr]=h.useState(""),
-[b_tripType,setTripType]=h.useState("one_way"),[b_contractTenure,setContractTenure]=h.useState("spot"),[b_payloadType,setPayloadType]=h.useState("standard"),[b_rateSlabs,setRateSlabs]=h.useState(()=>{
+[b_stops,setStops]=h.useState([]),[b_tripType,setTripType]=h.useState("one_way"),[b_contractTenure,setContractTenure]=h.useState("spot"),[b_payloadType,setPayloadType]=h.useState("standard"),[b_rateSlabs,setRateSlabs]=h.useState(()=>{
   try{
     const saved=localStorage.getItem("jbc_quotation_rate_slabs");
     if(saved)return JSON.parse(saved);
@@ -310,7 +310,7 @@ h.useEffect(()=>{
   };
 },[]);
 
-const P=xn.find(b=>b.id===t||b.value===t)||xn[5],
+const activeVehicles=h.useMemo(()=>xn.map(v=>{const cv=(b_rateSlabs?.vehicles||[]).find(x=>x.id===v.id||x.short===v.short||(x.name&&x.name.toLowerCase().includes(v.short.toLowerCase())));return cv?{...v,capacity:cv.capacity||v.capacity,maxMT:cv.maxMT||v.maxMT,name:cv.name||v.name}:v}),[b_rateSlabs]),P=activeVehicles.find(b=>b.id===t||b.value===t)||activeVehicles[5],
 w=h.useMemo(()=>l&&parseFloat(l)>0?parseFloat(l):r&&i?(Math.abs(r.length-i.length)+1)*120+250:0,[l,r,i]),
 k=h.useMemo(()=>{
   const b=parseFloat(d)||0,N=b/1e3,D=w;
@@ -480,7 +480,7 @@ const handleQuoteSubmit=async J=>{
     handling_fees:k.reqCharge,
     weight_charge:k.distanceCharge,
     total_price:k.total||(k.distanceCharge+k.reqCharge),
-    notes:`Online Inquiry from Welcome Page. Distance: ${w} KM. Applied Slab: ${k.appliedSlabLabel}.${b_cargoMaterial.trim()?` Material: ${b_cargoMaterial.trim()}.`:""}${b_pickupMaps.trim()?` Pickup Map: ${b_pickupMaps.trim()}`:""}${b_dropMaps.trim()?` Drop Map: ${b_dropMaps.trim()}`:""}`,
+    multi_stops:b_stops,stops_count:b_stops.length,notes:`Online Inquiry from Welcome Page. Distance: ${w} KM. Applied Slab: ${k.appliedSlabLabel}.${b_stops.length>0?` Stops (${b_stops.length}): ${b_stops.map((s,idx)=>`[Stop ${idx+1}: ${s.address||'N/A'}${s.maps_url?` (Map: ${s.maps_url})`:''}]`).join(', ')}.`:''}${b_cargoMaterial.trim()?` Material: ${b_cargoMaterial.trim()}.`:''}${b_pickupMaps.trim()?` Pickup Map: ${b_pickupMaps.trim()}`:''}${b_dropMaps.trim()?` Drop Map: ${b_dropMaps.trim()}`:''}`,
     status:"Pending"
   };
   try{
@@ -537,14 +537,14 @@ if(b_submitted){
       ]}),
       e.jsxs(dt,{className:"p-6 sm:p-8 space-y-6",children:[
         e.jsxs("div",{className:"bg-muted/40 p-4 rounded-2xl border border-border/60 space-y-3 text-sm",children:[
-          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Route:"}),e.jsxs("span",{className:"font-bold",children:[b_submitted.origin," ➡️ ",b_submitted.destination]})]}),
+          e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Route:"}),e.jsxs("span",{className:"font-bold",children:[b_submitted.origin," ➡️ ",b_submitted.destination]})]}),b_stops.length>0&&e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Multi-Drop Stops:"}),e.jsx("span",{className:"font-semibold text-amber-300",children:`${b_stops.length} Intermediate Drops`})]}),
           e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Vehicle:"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:b_submitted.truck_size})]}),
           e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Distance / Weight:"}),e.jsxs("span",{className:"font-semibold",children:[w," KM • ",d||(P.maxMT*1e3)," KG"]})]}),
           e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Pricing Slab:"}),e.jsx("span",{className:"font-semibold text-amber-400",children:k.appliedSlabLabel})]}),
           e.jsxs("div",{className:"flex justify-between border-t border-border pt-2 text-base font-bold",children:[e.jsx("span",{children:"Estimated Total:"}),e.jsxs("span",{className:"text-emerald-400 font-mono",children:["₹",Number(b_submitted.total_price).toLocaleString("en-IN")]})]})
         ]}),
         e.jsxs("div",{className:"flex flex-col sm:flex-row gap-3 pt-2",children:[
-          e.jsxs("a",{href:`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello Jai Bhavani Cargo, I have submitted Quote #${b_submitted.quote_number} for ${b_submitted.origin} to ${b_submitted.destination}. Estimated: ₹${Number(b_submitted.total_price).toLocaleString("en-IN")}. Please confirm vehicle dispatch.`)}`,target:"_blank",rel:"noopener noreferrer",className:"flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg",children:[e.jsx(oa,{className:"w-4 h-4"})," Confirm on WhatsApp"]}),
+          e.jsxs("a",{href:`https://wa.me/${waPhone}?text=${encodeURIComponent(`Hello Jai Bhavani Cargo, I have submitted Quote #${b_submitted.quote_number} for ${b_submitted.origin}${b_stops&&b_stops.length>0?` (via ${b_stops.length} stops: ${b_stops.map((s,idx)=>s.address||`Stop ${idx+1}`).join(" ➡️ ")})`:""} to ${b_submitted.destination}. Estimated: ₹${Number(b_submitted.total_price).toLocaleString("en-IN")}. Please confirm vehicle dispatch.`)}`,target:"_blank",rel:"noopener noreferrer",className:"flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg",children:[e.jsx(oa,{className:"w-4 h-4"})," Confirm on WhatsApp"]}),
           e.jsx(q,{variant:"outline",onClick:()=>setSubmittedQuote(null),className:"flex-1",children:"Calculate Another Quote"})
         ]})
       ]})
@@ -581,13 +581,13 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
           ]}),
           e.jsxs(Fe,{value:t,onValueChange:a,children:[
             e.jsx(Ie,{className:"bg-background text-foreground font-bold h-12 text-sm border-primary/50 focus:border-primary",children:e.jsx($e,{placeholder:"Select Vehicle Size"})}),
-            e.jsx(Oe,{className:"max-h-[340px]",children:xn.map(b=>e.jsx(re,{value:b.id,className:"py-2.5",children:e.jsxs("div",{className:"flex items-center justify-between gap-4 w-full",children:[e.jsx("span",{className:"font-bold text-foreground",children:b.name}),e.jsxs("span",{className:"text-xs text-emerald-400 font-mono font-semibold",children:["(",b.capacity,")"]})]})},b.id))})
+            e.jsx(Oe,{className:"max-h-[340px]",children:activeVehicles.map(b=>e.jsx(re,{value:b.id,className:"py-2.5",children:e.jsxs("div",{className:"flex items-center justify-between gap-4 w-full",children:[e.jsx("span",{className:"font-bold text-foreground",children:b.name}),e.jsxs("span",{className:"text-xs text-emerald-400 font-mono font-semibold",children:["(",b.capacity,")"]})]})},b.id))})
           ]}),
           t==="other"&&e.jsx("div",{className:"mt-2",children:e.jsx(H,{placeholder:"Specify custom vehicle requirement (e.g. 40ft trailer, 10-ton flatbed)...",value:b_customVehicle,onChange:b=>setCustomVehicle(b.target.value),className:"bg-background"})}),
   e.jsxs("div",{className:"p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3.5",children:[
     e.jsxs("div",{className:"flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800 pb-2",children:[
       e.jsx("span",{className:"text-xs font-bold text-slate-300 uppercase tracking-wider",children:"🎯 Trip & Engagement Customization"}),
-      e.jsx("span",{className:"text-[10px] text-amber-400 font-bold",children:"Super Admin Dynamic Pricing Active"})
+      null
     ]}),
     e.jsxs("div",{className:"space-y-1.5",children:[
       e.jsx("label",{className:"text-xs font-bold text-foreground",children:"Trip Directionality:"}),
@@ -610,7 +610,7 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
       e.jsx("label",{className:"text-xs font-bold text-foreground",children:"Cargo Weight & Payload Utilization:"}),
       e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[
         e.jsxs("button",{type:"button",onClick:()=>setPayloadType("standard"),className:`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${!k.isFullPayload?"bg-emerald-600 text-white font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800"}`,children:[e.jsx("span",{children:"⚖️"})," Standard Payload (1.0x)"]}),
-        e.jsxs("button",{type:"button",onClick:()=>setPayloadType("full_payload"),className:`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${k.isFullPayload?"bg-rose-600 text-white font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800"}`,children:[e.jsx("span",{children:"🏋️"})," Full Payload (+10%)",k.isFullPayload&&e.jsx("span",{className:"text-[9px] ml-1 bg-white/20 px-1.5 py-0.2 rounded-full",children:"Active"})]})
+        e.jsxs("button",{type:"button",onClick:()=>setPayloadType("full_payload"),className:`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${k.isFullPayload?"bg-rose-600 text-white font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800"}`,children:[e.jsx("span",{children:"🏋️"})," Full Payload (+10%)",k.isFullPayload?e.jsx("span",{className:"text-[9px] ml-1 bg-white/20 px-1.5 py-0.2 rounded-full",children:"Active"}):null]})
       ]})
     ]})
   ]})
@@ -628,6 +628,44 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
               e.jsx(H,{placeholder:"e.g. Delhi, 110001",value:i,onChange:b=>{o(b.target.value);setSubmitErr("");},className:"bg-background"}),
               e.jsx(H,{placeholder:"📍 Drop Google Maps Link (Optional)",value:b_dropMaps,onChange:b=>setDropMaps(b.target.value),className:"bg-background/80 text-xs h-9 border-dashed"})
             ]}),
+e.jsxs("div",{className:"md:col-span-2 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3.5",children:[
+      e.jsxs("div",{className:"flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5",children:[
+        e.jsxs("div",{className:"flex items-center gap-2",children:[
+          e.jsx("span",{className:"text-base",children:"🗺️"}),
+          e.jsx("span",{className:"text-xs font-bold text-slate-200 uppercase tracking-wider",children:"Multi-Drop / Intermediate Stops Option"}),
+          b_stops.length>0&&e.jsxs("span",{className:"px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono",children:[b_stops.length," Intermediate ",b_stops.length===1?"Stop":"Stops"]})
+        ]}),
+        e.jsxs("div",{className:"flex items-center gap-1.5 flex-wrap",children:[
+          e.jsx("span",{className:"text-[11px] text-slate-400 font-medium mr-1",children:"Select Stops:"}),
+          [0,1,2,3,4].map(num=>e.jsx("button",{key:num,type:"button",onClick:()=>{if(num===0)setStops([]);else setStops(prev=>{const next=[...prev];while(next.length<num)next.push({address:"",maps_url:""});return next.slice(0,num);});},className:`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${b_stops.length===num?"bg-amber-500 text-slate-950 font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"}`,children:num===0?"Direct (0)":`${num} ${num===1?"Stop":"Stops"}`}))
+        ]})
+      ]}),
+      b_stops.length===0?e.jsxs("div",{className:"flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 py-1",children:[
+        e.jsx("span",{children:"Direct point-to-point delivery. Need multi-point unloading or intermediate pickups?"}),
+        e.jsxs("button",{type:"button",onClick:()=>setStops([{address:"",maps_url:""}]),className:"px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1 transition-colors self-start sm:self-auto",children:[e.jsx("span",{children:"➕"})," Add Intermediate Stop"]})
+      ]}):e.jsxs("div",{className:"space-y-3 pt-1",children:[
+        b_stops.map((stop,idx)=>e.jsxs("div",{key:idx,className:"p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-2.5 transition-all hover:border-slate-700",children:[
+          e.jsxs("div",{className:"flex items-center justify-between",children:[
+            e.jsxs("div",{className:"flex items-center gap-2",children:[
+              e.jsxs("span",{className:"px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px] border border-amber-500/30",children:["Stop #",idx+1]}),
+              e.jsx("span",{className:"text-xs font-bold text-slate-200",children:`Intermediate Drop / Pickup Point ${idx+1}`})
+            ]}),
+            e.jsxs("button",{type:"button",onClick:()=>setStops(prev=>prev.filter((_,i)=>i!==idx)),className:"px-2 py-0.5 rounded text-[11px] font-bold text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-1",title:"Remove this stop",children:[e.jsx("span",{children:"✕"})," Remove"]})
+          ]}),
+          e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-3",children:[
+            e.jsxs("div",{className:"space-y-1",children:[
+              e.jsxs("label",{className:"text-[11px] font-semibold text-slate-400 flex items-center gap-1",children:[e.jsx("span",{children:"🏢"}),`Stop ${idx+1} Address / City / Pincode *`]}),
+              e.jsx(H,{placeholder:`e.g. Pune Logistics Hub, Pincode 411001`,value:stop.address||"",onChange:e=>{const val=e.target.value;setStops(prev=>prev.map((s,i)=>i===idx?{...s,address:val}:s));},className:"bg-background h-9 text-xs"})
+            ]}),
+            e.jsxs("div",{className:"space-y-1",children:[
+              e.jsxs("label",{className:"text-[11px] font-semibold text-slate-400 flex items-center gap-1",children:[e.jsx("span",{children:"📍"}),`Stop ${idx+1} Google Maps Link (Optional)`]}),
+              e.jsx(H,{placeholder:`https://maps.google.com/?q=...`,value:stop.maps_url||"",onChange:e=>{const val=e.target.value;setStops(prev=>prev.map((s,i)=>i===idx?{...s,maps_url:val}:s));},className:"bg-background/80 text-xs h-9 border-dashed"})
+            ]})
+          ]})
+        ]})),
+        b_stops.length<5&&e.jsxs("button",{type:"button",onClick:()=>setStops(prev=>[...prev,{address:"",maps_url:""}]),className:"w-full py-2 rounded-xl bg-slate-950/60 hover:bg-slate-900 text-amber-300 border border-dashed border-slate-700 hover:border-amber-500/50 text-xs font-bold flex items-center justify-center gap-1.5 transition-all",children:[e.jsx("span",{children:"➕"}),e.jsx("span",{children:`Add Another Stop (Stop ${b_stops.length+1})`})]})
+      ]})
+    ]}),
             e.jsxs("div",{className:"space-y-3 md:col-span-2",children:[
               e.jsxs(z,{children:["Distance in KM ",e.jsx("span",{className:"text-muted-foreground font-normal",children:"(Auto-calculated or enter exact)"})]}),
               e.jsx(H,{type:"number",min:"1",placeholder:"e.g. 500",value:l,onChange:b=>{c(b.target.value);setSubmitErr("");},className:"bg-background"})
@@ -695,7 +733,7 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Vehicle Selected"}),e.jsx("span",{className:"font-bold text-foreground",children:P.short})]}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Capacity"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:P.capacity})]}),e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Trip Direction"}),e.jsxs("span",{className:"font-bold text-foreground font-mono",children:[k.tripLabel||"One-Way"," (",k.tripMult||1,"x)"]})]}),
   e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Contract Tenure"}),e.jsxs("span",{className:"font-bold text-emerald-400 font-mono",children:[k.tenureLabel||"Spot"," (",k.tenureMult||1,"x)"]})]}),
-  e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Mode"}),e.jsxs("span",{className:"font-bold text-foreground font-mono",children:[k.payloadLabel||"Standard"," (",k.payloadMult||1,"x)"]})]}),
+  b_stops.length>0&&e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Route Stops"}),e.jsxs("span",{className:"font-bold text-amber-300 font-mono",children:[b_stops.length," Intermediate Drops"]})]}),e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Mode"}),e.jsxs("span",{className:"font-bold text-foreground font-mono",children:[k.payloadLabel||"Standard"," (",k.payloadMult||1,"x)"]})]}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
             e.jsx("span",{className:"text-muted-foreground",children:"Distance Slabs Applied"}),
             e.jsx("span",{className:"font-semibold text-amber-400 text-xs sm:text-sm text-right",children:k.appliedSlabLabel||(w<=100?"Below 100 km (Base Rate)":"Tiered Slab")})
