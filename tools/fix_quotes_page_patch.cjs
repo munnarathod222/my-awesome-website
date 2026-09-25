@@ -13,7 +13,9 @@ const rawTabJsx = fs.readFileSync('tools/RateSlabsManagerTab.jsx', 'utf8');
 const tabJsxForBundle = rawTabJsx
   .replace(/import\s+React,\s*\{[^}]*\}\s*from\s*['"]react['"];?/g, '')
   .replace(/export\s+default\s+function\s+RateSlabsManagerTab/g, 'function RateSlabsManagerTab')
-  .replace(/export\s+function\s+calculateQuotePrice/g, 'function calculateQuotePrice');
+  .replace(/export\s+function\s+calculateQuotePrice/g, 'function calculateQuotePrice')
+  .replace(/export\s+const\s+DEFAULT_SLABS_DATA/g, 'const DEFAULT_SLABS_DATA')
+  .replace(/export\s+/g, '');
 
 const wrappedJsx = 'const { useState, useEffect, useMemo } = c;\n' + tabJsxForBundle;
 const transRes = esbuild.transformSync(wrappedJsx, {
@@ -27,16 +29,14 @@ const newTabCode = transRes.code;
 quotePageFiles.forEach(file => {
   if (!fs.existsSync(file)) return;
   let content = fs.readFileSync(file, 'utf8');
-  let startIdx = content.indexOf('// --- SUPER ADMIN DYNAMIC RATE ENGINE & SLABS MANAGER ---');
-  if (startIdx === -1) {
-    startIdx = content.indexOf('const DEFAULT_SLABS_DATA = {');
-  }
-  if (startIdx !== -1) {
-    content = content.slice(0, startIdx) + newTabCode + '\nexport{Gt as default};\n';
+  const saveIdx = content.indexOf('Save Agreement');
+  if (saveIdx !== -1) {
+    const closeIdx = content.indexOf('}', saveIdx);
+    content = content.slice(0, closeIdx + 1) + '\n\n' + newTabCode + '\nexport{Gt as default};\n';
     fs.writeFileSync(file, content, 'utf8');
     console.log('✓ Cleanly replaced RateSlabsManagerTab in', file);
   } else {
-    console.error('Start marker not found in', file);
+    console.error('Save Agreement marker not found in', file);
   }
 });
 
