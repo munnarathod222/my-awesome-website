@@ -267,7 +267,7 @@ s=ls(),
 [b_cargoMaterial,setCargoMaterial]=h.useState(""),
 [b_customVehicle,setCustomVehicle]=h.useState(""),
 [b_submitErr,setSubmitErr]=h.useState(""),
-[b_rateSlabs,setRateSlabs]=h.useState(()=>{
+[b_tripType,setTripType]=h.useState("one_way"),[b_contractTenure,setContractTenure]=h.useState("spot"),[b_payloadType,setPayloadType]=h.useState("standard"),[b_rateSlabs,setRateSlabs]=h.useState(()=>{
   try{
     const saved=localStorage.getItem("jbc_quotation_rate_slabs");
     if(saved)return JSON.parse(saved);
@@ -382,10 +382,26 @@ k=h.useMemo(()=>{
   let Z=0;
   Object.keys(v).forEach(L=>{if(v[L]){const J=El.find(Q=>Q.id===L);J&&(Z+=J.cost)}});
 
-  let te=distanceCharge+Z;
+  // 1. Trip Type Multiplier (One-Way vs Round Trip)
+  const tripCfg=b_rateSlabs?.trip_types?.[b_tripType]||(b_tripType==="round_trip"?{multiplier:1.85,label:"Two-Way / Round Trip"}:{multiplier:1.0,label:"One-Way Trip"});
+  const tripMult=Number(tripCfg.multiplier)||1.0;
+
+  // 2. Payload / Weight Surcharge
+  const isHeavyWeight=(b&&P.maxMT&&(b/1e3>=P.maxMT*0.8||b>=P.maxMT*0.8));
+  const isFullPayload=b_payloadType==="full_payload"||isHeavyWeight;
+  const payloadCfg=b_rateSlabs?.weight_payload_rules?.[isFullPayload?"full_payload":"standard"]||(isFullPayload?{multiplier:1.10,label:"Full Payload (+10%)"}:{multiplier:1.0,label:"Standard Payload"});
+  const payloadMult=Number(payloadCfg.multiplier)||1.0;
+
+  // 3. Contract Tenure Discount
+  const tenureCfg=b_rateSlabs?.contract_tenures?.[b_contractTenure]||{multiplier:1.0,label:"Spot / Adhoc"};
+  const tenureMult=Number(tenureCfg.multiplier)||1.0;
+
+  const adjDistCost=Math.round(distanceCharge*tripMult*payloadMult*tenureMult);
+  let te=adjDistCost+Z;
 
   return{
-    distanceCharge:Math.round(distanceCharge),
+    rawDistanceCost:Math.round(distanceCharge),
+    distanceCharge:Math.round(adjDistCost),
     baseCharge:Math.round(baseRateUnder100),
     reqCharge:Z,
     total:Math.round(te),
@@ -395,9 +411,16 @@ k=h.useMemo(()=>{
     minApplied:isUnder100,
     isValid:D>0&&b>0&&!j,
     isCapacityExceeded:j,
-    maxMT:P.maxMT
+    maxMT:P.maxMT,
+    tripMult:tripMult,
+    tripLabel:tripCfg.label,
+    payloadMult:payloadMult,
+    payloadLabel:payloadCfg.label,
+    isFullPayload:isFullPayload,
+    tenureMult:tenureMult,
+    tenureLabel:tenureCfg.label
   };
-},[w,d,P,u,v,b_rateSlabs,t]),
+},[w,d,P,u,v,b_rateSlabs,t,b_tripType,b_contractTenure,b_payloadType]),
 O=(b,N)=>{g(D=>({...D,[b]:N}))};
 
 h.useEffect(()=>{
@@ -560,7 +583,37 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
             e.jsx(Ie,{className:"bg-background text-foreground font-bold h-12 text-sm border-primary/50 focus:border-primary",children:e.jsx($e,{placeholder:"Select Vehicle Size"})}),
             e.jsx(Oe,{className:"max-h-[340px]",children:xn.map(b=>e.jsx(re,{value:b.id,className:"py-2.5",children:e.jsxs("div",{className:"flex items-center justify-between gap-4 w-full",children:[e.jsx("span",{className:"font-bold text-foreground",children:b.name}),e.jsxs("span",{className:"text-xs text-emerald-400 font-mono font-semibold",children:["(",b.capacity,")"]})]})},b.id))})
           ]}),
-          t==="other"&&e.jsx("div",{className:"mt-2",children:e.jsx(H,{placeholder:"Specify custom vehicle requirement (e.g. 40ft trailer, 10-ton flatbed)...",value:b_customVehicle,onChange:b=>setCustomVehicle(b.target.value),className:"bg-background"})})
+          t==="other"&&e.jsx("div",{className:"mt-2",children:e.jsx(H,{placeholder:"Specify custom vehicle requirement (e.g. 40ft trailer, 10-ton flatbed)...",value:b_customVehicle,onChange:b=>setCustomVehicle(b.target.value),className:"bg-background"})}),
+  e.jsxs("div",{className:"p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3.5",children:[
+    e.jsxs("div",{className:"flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-800 pb-2",children:[
+      e.jsx("span",{className:"text-xs font-bold text-slate-300 uppercase tracking-wider",children:"🎯 Trip & Engagement Customization"}),
+      e.jsx("span",{className:"text-[10px] text-amber-400 font-bold",children:"Super Admin Dynamic Pricing Active"})
+    ]}),
+    e.jsxs("div",{className:"space-y-1.5",children:[
+      e.jsx("label",{className:"text-xs font-bold text-foreground",children:"Trip Directionality:"}),
+      e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[
+        e.jsxs("button",{type:"button",onClick:()=>setTripType("one_way"),className:`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${b_tripType==="one_way"?"bg-amber-500 text-slate-950 font-black shadow-md":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:[e.jsx("span",{children:"➡️"})," One-Way Trip"]}),
+        e.jsxs("button",{type:"button",onClick:()=>setTripType("round_trip"),className:`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${b_tripType==="round_trip"?"bg-amber-500 text-slate-950 font-black shadow-md":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:[e.jsx("span",{children:"🔄"})," Two-Way / Round Trip ",e.jsx("span",{className:"text-[10px] ml-1 px-1.5 py-0.2 rounded-full bg-slate-900 text-amber-300 font-black",children:"Save 15%"})]})
+      ]})
+    ]}),
+    e.jsxs("div",{className:"space-y-1.5",children:[
+      e.jsx("label",{className:"text-xs font-bold text-foreground",children:"Engagement Model / Contract Tenure:"}),
+      e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-5 gap-1.5",children:[
+        e.jsxs("button",{type:"button",onClick:()=>setContractTenure("spot"),className:`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${b_contractTenure==="spot"?"bg-primary text-primary-foreground font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:[e.jsx("span",{children:"⚡"})," Spot / Adhoc"]}),
+        e.jsxs("button",{type:"button",onClick:()=>setContractTenure("contract_1m"),className:`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${b_contractTenure==="contract_1m"?"bg-primary text-primary-foreground font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:["1 Month ",e.jsx("span",{className:"text-[9px] text-amber-300 font-extrabold",children:"(-5%)"})]}),
+        e.jsxs("button",{type:"button",onClick:()=>setContractTenure("contract_3m"),className:`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${b_contractTenure==="contract_3m"?"bg-primary text-primary-foreground font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:["3 Months ",e.jsx("span",{className:"text-[9px] text-amber-300 font-extrabold",children:"(-8%)"})]}),
+        e.jsxs("button",{type:"button",onClick:()=>setContractTenure("contract_6m"),className:`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${b_contractTenure==="contract_6m"?"bg-primary text-primary-foreground font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:["6 Months ",e.jsx("span",{className:"text-[9px] text-amber-300 font-extrabold",children:"(-12%)"})]}),
+        e.jsxs("button",{type:"button",onClick:()=>setContractTenure("contract_1y"),className:`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${b_contractTenure==="contract_1y"?"bg-primary text-primary-foreground font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800 hover:text-white"}`,children:["1 Year ",e.jsx("span",{className:"text-[9px] text-amber-300 font-extrabold",children:"(-15%)"})]})
+      ]})
+    ]}),
+    e.jsxs("div",{className:"space-y-1.5",children:[
+      e.jsx("label",{className:"text-xs font-bold text-foreground",children:"Cargo Weight & Payload Utilization:"}),
+      e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[
+        e.jsxs("button",{type:"button",onClick:()=>setPayloadType("standard"),className:`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${!k.isFullPayload?"bg-emerald-600 text-white font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800"}`,children:[e.jsx("span",{children:"⚖️"})," Standard Payload (1.0x)"]}),
+        e.jsxs("button",{type:"button",onClick:()=>setPayloadType("full_payload"),className:`py-1.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${k.isFullPayload?"bg-rose-600 text-white font-black shadow-sm":"bg-slate-950 text-slate-400 border border-slate-800"}`,children:[e.jsx("span",{children:"🏋️"})," Full Payload (+10%)",k.isFullPayload&&e.jsx("span",{className:"text-[9px] ml-1 bg-white/20 px-1.5 py-0.2 rounded-full",children:"Active"})]})
+      ]})
+    ]})
+  ]})
         ]}),
         e.jsxs("div",{className:"space-y-4",children:[
           e.jsxs("div",{className:"flex items-center gap-2 text-lg font-semibold border-b border-border pb-2",children:[e.jsx(ht,{className:"w-5 h-5 text-secondary"})," Routing Information"]}),
@@ -640,7 +693,9 @@ return e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8 items-sta
         e.jsxs("div",{className:"space-y-4",children:[
           e.jsx("h4",{className:"font-semibold text-foreground border-b border-border pb-2",children:"Cost Breakdown"}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Vehicle Selected"}),e.jsx("span",{className:"font-bold text-foreground",children:P.short})]}),
-          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Capacity"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:P.capacity})]}),
+          e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Capacity"}),e.jsx("span",{className:"font-semibold text-emerald-400",children:P.capacity})]}),e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Trip Direction"}),e.jsxs("span",{className:"font-bold text-foreground font-mono",children:[k.tripLabel||"One-Way"," (",k.tripMult||1,"x)"]})]}),
+  e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Contract Tenure"}),e.jsxs("span",{className:"font-bold text-emerald-400 font-mono",children:[k.tenureLabel||"Spot"," (",k.tenureMult||1,"x)"]})]}),
+  e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"text-muted-foreground",children:"Payload Mode"}),e.jsxs("span",{className:"font-bold text-foreground font-mono",children:[k.payloadLabel||"Standard"," (",k.payloadMult||1,"x)"]})]}),
           e.jsxs("div",{className:"flex justify-between items-center text-sm",children:[
             e.jsx("span",{className:"text-muted-foreground",children:"Distance Slabs Applied"}),
             e.jsx("span",{className:"font-semibold text-amber-400 text-xs sm:text-sm text-right",children:k.appliedSlabLabel||(w<=100?"Below 100 km (Base Rate)":"Tiered Slab")})
