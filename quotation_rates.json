@@ -1,13 +1,128 @@
 {
-  "updated_at": "2026-09-25T01:25:00.000Z",
+  "updated_at": "2026-09-25T06:52:59.361Z",
   "pricing_mode": "progressive",
   "slabs_definition": [
-    { "id": "below_100", "label": "0 - 100 km", "min_km": 0, "max_km": 100, "is_base": true },
-    { "id": "100_200", "label": "100 - 200 km", "min_km": 100, "max_km": 200, "is_base": false },
-    { "id": "200_300", "label": "200 - 300 km", "min_km": 200, "max_km": 300, "is_base": false },
-    { "id": "300_400", "label": "300 - 400 km", "min_km": 300, "max_km": 400, "is_base": false },
-    { "id": "above_400", "label": "400+ km", "min_km": 400, "max_km": 99999, "is_base": false }
+    {
+      "id": "below_100",
+      "label": "0 - 100 km",
+      "min_km": 0,
+      "max_km": 100,
+      "is_base": true
+    },
+    {
+      "id": "100_200",
+      "label": "100 - 200 km",
+      "min_km": 100,
+      "max_km": 200,
+      "is_base": false
+    },
+    {
+      "id": "200_300",
+      "label": "200 - 300 km",
+      "min_km": 200,
+      "max_km": 300,
+      "is_base": false
+    },
+    {
+      "id": "300_400",
+      "label": "300 - 400 km",
+      "min_km": 300,
+      "max_km": 400,
+      "is_base": false
+    },
+    {
+      "id": "above_400",
+      "label": "400+ km",
+      "min_km": 400,
+      "max_km": 99999,
+      "is_base": false
+    }
   ],
+  "trip_types": {
+    "one_way": {
+      "id": "one_way",
+      "label": "One-Way Trip",
+      "short": "One-Way",
+      "multiplier": 1,
+      "discount_percent": 0,
+      "badge": "Standard Trip"
+    },
+    "round_trip": {
+      "id": "round_trip",
+      "label": "Two-Way / Round Trip",
+      "short": "Two-Way",
+      "multiplier": 1.85,
+      "discount_percent": 15,
+      "badge": "15% Return Leg Off",
+      "description": "Round trip freight with return haulage discount"
+    }
+  },
+  "contract_tenures": {
+    "spot": {
+      "id": "spot",
+      "label": "Adhoc / Spot Load",
+      "short": "Adhoc / Spot",
+      "multiplier": 1,
+      "discount_percent": 0,
+      "badge": "Instant Market Rate",
+      "description": "Single-indent on-demand market rate"
+    },
+    "contract_1m": {
+      "id": "contract_1m",
+      "label": "1 Month Contract",
+      "short": "1 Month",
+      "multiplier": 0.95,
+      "discount_percent": 5,
+      "badge": "5% Volume Discount",
+      "description": "Monthly commitment (5% volume discount)"
+    },
+    "contract_3m": {
+      "id": "contract_3m",
+      "label": "3 Months Contract",
+      "short": "3 Months",
+      "multiplier": 0.92,
+      "discount_percent": 8,
+      "badge": "8% Quarterly Discount",
+      "description": "Quarterly agreement (8% volume discount)"
+    },
+    "contract_6m": {
+      "id": "contract_6m",
+      "label": "6 Months Contract",
+      "short": "6 Months",
+      "multiplier": 0.88,
+      "discount_percent": 12,
+      "badge": "12% Half-Yearly Discount",
+      "description": "Half-yearly contract (12% volume discount)"
+    },
+    "contract_1y": {
+      "id": "contract_1y",
+      "label": "1 Year Contract",
+      "short": "1 Year",
+      "multiplier": 0.85,
+      "discount_percent": 15,
+      "badge": "15% Annual Enterprise Discount",
+      "description": "Annual enterprise contract (15% volume discount)"
+    }
+  },
+  "weight_payload_rules": {
+    "standard": {
+      "id": "standard",
+      "label": "Standard Payload (Up to 75% Capacity)",
+      "short": "Standard Payload",
+      "multiplier": 1,
+      "surcharge_percent": 0,
+      "description": "Normal rated payload within standard capacity limits"
+    },
+    "full_payload": {
+      "id": "full_payload",
+      "label": "Full Payload / Max Rated Capacity",
+      "short": "Full Payload",
+      "multiplier": 1.1,
+      "surcharge_percent": 10,
+      "badge": "+10% Heavy Tonnage",
+      "description": "Full capacity / maximum gross weight load (heavy axle & fuel consumption surcharge)"
+    }
+  },
   "vehicles": [
     {
       "id": "32ftsxl",

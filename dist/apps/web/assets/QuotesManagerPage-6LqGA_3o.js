@@ -155,6 +155,8 @@ Vinod Kumar Rathod
 Jai Bhavani Cargo Ltd
 Phone: 7794072244`,html:F,label:`Quote #${s.quote_number}`}),_(!0)},L=async()=>{N(!0);try{const s=new Map;try{const A=["/hcgi/api/driver/get-quotes","/api/driver/get-quotes"];for(const T of A)try{const F=await window.fetch(T);if(F.ok){const q=await F.json();if(q.success&&Array.isArray(q.quotes)){q.quotes.forEach(be=>{const te=be.quote_number||be.id;s.set(te,be)});break}}}catch{}}catch{}try{(await K.collection("quotes").getFullList({sort:"-created",$autoCancel:!1})||[]).forEach(T=>{const F=T.quote_number||T.id;(!s.has(F)||!s.get(F).customer_name)&&s.set(F,T)})}catch(A){console.warn("PocketBase fetch quotes warning:",A)}try{(JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]")||[]).forEach(T=>{const F=T.quote_number||T.id;s.has(F)||s.set(F,T)})}catch{}const J=Array.from(s.values()).sort((A,T)=>{const F=new Date(A.created||A.updated||0).getTime();return new Date(T.created||T.updated||0).getTime()-F});t(J)}catch(s){console.error(s),v.error("Failed to load quotes")}finally{N(!1)}};c.useEffect(()=>{y==="quotes"&&L();const s=()=>{L()};window.addEventListener("jbc_new_quote_submitted",s),window.addEventListener("storage",s);const J=setInterval(()=>{y==="quotes"&&L()},12e3);return()=>{window.removeEventListener("jbc_new_quote_submitted",s),window.removeEventListener("storage",s),clearInterval(J)}},[y]);const O=()=>{z(null),p(!0)},U=s=>{z(s),p(!0)},R=s=>{z(s),o(!0)},X=s=>{l(s),E("invoices")},handleDeleteQuote=async s=>{if(!s)return;const qNum=s.quote_number||s.id||"";if(!window.confirm(`Are you sure you want to permanently delete Quote #${qNum}? This action cannot be undone.`))return;try{v.info(`Deleting quote #${qNum}...`);let deleted=!1;const endpts=[`/hcgi/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`,`/api/driver/quotes/${encodeURIComponent(s.id||qNum)}`];for(const ep of endpts)try{const r=await window.fetch(ep,{method:"DELETE"}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}if(!deleted){const postEndpts=["/hcgi/api/driver/delete-quote","/api/driver/delete-quote"];for(const ep of postEndpts)try{const r=await window.fetch(ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number,id:s.id})}),d=await r.json().catch(()=>({}));if(d?.success){deleted=!0;break}}catch(_){}}if(s.id&&!String(s.id).startsWith("qt_"))try{await K.collection("quotes").delete(s.id,{$autoCancel:!1}),deleted=!0}catch(_){}try{const local=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),filtered=local.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number);localStorage.setItem("jbc_public_quotes",JSON.stringify(filtered))}catch(_){}t(prev=>prev.filter(q=>q.id!==s.id&&q.quote_number!==s.quote_number)),v.success(`Quote #${qNum} deleted successfully`),window.dispatchEvent(new CustomEvent("jbc_quote_deleted",{detail:{quote_number:qNum,id:s.id}}))}catch(err){v.error(err.message||"Failed to delete quote")}},handleConvertToTrip=async s=>{/* jbc_convert_to_trip_v1 */if(!s)return;try{v.info(`Converting Quote #${s.quote_number} to Trip...`);let res=null,data=null;try{res=await window.fetch("/hcgi/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(!res||!res.ok||!data?.success)try{res=await window.fetch("/api/driver/convert-quote-to-trip",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({quote_id:s.id,quote_number:s.quote_number})}),data=await res.json().catch(()=>({}))}catch{}if(data&&data.success){v.success(data.message||`Quote converted to Trip #${data.tripId} successfully!`);try{const c=JSON.parse(localStorage.getItem("jbc_public_quotes")||"[]"),u=c.map(q=>(q.id===s.id||q.quote_number===s.quote_number)?{...q,status:"Approved"}:q);localStorage.setItem("jbc_public_quotes",JSON.stringify(u))}catch{}Oe&&Oe();try{const bc=new BroadcastChannel("jbc_trips_channel");bc.postMessage({type:"trip_created",trip:data.trip});setTimeout(()=>bc.close(),1e3)}catch{}}else v.error(data?.error||"Failed to convert quote to trip")}catch(err){v.error(err.message||"Failed to convert quote to trip")}},Y=a.filter(s=>{const J=(s.quote_number||"").toLowerCase(),A=(s.customer_name||"").toLowerCase(),T=(s.origin||"").toLowerCase(),F=(s.destination||"").toLowerCase(),q=(s.truck_size||s.container_type||"").toLowerCase(),be=(s.custom_vehicle_requirement||"").toLowerCase(),te=x.toLowerCase();if(!(J.includes(te)||A.includes(te)||T.includes(te)||F.includes(te)||q.includes(te)||be.includes(te)))return!1;if(S!=="All"){if(S==="Pending"){if(s.status!=="Pending"&&s.status!=="Draft"&&s.status)return!1}else if(s.status!==S)return!1}if(n!=="All"){const Me=n.toLowerCase();if(Me==="other / not sure"){if(!(q.includes("other")||q.includes("not sure")||!!s.custom_vehicle_requirement))return!1}else{const Qe=q.replace(/[^a-z0-9]/g,""),lt=Me.replace(/[^a-z0-9]/g,"");if(!Qe.includes(lt))return!1}}return!0}),G=ft.useMemo(()=>{const s=a.length,J=a.filter(F=>F.status==="Pending"||F.status==="Draft"||!F.status).length,A=a.filter(F=>F.status==="Quoted"||F.status==="Sent").length,T=a.filter(F=>F.status==="Accepted").length;return{total:s,pending:J,quoted:A,accepted:T}},[a]),Oe=s=>{s?(t(J=>J.map(A=>A.id===s.id||A.quote_number===s.quote_number?s:A)),z(s)):L()};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-8 animate-in fade-in duration-500 overflow-x-hidden min-w-0",children:[e.jsx(jt,{children:e.jsx("title",{children:"Quotes & Invoices | Dashboard"})}),e.jsx("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(Te,{className:"w-5 h-5 sm:w-8 sm:h-8 text-primary"})," Quotes & Invoicing Hub"]}),e.jsx("p",{className:"text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none",children:"Manage landing page inquiries, dispatch rate negotiations, and generate B2B invoices."})]})}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4",children:[e.jsx(oe,{className:"bg-card/60 border-border",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-bold uppercase",children:"Total Inquiries"}),e.jsx("p",{className:"text-lg sm:text-2xl font-black mt-0.5",children:G.total})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary",children:e.jsx(pe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-amber-500/30 bg-amber-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsxs("p",{className:"text-xs text-amber-400 font-bold uppercase flex items-center gap-1",children:[e.jsx(yt,{className:"w-3 h-3"})," Pending Inquiries"]}),e.jsx("p",{className:"text-2xl font-black text-amber-400 mt-0.5",children:G.pending})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400",children:e.jsx(He,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-blue-500/30 bg-blue-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-blue-400 font-bold uppercase",children:"Quoted / Sent"}),e.jsx("p",{className:"text-2xl font-black text-blue-400 mt-0.5",children:G.quoted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400",children:e.jsx(fe,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})}),e.jsx(oe,{className:"bg-card/60 border-emerald-500/30 bg-emerald-500/5",children:e.jsxs(ce,{className:"p-2.5 sm:p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-emerald-400 font-bold uppercase",children:"Accepted Orders"}),e.jsx("p",{className:"text-2xl font-black text-emerald-400 mt-0.5",children:G.accepted})]}),e.jsx("div",{className:"w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400",children:e.jsx(Nt,{className:"w-3.5 h-3.5 sm:w-5 sm:h-5"})})]})})]}),e.jsxs(Re,{value:y,onValueChange:E,className:"w-full space-y-6",children:[e.jsxs(Ee,{className:"bg-muted/50 p-0.5 sm:p-1 w-full sm:w-auto inline-flex h-9 sm:h-12 text-xs",children:[e.jsxs(ae,{value:"quotes",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Te,{className:"w-4 h-4"})," Quotes ",G.pending>0&&e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:G.pending})]}),e.jsxs(ae,{value:"invoices",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx(Se,{className:"w-4 h-4"})," Invoices"]}),e.jsxs(ae,{value:"contracts",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"💼"})," B2B Contracts",e.jsx("span",{className:"ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950",children:"3"})]}),e.jsxs(ae,{value:"rate_slabs",className:"flex-1 sm:px-8 flex items-center gap-2 data-[state=active]:bg-background",children:[e.jsx("span",{className:"text-base leading-none",children:"⚙️"})," Distance & Rate Slabs"]})]}),e.jsxs(re,{value:"quotes",className:"space-y-6 m-0 outline-none",children:[e.jsxs("div",{className:"flex flex-wrap sm:flex-nowrap justify-end items-center gap-2",children:[e.jsx(g,{variant:"outline",onClick:()=>E("rate_slabs"),className:"h-9 px-3 rounded-xl border-amber-500/40 text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 font-bold text-xs flex items-center gap-1 cursor-pointer",children:["⚙️ Rate Slabs & Distance Pricing"]}),e.jsxs(g,{variant:"outline",onClick:()=>{try{const s=Ot({clientName:"Valued Corporate Partner"}),J=new Blob([s],{type:"application/pdf"}),A=window.URL.createObjectURL(J),T=document.createElement("a");T.href=A,T.download="B2B_Transport_Contract_LOI.pdf",document.body.appendChild(T),T.click(),document.body.removeChild(T),window.URL.revokeObjectURL(A),v.success("B2B Transport Contract & Rate LOI exported!")}catch{v.error("Failed to export contract PDF")}},className:"rounded-lg sm:rounded-xl border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-semibold gap-1.5 sm:gap-2 text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(qe,{className:"w-4 h-4"})," B2B Contract LOI (PDF)"]}),e.jsxs(g,{onClick:O,className:"shadow-sm rounded-lg sm:rounded-xl text-xs h-8 sm:h-10 px-2.5 sm:px-4",children:[e.jsx(et,{className:"w-4 h-4 mr-2"})," Create Custom Quote"]})]}),e.jsxs(oe,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(Ct,{className:"bg-muted/30 border-b border-border pb-4 space-y-4",children:e.jsxs("div",{className:"flex flex-col md:flex-row gap-4 items-end md:items-center justify-between",children:[e.jsxs(St,{className:"text-xl flex items-center gap-2",children:[e.jsx(pe,{className:"w-5 h-5 text-primary"})," Quotes & Landing Inquiries"]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-3 w-full md:w-auto",children:[e.jsxs("div",{className:"relative flex-1 md:w-60 min-w-[200px]",children:[e.jsx(Ye,{className:"absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(j,{placeholder:"Search quote #, customer, route, truck...",className:"pl-9 bg-background",value:x,onChange:s=>w(s.target.value)})]}),e.jsxs(me,{value:S,onValueChange:h,children:[e.jsx(ue,{className:"w-[140px] bg-background",children:e.jsx(xe,{placeholder:"Status"})}),e.jsxs(he,{children:[e.jsx(Q,{value:"All",children:"All Statuses"}),e.jsx(Q,{value:"Pending",children:"Pending (Inquiries)"}),e.jsx(Q,{value:"Quoted",children:"Quoted"}),e.jsx(Q,{value:"Negotiating",children:"Negotiating"}),e.jsx(Q,{value:"Accepted",children:"Accepted"}),e.jsx(Q,{value:"Rejected",children:"Rejected"})]})]}),e.jsxs(me,{value:n,onValueChange:D,children:[e.jsx(ue,{className:"w-[160px] bg-background",children:e.jsx(xe,{placeholder:"Truck Size"})}),e.jsx(he,{className:"max-h-[300px]",children:kt.map(s=>e.jsx(Q,{value:s,children:s==="All"?"All Truck Sizes":s},s))})]})]})]})}),e.jsxs(ce,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(st,{children:[e.jsx(at,{className:"bg-muted/10",children:e.jsxs(ne,{children:[e.jsx(B,{className:"w-[130px]",children:"Quote #"}),e.jsx(B,{children:"Customer & Route"}),e.jsx(B,{children:"Truck Size / Cargo"}),e.jsx(B,{className:"text-right",children:"Weight"}),e.jsx(B,{className:"text-right",children:"Quoted Price"}),e.jsx(B,{className:"text-center w-[130px]",children:"Status"}),e.jsx(B,{className:"w-[110px]",children:"Date"}),e.jsx(B,{className:"text-right w-[180px]",children:"Quick Action"})]})}),e.jsx(rt,{children:f?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-8",children:"Loading quotes..."})}):Y.length===0?e.jsx(ne,{children:e.jsx(M,{colSpan:8,className:"text-center py-12 text-muted-foreground",children:"No quotes found matching your filter."})}):Y.map(s=>e.jsxs(ne,{className:"hover:bg-muted/40 transition-colors",children:[e.jsx(M,{className:"font-semibold text-primary font-mono text-xs",children:s.quote_number}),e.jsxs(M,{children:[e.jsx("div",{className:"font-bold text-foreground",children:s.customer_name}),e.jsxs("div",{className:"text-xs text-muted-foreground flex items-center gap-1 mt-0.5",children:[e.jsx("span",{children:s.origin}),e.jsx("span",{children:"➡️"}),e.jsx("span",{children:s.destination})]}),s.customer_phone&&e.jsxs("div",{className:"text-[11px] text-slate-400 mt-0.5",children:["📞 ",s.customer_phone]})]}),e.jsxs(M,{className:"text-xs",children:[e.jsx("div",{className:"font-bold text-slate-200",children:s.truck_size||s.container_type||"32 FT SXL"}),s.custom_vehicle_requirement?e.jsxs("div",{className:"text-amber-400 font-medium text-[11px] truncate max-w-[170px]",title:s.custom_vehicle_requirement,children:["Req: ",s.custom_vehicle_requirement]}):s.material_type?e.jsx("div",{className:"text-muted-foreground text-[11px] truncate max-w-[150px]",children:s.material_type}):null]}),e.jsx(M,{className:"text-right text-xs tabular-nums",children:s.actual_weight?`${Number(s.actual_weight).toLocaleString()} kg`:"1,000 kg"}),e.jsxs(M,{className:"text-right font-extrabold tabular-nums text-emerald-400",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]}),e.jsx(M,{className:"text-center",children:e.jsx(le,{variant:"outline",className:ie("text-xs font-bold px-2.5 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})}),e.jsx(M,{className:"text-xs text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd"):"Recent"}),e.jsx(M,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-8 px-2.5 rounded-xl bg-primary hover:bg-primary/90 font-bold text-xs gap-1 shadow-sm",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-8 px-2 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"Send WhatsApp Quote",children:e.jsx(fe,{className:"w-3.5 h-3.5 text-emerald-400 fill-emerald-500/20"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleConvertToTrip(s),className:"h-8 px-2.5 rounded-xl border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold text-xs gap-1 shadow-sm",title:"1-Click Convert Quote to Trip",children:[e.jsx(ot,{className:"w-3.5 h-3.5 mr-0.5"}),"+Trip"]}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-8 px-2 rounded-xl border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 font-bold text-xs gap-1 shadow-sm cursor-pointer",title:"Delete Quote",children:"🗑️"}),e.jsxs(ve,{children:[e.jsx(we,{asChild:!0,children:e.jsxs(g,{variant:"ghost",className:"h-8 w-8 p-0",children:[e.jsx("span",{className:"sr-only",children:"Open menu"}),e.jsx(Fe,{className:"h-4 w-4"})]})}),e.jsxs(Ce,{align:"end",children:[e.jsx(H,{onClick:()=>R(s),className:"font-bold text-primary",children:"Respond & Negotiate"}),e.jsxs(H,{onClick:()=>W(s),className:"text-emerald-400 font-bold",children:[e.jsx(fe,{className:"w-4 h-4 mr-2 text-emerald-400"}),"Share WhatsApp API"]}),e.jsxs(H,{onClick:()=>u(s),children:[e.jsx(Xe,{className:"w-4 h-4 mr-2"})," Email Quote"]}),e.jsx(H,{onClick:()=>handleConvertToTrip(s),className:"text-emerald-400 font-bold flex items-center gap-1.5 cursor-pointer",children:[e.jsx(ot,{className:"w-4 h-4 mr-2 text-emerald-400"})," 🚚 Convert to Trip (1-Click)"]}),e.jsx(H,{onClick:()=>U(s),children:"Edit Quote Form"}),e.jsx(H,{onClick:()=>X(s),children:"Convert to Invoice"}),e.jsx(H,{onClick:()=>handleDeleteQuote(s),className:"text-destructive focus:bg-destructive/10 focus:text-destructive font-bold cursor-pointer",children:"🗑️ Delete Quote"})]})]})]})})]},s.id||s.quote_number))})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:f?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading quotes..."}):Y.length===0?e.jsx("div",{className:"text-center py-12 text-sm text-muted-foreground",children:"No quotes found."}):Y.map(s=>e.jsxs("div",{className:"p-4 space-y-3 hover:bg-muted/5 transition-colors",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"font-bold text-xs text-primary font-mono",children:s.quote_number}),e.jsx(le,{variant:"outline",className:ie("text-[10px] font-bold px-2 py-0.5 border",_e[s.status]||_e.Pending),children:s.status||"Pending"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"font-bold text-sm text-foreground",children:s.customer_name}),e.jsxs("p",{className:"text-xs text-muted-foreground mt-0.5",children:[s.origin," ➡️ ",s.destination]})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-2 pt-2 border-t border-border/20 text-xs",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Truck Size"}),e.jsx("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:s.truck_size||s.container_type||"32 FT SXL"})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Weight"}),e.jsxs("p",{className:"font-semibold text-foreground mt-0.5 truncate",children:[s.actual_weight||1e3," kg"]})]}),e.jsxs("div",{children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-medium",children:"Quoted"}),e.jsxs("p",{className:"font-extrabold text-emerald-400 mt-0.5 truncate",children:["₹",Number(s.total_price||0).toLocaleString("en-IN")]})]})]}),s.custom_vehicle_requirement&&e.jsxs("div",{className:"text-[11px] bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md text-amber-300",children:[e.jsx("span",{className:"font-bold",children:"Req: "}),s.custom_vehicle_requirement]}),e.jsxs("div",{className:"flex items-center justify-between pt-2 border-t border-border/20",children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:s.created?V(new Date(s.created),"MMM dd, yyyy"):"Recent"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(g,{size:"sm",onClick:()=>R(s),className:"h-7 text-xs font-bold rounded-lg bg-primary hover:bg-primary/90",children:"Respond"}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>W(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1",children:e.jsx(fe,{className:"w-3.5 h-3.5"})}),e.jsx(g,{size:"sm",variant:"outline",onClick:()=>handleDeleteQuote(s),className:"h-7 px-2 text-[11px] font-bold rounded-lg border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 gap-1 cursor-pointer",title:"Delete Quote",children:"🗑️"})]})]})]},s.id||s.quote_number))})]})]})]}),e.jsx(re,{value:"invoices",className:"m-0 outline-none",children:e.jsx($t,{initialQuote:r})}),e.jsx(re,{value:"contracts",className:"m-0 outline-none",children:e.jsx(ContractManagerTab,{})}),e.jsx(re,{value:"rate_slabs",className:"m-0 outline-none",children:e.jsx(RateSlabsManagerTab,{})})]}),e.jsx(At,{isOpen:I,onClose:()=>p(!1),quote:k,onSuccess:Oe}),e.jsx(Pt,{isOpen:C,onClose:()=>o(!1),quote:k,onUpdate:Oe,onEdit:U,onConvertToInvoice:X,onConvertToTrip:handleConvertToTrip,onDeleteQuote:handleDeleteQuote,onTriggerEmail:u}),e.jsx(it,{isOpen:d,onClose:()=>_(!1),initialRecipient:P.recipient,initialSubject:P.subject,initialBody:P.body,initialHtml:P.html,documentLabel:P.label}),e.jsx(tt,{isOpen:Z,onClose:()=>ge(!1),quote:ee,defaultTemplate:"quote",overridePhone:ee?.customer_phone||ee?.phone||""})]})};
 // --- B2B CONTRACT MANAGER TAB ---
+
+// --- B2B CONTRACT MANAGER TAB ---
 function ContractManagerTab() {
   const [contracts, setContracts] = c.useState([]);
   const [loading, setLoading] = c.useState(true);
@@ -585,10 +587,102 @@ function ContractEditModal({ contract, onClose, onSave }) {
 }
 
 
-// --- DISTANCE & RATE SLABS MANAGER TAB ---
+// --- SUPER ADMIN DYNAMIC RATE ENGINE & SLABS MANAGER ---
 const DEFAULT_SLABS_DATA = {
   pricing_mode: "progressive",
   // "progressive" or "flat_min"
+  slabs_definition: [
+    { id: "below_100", label: "0 - 100 km", min_km: 0, max_km: 100, is_base: true },
+    { id: "100_200", label: "100 - 200 km", min_km: 100, max_km: 200, is_base: false },
+    { id: "200_300", label: "200 - 300 km", min_km: 200, max_km: 300, is_base: false },
+    { id: "300_400", label: "300 - 400 km", min_km: 300, max_km: 400, is_base: false },
+    { id: "above_400", label: "400+ km", min_km: 400, max_km: 99999, is_base: false }
+  ],
+  trip_types: {
+    one_way: {
+      id: "one_way",
+      label: "One-Way Trip",
+      short: "One-Way",
+      multiplier: 1,
+      discount_percent: 0,
+      badge: "Standard Trip"
+    },
+    round_trip: {
+      id: "round_trip",
+      label: "Two-Way / Round Trip",
+      short: "Two-Way",
+      multiplier: 1.85,
+      discount_percent: 15,
+      badge: "15% Return Leg Off",
+      description: "Round trip freight with return haulage discount"
+    }
+  },
+  contract_tenures: {
+    spot: {
+      id: "spot",
+      label: "Adhoc / Spot Load",
+      short: "Adhoc / Spot",
+      multiplier: 1,
+      discount_percent: 0,
+      badge: "Instant Market Rate",
+      description: "Single-indent on-demand market rate"
+    },
+    contract_1m: {
+      id: "contract_1m",
+      label: "1 Month Contract",
+      short: "1 Month",
+      multiplier: 0.95,
+      discount_percent: 5,
+      badge: "5% Volume Discount",
+      description: "Monthly commitment (5% volume discount)"
+    },
+    contract_3m: {
+      id: "contract_3m",
+      label: "3 Months Contract",
+      short: "3 Months",
+      multiplier: 0.92,
+      discount_percent: 8,
+      badge: "8% Quarterly Discount",
+      description: "Quarterly agreement (8% volume discount)"
+    },
+    contract_6m: {
+      id: "contract_6m",
+      label: "6 Months Contract",
+      short: "6 Months",
+      multiplier: 0.88,
+      discount_percent: 12,
+      badge: "12% Half-Yearly Discount",
+      description: "Half-yearly contract (12% volume discount)"
+    },
+    contract_1y: {
+      id: "contract_1y",
+      label: "1 Year Contract",
+      short: "1 Year",
+      multiplier: 0.85,
+      discount_percent: 15,
+      badge: "15% Annual Enterprise Discount",
+      description: "Annual enterprise contract (15% volume discount)"
+    }
+  },
+  weight_payload_rules: {
+    standard: {
+      id: "standard",
+      label: "Standard Payload (Up to 75% Capacity)",
+      short: "Standard Payload",
+      multiplier: 1,
+      surcharge_percent: 0,
+      description: "Normal rated payload within standard capacity limits"
+    },
+    full_payload: {
+      id: "full_payload",
+      label: "Full Payload / Max Rated Capacity",
+      short: "Full Payload",
+      multiplier: 1.1,
+      surcharge_percent: 10,
+      badge: "+10% Heavy Tonnage",
+      description: "Full capacity / maximum gross weight load (heavy axle & fuel consumption surcharge)"
+    }
+  },
   vehicles: [
     {
       id: "32ftsxl",
@@ -697,7 +791,7 @@ const DEFAULT_SLABS_DATA = {
     {
       id: "other",
       name: "Other / Not Sure (Custom Vehicle Requirement)",
-      "short": "Other / Not Sure",
+      short: "Other / Not Sure",
       capacity: "Custom Capacity",
       maxMT: 25,
       base_rate_under_100: 1e4,
@@ -709,23 +803,39 @@ const DEFAULT_SLABS_DATA = {
     }
   ]
 };
-function calculateQuotePrice(vehicle, distance, mode = "progressive") {
-  if (!vehicle || !distance || distance <= 0) return { total: 0, appliedSlab: "N/A", breakdown: "" };
+function calculateQuotePrice(vehicle, distance, options = {}) {
+  const mode = typeof options === "string" ? options : options.mode || "progressive";
+  const tripType = options.trip_type || "one_way";
+  const contractTenure = options.contract_tenure || "spot";
+  const payloadType = options.payload_type || (options.weight && vehicle?.maxMT && (options.weight / 1e3 >= vehicle.maxMT * 0.8 || options.weight >= vehicle.maxMT * 0.8) ? "full_payload" : "standard");
+  const config = options.ratesData || DEFAULT_SLABS_DATA;
+  if (!vehicle || !distance || distance <= 0) {
+    return {
+      total: 0,
+      baseDistanceCost: 0,
+      appliedSlab: "N/A",
+      slabRate: "N/A",
+      breakdown: "",
+      multipliers: { trip: 1, payload: 1, tenure: 1 }
+    };
+  }
   const baseRate = Number(vehicle.base_rate_under_100) || 1e4;
   const r100_200 = Number(vehicle.rate_100_200) || 60;
   const r200_300 = Number(vehicle.rate_200_300) || 54;
   const r300_400 = Number(vehicle.rate_300_400) || 50;
   const rAbove400 = Number(vehicle.rate_above_400) || 48;
+  let baseDistanceCost = 0;
+  let activeSlab = "";
+  let slabRateStr = "";
+  let isBase = false;
+  let breakdownParts = [];
   if (distance <= 100) {
-    return {
-      total: Math.round(baseRate),
-      appliedSlab: "Below 100 km (Base Minimum)",
-      slabRate: `\u20B9${baseRate.toLocaleString("en-IN")} Flat Base`,
-      isBaseRate: true,
-      breakdown: `Distance ${distance} km <= 100 km -> Base rate of \u20B9${baseRate.toLocaleString("en-IN")}`
-    };
-  }
-  if (mode === "flat_min") {
+    baseDistanceCost = baseRate;
+    activeSlab = "Below 100 km (Flat Base)";
+    slabRateStr = `\u20B9${baseRate.toLocaleString("en-IN")} Base`;
+    isBase = true;
+    breakdownParts.push(`Distance ${distance} km <= 100 km -> Flat base rate \u20B9${baseRate.toLocaleString("en-IN")}`);
+  } else if (mode === "flat_min") {
     let rate = rAbove400;
     let slabLabel = "Above 400 km";
     if (distance <= 200) {
@@ -739,537 +849,650 @@ function calculateQuotePrice(vehicle, distance, mode = "progressive") {
       slabLabel = "300 - 400 km";
     }
     const raw = distance * rate;
-    const finalTotal = Math.max(baseRate, Math.round(raw));
-    return {
-      total: finalTotal,
-      appliedSlab: `${slabLabel} (\u20B9${rate}/km)`,
-      slabRate: `\u20B9${rate}/km`,
-      isBaseRate: finalTotal === baseRate,
-      breakdown: `${distance} km \xD7 \u20B9${rate}/km = \u20B9${Math.round(raw).toLocaleString("en-IN")} (Min base \u20B9${baseRate.toLocaleString("en-IN")})`
-    };
-  }
-  let total = baseRate;
-  let breakdownParts = [`First 100 km: \u20B9${baseRate.toLocaleString("en-IN")}`];
-  let activeSlab = "";
-  if (distance <= 200) {
-    const extra = distance - 100;
-    const extraCost = extra * r100_200;
-    total += extraCost;
-    breakdownParts.push(`+ ${extra} km @ \u20B9${r100_200}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-    activeSlab = `100 - 200 km (\u20B9${r100_200}/km)`;
-  } else if (distance <= 300) {
-    const cost100_200 = 100 * r100_200;
-    const extra = distance - 200;
-    const extraCost = extra * r200_300;
-    total += cost100_200 + extraCost;
-    breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(cost100_200).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ ${extra} km @ \u20B9${r200_300}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-    activeSlab = `200 - 300 km (\u20B9${r200_300}/km)`;
-  } else if (distance <= 400) {
-    const cost100_200 = 100 * r100_200;
-    const cost200_300 = 100 * r200_300;
-    const extra = distance - 300;
-    const extraCost = extra * r300_400;
-    total += cost100_200 + cost200_300 + extraCost;
-    breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(cost100_200).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(cost200_300).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ ${extra} km @ \u20B9${r300_400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-    activeSlab = `300 - 400 km (\u20B9${r300_400}/km)`;
+    baseDistanceCost = Math.max(baseRate, Math.round(raw));
+    activeSlab = `${slabLabel} (\u20B9${rate}/km)`;
+    slabRateStr = `\u20B9${rate}/km`;
+    isBase = baseDistanceCost === baseRate;
+    breakdownParts.push(`${distance} km \xD7 \u20B9${rate}/km = \u20B9${Math.round(raw).toLocaleString("en-IN")}`);
   } else {
-    const cost100_200 = 100 * r100_200;
-    const cost200_300 = 100 * r200_300;
-    const cost300_400 = 100 * r300_400;
-    const extra = distance - 400;
-    const extraCost = extra * rAbove400;
-    total += cost100_200 + cost200_300 + cost300_400 + extraCost;
-    breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(cost100_200).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(cost200_300).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ 100 km @ \u20B9${r300_400}/km = \u20B9${Math.round(cost300_400).toLocaleString("en-IN")}`);
-    breakdownParts.push(`+ ${extra} km @ \u20B9${rAbove400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
-    activeSlab = `Above 400 km (\u20B9${rAbove400}/km)`;
+    let tot = baseRate;
+    breakdownParts.push(`0 - 100 km: \u20B9${baseRate.toLocaleString("en-IN")}`);
+    if (distance <= 200) {
+      const extra = distance - 100;
+      const extraCost = extra * r100_200;
+      tot += extraCost;
+      breakdownParts.push(`+ ${extra} km @ \u20B9${r100_200}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
+      activeSlab = `100 - 200 km (\u20B9${r100_200}/km)`;
+      slabRateStr = `\u20B9${r100_200}/km`;
+    } else if (distance <= 300) {
+      const c100_200 = 100 * r100_200;
+      const extra = distance - 200;
+      const extraCost = extra * r200_300;
+      tot += c100_200 + extraCost;
+      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ ${extra} km @ \u20B9${r200_300}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
+      activeSlab = `200 - 300 km (\u20B9${r200_300}/km)`;
+      slabRateStr = `\u20B9${r200_300}/km`;
+    } else if (distance <= 400) {
+      const c100_200 = 100 * r100_200;
+      const c200_300 = 100 * r200_300;
+      const extra = distance - 300;
+      const extraCost = extra * r300_400;
+      tot += c100_200 + c200_300 + extraCost;
+      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(c200_300).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ ${extra} km @ \u20B9${r300_400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
+      activeSlab = `300 - 400 km (\u20B9${r300_400}/km)`;
+      slabRateStr = `\u20B9${r300_400}/km`;
+    } else {
+      const c100_200 = 100 * r100_200;
+      const c200_300 = 100 * r200_300;
+      const c300_400 = 100 * r300_400;
+      const extra = distance - 400;
+      const extraCost = extra * rAbove400;
+      tot += c100_200 + c200_300 + c300_400 + extraCost;
+      breakdownParts.push(`+ 100 km @ \u20B9${r100_200}/km = \u20B9${Math.round(c100_200).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ 100 km @ \u20B9${r200_300}/km = \u20B9${Math.round(c200_300).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ 100 km @ \u20B9${r300_400}/km = \u20B9${Math.round(c300_400).toLocaleString("en-IN")}`);
+      breakdownParts.push(`+ ${extra} km @ \u20B9${rAbove400}/km = \u20B9${Math.round(extraCost).toLocaleString("en-IN")}`);
+      activeSlab = `Above 400 km (\u20B9${rAbove400}/km)`;
+      slabRateStr = `\u20B9${rAbove400}/km`;
+    }
+    baseDistanceCost = Math.round(tot);
   }
+  const tripCfg = config?.trip_types?.[tripType] || (tripType === "round_trip" ? { multiplier: 1.85, label: "Two-Way / Round Trip" } : { multiplier: 1, label: "One-Way" });
+  const tripMultiplier = Number(tripCfg.multiplier) || 1;
+  const tripSubtotal = Math.round(baseDistanceCost * tripMultiplier);
+  const payloadCfg = config?.weight_payload_rules?.[payloadType] || (payloadType === "full_payload" ? { multiplier: 1.1, label: "Full Payload" } : { multiplier: 1, label: "Standard Payload" });
+  const payloadMultiplier = Number(payloadCfg.multiplier) || 1;
+  const payloadSubtotal = Math.round(tripSubtotal * payloadMultiplier);
+  const tenureCfg = config?.contract_tenures?.[contractTenure] || { multiplier: 1, label: "Spot / Adhoc" };
+  const tenureMultiplier = Number(tenureCfg.multiplier) || 1;
+  const finalTotal = Math.round(payloadSubtotal * tenureMultiplier);
   return {
-    total: Math.round(total),
+    total: finalTotal,
+    baseDistanceCost: Math.round(baseDistanceCost),
     appliedSlab: activeSlab,
-    slabRate: activeSlab,
-    isBaseRate: false,
-    breakdown: breakdownParts.join(" ")
+    slabRate: slabRateStr,
+    isBaseRate: isBase,
+    breakdown: breakdownParts.join(" "),
+    multipliers: {
+      trip: tripMultiplier,
+      tripLabel: tripCfg.label,
+      payload: payloadMultiplier,
+      payloadLabel: payloadCfg.label,
+      tenure: tenureMultiplier,
+      tenureLabel: tenureCfg.label
+    }
   };
 }
 function RateSlabsManagerTab() {
-  const { useState, useEffect, useMemo } = c;
-  const [ratesData, setRatesData] = useState(() => {
+  const { useState: useState2, useEffect, useMemo } = c;
+  const [ratesData, setRatesData] = useState2(() => {
     try {
       const saved = localStorage.getItem("jbc_quotation_rate_slabs");
       if (saved) return JSON.parse(saved);
-    } catch (e) {
+    } catch (_) {
     }
     return DEFAULT_SLABS_DATA;
   });
-  const [saving, setSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState("32ftsxl");
-  const [testDistance, setTestDistance] = useState(85);
-  const [editingVehicle, setEditingVehicle] = useState(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [searchFilter, setSearchFilter] = useState("");
+  const [activeSubTab, setActiveSubTab] = useState2("vehicles");
+  const [editingVehicle, setEditingVehicle] = useState2(null);
+  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState2(false);
+  const [saving, setSaving] = useState2(false);
+  const [saveStatus, setSaveStatus] = useState2(null);
+  const [testVehicleId, setTestVehicleId] = useState2("32ftsxl");
+  const [testDistance, setTestDistance] = useState2(150);
+  const [testTripType, setTestTripType] = useState2("one_way");
+  const [testTenure, setTestTenure] = useState2("spot");
+  const [testPayload, setTestPayload] = useState2("standard");
   useEffect(() => {
-    let isMounted = true;
-    async function loadRemote() {
+    const fetchLive = async () => {
       try {
-        const endpoints = ["/api/quotation/rates", "/hcgi/api/quotation/rates", "/quotation_rates.json"];
-        for (const ep of endpoints) {
-          try {
-            const res = await fetch(ep + "?t=" + Date.now());
-            if (res.ok) {
-              const data = await res.json();
-              const payload = data.rates || data;
-              if (payload && Array.isArray(payload.vehicles) && isMounted) {
-                setRatesData(payload);
-                localStorage.setItem("jbc_quotation_rate_slabs", JSON.stringify(payload));
-                break;
-              }
-            }
-          } catch (e) {
+        const res = await fetch("/api/quotation/rates?t=" + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.rates && Array.isArray(data.rates.vehicles)) {
+            setRatesData((prev) => ({
+              ...prev,
+              ...data.rates,
+              trip_types: data.rates.trip_types || prev.trip_types,
+              contract_tenures: data.rates.contract_tenures || prev.contract_tenures,
+              weight_payload_rules: data.rates.weight_payload_rules || prev.weight_payload_rules
+            }));
+            localStorage.setItem("jbc_quotation_rate_slabs", JSON.stringify(data.rates));
           }
         }
-      } catch (e) {
+      } catch (err) {
+        console.warn("Using local rates cache:", err.message);
       }
-    }
-    loadRemote();
-    return () => {
-      isMounted = false;
     };
+    fetchLive();
   }, []);
-  const handleModeChange = (newMode) => {
-    setRatesData((prev) => ({ ...prev, pricing_mode: newMode }));
-  };
-  const handleUpdateVehicleField = (vehicleId, field, val) => {
-    setRatesData((prev) => ({
-      ...prev,
-      vehicles: prev.vehicles.map((v) => v.id === vehicleId ? { ...v, [field]: Number(val) || 0 } : v)
-    }));
-  };
-  const handleSaveAll = async () => {
+  const handleSaveAll = async (overrideData) => {
     setSaving(true);
     setSaveStatus(null);
+    const payload = overrideData || ratesData;
+    payload.updated_at = (/* @__PURE__ */ new Date()).toISOString();
     try {
-      const payload = {
-        ...ratesData,
-        updated_at: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      localStorage.setItem("jbc_quotation_rate_slabs", JSON.stringify(payload));
-      window.__JBC_RATE_SLABS = payload;
-      try {
-        const bc = new BroadcastChannel("jbc_rate_slabs_channel");
-        bc.postMessage({ type: "RATES_UPDATED", rates: payload });
-        setTimeout(() => bc.close(), 1e3);
-      } catch (e) {
-      }
-      window.dispatchEvent(new CustomEvent("jbc_rate_slabs_updated", { detail: payload }));
-      const endpoints = ["/api/quotation/rates", "/hcgi/api/quotation/rates"];
-      let apiSuccess = false;
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          if (res.ok) {
-            apiSuccess = true;
-            break;
-          }
-        } catch (e) {
-        }
-      }
-      setSaveStatus({
-        type: "success",
-        msg: apiSuccess ? "\u{1F389} Rate slabs saved & synchronized live to welcome page!" : "\u2713 Rates updated locally and broadcasted to quotation calculator!"
+      const res = await fetch("/api/quotation/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
       });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSaveStatus({ type: "success", msg: "All pricing rules & slabs saved & synced live!" });
+        localStorage.setItem("jbc_quotation_rate_slabs", JSON.stringify(payload));
+        window.__JBC_RATE_SLABS = payload;
+        try {
+          const bc = new BroadcastChannel("jbc_rate_slabs_channel");
+          bc.postMessage({ rates: payload });
+          bc.close();
+        } catch (_) {
+        }
+        window.dispatchEvent(new CustomEvent("jbc_rate_slabs_updated", { detail: payload }));
+      } else {
+        setSaveStatus({ type: "error", msg: data.error || "Failed to save rates to server" });
+      }
     } catch (err) {
-      setSaveStatus({ type: "error", msg: `Error saving rates: ${err.message}` });
+      setSaveStatus({ type: "error", msg: "Network error saving rates: " + err.message });
     } finally {
       setSaving(false);
-      setTimeout(() => setSaveStatus(null), 5e3);
+      setTimeout(() => setSaveStatus(null), 6e3);
     }
   };
-  const currentTestVehicle = useMemo(() => {
-    return ratesData.vehicles.find((v) => v.id === selectedVehicleId) || ratesData.vehicles[0];
-  }, [ratesData, selectedVehicleId]);
-  const testCalcResult = useMemo(() => {
-    return calculateQuotePrice(currentTestVehicle, Number(testDistance) || 0, ratesData.pricing_mode);
-  }, [currentTestVehicle, testDistance, ratesData.pricing_mode]);
-  const filteredVehicles = useMemo(() => {
-    if (!searchFilter.trim()) return ratesData.vehicles;
-    const q = searchFilter.toLowerCase();
-    return ratesData.vehicles.filter(
-      (v) => (v.name || "").toLowerCase().includes(q) || (v.short || "").toLowerCase().includes(q) || (v.capacity || "").toLowerCase().includes(q)
-    );
-  }, [ratesData.vehicles, searchFilter]);
-  return /* @__PURE__ */ c.createElement("div", { className: "space-y-6 animate-in fade-in duration-300" }, /* @__PURE__ */ c.createElement("div", { className: "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col lg:flex-row lg:items-center justify-between gap-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-xl" }, "\u2699\uFE0F"), /* @__PURE__ */ c.createElement("h2", { className: "text-lg sm:text-xl font-black text-white tracking-tight" }, "Quotation Distance & Rate Slabs"), /* @__PURE__ */ c.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1" }, /* @__PURE__ */ c.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), "Connected to Welcome Page")), /* @__PURE__ */ c.createElement("p", { className: "text-xs sm:text-sm text-slate-300 max-w-2xl" }, "Configure base minimum pricing for trips below 100 km (e.g. \u20B910k for 32 FT), and tiered per-KM rates for 100-200 km, 200-300 km, 300-400 km, and 400+ km across all vehicle categories.")), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-3" }, /* @__PURE__ */ c.createElement(
+  const updateTripType = (typeKey, field, val) => {
+    setRatesData((prev) => {
+      const updated = {
+        ...prev,
+        trip_types: {
+          ...prev.trip_types,
+          [typeKey]: {
+            ...prev.trip_types[typeKey],
+            [field]: val
+          }
+        }
+      };
+      if (field === "discount_percent") {
+        const disc = parseFloat(val) || 0;
+        updated.trip_types[typeKey].multiplier = parseFloat((2 - disc / 100).toFixed(2));
+      } else if (field === "multiplier") {
+        const mult = parseFloat(val) || 1;
+        if (typeKey === "round_trip") {
+          updated.trip_types[typeKey].discount_percent = Math.max(0, Math.round((2 - mult) * 100));
+        }
+      }
+      return updated;
+    });
+  };
+  const updateContractTenure = (tenureKey, field, val) => {
+    setRatesData((prev) => {
+      const updated = {
+        ...prev,
+        contract_tenures: {
+          ...prev.contract_tenures,
+          [tenureKey]: {
+            ...prev.contract_tenures[tenureKey],
+            [field]: val
+          }
+        }
+      };
+      if (field === "discount_percent") {
+        const disc = parseFloat(val) || 0;
+        updated.contract_tenures[tenureKey].multiplier = parseFloat((1 - disc / 100).toFixed(2));
+      } else if (field === "multiplier") {
+        const mult = parseFloat(val) || 1;
+        updated.contract_tenures[tenureKey].discount_percent = Math.max(0, Math.round((1 - mult) * 100));
+      }
+      return updated;
+    });
+  };
+  const updatePayloadRule = (ruleKey, field, val) => {
+    setRatesData((prev) => {
+      const updated = {
+        ...prev,
+        weight_payload_rules: {
+          ...prev.weight_payload_rules,
+          [ruleKey]: {
+            ...prev.weight_payload_rules[ruleKey],
+            [field]: val
+          }
+        }
+      };
+      if (field === "surcharge_percent") {
+        const sur = parseFloat(val) || 0;
+        updated.weight_payload_rules[ruleKey].multiplier = parseFloat((1 + sur / 100).toFixed(2));
+      } else if (field === "multiplier") {
+        const mult = parseFloat(val) || 1;
+        updated.weight_payload_rules[ruleKey].surcharge_percent = Math.max(0, Math.round((mult - 1) * 100));
+      }
+      return updated;
+    });
+  };
+  const handleUpdateVehicle = (updated) => {
+    const nextVehicles = ratesData.vehicles.map((v) => v.id === updated.id ? updated : v);
+    const nextData = { ...ratesData, vehicles: nextVehicles };
+    setRatesData(nextData);
+    setEditingVehicle(null);
+  };
+  const handleAddVehicle = (newVeh) => {
+    const nextData = { ...ratesData, vehicles: [...ratesData.vehicles, newVeh] };
+    setRatesData(nextData);
+    setIsNewCategoryOpen(false);
+  };
+  const handleDeleteVehicle = (vehId) => {
+    if (!window.confirm("Are you sure you want to remove this vehicle category?")) return;
+    const nextData = { ...ratesData, vehicles: ratesData.vehicles.filter((v) => v.id !== vehId) };
+    setRatesData(nextData);
+  };
+  const testVehicle = useMemo(() => {
+    return ratesData.vehicles.find((v) => v.id === testVehicleId) || ratesData.vehicles[0];
+  }, [ratesData.vehicles, testVehicleId]);
+  const testResult = useMemo(() => {
+    return calculateQuotePrice(testVehicle, Number(testDistance) || 0, {
+      trip_type: testTripType,
+      contract_tenure: testTenure,
+      payload_type: testPayload,
+      mode: ratesData.pricing_mode,
+      ratesData
+    });
+  }, [testVehicle, testDistance, testTripType, testTenure, testPayload, ratesData]);
+  return /* @__PURE__ */ c.createElement("div", { className: "space-y-6" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 shadow-xl" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 mb-1" }, /* @__PURE__ */ c.createElement("span", { className: "text-2xl" }, "\u2699\uFE0F"), /* @__PURE__ */ c.createElement("h2", { className: "text-lg sm:text-xl font-black text-white tracking-wide" }, "Quotation Pricing Matrix & Super Admin Rate Engine"), /* @__PURE__ */ c.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 uppercase" }, "Super Admin")), /* @__PURE__ */ c.createElement("p", { className: "text-xs sm:text-sm text-slate-400" }, "Control distance slabs (<100km base \u20B910k for 32ft), one-way vs round trip, contract tenures, and full payload weight surcharges. All changes sync live to the Welcome Page customer calculator.")), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2.5 self-end md:self-center" }, /* @__PURE__ */ c.createElement(
     "button",
     {
-      onClick: () => setIsAddModalOpen(true),
-      className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/60 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
-    },
-    /* @__PURE__ */ c.createElement("span", null, "\u2795"),
-    " Add Vehicle Category"
-  ), /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      onClick: handleSaveAll,
+      type: "button",
+      onClick: () => handleSaveAll(),
       disabled: saving,
-      className: `px-5 py-2 rounded-xl text-xs font-black text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer ${saving ? "bg-emerald-800 opacity-60 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 active:scale-95"}`
+      className: `px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 shadow-lg ${saving ? "bg-slate-700 text-slate-400 cursor-not-allowed" : "bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 active:scale-95 shadow-amber-500/25"}`
     },
     /* @__PURE__ */ c.createElement("span", null, saving ? "\u23F3" : "\u{1F4BE}"),
     /* @__PURE__ */ c.createElement("span", null, saving ? "Saving & Syncing..." : "Save & Sync Live")
-  ))), saveStatus && /* @__PURE__ */ c.createElement("div", { className: `mt-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${saveStatus.type === "success" ? "bg-emerald-950/80 text-emerald-200 border-emerald-500/40" : "bg-rose-950/80 text-rose-200 border-rose-500/40"}` }, /* @__PURE__ */ c.createElement("span", null, saveStatus.type === "success" ? "\u2705" : "\u274C"), /* @__PURE__ */ c.createElement("span", null, saveStatus.msg)), /* @__PURE__ */ c.createElement("div", { className: "mt-5 pt-4 border-t border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 text-slate-300 font-semibold" }, /* @__PURE__ */ c.createElement("span", null, "Pricing Calculation Mode:")), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-2" }, /* @__PURE__ */ c.createElement(
+  ))), saveStatus && /* @__PURE__ */ c.createElement("div", { className: `p-4 rounded-xl text-xs font-bold border flex items-center gap-2.5 animate-in fade-in duration-200 ${saveStatus.type === "success" ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" : "bg-rose-500/10 text-rose-300 border-rose-500/30"}` }, /* @__PURE__ */ c.createElement("span", null, saveStatus.type === "success" ? "\u2705" : "\u274C"), /* @__PURE__ */ c.createElement("span", null, saveStatus.msg)), /* @__PURE__ */ c.createElement("div", { className: "flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3" }, [
+    { id: "vehicles", label: "\u{1F69A} Vehicle Distance Slabs", desc: "0-100km Base \u20B910k & progressive tiers" },
+    { id: "trip_types", label: "\u{1F504} Trip Type (1-Way / 2-Way)", desc: "Round trip return leg discount" },
+    { id: "contracts", label: "\u{1F4C4} Contract Tenures", desc: "Spot, 1M, 3M, 6M, 1Y discounts" },
+    { id: "payload", label: "\u2696\uFE0F Weight & Full Payload", desc: "Heavy tonnage surcharge" },
+    { id: "tester", label: "\u{1F9EE} Live Pricing Simulator", desc: "Test real-time calculation" }
+  ].map((tab) => /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      key: tab.id,
+      type: "button",
+      onClick: () => setActiveSubTab(tab.id),
+      className: `px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${activeSubTab === tab.id ? "bg-amber-500 text-slate-950 shadow-md font-black" : "bg-slate-900/60 hover:bg-slate-800 text-slate-300 border border-slate-800"}`
+    },
+    tab.label
+  ))), activeSubTab === "vehicles" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "Distance Rate Slabs by Vehicle Category"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" }, ratesData.vehicles.length, " Categories")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Below 100 kms uses flat base rate (\u20B910,000 for 32ft). Above 100km follows progressive marginal slabs.")), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
-      onClick: () => handleModeChange("progressive"),
-      className: `px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${ratesData.pricing_mode === "progressive" ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/20" : "bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-800"}`
+      onClick: () => setIsNewCategoryOpen(true),
+      className: "px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
     },
-    "\u2B50 Progressive Slabs (0-100km Base + Per-KM Extra)"
-  ), /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => handleModeChange("flat_min"),
-      className: `px-3 py-1.5 rounded-lg font-bold border transition-all cursor-pointer ${ratesData.pricing_mode === "flat_min" ? "bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-sm shadow-blue-500/20" : "bg-slate-800/80 text-slate-400 border-slate-700 hover:bg-slate-800"}`
-    },
-    "Distance \xD7 Slab Rate (Min Base Guarantee)"
-  )))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ c.createElement("span", { className: "text-base" }, "\u{1F9EA}"), /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Live Calculation Preview & Simulator"), /* @__PURE__ */ c.createElement("span", { className: "text-[11px] text-slate-400" }, "(Test how welcome page customers will see prices)")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5 sm:p-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Select Vehicle"), /* @__PURE__ */ c.createElement(
-    "select",
-    {
-      value: selectedVehicleId,
-      onChange: (e) => setSelectedVehicleId(e.target.value),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-amber-500"
-    },
-    ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("option", { key: v.id, value: v.id }, v.short || v.name, " (", v.capacity, ")"))
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5" }, "Enter Distance (KMs)"), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "1",
-      max: "5000",
-      value: testDistance,
-      onChange: (e) => setTestDistance(e.target.value),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500",
-      placeholder: "e.g. 85"
-    }
-  ), /* @__PURE__ */ c.createElement("div", { className: "flex gap-1" }, [65, 140, 260, 480].map((km) => /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      key: km,
-      type: "button",
-      onClick: () => setTestDistance(km),
-      className: "px-2 py-1.5 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 cursor-pointer"
-    },
-    km,
-    "k"
-  ))))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 flex flex-col justify-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ c.createElement("span", { className: "text-[11px] font-bold text-slate-400" }, "Total Calculated Price:"), /* @__PURE__ */ c.createElement("span", { className: "text-lg sm:text-xl font-black text-emerald-400" }, "\u20B9", testCalcResult.total.toLocaleString("en-IN"))), /* @__PURE__ */ c.createElement("div", { className: "mt-1 flex items-center justify-between text-[11px]" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400" }, "Active Slab:"), /* @__PURE__ */ c.createElement("span", { className: "font-bold text-amber-300" }, testCalcResult.appliedSlab)), /* @__PURE__ */ c.createElement("p", { className: "mt-1 text-[10px] text-slate-400 truncate", title: testCalcResult.breakdown }, testCalcResult.breakdown)))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "text-base" }, "\u{1F4CB}"), /* @__PURE__ */ c.createElement("h3", { className: "text-sm font-black text-white uppercase tracking-wider" }, "Vehicle Rate Slabs (", filteredVehicles.length, " Categories)")), /* @__PURE__ */ c.createElement("div", { className: "w-full sm:w-64" }, /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "text",
-      placeholder: "Search vehicle...",
-      value: searchFilter,
-      onChange: (e) => setSearchFilter(e.target.value),
-      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-    }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-left text-xs text-slate-300" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-800 font-bold" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-950/20 text-amber-300 border-x border-slate-800" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/80" }, "(Base Rate \u20B9)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "(\u20B9 / KM)")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60 font-medium" }, filteredVehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors group" }, /* @__PURE__ */ c.createElement("td", { className: "py-3.5 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs leading-tight" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 mt-0.5 flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", { className: "font-semibold text-amber-400/90" }, v.short || v.value), /* @__PURE__ */ c.createElement("span", null, "\u2022"), /* @__PURE__ */ c.createElement("span", null, "Capacity: ", v.capacity || `${v.maxMT} MT`))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-950/10 border-x border-slate-800/60" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: v.base_rate_under_100,
-      onChange: (e) => handleUpdateVehicleField(v.id, "base_rate_under_100", e.target.value),
-      className: "w-20 bg-slate-950 border border-amber-500/40 focus:border-amber-400 rounded-lg px-2 py-1 text-center font-bold text-amber-300 text-xs outline-none shadow-inner"
-    }
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "1",
-      value: v.rate_100_200,
-      onChange: (e) => handleUpdateVehicleField(v.id, "rate_100_200", e.target.value),
-      className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
-    }
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "1",
-      value: v.rate_200_300,
-      onChange: (e) => handleUpdateVehicleField(v.id, "rate_200_300", e.target.value),
-      className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
-    }
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "1",
-      value: v.rate_300_400,
-      onChange: (e) => handleUpdateVehicleField(v.id, "rate_300_400", e.target.value),
-      className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
-    }
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-center" }, /* @__PURE__ */ c.createElement("span", { className: "text-slate-400 mr-1 text-[11px]" }, "\u20B9"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "1",
-      value: v.rate_above_400,
-      onChange: (e) => handleUpdateVehicleField(v.id, "rate_above_400", e.target.value),
-      className: "w-16 bg-slate-950 border border-slate-700 focus:border-blue-400 rounded-lg px-2 py-1 text-center font-bold text-slate-200 text-xs outline-none"
-    }
-  ))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => {
-        setSelectedVehicleId(v.id);
-        setTestDistance(85);
-      },
-      title: "Test Calculate this vehicle",
-      className: "px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold border border-slate-700 cursor-pointer"
-    },
-    "\u26A1 Test"
-  ), /* @__PURE__ */ c.createElement(
+    /* @__PURE__ */ c.createElement("span", null, "\u2795"),
+    " Add Vehicle Category"
+  )), /* @__PURE__ */ c.createElement("div", { className: "border border-slate-800 rounded-xl overflow-hidden bg-slate-900/60 shadow-lg" }, /* @__PURE__ */ c.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ c.createElement("table", { className: "w-full text-xs text-left" }, /* @__PURE__ */ c.createElement("thead", { className: "bg-slate-950/80 text-slate-400 font-bold border-b border-slate-800" }, /* @__PURE__ */ c.createElement("tr", null, /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4" }, "Vehicle Category"), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center bg-amber-500/10 border-x border-amber-500/20 text-amber-300 font-black" }, "0 - 100 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-amber-400/90" }, "Base Flat Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "100 - 200 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 1 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "200 - 300 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 2 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "300 - 400 KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Tier 3 Rate")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-3 text-center" }, "400+ KM", /* @__PURE__ */ c.createElement("br", null), /* @__PURE__ */ c.createElement("span", { className: "text-[9px] font-normal text-slate-500" }, "Long Haul")), /* @__PURE__ */ c.createElement("th", { className: "py-3 px-4 text-right" }, "Actions"))), /* @__PURE__ */ c.createElement("tbody", { className: "divide-y divide-slate-800/60" }, ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("tr", { key: v.id, className: "hover:bg-slate-800/40 transition-colors" }, /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-xs sm:text-sm" }, v.name), /* @__PURE__ */ c.createElement("div", { className: "text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5" }, /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-400" }, v.short || v.id), /* @__PURE__ */ c.createElement("span", null, "\u2022"), /* @__PURE__ */ c.createElement("span", null, "Capacity: ", v.capacity || `${v.maxMT} MT`))), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center bg-amber-500/5 border-x border-amber-500/15" }, /* @__PURE__ */ c.createElement("div", { className: "font-black text-amber-300 text-sm" }, "\u20B9", Number(v.base_rate_under_100 || 0).toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-[10px] text-amber-400/70 font-semibold" }, "Min Base <100km")), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_100_200, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_200_300, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-slate-200" }, "\u20B9", v.rate_300_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-3 text-center font-bold text-emerald-400" }, "\u20B9", v.rate_above_400, "/km"), /* @__PURE__ */ c.createElement("td", { className: "py-3 px-4 text-right" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
       onClick: () => setEditingVehicle(v),
-      title: "Edit Details",
-      className: "px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30 cursor-pointer"
+      className: "px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-bold transition-colors"
     },
-    "\u270F\uFE0F Edit"
-  )))))))), /* @__PURE__ */ c.createElement("div", { className: "p-4 bg-slate-950/60 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("span", null, "\u{1F4A1} "), /* @__PURE__ */ c.createElement("strong", { className: "text-slate-300" }, "Quick Tip:"), " Edits to rates in the table are applied when you click", /* @__PURE__ */ c.createElement("span", { className: "text-emerald-400 font-bold" }, ' "Save & Sync Live"'), " at the top."), /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      onClick: handleSaveAll,
-      disabled: saving,
-      className: "px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all self-end cursor-pointer"
-    },
-    saving ? "\u23F3 Saving..." : "\u{1F4BE} Save All Changes"
-  ))), editingVehicle && /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ c.createElement("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u270F\uFE0F"), " Edit Vehicle: ", editingVehicle.short || editingVehicle.name), /* @__PURE__ */ c.createElement(
-    "button",
-    {
-      onClick: () => setEditingVehicle(null),
-      className: "text-slate-400 hover:text-white p-1 rounded-lg"
-    },
-    "\u2715"
-  )), /* @__PURE__ */ c.createElement("div", { className: "space-y-3 text-xs" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Full Name"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "text",
-      value: editingVehicle.name,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, name: e.target.value }),
-      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
-    }
-  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Label"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "text",
-      value: editingVehicle.short,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, short: e.target.value }),
-      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
-    }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Capacity (Tonnage)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "text",
-      value: editingVehicle.capacity,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, capacity: e.target.value }),
-      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500 font-medium"
-    }
-  ))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-amber-300 text-[11px] uppercase tracking-wider mb-1" }, "Distance Slab Pricing (\u20B9)"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM (Base Rate)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      value: editingVehicle.base_rate_under_100,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, base_rate_under_100: Number(e.target.value) || 0 }),
-      className: "w-full bg-slate-900 border border-amber-500/50 rounded-lg px-2.5 py-1.5 text-amber-300 font-bold text-xs"
-    }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      value: editingVehicle.rate_100_200,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_100_200: Number(e.target.value) || 0 }),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-    }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      value: editingVehicle.rate_200_300,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_200_300: Number(e.target.value) || 0 }),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-    }
-  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      value: editingVehicle.rate_300_400,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_300_400: Number(e.target.value) || 0 }),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-    }
-  ))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-    "input",
-    {
-      type: "number",
-      value: editingVehicle.rate_above_400,
-      onChange: (e) => setEditingVehicle({ ...editingVehicle, rate_above_400: Number(e.target.value) || 0 }),
-      className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-    }
-  )))), /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ c.createElement(
+    "\u270F\uFE0F Edit Slabs"
+  ), ratesData.vehicles.length > 1 && /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
-      onClick: () => setEditingVehicle(null),
-      className: "px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+      onClick: () => handleDeleteVehicle(v.id),
+      className: "px-2 py-1 rounded-lg hover:bg-rose-500/20 text-rose-400 text-xs transition-colors",
+      title: "Delete vehicle category"
     },
-    "Cancel"
+    "\u{1F5D1}\uFE0F"
+  )))))))))), activeSubTab === "trip_types" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F504} Trip Type Directionality Pricing"), /* @__PURE__ */ c.createElement("span", { className: "text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold" }, "Live Synced")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Configure multipliers and return leg discounts when a client books a One-Way vs Two-Way (Round Trip). Round trip pricing automatically applies the return discount.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u27A1\uFE0F"), " One-Way Trip"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold" }, "Standard Baseline")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Single leg destination drop point. Standard calculated rate."), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Pricing Multiplier"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      step: "0.05",
+      min: "0.5",
+      max: "2",
+      value: ratesData.trip_types?.one_way?.multiplier ?? 1,
+      onChange: (e) => updateTripType("one_way", "multiplier", e.target.value),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-slate-500 mt-1 block" }, "1.0 = 100% of single leg distance slab"))), /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-amber-500/30 bg-amber-500/5 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-amber-300 text-sm flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F504}"), " Two-Way / Round Trip"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold" }, "Return Leg Discount")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Includes return journey with backhaul / return freight savings."), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Return Leg Discount %"), /* @__PURE__ */ c.createElement("div", { className: "relative" }, /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      max: "50",
+      value: ratesData.trip_types?.round_trip?.discount_percent ?? 15,
+      onChange: (e) => updateTripType("round_trip", "discount_percent", e.target.value),
+      className: "w-full h-9 px-3 pr-7 rounded-lg bg-slate-900 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("span", { className: "absolute right-2.5 top-2 text-xs text-slate-500 font-bold" }, "%"))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Total Trip Multiplier"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      step: "0.05",
+      min: "1.0",
+      max: "2.5",
+      value: ratesData.trip_types?.round_trip?.multiplier ?? 1.85,
+      onChange: (e) => updateTripType("round_trip", "multiplier", e.target.value),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ))), /* @__PURE__ */ c.createElement("div", { className: "p-2.5 rounded-lg bg-slate-900/80 text-[11px] text-slate-300 flex items-center justify-between border border-slate-800" }, /* @__PURE__ */ c.createElement("span", null, "Effective Formula:"), /* @__PURE__ */ c.createElement("span", { className: "font-mono text-amber-300 font-bold" }, "Total = Single Leg Rate \xD7 ", ratesData.trip_types?.round_trip?.multiplier ?? 1.85)))))), activeSubTab === "contracts" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F4C4} Contract Tenure & Commitment Volume Discounts")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Clients committing to 1-Month, 3-Month, 6-Month, or 1-Year agreements receive dedicated volume discounts over Adhoc / Spot loads.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2" }, [
+    { key: "spot", label: "Adhoc / Spot Load", defaultDisc: 0, badge: "No Discount (Spot)", color: "border-slate-800" },
+    { key: "contract_1m", label: "1 Month Contract", defaultDisc: 5, badge: "Monthly Tenure", color: "border-emerald-500/30" },
+    { key: "contract_3m", label: "3 Months Contract", defaultDisc: 8, badge: "Quarterly Tenure", color: "border-emerald-500/40" },
+    { key: "contract_6m", label: "6 Months Contract", defaultDisc: 12, badge: "Half-Yearly Tenure", color: "border-amber-500/40" },
+    { key: "contract_1y", label: "1 Year Contract", defaultDisc: 15, badge: "Annual Enterprise", color: "border-purple-500/40" }
+  ].map((item) => {
+    const cfg = ratesData.contract_tenures?.[item.key] || { discount_percent: item.defaultDisc, multiplier: 1 - item.defaultDisc / 100 };
+    return /* @__PURE__ */ c.createElement("div", { key: item.key, className: `p-4 rounded-xl bg-slate-950/70 border ${item.color} space-y-3` }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("span", { className: "font-bold text-white text-xs" }, item.label), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300" }, item.badge)), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-semibold mb-1" }, "Discount %"), /* @__PURE__ */ c.createElement("div", { className: "relative" }, /* @__PURE__ */ c.createElement(
+      "input",
+      {
+        type: "number",
+        min: "0",
+        max: "40",
+        value: cfg.discount_percent ?? item.defaultDisc,
+        onChange: (e) => updateContractTenure(item.key, "discount_percent", e.target.value),
+        className: "w-full h-8 px-2 text-xs rounded bg-slate-900 border border-slate-700 text-amber-300 font-bold font-mono"
+      }
+    ), /* @__PURE__ */ c.createElement("span", { className: "absolute right-2 top-1.5 text-xs text-slate-500" }, "%"))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-semibold mb-1" }, "Multiplier"), /* @__PURE__ */ c.createElement(
+      "input",
+      {
+        type: "number",
+        step: "0.01",
+        min: "0.5",
+        max: "1.0",
+        value: cfg.multiplier ?? 1 - (cfg.discount_percent || 0) / 100,
+        onChange: (e) => updateContractTenure(item.key, "multiplier", e.target.value),
+        className: "w-full h-8 px-2 text-xs rounded bg-slate-900 border border-slate-700 text-white font-bold font-mono"
+      }
+    ))));
+  })))), activeSubTab === "payload" && /* @__PURE__ */ c.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2696\uFE0F Weight & Full Payload Utilization Surcharges")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "When a vehicle operates under maximum gross payload (e.g. 9 MT for 32ft SXL or 18 MT for MXL), diesel fuel consumption and axle stress increase. Configure the full-payload pricing premium.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4 pt-2" }, /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-white text-sm" }, "\u2696\uFE0F Standard Payload (Partial / Average)"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px] font-bold" }, "Up to 75% Capacity")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Regular freight density within vehicle's comfortable operating tonnage."), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Pricing Multiplier"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      step: "0.05",
+      value: ratesData.weight_payload_rules?.standard?.multiplier ?? 1,
+      onChange: (e) => updatePayloadRule("standard", "multiplier", e.target.value),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-slate-500 mt-1 block" }, "1.0 = standard rate (0% surcharge)"))), /* @__PURE__ */ c.createElement("div", { className: "p-4 rounded-xl bg-slate-950/70 border border-rose-500/30 bg-rose-500/5 space-y-3" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-rose-300 text-sm" }, "\u{1F3CB}\uFE0F Full Payload / Maximum Capacity"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold" }, "100% Rated Tonnage")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400" }, "Full vehicle weight capacity utilization with high diesel consumption."), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Heavy Load Surcharge %"), /* @__PURE__ */ c.createElement("div", { className: "relative" }, /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      max: "30",
+      value: ratesData.weight_payload_rules?.full_payload?.surcharge_percent ?? 10,
+      onChange: (e) => updatePayloadRule("full_payload", "surcharge_percent", e.target.value),
+      className: "w-full h-9 px-3 pr-7 rounded-lg bg-slate-900 border border-rose-500/40 text-rose-300 font-mono text-xs font-bold"
+    }
+  ), /* @__PURE__ */ c.createElement("span", { className: "absolute right-2.5 top-2 text-xs text-slate-500 font-bold" }, "%"))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Multiplier"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      step: "0.01",
+      value: ratesData.weight_payload_rules?.full_payload?.multiplier ?? 1.1,
+      onChange: (e) => updatePayloadRule("full_payload", "multiplier", e.target.value),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-xs font-bold"
+    }
+  ))))))), activeSubTab === "tester" && /* @__PURE__ */ c.createElement("div", { className: "p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-amber-500/30 shadow-2xl space-y-5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u{1F9EE} Super Admin Real-Time Dynamic Price Simulator"), /* @__PURE__ */ c.createElement("span", { className: "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold" }, "Instant Evaluation")), /* @__PURE__ */ c.createElement("p", { className: "text-xs text-slate-400 mt-1" }, "Select any vehicle, distance, trip type, contract tenure, and payload weight to test the exact pricing engine calculations in real time.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4" }, /* @__PURE__ */ c.createElement("div", { className: "md:col-span-2 space-y-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Select Vehicle Category"), /* @__PURE__ */ c.createElement(
+    "select",
+    {
+      value: testVehicleId,
+      onChange: (e) => setTestVehicleId(e.target.value),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-bold"
+    },
+    ratesData.vehicles.map((v) => /* @__PURE__ */ c.createElement("option", { key: v.id, value: v.id }, v.name, " (", v.capacity, ")"))
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Trip Distance: ", testDistance, " KM"), /* @__PURE__ */ c.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "range",
+      min: "10",
+      max: "1500",
+      step: "10",
+      value: testDistance,
+      onChange: (e) => setTestDistance(Number(e.target.value)),
+      className: "flex-1 accent-amber-500"
+    }
+  ), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      min: "1",
+      max: "3000",
+      value: testDistance,
+      onChange: (e) => setTestDistance(Number(e.target.value)),
+      className: "w-20 h-9 px-2 text-xs rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold text-center"
+    }
+  )))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Trip Directionality"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setTestTripType("one_way"),
+      className: `p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${testTripType === "one_way" ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-950 text-slate-400 border border-slate-800"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u27A1\uFE0F"),
+    " One-Way Trip (1.0x)"
   ), /* @__PURE__ */ c.createElement(
     "button",
     {
       type: "button",
-      onClick: () => {
-        setRatesData((prev) => ({
-          ...prev,
-          vehicles: prev.vehicles.map((v) => v.id === editingVehicle.id ? editingVehicle : v)
-        }));
-        setEditingVehicle(null);
-      },
-      className: "px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md cursor-pointer"
+      onClick: () => setTestTripType("round_trip"),
+      className: `p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${testTripType === "round_trip" ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-950 text-slate-400 border border-slate-800"}`
     },
-    "Apply Changes"
-  )))), isAddModalOpen && /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-5 sm:p-6 space-y-4" }, /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-between pb-3 border-b border-slate-800" }, /* @__PURE__ */ c.createElement("h4", { className: "text-base font-black text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ c.createElement(
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F504}"),
+    " Two-Way / Round Trip (",
+    ratesData.trip_types?.round_trip?.multiplier ?? 1.85,
+    "x)"
+  ))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Contract / Engagement Tenure"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-5 gap-1.5" }, [
+    { id: "spot", label: "Spot / Adhoc" },
+    { id: "contract_1m", label: "1 Month" },
+    { id: "contract_3m", label: "3 Months" },
+    { id: "contract_6m", label: "6 Months" },
+    { id: "contract_1y", label: "1 Year" }
+  ].map((t) => /* @__PURE__ */ c.createElement(
     "button",
     {
-      onClick: () => setIsAddModalOpen(false),
-      className: "text-slate-400 hover:text-white p-1 rounded-lg"
+      key: t.id,
+      type: "button",
+      onClick: () => setTestTenure(t.id),
+      className: `py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${testTenure === t.id ? "bg-primary text-primary-foreground font-black" : "bg-slate-950 text-slate-400 border border-slate-800"}`
     },
-    "\u2715"
-  )), /* @__PURE__ */ c.createElement(
-    "form",
+    t.label
+  )))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Cargo Weight & Payload"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ c.createElement(
+    "button",
     {
-      onSubmit: (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const name = formData.get("name");
-        const short = formData.get("short") || name;
-        const capacity = formData.get("capacity") || "Custom";
-        const id = short.toLowerCase().replace(/[^a-z0-9]/g, "") || `veh_${Date.now()}`;
-        const newVeh = {
-          id,
-          name,
-          short,
-          capacity,
-          maxMT: Number(formData.get("maxMT")) || 10,
-          base_rate_under_100: Number(formData.get("base_rate_under_100")) || 1e4,
-          rate_100_200: Number(formData.get("rate_100_200")) || 60,
-          rate_200_300: Number(formData.get("rate_200_300")) || 54,
-          rate_300_400: Number(formData.get("rate_300_400")) || 50,
-          rate_above_400: Number(formData.get("rate_above_400")) || 48,
-          description: formData.get("description") || ""
-        };
-        setRatesData((prev) => ({
-          ...prev,
-          vehicles: [...prev.vehicles, newVeh]
-        }));
-        setIsAddModalOpen(false);
-      },
-      className: "space-y-3 text-xs"
+      type: "button",
+      onClick: () => setTestPayload("standard"),
+      className: `p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${testPayload === "standard" ? "bg-emerald-600 text-white font-black" : "bg-slate-950 text-slate-400 border border-slate-800"}`
     },
-    /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Vehicle Name *"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "name",
-        required: true,
-        placeholder: "e.g. 40 FT High Cube Trailer",
-        className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
-      }
-    )),
-    /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Short Display Label"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "short",
-        placeholder: "e.g. 40 FT Trailer",
-        className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
-      }
-    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 uppercase mb-1" }, "Payload Capacity (MT)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "capacity",
-        placeholder: "e.g. 20 - 25 MT",
-        className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-500 font-medium"
-      }
-    ))),
-    /* @__PURE__ */ c.createElement("div", { className: "bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5" }, /* @__PURE__ */ c.createElement("div", { className: "font-bold text-emerald-400 text-[11px] uppercase tracking-wider mb-1" }, "Default Slabs for this Vehicle"), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "0 - 100 KM Base (\u20B9)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "base_rate_under_100",
-        type: "number",
-        defaultValue: 1e4,
-        className: "w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-emerald-300 font-bold text-xs"
-      }
-    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "100 - 200 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "rate_100_200",
-        type: "number",
-        defaultValue: 60,
-        className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-      }
-    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "200 - 300 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "rate_200_300",
-        type: "number",
-        defaultValue: 54,
-        className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-      }
-    )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "300 - 400 KM (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "rate_300_400",
-        type: "number",
-        defaultValue: 50,
-        className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-      }
-    ))), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "text-[10px] text-slate-400 font-bold" }, "400+ KM Long Haul (\u20B9/KM)"), /* @__PURE__ */ c.createElement(
-      "input",
-      {
-        name: "rate_above_400",
-        type: "number",
-        defaultValue: 48,
-        className: "w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-bold text-xs"
-      }
-    ))),
-    /* @__PURE__ */ c.createElement("div", { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-800" }, /* @__PURE__ */ c.createElement(
-      "button",
-      {
-        type: "button",
-        onClick: () => setIsAddModalOpen(false),
-        className: "px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-      },
-      "Cancel"
-    ), /* @__PURE__ */ c.createElement(
-      "button",
-      {
-        type: "submit",
-        className: "px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md cursor-pointer"
-      },
-      "Add Category"
-    ))
-  ))));
+    /* @__PURE__ */ c.createElement("span", null, "\u2696\uFE0F"),
+    " Standard Payload (1.0x)"
+  ), /* @__PURE__ */ c.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setTestPayload("full_payload"),
+      className: `p-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${testPayload === "full_payload" ? "bg-rose-600 text-white font-black" : "bg-slate-950 text-slate-400 border border-slate-800"}`
+    },
+    /* @__PURE__ */ c.createElement("span", null, "\u{1F3CB}\uFE0F"),
+    " Full Payload (+",
+    ratesData.weight_payload_rules?.full_payload?.surcharge_percent ?? 10,
+    "%)"
+  )))), /* @__PURE__ */ c.createElement("div", { className: "bg-slate-950 p-5 rounded-xl border border-amber-500/40 flex flex-col justify-between space-y-4" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-amber-400" }, "Total Calculated Estimate"), /* @__PURE__ */ c.createElement("div", { className: "text-3xl sm:text-4xl font-black text-amber-300 mt-1 font-mono" }, "\u20B9", testResult.total.toLocaleString("en-IN")), /* @__PURE__ */ c.createElement("div", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1.5" }, /* @__PURE__ */ c.createElement("span", null, testVehicle?.short || testVehicle?.name), /* @__PURE__ */ c.createElement("span", null, "\u2022"), /* @__PURE__ */ c.createElement("span", null, testDistance, " km"))), /* @__PURE__ */ c.createElement("div", { className: "space-y-2 border-t border-slate-800 pt-3 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between text-slate-300" }, /* @__PURE__ */ c.createElement("span", null, "Base Distance Cost:"), /* @__PURE__ */ c.createElement("span", { className: "font-mono font-bold" }, "\u20B9", testResult.baseDistanceCost.toLocaleString("en-IN"))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-between text-slate-400 text-[11px]" }, /* @__PURE__ */ c.createElement("span", null, "Applied Slab:"), /* @__PURE__ */ c.createElement("span", { className: "text-amber-300 font-bold" }, testResult.appliedSlab)), /* @__PURE__ */ c.createElement("div", { className: "flex justify-between text-slate-300" }, /* @__PURE__ */ c.createElement("span", null, "Trip Direction:"), /* @__PURE__ */ c.createElement("span", { className: "font-mono" }, testResult.multipliers.tripLabel, " (", testResult.multipliers.trip, "x)")), /* @__PURE__ */ c.createElement("div", { className: "flex justify-between text-slate-300" }, /* @__PURE__ */ c.createElement("span", null, "Payload:"), /* @__PURE__ */ c.createElement("span", { className: "font-mono" }, testResult.multipliers.payloadLabel, " (", testResult.multipliers.payload, "x)")), /* @__PURE__ */ c.createElement("div", { className: "flex justify-between text-slate-300" }, /* @__PURE__ */ c.createElement("span", null, "Tenure Discount:"), /* @__PURE__ */ c.createElement("span", { className: "font-mono text-emerald-400" }, testResult.multipliers.tenureLabel, " (", testResult.multipliers.tenure, "x)"))), /* @__PURE__ */ c.createElement("div", { className: "p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-400 leading-relaxed font-mono" }, testResult.breakdown)))), editingVehicle && /* @__PURE__ */ c.createElement(
+    VehicleSlabsEditModal,
+    {
+      vehicle: editingVehicle,
+      onClose: () => setEditingVehicle(null),
+      onSave: handleUpdateVehicle
+    }
+  ), isNewCategoryOpen && /* @__PURE__ */ c.createElement(
+    NewVehicleModal,
+    {
+      onClose: () => setIsNewCategoryOpen(false),
+      onAdd: handleAddVehicle
+    }
+  ));
+}
+function VehicleSlabsEditModal({ vehicle, onClose, onSave }) {
+  const [form, setForm] = useState({ ...vehicle });
+  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u270F\uFE0F"), " Edit Slabs: ", form.name), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: (e) => {
+    e.preventDefault();
+    onSave(form);
+  }, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Name"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "text",
+      required: true,
+      value: form.name,
+      onChange: (e) => setForm({ ...form, name: e.target.value }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Max Capacity (Tons)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      step: "0.5",
+      value: form.maxMT || 9,
+      onChange: (e) => setForm({ ...form, maxMT: parseFloat(e.target.value) || 0 }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+    }
+  ))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      min: "1000",
+      value: form.base_rate_under_100,
+      onChange: (e) => setForm({ ...form, base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
+    }
+  ), /* @__PURE__ */ c.createElement("span", { className: "text-[10px] text-amber-400/80 block" }, "For trips < 100 km, this flat rate applies as minimum charge.")), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "100 - 200 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_100_200,
+      onChange: (e) => setForm({ ...form, rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "200 - 300 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_200_300,
+      onChange: (e) => setForm({ ...form, rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "300 - 400 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_300_400,
+      onChange: (e) => setForm({ ...form, rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "400+ KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_above_400,
+      onChange: (e) => setForm({ ...form, rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
+    }
+  ))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Save Slabs")))));
+}
+function NewVehicleModal({ onClose, onAdd }) {
+  const [form, setForm] = useState({
+    id: "custom_" + Date.now().toString(36),
+    name: "",
+    short: "",
+    capacity: "8 - 12 MT",
+    maxMT: 10,
+    base_rate_under_100: 9e3,
+    rate_100_200: 55,
+    rate_200_300: 50,
+    rate_300_400: 46,
+    rate_above_400: 44,
+    description: "Custom commercial transport vehicle"
+  });
+  return /* @__PURE__ */ c.createElement("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto" }, /* @__PURE__ */ c.createElement("div", { className: "bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 my-auto" }, /* @__PURE__ */ c.createElement("div", { className: "flex justify-between items-center border-b border-slate-800 pb-3" }, /* @__PURE__ */ c.createElement("h3", { className: "text-base font-bold text-white flex items-center gap-2" }, /* @__PURE__ */ c.createElement("span", null, "\u2795"), " Add New Vehicle Category"), /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold" }, "\u2715")), /* @__PURE__ */ c.createElement("form", { onSubmit: (e) => {
+    e.preventDefault();
+    onAdd(form);
+  }, className: "space-y-4 text-xs" }, /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-3" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Vehicle Full Name *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "text",
+      required: true,
+      placeholder: "e.g. 28 FT Container",
+      value: form.name,
+      onChange: (e) => setForm({ ...form, name: e.target.value }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[11px] font-bold text-slate-400 mb-1" }, "Short Code *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "text",
+      required: true,
+      placeholder: "e.g. 28 FT",
+      value: form.short,
+      onChange: (e) => setForm({ ...form, short: e.target.value }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
+    }
+  ))), /* @__PURE__ */ c.createElement("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1" }, /* @__PURE__ */ c.createElement("label", { className: "block text-xs font-bold text-amber-300" }, "0 - 100 KM Flat Base Rate (\u20B9) *"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      min: "1000",
+      value: form.base_rate_under_100,
+      onChange: (e) => setForm({ ...form, base_rate_under_100: Number(e.target.value) }),
+      className: "w-full h-9 px-3 rounded-lg bg-slate-950 border border-amber-500/50 text-amber-300 font-bold font-mono text-sm"
+    }
+  )), /* @__PURE__ */ c.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "100 - 200 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_100_200,
+      onChange: (e) => setForm({ ...form, rate_100_200: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "200 - 300 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_200_300,
+      onChange: (e) => setForm({ ...form, rate_200_300: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "300 - 400 KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_300_400,
+      onChange: (e) => setForm({ ...form, rate_300_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-white font-mono font-bold"
+    }
+  )), /* @__PURE__ */ c.createElement("div", null, /* @__PURE__ */ c.createElement("label", { className: "block text-[10px] text-slate-400 font-bold mb-1" }, "400+ KM Rate (\u20B9/km)"), /* @__PURE__ */ c.createElement(
+    "input",
+    {
+      type: "number",
+      required: true,
+      value: form.rate_above_400,
+      onChange: (e) => setForm({ ...form, rate_above_400: Number(e.target.value) }),
+      className: "w-full h-8 px-2.5 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 font-mono font-bold"
+    }
+  ))), /* @__PURE__ */ c.createElement("div", { className: "flex justify-end gap-2 border-t border-slate-800 pt-3" }, /* @__PURE__ */ c.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 rounded-lg bg-slate-800 text-slate-300 font-bold" }, "Cancel"), /* @__PURE__ */ c.createElement("button", { type: "submit", className: "px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black" }, "Add Vehicle")))));
 }
 
 
