@@ -22,8 +22,12 @@ quoteFiles.forEach(file => {
 
   // Body container: replace $e with scrollable div
   content = content.replace(
-    /children:e\.jsx\(\$e,\{className:"flex-1 px-6 py-4",children:e\.jsxs\("div",\{className:"space-y-6"/g,
-    'children:e.jsx("div",{className:"flex-1 overflow-y-auto max-h-[calc(92vh-75px)] px-6 py-4 overscroll-contain",children:e.jsxs("div",{className:"space-y-6"'
+    /e\.jsx\(\$e,\{className:"flex-1 px-6 py-4",children:e\.jsxs\("div",\{className:"space-y-6"/g,
+    'e.jsx("div",{className:"flex-1 overflow-y-auto max-h-[calc(92vh-80px)] px-6 py-4 overscroll-contain",children:e.jsxs("div",{className:"space-y-6"'
+  );
+  content = content.replace(
+    /e\.jsxs\(\$e,\{className:"flex-1 px-6 py-4",children:\[e\.jsxs\(re,\{value:"customer"/g,
+    'e.jsxs("div",{className:"flex-1 overflow-y-auto max-h-[calc(92vh-80px)] px-6 py-4 overscroll-contain",children:[e.jsxs(re,{value:"customer"'
   );
 
   // Also fix Create/Edit quote dialog (At)
