@@ -662,13 +662,26 @@ const syncDeletedBidsToSQLite = async (id) => {
   } catch (e) {}
 };
 
+const isDraftOrEmptyBid = (b) => {
+  if (!b) return true;
+  const start = String(b.starting_point || b.origin || '').trim();
+  const end = String(b.ending_point || b.destination || '').trim();
+  const client = String(b.underlying_client || b.end_client || b.shipper || '').trim();
+  const amount = Number(b.bidding_amount || b.quoted_amount || 0);
+  const lostAt = Number(b.bidding_lost_at || 0);
+  if (!end && !client && amount === 0 && lostAt === 0 && (start === 'HYD_Medchal GW' || !start)) {
+    return true;
+  }
+  return false;
+};
+
 const getBidsStore = () => {
   try {
     const deletedSet = getDeletedBidsStore();
     if (fs.existsSync(BIDS_STORE_PATH)) {
       const data = JSON.parse(fs.readFileSync(BIDS_STORE_PATH, 'utf8'));
       if (Array.isArray(data)) {
-        return data.filter(b => b && b.id && !deletedSet.has(String(b.id)));
+        return data.filter(b => b && b.id && !deletedSet.has(String(b.id)) && !isDraftOrEmptyBid(b));
       }
     }
   } catch (e) {}
@@ -678,7 +691,7 @@ const getBidsStore = () => {
 const saveBidsStore = (list) => {
   try {
     const deletedSet = getDeletedBidsStore();
-    const clean = Array.isArray(list) ? list.filter(b => b && b.id && !deletedSet.has(String(b.id))) : [];
+    const clean = Array.isArray(list) ? list.filter(b => b && b.id && !deletedSet.has(String(b.id)) && !isDraftOrEmptyBid(b)) : [];
     fs.writeFileSync(BIDS_STORE_PATH, JSON.stringify(clean, null, 2), 'utf8');
   } catch (e) {}
 };
@@ -4402,6 +4415,14 @@ const handleGetBids = async (req, res) => {
       const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
       if (dbPath && fs.existsSync(dbPath)) {
         const db = new DatabaseSync(dbPath);
+        // Clean out any empty placeholder rows from SQLite bids table
+        db.exec(`
+          DELETE FROM bids 
+          WHERE (ending_point IS NULL OR ending_point = '' OR TRIM(ending_point) = '') 
+            AND (underlying_client IS NULL OR underlying_client = '' OR TRIM(underlying_client) = '') 
+            AND (bidding_amount IS NULL OR bidding_amount = 0)
+            AND (bidding_lost_at IS NULL OR bidding_lost_at = 0)
+        `);
         list = db.prepare('SELECT * FROM bids ORDER BY created DESC').all();
       }
     } catch (e) {}
@@ -4409,12 +4430,32 @@ const handleGetBids = async (req, res) => {
     const fileList = getBidsStore();
     const map = new Map();
     [...list, ...fileList].forEach(b => {
-      if (b && b.id && !deletedSet.has(String(b.id))) {
+      if (b && b.id && !deletedSet.has(String(b.id)) && !isDraftOrEmptyBid(b)) {
         map.set(b.id, { ...(map.get(b.id) || {}), ...b });
       }
     });
-    const merged = Array.from(map.values());
-    res.json({ success: true, bids: merged });
+
+    // De-duplicate identical bids (same date, client, underlying client, origin, destination, vehicle type)
+    const seen = new Map();
+    const deduped = [];
+    for (const b of map.values()) {
+      if (isDraftOrEmptyBid(b)) continue;
+      const key = [
+        b.date || b.bid_date || '',
+        String(b.client_name || b.counterparty || '').trim().toLowerCase(),
+        String(b.underlying_client || b.end_client || '').trim().toLowerCase(),
+        String(b.starting_point || b.origin || '').trim().toLowerCase(),
+        String(b.ending_point || b.destination || '').trim().toLowerCase(),
+        String(b.vehicle_type || b.truck_type || '').trim().toLowerCase()
+      ].join('|||');
+
+      if (!seen.has(key)) {
+        seen.set(key, b);
+        deduped.push(b);
+      }
+    }
+
+    res.json({ success: true, bids: deduped });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -4424,7 +4465,15 @@ const handleSaveBid = async (req, res) => {
   try {
     const b = req.body;
     if (!b) return res.status(400).json({ success: false, error: 'No bid data provided' });
-    if (!b.id) b.id = 'bid_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    // Disallow saving completely empty / placeholder rows to persistent storage
+    if (isDraftOrEmptyBid(b)) {
+      return res.json({ success: true, message: 'Draft placeholder ignored', bid: b });
+    }
+
+    if (!b.id || String(b.id).startsWith('draft_')) {
+      b.id = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 9);
+    }
 
     // If previously deleted, unmark since user explicitly saved it
     const deletedSet = getDeletedBidsStore();
@@ -4443,7 +4492,7 @@ const handleSaveBid = async (req, res) => {
 
     syncBidsListToSQLite([b]);
 
-    const list = getBidsStore().filter(item => !deletedSet.has(String(item.id)));
+    const list = getBidsStore().filter(item => !deletedSet.has(String(item.id)) && !isDraftOrEmptyBid(item));
     const idx = list.findIndex(item => item.id === b.id);
     if (idx >= 0) list[idx] = { ...list[idx], ...b };
     else list.unshift(b);
