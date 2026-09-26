@@ -4435,27 +4435,8 @@ const handleGetBids = async (req, res) => {
       }
     });
 
-    // De-duplicate identical bids (same date, client, underlying client, origin, destination, vehicle type)
-    const seen = new Map();
-    const deduped = [];
-    for (const b of map.values()) {
-      if (isDraftOrEmptyBid(b)) continue;
-      const key = [
-        b.date || b.bid_date || '',
-        String(b.client_name || b.counterparty || '').trim().toLowerCase(),
-        String(b.underlying_client || b.end_client || '').trim().toLowerCase(),
-        String(b.starting_point || b.origin || '').trim().toLowerCase(),
-        String(b.ending_point || b.destination || '').trim().toLowerCase(),
-        String(b.vehicle_type || b.truck_type || '').trim().toLowerCase()
-      ].join('|||');
-
-      if (!seen.has(key)) {
-        seen.set(key, b);
-        deduped.push(b);
-      }
-    }
-
-    res.json({ success: true, bids: deduped });
+    const allActiveBids = Array.from(map.values()).filter(b => !isDraftOrEmptyBid(b));
+    res.json({ success: true, bids: allActiveBids });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
