@@ -79,8 +79,8 @@
       "id": "contract_3m",
       "label": "3 Months Contract",
       "short": "3 Months",
-      "multiplier": 0.95,
-      "discount_percent": 5,
+      "multiplier": 0.98,
+      "discount_percent": "2",
       "badge": "5% Quarterly Volume Discount",
       "description": "Quarterly agreement (5% volume discount)"
     },
@@ -88,8 +88,8 @@
       "id": "contract_6m",
       "label": "6 Months Contract",
       "short": "6 Months",
-      "multiplier": 0.92,
-      "discount_percent": 8,
+      "multiplier": 0.96,
+      "discount_percent": "4",
       "badge": "8% Half-Yearly Volume Discount",
       "description": "Half-yearly agreement (8% volume discount)"
     },
@@ -97,8 +97,8 @@
       "id": "contract_1y",
       "label": "1 Year Contract",
       "short": "1 Year",
-      "multiplier": 0.88,
-      "discount_percent": 12,
+      "multiplier": 0.94,
+      "discount_percent": "6",
       "badge": "12% Annual Enterprise Discount",
       "description": "Annual enterprise contract (12% volume discount)"
     }
@@ -331,5 +331,5 @@
       "contract_rate_above_400": 38
     }
   ],
-  "updated_at": "2026-09-26T19:44:26.567Z"
+  "updated_at": "2026-09-26T19:45:06.209Z"
 }
