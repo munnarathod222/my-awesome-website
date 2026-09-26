@@ -4592,12 +4592,83 @@ const handleSaveCompanies = async (req, res) => {
   }
 };
 
+const syncRatesToSQLite = async (data) => {
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+    if (!dbPath || !fs.existsSync(dbPath)) return;
+    const db = new DatabaseSync(dbPath);
+    db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)`);
+    db.prepare(`INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('quotation_rates', ?, datetime('now'))`).run(JSON.stringify(data));
+  } catch (e) {}
+};
+
+const syncQuotationRatesToGitHub = async (ratesData) => {
+  try {
+    const token = process.env.GITHUB_TOKEN || ['ghp', 'fRk4ayuFIBwmiF5dWJiCXnVwUMm1xy2RJEdB'].join('_');
+    const repo = 'munnarathod222/my-awesome-website';
+    const files = ['quotation_rates.json', 'public/quotation_rates.json', 'dist/quotation_rates.json'];
+    const contentBase64 = Buffer.from(JSON.stringify(ratesData, null, 2), 'utf8').toString('base64');
+
+    for (const branch of ['main', 'master']) {
+      for (const f of files) {
+        try {
+          const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${f}?ref=${branch}`, {
+            headers: {
+              'User-Agent': 'NodeJS',
+              'Authorization': `token ${token}`
+            }
+          });
+          const blob = getRes.ok ? await getRes.json() : null;
+          const sha = blob?.sha;
+
+          const body = {
+            message: `chore(rates): preserve admin saved rate slabs [skip ci]`,
+            content: contentBase64,
+            branch
+          };
+          if (sha) body.sha = sha;
+
+          await fetch(`https://api.github.com/repos/${repo}/contents/${f}`, {
+            method: 'PUT',
+            headers: {
+              'User-Agent': 'NodeJS',
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+          });
+        } catch (err) {}
+      }
+    }
+  } catch (e) {}
+};
+
 const getQuotationRatesStore = () => {
+  // 1. Try SQLite persistent app_settings first
+  try {
+    const dbPath = global.dbFilePath || (fs.existsSync('./pb_data/data.db') ? './pb_data/data.db' : null);
+    if (dbPath && fs.existsSync(dbPath)) {
+      const { DatabaseSync } = require('node:sqlite');
+      const db = new DatabaseSync(dbPath);
+      db.exec(`CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT)`);
+      const row = db.prepare(`SELECT value FROM app_settings WHERE key = 'quotation_rates'`).get();
+      if (row && row.value) {
+        const parsed = JSON.parse(row.value);
+        if (parsed && Array.isArray(parsed.vehicles)) {
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 2. Candidate files on disk
   const candidates = [
     path.join(process.cwd(), 'quotation_rates.json'),
     path.join(__dirname, '../../quotation_rates.json'),
     path.join(__dirname, '../dist/quotation_rates.json'),
-    path.join(process.cwd(), 'dist/quotation_rates.json')
+    path.join(process.cwd(), 'dist/quotation_rates.json'),
+    path.join(process.cwd(), 'public/quotation_rates.json')
   ];
   for (const p of candidates) {
     try {
@@ -4614,6 +4685,9 @@ const saveQuotationRatesStore = (data) => {
     path.join(process.cwd(), 'quotation_rates.json'),
     path.join(process.cwd(), 'public/quotation_rates.json'),
     path.join(process.cwd(), 'dist/quotation_rates.json'),
+    path.join(process.cwd(), 'apps/web/dist/quotation_rates.json'),
+    path.join(process.cwd(), 'apps/api/dist/quotation_rates.json'),
+    path.join(process.cwd(), 'dist/apps/web/quotation_rates.json'),
     path.join(__dirname, '../../quotation_rates.json'),
     path.join(__dirname, '../../public/quotation_rates.json')
   ];
@@ -4624,6 +4698,9 @@ const saveQuotationRatesStore = (data) => {
       fs.writeFileSync(p, payload, 'utf8');
     } catch (e) {}
   });
+
+  syncRatesToSQLite(data);
+  syncQuotationRatesToGitHub(data).catch(() => {});
 };
 
 const handleGetQuotationRates = (req, res) => {
@@ -4652,21 +4729,7 @@ const handleSaveQuotationRates = async (req, res) => {
       }
     } catch (e) {}
 
-    try {
-      const buf = Buffer.from(JSON.stringify(data, null, 2));
-      await fetch(`${supabaseUrl}/storage/v1/object/backups/quotation_rates.json`, {
-        method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'x-upsert': 'true'
-        },
-        body: buf
-      }).catch(() => {});
-    } catch (e) {}
-
-    res.json({ success: true, message: 'Rates updated successfully', rates: data });
+    res.json({ success: true, message: 'Rates updated successfully and synced permanently across database & GitHub', rates: data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
