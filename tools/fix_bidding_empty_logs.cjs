@@ -85,24 +85,8 @@ targetBundles.forEach(bundlePath => {
     }catch(m){}
   }
 
-  // De-duplicate identical bids
-  const seen=new Map();
-  const deduped=[];
-  list.filter(b=>b&&b.id&&!delSet.has(String(b.id))&&!isDraftOrEmptyBid(b)).forEach(b=>{
-    const key=[
-      b.date||b.bid_date||'',
-      String(b.client_name||b.counterparty||'').trim().toLowerCase(),
-      String(b.underlying_client||b.end_client||'').trim().toLowerCase(),
-      String(b.starting_point||b.origin||'').trim().toLowerCase(),
-      String(b.ending_point||b.destination||'').trim().toLowerCase(),
-      String(b.vehicle_type||b.truck_type||'').trim().toLowerCase()
-    ].join('|||');
-    if(!seen.has(key)){
-      seen.set(key,b);
-      deduped.push(b);
-    }
-  });
-  list=deduped;
+  // Preserve all bids with unique IDs without collapsing identical lanes (supports multiple loads/bids for same trip)
+  list=list.filter(b=>b&&b.id&&!delSet.has(String(b.id))&&!isDraftOrEmptyBid(b));
 
   try{
     localStorage.setItem(ue.BIDS,JSON.stringify(list));
@@ -224,7 +208,7 @@ targetBundles.forEach(bundlePath => {
 },`;
 
     content = content.substring(0, rsStart) + newStorageCode + content.substring(nsStart);
-    console.log(`✓ Replaced rs, Ne, Ye storage engine`);
+    console.log(`✓ Replaced rs, Ne, Ye storage engine (deduping removed, empty bids prevented)`);
   }
 
   // 2. Fix le ("Add Bid Row") in ms component so it creates an in-memory draft without sending to server
@@ -234,8 +218,6 @@ targetBundles.forEach(bundlePath => {
   if (content.includes(oldLe)) {
     content = content.replace(oldLe, newLe);
     console.log(`✓ Replaced le() in ms component`);
-  } else {
-    console.log(`Note: oldLe not found directly in ${bundlePath}`);
   }
 
   // 3. Fix B() in ms component so it promotes draft when real data is entered
@@ -247,7 +229,51 @@ targetBundles.forEach(bundlePath => {
     console.log(`✓ Replaced B() ending in ms component`);
   }
 
-  // 4. Fix flushRow so it ignores draft rows
+  // 4. Inject laneBidInfo and cloneBid helper into ms component
+  const statsDef = 'const stats=C.useMemo(()=>{const total=H.length,won=H.filter(b=>b.status==="Won").length,lost=H.filter(b=>b.status==="Lost").length,winRate=total>0?Math.round((won/total)*100):0,totalVal=H.reduce((sum,b)=>sum+(Number(b.bidding_amount)||0),0);return{total,won,lost,winRate,totalVal}},[H]);';
+  const newStatsAndHelpers = `${statsDef}const laneBidInfo=C.useMemo(()=>{const countMap={},curMap={},indexMap={};const list=(localBids||x).filter(b=>b&&b.id&&!b._isDraft&&!String(b.id).startsWith("draft_"));list.forEach(b=>{const d=b.date||b.bid_date||"";const cl=String(b.client_name||b.counterparty||"").trim().toLowerCase();const o=String(b.starting_point||b.origin||"").trim().toLowerCase();const dest=String(b.ending_point||b.destination||"").trim().toLowerCase();if(!dest)return;const k=[d,cl,o,dest].join("|||");countMap[k]=(countMap[k]||0)+1});[...list].reverse().forEach(b=>{const d=b.date||b.bid_date||"";const cl=String(b.client_name||b.counterparty||"").trim().toLowerCase();const o=String(b.starting_point||b.origin||"").trim().toLowerCase();const dest=String(b.ending_point||b.destination||"").trim().toLowerCase();if(!dest)return;const k=[d,cl,o,dest].join("|||");curMap[k]=(curMap[k]||0)+1;indexMap[b.id]={total:countMap[k],index:curMap[k]}});return indexMap},[localBids,x]);const cloneBid=row=>{const cDate=row.date||row.bid_date||tt(new Date,"yyyy-MM-dd");const newId=Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,9);const newRow={...row,id:newId,date:cDate,bid_date:cDate,bidding_amount:row.bidding_amount||0,quoted_amount:row.quoted_amount||row.bidding_amount||0,quoted_rate:row.quoted_rate||row.bidding_amount||0,bidding_lost_at:0,actual_winning_rate:0,status:"Not bidded",result:"Not bidded",created:new Date().toISOString(),updated:new Date().toISOString()};delete newRow._isDraft;setLocalBids(prev=>[newRow,...(prev||[])]);r?.(newRow);F.success(\`Added duplicate load/bid for \${newRow.starting_point||"Origin"} ➔ \${newRow.ending_point||"Destination"} (\${newRow.client_name})\`)};`;
+
+  if (content.includes(statsDef)) {
+    // Only inject if not already present
+    if (!content.includes('const laneBidInfo=')) {
+      content = content.replace(statsDef, newStatsAndHelpers);
+      console.log(`✓ Injected laneBidInfo and cloneBid into ms component`);
+    } else {
+      console.log(`Note: laneBidInfo already present in ${bundlePath}`);
+    }
+  }
+
+  // 5. Enhance Date column in H.map to show "Load #1 of 3" badge for duplicate lane bids
+  const oldDateCellWithBang = 'e.jsx(ae,{className:"p-1",children:e.jsx("input",{type:"date",value:c.date?c.date.split("T")[0]:"",onChange:N=>B(c.id,"date",N.target.value,!0),className:"w-full bg-transparent px-2 py-1.5 text-slate-200 border border-transparent hover:border-slate-700 focus:border-cyan-500 focus:bg-slate-900 rounded outline-none text-xs"})})';
+  const oldDateCellWithoutBang = 'e.jsx(ae,{className:"p-1",children:e.jsx("input",{type:"date",value:c.date?c.date.split("T")[0]:"",onChange:N=>B(c.id,"date",N.target.value),className:"w-full bg-transparent px-2 py-1.5 text-slate-200 border border-transparent hover:border-slate-700 focus:border-cyan-500 focus:bg-slate-900 rounded outline-none text-xs"})})';
+  
+  const newDateCell = 'e.jsx(ae,{className:"p-1",children:e.jsxs("div",{className:"flex items-center gap-1",children:[e.jsx("input",{type:"date",value:c.date?c.date.split("T")[0]:"",onChange:N=>B(c.id,"date",N.target.value,!0),className:"w-full bg-transparent px-2 py-1.5 text-slate-200 border border-transparent hover:border-slate-700 focus:border-cyan-500 focus:bg-slate-900 rounded outline-none text-xs"}),laneBidInfo[c.id]?.total>1&&e.jsxs("span",{className:"shrink-0 px-1 py-0.5 text-[9px] font-bold rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 shadow-sm whitespace-nowrap",title:`Multiple bids/trucks for this corridor today: Load ${laneBidInfo[c.id].index} of ${laneBidInfo[c.id].total}`,children:[`#${laneBidInfo[c.id].index}/${laneBidInfo[c.id].total}`]})]})})';
+
+  if (content.includes(oldDateCellWithBang)) {
+    content = content.replace(oldDateCellWithBang, newDateCell);
+    console.log(`✓ Enhanced Date cell with multi-load badge`);
+  } else if (content.includes(oldDateCellWithoutBang)) {
+    content = content.replace(oldDateCellWithoutBang, newDateCell);
+    console.log(`✓ Enhanced Date cell (without bang) with multi-load badge`);
+  }
+
+  // 6. Enhance Action header and Action cell with 1-click Clone / Duplicate helper button
+  const oldActionHeader = 'e.jsx(ne,{className:"w-[50px] text-right pr-4",children:"Action"})';
+  const newActionHeader = 'e.jsx(ne,{className:"w-[70px] text-right pr-3",children:"Action"})';
+  if (content.includes(oldActionHeader)) {
+    content = content.replace(oldActionHeader, newActionHeader);
+    console.log(`✓ Widened Action column header`);
+  }
+
+  const oldActionCell = 'e.jsx(ae,{className:"text-right pr-4",children:e.jsx(L,{variant:"ghost",size:"sm",className:"h-7 w-7 p-0 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg",onClick:()=>y?.(c.id),title:"Delete Bid",children:e.jsx(Ze,{className:"w-3.5 h-3.5"})})})';
+  const newActionCell = 'e.jsxs(ae,{className:"text-right pr-3 flex items-center justify-end gap-1",children:[e.jsx(L,{variant:"ghost",size:"sm",className:"h-7 w-7 p-0 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 rounded-lg",onClick:()=>cloneBid(c),title:"Duplicate / Rebid (Add another load or quote for this corridor)",children:e.jsx("span",{className:"text-xs",children:"📑"})}),e.jsx(L,{variant:"ghost",size:"sm",className:"h-7 w-7 p-0 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg",onClick:()=>y?.(c.id),title:"Delete Bid",children:e.jsx(Ze,{className:"w-3.5 h-3.5"})})]})';
+
+  if (content.includes(oldActionCell)) {
+    content = content.replace(oldActionCell, newActionCell);
+    console.log(`✓ Added Clone / Rebid button in Action cell`);
+  }
+
+  // 7. Fix flushRow so it ignores draft rows
   const oldFlush = 'const item=(localBids||x).find(N=>N.id===rowId);item&&d?.(item)';
   const newFlush = 'const item=(localBids||x).find(N=>N.id===rowId);if(item&&!item._isDraft&&!String(item.id).startsWith("draft_")){d?.(item)}';
   if (content.includes(oldFlush)) {
@@ -255,7 +281,7 @@ targetBundles.forEach(bundlePath => {
     console.log(`✓ Replaced flushRow in ms component`);
   }
 
-  // 5. Fix T and D in parent component
+  // 8. Fix T and D in parent component
   const oldTandD = 'T=async t=>{try{await Ne(t),j(s=>s.map(u=>u.id===t.id?t:u))}catch{F.error("Failed to update bid")}},D=async t=>{try{const s=await Ne(t);j(u=>[s,...u])}catch{F.error("Failed to save new bid")}}';
   const newTandD = 'T=async t=>{try{const saved=await Ne(t);const finalItem=saved||t;j(s=>s.map(u=>(u.id===t.id||u.id===finalItem.id)?finalItem:u))}catch{F.error("Failed to update bid")}},D=async t=>{try{const saved=await Ne(t);if(saved)j(u=>[saved,...u.filter(x=>x.id!==saved.id&&x.id!==t.id)])}catch{F.error("Failed to save new bid")}}';
 
@@ -264,7 +290,7 @@ targetBundles.forEach(bundlePath => {
     console.log(`✓ Replaced T and D in parent component`);
   }
 
-  // 6. Validate with esbuild
+  // 9. Validate with esbuild
   try {
     esbuild.transformSync(content, { loader: 'js' });
     fs.writeFileSync(bundlePath, content, 'utf8');
