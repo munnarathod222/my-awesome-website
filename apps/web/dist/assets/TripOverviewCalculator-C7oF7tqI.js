@@ -19,59 +19,617 @@ function calcOrrToll(o,d,v="bus_2axle",t="single"){
   return{singleFare:s,returnFare24h:r,selectedFare:t==="return24h"?r:s,savings:sav,origin:ORR_IC[oi],destination:ORR_IC[di]};
 }
 
+function LogisticsTripCostCalculator({
+  initialDistance = 650,
+  initialMileage = 4.5,
+  initialFuelPrice = 92.5,
+  initialTolls = 1400,
+  onSaveToDatabase,
+  savedReportsCount = 0,
+  onOpenReports
+}) {
+  const [emiMonthly, setEmiMonthly] = a.useState(42e3);
+  const [driverSalaryMonthly, setDriverSalaryMonthly] = a.useState(22e3);
+  const [insuranceAnnual, setInsuranceAnnual] = a.useState(65e3);
+  const [roadTaxAnnual, setRoadTaxAnnual] = a.useState(28e3);
+  const [permitsAnnual, setPermitsAnnual] = a.useState(18e3);
+  const [workingDaysMonthly, setWorkingDaysMonthly] = a.useState(25);
+  const [allocationMode, setAllocationMode] = a.useState("trips_frequency");
+  const [tripsPerMonth, setTripsPerMonth] = a.useState(15);
+  const [tripDays, setTripDays] = a.useState(2);
+  const [distanceKm, setDistanceKm] = a.useState(initialDistance);
+  const [mileageKmpl, setMileageKmpl] = a.useState(initialMileage);
+  const [fuelPricePerLitre, setFuelPricePerLitre] = a.useState(initialFuelPrice);
+  const [tollCost, setTollCost] = a.useState(initialTolls);
+  const [tyreWearPerKm, setTyreWearPerKm] = a.useState(2.5);
+  const [maintenancePerKm, setMaintenancePerKm] = a.useState(1.8);
+  const [loadingUnloadingCost, setLoadingUnloadingCost] = a.useState(1200);
+  const [driverBattaPerTrip, setDriverBattaPerTrip] = a.useState(800);
+  const [targetMarginPct, setTargetMarginPct] = a.useState(15);
+  const [clientOfferRevenue, setClientOfferRevenue] = a.useState(38e3);
+  const [showClientOfferCompare, setShowClientOfferCompare] = a.useState(false);
+  const [orrOrigin, setOrrOrigin] = a.useState("1");
+  const [orrDestination, setOrrDestination] = a.useState("16");
+  const [orrVehicle, setOrrVehicle] = a.useState("bus_2axle");
+  const [orrTripType, setOrrTripType] = a.useState("single");
+  const [orrApplied, setOrrApplied] = a.useState(false);
+  const orrRes = calcOrrToll(orrOrigin, orrDestination, orrVehicle, orrTripType);
+  const handleApplyOrrToll = () => {
+    setTollCost(orrRes.selectedFare);
+    setOrrApplied(true);
+    setTimeout(() => setOrrApplied(false), 2e3);
+    i.success(`Applied ORR Toll: \u20B9${orrRes.selectedFare} (${orrTripType === "return24h" ? "2-Way Return" : "1-Way Single"})`);
+  };
+  const handleSwapOrr = () => {
+    const tmp = orrOrigin;
+    setOrrOrigin(orrDestination);
+    setOrrDestination(tmp);
+  };
+  const calc = a.useMemo(() => {
+    const insuranceMonthly = (parseFloat(insuranceAnnual) || 0) / 12;
+    const roadTaxMonthly = (parseFloat(roadTaxAnnual) || 0) / 12;
+    const permitsMonthly = (parseFloat(permitsAnnual) || 0) / 12;
+    const totalMonthlyFixed = (parseFloat(emiMonthly) || 0) + (parseFloat(driverSalaryMonthly) || 0) + insuranceMonthly + roadTaxMonthly + permitsMonthly;
+    let allocatedFixedCost = 0;
+    if (allocationMode === "trips_frequency") {
+      const freq = Math.max(1, parseFloat(tripsPerMonth) || 1);
+      allocatedFixedCost = totalMonthlyFixed / freq;
+    } else {
+      const workingDays = Math.max(1, parseFloat(workingDaysMonthly) || 25);
+      const days = Math.max(0.5, parseFloat(tripDays) || 1);
+      const fixedPerDay = totalMonthlyFixed / workingDays;
+      allocatedFixedCost = fixedPerDay * days;
+    }
+    const dist = Math.max(0, parseFloat(distanceKm) || 0);
+    const mileage = Math.max(0.1, parseFloat(mileageKmpl) || 1);
+    const fuelPrice = Math.max(0, parseFloat(fuelPricePerLitre) || 0);
+    const fuelLitres = dist / mileage;
+    const fuelCost = fuelLitres * fuelPrice;
+    const toll = parseFloat(tollCost) || 0;
+    const tyreCost = dist * (parseFloat(tyreWearPerKm) || 0);
+    const maintCost = dist * (parseFloat(maintenancePerKm) || 0);
+    const loadingCost = parseFloat(loadingUnloadingCost) || 0;
+    const battaCost = parseFloat(driverBattaPerTrip) || 0;
+    const totalVariableCost = fuelCost + toll + tyreCost + maintCost + loadingCost + battaCost;
+    const totalTripCost = allocatedFixedCost + totalVariableCost;
+    const costPerKm = dist > 0 ? totalTripCost / dist : 0;
+    const variableCostPerKm = dist > 0 ? totalVariableCost / dist : 0;
+    const fixedCostPerKm = dist > 0 ? allocatedFixedCost / dist : 0;
+    const breakEvenRate = totalTripCost;
+    const marginPct = parseFloat(targetMarginPct) || 0;
+    const recommendedQuote = totalTripCost * (1 + marginPct / 100);
+    const expectedProfit = recommendedQuote - totalTripCost;
+    const quotePerKm = dist > 0 ? recommendedQuote / dist : 0;
+    const minBidMarginPct = 6;
+    const minBidAmount = totalTripCost * (1 + minBidMarginPct / 100);
+    const minBidProfit = minBidAmount - totalTripCost;
+    const minBidRatePerKm = dist > 0 ? minBidAmount / dist : 0;
+    const medBidMarginPct = 15;
+    const medBidAmount = totalTripCost * (1 + medBidMarginPct / 100);
+    const medBidProfit = medBidAmount - totalTripCost;
+    const medBidRatePerKm = dist > 0 ? medBidAmount / dist : 0;
+    const maxBidMarginPct = 28;
+    const maxBidAmount = totalTripCost * (1 + maxBidMarginPct / 100);
+    const maxBidProfit = maxBidAmount - totalTripCost;
+    const maxBidRatePerKm = dist > 0 ? maxBidAmount / dist : 0;
+    const clientOffer = parseFloat(clientOfferRevenue) || 0;
+    const clientNetProfit = clientOffer - totalTripCost;
+    const clientMarginPct = clientOffer > 0 ? clientNetProfit / clientOffer * 100 : 0;
+    return {
+      totalMonthlyFixed,
+      insuranceMonthly,
+      roadTaxMonthly,
+      permitsMonthly,
+      allocatedFixedCost,
+      fuelLitres,
+      fuelCost,
+      toll,
+      tyreCost,
+      maintCost,
+      loadingCost,
+      battaCost,
+      totalVariableCost,
+      totalTripCost,
+      costPerKm,
+      variableCostPerKm,
+      fixedCostPerKm,
+      breakEvenRate,
+      recommendedQuote,
+      expectedProfit,
+      quotePerKm,
+      minBidMarginPct,
+      minBidAmount,
+      minBidProfit,
+      minBidRatePerKm,
+      medBidMarginPct,
+      medBidAmount,
+      medBidProfit,
+      medBidRatePerKm,
+      maxBidMarginPct,
+      maxBidAmount,
+      maxBidProfit,
+      maxBidRatePerKm,
+      clientOffer,
+      clientNetProfit,
+      clientMarginPct
+    };
+  }, [
+    emiMonthly,
+    driverSalaryMonthly,
+    insuranceAnnual,
+    roadTaxAnnual,
+    permitsAnnual,
+    workingDaysMonthly,
+    allocationMode,
+    tripsPerMonth,
+    tripDays,
+    distanceKm,
+    mileageKmpl,
+    fuelPricePerLitre,
+    tollCost,
+    tyreWearPerKm,
+    maintenancePerKm,
+    loadingUnloadingCost,
+    driverBattaPerTrip,
+    targetMarginPct,
+    clientOfferRevenue
+  ]);
+  const inr = (val) => new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0
+  }).format(Math.round(val || 0));
+  const handleReset = () => {
+    setEmiMonthly(42e3);
+    setDriverSalaryMonthly(22e3);
+    setInsuranceAnnual(65e3);
+    setRoadTaxAnnual(28e3);
+    setPermitsAnnual(18e3);
+    setWorkingDaysMonthly(25);
+    setAllocationMode("trips_frequency");
+    setTripsPerMonth(15);
+    setTripDays(2);
+    setDistanceKm(650);
+    setMileageKmpl(4.5);
+    setFuelPricePerLitre(92.5);
+    setTollCost(1400);
+    setTyreWearPerKm(2.5);
+    setMaintenancePerKm(1.8);
+    setLoadingUnloadingCost(1200);
+    setDriverBattaPerTrip(800);
+    setTargetMarginPct(15);
+    setClientOfferRevenue(38e3);
+    i.success("Reset calculator to heavy commercial 32ft truck standards");
+  };
+  const handleCopyWhatsAppQuote = () => {
+    const text = `\u{1F69A} *JAI BHAVANI CARGO - TRIP FREIGHT QUOTATION*
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+\u{1F4CD} *Trip Distance:* ${distanceKm} KM
+\u{1F5D3}\uFE0F *Operating Frequency:* ${tripsPerMonth} Trips/Month
+
+*COST STRUCTURE [A + B]:*
+\u2022 *[A] Allocated Fixed Overhead:* ${inr(calc.allocatedFixedCost)}
+\u2022 *[B] Variable Running Costs:* ${inr(calc.totalVariableCost)}
+  _(Fuel: ${inr(calc.fuelCost)} | Tolls: ${inr(calc.toll)} | Tyre: ${inr(calc.tyreCost)} | Maint: ${inr(calc.maintCost)} | Labour/Batta: ${inr(calc.loadingCost + calc.battaCost)})_
+
+*TOTAL NET TRIP COST:* ${inr(calc.totalTripCost)} (\u20B9${calc.costPerKm.toFixed(2)}/KM)
+*BREAK-EVEN RATE:* ${inr(calc.breakEvenRate)}
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+\u{1F3AF} *THREE-TIER BIDDING RATES:*
+\u2022 \u{1F7E2} *MINIMUM BID (Floor / Backhaul):* ${inr(calc.minBidAmount)} (\u20B9${calc.minBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.minBidMarginPct}%)
+\u2022 \u{1F535} *MEDIUM BID (Standard Target):* ${inr(calc.medBidAmount)} (\u20B9${calc.medBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.medBidMarginPct}%)
+\u2022 \u{1F7E3} *MAXIMUM BID (Peak / Urgent):* ${inr(calc.maxBidAmount)} (\u20B9${calc.maxBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.maxBidMarginPct}%)
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+\u2B50 *CURRENT QUOTE SELECTED:* ${inr(calc.recommendedQuote)}
+_Generated via Jai Bhavani Cargo Fleet Intelligence_`;
+    navigator.clipboard.writeText(text);
+    i.success("Copied 3-Tier Freight Quote to Clipboard!");
+  };
+  const handlePrint = () => {
+    window.print();
+  };
+  return /* @__PURE__ */ e.jsx("div", { className: "space-y-6" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 sm:p-5 bg-card border border-border/80 rounded-3xl shadow-sm space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u26A1 OPERATIONAL FREQUENCY SCENARIOS")), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground mt-0.5" }, "How many trips does this truck complete per month?"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground" }, "A 4-trip long haul must absorb 1/4th of the monthly EMI & salary, while a 30-trip local route absorbs 1/30th.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "Allocation Model:"), /* @__PURE__ */ e.jsx("div", { className: "p-0.5 bg-muted rounded-xl flex" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setAllocationMode("trips_frequency"),
+      className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trips_frequency" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`
+    },
+    "By Trips / Mo"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setAllocationMode("trip_days"),
+      className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trip_days" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`
+    },
+    "By Trip Days"
+  )))), allocationMode === "trips_frequency" ? /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1" }, [
+    {
+      trips: 4,
+      title: "4 Trips / Month",
+      type: "Long-Haul Line-Haul",
+      desc: "1,500-2,500 KM (Hyd-Del/Mum), ~7 days",
+      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30"
+    },
+    {
+      trips: 15,
+      title: "15 Trips / Month",
+      type: "Regional Inter-State",
+      desc: "500-800 KM (Hyd-Blr/Chn), ~2 days",
+      badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
+    },
+    {
+      trips: 30,
+      title: "30 Trips / Month",
+      type: "Daily Express / Local",
+      desc: "150-300 KM (Warangal/VJA), 1 day",
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+    },
+    {
+      trips: "custom",
+      title: "Custom Frequency",
+      type: "Flexible Allocation",
+      desc: "Specify exact monthly trips",
+      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
+    }
+  ].map((scenario) => {
+    const isSelected = scenario.trips === "custom" ? tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 : tripsPerMonth === scenario.trips;
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: scenario.title,
+        type: "button",
+        onClick: () => {
+          if (scenario.trips !== "custom") setTripsPerMonth(scenario.trips);
+          else if (tripsPerMonth === 4 || tripsPerMonth === 15 || tripsPerMonth === 30) {
+            setTripsPerMonth(10);
+          }
+        },
+        className: `p-3.5 rounded-2xl text-left border transition flex flex-col justify-between ${isSelected ? "bg-primary/10 border-primary shadow-sm ring-1 ring-primary" : "bg-card hover:bg-muted/30 border-border/60"}`
+      },
+      /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, scenario.title), /* @__PURE__ */ e.jsx("span", { className: `text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${scenario.badgeColor}` }, scenario.type)), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground line-clamp-1" }, scenario.desc)),
+      /* @__PURE__ */ e.jsx("div", { className: "pt-2 mt-2 border-t border-border/30 flex items-baseline justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "Fixed Burden [A]:"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold font-mono text-primary" }, scenario.trips === "custom" ? inr(calc.allocatedFixedCost) : inr(calc.totalMonthlyFixed / scenario.trips)))
+    );
+  })) : /* @__PURE__ */ e.jsx("div", { className: "p-3 bg-muted/20 border border-border/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-0.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, "Trip Duration Based Allocation"), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground" }, "Monthly fixed cost (", inr(calc.totalMonthlyFixed), ") is divided across ", workingDaysMonthly, " working days = ", inr(calc.totalMonthlyFixed / workingDaysMonthly), " / day.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "Trip Days:"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0.5",
+      max: "30",
+      step: "0.5",
+      value: tripDays,
+      onChange: (e2) => setTripDays(parseFloat(e2.target.value) || 1),
+      className: "w-20 h-9 px-2 text-center text-xs font-mono font-bold bg-background border border-border rounded-xl"
+    }
+  )), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-primary font-mono bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20" }, "[A] Burden: ", inr(calc.allocatedFixedCost)))), allocationMode === "trips_frequency" && tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 && /* @__PURE__ */ e.jsx("div", { className: "p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-amber-500" }, "Enter Custom Trips Completed Per Month:"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "1",
+      max: "100",
+      value: tripsPerMonth,
+      onChange: (e2) => setTripsPerMonth(Math.max(1, parseInt(e2.target.value) || 1)),
+      className: "w-24 h-8 px-2 text-center text-xs font-mono font-bold bg-background border border-amber-500/40 rounded-xl text-foreground"
+    }
+  ), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "trips/month")))), /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-gradient-to-br from-card via-card to-primary/[0.04] border-2 border-primary/30 rounded-3xl shadow-lg space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest bg-primary text-primary-foreground uppercase" }, "FORMULA: [A] + [B]"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "32ft Container / Commercial Fleet Cost Structure")), /* @__PURE__ */ e.jsx("h2", { className: "text-xl sm:text-2xl font-black font-heading text-foreground" }, "Total Trip Cost = ", inr(calc.allocatedFixedCost), " ", /* @__PURE__ */ e.jsx("span", { className: "text-primary font-bold text-sm" }, "[A]"), " + ", inr(calc.totalVariableCost), " ", /* @__PURE__ */ e.jsx("span", { className: "text-emerald-500 font-bold text-sm" }, "[B]"))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleCopyWhatsAppQuote,
+      className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition active:scale-95"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4CB} Copy WhatsApp Quote")
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handlePrint,
+      className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border/60 transition"
+    },
+    "\u{1F5A8}\uFE0F Print"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleReset,
+      className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50 transition",
+      title: "Reset to 32ft commercial standards"
+    },
+    "\u21BA Reset"
+  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "TOTAL NET TRIP COST"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-foreground" }, inr(calc.totalTripCost)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground font-medium" }, "\u20B9", calc.costPerKm.toFixed(2), " / KM over ", distanceKm, " KMs")), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-amber-500 block" }, "BREAK-EVEN FREIGHT RATE"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-amber-500" }, inr(calc.breakEvenRate)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-amber-500/80 font-medium" }, "Zero-profit booking threshold")), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block" }, "RECOMMENDED QUOTE"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400" }, "+", targetMarginPct, "%")), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-emerald-400" }, inr(calc.recommendedQuote)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-emerald-400/80 font-medium" }, "Rate: \u20B9", calc.quotePerKm.toFixed(2), "/KM \u2022 Net: +", inr(calc.expectedProfit))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "FUEL EXPENSE BURDEN"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-primary" }, inr(calc.fuelCost)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground font-medium" }, calc.fuelLitres.toFixed(1), " L diesel (", Math.round(calc.fuelCost / (calc.totalTripCost || 1) * 100), "% of total trip cost)"))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-card/60 border border-border/50 rounded-2xl space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "Target Net Profit Margin:"), /* @__PURE__ */ e.jsx("span", { className: "text-emerald-500 font-extrabold font-mono text-sm" }, targetMarginPct, "%")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1" }, [10, 15, 20, 25].map((pct) => /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      key: pct,
+      type: "button",
+      onClick: () => setTargetMarginPct(pct),
+      className: `px-2 py-0.5 text-[10px] font-bold rounded-lg border transition ${targetMarginPct === pct ? "bg-emerald-500 text-white border-emerald-500 shadow-sm" : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/40"}`
+    },
+    pct,
+    "%"
+  )))), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "range",
+      min: "0",
+      max: "35",
+      step: "1",
+      value: targetMarginPct,
+      onChange: (e2) => setTargetMarginPct(parseFloat(e2.target.value) || 0),
+      className: "w-full accent-emerald-500 cursor-pointer h-2 bg-muted rounded-lg"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "pt-3 border-t border-border/50 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30" }, "\u{1F3AF} BIDDING INTELLIGENCE"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, "Three Strategic Quotation Benchmarks")), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-muted-foreground" }, "Click any tier to auto-apply its margin to your quote")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-3.5" }, /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500/10 border-amber-500 shadow-md ring-1 ring-amber-500/30" : "bg-muted/20 border-amber-500/30 hover:border-amber-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30" }, "\u{1F7E2} Minimum Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-amber-500" }, "+", calc.minBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Floor / Backhaul / Tender"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.minBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.minBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.minBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Floor pricing for return loads, empty backhauls, or highly contested tenders. Covers all costs with a safety buffer.")), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setTargetMarginPct(calc.minBidMarginPct),
+      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500 text-white shadow-sm" : "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30"}`
+    },
+    targetMarginPct === calc.minBidMarginPct ? "\u2713 Active Bid Selected" : "Select Minimum Bid"
+  )), /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-500/10 border-blue-500 shadow-md ring-1 ring-blue-500/30" : "bg-muted/20 border-blue-500/30 hover:border-blue-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-blue-500/20 text-blue-400 border border-blue-500/30" }, "\u{1F535} Medium Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-blue-400" }, "+", calc.medBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Standard Commercial Target"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.medBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.medBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.medBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Standard market rate for regular contracts and dedicated trips. Generates solid enterprise profit while staying competitive.")), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setTargetMarginPct(calc.medBidMarginPct),
+      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-600 text-white shadow-sm" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"}`
+    },
+    targetMarginPct === calc.medBidMarginPct ? "\u2713 Active Bid Selected" : "Select Medium Bid"
+  )), /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-500/10 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-muted/20 border-purple-500/30 hover:border-purple-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-purple-500/20 text-purple-400 border border-purple-500/30" }, "\u{1F7E3} Maximum Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-purple-400" }, "+", calc.maxBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Peak Demand / Urgent / Premium"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.maxBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.maxBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.maxBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Premium quotation for urgent express dispatches, festive peak seasons, fragile freight, or difficult terrain routes.")), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setTargetMarginPct(calc.maxBidMarginPct),
+      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-600 text-white shadow-sm" : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30"}`
+    },
+    targetMarginPct === calc.maxBidMarginPct ? "\u2713 Active Bid Selected" : "Select Maximum Bid"
+  ))), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 bg-card/80 border border-border/60 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "CLIENT OFFER STRESS TEST"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-foreground" }, "Client's Proposed Freight:"), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-2.5 top-1.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "500",
+      value: clientOfferRevenue,
+      onChange: (e2) => setClientOfferRevenue(parseFloat(e2.target.value) || 0),
+      className: "w-32 h-7 pl-6 pr-2 text-xs font-mono font-bold bg-background border border-border rounded-lg text-foreground",
+      placeholder: "Enter offer"
+    }
+  )))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Margin on Offer:"), /* @__PURE__ */ e.jsx("span", { className: `text-xs font-mono font-black ${calc.clientNetProfit >= 0 ? "text-emerald-400" : "text-rose-500"}` }, calc.clientMarginPct.toFixed(1), "% (", calc.clientNetProfit >= 0 ? `+${inr(calc.clientNetProfit)}` : `-${inr(Math.abs(calc.clientNetProfit))}`, ")")), /* @__PURE__ */ e.jsx("div", { className: `px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${calc.clientOffer >= calc.maxBidAmount ? "bg-purple-500/10 text-purple-400 border-purple-500/30" : calc.clientOffer >= calc.medBidAmount ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : calc.clientOffer >= calc.minBidAmount ? "bg-amber-500/10 text-amber-400 border-amber-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30"}` }, calc.clientOffer >= calc.maxBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E3} Premium Win"), calc.clientOffer >= calc.medBidAmount && calc.clientOffer < calc.maxBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E2} Highly Profitable"), calc.clientOffer >= calc.minBidAmount && calc.clientOffer < calc.medBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E1} Acceptable Backhaul"), calc.clientOffer < calc.minBidAmount && calc.clientOffer >= calc.breakEvenRate && /* @__PURE__ */ e.jsx("span", null, "\u26A0\uFE0F Zero Profit Buffer"), calc.clientOffer < calc.breakEvenRate && /* @__PURE__ */ e.jsx("span", null, "\u{1F534} Direct Loss (Reject)")))))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" }, /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/50 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20" }, /* @__PURE__ */ e.jsx(Xe, { className: "w-5 h-5" })), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-purple-400 block" }, "PART [A]"), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground" }, "Fixed Fleet Overhead (Monthly Base)"))), /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Monthly Pool:"), /* @__PURE__ */ e.jsx("span", { className: "text-sm font-black font-mono text-purple-400" }, inr(calc.totalMonthlyFixed)))), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground leading-relaxed" }, "Expenses that remain constant regardless of running KMs. These are divided by your expected trip frequency to calculate the fixed overhead this trip must absorb."), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Vehicle EMI / Loan"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(emiMonthly), "/mo")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "500",
+      value: emiMonthly,
+      onChange: (e2) => setEmiMonthly(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Driver Monthly Salary"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(driverSalaryMonthly), "/mo")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "500",
+      value: driverSalaryMonthly,
+      onChange: (e2) => setDriverSalaryMonthly(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Annual Comprehensive Insurance"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.insuranceMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "1000",
+      value: insuranceAnnual,
+      onChange: (e2) => setInsuranceAnnual(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Road Tax (Annual Equivalent)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.roadTaxMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "500",
+      value: roadTaxAnnual,
+      onChange: (e2) => setRoadTaxAnnual(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "National Permits & Fitness"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.permitsMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "500",
+      value: permitsAnnual,
+      onChange: (e2) => setPermitsAnnual(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Working Days Per Month"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "Default 25 days")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "1",
+      max: "31",
+      value: workingDaysMonthly,
+      onChange: (e2) => setWorkingDaysMonthly(parseInt(e2.target.value) || 25),
+      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+    }
+  )))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("span", { className: "font-semibold text-foreground" }, "Allocated Fixed Cost For This Trip [A]:"), /* @__PURE__ */ e.jsx("span", { className: "text-base font-black font-mono text-purple-400" }, inr(calc.allocatedFixedCost))), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground leading-relaxed" }, "Calculation: Total monthly fixed overhead of ", /* @__PURE__ */ e.jsx("strong", null, inr(calc.totalMonthlyFixed)), " divided by", " ", /* @__PURE__ */ e.jsx("strong", null, allocationMode === "trips_frequency" ? `${tripsPerMonth} trips/month` : `${workingDaysMonthly} working days \xD7 ${tripDays} trip days`), " ", "= ", /* @__PURE__ */ e.jsx("strong", null, inr(calc.allocatedFixedCost)), " (\u20B9", calc.fixedCostPerKm.toFixed(2), "/KM)."))), /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/50 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, /* @__PURE__ */ e.jsx(Ge, { className: "w-5 h-5" })), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-emerald-400 block" }, "PART [B]"), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground" }, "Variable Trip-Specific Costs"))), /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Total Variable:"), /* @__PURE__ */ e.jsx("span", { className: "text-sm font-black font-mono text-emerald-400" }, inr(calc.totalVariableCost)))), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground leading-relaxed" }, "Direct operational expenses incurred solely for this journey (Diesel, Fastag tolls, Tyre and Maintenance wear per KM, Batta, and Loading)."), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5 sm:col-span-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("label", { className: "font-semibold text-foreground" }, "Trip Distance (KM)"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setDistanceKm((prev) => Math.round(prev * 2)),
+      className: "text-[10px] px-2 py-0.5 bg-muted rounded border border-border hover:bg-muted/80 text-muted-foreground",
+      title: "Convert to Round Trip"
+    },
+    "\u21C4 2-Way Round Trip"
+  ), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-black text-sm" }, distanceKm, " KM"))), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "10",
+      max: "5000",
+      value: distanceKm,
+      onChange: (e2) => setDistanceKm(Math.max(0, parseFloat(e2.target.value) || 0)),
+      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Vehicle Mileage (KM/L)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, mileageKmpl, " KMPL")), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "1.0",
+      max: "15.0",
+      step: "0.1",
+      value: mileageKmpl,
+      onChange: (e2) => setMileageKmpl(parseFloat(e2.target.value) || 4.5),
+      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Diesel Price (\u20B9/Litre)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, "\u20B9", fuelPricePerLitre, "/L")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "50",
+      max: "150",
+      step: "0.5",
+      value: fuelPricePerLitre,
+      onChange: (e2) => setFuelPricePerLitre(parseFloat(e2.target.value) || 92.5),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Highway Toll Charges (\u20B9)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(tollCost))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "100",
+      value: tollCost,
+      onChange: (e2) => setTollCost(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Driver Batta / Allowance"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(driverBattaPerTrip))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "100",
+      value: driverBattaPerTrip,
+      onChange: (e2) => setDriverBattaPerTrip(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Tyre Wear Cost (\u20B9/KM)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.tyreCost), ")")), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      max: "10",
+      step: "0.1",
+      value: tyreWearPerKm,
+      onChange: (e2) => setTyreWearPerKm(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Maintenance / Servicing (\u20B9/KM)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.maintCost), ")")), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      max: "10",
+      step: "0.1",
+      value: maintenancePerKm,
+      onChange: (e2) => setMaintenancePerKm(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5 sm:col-span-2" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Loading / Unloading / Hamali Charges (Fixed per trip)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(loadingUnloadingCost))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "number",
+      min: "0",
+      step: "100",
+      value: loadingUnloadingCost,
+      onChange: (e2) => setLoadingUnloadingCost(parseFloat(e2.target.value) || 0),
+      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+    }
+  )))), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 bg-slate-950/70 border border-border/80 rounded-2xl space-y-3 shadow-inner" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/40 pb-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded" }, "ORR"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200" }, "Hyderabad ORR Toll Calculator")), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400 font-medium" }, "2024-25 Matrix")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-5 gap-2 items-center" }, /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1" }, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] font-bold text-slate-400" }, "Origin"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: orrOrigin,
+      onChange: (e2) => setOrrOrigin(e2.target.value),
+      className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary"
+    },
+    ORR_IC.map((ic) => /* @__PURE__ */ e.jsx("option", { key: `orig-${ic.id}`, value: ic.id, className: "bg-slate-900 text-white" }, "IC ", ic.code, " - ", ic.name))
+  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-1 flex justify-center pt-2 sm:pt-4" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleSwapOrr,
+      title: "Swap Origin & Destination",
+      className: "p-1.5 rounded-lg bg-muted/30 hover:bg-muted border border-border/60 text-slate-300 hover:text-white transition active:scale-95"
+    },
+    "\u21C4"
+  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1" }, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] font-bold text-slate-400" }, "Destination"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: orrDestination,
+      onChange: (e2) => setOrrDestination(e2.target.value),
+      className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary"
+    },
+    ORR_IC.map((ic) => /* @__PURE__ */ e.jsx("option", { key: `dest-${ic.id}`, value: ic.id, className: "bg-slate-900 text-white" }, "IC ", ic.code, " - ", ic.name))
+  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setOrrTripType("single"),
+      className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "single" ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "1-Way Single: \u20B9", orrRes.singleFare)
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setOrrTripType("return24h"),
+      className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "return24h" ? "bg-emerald-600 text-white shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "2-Way 24h: \u20B9", orrRes.returnFare24h)
+  )), /* @__PURE__ */ e.jsx("div", { className: "pt-2 border-t border-border/40 flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-white font-mono" }, "Calculated Toll: \u20B9", orrRes.selectedFare), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: handleApplyOrrToll,
+      className: "px-3 py-1 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow-sm transition"
+    },
+    orrApplied ? "\u2713 Applied to Tolls" : "Apply to Tolls \u2192"
+  ))))), /* @__PURE__ */ e.jsx("div", { className: "p-5 bg-card border border-border/70 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("h4", { className: "text-sm font-bold text-foreground" }, "Save or Export This Trip Simulation"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground mt-0.5" }, "Store this [A + B] breakdown to track route margins and client bidding trends over time.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, onOpenReports && /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: onOpenReports,
+      className: "px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border/60 rounded-xl text-xs font-bold transition"
+    },
+    "Saved Reports (",
+    savedReportsCount,
+    ")"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => onSaveToDatabase && onSaveToDatabase({
+        distance: distanceKm,
+        mileage: mileageKmpl,
+        fuel_price: fuelPricePerLitre,
+        tolls: tollCost,
+        total_fixed_allocated: calc.allocatedFixedCost,
+        total_variable: calc.totalVariableCost,
+        total_expenses: calc.totalTripCost,
+        break_even_rate: calc.breakEvenRate,
+        recommended_quote: calc.recommendedQuote,
+        target_margin_pct: targetMarginPct,
+        trips_per_month: tripsPerMonth
+      }),
+      className: "px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+    },
+    /* @__PURE__ */ e.jsx(U, { className: "w-4 h-4" }),
+    /* @__PURE__ */ e.jsx("span", null, "Save Calculation")
+  ))));
+}
+
 function vs(){const[b,A]=a.useState([1477]),[g,O]=a.useState([103.8]),[f,$]=a.useState([11.5]),[j,B]=a.useState([1860]),[orrOrigin,setOrrOrigin]=a.useState("1"),[orrDestination,setOrrDestination]=a.useState("16"),[orrVehicle,setOrrVehicle]=a.useState("bus_2axle"),[orrTripType,setOrrTripType]=a.useState("single"),[orrApplied,setOrrApplied]=a.useState(false),[N,q]=a.useState([1200]),[v,K]=a.useState([3]),[_,Z]=a.useState(0),[S,ee]=a.useState(0),[D,se]=a.useState(0),[y,te]=a.useState(15e3),[w,ae]=a.useState(1),[De,T]=a.useState(!1),[z,re]=a.useState(!1),[m,H]=a.useState({routeName:"",vehicleNumber:""}),[Te,Re]=a.useState([]),[Fe,Me]=a.useState([]),[le,Ee]=a.useState([]),[Le,ne]=a.useState(!1),[oe,W]=a.useState("reports"),[t,R]=a.useState(null),F=async()=>{ne(!0);try{const r=await(await fetch("/hcgi/api/trip-calculations/list")).json();r.success?Ee(r.calculations||[]):i.error(r.error||"Failed to fetch saved calculations")}catch(s){console.error(s),i.error("Failed to load saved calculations")}finally{ne(!1)}},Pe=async s=>{if(window.confirm("Are you sure you want to delete this saved calculation report?"))try{const u=await(await fetch(`/hcgi/api/trip-calculations/${s}`,{method:"DELETE"})).json();u.success?(i.success("Report deleted successfully"),F()):i.error(u.error||"Failed to delete report")}catch(r){console.error(r),i.error("Failed to delete report. Connection error.")}},de=s=>{A([s.distance||1477]),O([s.fuel_price||103.8]),$([s.mileage||11.5]),B([s.tolls||1860]),q([s.driver_expenses||1200]),K([s.tyre_depreciation_rate||3]),Z(s.vehicle_emi||0),ee(s.insurance||0),se(s.quarterly_tax||0),te(s.freight_revenue||15e3),ae(s.tds_rate!==void 0?s.tds_rate:1),W("calculator"),i.success(`Loaded parameters for Route: ${s.route_name}`)};a.useEffect(()=>{(async()=>{try{const[r,u]=await Promise.all([Se.collection("routes").getFullList({sort:"route_name",$autoCancel:!1}),Se.collection("trucks").getFullList({sort:"truck_number",$autoCancel:!1})]);Re(r),Me(u)}catch(r){console.error("Failed to load routes/trucks data:",r)}})(),F()},[]);const{fuelCost:Ie,tyreExpense:Ve,totalExpenses:ie,tdsAmount:Q,netProfit:o,profitMargin:h,chartData:ce}=a.useMemo(()=>{const s=b[0]||0,r=g[0]||0,u=f[0]||1,M=j[0]||0,Oe=N[0]||0,$e=v[0]||0,Be=parseFloat(_)||0,qe=parseFloat(S)||0,Ke=parseFloat(D)||0,E=parseFloat(y)||0,ze=parseFloat(w)||0,xe=s/u*r,me=s*$e,X=xe+me+M+Oe+Be+qe+Ke,G=E*ze/100,J=E-G-X,He=E>0?J/E*100:0,We=[{name:"Expenses",value:X,color:"hsl(var(--primary))"},{name:"TDS Deducted",value:G,color:"hsl(var(--warning))"},{name:"Net Profit",value:Math.max(J,0),color:"hsl(var(--success))"}];return{fuelCost:xe,tyreExpense:me,totalExpenses:X,tdsAmount:G,netProfit:J,profitMargin:He,chartData:We}},[b,g,f,j,N,v,_,S,D,y,w]),l=s=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(s||0),
 orrRes=calcOrrToll(orrOrigin,orrDestination,orrVehicle,orrTripType),
 applyOrrToll=()=>{B([orrRes.selectedFare]);setOrrApplied(true);setTimeout(()=>setOrrApplied(false),2000);i.success("Applied ORR toll: ₹"+orrRes.selectedFare+" ("+(orrTripType==="return24h"?"2-Way 24h Return":"1-Way Single")+")")},
-swapOrr=()=>{const tmp=orrOrigin;setOrrOrigin(orrDestination);setOrrDestination(tmp)},Ae=async s=>{if(s.preventDefault(),!m.routeName){i.error("Route Name is required to save calculation.");return}re(!0);try{const r={route_name:m.routeName,vehicle_number:m.vehicleNumber==="none"?"":m.vehicleNumber,distance:b[0],fuel_price:g[0],mileage:f[0],tolls:j[0],driver_expenses:N[0],tyre_depreciation_rate:v[0],tyre_expense:Ve,fuel_cost:Ie,vehicle_emi:parseFloat(_)||0,insurance:parseFloat(S)||0,quarterly_tax:parseFloat(D)||0,freight_revenue:parseFloat(y)||0,total_expenses:ie,net_profit:o,profit_margin:h,tds_rate:parseFloat(w)||0,tds_amount:Q},M=await(await fetch("/hcgi/api/trip-calculations/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(r)})).json();M.success?(i.success("Trip calculation report saved successfully!"),T(!1),H({routeName:"",vehicleNumber:""}),F()):i.error(M.error||"Failed to save calculation.")}catch(r){console.error("Save trip calculation error:",r),i.error("Failed to save calculation. Connection error.")}finally{re(!1)}};return e.jsxs("div",{className:"p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500",children:[e.jsxs(Qe,{children:[e.jsx("title",{children:"Trip Overview | Logistics Hub"}),e.jsx("meta",{name:"description",content:"Calculate trip profitability, expenses, and margins"})]}),e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-5 rounded-2xl border border-border shadow-sm",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-2xl font-bold tracking-tight text-foreground flex items-center gap-3",children:[e.jsx(ue,{className:"w-7 h-7 text-primary"}),"Trip Overview Calculator"]}),e.jsx("p",{className:"text-muted-foreground mt-1 text-sm",children:"Simulate profitability based on variable constraints, tyre depreciation, and vehicle fixed costs."})]}),e.jsx("div",{className:"flex items-center gap-3 w-full md:w-auto",children:oe==="calculator"?e.jsxs(c,{onClick:()=>T(!0),className:"rounded-xl font-bold shadow-sm w-full md:w-auto",children:[e.jsx(U,{className:"w-4 h-4 mr-2"})," Save Calculation"]}):e.jsxs(c,{onClick:()=>W("calculator"),className:"rounded-xl font-extrabold bg-blue-600 hover:bg-blue-500 text-white shadow-md w-full md:w-auto gap-2",children:[e.jsx(k,{className:"w-4 h-4"})," Calculate New Trip"]})})]}),e.jsxs(ss,{value:oe,onValueChange:s=>{W(s),s==="reports"&&F()},className:"w-full",children:[e.jsxs(ts,{className:"bg-muted/50 p-1 mb-6 flex h-auto rounded-xl max-w-xs",children:[e.jsx(be,{value:"calculator",className:"gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm w-1/2",children:"Calculator"}),e.jsx(be,{value:"reports",className:"gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm w-1/2",children:"Saved Reports"})]}),e.jsx(ge,{value:"calculator",className:"space-y-4 m-0",children:e.jsxs("div",{className:"grid grid-cols-1 lg:grid-cols-12 gap-8",children:[e.jsxs("div",{className:"lg:col-span-5 space-y-6",children:[e.jsxs(C,{className:"border-border shadow-sm bg-card",children:[e.jsxs(L,{className:"border-b border-border/40 pb-3.5",children:[e.jsxs(P,{className:"flex items-center gap-2 text-base font-bold",children:[e.jsx(Xe,{className:"w-4.5 h-4.5 text-primary"}),"Journey & Route Variables"]}),e.jsx(I,{className:"text-xs",children:"Adjust travel distance and associated road overheads"})]}),e.jsxs(V,{className:"space-y-6 pt-5",children:[e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Distance (KM)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"0",max:"5000",value:b[0],onChange:s=>A([Math.min(5e3,Math.max(0,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"KM"})]})]}),e.jsx(p,{value:b,onValueChange:A,max:2e3,step:1,className:"py-1"})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Tolls (INR)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"0",max:"20000",value:j[0],onChange:s=>B([Math.min(2e4,Math.max(0,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"₹"})]})]}),e.jsx(p,{value:j,onValueChange:B,max:5e3,step:10,className:"py-1"}),
-e.jsxs("div",{className:"p-3.5 bg-slate-950/70 border border-border/80 rounded-xl space-y-3 shadow-inner mt-2",children:[
-  e.jsxs("div",{className:"flex items-center justify-between border-b border-border/40 pb-2",children:[
-    e.jsxs("div",{className:"flex items-center gap-2",children:[
-      e.jsx("span",{className:"px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded",children:"ORR"}),
-      e.jsx("span",{className:"text-xs font-bold text-slate-200",children:"Hyderabad ORR Toll Calculator"})
-    ]}),
-    e.jsx("span",{className:"text-[10px] text-slate-400 font-medium",children:"2024-25 Rate Matrix"})
-  ]}),
-  e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-5 gap-2 items-center",children:[
-    e.jsxs("div",{className:"sm:col-span-2 space-y-1",children:[
-      e.jsx("label",{className:"text-[10px] font-bold text-slate-400",children:"Origin Interchange"}),
-      e.jsx("select",{value:orrOrigin,onChange:s=>setOrrOrigin(s.target.value),className:"w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary",children:ORR_IC.map(ic=>e.jsxs("option",{value:ic.id,className:"bg-slate-900 text-white",children:["IC ",ic.code," - ",ic.name]},"orig-"+ic.id))})
-    ]}),
-    e.jsx("div",{className:"sm:col-span-1 flex justify-center pt-2 sm:pt-4",children:
-      e.jsx("button",{type:"button",onClick:swapOrr,title:"Swap Origin & Destination",className:"p-1.5 rounded-lg bg-muted/30 hover:bg-muted border border-border/60 text-slate-300 hover:text-white transition active:scale-95",children:"⇄"})
-    }),
-    e.jsxs("div",{className:"sm:col-span-2 space-y-1",children:[
-      e.jsx("label",{className:"text-[10px] font-bold text-slate-400",children:"Destination Interchange"}),
-      e.jsx("select",{value:orrDestination,onChange:s=>setOrrDestination(s.target.value),className:"w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary",children:ORR_IC.map(ic=>e.jsxs("option",{value:ic.id,className:"bg-slate-900 text-white",children:["IC ",ic.code," - ",ic.name]},"dest-"+ic.id))})
-    ]})
-  ]}),
-  e.jsxs("div",{className:"space-y-1",children:[
-    e.jsx("label",{className:"text-[10px] font-bold text-slate-400",children:"Vehicle Category"}),
-    e.jsx("select",{value:orrVehicle,onChange:s=>setOrrVehicle(s.target.value),className:"w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary",children:ORR_CATS.map(v=>e.jsx("option",{value:v.id,className:"bg-slate-900 text-white",children:v.label},v.id))})
-  ]}),
-  e.jsxs("div",{className:"space-y-1.5",children:[
-    e.jsxs("div",{className:"flex justify-between items-center text-[10px] font-bold text-slate-400",children:[
-      e.jsx("span",{children:"Trip Duration / Type"}),
-      orrTripType==="return24h"&&e.jsx("span",{className:"text-emerald-400 font-semibold",children:"24h Return Pass (1.5× Rate)"})
-    ]}),
-    e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[
-      e.jsxs("button",{type:"button",onClick:()=>setOrrTripType("single"),className:"py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 "+(orrTripType==="single"?"bg-primary text-primary-foreground shadow-sm":"bg-muted/30 border border-border/50 text-slate-400 hover:text-white"),children:[
-        e.jsx("span",{children:"1-Way Single"}),
-        e.jsxs("span",{className:"text-[10px] opacity-80 font-mono",children:["₹",orrRes.singleFare]})
-      ]}),
-      e.jsxs("button",{type:"button",onClick:()=>setOrrTripType("return24h"),className:"py-1.5 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 "+(orrTripType==="return24h"?"bg-emerald-600 text-white shadow-sm":"bg-muted/30 border border-border/50 text-slate-400 hover:text-white"),children:[
-        e.jsx("span",{children:"2-Way (24 Hours)"}),
-        e.jsxs("span",{className:"text-[10px] opacity-80 font-mono",children:["₹",orrRes.returnFare24h]})
-      ]})
-    ]})
-  ]}),
-  e.jsxs("div",{className:"pt-2.5 border-t border-border/40 flex items-center justify-between gap-3",children:[
-    e.jsxs("div",{children:[
-      e.jsx("span",{className:"text-[10px] text-slate-400 block font-medium",children:orrTripType==="return24h"?"2-Way Toll (within 24h):":"One-Way Toll:"}),
-      e.jsxs("div",{className:"flex items-baseline gap-2",children:[
-        e.jsxs("span",{className:"text-lg font-black text-white font-mono",children:["₹",orrRes.selectedFare]}),
-        orrTripType==="return24h"&&orrRes.savings>0&&e.jsxs("span",{className:"text-[10px] text-emerald-400 font-bold",children:["(Saves ₹",orrRes.savings,")"]})
-      ]})
-    ]}),
-    e.jsx("button",{type:"button",onClick:applyOrrToll,className:"px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition "+(orrApplied?"bg-emerald-600 text-white scale-105":"bg-orange-600 hover:bg-orange-500 text-white shadow"),children:orrApplied?"✓ Applied to Tolls":"Apply to Tolls →"})
-  ]})
-]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Driver Allowance (INR)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"0",max:"10000",value:N[0],onChange:s=>q([Math.min(1e4,Math.max(0,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"₹"})]})]}),e.jsx(p,{value:N,onValueChange:q,max:5e3,step:10,className:"py-1"})]})]})]}),e.jsxs(C,{className:"border-border shadow-sm bg-card",children:[e.jsxs(L,{className:"border-b border-border/40 pb-3.5",children:[e.jsxs(P,{className:"flex items-center gap-2 text-base font-bold",children:[e.jsx(Ge,{className:"w-4.5 h-4.5 text-emerald-400"}),"Vehicle Performance & Wear"]}),e.jsx(I,{className:"text-xs",children:"Adjust mileage levels, fuel pricing, and tyre depreciation"})]}),e.jsxs(V,{className:"space-y-6 pt-5",children:[e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Mileage (KM/L)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"0.1",max:"30",step:"0.1",value:f[0],onChange:s=>$([Math.min(30,Math.max(.1,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"KMPL"})]})]}),e.jsx(p,{value:f,onValueChange:$,max:30,step:.1,className:"py-1"})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Fuel Price (INR/L)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"1",max:"200",step:"0.1",value:g[0],onChange:s=>O([Math.min(200,Math.max(1,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"₹/L"})]})]}),e.jsx(p,{value:g,onValueChange:O,max:200,step:.1,className:"py-1"})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(n,{className:"text-xs font-bold text-slate-400",children:"Tyre Depreciation (₹/KM)"}),e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx(d,{type:"number",min:"0",max:"20",step:"0.5",value:v[0],onChange:s=>K([Math.min(20,Math.max(0,Number(s.target.value)))]),className:"w-20 h-7 text-right px-2 font-mono font-bold text-xs bg-muted/40 border-border/80 focus-visible:ring-primary/40"}),e.jsx("span",{className:"text-[10px] text-slate-500 font-bold",children:"₹/KM"})]})]}),e.jsx(p,{value:v,onValueChange:K,max:10,step:.5,className:"py-1"})]})]})]})]}),e.jsxs("div",{className:"lg:col-span-7 space-y-6",children:[e.jsxs("div",{className:x("p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all",o>2e3?"bg-emerald-500/10 border-emerald-500/20 text-emerald-400":o>0?"bg-amber-500/10 border-amber-500/20 text-amber-400":"bg-rose-500/10 border-rose-500/20 text-rose-400"),children:[e.jsxs("div",{className:"flex gap-3.5 items-start",children:[e.jsx("div",{className:x("p-2 rounded-xl border shrink-0 mt-0.5",o>2e3?"bg-emerald-500/10 border-emerald-500/20 text-emerald-400":o>0?"bg-amber-500/10 border-amber-500/20 text-amber-400":"bg-rose-500/10 border-rose-500/20 text-rose-400"),children:e.jsx(ue,{className:"w-4.5 h-4.5"})}),e.jsxs("div",{children:[e.jsx("h4",{className:"font-bold text-sm text-white",children:o>2e3?"Highly Profitable Route Simulation":o>0?"Marginally Profitable Route Simulation":"Unprofitable Route Simulation"}),e.jsx("p",{className:"text-[11px] text-slate-400 mt-1 max-w-[48ch] leading-relaxed",children:o>2e3?`Excellent margin of ${h.toFixed(1)}%. Distance and fuel parameters are well balanced.`:o>0?`Caution: Profit margin is low (${h.toFixed(1)}%). Review driver expenses or tolls.`:"Alert: This simulation operates at a loss. Try adjusting fuel, tolls, or request a higher freight revenue."})]})]}),o<0&&e.jsx("div",{className:"text-[9px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded shadow animate-pulse shrink-0",children:"Loss Alert"})]}),e.jsxs(C,{className:"border-border shadow-sm bg-card",children:[e.jsxs(L,{className:"border-b border-border/40 pb-3.5",children:[e.jsxs(P,{className:"flex items-center gap-2 text-base font-bold",children:[e.jsx(k,{className:"w-4.5 h-4.5 text-accent"}),"Revenue & Fixed Costs"]}),e.jsx(I,{className:"text-xs",children:"Enter freight income and asset/operating overheads"})]}),e.jsxs(V,{className:"pt-5 grid grid-cols-1 md:grid-cols-2 gap-5",children:[e.jsxs("div",{className:"space-y-2 md:col-span-2",children:[e.jsxs(n,{htmlFor:"freight",className:"text-accent text-xs font-bold flex items-center gap-1",children:[e.jsx(Je,{className:"w-3.5 h-3.5"})," Freight Revenue (INR)"]}),e.jsx(d,{id:"freight",type:"number",value:y,onChange:s=>te(s.target.value),className:"h-10 text-sm font-bold text-white bg-slate-950 border border-slate-700 rounded-xl px-3 focus:border-primary"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{htmlFor:"emi",className:"text-xs text-slate-400",children:"Vehicle EMI (INR)"}),e.jsx(d,{id:"emi",type:"number",value:_,onChange:s=>Z(s.target.value),className:"bg-background/40 h-9.5 text-xs text-white"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{htmlFor:"insurance",className:"text-xs text-slate-400",children:"Insurance (INR)"}),e.jsx(d,{id:"insurance",type:"number",value:S,onChange:s=>ee(s.target.value),className:"bg-background/40 h-9.5 text-xs text-white"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{htmlFor:"tax",className:"text-xs text-slate-400",children:"Quarterly Tax (INR)"}),e.jsx(d,{id:"tax",type:"number",value:D,onChange:s=>se(s.target.value),className:"bg-background/40 h-9.5 text-xs text-white"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{htmlFor:"tds",className:"text-xs text-slate-400",children:"TDS Rate (%)"}),e.jsx(d,{id:"tds",type:"number",step:"0.1",min:"0",max:"10",value:w,onChange:s=>ae(s.target.value),className:"bg-background/40 h-9.5 text-xs text-white"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{className:"text-xs text-slate-400",children:"Calculated TDS Amount"}),e.jsx("div",{className:"h-9.5 bg-background/20 border border-border/30 rounded-lg px-3 flex items-center text-xs font-mono font-bold text-slate-300",children:l(Q)})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-3",children:[e.jsxs("div",{className:x("p-4 rounded-2xl border transition-all",o>=0?"bg-emerald-500/10 border-emerald-500/30 shadow-sm":"bg-rose-500/10 border-rose-500/30 shadow-sm"),children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase tracking-wider text-slate-400",children:"Net Profit"}),e.jsx("span",{className:"text-[10px] font-mono font-bold px-1.5 py-0.5 rounded "+(o>=0?"bg-emerald-500/20 text-emerald-300":"bg-rose-500/20 text-rose-300"),children:o>=0?"PROFITABLE":"LOSS"})]}),e.jsx("p",{className:x("text-2xl font-black mt-1.5 font-mono tracking-tight",o>=0?"text-emerald-400":"text-rose-400"),children:l(o)}),e.jsxs("p",{className:"text-[10px] text-slate-400 mt-1 flex items-center gap-1",children:["Profit Margin: ",e.jsxs("strong",{className:o>=0?"text-emerald-400":"text-rose-400",children:[h.toFixed(1),"%"]})]})]}),e.jsxs("div",{className:x("p-4 rounded-2xl border transition-all",o>=0?"bg-emerald-500/5 border-emerald-500/20":"bg-rose-500/5 border-rose-500/20"),children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase tracking-wider text-slate-400",children:"📈 Profit / KM"}),e.jsxs("p",{className:x("text-2xl font-black mt-1.5 font-mono",o>=0?"text-emerald-400":"text-rose-400"),children:["₹",(b[0]>0?Number(o/b[0]).toFixed(2):"0.00")]}),e.jsxs("p",{className:"text-[10px] text-slate-400 mt-1",children:["Over ",b[0]," KMs travel"]})]}),e.jsxs("div",{className:"p-4 rounded-2xl bg-card border border-border/60 shadow-sm",children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase tracking-wider text-slate-400",children:"⚡ Expense / KM"}),e.jsxs("p",{className:"text-2xl font-black mt-1.5 font-mono text-primary",children:["₹",(b[0]>0?Number(ie/b[0]).toFixed(2):"0.00")]}),e.jsxs("p",{className:"text-[10px] text-slate-400 mt-1",children:["Direct burn rate"]})]})]}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-2.5",children:[e.jsxs("div",{className:"p-3 rounded-xl bg-card/60 border border-border/50 text-xs",children:[e.jsx("span",{className:"text-[9px] font-extrabold uppercase tracking-wider text-muted-foreground block",children:"Revenue"}),e.jsx("p",{className:"text-sm font-black text-foreground font-mono mt-0.5",children:l(y)})]}),e.jsxs("div",{className:"p-3 rounded-xl bg-card/60 border border-border/50 text-xs",children:[e.jsx("span",{className:"text-[9px] font-extrabold uppercase tracking-wider text-muted-foreground block",children:"Total Expenses"}),e.jsx("p",{className:"text-sm font-black text-rose-400 font-mono mt-0.5",children:l(ie)})]}),e.jsxs("div",{className:"p-3 rounded-xl bg-card/60 border border-border/50 text-xs",children:[e.jsx("span",{className:"text-[9px] font-extrabold uppercase tracking-wider text-muted-foreground block",children:"Margin %"}),e.jsxs("p",{className:x("text-sm font-black font-mono mt-0.5",h>=0?"text-emerald-400":"text-rose-400"),children:[h.toFixed(1),"%"]})]}),e.jsxs("div",{className:"p-3 rounded-xl bg-card/60 border border-border/50 text-xs",children:[e.jsxs("span",{className:"text-[9px] font-extrabold uppercase tracking-wider text-muted-foreground block",children:["TDS (",w,"%)"]}),e.jsx("p",{className:"text-sm font-black text-yellow-500 font-mono mt-0.5",children:l(Q)})]})]})]}),e.jsxs("div",{className:"chart-container p-4 rounded-2xl border border-border/50 bg-card/40 h-56 mt-4 shadow-sm",children:[e.jsxs("div",{className:"flex items-center gap-2 mb-4 text-xs font-bold text-slate-400",children:[e.jsx(Ue,{className:"w-4 h-4"}),"Expense vs Profit Breakdown"]}),e.jsx(rs,{width:"100%",height:"80%",children:e.jsxs(ds,{data:ce,margin:{top:10,right:10,left:10,bottom:5},children:[e.jsx(is,{strokeDasharray:"3 3",vertical:!1,stroke:"rgba(255,255,255,0.04)"}),e.jsx(cs,{dataKey:"name",axisLine:!1,tickLine:!1,tick:{fill:"hsl(var(--muted-foreground))",fontSize:10,fontWeight:700},dy:8}),e.jsx(xs,{hide:!0}),e.jsx(ls,{cursor:{fill:"rgba(255,255,255,0.02)"},contentStyle:{backgroundColor:"#101424",borderColor:"rgba(255,255,255,0.08)",borderRadius:"12px",color:"#fff",fontSize:"11px",fontWeight:"700"},formatter:s=>[l(s),""]}),e.jsx(ns,{dataKey:"value",radius:[8,8,0,0],maxBarSize:45,children:ce.map((s,r)=>e.jsx(os,{fill:s.color},`cell-${r}`))})]})})]})]})]})}),e.jsx(ge,{value:"reports",className:"space-y-6 m-0 animate-in fade-in duration-300",children:e.jsxs(C,{className:"border-border shadow-sm bg-card",children:[e.jsxs(L,{className:"border-b border-border/50 pb-4",children:[e.jsxs(P,{className:"flex items-center gap-2 text-lg",children:[e.jsx(k,{className:"w-5 h-5 text-primary"}),"Saved Simulation Reports"]}),e.jsx(I,{children:"View, load parameters, or delete previously saved simulation records."})]}),e.jsx(V,{className:"pt-6",children:Le?e.jsxs("div",{className:"py-12 flex justify-center items-center text-muted-foreground gap-2",children:[e.jsx(he,{className:"w-6 h-6 animate-spin text-primary"}),e.jsx("span",{children:"Loading reports..."})]}):le.length===0?e.jsxs("div",{className:"py-16 text-center text-muted-foreground space-y-3",children:[e.jsx(k,{className:"w-12 h-12 mx-auto opacity-20"}),e.jsx("p",{className:"text-base font-semibold",children:"No saved calculations found"}),e.jsx("p",{className:"text-sm",children:'Run a simulation and click "Save Calculation" to record a report.'})]}):e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",children:le.map(s=>{const r=Number(s.net_profit)>=0;return e.jsxs(C,{className:"border-border/60 bg-card hover:shadow-md transition-shadow duration-300 rounded-2xl overflow-hidden flex flex-col justify-between",children:[e.jsxs("div",{className:"p-5 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-start gap-2 border-b border-border/40 pb-3",children:[e.jsxs("div",{className:"overflow-hidden mr-2",children:[e.jsx("h4",{className:"font-heading font-bold text-base text-foreground tracking-tight truncate",title:s.route_name,children:s.route_name}),e.jsx("p",{className:"text-[10px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider font-mono",children:s.vehicle_number?`Truck: ${s.vehicle_number}`:"No Truck Assigned"})]}),e.jsxs("div",{className:x("text-[10px] font-bold py-0.5 px-2 rounded-md border border-transparent shrink-0",r?"bg-emerald-500/10 text-emerald-500 border-emerald-500/20":"bg-destructive/10 text-destructive border-destructive/20"),children:[s.profit_margin?.toFixed(1),"% Margin"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-x-4 gap-y-2 text-xs",children:[e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Distance:"}),e.jsxs("span",{className:"font-medium text-foreground",children:[s.distance," km"]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Mileage:"}),e.jsxs("span",{className:"font-medium text-foreground",children:[s.mileage," km/l"]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fuel Price:"}),e.jsxs("span",{className:"font-medium text-foreground",children:["₹",s.fuel_price]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Tolls:"}),e.jsxs("span",{className:"font-medium text-foreground",children:["₹",s.tolls]})]})]}),e.jsxs("div",{className:"bg-muted/30 border border-border/50 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-1 shadow-inner",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Net Profit"}),e.jsx("span",{className:x("font-bold text-sm tabular-nums block mt-0.5",r?"text-emerald-500":"text-destructive"),children:l(s.net_profit)})]}),e.jsxs("div",{className:"text-right sm:text-center sm:border-x border-border/30",children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Expense/KM"}),e.jsxs("span",{className:"font-bold text-primary font-mono tabular-nums block mt-0.5",children:["₹",(s.distance>0?(s.total_expenses/s.distance).toFixed(2):"0.00")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Profit/KM"}),e.jsxs("span",{className:x("font-bold font-mono tabular-nums block mt-0.5",r?"text-emerald-500":"text-destructive"),children:["₹",(s.distance>0?(s.net_profit/s.distance).toFixed(2):"0.00")]})]}),e.jsxs("div",{className:"text-right",children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Revenue"}),e.jsx("span",{className:"font-bold text-foreground tabular-nums block mt-0.5",children:l(s.freight_revenue)})]})]})]}),e.jsxs("div",{className:"bg-muted/10 border-t border-border/50 px-5 py-3.5 flex justify-between items-center gap-2",children:[e.jsxs("span",{className:"text-[10px] text-muted-foreground flex items-center gap-1 font-medium",children:[e.jsx(Ye,{className:"w-3.5 h-3.5"}),new Date(s.created).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})]}),e.jsxs("div",{className:"flex gap-1.5",children:[e.jsxs(c,{size:"sm",variant:"outline",onClick:()=>R(s),className:"rounded-lg h-8 text-[11px] font-semibold border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 shadow-sm",children:[e.jsx(Ze,{className:"w-3.5 h-3.5 text-primary"})," View Details"]}),e.jsxs(c,{size:"sm",variant:"outline",onClick:()=>de(s),className:"rounded-lg h-8 text-[11px] font-semibold border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 shadow-sm",children:[e.jsx(pe,{className:"w-3 h-3 fill-current text-primary"})," Load"]}),e.jsx(c,{size:"sm",variant:"ghost",onClick:()=>Pe(s.id),className:"rounded-lg h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10",children:e.jsx(es,{className:"w-3.5 h-3.5"})})]})]})]},s.id)})})})]})})]}),e.jsx(fe,{open:De,onOpenChange:s=>!s&&T(!1),children:e.jsxs(je,{className:"sm:max-w-[480px] rounded-[2rem] p-6 sm:p-8 shadow-2xl bg-card border-border/50",children:[e.jsxs(Ne,{className:"mb-4",children:[e.jsxs(ve,{className:"text-xl font-bold tracking-tight text-foreground flex items-center gap-3",children:[e.jsx("div",{className:"bg-primary/10 p-2.5 rounded-2xl text-primary",children:e.jsx(U,{className:"w-5 h-5"})}),"Save Profitability Report"]}),e.jsx(as,{className:"text-sm text-muted-foreground pt-1.5",children:"Record this simulation log to help track profitability trends across routes and trucks."})]}),e.jsxs("form",{onSubmit:Ae,className:"space-y-5",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{className:"text-sm font-medium text-foreground ml-1",children:"Route Name *"}),e.jsxs(ye,{value:m.routeName,onValueChange:s=>H({...m,routeName:s}),required:!0,children:[e.jsx(we,{className:"bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-12 text-base px-4 w-full",children:e.jsx(ke,{placeholder:"Select Route Name"})}),e.jsx(Ce,{className:"rounded-xl",children:Te.map(s=>e.jsxs(Y,{value:s.route_name,children:[s.route_name," ",s.route_code?`(${s.route_code})`:""]},s.id))})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{className:"text-sm font-medium text-foreground ml-1",children:"Vehicle Registration Number"}),e.jsxs(ye,{value:m.vehicleNumber||"none",onValueChange:s=>H({...m,vehicleNumber:s}),children:[e.jsx(we,{className:"bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-12 text-base px-4 w-full",children:e.jsx(ke,{placeholder:"Select Vehicle Number"})}),e.jsxs(Ce,{className:"rounded-xl",children:[e.jsx(Y,{value:"none",children:"None / Select later"}),Fe.map(s=>e.jsxs(Y,{value:s.truck_number,children:[s.truck_number," ",s.truck_name?`(${s.truck_name})`:""]},s.id))]})]})]}),e.jsxs(_e,{className:"pt-4 gap-3",children:[e.jsx(c,{type:"button",variant:"outline",onClick:()=>T(!1),disabled:z,className:"rounded-xl h-12 px-6",children:"Cancel"}),e.jsxs(c,{type:"submit",disabled:z,className:"rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground h-12 px-6 shadow-sm",children:[z?e.jsx(he,{className:"w-4 h-4 mr-2 animate-spin"}):e.jsx(U,{className:"w-4 h-4 mr-2"}),"Save Report"]})]})]})]})}),e.jsx(fe,{open:!!t,onOpenChange:s=>!s&&R(null),children:e.jsxs(je,{className:"sm:max-w-[550px] bg-card text-card-foreground border-border/50 rounded-3xl p-6 shadow-2xl",children:[e.jsxs(Ne,{className:"border-b border-border/50 pb-4",children:[e.jsxs(ve,{className:"text-xl font-heading font-bold flex items-center gap-2",children:[e.jsx(k,{className:"w-5 h-5 text-primary"}),"Trip Calculation Details"]}),e.jsx("div",{className:"text-xs text-muted-foreground mt-1 flex gap-3",children:e.jsxs("span",{children:["Saved: ",t&&new Date(t.created).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})]})})]}),t&&e.jsxs("div",{className:"space-y-6 py-4 overflow-y-auto max-h-[60vh] pr-1",children:[e.jsxs("div",{className:"grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-border/50",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground tracking-wider block",children:"Route"}),e.jsx("span",{className:"text-sm font-semibold text-foreground block truncate",title:t.route_name,children:t.route_name})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground tracking-wider block",children:"Vehicle"}),e.jsx("span",{className:"text-sm font-semibold text-foreground block",children:t.vehicle_number||"No Vehicle Assigned"})]})]}),e.jsxs("div",{className:"space-y-2.5",children:[e.jsx("h4",{className:"text-xs font-bold text-primary uppercase tracking-wider",children:"Simulation Parameters"}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-3",children:[e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Distance"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:[t.distance," km"]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Mileage"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:[t.mileage," km/l"]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Fuel Price"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:["₹",t.fuel_price]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Tolls"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:["₹",t.tolls]})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsx("h4",{className:"text-xs font-bold text-primary uppercase tracking-wider",children:"Financial Breakdown"}),e.jsxs("div",{className:"border border-border/50 rounded-2xl overflow-hidden text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/20 border-b border-border/50",children:[e.jsx("span",{className:"font-semibold text-foreground",children:"Gross Freight Revenue"}),e.jsx("span",{className:"font-bold text-foreground text-sm",children:l(t.freight_revenue)})]}),e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/10 border-b border-border/50 text-yellow-600 dark:text-yellow-500",children:[e.jsxs("span",{className:"font-semibold",children:["TDS Deducted (",t.tds_rate!==void 0?t.tds_rate:0,"%)"]}),e.jsxs("span",{className:"font-bold text-sm",children:["-",l(t.tds_amount||t.freight_revenue*(t.tds_rate||0)/100)]})]}),e.jsxs("div",{className:"p-3 space-y-2 bg-card",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fuel Cost:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.fuel_cost||t.distance/t.mileage*t.fuel_price)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Toll Charges:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.tolls)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Driver Expenses / Batta:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.driver_expenses)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("span",{className:"text-muted-foreground",children:["Tyre Wear & Tear (₹",t.tyre_depreciation_rate||3,"/km):"]}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.tyre_expense||t.distance*(t.tyre_depreciation_rate||3))})]}),e.jsxs("div",{className:"flex justify-between items-center border-t border-border/40 pt-2 mt-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fixed Overheads (EMI, Tax, Insurance):"}),e.jsx("span",{className:"font-medium text-foreground",children:l(Number(t.vehicle_emi||0)+Number(t.insurance||0)+Number(t.quarterly_tax||0))})]})]}),e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/10 border-t border-border/50",children:[e.jsx("span",{className:"font-semibold text-foreground",children:"Total Operating Expenses"}),e.jsx("span",{className:"font-bold text-foreground",children:l(t.total_expenses)})]}),e.jsxs("div",{className:x("flex justify-between items-center p-3.5 border-t border-border/50",Number(t.net_profit)>=0?"bg-emerald-500/5 text-emerald-600":"bg-destructive/5 text-destructive"),children:[e.jsxs("div",{className:"space-y-0.5",children:[e.jsx("span",{className:"font-bold text-sm block",children:"Net Profit / Earnings"}),e.jsxs("span",{className:"text-[10px] opacity-80 block",children:[t.profit_margin?.toFixed(1),"% Margin on revenue"]})]}),e.jsx("span",{className:"font-extrabold text-base tabular-nums",children:l(t.net_profit)})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-3 p-3 bg-muted/20 border-t border-border/50 text-xs",children:[e.jsxs("div",{className:"p-2.5 rounded-xl bg-primary/5 border border-primary/20",children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-muted-foreground block",children:"⚡ Expense Intel"}),e.jsxs("span",{className:"font-mono font-black text-sm text-primary block mt-0.5",children:["₹",(t.distance>0?(Number(t.total_expenses||0)/t.distance).toFixed(2):"0.00")," / KM"]})]}),e.jsxs("div",{className:x("p-2.5 rounded-xl border",Number(t.net_profit)>=0?"bg-emerald-500/10 border-emerald-500/30 text-emerald-500":"bg-destructive/10 border-destructive/30 text-destructive"),children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-muted-foreground block",children:"📈 Profit Intel"}),e.jsxs("span",{className:"font-mono font-black text-sm block mt-0.5",children:["₹",(t.distance>0?(Number(t.net_profit||0)/t.distance).toFixed(2):"0.00")," / KM"]})]})]})]})]})]}),e.jsxs(_e,{className:"pt-3 border-t border-border/50",children:[e.jsx(c,{variant:"outline",className:"rounded-xl h-11",onClick:()=>R(null),children:"Close Details"}),t&&e.jsxs(c,{className:"rounded-xl h-11 gap-1.5",onClick:()=>{de(t),R(null)},children:[e.jsx(pe,{className:"w-3.5 h-3.5 fill-current"})," Load Simulator"]})]})]})})]})}export{vs as default};
+swapOrr=()=>{const tmp=orrOrigin;setOrrOrigin(orrDestination);setOrrDestination(tmp)},Ae=async s=>{if(s.preventDefault(),!m.routeName){i.error("Route Name is required to save calculation.");return}re(!0);try{const r={route_name:m.routeName,vehicle_number:m.vehicleNumber==="none"?"":m.vehicleNumber,distance:b[0],fuel_price:g[0],mileage:f[0],tolls:j[0],driver_expenses:N[0],tyre_depreciation_rate:v[0],tyre_expense:Ve,fuel_cost:Ie,vehicle_emi:parseFloat(_)||0,insurance:parseFloat(S)||0,quarterly_tax:parseFloat(D)||0,freight_revenue:parseFloat(y)||0,total_expenses:ie,net_profit:o,profit_margin:h,tds_rate:parseFloat(w)||0,tds_amount:Q},M=await(await fetch("/hcgi/api/trip-calculations/save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(r)})).json();M.success?(i.success("Trip calculation report saved successfully!"),T(!1),H({routeName:"",vehicleNumber:""}),F()):i.error(M.error||"Failed to save calculation.")}catch(r){console.error("Save trip calculation error:",r),i.error("Failed to save calculation. Connection error.")}finally{re(!1)}};return e.jsxs("div",{className:"p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500",children:[e.jsxs(Qe,{children:[e.jsx("title",{children:"Trip Overview | Logistics Hub"}),e.jsx("meta",{name:"description",content:"Calculate trip profitability, expenses, and margins"})]}),e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-5 rounded-2xl border border-border shadow-sm",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-2xl font-bold tracking-tight text-foreground flex items-center gap-3",children:[e.jsx(ue,{className:"w-7 h-7 text-primary"}),"Trip Overview Calculator"]}),e.jsx("p",{className:"text-muted-foreground mt-1 text-sm",children:"Simulate profitability based on variable constraints, tyre depreciation, and vehicle fixed costs."})]}),e.jsx("div",{className:"flex items-center gap-3 w-full md:w-auto",children:oe==="calculator"?e.jsxs(c,{onClick:()=>T(!0),className:"rounded-xl font-bold shadow-sm w-full md:w-auto",children:[e.jsx(U,{className:"w-4 h-4 mr-2"})," Save Calculation"]}):e.jsxs(c,{onClick:()=>W("calculator"),className:"rounded-xl font-extrabold bg-blue-600 hover:bg-blue-500 text-white shadow-md w-full md:w-auto gap-2",children:[e.jsx(k,{className:"w-4 h-4"})," Calculate New Trip"]})})]}),e.jsxs(ss,{value:oe,onValueChange:s=>{W(s),s==="reports"&&F()},className:"w-full",children:[e.jsxs(ts,{className:"bg-muted/50 p-1 mb-6 flex h-auto rounded-xl max-w-xs",children:[e.jsx(be,{value:"calculator",className:"gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm w-1/2",children:"Calculator"}),e.jsx(be,{value:"reports",className:"gap-2 px-6 py-2 rounded-lg data-[state=active]:shadow-sm w-1/2",children:"Saved Reports"})]}),e.jsx(ge,{value:"calculator",className:"space-y-4 m-0",children:e.jsx(LogisticsTripCostCalculator,{initialDistance:b[0]||650,initialMileage:f[0]||4.5,initialFuelPrice:g[0]||92.5,initialTolls:j[0]||1400,savedReportsCount:le.length,onOpenReports:()=>W("reports"),onSaveToDatabase:(data)=>{A([data.distance]);O([data.fuel_price]);$([data.mileage]);B([data.tolls]);Z(data.total_fixed_allocated);te(data.recommended_quote);T(!0)}})}),e.jsx(ge,{value:"reports",className:"space-y-6 m-0 animate-in fade-in duration-300",children:e.jsxs(C,{className:"border-border shadow-sm bg-card",children:[e.jsxs(L,{className:"border-b border-border/50 pb-4",children:[e.jsxs(P,{className:"flex items-center gap-2 text-lg",children:[e.jsx(k,{className:"w-5 h-5 text-primary"}),"Saved Simulation Reports"]}),e.jsx(I,{children:"View, load parameters, or delete previously saved simulation records."})]}),e.jsx(V,{className:"pt-6",children:Le?e.jsxs("div",{className:"py-12 flex justify-center items-center text-muted-foreground gap-2",children:[e.jsx(he,{className:"w-6 h-6 animate-spin text-primary"}),e.jsx("span",{children:"Loading reports..."})]}):le.length===0?e.jsxs("div",{className:"py-16 text-center text-muted-foreground space-y-3",children:[e.jsx(k,{className:"w-12 h-12 mx-auto opacity-20"}),e.jsx("p",{className:"text-base font-semibold",children:"No saved calculations found"}),e.jsx("p",{className:"text-sm",children:'Run a simulation and click "Save Calculation" to record a report.'})]}):e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",children:le.map(s=>{const r=Number(s.net_profit)>=0;return e.jsxs(C,{className:"border-border/60 bg-card hover:shadow-md transition-shadow duration-300 rounded-2xl overflow-hidden flex flex-col justify-between",children:[e.jsxs("div",{className:"p-5 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-start gap-2 border-b border-border/40 pb-3",children:[e.jsxs("div",{className:"overflow-hidden mr-2",children:[e.jsx("h4",{className:"font-heading font-bold text-base text-foreground tracking-tight truncate",title:s.route_name,children:s.route_name}),e.jsx("p",{className:"text-[10px] font-bold text-muted-foreground mt-0.5 uppercase tracking-wider font-mono",children:s.vehicle_number?`Truck: ${s.vehicle_number}`:"No Truck Assigned"})]}),e.jsxs("div",{className:x("text-[10px] font-bold py-0.5 px-2 rounded-md border border-transparent shrink-0",r?"bg-emerald-500/10 text-emerald-500 border-emerald-500/20":"bg-destructive/10 text-destructive border-destructive/20"),children:[s.profit_margin?.toFixed(1),"% Margin"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-x-4 gap-y-2 text-xs",children:[e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Distance:"}),e.jsxs("span",{className:"font-medium text-foreground",children:[s.distance," km"]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Mileage:"}),e.jsxs("span",{className:"font-medium text-foreground",children:[s.mileage," km/l"]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fuel Price:"}),e.jsxs("span",{className:"font-medium text-foreground",children:["₹",s.fuel_price]})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground",children:"Tolls:"}),e.jsxs("span",{className:"font-medium text-foreground",children:["₹",s.tolls]})]})]}),e.jsxs("div",{className:"bg-muted/30 border border-border/50 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mt-1 shadow-inner",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Net Profit"}),e.jsx("span",{className:x("font-bold text-sm tabular-nums block mt-0.5",r?"text-emerald-500":"text-destructive"),children:l(s.net_profit)})]}),e.jsxs("div",{className:"text-right sm:text-center sm:border-x border-border/30",children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Expense/KM"}),e.jsxs("span",{className:"font-bold text-primary font-mono tabular-nums block mt-0.5",children:["₹",(s.distance>0?(s.total_expenses/s.distance).toFixed(2):"0.00")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Profit/KM"}),e.jsxs("span",{className:x("font-bold font-mono tabular-nums block mt-0.5",r?"text-emerald-500":"text-destructive"),children:["₹",(s.distance>0?(s.net_profit/s.distance).toFixed(2):"0.00")]})]}),e.jsxs("div",{className:"text-right",children:[e.jsx("span",{className:"text-[9px] font-bold text-muted-foreground uppercase tracking-widest block",children:"Revenue"}),e.jsx("span",{className:"font-bold text-foreground tabular-nums block mt-0.5",children:l(s.freight_revenue)})]})]})]}),e.jsxs("div",{className:"bg-muted/10 border-t border-border/50 px-5 py-3.5 flex justify-between items-center gap-2",children:[e.jsxs("span",{className:"text-[10px] text-muted-foreground flex items-center gap-1 font-medium",children:[e.jsx(Ye,{className:"w-3.5 h-3.5"}),new Date(s.created).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})]}),e.jsxs("div",{className:"flex gap-1.5",children:[e.jsxs(c,{size:"sm",variant:"outline",onClick:()=>R(s),className:"rounded-lg h-8 text-[11px] font-semibold border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 shadow-sm",children:[e.jsx(Ze,{className:"w-3.5 h-3.5 text-primary"})," View Details"]}),e.jsxs(c,{size:"sm",variant:"outline",onClick:()=>de(s),className:"rounded-lg h-8 text-[11px] font-semibold border-border bg-background hover:bg-muted text-foreground flex items-center gap-1 shadow-sm",children:[e.jsx(pe,{className:"w-3 h-3 fill-current text-primary"})," Load"]}),e.jsx(c,{size:"sm",variant:"ghost",onClick:()=>Pe(s.id),className:"rounded-lg h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10",children:e.jsx(es,{className:"w-3.5 h-3.5"})})]})]})]},s.id)})})})]})})]}),e.jsx(fe,{open:De,onOpenChange:s=>!s&&T(!1),children:e.jsxs(je,{className:"sm:max-w-[480px] rounded-[2rem] p-6 sm:p-8 shadow-2xl bg-card border-border/50",children:[e.jsxs(Ne,{className:"mb-4",children:[e.jsxs(ve,{className:"text-xl font-bold tracking-tight text-foreground flex items-center gap-3",children:[e.jsx("div",{className:"bg-primary/10 p-2.5 rounded-2xl text-primary",children:e.jsx(U,{className:"w-5 h-5"})}),"Save Profitability Report"]}),e.jsx(as,{className:"text-sm text-muted-foreground pt-1.5",children:"Record this simulation log to help track profitability trends across routes and trucks."})]}),e.jsxs("form",{onSubmit:Ae,className:"space-y-5",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{className:"text-sm font-medium text-foreground ml-1",children:"Route Name *"}),e.jsxs(ye,{value:m.routeName,onValueChange:s=>H({...m,routeName:s}),required:!0,children:[e.jsx(we,{className:"bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-12 text-base px-4 w-full",children:e.jsx(ke,{placeholder:"Select Route Name"})}),e.jsx(Ce,{className:"rounded-xl",children:Te.map(s=>e.jsxs(Y,{value:s.route_name,children:[s.route_name," ",s.route_code?`(${s.route_code})`:""]},s.id))})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(n,{className:"text-sm font-medium text-foreground ml-1",children:"Vehicle Registration Number"}),e.jsxs(ye,{value:m.vehicleNumber||"none",onValueChange:s=>H({...m,vehicleNumber:s}),children:[e.jsx(we,{className:"bg-muted/40 border-muted-foreground/20 focus:ring-primary/30 rounded-xl h-12 text-base px-4 w-full",children:e.jsx(ke,{placeholder:"Select Vehicle Number"})}),e.jsxs(Ce,{className:"rounded-xl",children:[e.jsx(Y,{value:"none",children:"None / Select later"}),Fe.map(s=>e.jsxs(Y,{value:s.truck_number,children:[s.truck_number," ",s.truck_name?`(${s.truck_name})`:""]},s.id))]})]})]}),e.jsxs(_e,{className:"pt-4 gap-3",children:[e.jsx(c,{type:"button",variant:"outline",onClick:()=>T(!1),disabled:z,className:"rounded-xl h-12 px-6",children:"Cancel"}),e.jsxs(c,{type:"submit",disabled:z,className:"rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground h-12 px-6 shadow-sm",children:[z?e.jsx(he,{className:"w-4 h-4 mr-2 animate-spin"}):e.jsx(U,{className:"w-4 h-4 mr-2"}),"Save Report"]})]})]})]})}),e.jsx(fe,{open:!!t,onOpenChange:s=>!s&&R(null),children:e.jsxs(je,{className:"sm:max-w-[550px] bg-card text-card-foreground border-border/50 rounded-3xl p-6 shadow-2xl",children:[e.jsxs(Ne,{className:"border-b border-border/50 pb-4",children:[e.jsxs(ve,{className:"text-xl font-heading font-bold flex items-center gap-2",children:[e.jsx(k,{className:"w-5 h-5 text-primary"}),"Trip Calculation Details"]}),e.jsx("div",{className:"text-xs text-muted-foreground mt-1 flex gap-3",children:e.jsxs("span",{children:["Saved: ",t&&new Date(t.created).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"})]})})]}),t&&e.jsxs("div",{className:"space-y-6 py-4 overflow-y-auto max-h-[60vh] pr-1",children:[e.jsxs("div",{className:"grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-2xl border border-border/50",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground tracking-wider block",children:"Route"}),e.jsx("span",{className:"text-sm font-semibold text-foreground block truncate",title:t.route_name,children:t.route_name})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground tracking-wider block",children:"Vehicle"}),e.jsx("span",{className:"text-sm font-semibold text-foreground block",children:t.vehicle_number||"No Vehicle Assigned"})]})]}),e.jsxs("div",{className:"space-y-2.5",children:[e.jsx("h4",{className:"text-xs font-bold text-primary uppercase tracking-wider",children:"Simulation Parameters"}),e.jsxs("div",{className:"grid grid-cols-2 sm:grid-cols-4 gap-3",children:[e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Distance"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:[t.distance," km"]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Mileage"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:[t.mileage," km/l"]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Fuel Price"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:["₹",t.fuel_price]})]}),e.jsxs("div",{className:"bg-muted/10 border border-border/40 p-2.5 rounded-xl text-center",children:[e.jsx("span",{className:"text-[9px] text-muted-foreground block",children:"Tolls"}),e.jsxs("span",{className:"text-xs font-bold text-foreground",children:["₹",t.tolls]})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsx("h4",{className:"text-xs font-bold text-primary uppercase tracking-wider",children:"Financial Breakdown"}),e.jsxs("div",{className:"border border-border/50 rounded-2xl overflow-hidden text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/20 border-b border-border/50",children:[e.jsx("span",{className:"font-semibold text-foreground",children:"Gross Freight Revenue"}),e.jsx("span",{className:"font-bold text-foreground text-sm",children:l(t.freight_revenue)})]}),e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/10 border-b border-border/50 text-yellow-600 dark:text-yellow-500",children:[e.jsxs("span",{className:"font-semibold",children:["TDS Deducted (",t.tds_rate!==void 0?t.tds_rate:0,"%)"]}),e.jsxs("span",{className:"font-bold text-sm",children:["-",l(t.tds_amount||t.freight_revenue*(t.tds_rate||0)/100)]})]}),e.jsxs("div",{className:"p-3 space-y-2 bg-card",children:[e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fuel Cost:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.fuel_cost||t.distance/t.mileage*t.fuel_price)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Toll Charges:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.tolls)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx("span",{className:"text-muted-foreground",children:"Driver Expenses / Batta:"}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.driver_expenses)})]}),e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsxs("span",{className:"text-muted-foreground",children:["Tyre Wear & Tear (₹",t.tyre_depreciation_rate||3,"/km):"]}),e.jsx("span",{className:"font-medium text-foreground",children:l(t.tyre_expense||t.distance*(t.tyre_depreciation_rate||3))})]}),e.jsxs("div",{className:"flex justify-between items-center border-t border-border/40 pt-2 mt-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"Fixed Overheads (EMI, Tax, Insurance):"}),e.jsx("span",{className:"font-medium text-foreground",children:l(Number(t.vehicle_emi||0)+Number(t.insurance||0)+Number(t.quarterly_tax||0))})]})]}),e.jsxs("div",{className:"flex justify-between items-center p-3 bg-muted/10 border-t border-border/50",children:[e.jsx("span",{className:"font-semibold text-foreground",children:"Total Operating Expenses"}),e.jsx("span",{className:"font-bold text-foreground",children:l(t.total_expenses)})]}),e.jsxs("div",{className:x("flex justify-between items-center p-3.5 border-t border-border/50",Number(t.net_profit)>=0?"bg-emerald-500/5 text-emerald-600":"bg-destructive/5 text-destructive"),children:[e.jsxs("div",{className:"space-y-0.5",children:[e.jsx("span",{className:"font-bold text-sm block",children:"Net Profit / Earnings"}),e.jsxs("span",{className:"text-[10px] opacity-80 block",children:[t.profit_margin?.toFixed(1),"% Margin on revenue"]})]}),e.jsx("span",{className:"font-extrabold text-base tabular-nums",children:l(t.net_profit)})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-3 p-3 bg-muted/20 border-t border-border/50 text-xs",children:[e.jsxs("div",{className:"p-2.5 rounded-xl bg-primary/5 border border-primary/20",children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-muted-foreground block",children:"⚡ Expense Intel"}),e.jsxs("span",{className:"font-mono font-black text-sm text-primary block mt-0.5",children:["₹",(t.distance>0?(Number(t.total_expenses||0)/t.distance).toFixed(2):"0.00")," / KM"]})]}),e.jsxs("div",{className:x("p-2.5 rounded-xl border",Number(t.net_profit)>=0?"bg-emerald-500/10 border-emerald-500/30 text-emerald-500":"bg-destructive/10 border-destructive/30 text-destructive"),children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-muted-foreground block",children:"📈 Profit Intel"}),e.jsxs("span",{className:"font-mono font-black text-sm block mt-0.5",children:["₹",(t.distance>0?(Number(t.net_profit||0)/t.distance).toFixed(2):"0.00")," / KM"]})]})]})]})]})]}),e.jsxs(_e,{className:"pt-3 border-t border-border/50",children:[e.jsx(c,{variant:"outline",className:"rounded-xl h-11",onClick:()=>R(null),children:"Close Details"}),t&&e.jsxs(c,{className:"rounded-xl h-11 gap-1.5",onClick:()=>{de(t),R(null)},children:[e.jsx(pe,{className:"w-3.5 h-3.5 fill-current"})," Load Simulator"]})]})]})})]})}export{vs as default};
