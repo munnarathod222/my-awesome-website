@@ -3172,6 +3172,155 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
     }
   });
 
+  // GET /api/supabase/usage
+  app.get('/api/supabase/usage', async (req, res) => {
+    try {
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ success: false, error: 'Supabase credentials not configured' });
+      }
+
+      // Fetch buckets
+      const bucketsRes = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      });
+      const buckets = bucketsRes.ok ? await bucketsRes.json() : [{ name: 'backups' }];
+
+      let totalStorageBytes = 0;
+      let totalFilesCount = 0;
+      const breakdown = {
+        database_backups: { count: 0, bytes: 0, files: [] },
+        history_snapshots: { count: 0, bytes: 0, samples: [] },
+        document_attachments: { count: 0, bytes: 0 },
+        stores_and_metadata: { count: 0, bytes: 0, files: [] },
+        other: { count: 0, bytes: 0 }
+      };
+
+      const fetchFolder = async (bucketName, prefix = '', depth = 0) => {
+        if (depth > 5) return;
+        try {
+          const listRes = await fetch(`${supabaseUrl}/storage/v1/object/list/${bucketName}`, {
+            method: 'POST',
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prefix, limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } })
+          });
+          if (!listRes.ok) return;
+          const items = await listRes.json();
+          if (!Array.isArray(items)) return;
+
+          for (const item of items) {
+            const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+            if (item.id === null) {
+              await fetchFolder(bucketName, fullPath, depth + 1);
+            } else {
+              const sz = Number(item.metadata?.size || 0);
+              totalStorageBytes += sz;
+              totalFilesCount++;
+
+              if (fullPath.startsWith('history/')) {
+                breakdown.history_snapshots.count++;
+                breakdown.history_snapshots.bytes += sz;
+                if (breakdown.history_snapshots.samples.length < 10) {
+                  breakdown.history_snapshots.samples.push({
+                    name: item.name,
+                    sizeKB: (sz / 1024).toFixed(1) + ' KB',
+                    lastModified: item.updated_at || item.created_at
+                  });
+                }
+              } else if (fullPath.startsWith('storage/')) {
+                breakdown.document_attachments.count++;
+                breakdown.document_attachments.bytes += sz;
+              } else if (fullPath.endsWith('.db') || fullPath.endsWith('.db.gz')) {
+                breakdown.database_backups.count++;
+                breakdown.database_backups.bytes += sz;
+                breakdown.database_backups.files.push({
+                  name: fullPath,
+                  sizeMB: (sz / 1024 / 1024).toFixed(2) + ' MB',
+                  lastModified: item.updated_at || item.created_at
+                });
+              } else if (fullPath.endsWith('.json')) {
+                breakdown.stores_and_metadata.count++;
+                breakdown.stores_and_metadata.bytes += sz;
+                breakdown.stores_and_metadata.files.push({
+                  name: fullPath,
+                  sizeKB: (sz / 1024).toFixed(1) + ' KB'
+                });
+              } else {
+                breakdown.other.count++;
+                breakdown.other.bytes += sz;
+              }
+            }
+          }
+        } catch (e) {}
+      };
+
+      for (const b of buckets) {
+        await fetchFolder(b.name || 'backups', '');
+      }
+
+      const FREE_TIER_STORAGE_LIMIT_MB = 500;
+      const totalUsedMb = totalStorageBytes / (1024 * 1024);
+      const usagePercent = ((totalUsedMb / FREE_TIER_STORAGE_LIMIT_MB) * 100);
+      const remainingMb = Math.max(0, FREE_TIER_STORAGE_LIMIT_MB - totalUsedMb);
+
+      let localDbSizeBytes = 0;
+      try {
+        if (global.dbFilePath && fs.existsSync(global.dbFilePath)) {
+          localDbSizeBytes = fs.statSync(global.dbFilePath).size;
+        }
+      } catch (e) {}
+
+      res.json({
+        success: true,
+        provider: 'Supabase Cloud (AWS ap-southeast-1)',
+        project_url: supabaseUrl,
+        plan: 'Free Tier (Hobby)',
+        usage: {
+          total_storage_used_mb: Number(totalUsedMb.toFixed(2)),
+          total_storage_used_human: totalUsedMb < 1 ? (totalStorageBytes / 1024).toFixed(1) + ' KB' : totalUsedMb.toFixed(2) + ' MB',
+          total_files_stored: totalFilesCount,
+          free_tier_storage_limit_mb: FREE_TIER_STORAGE_LIMIT_MB,
+          storage_usage_percent: Number(usagePercent.toFixed(2)),
+          storage_remaining_mb: Number(remainingMb.toFixed(2)),
+          status: usagePercent < 50 ? 'Extremely Low Usage (Safe)' : (usagePercent < 80 ? 'Normal' : 'High Usage')
+        },
+        breakdown: {
+          primary_database_file: {
+            count: breakdown.database_backups.count,
+            size_mb: Number((breakdown.database_backups.bytes / 1024 / 1024).toFixed(2)),
+            files: breakdown.database_backups.files
+          },
+          historical_daily_snapshots: {
+            count: breakdown.history_snapshots.count,
+            size_mb: Number((breakdown.history_snapshots.bytes / 1024 / 1024).toFixed(2)),
+            samples: breakdown.history_snapshots.samples
+          },
+          uploaded_documents_and_media: {
+            count: breakdown.document_attachments.count,
+            size_mb: Number((breakdown.document_attachments.bytes / 1024 / 1024).toFixed(2))
+          },
+          metadata_and_stores: {
+            count: breakdown.stores_and_metadata.count,
+            size_kb: Number((breakdown.stores_and_metadata.bytes / 1024).toFixed(1)),
+            files: breakdown.stores_and_metadata.files
+          }
+        },
+        sqlite_live_database: {
+          local_file_size_mb: Number((localDbSizeBytes / 1024 / 1024).toFixed(2)),
+          local_file_size_bytes: localDbSizeBytes
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // POST /api/backup/trigger
   app.post('/api/backup/trigger', requireBackupAuth, async (req, res) => {
     try {
