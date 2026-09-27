@@ -20,30 +20,146 @@ function calcOrrToll(o,d,v="bus_2axle",t="single"){
 }
 
 const jsx = e.jsx, jsxs = e.jsxs;
+const TRUCK_CATEGORIES = [
+  {
+    id: "14ftsxl",
+    name: "14 FT SXL",
+    badge: "14ft SXL",
+    fullName: "14 FT Closed Container / Light Truck",
+    emiMonthly: 22e3,
+    driverSalaryMonthly: 18e3,
+    insuranceAnnual: 35e3,
+    roadTaxAnnual: 15e3,
+    permitsAnnual: 1e4,
+    mileageKmpl: 8.5,
+    tyreWearPerKm: 1.2,
+    maintenancePerKm: 1
+  },
+  {
+    id: "17ftsxl",
+    name: "17 FT SXL",
+    badge: "17ft SXL",
+    fullName: "17 FT Closed Container / Open Body",
+    emiMonthly: 26e3,
+    driverSalaryMonthly: 19e3,
+    insuranceAnnual: 42e3,
+    roadTaxAnnual: 18e3,
+    permitsAnnual: 12e3,
+    mileageKmpl: 7,
+    tyreWearPerKm: 1.5,
+    maintenancePerKm: 1.2
+  },
+  {
+    id: "20ftsxl",
+    name: "20 FT SXL",
+    badge: "20ft SXL",
+    fullName: "20 FT Single Axle Container",
+    emiMonthly: 3e4,
+    driverSalaryMonthly: 2e4,
+    insuranceAnnual: 48e3,
+    roadTaxAnnual: 22e3,
+    permitsAnnual: 14e3,
+    mileageKmpl: 6,
+    tyreWearPerKm: 1.8,
+    maintenancePerKm: 1.4
+  },
+  {
+    id: "24ftsxl",
+    name: "24 FT SXL",
+    badge: "24ft SXL",
+    fullName: "24 FT Single Axle Container",
+    emiMonthly: 35e3,
+    driverSalaryMonthly: 22e3,
+    insuranceAnnual: 55e3,
+    roadTaxAnnual: 24e3,
+    permitsAnnual: 15e3,
+    mileageKmpl: 5.5,
+    tyreWearPerKm: 2,
+    maintenancePerKm: 1.5
+  },
+  {
+    id: "32ftsxl",
+    name: "32 FT SXL",
+    badge: "32ft SXL",
+    fullName: "32 FT Single Axle Heavy Container",
+    emiMonthly: 33410,
+    driverSalaryMonthly: 35e3,
+    insuranceAnnual: 42e3,
+    roadTaxAnnual: 20800,
+    permitsAnnual: 0,
+    mileageKmpl: 5,
+    tyreWearPerKm: 3,
+    maintenancePerKm: 2
+  },
+  {
+    id: "32ftmxl",
+    name: "32 FT MXL",
+    badge: "32ft MXL",
+    fullName: "32 FT Multi-Axle Heavy Container (MXL)",
+    emiMonthly: 48e3,
+    driverSalaryMonthly: 25e3,
+    insuranceAnnual: 75e3,
+    roadTaxAnnual: 34e3,
+    permitsAnnual: 22e3,
+    mileageKmpl: 3.8,
+    tyreWearPerKm: 3.5,
+    maintenancePerKm: 2.2
+  }
+];
+const DEFAULT_TRUCK_PROFILES = {
+  "TG12U2637": {
+    truckNumber: "TG12U2637",
+    category: "32ftsxl",
+    emiMonthly: 33410,
+    driverSalaryMonthly: 35e3,
+    insuranceAnnual: 42e3,
+    roadTaxAnnual: 20800,
+    permitsAnnual: 0,
+    workingDaysMonthly: 30,
+    mileageKmpl: 5,
+    tyreWearPerKm: 3,
+    maintenancePerKm: 2
+  }
+};
 function LogisticsTripCostCalculator({
   initialDistance = 650,
-  initialMileage = 4.5,
+  initialMileage = 5,
   initialFuelPrice = 92.5,
   initialTolls = 1400,
+  registeredTrucks = [],
   onSaveToDatabase,
   savedReportsCount = 0,
   onOpenReports
 }) {
-  const [emiMonthly, setEmiMonthly] = a.useState(42e3);
-  const [driverSalaryMonthly, setDriverSalaryMonthly] = a.useState(22e3);
-  const [insuranceAnnual, setInsuranceAnnual] = a.useState(65e3);
-  const [roadTaxAnnual, setRoadTaxAnnual] = a.useState(28e3);
-  const [permitsAnnual, setPermitsAnnual] = a.useState(18e3);
-  const [workingDaysMonthly, setWorkingDaysMonthly] = a.useState(25);
+  const [selectedVehicleType, setSelectedVehicleType] = a.useState("32ftsxl");
+  const [selectedTruckId, setSelectedTruckId] = a.useState("TG12U2637");
+  const [customTruckInput, setCustomTruckInput] = a.useState("");
+  const [truckProfiles, setTruckProfiles] = a.useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = localStorage.getItem("jbc_truck_custom_profiles_v1");
+        if (saved) return { ...DEFAULT_TRUCK_PROFILES, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+    }
+    return DEFAULT_TRUCK_PROFILES;
+  });
+  const defaultTG = DEFAULT_TRUCK_PROFILES["TG12U2637"];
+  const [emiMonthly, setEmiMonthly] = a.useState(defaultTG.emiMonthly);
+  const [driverSalaryMonthly, setDriverSalaryMonthly] = a.useState(defaultTG.driverSalaryMonthly);
+  const [insuranceAnnual, setInsuranceAnnual] = a.useState(defaultTG.insuranceAnnual);
+  const [roadTaxAnnual, setRoadTaxAnnual] = a.useState(defaultTG.roadTaxAnnual);
+  const [permitsAnnual, setPermitsAnnual] = a.useState(defaultTG.permitsAnnual);
+  const [workingDaysMonthly, setWorkingDaysMonthly] = a.useState(defaultTG.workingDaysMonthly || 30);
   const [allocationMode, setAllocationMode] = a.useState("trips_frequency");
   const [tripsPerMonth, setTripsPerMonth] = a.useState(15);
   const [tripDays, setTripDays] = a.useState(2);
   const [distanceKm, setDistanceKm] = a.useState(initialDistance);
-  const [mileageKmpl, setMileageKmpl] = a.useState(initialMileage);
+  const [mileageKmpl, setMileageKmpl] = a.useState(defaultTG.mileageKmpl || initialMileage);
   const [fuelPricePerLitre, setFuelPricePerLitre] = a.useState(initialFuelPrice);
   const [tollCost, setTollCost] = a.useState(initialTolls);
-  const [tyreWearPerKm, setTyreWearPerKm] = a.useState(2.5);
-  const [maintenancePerKm, setMaintenancePerKm] = a.useState(1.8);
+  const [tyreWearPerKm, setTyreWearPerKm] = a.useState(defaultTG.tyreWearPerKm || 3);
+  const [maintenancePerKm, setMaintenancePerKm] = a.useState(defaultTG.maintenancePerKm || 2);
   const [loadingUnloadingCost, setLoadingUnloadingCost] = a.useState(1200);
   const [driverBattaPerTrip, setDriverBattaPerTrip] = a.useState(800);
   const [targetMarginPct, setTargetMarginPct] = a.useState(15);
@@ -224,6 +340,92 @@ function LogisticsTripCostCalculator({
     currency: "INR",
     maximumFractionDigits: 0
   }).format(Math.round(val || 0));
+  const allFleetTruckNumbers = a.useMemo(() => {
+    const list = ["TG12U2637"];
+    if (Array.isArray(registeredTrucks)) {
+      registeredTrucks.forEach((t) => {
+        const no = typeof t === "string" ? t : t?.truck_number || t?.name;
+        if (no && !list.includes(no)) list.push(no);
+      });
+    }
+    Object.keys(truckProfiles).forEach((no) => {
+      if (!list.includes(no)) list.push(no);
+    });
+    return list;
+  }, [registeredTrucks, truckProfiles]);
+  const applyTruckProfile = (profileOrCategory) => {
+    if (!profileOrCategory) return;
+    const cat = TRUCK_CATEGORIES.find((c) => c.id === profileOrCategory);
+    if (cat) {
+      setSelectedVehicleType(cat.id);
+      setEmiMonthly(cat.emiMonthly);
+      setDriverSalaryMonthly(cat.driverSalaryMonthly);
+      setInsuranceAnnual(cat.insuranceAnnual);
+      setRoadTaxAnnual(cat.roadTaxAnnual);
+      setPermitsAnnual(cat.permitsAnnual);
+      setMileageKmpl(cat.mileageKmpl);
+      setTyreWearPerKm(cat.tyreWearPerKm);
+      setMaintenancePerKm(cat.maintenancePerKm);
+      i.success(`1-Click Loaded Specs for ${cat.name} (${cat.fullName})`);
+      return;
+    }
+    const truckNo = (typeof profileOrCategory === "string" ? profileOrCategory : profileOrCategory.truckNumber || "").trim().toUpperCase();
+    const profile = truckProfiles[truckNo] || DEFAULT_TRUCK_PROFILES[truckNo];
+    if (profile) {
+      setSelectedTruckId(truckNo);
+      if (profile.category) setSelectedVehicleType(profile.category);
+      setEmiMonthly(profile.emiMonthly);
+      setDriverSalaryMonthly(profile.driverSalaryMonthly);
+      setInsuranceAnnual(profile.insuranceAnnual);
+      setRoadTaxAnnual(profile.roadTaxAnnual);
+      setPermitsAnnual(profile.permitsAnnual);
+      if (profile.workingDaysMonthly) setWorkingDaysMonthly(profile.workingDaysMonthly);
+      setMileageKmpl(profile.mileageKmpl);
+      if (profile.tyreWearPerKm !== void 0) setTyreWearPerKm(profile.tyreWearPerKm);
+      if (profile.maintenancePerKm !== void 0) setMaintenancePerKm(profile.maintenancePerKm);
+      i.success(`1-Click Loaded Saved Specs for Truck ${truckNo}!`);
+    } else {
+      setSelectedTruckId(truckNo);
+      const activeCat = TRUCK_CATEGORIES.find((c) => c.id === selectedVehicleType) || TRUCK_CATEGORIES[4];
+      setEmiMonthly(activeCat.emiMonthly);
+      setDriverSalaryMonthly(activeCat.driverSalaryMonthly);
+      setInsuranceAnnual(activeCat.insuranceAnnual);
+      setRoadTaxAnnual(activeCat.roadTaxAnnual);
+      setPermitsAnnual(activeCat.permitsAnnual);
+      setMileageKmpl(activeCat.mileageKmpl);
+      i.success(`Linked Truck ${truckNo} to ${activeCat.name} standards`);
+    }
+  };
+  const handleSaveProfileForTruck = (targetTruck = selectedTruckId) => {
+    const truckKey = (targetTruck || "TG12U2637").trim().toUpperCase();
+    if (!truckKey) {
+      i.error("Please provide a valid truck registration number.");
+      return;
+    }
+    const newProfile = {
+      truckNumber: truckKey,
+      category: selectedVehicleType,
+      emiMonthly,
+      driverSalaryMonthly,
+      insuranceAnnual,
+      roadTaxAnnual,
+      permitsAnnual,
+      workingDaysMonthly,
+      mileageKmpl,
+      tyreWearPerKm,
+      maintenancePerKm
+    };
+    const updated = { ...truckProfiles, [truckKey]: newProfile };
+    setTruckProfiles(updated);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("jbc_truck_custom_profiles_v1", JSON.stringify(updated));
+      }
+    } catch (e) {
+    }
+    setSelectedTruckId(truckKey);
+    i.success(`Saved all specs for Truck ${truckKey}! Selected in 1 click anytime.`);
+  };
   const handleReset = () => {
     setEmiMonthly(42e3);
     setDriverSalaryMonthly(22e3);
@@ -818,6 +1020,136 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
               calc.clientOffer >= calc.minBidAmount && calc.clientOffer < calc.medBidAmount && /* @__PURE__ */ jsx("span", { children: "\u{1F7E1} Acceptable Backhaul" }),
               calc.clientOffer < calc.minBidAmount && calc.clientOffer >= calc.breakEvenRate && /* @__PURE__ */ jsx("span", { children: "\u26A0\uFE0F Zero Profit Buffer" }),
               calc.clientOffer < calc.breakEvenRate && /* @__PURE__ */ jsx("span", { children: "\u{1F534} Direct Loss (Reject)" })
+            ] })
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "p-5 bg-card border-2 border-primary/30 rounded-3xl shadow-sm space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border/40 pb-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30", children: "\u{1F69B} 1-CLICK TRUCK AUTO-FILL" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground", children: "Fleet Vehicle Cost & Mileage Profiles" })
+          ] }),
+          /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-foreground mt-0.5", children: "Select Truck or Vehicle Size to Pre-Fill All Fixed Overheads & Mileage" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-muted-foreground", children: "Automatically pre-fills Loan EMI, Driver Salary, Insurance, Road Tax, National Permits, and Mileage in 1 click." })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => handleSaveProfileForTruck(selectedTruckId),
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center gap-1.5 transition active:scale-95",
+            title: "Save current EMI, salary, insurance, road tax, permits & mileage for this truck",
+            children: /* @__PURE__ */ jsxs("span", { children: [
+              "\u{1F4BE} Save Specs for ",
+              selectedTruckId || "Truck"
+            ] })
+          }
+        ) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs", children: [
+          /* @__PURE__ */ jsxs("span", { className: "font-semibold text-foreground flex items-center gap-1.5", children: [
+            /* @__PURE__ */ jsx("span", { children: "Standard Truck Categories:" }),
+            /* @__PURE__ */ jsx("span", { className: "text-[11px] text-muted-foreground font-normal", children: "(Click any to pre-fill standard specifications)" })
+          ] }),
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-primary font-bold", children: "1-Click Auto Fill" })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5", children: TRUCK_CATEGORIES.map((cat) => {
+          const isCatActive = selectedVehicleType === cat.id;
+          return /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => applyTruckProfile(cat.id),
+              className: `p-3 rounded-2xl border text-left transition flex flex-col justify-between ${isCatActive ? "bg-primary text-primary-foreground border-primary shadow-md ring-2 ring-primary/40" : "bg-muted/30 hover:bg-muted/60 text-foreground border-border/70 hover:border-primary/40"}`,
+              children: [
+                /* @__PURE__ */ jsxs("div", { className: "space-y-0.5", children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                    /* @__PURE__ */ jsx("span", { className: "text-xs font-black", children: cat.name }),
+                    /* @__PURE__ */ jsxs("span", { className: `text-[9px] font-bold px-1 rounded ${isCatActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`, children: [
+                      cat.mileageKmpl,
+                      " KM/L"
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsx("p", { className: `text-[10px] line-clamp-1 ${isCatActive ? "text-primary-foreground/90" : "text-muted-foreground"}`, children: cat.fullName })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: `mt-2 pt-1.5 border-t text-[10px] font-mono flex items-center justify-between ${isCatActive ? "border-primary-foreground/20 text-primary-foreground" : "border-border/40 text-muted-foreground"}`, children: [
+                  /* @__PURE__ */ jsxs("span", { children: [
+                    "EMI: ",
+                    inr(cat.emiMonthly)
+                  ] }),
+                  /* @__PURE__ */ jsxs("span", { children: [
+                    "Sal: ",
+                    inr(cat.driverSalaryMonthly)
+                  ] })
+                ] })
+              ]
+            },
+            cat.id
+          );
+        }) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-muted/20 border border-border/70 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5 flex-wrap", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground flex items-center gap-1.5", children: /* @__PURE__ */ jsx("span", { children: "Selected Fleet Truck:" }) }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: selectedTruckId,
+              onChange: (e) => applyTruckProfile(e.target.value),
+              className: "h-9 px-3 text-xs font-bold font-mono bg-background border border-border rounded-xl text-foreground focus:outline-none focus:border-primary shadow-sm",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "TG12U2637", children: "TG12U2637 (Primary Fleet Truck)" }),
+                allFleetTruckNumbers.filter((t) => t !== "TG12U2637").map((t) => /* @__PURE__ */ jsxs("option", { value: t, children: [
+                  t,
+                  " ",
+                  truckProfiles[t] ? "\u2605 (Saved Custom Specs)" : ""
+                ] }, t))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5", children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                placeholder: "+ Enter Truck No (e.g. TS08UA1234)",
+                value: customTruckInput,
+                onChange: (e) => setCustomTruckInput(e.target.value.toUpperCase()),
+                className: "h-9 w-48 px-3 text-xs font-mono font-bold bg-background border border-border/80 rounded-xl uppercase text-foreground placeholder:normal-case placeholder:font-normal focus:border-primary"
+              }
+            ),
+            customTruckInput && /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  if (!customTruckInput.trim()) return;
+                  handleSaveProfileForTruck(customTruckInput.trim());
+                  setCustomTruckInput("");
+                },
+                className: "h-9 px-3.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-95 shadow-sm",
+                children: "Save New Truck"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-xs", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-muted-foreground", children: "Active Configuration:" }),
+          /* @__PURE__ */ jsxs("span", { className: "px-3 py-1 rounded-xl text-xs font-black font-mono bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center gap-1.5", children: [
+            /* @__PURE__ */ jsx("span", { children: selectedTruckId || "TG12U2637" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] font-bold text-muted-foreground", children: [
+              "(",
+              selectedVehicleType.toUpperCase(),
+              ")"
+            ] }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-emerald-400", children: [
+              "\u2713 ",
+              mileageKmpl,
+              " KM/L"
             ] })
           ] })
         ] })

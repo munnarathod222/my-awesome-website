@@ -1,25 +1,143 @@
 // LogisticsTripCostCalculator.jsx
 // Professional Heavy Commercial Vehicle (32ft Container / Multi-Axle) Trip Cost & Freight Rate Calculator
-// Featuring explicit [A + B] Cost Architecture:
-// [A] Fixed Fleet Overhead (Allocated by Monthly Trip Frequency: 4, 15, 30 trips/mo or Trip Days)
-// [B] Variable Running Costs (Distance, Fuel, Tolls, Tyre wear, Maintenance, Loading, Batta)
+// Featuring explicit [A + B] Cost Architecture & 1-Click Truck Profile Auto-Fill
+
+const TRUCK_CATEGORIES = [
+  {
+    id: "14ftsxl",
+    name: "14 FT SXL",
+    badge: "14ft SXL",
+    fullName: "14 FT Closed Container / Light Truck",
+    emiMonthly: 22000,
+    driverSalaryMonthly: 18000,
+    insuranceAnnual: 35000,
+    roadTaxAnnual: 15000,
+    permitsAnnual: 10000,
+    mileageKmpl: 8.5,
+    tyreWearPerKm: 1.20,
+    maintenancePerKm: 1.00
+  },
+  {
+    id: "17ftsxl",
+    name: "17 FT SXL",
+    badge: "17ft SXL",
+    fullName: "17 FT Closed Container / Open Body",
+    emiMonthly: 26000,
+    driverSalaryMonthly: 19000,
+    insuranceAnnual: 42000,
+    roadTaxAnnual: 18000,
+    permitsAnnual: 12000,
+    mileageKmpl: 7.0,
+    tyreWearPerKm: 1.50,
+    maintenancePerKm: 1.20
+  },
+  {
+    id: "20ftsxl",
+    name: "20 FT SXL",
+    badge: "20ft SXL",
+    fullName: "20 FT Single Axle Container",
+    emiMonthly: 30000,
+    driverSalaryMonthly: 20000,
+    insuranceAnnual: 48000,
+    roadTaxAnnual: 22000,
+    permitsAnnual: 14000,
+    mileageKmpl: 6.0,
+    tyreWearPerKm: 1.80,
+    maintenancePerKm: 1.40
+  },
+  {
+    id: "24ftsxl",
+    name: "24 FT SXL",
+    badge: "24ft SXL",
+    fullName: "24 FT Single Axle Container",
+    emiMonthly: 35000,
+    driverSalaryMonthly: 22000,
+    insuranceAnnual: 55000,
+    roadTaxAnnual: 24000,
+    permitsAnnual: 15000,
+    mileageKmpl: 5.5,
+    tyreWearPerKm: 2.00,
+    maintenancePerKm: 1.50
+  },
+  {
+    id: "32ftsxl",
+    name: "32 FT SXL",
+    badge: "32ft SXL",
+    fullName: "32 FT Single Axle Heavy Container",
+    emiMonthly: 33410,
+    driverSalaryMonthly: 35000,
+    insuranceAnnual: 42000,
+    roadTaxAnnual: 20800,
+    permitsAnnual: 0,
+    mileageKmpl: 5.0,
+    tyreWearPerKm: 3.00,
+    maintenancePerKm: 2.00
+  },
+  {
+    id: "32ftmxl",
+    name: "32 FT MXL",
+    badge: "32ft MXL",
+    fullName: "32 FT Multi-Axle Heavy Container (MXL)",
+    emiMonthly: 48000,
+    driverSalaryMonthly: 25000,
+    insuranceAnnual: 75000,
+    roadTaxAnnual: 34000,
+    permitsAnnual: 22000,
+    mileageKmpl: 3.8,
+    tyreWearPerKm: 3.50,
+    maintenancePerKm: 2.20
+  }
+];
+
+const DEFAULT_TRUCK_PROFILES = {
+  "TG12U2637": {
+    truckNumber: "TG12U2637",
+    category: "32ftsxl",
+    emiMonthly: 33410,
+    driverSalaryMonthly: 35000,
+    insuranceAnnual: 42000,
+    roadTaxAnnual: 20800,
+    permitsAnnual: 0,
+    workingDaysMonthly: 30,
+    mileageKmpl: 5.0,
+    tyreWearPerKm: 3.00,
+    maintenancePerKm: 2.00
+  }
+};
 
 export function LogisticsTripCostCalculator({
   initialDistance = 650,
-  initialMileage = 4.5,
+  initialMileage = 5.0,
   initialFuelPrice = 92.5,
   initialTolls = 1400,
+  registeredTrucks = [],
   onSaveToDatabase,
   savedReportsCount = 0,
   onOpenReports
 }) {
+  // --- TRUCK PROFILES & PRESETS (1-Click Auto-Fill) ---
+  const [selectedVehicleType, setSelectedVehicleType] = a.useState("32ftsxl");
+  const [selectedTruckId, setSelectedTruckId] = a.useState("TG12U2637");
+  const [customTruckInput, setCustomTruckInput] = a.useState("");
+  const [truckProfiles, setTruckProfiles] = a.useState(() => {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const saved = localStorage.getItem("jbc_truck_custom_profiles_v1");
+        if (saved) return { ...DEFAULT_TRUCK_PROFILES, ...JSON.parse(saved) };
+      }
+    } catch (e) {}
+    return DEFAULT_TRUCK_PROFILES;
+  });
+
+  const defaultTG = DEFAULT_TRUCK_PROFILES["TG12U2637"];
+
   // --- SECTION A: FIXED FLEET COSTS (Monthly / Annual Pool) ---
-  const [emiMonthly, setEmiMonthly] = a.useState(42000);
-  const [driverSalaryMonthly, setDriverSalaryMonthly] = a.useState(22000);
-  const [insuranceAnnual, setInsuranceAnnual] = a.useState(65000);
-  const [roadTaxAnnual, setRoadTaxAnnual] = a.useState(28000);
-  const [permitsAnnual, setPermitsAnnual] = a.useState(18000);
-  const [workingDaysMonthly, setWorkingDaysMonthly] = a.useState(25);
+  const [emiMonthly, setEmiMonthly] = a.useState(defaultTG.emiMonthly);
+  const [driverSalaryMonthly, setDriverSalaryMonthly] = a.useState(defaultTG.driverSalaryMonthly);
+  const [insuranceAnnual, setInsuranceAnnual] = a.useState(defaultTG.insuranceAnnual);
+  const [roadTaxAnnual, setRoadTaxAnnual] = a.useState(defaultTG.roadTaxAnnual);
+  const [permitsAnnual, setPermitsAnnual] = a.useState(defaultTG.permitsAnnual);
+  const [workingDaysMonthly, setWorkingDaysMonthly] = a.useState(defaultTG.workingDaysMonthly || 30);
 
   // Allocation Setting: 'trips_frequency' | 'trip_days'
   const [allocationMode, setAllocationMode] = a.useState("trips_frequency");
@@ -30,11 +148,11 @@ export function LogisticsTripCostCalculator({
 
   // --- SECTION B: VARIABLE RUNNING COSTS ---
   const [distanceKm, setDistanceKm] = a.useState(initialDistance);
-  const [mileageKmpl, setMileageKmpl] = a.useState(initialMileage);
+  const [mileageKmpl, setMileageKmpl] = a.useState(defaultTG.mileageKmpl || initialMileage);
   const [fuelPricePerLitre, setFuelPricePerLitre] = a.useState(initialFuelPrice);
   const [tollCost, setTollCost] = a.useState(initialTolls);
-  const [tyreWearPerKm, setTyreWearPerKm] = a.useState(2.50);
-  const [maintenancePerKm, setMaintenancePerKm] = a.useState(1.80);
+  const [tyreWearPerKm, setTyreWearPerKm] = a.useState(defaultTG.tyreWearPerKm || 3.00);
+  const [maintenancePerKm, setMaintenancePerKm] = a.useState(defaultTG.maintenancePerKm || 2.00);
   const [loadingUnloadingCost, setLoadingUnloadingCost] = a.useState(1200);
   const [driverBattaPerTrip, setDriverBattaPerTrip] = a.useState(800);
 
@@ -247,6 +365,104 @@ export function LogisticsTripCostCalculator({
       currency: "INR",
       maximumFractionDigits: 0
     }).format(Math.round(val || 0));
+
+  // List of all truck numbers available in fleet
+  const allFleetTruckNumbers = a.useMemo(() => {
+    const list = ["TG12U2637"];
+    if (Array.isArray(registeredTrucks)) {
+      registeredTrucks.forEach(t => {
+        const no = typeof t === "string" ? t : (t?.truck_number || t?.name);
+        if (no && !list.includes(no)) list.push(no);
+      });
+    }
+    Object.keys(truckProfiles).forEach(no => {
+      if (!list.includes(no)) list.push(no);
+    });
+    return list;
+  }, [registeredTrucks, truckProfiles]);
+
+  // 1-Click Apply Truck Profile or Category
+  const applyTruckProfile = (profileOrCategory) => {
+    if (!profileOrCategory) return;
+
+    // 1. Check if it's a vehicle category (14ftsxl, 17ftsxl, 20ftsxl, 24ftsxl, 32ftsxl, 32ftmxl)
+    const cat = TRUCK_CATEGORIES.find(c => c.id === profileOrCategory);
+    if (cat) {
+      setSelectedVehicleType(cat.id);
+      setEmiMonthly(cat.emiMonthly);
+      setDriverSalaryMonthly(cat.driverSalaryMonthly);
+      setInsuranceAnnual(cat.insuranceAnnual);
+      setRoadTaxAnnual(cat.roadTaxAnnual);
+      setPermitsAnnual(cat.permitsAnnual);
+      setMileageKmpl(cat.mileageKmpl);
+      setTyreWearPerKm(cat.tyreWearPerKm);
+      setMaintenancePerKm(cat.maintenancePerKm);
+      i.success(`1-Click Loaded Specs for ${cat.name} (${cat.fullName})`);
+      return;
+    }
+
+    // 2. Check if it's a specific fleet truck
+    const truckNo = (typeof profileOrCategory === "string" ? profileOrCategory : profileOrCategory.truckNumber || "").trim().toUpperCase();
+    const profile = truckProfiles[truckNo] || DEFAULT_TRUCK_PROFILES[truckNo];
+    if (profile) {
+      setSelectedTruckId(truckNo);
+      if (profile.category) setSelectedVehicleType(profile.category);
+      setEmiMonthly(profile.emiMonthly);
+      setDriverSalaryMonthly(profile.driverSalaryMonthly);
+      setInsuranceAnnual(profile.insuranceAnnual);
+      setRoadTaxAnnual(profile.roadTaxAnnual);
+      setPermitsAnnual(profile.permitsAnnual);
+      if (profile.workingDaysMonthly) setWorkingDaysMonthly(profile.workingDaysMonthly);
+      setMileageKmpl(profile.mileageKmpl);
+      if (profile.tyreWearPerKm !== undefined) setTyreWearPerKm(profile.tyreWearPerKm);
+      if (profile.maintenancePerKm !== undefined) setMaintenancePerKm(profile.maintenancePerKm);
+      i.success(`1-Click Loaded Saved Specs for Truck ${truckNo}!`);
+    } else {
+      setSelectedTruckId(truckNo);
+      const activeCat = TRUCK_CATEGORIES.find(c => c.id === selectedVehicleType) || TRUCK_CATEGORIES[4];
+      setEmiMonthly(activeCat.emiMonthly);
+      setDriverSalaryMonthly(activeCat.driverSalaryMonthly);
+      setInsuranceAnnual(activeCat.insuranceAnnual);
+      setRoadTaxAnnual(activeCat.roadTaxAnnual);
+      setPermitsAnnual(activeCat.permitsAnnual);
+      setMileageKmpl(activeCat.mileageKmpl);
+      i.success(`Linked Truck ${truckNo} to ${activeCat.name} standards`);
+    }
+  };
+
+  // Save current parameters for a specific truck
+  const handleSaveProfileForTruck = (targetTruck = selectedTruckId) => {
+    const truckKey = (targetTruck || "TG12U2637").trim().toUpperCase();
+    if (!truckKey) {
+      i.error("Please provide a valid truck registration number.");
+      return;
+    }
+
+    const newProfile = {
+      truckNumber: truckKey,
+      category: selectedVehicleType,
+      emiMonthly,
+      driverSalaryMonthly,
+      insuranceAnnual,
+      roadTaxAnnual,
+      permitsAnnual,
+      workingDaysMonthly,
+      mileageKmpl,
+      tyreWearPerKm,
+      maintenancePerKm
+    };
+
+    const updated = { ...truckProfiles, [truckKey]: newProfile };
+    setTruckProfiles(updated);
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("jbc_truck_custom_profiles_v1", JSON.stringify(updated));
+      }
+    } catch (e) {}
+
+    setSelectedTruckId(truckKey);
+    i.success(`Saved all specs for Truck ${truckKey}! Selected in 1 click anytime.`);
+  };
 
   // Reset form to heavy vehicle defaults
   const handleReset = () => {
@@ -911,6 +1127,146 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                 {calc.clientOffer < calc.breakEvenRate && <span>🔴 Direct Loss (Reject)</span>}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 1-CLICK TRUCK SELECTION & SPECIFICATION AUTO-FILL BAR           */}
+      {/* ============================================================== */}
+      <div className="p-5 bg-card border-2 border-primary/30 rounded-3xl shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border/40 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">
+                🚛 1-CLICK TRUCK AUTO-FILL
+              </span>
+              <span className="text-xs font-bold text-foreground">
+                Fleet Vehicle Cost &amp; Mileage Profiles
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-foreground mt-0.5">
+              Select Truck or Vehicle Size to Pre-Fill All Fixed Overheads &amp; Mileage
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Automatically pre-fills Loan EMI, Driver Salary, Insurance, Road Tax, National Permits, and Mileage in 1 click.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSaveProfileForTruck(selectedTruckId)}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center gap-1.5 transition active:scale-95"
+              title="Save current EMI, salary, insurance, road tax, permits & mileage for this truck"
+            >
+              <span>💾 Save Specs for {selectedTruckId || "Truck"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 6 Vehicle Options (14ftsxl, 17ftsxl, 20ftsxl, 24ftsxl, 32ftsxl, 32ftmxl) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-foreground flex items-center gap-1.5">
+              <span>Standard Truck Categories:</span>
+              <span className="text-[11px] text-muted-foreground font-normal">(Click any to pre-fill standard specifications)</span>
+            </span>
+            <span className="text-[11px] text-primary font-bold">1-Click Auto Fill</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {TRUCK_CATEGORIES.map(cat => {
+              const isCatActive = selectedVehicleType === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => applyTruckProfile(cat.id)}
+                  className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between ${
+                    isCatActive
+                      ? "bg-primary text-primary-foreground border-primary shadow-md ring-2 ring-primary/40"
+                      : "bg-muted/30 hover:bg-muted/60 text-foreground border-border/70 hover:border-primary/40"
+                  }`}
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black">{cat.name}</span>
+                      <span className={`text-[9px] font-bold px-1 rounded ${
+                        isCatActive ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                      }`}>
+                        {cat.mileageKmpl} KM/L
+                      </span>
+                    </div>
+                    <p className={`text-[10px] line-clamp-1 ${isCatActive ? "text-primary-foreground/90" : "text-muted-foreground"}`}>
+                      {cat.fullName}
+                    </p>
+                  </div>
+
+                  <div className={`mt-2 pt-1.5 border-t text-[10px] font-mono flex items-center justify-between ${
+                    isCatActive ? "border-primary-foreground/20 text-primary-foreground" : "border-border/40 text-muted-foreground"
+                  }`}>
+                    <span>EMI: {inr(cat.emiMonthly)}</span>
+                    <span>Sal: {inr(cat.driverSalaryMonthly)}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Specific Fleet Truck Registration Selector & Custom Profile Linking */}
+        <div className="p-3.5 bg-muted/20 border border-border/70 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <span>Selected Fleet Truck:</span>
+            </span>
+            <select
+              value={selectedTruckId}
+              onChange={(e) => applyTruckProfile(e.target.value)}
+              className="h-9 px-3 text-xs font-bold font-mono bg-background border border-border rounded-xl text-foreground focus:outline-none focus:border-primary shadow-sm"
+            >
+              <option value="TG12U2637">TG12U2637 (Primary Fleet Truck)</option>
+              {allFleetTruckNumbers.filter(t => t !== "TG12U2637").map(t => (
+                <option key={t} value={t}>
+                  {t} {truckProfiles[t] ? "★ (Saved Custom Specs)" : ""}
+                </option>
+              ))}
+            </select>
+
+            {/* Quick Add Custom Truck Number input */}
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                placeholder="+ Enter Truck No (e.g. TS08UA1234)"
+                value={customTruckInput}
+                onChange={(e) => setCustomTruckInput(e.target.value.toUpperCase())}
+                className="h-9 w-48 px-3 text-xs font-mono font-bold bg-background border border-border/80 rounded-xl uppercase text-foreground placeholder:normal-case placeholder:font-normal focus:border-primary"
+              />
+              {customTruckInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!customTruckInput.trim()) return;
+                    handleSaveProfileForTruck(customTruckInput.trim());
+                    setCustomTruckInput("");
+                  }}
+                  className="h-9 px-3.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-95 shadow-sm"
+                >
+                  Save New Truck
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Active Profile Status Chip */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-[11px] text-muted-foreground">Active Configuration:</span>
+            <span className="px-3 py-1 rounded-xl text-xs font-black font-mono bg-primary/10 text-primary border border-primary/20 shadow-sm flex items-center gap-1.5">
+              <span>{selectedTruckId || "TG12U2637"}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">({selectedVehicleType.toUpperCase()})</span>
+              <span className="text-[10px] text-emerald-400">✓ {mileageKmpl} KM/L</span>
+            </span>
           </div>
         </div>
       </div>
