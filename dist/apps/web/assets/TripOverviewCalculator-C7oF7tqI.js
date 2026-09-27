@@ -116,6 +116,34 @@ function LogisticsTripCostCalculator({
     const clientOffer = parseFloat(clientOfferRevenue) || 0;
     const clientNetProfit = clientOffer - totalTripCost;
     const clientMarginPct = clientOffer > 0 ? clientNetProfit / clientOffer * 100 : 0;
+    const effectiveMonthlyTrips = allocationMode === "trips_frequency" ? Math.max(1, tripsPerMonth || 1) : Math.max(1, Math.round((workingDaysMonthly || 25) / (tripDays || 1)));
+    const monthlyGrossRevenue = recommendedQuote * effectiveMonthlyTrips;
+    const monthlyVariableCost = totalVariableCost * effectiveMonthlyTrips;
+    const monthlyTotalExpenses = totalMonthlyFixed + monthlyVariableCost;
+    const monthlyNetProfit = expectedProfit * effectiveMonthlyTrips;
+    const monthlyNetProfitMarginPct = monthlyGrossRevenue > 0 ? monthlyNetProfit / monthlyGrossRevenue * 100 : 0;
+    const annualNetProfitRunRate = monthlyNetProfit * 12;
+    const monthlyMinBidProfit = minBidProfit * effectiveMonthlyTrips;
+    const monthlyMinBidRevenue = minBidAmount * effectiveMonthlyTrips;
+    const monthlyMedBidProfit = medBidProfit * effectiveMonthlyTrips;
+    const monthlyMedBidRevenue = medBidAmount * effectiveMonthlyTrips;
+    const monthlyMaxBidProfit = maxBidProfit * effectiveMonthlyTrips;
+    const monthlyMaxBidRevenue = maxBidAmount * effectiveMonthlyTrips;
+    const scenario4TripsFixedPerTrip = totalMonthlyFixed / 4;
+    const scenario4TripCost = scenario4TripsFixedPerTrip + totalVariableCost;
+    const scenario4Quote = scenario4TripCost * (1 + marginPct / 100);
+    const scenario4ProfitPerTrip = scenario4Quote - scenario4TripCost;
+    const scenario4MonthlyProfit = scenario4ProfitPerTrip * 4;
+    const scenario15TripsFixedPerTrip = totalMonthlyFixed / 15;
+    const scenario15TripCost = scenario15TripsFixedPerTrip + totalVariableCost;
+    const scenario15Quote = scenario15TripCost * (1 + marginPct / 100);
+    const scenario15ProfitPerTrip = scenario15Quote - scenario15TripCost;
+    const scenario15MonthlyProfit = scenario15ProfitPerTrip * 15;
+    const scenario30TripsFixedPerTrip = totalMonthlyFixed / 30;
+    const scenario30TripCost = scenario30TripsFixedPerTrip + totalVariableCost;
+    const scenario30Quote = scenario30TripCost * (1 + marginPct / 100);
+    const scenario30ProfitPerTrip = scenario30Quote - scenario30TripCost;
+    const scenario30MonthlyProfit = scenario30ProfitPerTrip * 30;
     return {
       totalMonthlyFixed,
       insuranceMonthly,
@@ -152,7 +180,23 @@ function LogisticsTripCostCalculator({
       maxBidRatePerKm,
       clientOffer,
       clientNetProfit,
-      clientMarginPct
+      clientMarginPct,
+      effectiveMonthlyTrips,
+      monthlyGrossRevenue,
+      monthlyVariableCost,
+      monthlyTotalExpenses,
+      monthlyNetProfit,
+      monthlyNetProfitMarginPct,
+      annualNetProfitRunRate,
+      monthlyMinBidProfit,
+      monthlyMinBidRevenue,
+      monthlyMedBidProfit,
+      monthlyMedBidRevenue,
+      monthlyMaxBidProfit,
+      monthlyMaxBidRevenue,
+      scenario4MonthlyProfit,
+      scenario15MonthlyProfit,
+      scenario30MonthlyProfit
     };
   }, [
     emiMonthly,
@@ -220,6 +264,11 @@ function LogisticsTripCostCalculator({
 \u2022 \u{1F7E2} *MINIMUM BID (Floor / Backhaul):* ${inr(calc.minBidAmount)} (\u20B9${calc.minBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.minBidMarginPct}%)
 \u2022 \u{1F535} *MEDIUM BID (Standard Target):* ${inr(calc.medBidAmount)} (\u20B9${calc.medBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.medBidMarginPct}%)
 \u2022 \u{1F7E3} *MAXIMUM BID (Peak / Urgent):* ${inr(calc.maxBidAmount)} (\u20B9${calc.maxBidRatePerKm.toFixed(2)}/KM \u2022 +${calc.maxBidMarginPct}%)
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+\u{1F4B0} *MONTHLY FLEET PROFIT INTEL (${calc.effectiveMonthlyTrips} Trips/Mo):*
+\u2022 *Monthly Net Profit:* +${inr(calc.monthlyNetProfit)} / month
+\u2022 *Monthly Gross Freight:* ${inr(calc.monthlyGrossRevenue)} / month
+\u2022 *Annual Run-Rate Profit:* +${inr(calc.annualNetProfitRunRate)} / year
 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 \u2B50 *CURRENT QUOTE SELECTED:* ${inr(calc.recommendedQuote)}
 _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
@@ -311,9 +360,20 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                 ] }),
                 /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground line-clamp-1", children: scenario.desc })
               ] }),
-              /* @__PURE__ */ jsxs("div", { className: "pt-2 mt-2 border-t border-border/30 flex items-baseline justify-between", children: [
-                /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground", children: "Fixed Burden [A]:" }),
-                /* @__PURE__ */ jsx("span", { className: "text-xs font-bold font-mono text-primary", children: scenario.trips === "custom" ? inr(calc.allocatedFixedCost) : inr(calc.totalMonthlyFixed / scenario.trips) })
+              /* @__PURE__ */ jsxs("div", { className: "pt-2 mt-2 border-t border-border/30 space-y-1", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-baseline justify-between text-[11px]", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground", children: "Fixed Burden [A]:" }),
+                  /* @__PURE__ */ jsx("span", { className: "text-xs font-bold font-mono text-purple-400", children: scenario.trips === "custom" ? inr(calc.allocatedFixedCost) : inr(calc.totalMonthlyFixed / scenario.trips) })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "flex items-baseline justify-between text-[11px] pt-1 border-t border-border/20", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold text-foreground", children: "Monthly Profit:" }),
+                  /* @__PURE__ */ jsxs("span", { className: "text-xs font-black font-mono text-emerald-400", children: [
+                    "+",
+                    inr(
+                      scenario.trips === 4 ? calc.scenario4MonthlyProfit : scenario.trips === 15 ? calc.scenario15MonthlyProfit : scenario.trips === 30 ? calc.scenario30MonthlyProfit : calc.monthlyNetProfit
+                    )
+                  ] })
+                ] })
               ] })
             ]
           },
@@ -466,6 +526,70 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
           ] })
         ] })
       ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 sm:p-5 bg-gradient-to-r from-emerald-950/40 via-card to-emerald-950/25 border-2 border-emerald-500/40 rounded-2xl shadow-sm space-y-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-sm", children: "\u{1F4B0} MONTHLY PROFIT INTEL" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-sm font-black text-foreground", children: [
+              "Fleet Earnings Projection (",
+              calc.effectiveMonthlyTrips,
+              " Trips / Month)"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20", children: /* @__PURE__ */ jsx("span", { children: "In-Hand Net Cash Flow (All Fixed EMI + Driver Salaries + Running Costs Deducted)" }) })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-card/90 border-2 border-emerald-500/40 rounded-xl space-y-0.5 shadow-sm", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase text-emerald-400 tracking-wider", children: "MONTHLY NET PROFIT" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] font-bold text-emerald-400/80", children: [
+                "+",
+                calc.monthlyNetProfitMarginPct.toFixed(1),
+                "%"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("p", { className: "text-2xl sm:text-3xl font-black font-mono text-emerald-400", children: [
+              "+",
+              inr(calc.monthlyNetProfit)
+            ] }),
+            /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground font-medium", children: [
+              "+",
+              inr(calc.expectedProfit),
+              " / trip \xD7 ",
+              calc.effectiveMonthlyTrips,
+              " trips"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block", children: "MONTHLY GROSS FREIGHT" }),
+            /* @__PURE__ */ jsx("p", { className: "text-xl sm:text-2xl font-black font-mono text-foreground", children: inr(calc.monthlyGrossRevenue) }),
+            /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground font-medium", children: [
+              inr(calc.recommendedQuote),
+              " \xD7 ",
+              calc.effectiveMonthlyTrips,
+              " trips"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block", children: "TOTAL MONTHLY EXPENSES" }),
+            /* @__PURE__ */ jsx("p", { className: "text-xl sm:text-2xl font-black font-mono text-foreground", children: inr(calc.monthlyTotalExpenses) }),
+            /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground font-medium", children: [
+              inr(calc.totalMonthlyFixed),
+              " [A] + ",
+              inr(calc.monthlyVariableCost),
+              " [B]"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-card/90 border border-primary/30 rounded-xl space-y-0.5", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase text-primary tracking-wider block", children: "ANNUAL PROFIT RUN-RATE" }),
+            /* @__PURE__ */ jsxs("p", { className: "text-xl sm:text-2xl font-black font-mono text-primary", children: [
+              "+",
+              inr(calc.annualNetProfitRunRate)
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-[11px] text-muted-foreground font-medium", children: "Full-year net earnings forecast" })
+          ] })
+        ] })
+      ] }),
       /* @__PURE__ */ jsxs("div", { className: "p-4 bg-card/60 border border-border/50 rounded-2xl space-y-2.5", children: [
         /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs", children: [
           /* @__PURE__ */ jsxs("span", { className: "font-bold text-foreground flex items-center gap-1.5", children: [
@@ -535,11 +659,16 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                   ] })
                 ] }),
                 /* @__PURE__ */ jsxs("div", { children: [
-                  "Net Profit: ",
+                  "Trip Profit: ",
                   /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
                     "+",
                     inr(calc.minBidProfit)
                   ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "text-amber-400 font-bold", children: [
+                  "Monthly Profit: +",
+                  inr(calc.monthlyMinBidProfit),
+                  " / mo"
                 ] })
               ] }),
               /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Floor pricing for return loads, empty backhauls, or highly contested tenders. Covers all costs with a safety buffer." })
@@ -578,11 +707,16 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                   ] })
                 ] }),
                 /* @__PURE__ */ jsxs("div", { children: [
-                  "Net Profit: ",
+                  "Trip Profit: ",
                   /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
                     "+",
                     inr(calc.medBidProfit)
                   ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "text-blue-400 font-bold", children: [
+                  "Monthly Profit: +",
+                  inr(calc.monthlyMedBidProfit),
+                  " / mo"
                 ] })
               ] }),
               /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Standard market rate for regular contracts and dedicated trips. Generates solid enterprise profit while staying competitive." })
@@ -621,11 +755,16 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                   ] })
                 ] }),
                 /* @__PURE__ */ jsxs("div", { children: [
-                  "Net Profit: ",
+                  "Trip Profit: ",
                   /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
                     "+",
                     inr(calc.maxBidProfit)
                   ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { className: "text-purple-400 font-bold", children: [
+                  "Monthly Profit: +",
+                  inr(calc.monthlyMaxBidProfit),
+                  " / mo"
                 ] })
               ] }),
               /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Premium quotation for urgent express dispatches, festive peak seasons, fragile freight, or difficult terrain routes." })
