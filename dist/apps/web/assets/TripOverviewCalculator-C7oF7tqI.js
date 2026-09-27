@@ -19,6 +19,7 @@ function calcOrrToll(o,d,v="bus_2axle",t="single"){
   return{singleFare:s,returnFare24h:r,selectedFare:t==="return24h"?r:s,savings:sav,origin:ORR_IC[oi],destination:ORR_IC[di]};
 }
 
+const jsx = e.jsx, jsxs = e.jsxs;
 function LogisticsTripCostCalculator({
   initialDistance = 650,
   initialMileage = 4.5,
@@ -228,406 +229,979 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
   const handlePrint = () => {
     window.print();
   };
-  return /* @__PURE__ */ e.jsx("div", { className: "space-y-6" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 sm:p-5 bg-card border border-border/80 rounded-3xl shadow-sm space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u26A1 OPERATIONAL FREQUENCY SCENARIOS")), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground mt-0.5" }, "How many trips does this truck complete per month?"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground" }, "A 4-trip long haul must absorb 1/4th of the monthly EMI & salary, while a 30-trip local route absorbs 1/30th.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "Allocation Model:"), /* @__PURE__ */ e.jsx("div", { className: "p-0.5 bg-muted rounded-xl flex" }, /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setAllocationMode("trips_frequency"),
-      className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trips_frequency" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`
-    },
-    "By Trips / Mo"
-  ), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setAllocationMode("trip_days"),
-      className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trip_days" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`
-    },
-    "By Trip Days"
-  )))), allocationMode === "trips_frequency" ? /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1" }, [
-    {
-      trips: 4,
-      title: "4 Trips / Month",
-      type: "Long-Haul Line-Haul",
-      desc: "1,500-2,500 KM (Hyd-Del/Mum), ~7 days",
-      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30"
-    },
-    {
-      trips: 15,
-      title: "15 Trips / Month",
-      type: "Regional Inter-State",
-      desc: "500-800 KM (Hyd-Blr/Chn), ~2 days",
-      badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
-    },
-    {
-      trips: 30,
-      title: "30 Trips / Month",
-      type: "Daily Express / Local",
-      desc: "150-300 KM (Warangal/VJA), 1 day",
-      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-    },
-    {
-      trips: "custom",
-      title: "Custom Frequency",
-      type: "Flexible Allocation",
-      desc: "Specify exact monthly trips",
-      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
-    }
-  ].map((scenario) => {
-    const isSelected = scenario.trips === "custom" ? tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 : tripsPerMonth === scenario.trips;
-    return /* @__PURE__ */ e.jsx(
-      "button",
-      {
-        key: scenario.title,
-        type: "button",
-        onClick: () => {
-          if (scenario.trips !== "custom") setTripsPerMonth(scenario.trips);
-          else if (tripsPerMonth === 4 || tripsPerMonth === 15 || tripsPerMonth === 30) {
-            setTripsPerMonth(10);
-          }
+  return /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+    /* @__PURE__ */ jsxs("div", { className: "p-4 sm:p-5 bg-card border border-border/80 rounded-3xl shadow-sm space-y-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5", children: /* @__PURE__ */ jsx("span", { children: "\u26A1 OPERATIONAL FREQUENCY SCENARIOS" }) }),
+          /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-foreground mt-0.5", children: "How many trips does this truck complete per month?" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-muted-foreground", children: "A 4-trip long haul must absorb 1/4th of the monthly EMI & salary, while a 30-trip local route absorbs 1/30th." })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-semibold text-muted-foreground", children: "Allocation Model:" }),
+          /* @__PURE__ */ jsxs("div", { className: "p-0.5 bg-muted rounded-xl flex", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setAllocationMode("trips_frequency"),
+                className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trips_frequency" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+                children: "By Trips / Mo"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setAllocationMode("trip_days"),
+                className: `px-3 py-1 text-xs font-bold rounded-lg transition ${allocationMode === "trip_days" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+                children: "By Trip Days"
+              }
+            )
+          ] })
+        ] })
+      ] }),
+      allocationMode === "trips_frequency" ? /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1", children: [
+        {
+          trips: 4,
+          title: "4 Trips / Month",
+          type: "Long-Haul Line-Haul",
+          desc: "1,500-2,500 KM (Hyd-Del/Mum), ~7 days",
+          badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30"
         },
-        className: `p-3.5 rounded-2xl text-left border transition flex flex-col justify-between ${isSelected ? "bg-primary/10 border-primary shadow-sm ring-1 ring-primary" : "bg-card hover:bg-muted/30 border-border/60"}`
-      },
-      /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, scenario.title), /* @__PURE__ */ e.jsx("span", { className: `text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${scenario.badgeColor}` }, scenario.type)), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground line-clamp-1" }, scenario.desc)),
-      /* @__PURE__ */ e.jsx("div", { className: "pt-2 mt-2 border-t border-border/30 flex items-baseline justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "Fixed Burden [A]:"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold font-mono text-primary" }, scenario.trips === "custom" ? inr(calc.allocatedFixedCost) : inr(calc.totalMonthlyFixed / scenario.trips)))
-    );
-  })) : /* @__PURE__ */ e.jsx("div", { className: "p-3 bg-muted/20 border border-border/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-0.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, "Trip Duration Based Allocation"), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground" }, "Monthly fixed cost (", inr(calc.totalMonthlyFixed), ") is divided across ", workingDaysMonthly, " working days = ", inr(calc.totalMonthlyFixed / workingDaysMonthly), " / day.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "Trip Days:"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0.5",
-      max: "30",
-      step: "0.5",
-      value: tripDays,
-      onChange: (e2) => setTripDays(parseFloat(e2.target.value) || 1),
-      className: "w-20 h-9 px-2 text-center text-xs font-mono font-bold bg-background border border-border rounded-xl"
-    }
-  )), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-primary font-mono bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20" }, "[A] Burden: ", inr(calc.allocatedFixedCost)))), allocationMode === "trips_frequency" && tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 && /* @__PURE__ */ e.jsx("div", { className: "p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-amber-500" }, "Enter Custom Trips Completed Per Month:"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "1",
-      max: "100",
-      value: tripsPerMonth,
-      onChange: (e2) => setTripsPerMonth(Math.max(1, parseInt(e2.target.value) || 1)),
-      className: "w-24 h-8 px-2 text-center text-xs font-mono font-bold bg-background border border-amber-500/40 rounded-xl text-foreground"
-    }
-  ), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "trips/month")))), /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-gradient-to-br from-card via-card to-primary/[0.04] border-2 border-primary/30 rounded-3xl shadow-lg space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest bg-primary text-primary-foreground uppercase" }, "FORMULA: [A] + [B]"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-muted-foreground" }, "32ft Container / Commercial Fleet Cost Structure")), /* @__PURE__ */ e.jsx("h2", { className: "text-xl sm:text-2xl font-black font-heading text-foreground" }, "Total Trip Cost = ", inr(calc.allocatedFixedCost), " ", /* @__PURE__ */ e.jsx("span", { className: "text-primary font-bold text-sm" }, "[A]"), " + ", inr(calc.totalVariableCost), " ", /* @__PURE__ */ e.jsx("span", { className: "text-emerald-500 font-bold text-sm" }, "[B]"))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handleCopyWhatsAppQuote,
-      className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition active:scale-95"
-    },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F4CB} Copy WhatsApp Quote")
-  ), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handlePrint,
-      className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border/60 transition"
-    },
-    "\u{1F5A8}\uFE0F Print"
-  ), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handleReset,
-      className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50 transition",
-      title: "Reset to 32ft commercial standards"
-    },
-    "\u21BA Reset"
-  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "TOTAL NET TRIP COST"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-foreground" }, inr(calc.totalTripCost)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground font-medium" }, "\u20B9", calc.costPerKm.toFixed(2), " / KM over ", distanceKm, " KMs")), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-amber-500 block" }, "BREAK-EVEN FREIGHT RATE"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-amber-500" }, inr(calc.breakEvenRate)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-amber-500/80 font-medium" }, "Zero-profit booking threshold")), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block" }, "RECOMMENDED QUOTE"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400" }, "+", targetMarginPct, "%")), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-emerald-400" }, inr(calc.recommendedQuote)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-emerald-400/80 font-medium" }, "Rate: \u20B9", calc.quotePerKm.toFixed(2), "/KM \u2022 Net: +", inr(calc.expectedProfit))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "FUEL EXPENSE BURDEN"), /* @__PURE__ */ e.jsx("p", { className: "text-2xl font-black font-mono text-primary" }, inr(calc.fuelCost)), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground font-medium" }, calc.fuelLitres.toFixed(1), " L diesel (", Math.round(calc.fuelCost / (calc.totalTripCost || 1) * 100), "% of total trip cost)"))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-card/60 border border-border/50 rounded-2xl space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "Target Net Profit Margin:"), /* @__PURE__ */ e.jsx("span", { className: "text-emerald-500 font-extrabold font-mono text-sm" }, targetMarginPct, "%")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1" }, [10, 15, 20, 25].map((pct) => /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      key: pct,
-      type: "button",
-      onClick: () => setTargetMarginPct(pct),
-      className: `px-2 py-0.5 text-[10px] font-bold rounded-lg border transition ${targetMarginPct === pct ? "bg-emerald-500 text-white border-emerald-500 shadow-sm" : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/40"}`
-    },
-    pct,
-    "%"
-  )))), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "range",
-      min: "0",
-      max: "35",
-      step: "1",
-      value: targetMarginPct,
-      onChange: (e2) => setTargetMarginPct(parseFloat(e2.target.value) || 0),
-      className: "w-full accent-emerald-500 cursor-pointer h-2 bg-muted rounded-lg"
-    }
-  )), /* @__PURE__ */ e.jsx("div", { className: "pt-3 border-t border-border/50 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30" }, "\u{1F3AF} BIDDING INTELLIGENCE"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-foreground" }, "Three Strategic Quotation Benchmarks")), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-muted-foreground" }, "Click any tier to auto-apply its margin to your quote")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-3.5" }, /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500/10 border-amber-500 shadow-md ring-1 ring-amber-500/30" : "bg-muted/20 border-amber-500/30 hover:border-amber-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30" }, "\u{1F7E2} Minimum Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-amber-500" }, "+", calc.minBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Floor / Backhaul / Tender"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.minBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.minBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.minBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Floor pricing for return loads, empty backhauls, or highly contested tenders. Covers all costs with a safety buffer.")), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setTargetMarginPct(calc.minBidMarginPct),
-      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500 text-white shadow-sm" : "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30"}`
-    },
-    targetMarginPct === calc.minBidMarginPct ? "\u2713 Active Bid Selected" : "Select Minimum Bid"
-  )), /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-500/10 border-blue-500 shadow-md ring-1 ring-blue-500/30" : "bg-muted/20 border-blue-500/30 hover:border-blue-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-blue-500/20 text-blue-400 border border-blue-500/30" }, "\u{1F535} Medium Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-blue-400" }, "+", calc.medBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Standard Commercial Target"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.medBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.medBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.medBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Standard market rate for regular contracts and dedicated trips. Generates solid enterprise profit while staying competitive.")), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setTargetMarginPct(calc.medBidMarginPct),
-      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-600 text-white shadow-sm" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"}`
-    },
-    targetMarginPct === calc.medBidMarginPct ? "\u2713 Active Bid Selected" : "Select Medium Bid"
-  )), /* @__PURE__ */ e.jsx("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-500/10 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-muted/20 border-purple-500/30 hover:border-purple-500/60"}` }, /* @__PURE__ */ e.jsx("div", { className: "space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-purple-500/20 text-purple-400 border border-purple-500/30" }, "\u{1F7E3} Maximum Bid"), /* @__PURE__ */ e.jsx("span", { className: "text-[11px] font-mono font-bold text-purple-400" }, "+", calc.maxBidMarginPct, "% Margin")), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground font-semibold" }, "Peak Demand / Urgent / Premium"), /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5" }, inr(calc.maxBidAmount))), /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium" }, /* @__PURE__ */ e.jsx("div", null, "Rate: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-foreground" }, "\u20B9", calc.maxBidRatePerKm.toFixed(2), "/KM")), /* @__PURE__ */ e.jsx("div", null, "Net Profit: ", /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400" }, "+", inr(calc.maxBidProfit)))), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40" }, "Premium quotation for urgent express dispatches, festive peak seasons, fragile freight, or difficult terrain routes.")), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setTargetMarginPct(calc.maxBidMarginPct),
-      className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-600 text-white shadow-sm" : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30"}`
-    },
-    targetMarginPct === calc.maxBidMarginPct ? "\u2713 Active Bid Selected" : "Select Maximum Bid"
-  ))), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 bg-card/80 border border-border/60 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block" }, "CLIENT OFFER STRESS TEST"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold text-foreground" }, "Client's Proposed Freight:"), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-2.5 top-1.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: clientOfferRevenue,
-      onChange: (e2) => setClientOfferRevenue(parseFloat(e2.target.value) || 0),
-      className: "w-32 h-7 pl-6 pr-2 text-xs font-mono font-bold bg-background border border-border rounded-lg text-foreground",
-      placeholder: "Enter offer"
-    }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Margin on Offer:"), /* @__PURE__ */ e.jsx("span", { className: `text-xs font-mono font-black ${calc.clientNetProfit >= 0 ? "text-emerald-400" : "text-rose-500"}` }, calc.clientMarginPct.toFixed(1), "% (", calc.clientNetProfit >= 0 ? `+${inr(calc.clientNetProfit)}` : `-${inr(Math.abs(calc.clientNetProfit))}`, ")")), /* @__PURE__ */ e.jsx("div", { className: `px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${calc.clientOffer >= calc.maxBidAmount ? "bg-purple-500/10 text-purple-400 border-purple-500/30" : calc.clientOffer >= calc.medBidAmount ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : calc.clientOffer >= calc.minBidAmount ? "bg-amber-500/10 text-amber-400 border-amber-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30"}` }, calc.clientOffer >= calc.maxBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E3} Premium Win"), calc.clientOffer >= calc.medBidAmount && calc.clientOffer < calc.maxBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E2} Highly Profitable"), calc.clientOffer >= calc.minBidAmount && calc.clientOffer < calc.medBidAmount && /* @__PURE__ */ e.jsx("span", null, "\u{1F7E1} Acceptable Backhaul"), calc.clientOffer < calc.minBidAmount && calc.clientOffer >= calc.breakEvenRate && /* @__PURE__ */ e.jsx("span", null, "\u26A0\uFE0F Zero Profit Buffer"), calc.clientOffer < calc.breakEvenRate && /* @__PURE__ */ e.jsx("span", null, "\u{1F534} Direct Loss (Reject)")))))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" }, /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/50 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20" }, /* @__PURE__ */ e.jsx(Xe, { className: "w-5 h-5" })), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-purple-400 block" }, "PART [A]"), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground" }, "Fixed Fleet Overhead (Monthly Base)"))), /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Monthly Pool:"), /* @__PURE__ */ e.jsx("span", { className: "text-sm font-black font-mono text-purple-400" }, inr(calc.totalMonthlyFixed)))), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground leading-relaxed" }, "Expenses that remain constant regardless of running KMs. These are divided by your expected trip frequency to calculate the fixed overhead this trip must absorb."), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Vehicle EMI / Loan"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(emiMonthly), "/mo")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: emiMonthly,
-      onChange: (e2) => setEmiMonthly(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Driver Monthly Salary"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(driverSalaryMonthly), "/mo")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: driverSalaryMonthly,
-      onChange: (e2) => setDriverSalaryMonthly(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Annual Comprehensive Insurance"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.insuranceMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "1000",
-      value: insuranceAnnual,
-      onChange: (e2) => setInsuranceAnnual(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Road Tax (Annual Equivalent)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.roadTaxMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: roadTaxAnnual,
-      onChange: (e2) => setRoadTaxAnnual(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "National Permits & Fitness"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.permitsMonthly), "/mo)")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "500",
-      value: permitsAnnual,
-      onChange: (e2) => setPermitsAnnual(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Working Days Per Month"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "Default 25 days")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "1",
-      max: "31",
-      value: workingDaysMonthly,
-      onChange: (e2) => setWorkingDaysMonthly(parseInt(e2.target.value) || 25),
-      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
-    }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl space-y-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("span", { className: "font-semibold text-foreground" }, "Allocated Fixed Cost For This Trip [A]:"), /* @__PURE__ */ e.jsx("span", { className: "text-base font-black font-mono text-purple-400" }, inr(calc.allocatedFixedCost))), /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground leading-relaxed" }, "Calculation: Total monthly fixed overhead of ", /* @__PURE__ */ e.jsx("strong", null, inr(calc.totalMonthlyFixed)), " divided by", " ", /* @__PURE__ */ e.jsx("strong", null, allocationMode === "trips_frequency" ? `${tripsPerMonth} trips/month` : `${workingDaysMonthly} working days \xD7 ${tripDays} trip days`), " ", "= ", /* @__PURE__ */ e.jsx("strong", null, inr(calc.allocatedFixedCost)), " (\u20B9", calc.fixedCostPerKm.toFixed(2), "/KM)."))), /* @__PURE__ */ e.jsx("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/50 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" }, /* @__PURE__ */ e.jsx(Ge, { className: "w-5 h-5" })), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-emerald-400 block" }, "PART [B]"), /* @__PURE__ */ e.jsx("h3", { className: "text-base font-bold text-foreground" }, "Variable Trip-Specific Costs"))), /* @__PURE__ */ e.jsx("div", { className: "text-right" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block" }, "Total Variable:"), /* @__PURE__ */ e.jsx("span", { className: "text-sm font-black font-mono text-emerald-400" }, inr(calc.totalVariableCost)))), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground leading-relaxed" }, "Direct operational expenses incurred solely for this journey (Diesel, Fastag tolls, Tyre and Maintenance wear per KM, Batta, and Loading)."), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5 sm:col-span-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs" }, /* @__PURE__ */ e.jsx("label", { className: "font-semibold text-foreground" }, "Trip Distance (KM)"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setDistanceKm((prev) => Math.round(prev * 2)),
-      className: "text-[10px] px-2 py-0.5 bg-muted rounded border border-border hover:bg-muted/80 text-muted-foreground",
-      title: "Convert to Round Trip"
-    },
-    "\u21C4 2-Way Round Trip"
-  ), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-black text-sm" }, distanceKm, " KM"))), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "10",
-      max: "5000",
-      value: distanceKm,
-      onChange: (e2) => setDistanceKm(Math.max(0, parseFloat(e2.target.value) || 0)),
-      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Vehicle Mileage (KM/L)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, mileageKmpl, " KMPL")), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "1.0",
-      max: "15.0",
-      step: "0.1",
-      value: mileageKmpl,
-      onChange: (e2) => setMileageKmpl(parseFloat(e2.target.value) || 4.5),
-      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Diesel Price (\u20B9/Litre)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, "\u20B9", fuelPricePerLitre, "/L")), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "50",
-      max: "150",
-      step: "0.5",
-      value: fuelPricePerLitre,
-      onChange: (e2) => setFuelPricePerLitre(parseFloat(e2.target.value) || 92.5),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Highway Toll Charges (\u20B9)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(tollCost))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "100",
-      value: tollCost,
-      onChange: (e2) => setTollCost(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Driver Batta / Allowance"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(driverBattaPerTrip))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "100",
-      value: driverBattaPerTrip,
-      onChange: (e2) => setDriverBattaPerTrip(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Tyre Wear Cost (\u20B9/KM)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.tyreCost), ")")), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      max: "10",
-      step: "0.1",
-      value: tyreWearPerKm,
-      onChange: (e2) => setTyreWearPerKm(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Maintenance / Servicing (\u20B9/KM)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground" }, "(", inr(calc.maintCost), ")")), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      max: "10",
-      step: "0.1",
-      value: maintenancePerKm,
-      onChange: (e2) => setMaintenancePerKm(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5 sm:col-span-2" }, /* @__PURE__ */ e.jsx("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between" }, /* @__PURE__ */ e.jsx("span", null, "Loading / Unloading / Hamali Charges (Fixed per trip)"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-foreground font-bold" }, inr(loadingUnloadingCost))), /* @__PURE__ */ e.jsx("div", { className: "relative" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold" }, "\u20B9"), /* @__PURE__ */ e.jsx(
-    "input",
-    {
-      type: "number",
-      min: "0",
-      step: "100",
-      value: loadingUnloadingCost,
-      onChange: (e2) => setLoadingUnloadingCost(parseFloat(e2.target.value) || 0),
-      className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
-    }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "p-3.5 bg-slate-950/70 border border-border/80 rounded-2xl space-y-3 shadow-inner" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-border/40 pb-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded" }, "ORR"), /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200" }, "Hyderabad ORR Toll Calculator")), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400 font-medium" }, "2024-25 Matrix")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-5 gap-2 items-center" }, /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1" }, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] font-bold text-slate-400" }, "Origin"), /* @__PURE__ */ e.jsx(
-    "select",
-    {
-      value: orrOrigin,
-      onChange: (e2) => setOrrOrigin(e2.target.value),
-      className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary"
-    },
-    ORR_IC.map((ic) => /* @__PURE__ */ e.jsx("option", { key: `orig-${ic.id}`, value: ic.id, className: "bg-slate-900 text-white" }, "IC ", ic.code, " - ", ic.name))
-  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-1 flex justify-center pt-2 sm:pt-4" }, /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handleSwapOrr,
-      title: "Swap Origin & Destination",
-      className: "p-1.5 rounded-lg bg-muted/30 hover:bg-muted border border-border/60 text-slate-300 hover:text-white transition active:scale-95"
-    },
-    "\u21C4"
-  )), /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1" }, /* @__PURE__ */ e.jsx("label", { className: "text-[10px] font-bold text-slate-400" }, "Destination"), /* @__PURE__ */ e.jsx(
-    "select",
-    {
-      value: orrDestination,
-      onChange: (e2) => setOrrDestination(e2.target.value),
-      className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary"
-    },
-    ORR_IC.map((ic) => /* @__PURE__ */ e.jsx("option", { key: `dest-${ic.id}`, value: ic.id, className: "bg-slate-900 text-white" }, "IC ", ic.code, " - ", ic.name))
-  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 gap-2" }, /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setOrrTripType("single"),
-      className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "single" ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`
-    },
-    /* @__PURE__ */ e.jsx("span", null, "1-Way Single: \u20B9", orrRes.singleFare)
-  ), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => setOrrTripType("return24h"),
-      className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "return24h" ? "bg-emerald-600 text-white shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`
-    },
-    /* @__PURE__ */ e.jsx("span", null, "2-Way 24h: \u20B9", orrRes.returnFare24h)
-  )), /* @__PURE__ */ e.jsx("div", { className: "pt-2 border-t border-border/40 flex items-center justify-between" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-white font-mono" }, "Calculated Toll: \u20B9", orrRes.selectedFare), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: handleApplyOrrToll,
-      className: "px-3 py-1 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow-sm transition"
-    },
-    orrApplied ? "\u2713 Applied to Tolls" : "Apply to Tolls \u2192"
-  ))))), /* @__PURE__ */ e.jsx("div", { className: "p-5 bg-card border border-border/70 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("h4", { className: "text-sm font-bold text-foreground" }, "Save or Export This Trip Simulation"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-muted-foreground mt-0.5" }, "Store this [A + B] breakdown to track route margins and client bidding trends over time.")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2.5" }, onOpenReports && /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: onOpenReports,
-      className: "px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border/60 rounded-xl text-xs font-bold transition"
-    },
-    "Saved Reports (",
-    savedReportsCount,
-    ")"
-  ), /* @__PURE__ */ e.jsx(
-    "button",
-    {
-      type: "button",
-      onClick: () => onSaveToDatabase && onSaveToDatabase({
-        distance: distanceKm,
-        mileage: mileageKmpl,
-        fuel_price: fuelPricePerLitre,
-        tolls: tollCost,
-        total_fixed_allocated: calc.allocatedFixedCost,
-        total_variable: calc.totalVariableCost,
-        total_expenses: calc.totalTripCost,
-        break_even_rate: calc.breakEvenRate,
-        recommended_quote: calc.recommendedQuote,
-        target_margin_pct: targetMarginPct,
-        trips_per_month: tripsPerMonth
-      }),
-      className: "px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
-    },
-    /* @__PURE__ */ e.jsx(U, { className: "w-4 h-4" }),
-    /* @__PURE__ */ e.jsx("span", null, "Save Calculation")
-  ))));
+        {
+          trips: 15,
+          title: "15 Trips / Month",
+          type: "Regional Inter-State",
+          desc: "500-800 KM (Hyd-Blr/Chn), ~2 days",
+          badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/30"
+        },
+        {
+          trips: 30,
+          title: "30 Trips / Month",
+          type: "Daily Express / Local",
+          desc: "150-300 KM (Warangal/VJA), 1 day",
+          badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+        },
+        {
+          trips: "custom",
+          title: "Custom Frequency",
+          type: "Flexible Allocation",
+          desc: "Specify exact monthly trips",
+          badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30"
+        }
+      ].map((scenario) => {
+        const isSelected = scenario.trips === "custom" ? tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 : tripsPerMonth === scenario.trips;
+        return /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              if (scenario.trips !== "custom") setTripsPerMonth(scenario.trips);
+              else if (tripsPerMonth === 4 || tripsPerMonth === 15 || tripsPerMonth === 30) {
+                setTripsPerMonth(10);
+              }
+            },
+            className: `p-3.5 rounded-2xl text-left border transition flex flex-col justify-between ${isSelected ? "bg-primary/10 border-primary shadow-sm ring-1 ring-primary" : "bg-card hover:bg-muted/30 border-border/60"}`,
+            children: [
+              /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                  /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground", children: scenario.title }),
+                  /* @__PURE__ */ jsx("span", { className: `text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${scenario.badgeColor}`, children: scenario.type })
+                ] }),
+                /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground line-clamp-1", children: scenario.desc })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "pt-2 mt-2 border-t border-border/30 flex items-baseline justify-between", children: [
+                /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground", children: "Fixed Burden [A]:" }),
+                /* @__PURE__ */ jsx("span", { className: "text-xs font-bold font-mono text-primary", children: scenario.trips === "custom" ? inr(calc.allocatedFixedCost) : inr(calc.totalMonthlyFixed / scenario.trips) })
+              ] })
+            ]
+          },
+          scenario.title
+        );
+      }) }) : /* @__PURE__ */ jsxs("div", { className: "p-3 bg-muted/20 border border-border/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-0.5", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground", children: "Trip Duration Based Allocation" }),
+          /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground", children: [
+            "Monthly fixed cost (",
+            inr(calc.totalMonthlyFixed),
+            ") is divided across ",
+            workingDaysMonthly,
+            " working days = ",
+            inr(calc.totalMonthlyFixed / workingDaysMonthly),
+            " / day."
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-xs font-semibold text-muted-foreground", children: "Trip Days:" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "0.5",
+                max: "30",
+                step: "0.5",
+                value: tripDays,
+                onChange: (e) => setTripDays(parseFloat(e.target.value) || 1),
+                className: "w-20 h-9 px-2 text-center text-xs font-mono font-bold bg-background border border-border rounded-xl"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-primary font-mono bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20", children: [
+            "[A] Burden: ",
+            inr(calc.allocatedFixedCost)
+          ] })
+        ] })
+      ] }),
+      allocationMode === "trips_frequency" && tripsPerMonth !== 4 && tripsPerMonth !== 15 && tripsPerMonth !== 30 && /* @__PURE__ */ jsxs("div", { className: "p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-amber-500", children: "Enter Custom Trips Completed Per Month:" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "number",
+              min: "1",
+              max: "100",
+              value: tripsPerMonth,
+              onChange: (e) => setTripsPerMonth(Math.max(1, parseInt(e.target.value) || 1)),
+              className: "w-24 h-8 px-2 text-center text-xs font-mono font-bold bg-background border border-amber-500/40 rounded-xl text-foreground"
+            }
+          ),
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-semibold text-muted-foreground", children: "trips/month" })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "p-5 sm:p-6 bg-gradient-to-br from-card via-card to-primary/[0.04] border-2 border-primary/30 rounded-3xl shadow-lg space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-widest bg-primary text-primary-foreground uppercase", children: "FORMULA: [A] + [B]" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs font-semibold text-muted-foreground", children: "32ft Container / Commercial Fleet Cost Structure" })
+          ] }),
+          /* @__PURE__ */ jsxs("h2", { className: "text-xl sm:text-2xl font-black font-heading text-foreground", children: [
+            "Total Trip Cost = ",
+            inr(calc.allocatedFixedCost),
+            " ",
+            /* @__PURE__ */ jsx("span", { className: "text-primary font-bold text-sm", children: "[A]" }),
+            " + ",
+            inr(calc.totalVariableCost),
+            " ",
+            /* @__PURE__ */ jsx("span", { className: "text-emerald-500 font-bold text-sm", children: "[B]" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap", children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: handleCopyWhatsAppQuote,
+              className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5 transition active:scale-95",
+              children: /* @__PURE__ */ jsx("span", { children: "\u{1F4CB} Copy WhatsApp Quote" })
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: handlePrint,
+              className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted hover:bg-muted/80 text-foreground border border-border/60 transition",
+              children: "\u{1F5A8}\uFE0F Print"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: handleReset,
+              className: "px-3 py-2 rounded-xl text-xs font-semibold bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50 transition",
+              title: "Reset to 32ft commercial standards",
+              children: "\u21BA Reset"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4", children: [
+        /* @__PURE__ */ jsxs("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block", children: "TOTAL NET TRIP COST" }),
+          /* @__PURE__ */ jsx("p", { className: "text-2xl font-black font-mono text-foreground", children: inr(calc.totalTripCost) }),
+          /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground font-medium", children: [
+            "\u20B9",
+            calc.costPerKm.toFixed(2),
+            " / KM over ",
+            distanceKm,
+            " KMs"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-amber-500 block", children: "BREAK-EVEN FREIGHT RATE" }),
+          /* @__PURE__ */ jsx("p", { className: "text-2xl font-black font-mono text-amber-500", children: inr(calc.breakEvenRate) }),
+          /* @__PURE__ */ jsx("p", { className: "text-[11px] text-amber-500/80 font-medium", children: "Zero-profit booking threshold" })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-4 bg-emerald-500/10 border-2 border-emerald-500/40 rounded-2xl space-y-1", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 block", children: "RECOMMENDED QUOTE" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400", children: [
+              "+",
+              targetMarginPct,
+              "%"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-2xl font-black font-mono text-emerald-400", children: inr(calc.recommendedQuote) }),
+          /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-emerald-400/80 font-medium", children: [
+            "Rate: \u20B9",
+            calc.quotePerKm.toFixed(2),
+            "/KM \u2022 Net: +",
+            inr(calc.expectedProfit)
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-4 bg-muted/30 border border-border/60 rounded-2xl space-y-1", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block", children: "FUEL EXPENSE BURDEN" }),
+          /* @__PURE__ */ jsx("p", { className: "text-2xl font-black font-mono text-primary", children: inr(calc.fuelCost) }),
+          /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground font-medium", children: [
+            calc.fuelLitres.toFixed(1),
+            " L diesel (",
+            Math.round(calc.fuelCost / (calc.totalTripCost || 1) * 100),
+            "% of total trip cost)"
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 bg-card/60 border border-border/50 rounded-2xl space-y-2.5", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs", children: [
+          /* @__PURE__ */ jsxs("span", { className: "font-bold text-foreground flex items-center gap-1.5", children: [
+            /* @__PURE__ */ jsx("span", { children: "Target Net Profit Margin:" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-emerald-500 font-extrabold font-mono text-sm", children: [
+              targetMarginPct,
+              "%"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex items-center gap-1", children: [10, 15, 20, 25].map((pct) => /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setTargetMarginPct(pct),
+              className: `px-2 py-0.5 text-[10px] font-bold rounded-lg border transition ${targetMarginPct === pct ? "bg-emerald-500 text-white border-emerald-500 shadow-sm" : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/40"}`,
+              children: [
+                pct,
+                "%"
+              ]
+            },
+            pct
+          )) })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "range",
+            min: "0",
+            max: "35",
+            step: "1",
+            value: targetMarginPct,
+            onChange: (e) => setTargetMarginPct(parseFloat(e.target.value) || 0),
+            className: "w-full accent-emerald-500 cursor-pointer h-2 bg-muted rounded-lg"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "pt-3 border-t border-border/50 space-y-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-1", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary border border-primary/30", children: "\u{1F3AF} BIDDING INTELLIGENCE" }),
+            /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-foreground", children: "Three Strategic Quotation Benchmarks" })
+          ] }),
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] text-muted-foreground", children: "Click any tier to auto-apply its margin to your quote" })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-3.5", children: [
+          /* @__PURE__ */ jsxs("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500/10 border-amber-500 shadow-md ring-1 ring-amber-500/30" : "bg-muted/20 border-amber-500/30 hover:border-amber-500/60"}`, children: [
+            /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-amber-500/20 text-amber-500 border border-amber-500/30", children: "\u{1F7E2} Minimum Bid" }),
+                /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-mono font-bold text-amber-500", children: [
+                  "+",
+                  calc.minBidMarginPct,
+                  "% Margin"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("div", { className: "text-xs text-muted-foreground font-semibold", children: "Floor / Backhaul / Tender" }),
+                /* @__PURE__ */ jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5", children: inr(calc.minBidAmount) })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Rate: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-foreground", children: [
+                    "\u20B9",
+                    calc.minBidRatePerKm.toFixed(2),
+                    "/KM"
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Net Profit: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
+                    "+",
+                    inr(calc.minBidProfit)
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Floor pricing for return loads, empty backhauls, or highly contested tenders. Covers all costs with a safety buffer." })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setTargetMarginPct(calc.minBidMarginPct),
+                className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.minBidMarginPct ? "bg-amber-500 text-white shadow-sm" : "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30"}`,
+                children: targetMarginPct === calc.minBidMarginPct ? "\u2713 Active Bid Selected" : "Select Minimum Bid"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-500/10 border-blue-500 shadow-md ring-1 ring-blue-500/30" : "bg-muted/20 border-blue-500/30 hover:border-blue-500/60"}`, children: [
+            /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-blue-500/20 text-blue-400 border border-blue-500/30", children: "\u{1F535} Medium Bid" }),
+                /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-mono font-bold text-blue-400", children: [
+                  "+",
+                  calc.medBidMarginPct,
+                  "% Margin"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("div", { className: "text-xs text-muted-foreground font-semibold", children: "Standard Commercial Target" }),
+                /* @__PURE__ */ jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5", children: inr(calc.medBidAmount) })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Rate: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-foreground", children: [
+                    "\u20B9",
+                    calc.medBidRatePerKm.toFixed(2),
+                    "/KM"
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Net Profit: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
+                    "+",
+                    inr(calc.medBidProfit)
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Standard market rate for regular contracts and dedicated trips. Generates solid enterprise profit while staying competitive." })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setTargetMarginPct(calc.medBidMarginPct),
+                className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.medBidMarginPct ? "bg-blue-600 text-white shadow-sm" : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30"}`,
+                children: targetMarginPct === calc.medBidMarginPct ? "\u2713 Active Bid Selected" : "Select Medium Bid"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: `p-4 rounded-2xl border-2 transition relative flex flex-col justify-between ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-500/10 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-muted/20 border-purple-500/30 hover:border-purple-500/60"}`, children: [
+            /* @__PURE__ */ jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide bg-purple-500/20 text-purple-400 border border-purple-500/30", children: "\u{1F7E3} Maximum Bid" }),
+                /* @__PURE__ */ jsxs("span", { className: "text-[11px] font-mono font-bold text-purple-400", children: [
+                  "+",
+                  calc.maxBidMarginPct,
+                  "% Margin"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("div", { className: "text-xs text-muted-foreground font-semibold", children: "Peak Demand / Urgent / Premium" }),
+                /* @__PURE__ */ jsx("div", { className: "text-2xl font-black font-mono text-foreground mt-0.5", children: inr(calc.maxBidAmount) })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "text-[11px] text-muted-foreground space-y-0.5 font-medium", children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Rate: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-foreground", children: [
+                    "\u20B9",
+                    calc.maxBidRatePerKm.toFixed(2),
+                    "/KM"
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  "Net Profit: ",
+                  /* @__PURE__ */ jsxs("span", { className: "font-bold text-emerald-400", children: [
+                    "+",
+                    inr(calc.maxBidProfit)
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40", children: "Premium quotation for urgent express dispatches, festive peak seasons, fragile freight, or difficult terrain routes." })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setTargetMarginPct(calc.maxBidMarginPct),
+                className: `mt-3 w-full py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 ${targetMarginPct === calc.maxBidMarginPct ? "bg-purple-600 text-white shadow-sm" : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30"}`,
+                children: targetMarginPct === calc.maxBidMarginPct ? "\u2713 Active Bid Selected" : "Select Maximum Bid"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-card/80 border border-border/60 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground block", children: "CLIENT OFFER STRESS TEST" }),
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-semibold text-foreground", children: "Client's Proposed Freight:" }),
+              /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+                /* @__PURE__ */ jsx("span", { className: "absolute left-2.5 top-1.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+                /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    type: "number",
+                    min: "0",
+                    step: "500",
+                    value: clientOfferRevenue,
+                    onChange: (e) => setClientOfferRevenue(parseFloat(e.target.value) || 0),
+                    className: "w-32 h-7 pl-6 pr-2 text-xs font-mono font-bold bg-background border border-border rounded-lg text-foreground",
+                    placeholder: "Enter offer"
+                  }
+                )
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "text-right", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground block", children: "Margin on Offer:" }),
+              /* @__PURE__ */ jsxs("span", { className: `text-xs font-mono font-black ${calc.clientNetProfit >= 0 ? "text-emerald-400" : "text-rose-500"}`, children: [
+                calc.clientMarginPct.toFixed(1),
+                "% (",
+                calc.clientNetProfit >= 0 ? `+${inr(calc.clientNetProfit)}` : `-${inr(Math.abs(calc.clientNetProfit))}`,
+                ")"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: `px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center gap-1.5 ${calc.clientOffer >= calc.maxBidAmount ? "bg-purple-500/10 text-purple-400 border-purple-500/30" : calc.clientOffer >= calc.medBidAmount ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : calc.clientOffer >= calc.minBidAmount ? "bg-amber-500/10 text-amber-400 border-amber-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30"}`, children: [
+              calc.clientOffer >= calc.maxBidAmount && /* @__PURE__ */ jsx("span", { children: "\u{1F7E3} Premium Win" }),
+              calc.clientOffer >= calc.medBidAmount && calc.clientOffer < calc.maxBidAmount && /* @__PURE__ */ jsx("span", { children: "\u{1F7E2} Highly Profitable" }),
+              calc.clientOffer >= calc.minBidAmount && calc.clientOffer < calc.medBidAmount && /* @__PURE__ */ jsx("span", { children: "\u{1F7E1} Acceptable Backhaul" }),
+              calc.clientOffer < calc.minBidAmount && calc.clientOffer >= calc.breakEvenRate && /* @__PURE__ */ jsx("span", { children: "\u26A0\uFE0F Zero Profit Buffer" }),
+              calc.clientOffer < calc.breakEvenRate && /* @__PURE__ */ jsx("span", { children: "\u{1F534} Direct Loss (Reject)" })
+            ] })
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-border/50 pb-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ jsx("div", { className: "p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20", children: /* @__PURE__ */ jsx(Xe, { className: "w-5 h-5" }) }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-purple-400 block", children: "PART [A]" }),
+              /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-foreground", children: "Fixed Fleet Overhead (Monthly Base)" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "text-right", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground block", children: "Monthly Pool:" }),
+            /* @__PURE__ */ jsx("span", { className: "text-sm font-black font-mono text-purple-400", children: inr(calc.totalMonthlyFixed) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-muted-foreground leading-relaxed", children: "Expenses that remain constant regardless of running KMs. These are divided by your expected trip frequency to calculate the fixed overhead this trip must absorb." }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Vehicle EMI / Loan" }),
+              /* @__PURE__ */ jsxs("span", { className: "font-mono text-foreground font-bold", children: [
+                inr(emiMonthly),
+                "/mo"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "500",
+                  value: emiMonthly,
+                  onChange: (e) => setEmiMonthly(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Driver Monthly Salary" }),
+              /* @__PURE__ */ jsxs("span", { className: "font-mono text-foreground font-bold", children: [
+                inr(driverSalaryMonthly),
+                "/mo"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "500",
+                  value: driverSalaryMonthly,
+                  onChange: (e) => setDriverSalaryMonthly(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Annual Comprehensive Insurance" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-muted-foreground", children: [
+                "(",
+                inr(calc.insuranceMonthly),
+                "/mo)"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "1000",
+                  value: insuranceAnnual,
+                  onChange: (e) => setInsuranceAnnual(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Road Tax (Annual Equivalent)" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-muted-foreground", children: [
+                "(",
+                inr(calc.roadTaxMonthly),
+                "/mo)"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "500",
+                  value: roadTaxAnnual,
+                  onChange: (e) => setRoadTaxAnnual(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "National Permits & Fitness" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-muted-foreground", children: [
+                "(",
+                inr(calc.permitsMonthly),
+                "/mo)"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "500",
+                  value: permitsAnnual,
+                  onChange: (e) => setPermitsAnnual(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Working Days Per Month" }),
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground", children: "Default 25 days" })
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "relative", children: /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "1",
+                max: "31",
+                value: workingDaysMonthly,
+                onChange: (e) => setWorkingDaysMonthly(parseInt(e.target.value) || 25),
+                className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-purple-500"
+              }
+            ) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-4 bg-purple-500/5 border border-purple-500/20 rounded-2xl space-y-2", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs", children: [
+            /* @__PURE__ */ jsx("span", { className: "font-semibold text-foreground", children: "Allocated Fixed Cost For This Trip [A]:" }),
+            /* @__PURE__ */ jsx("span", { className: "text-base font-black font-mono text-purple-400", children: inr(calc.allocatedFixedCost) })
+          ] }),
+          /* @__PURE__ */ jsxs("p", { className: "text-[11px] text-muted-foreground leading-relaxed", children: [
+            "Calculation: Total monthly fixed overhead of ",
+            /* @__PURE__ */ jsx("strong", { children: inr(calc.totalMonthlyFixed) }),
+            " divided by",
+            " ",
+            /* @__PURE__ */ jsx("strong", { children: allocationMode === "trips_frequency" ? `${tripsPerMonth} trips/month` : `${workingDaysMonthly} working days \xD7 ${tripDays} trip days` }),
+            " ",
+            "= ",
+            /* @__PURE__ */ jsx("strong", { children: inr(calc.allocatedFixedCost) }),
+            " (\u20B9",
+            calc.fixedCostPerKm.toFixed(2),
+            "/KM)."
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-5 sm:p-6 bg-card border border-border/70 rounded-3xl shadow-sm space-y-5", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-border/50 pb-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ jsx("div", { className: "p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", children: /* @__PURE__ */ jsx(Ge, { className: "w-5 h-5" }) }),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black uppercase tracking-wider text-emerald-400 block", children: "PART [B]" }),
+              /* @__PURE__ */ jsx("h3", { className: "text-base font-bold text-foreground", children: "Variable Trip-Specific Costs" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "text-right", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground block", children: "Total Variable:" }),
+            /* @__PURE__ */ jsx("span", { className: "text-sm font-black font-mono text-emerald-400", children: inr(calc.totalVariableCost) })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-muted-foreground leading-relaxed", children: "Direct operational expenses incurred solely for this journey (Diesel, Fastag tolls, Tyre and Maintenance wear per KM, Batta, and Loading)." }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5 sm:col-span-2", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs", children: [
+              /* @__PURE__ */ jsx("label", { className: "font-semibold text-foreground", children: "Trip Distance (KM)" }),
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => setDistanceKm((prev) => Math.round(prev * 2)),
+                    className: "text-[10px] px-2 py-0.5 bg-muted rounded border border-border hover:bg-muted/80 text-muted-foreground",
+                    title: "Convert to Round Trip",
+                    children: "\u21C4 2-Way Round Trip"
+                  }
+                ),
+                /* @__PURE__ */ jsxs("span", { className: "font-mono text-foreground font-black text-sm", children: [
+                  distanceKm,
+                  " KM"
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "10",
+                max: "5000",
+                value: distanceKm,
+                onChange: (e) => setDistanceKm(Math.max(0, parseFloat(e.target.value) || 0)),
+                className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Vehicle Mileage (KM/L)" }),
+              /* @__PURE__ */ jsxs("span", { className: "font-mono text-foreground font-bold", children: [
+                mileageKmpl,
+                " KMPL"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "1.0",
+                max: "15.0",
+                step: "0.1",
+                value: mileageKmpl,
+                onChange: (e) => setMileageKmpl(parseFloat(e.target.value) || 4.5),
+                className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Diesel Price (\u20B9/Litre)" }),
+              /* @__PURE__ */ jsxs("span", { className: "font-mono text-foreground font-bold", children: [
+                "\u20B9",
+                fuelPricePerLitre,
+                "/L"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "50",
+                  max: "150",
+                  step: "0.5",
+                  value: fuelPricePerLitre,
+                  onChange: (e) => setFuelPricePerLitre(parseFloat(e.target.value) || 92.5),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Highway Toll Charges (\u20B9)" }),
+              /* @__PURE__ */ jsx("span", { className: "font-mono text-foreground font-bold", children: inr(tollCost) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "100",
+                  value: tollCost,
+                  onChange: (e) => setTollCost(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Driver Batta / Allowance" }),
+              /* @__PURE__ */ jsx("span", { className: "font-mono text-foreground font-bold", children: inr(driverBattaPerTrip) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "100",
+                  value: driverBattaPerTrip,
+                  onChange: (e) => setDriverBattaPerTrip(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Tyre Wear Cost (\u20B9/KM)" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-muted-foreground", children: [
+                "(",
+                inr(calc.tyreCost),
+                ")"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "0",
+                max: "10",
+                step: "0.1",
+                value: tyreWearPerKm,
+                onChange: (e) => setTyreWearPerKm(parseFloat(e.target.value) || 0),
+                className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Maintenance / Servicing (\u20B9/KM)" }),
+              /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-muted-foreground", children: [
+                "(",
+                inr(calc.maintCost),
+                ")"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "number",
+                min: "0",
+                max: "10",
+                step: "0.1",
+                value: maintenancePerKm,
+                onChange: (e) => setMaintenancePerKm(parseFloat(e.target.value) || 0),
+                className: "w-full h-9 px-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5 sm:col-span-2", children: [
+            /* @__PURE__ */ jsxs("label", { className: "text-xs font-semibold text-muted-foreground flex justify-between", children: [
+              /* @__PURE__ */ jsx("span", { children: "Loading / Unloading / Hamali Charges (Fixed per trip)" }),
+              /* @__PURE__ */ jsx("span", { className: "font-mono text-foreground font-bold", children: inr(loadingUnloadingCost) })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "relative", children: [
+              /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-xs text-muted-foreground font-bold", children: "\u20B9" }),
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "number",
+                  min: "0",
+                  step: "100",
+                  value: loadingUnloadingCost,
+                  onChange: (e) => setLoadingUnloadingCost(parseFloat(e.target.value) || 0),
+                  className: "w-full h-9 pl-7 pr-3 text-xs font-mono font-bold bg-muted/30 border border-border/80 rounded-xl focus:border-emerald-500"
+                }
+              )
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "p-3.5 bg-slate-950/70 border border-border/80 rounded-2xl space-y-3 shadow-inner", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-border/40 pb-2", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded", children: "ORR" }),
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-200", children: "Hyderabad ORR Toll Calculator" })
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400 font-medium", children: "2024-25 Matrix" })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-5 gap-2 items-center", children: [
+            /* @__PURE__ */ jsxs("div", { className: "sm:col-span-2 space-y-1", children: [
+              /* @__PURE__ */ jsx("label", { className: "text-[10px] font-bold text-slate-400", children: "Origin" }),
+              /* @__PURE__ */ jsx(
+                "select",
+                {
+                  value: orrOrigin,
+                  onChange: (e) => setOrrOrigin(e.target.value),
+                  className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary",
+                  children: ORR_IC.map((ic) => /* @__PURE__ */ jsxs("option", { value: ic.id, className: "bg-slate-900 text-white", children: [
+                    "IC ",
+                    ic.code,
+                    " - ",
+                    ic.name
+                  ] }, `orig-${ic.id}`))
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "sm:col-span-1 flex justify-center pt-2 sm:pt-4", children: /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: handleSwapOrr,
+                title: "Swap Origin & Destination",
+                className: "p-1.5 rounded-lg bg-muted/30 hover:bg-muted border border-border/60 text-slate-300 hover:text-white transition active:scale-95",
+                children: "\u21C4"
+              }
+            ) }),
+            /* @__PURE__ */ jsxs("div", { className: "sm:col-span-2 space-y-1", children: [
+              /* @__PURE__ */ jsx("label", { className: "text-[10px] font-bold text-slate-400", children: "Destination" }),
+              /* @__PURE__ */ jsx(
+                "select",
+                {
+                  value: orrDestination,
+                  onChange: (e) => setOrrDestination(e.target.value),
+                  className: "w-full h-8 text-xs bg-muted/40 border border-border/80 rounded-lg px-2 text-white font-medium focus:outline-none focus:border-primary",
+                  children: ORR_IC.map((ic) => /* @__PURE__ */ jsxs("option", { value: ic.id, className: "bg-slate-900 text-white", children: [
+                    "IC ",
+                    ic.code,
+                    " - ",
+                    ic.name
+                  ] }, `dest-${ic.id}`))
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-2", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setOrrTripType("single"),
+                className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "single" ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`,
+                children: /* @__PURE__ */ jsxs("span", { children: [
+                  "1-Way Single: \u20B9",
+                  orrRes.singleFare
+                ] })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setOrrTripType("return24h"),
+                className: `py-1 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${orrTripType === "return24h" ? "bg-emerald-600 text-white shadow-sm" : "bg-muted/30 text-slate-400 border border-border/50"}`,
+                children: /* @__PURE__ */ jsxs("span", { children: [
+                  "2-Way 24h: \u20B9",
+                  orrRes.returnFare24h
+                ] })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "pt-2 border-t border-border/40 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxs("span", { className: "text-xs font-bold text-white font-mono", children: [
+              "Calculated Toll: \u20B9",
+              orrRes.selectedFare
+            ] }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: handleApplyOrrToll,
+                className: "px-3 py-1 rounded-lg text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white shadow-sm transition",
+                children: orrApplied ? "\u2713 Applied to Tolls" : "Apply to Tolls \u2192"
+              }
+            )
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "p-5 bg-card border border-border/70 rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4", children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("h4", { className: "text-sm font-bold text-foreground", children: "Save or Export This Trip Simulation" }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-muted-foreground mt-0.5", children: "Store this [A + B] breakdown to track route margins and client bidding trends over time." })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2.5", children: [
+        onOpenReports && /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: onOpenReports,
+            className: "px-3.5 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border/60 rounded-xl text-xs font-bold transition",
+            children: [
+              "Saved Reports (",
+              savedReportsCount,
+              ")"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => onSaveToDatabase && onSaveToDatabase({
+              distance: distanceKm,
+              mileage: mileageKmpl,
+              fuel_price: fuelPricePerLitre,
+              tolls: tollCost,
+              total_fixed_allocated: calc.allocatedFixedCost,
+              total_variable: calc.totalVariableCost,
+              total_expenses: calc.totalTripCost,
+              break_even_rate: calc.breakEvenRate,
+              recommended_quote: calc.recommendedQuote,
+              target_margin_pct: targetMarginPct,
+              trips_per_month: tripsPerMonth
+            }),
+            className: "px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5",
+            children: [
+              /* @__PURE__ */ jsx(U, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx("span", { children: "Save Calculation" })
+            ]
+          }
+        )
+      ] })
+    ] })
+  ] });
 }
+
 
 function vs(){const[b,A]=a.useState([1477]),[g,O]=a.useState([103.8]),[f,$]=a.useState([11.5]),[j,B]=a.useState([1860]),[orrOrigin,setOrrOrigin]=a.useState("1"),[orrDestination,setOrrDestination]=a.useState("16"),[orrVehicle,setOrrVehicle]=a.useState("bus_2axle"),[orrTripType,setOrrTripType]=a.useState("single"),[orrApplied,setOrrApplied]=a.useState(false),[N,q]=a.useState([1200]),[v,K]=a.useState([3]),[_,Z]=a.useState(0),[S,ee]=a.useState(0),[D,se]=a.useState(0),[y,te]=a.useState(15e3),[w,ae]=a.useState(1),[De,T]=a.useState(!1),[z,re]=a.useState(!1),[m,H]=a.useState({routeName:"",vehicleNumber:""}),[Te,Re]=a.useState([]),[Fe,Me]=a.useState([]),[le,Ee]=a.useState([]),[Le,ne]=a.useState(!1),[oe,W]=a.useState("reports"),[t,R]=a.useState(null),F=async()=>{ne(!0);try{const r=await(await fetch("/hcgi/api/trip-calculations/list")).json();r.success?Ee(r.calculations||[]):i.error(r.error||"Failed to fetch saved calculations")}catch(s){console.error(s),i.error("Failed to load saved calculations")}finally{ne(!1)}},Pe=async s=>{if(window.confirm("Are you sure you want to delete this saved calculation report?"))try{const u=await(await fetch(`/hcgi/api/trip-calculations/${s}`,{method:"DELETE"})).json();u.success?(i.success("Report deleted successfully"),F()):i.error(u.error||"Failed to delete report")}catch(r){console.error(r),i.error("Failed to delete report. Connection error.")}},de=s=>{A([s.distance||1477]),O([s.fuel_price||103.8]),$([s.mileage||11.5]),B([s.tolls||1860]),q([s.driver_expenses||1200]),K([s.tyre_depreciation_rate||3]),Z(s.vehicle_emi||0),ee(s.insurance||0),se(s.quarterly_tax||0),te(s.freight_revenue||15e3),ae(s.tds_rate!==void 0?s.tds_rate:1),W("calculator"),i.success(`Loaded parameters for Route: ${s.route_name}`)};a.useEffect(()=>{(async()=>{try{const[r,u]=await Promise.all([Se.collection("routes").getFullList({sort:"route_name",$autoCancel:!1}),Se.collection("trucks").getFullList({sort:"truck_number",$autoCancel:!1})]);Re(r),Me(u)}catch(r){console.error("Failed to load routes/trucks data:",r)}})(),F()},[]);const{fuelCost:Ie,tyreExpense:Ve,totalExpenses:ie,tdsAmount:Q,netProfit:o,profitMargin:h,chartData:ce}=a.useMemo(()=>{const s=b[0]||0,r=g[0]||0,u=f[0]||1,M=j[0]||0,Oe=N[0]||0,$e=v[0]||0,Be=parseFloat(_)||0,qe=parseFloat(S)||0,Ke=parseFloat(D)||0,E=parseFloat(y)||0,ze=parseFloat(w)||0,xe=s/u*r,me=s*$e,X=xe+me+M+Oe+Be+qe+Ke,G=E*ze/100,J=E-G-X,He=E>0?J/E*100:0,We=[{name:"Expenses",value:X,color:"hsl(var(--primary))"},{name:"TDS Deducted",value:G,color:"hsl(var(--warning))"},{name:"Net Profit",value:Math.max(J,0),color:"hsl(var(--success))"}];return{fuelCost:xe,tyreExpense:me,totalExpenses:X,tdsAmount:G,netProfit:J,profitMargin:He,chartData:We}},[b,g,f,j,N,v,_,S,D,y,w]),l=s=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(s||0),
 orrRes=calcOrrToll(orrOrigin,orrDestination,orrVehicle,orrTripType),
