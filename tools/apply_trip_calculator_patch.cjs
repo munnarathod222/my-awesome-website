@@ -33,7 +33,7 @@ targetBundles.forEach(bundlePath => {
   bundleCode = bundleCode.slice(0, idxBefore + boundaryBefore.length) + '\n\n' + calcCode + '\n\n' + bundleCode.slice(idxAfter);
 
   // Set default tab to "calculator" instead of "reports"
-  bundleCode = bundleCode.replace('const[oe,W]=a.useState("reports")', 'const[oe,W]=a.useState("calculator")');
+  bundleCode = bundleCode.replace('[oe,W]=a.useState("reports")', '[oe,W]=a.useState("calculator")');
 
   // Ensure ge tabs content is wired to LogisticsTripCostCalculator
   const geStart = bundleCode.indexOf('e.jsx(ge,{value:"calculator"');
