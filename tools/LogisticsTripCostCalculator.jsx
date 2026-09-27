@@ -139,6 +139,46 @@ export function LogisticsTripCostCalculator({
     const clientNetProfit = clientOffer - totalTripCost;
     const clientMarginPct = clientOffer > 0 ? (clientNetProfit / clientOffer) * 100 : 0;
 
+    // 7. Monthly Fleet Profit Intel (Based on selected trips per month)
+    const effectiveMonthlyTrips = allocationMode === "trips_frequency"
+      ? Math.max(1, tripsPerMonth || 1)
+      : Math.max(1, Math.round((workingDaysMonthly || 25) / (tripDays || 1)));
+
+    const monthlyGrossRevenue = recommendedQuote * effectiveMonthlyTrips;
+    const monthlyVariableCost = totalVariableCost * effectiveMonthlyTrips;
+    const monthlyTotalExpenses = totalMonthlyFixed + monthlyVariableCost;
+    const monthlyNetProfit = expectedProfit * effectiveMonthlyTrips;
+    const monthlyNetProfitMarginPct = monthlyGrossRevenue > 0 ? (monthlyNetProfit / monthlyGrossRevenue) * 100 : 0;
+    const annualNetProfitRunRate = monthlyNetProfit * 12;
+
+    const monthlyMinBidProfit = minBidProfit * effectiveMonthlyTrips;
+    const monthlyMinBidRevenue = minBidAmount * effectiveMonthlyTrips;
+
+    const monthlyMedBidProfit = medBidProfit * effectiveMonthlyTrips;
+    const monthlyMedBidRevenue = medBidAmount * effectiveMonthlyTrips;
+
+    const monthlyMaxBidProfit = maxBidProfit * effectiveMonthlyTrips;
+    const monthlyMaxBidRevenue = maxBidAmount * effectiveMonthlyTrips;
+
+    // 8. Scenario Projections for 4, 15, 30 trips
+    const scenario4TripsFixedPerTrip = totalMonthlyFixed / 4;
+    const scenario4TripCost = scenario4TripsFixedPerTrip + totalVariableCost;
+    const scenario4Quote = scenario4TripCost * (1 + marginPct / 100);
+    const scenario4ProfitPerTrip = scenario4Quote - scenario4TripCost;
+    const scenario4MonthlyProfit = scenario4ProfitPerTrip * 4;
+
+    const scenario15TripsFixedPerTrip = totalMonthlyFixed / 15;
+    const scenario15TripCost = scenario15TripsFixedPerTrip + totalVariableCost;
+    const scenario15Quote = scenario15TripCost * (1 + marginPct / 100);
+    const scenario15ProfitPerTrip = scenario15Quote - scenario15TripCost;
+    const scenario15MonthlyProfit = scenario15ProfitPerTrip * 15;
+
+    const scenario30TripsFixedPerTrip = totalMonthlyFixed / 30;
+    const scenario30TripCost = scenario30TripsFixedPerTrip + totalVariableCost;
+    const scenario30Quote = scenario30TripCost * (1 + marginPct / 100);
+    const scenario30ProfitPerTrip = scenario30Quote - scenario30TripCost;
+    const scenario30MonthlyProfit = scenario30ProfitPerTrip * 30;
+
     return {
       totalMonthlyFixed,
       insuranceMonthly,
@@ -175,7 +215,23 @@ export function LogisticsTripCostCalculator({
       maxBidRatePerKm,
       clientOffer,
       clientNetProfit,
-      clientMarginPct
+      clientMarginPct,
+      effectiveMonthlyTrips,
+      monthlyGrossRevenue,
+      monthlyVariableCost,
+      monthlyTotalExpenses,
+      monthlyNetProfit,
+      monthlyNetProfitMarginPct,
+      annualNetProfitRunRate,
+      monthlyMinBidProfit,
+      monthlyMinBidRevenue,
+      monthlyMedBidProfit,
+      monthlyMedBidRevenue,
+      monthlyMaxBidProfit,
+      monthlyMaxBidRevenue,
+      scenario4MonthlyProfit,
+      scenario15MonthlyProfit,
+      scenario30MonthlyProfit
     };
   }, [
     emiMonthly, driverSalaryMonthly, insuranceAnnual, roadTaxAnnual, permitsAnnual,
@@ -235,6 +291,11 @@ export function LogisticsTripCostCalculator({
 • 🟢 *MINIMUM BID (Floor / Backhaul):* ${inr(calc.minBidAmount)} (₹${calc.minBidRatePerKm.toFixed(2)}/KM • +${calc.minBidMarginPct}%)
 • 🔵 *MEDIUM BID (Standard Target):* ${inr(calc.medBidAmount)} (₹${calc.medBidRatePerKm.toFixed(2)}/KM • +${calc.medBidMarginPct}%)
 • 🟣 *MAXIMUM BID (Peak / Urgent):* ${inr(calc.maxBidAmount)} (₹${calc.maxBidRatePerKm.toFixed(2)}/KM • +${calc.maxBidMarginPct}%)
+──────────────────────────────
+💰 *MONTHLY FLEET PROFIT INTEL (${calc.effectiveMonthlyTrips} Trips/Mo):*
+• *Monthly Net Profit:* +${inr(calc.monthlyNetProfit)} / month
+• *Monthly Gross Freight:* ${inr(calc.monthlyGrossRevenue)} / month
+• *Annual Run-Rate Profit:* +${inr(calc.annualNetProfitRunRate)} / year
 ──────────────────────────────
 ⭐ *CURRENT QUOTE SELECTED:* ${inr(calc.recommendedQuote)}
 _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
@@ -360,13 +421,29 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                     </p>
                   </div>
 
-                  <div className="pt-2 mt-2 border-t border-border/30 flex items-baseline justify-between">
-                    <span className="text-[10px] text-muted-foreground">Fixed Burden [A]:</span>
-                    <span className="text-xs font-bold font-mono text-primary">
-                      {scenario.trips === "custom"
-                        ? inr(calc.allocatedFixedCost)
-                        : inr(calc.totalMonthlyFixed / scenario.trips)}
-                    </span>
+                  <div className="pt-2 mt-2 border-t border-border/30 space-y-1">
+                    <div className="flex items-baseline justify-between text-[11px]">
+                      <span className="text-[10px] text-muted-foreground">Fixed Burden [A]:</span>
+                      <span className="text-xs font-bold font-mono text-purple-400">
+                        {scenario.trips === "custom"
+                          ? inr(calc.allocatedFixedCost)
+                          : inr(calc.totalMonthlyFixed / scenario.trips)}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between text-[11px] pt-1 border-t border-border/20">
+                      <span className="text-[10px] font-bold text-foreground">Monthly Profit:</span>
+                      <span className="text-xs font-black font-mono text-emerald-400">
+                        +{inr(
+                          scenario.trips === 4
+                            ? calc.scenario4MonthlyProfit
+                            : scenario.trips === 15
+                            ? calc.scenario15MonthlyProfit
+                            : scenario.trips === 30
+                            ? calc.scenario30MonthlyProfit
+                            : calc.monthlyNetProfit
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
@@ -525,6 +602,82 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
           </div>
         </div>
 
+        {/* --- MONTHLY FLEET PROFIT INTEL PANEL (When selecting this many trips, show this much profit per month) --- */}
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950/40 via-card to-emerald-950/25 border-2 border-emerald-500/40 rounded-2xl shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-sm">
+                💰 MONTHLY PROFIT INTEL
+              </span>
+              <span className="text-sm font-black text-foreground">
+                Fleet Earnings Projection ({calc.effectiveMonthlyTrips} Trips / Month)
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+              <span>In-Hand Net Cash Flow (All Fixed EMI + Driver Salaries + Running Costs Deducted)</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* 1. Monthly Net Profit */}
+            <div className="p-3.5 bg-card/90 border-2 border-emerald-500/40 rounded-xl space-y-0.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase text-emerald-400 tracking-wider">
+                  MONTHLY NET PROFIT
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400/80">
+                  +{calc.monthlyNetProfitMarginPct.toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+                +{inr(calc.monthlyNetProfit)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                +{inr(calc.expectedProfit)} / trip × {calc.effectiveMonthlyTrips} trips
+              </p>
+            </div>
+
+            {/* 2. Monthly Gross Revenue */}
+            <div className="p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block">
+                MONTHLY GROSS FREIGHT
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                {inr(calc.monthlyGrossRevenue)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {inr(calc.recommendedQuote)} × {calc.effectiveMonthlyTrips} trips
+              </p>
+            </div>
+
+            {/* 3. Monthly Total Expenses */}
+            <div className="p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block">
+                TOTAL MONTHLY EXPENSES
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                {inr(calc.monthlyTotalExpenses)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {inr(calc.totalMonthlyFixed)} [A] + {inr(calc.monthlyVariableCost)} [B]
+              </p>
+            </div>
+
+            {/* 4. Annual Profit Run-Rate */}
+            <div className="p-3.5 bg-card/90 border border-primary/30 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-primary tracking-wider block">
+                ANNUAL PROFIT RUN-RATE
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-primary">
+                +{inr(calc.annualNetProfitRunRate)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                Full-year net earnings forecast
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Target Profit Margin Slider */}
         <div className="p-4 bg-card/60 border border-border/50 rounded-2xl space-y-2.5">
           <div className="flex items-center justify-between text-xs">
@@ -602,7 +755,8 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                 </div>
                 <div className="text-[11px] text-muted-foreground space-y-0.5 font-medium">
                   <div>Rate: <span className="font-bold text-foreground">₹{calc.minBidRatePerKm.toFixed(2)}/KM</span></div>
-                  <div>Net Profit: <span className="font-bold text-emerald-400">+{inr(calc.minBidProfit)}</span></div>
+                  <div>Trip Profit: <span className="font-bold text-emerald-400">+{inr(calc.minBidProfit)}</span></div>
+                  <div className="text-amber-400 font-bold">Monthly Profit: +{inr(calc.monthlyMinBidProfit)} / mo</div>
                 </div>
                 <p className="text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40">
                   Floor pricing for return loads, empty backhauls, or highly contested tenders. Covers all costs with a safety buffer.
@@ -644,7 +798,8 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                 </div>
                 <div className="text-[11px] text-muted-foreground space-y-0.5 font-medium">
                   <div>Rate: <span className="font-bold text-foreground">₹{calc.medBidRatePerKm.toFixed(2)}/KM</span></div>
-                  <div>Net Profit: <span className="font-bold text-emerald-400">+{inr(calc.medBidProfit)}</span></div>
+                  <div>Trip Profit: <span className="font-bold text-emerald-400">+{inr(calc.medBidProfit)}</span></div>
+                  <div className="text-blue-400 font-bold">Monthly Profit: +{inr(calc.monthlyMedBidProfit)} / mo</div>
                 </div>
                 <p className="text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40">
                   Standard market rate for regular contracts and dedicated trips. Generates solid enterprise profit while staying competitive.
@@ -686,7 +841,8 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
                 </div>
                 <div className="text-[11px] text-muted-foreground space-y-0.5 font-medium">
                   <div>Rate: <span className="font-bold text-foreground">₹{calc.maxBidRatePerKm.toFixed(2)}/KM</span></div>
-                  <div>Net Profit: <span className="font-bold text-emerald-400">+{inr(calc.maxBidProfit)}</span></div>
+                  <div>Trip Profit: <span className="font-bold text-emerald-400">+{inr(calc.maxBidProfit)}</span></div>
+                  <div className="text-purple-400 font-bold">Monthly Profit: +{inr(calc.monthlyMaxBidProfit)} / mo</div>
                 </div>
                 <p className="text-[10px] text-muted-foreground/90 leading-tight pt-1.5 border-t border-border/40">
                   Premium quotation for urgent express dispatches, festive peak seasons, fragile freight, or difficult terrain routes.

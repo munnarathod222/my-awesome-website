@@ -133,6 +133,22 @@ export const TripOverviewPage: React.FC = () => {
     const clientNetProfit = clientOffer - totalTripCost;
     const clientMarginPct = clientOffer > 0 ? (clientNetProfit / clientOffer) * 100 : 0;
 
+    // 8. Monthly Fleet Profit Intel (Based on selected trips per month)
+    const effectiveMonthlyTrips = allocationMode === 'trips_frequency'
+      ? Math.max(1, tripsPerMonth || 1)
+      : Math.max(1, Math.round((workingDaysMonthly || 25) / (tripDays || 1)));
+
+    const monthlyGrossRevenue = recommendedQuote * effectiveMonthlyTrips;
+    const monthlyVariableCost = totalVariableCost * effectiveMonthlyTrips;
+    const monthlyTotalExpenses = totalMonthlyFixed + monthlyVariableCost;
+    const monthlyNetProfit = expectedProfit * effectiveMonthlyTrips;
+    const monthlyNetProfitMarginPct = monthlyGrossRevenue > 0 ? (monthlyNetProfit / monthlyGrossRevenue) * 100 : 0;
+    const annualNetProfitRunRate = monthlyNetProfit * 12;
+
+    const monthlyMinBidProfit = minBidProfit * effectiveMonthlyTrips;
+    const monthlyMedBidProfit = medBidProfit * effectiveMonthlyTrips;
+    const monthlyMaxBidProfit = maxBidProfit * effectiveMonthlyTrips;
+
     return {
       totalMonthlyFixed,
       allocatedFixedCost,
@@ -166,7 +182,17 @@ export const TripOverviewPage: React.FC = () => {
       maxBidRatePerKm,
       clientOffer,
       clientNetProfit,
-      clientMarginPct
+      clientMarginPct,
+      effectiveMonthlyTrips,
+      monthlyGrossRevenue,
+      monthlyVariableCost,
+      monthlyTotalExpenses,
+      monthlyNetProfit,
+      monthlyNetProfitMarginPct,
+      annualNetProfitRunRate,
+      monthlyMinBidProfit,
+      monthlyMedBidProfit,
+      monthlyMaxBidProfit
     };
   }, [
     emiMonthly, driverSalaryMonthly, insuranceAnnual, roadTaxAnnual, permitsAnnual,
@@ -456,6 +482,78 @@ _Generated via Jai Bhavani Cargo Fleet Intelligence_`;
             <p className="text-[11px] text-muted-foreground font-medium">
               {calc.fuelLitres.toFixed(1)} L diesel ({Math.round((calc.fuelCost / (calc.totalTripCost || 1)) * 100)}% of total trip cost)
             </p>
+          </div>
+        </div>
+
+        {/* MONTHLY FLEET PROFIT INTEL PANEL */}
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-950/40 via-card to-emerald-950/25 border-2 border-emerald-500/40 rounded-2xl shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-sm">
+                💰 MONTHLY PROFIT INTEL
+              </span>
+              <span className="text-sm font-black text-foreground">
+                Fleet Earnings Projection ({calc.effectiveMonthlyTrips} Trips / Month)
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+              <span>Net in-hand profit after paying full monthly EMI ({inr(emiMonthly)}) + all running costs</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-3.5 bg-card/90 border-2 border-emerald-500/40 rounded-xl space-y-0.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold uppercase text-emerald-400 tracking-wider">
+                  MONTHLY NET PROFIT
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400/80">
+                  +{calc.monthlyNetProfitMarginPct.toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
+                +{inr(calc.monthlyNetProfit)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                +{inr(calc.expectedProfit)} / trip × {calc.effectiveMonthlyTrips} trips
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block">
+                MONTHLY GROSS FREIGHT
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                {inr(calc.monthlyGrossRevenue)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {inr(calc.recommendedQuote)} × {calc.effectiveMonthlyTrips} trips
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-card/90 border border-border/70 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-muted-foreground tracking-wider block">
+                TOTAL MONTHLY EXPENSES
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-foreground">
+                {inr(calc.monthlyTotalExpenses)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {inr(calc.totalMonthlyFixed)} [A] + {inr(calc.monthlyVariableCost)} [B]
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-card/90 border border-primary/30 rounded-xl space-y-0.5">
+              <span className="text-[10px] font-extrabold uppercase text-primary tracking-wider block">
+                ANNUAL PROFIT RUN-RATE
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-primary">
+                +{inr(calc.annualNetProfitRunRate)}
+              </p>
+              <p className="text-[11px] text-muted-foreground font-medium">
+                Full-year net earnings forecast
+              </p>
+            </div>
           </div>
         </div>
 
