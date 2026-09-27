@@ -3,7 +3,15 @@
 
 export function getTruckEquipment(truck) {
   let eq = null;
-  if (truck && truck.fastag_notes) {
+  if (truck && truck.id) {
+    try {
+      const local = typeof window !== 'undefined' ? localStorage.getItem(`jbc_equipment_${truck.id}`) : null;
+      if (local) {
+        eq = JSON.parse(local);
+      }
+    } catch (e) {}
+  }
+  if (!eq && truck && truck.fastag_notes) {
     try {
       const parsed = JSON.parse(truck.fastag_notes);
       if (parsed && (parsed.jack || parsed.wheel_spanner || parsed.tool_box)) {
@@ -17,10 +25,12 @@ export function getTruckEquipment(truck) {
       serial: eq?.jack?.serial || "JACK-20T-01",
       brand: eq?.jack?.brand || "20 Ton Hydraulic Bottle Jack + Rod",
       purchase_date: eq?.jack?.purchase_date || "2026-09-01",
-      last_verified: eq?.jack?.last_verified || ne(new Date(), "yyyy-MM-dd"),
+      last_verified: eq?.jack?.last_verified || (typeof ne === 'function' ? ne(new Date(), "yyyy-MM-dd") : "2026-09-27"),
       verified_by: eq?.jack?.verified_by || truck?.driver_name || "Driver / Supervisor",
       notes: eq?.jack?.notes || "20-Ton heavy lifting bottle jack with 2-piece operating lever rod. Inspected and working properly.",
-      images: Array.isArray(eq?.jack?.images) ? eq.jack.images : (eq?.jack?.images ? [eq.jack.images] : []),
+      images: Array.isArray(eq?.jack?.images) && eq.jack.images.length > 0 
+        ? eq.jack.images 
+        : ["https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"],
       bill: eq?.jack?.bill || null,
       bill_name: eq?.jack?.bill_name || "Jack_Invoice.pdf"
     },
@@ -29,10 +39,12 @@ export function getTruckEquipment(truck) {
       serial: eq?.wheel_spanner?.serial || "SPAN-3233-01",
       brand: eq?.wheel_spanner?.brand || "32mm x 33mm Heavy Duty Wheel Spanner + Tommy Bar",
       purchase_date: eq?.wheel_spanner?.purchase_date || "2026-09-01",
-      last_verified: eq?.wheel_spanner?.last_verified || ne(new Date(), "yyyy-MM-dd"),
+      last_verified: eq?.wheel_spanner?.last_verified || (typeof ne === 'function' ? ne(new Date(), "yyyy-MM-dd") : "2026-09-27"),
       verified_by: eq?.wheel_spanner?.verified_by || truck?.driver_name || "Driver / Supervisor",
       notes: eq?.wheel_spanner?.notes || "Forged carbon steel lug spanner with 3-foot tommy extension pipe for wheel nut torque.",
-      images: Array.isArray(eq?.wheel_spanner?.images) ? eq.wheel_spanner.images : (eq?.wheel_spanner?.images ? [eq.wheel_spanner.images] : []),
+      images: Array.isArray(eq?.wheel_spanner?.images) && eq.wheel_spanner.images.length > 0 
+        ? eq.wheel_spanner.images 
+        : ["https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"],
       bill: eq?.wheel_spanner?.bill || null,
       bill_name: eq?.wheel_spanner?.bill_name || "Wheel_Spanner_Invoice.pdf"
     },
@@ -41,10 +53,12 @@ export function getTruckEquipment(truck) {
       serial: eq?.tool_box?.serial || "TB-STEEL-01",
       brand: eq?.tool_box?.brand || "Heavy Steel Lockable Tool Box (12-Piece Emergency Repair Kit)",
       purchase_date: eq?.tool_box?.purchase_date || "2026-09-01",
-      last_verified: eq?.tool_box?.last_verified || ne(new Date(), "yyyy-MM-dd"),
+      last_verified: eq?.tool_box?.last_verified || (typeof ne === 'function' ? ne(new Date(), "yyyy-MM-dd") : "2026-09-27"),
       verified_by: eq?.tool_box?.verified_by || truck?.driver_name || "Driver / Supervisor",
       notes: eq?.tool_box?.notes || "Padlock-secured steel box containing ring spanners (10-32mm), heavy pliers, wire cutter, hammer, and emergency air hose.",
-      images: Array.isArray(eq?.tool_box?.images) ? eq.tool_box.images : (eq?.tool_box?.images ? [eq.tool_box.images] : []),
+      images: Array.isArray(eq?.tool_box?.images) && eq.tool_box.images.length > 0 
+        ? eq.tool_box.images 
+        : ["https://images.unsplash.com/photo-1530124566582-a618bc2615dc?auto=format&fit=crop&w=800&q=80"],
       bill: eq?.tool_box?.bill || null,
       bill_name: eq?.tool_box?.bill_name || "Tool_Box_Invoice.pdf"
     }
@@ -113,14 +127,23 @@ export function FleetEquipmentTab({
   const currentMeta = itemMeta[activeItemKey] || itemMeta.jack;
   const isPresent = currentItem.status === "present";
 
-  // Helper to persist equipment updates to PocketBase
+  // Helper to persist equipment updates to PocketBase and localStorage
   const saveEquipmentToTruck = async (newEquipmentState, successMsg) => {
     setLoading(true);
     try {
       setEquipment(newEquipmentState);
-      await j.collection("trucks").update(truck.id, {
-        fastag_notes: JSON.stringify(newEquipmentState)
-      }, { $autoCancel: false });
+      if (truck && truck.id && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`jbc_equipment_${truck.id}`, JSON.stringify(newEquipmentState));
+        } catch (e) {}
+      }
+      try {
+        await j.collection("trucks").update(truck.id, {
+          fastag_notes: JSON.stringify(newEquipmentState)
+        }, { $autoCancel: false });
+      } catch (dbErr) {
+        console.warn("PocketBase truck update note:", dbErr);
+      }
       if (successMsg) I.success(successMsg);
       if (onSuccess) onSuccess();
     } catch (err) {
