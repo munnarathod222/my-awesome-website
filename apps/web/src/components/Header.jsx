@@ -377,15 +377,10 @@ export default function Header() {
       title: 'Overview',
       items: [
         { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { label: 'AI Freight Marketplace', path: '/marketplace', icon: Sparkles, roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { label: 'Analytics', path: '/analytics', icon: BarChart3, roles: ['super_admin','admin','manager'] },
-        { label: 'Vehicle TCO & ROI', path: '/vehicle-tco', icon: Calculator, roles: ['super_admin','admin','manager'] },
         { label: 'Calendar', path: '/calendar', icon: CalendarDays, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { label: 'Leaderboard', path: '/leaderboard', icon: Trophy, roles: ['super_admin','admin','manager'] },
         { label: 'Client Analysis', path: '/client-analysis', icon: PieChart, roles: ['super_admin','admin','manager'] },
         { label: 'Trip Overview', path: '/dashboard/trip-overview', icon: TrendingUp, roles: ['super_admin','admin','manager'] },
-        { label: 'Reminders', path: '/reminders', icon: Bell, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { label: 'To-Do List', path: '/todo', icon: CheckSquare, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     {
@@ -406,7 +401,6 @@ export default function Header() {
     {
       title: 'Finance',
       items: [
-        { label: 'Insurance Manager', path: '/insurance-manager', icon: ShieldAlert, roles: ['super_admin','admin','manager','dispatcher'] },
         { label: 'Company Vault', path: '/company-vault', icon: ShieldCheck, roles: ['super_admin','admin','manager'] },
         { label: 'Cashbook', path: '/cashbook', icon: FileText, roles: ['super_admin','admin','manager'] },
         { label: 'Expenses', path: '/expenses', icon: FileText, roles: ['super_admin','admin','manager'] },
@@ -438,7 +432,6 @@ export default function Header() {
       title: 'Directory',
       items: [
         { label: 'Vendor Registration Tracker', path: '/vendor-tracker', icon: Building2, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
-        { label: 'Transport CRM', path: '/transport-crm', icon: Building2, roles: ['super_admin','admin','manager','dispatcher'] },
         { label: 'Contacts Directory', path: '/contacts', icon: Contact2, roles: ['super_admin','admin','manager','dispatcher'] },
         { label: 'Clients List', path: '/clients', icon: Users, roles: ['super_admin','admin','manager'] },
       ]
@@ -448,9 +441,28 @@ export default function Header() {
       items: [
         { label: 'User Management', path: '/dashboard/users', icon: Users, roles: ['superuser', 'super_admin', 'admin'] },
         { label: 'Access Requests', path: '/dashboard/signup-requests', icon: UserPlus, roles: ['superuser', 'super_admin', 'admin'] },
+      ]
+    },
+    {
+      title: 'Future Upgrades',
+      items: [
+        { label: 'Client Portal', path: '/client-portal', icon: Building2, roles: ['client','super_admin','admin','manager'] },
+        { label: 'AI Freight Marketplace', path: '/marketplace', icon: Sparkles, roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { label: 'Vehicle TCO & ROI', path: '/vehicle-tco', icon: Calculator, roles: ['super_admin','admin','manager'] },
+        { label: 'Leaderboard', path: '/leaderboard', icon: Trophy, roles: ['super_admin','admin','manager'] },
+        { label: 'Driver Scorecard', path: '/driver-scorecard', icon: Users, roles: ['super_admin','admin','manager'] },
+        { label: 'Invoice Matching', path: '/invoice-matching', icon: Receipt, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'GST ITC Tax', path: '/gst-itc', icon: Receipt, roles: ['super_admin','admin','manager'] },
+        { label: 'Insurance Manager', path: '/insurance-manager', icon: ShieldAlert, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Transport CRM', path: '/transport-crm', icon: Building2, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Sales & Vendor Leads', path: '/sales-leads', icon: Building2, roles: ['super_admin','admin','manager','dispatcher'] },
+        { label: 'Branding Hub', path: '/branding-hub', icon: Package, roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
+        { label: 'Reminders', path: '/reminders', icon: Bell, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'To-Do List', path: '/todo', icon: CheckSquare, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { label: 'Audit & Security Logs', path: '/dashboard/audit-logs', icon: ShieldCheck, roles: ['superuser', 'super_admin'] },
         { label: 'Reports Center', path: '/reports', icon: FileText, roles: ['super_admin','admin'] },
         { label: 'Settings', path: '/dashboard/profile', icon: Settings, roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { label: 'Data Backup & Export', path: '/data-backup', icon: HardDrive, roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
       ]
     }
   ];
