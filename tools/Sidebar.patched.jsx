@@ -246,7 +246,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                       const currentFullPath = location.pathname + location.search;
                       const isActive = item.path.includes('?')
                         ? currentFullPath === item.path
-                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) ));
+                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) ) || (item.path === '/lorry-receipts' && location.pathname === '/pod-management'));
 
                       return (
                         <li key={itemIdx}>
