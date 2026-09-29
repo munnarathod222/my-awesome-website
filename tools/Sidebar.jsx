@@ -64,8 +64,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { icon: MapPin,        label: 'Route Master',     path: '/routes-master',        roles: ['super_admin','admin','dispatcher'] },
     { icon: Package,       label: 'Inventory',        path: '/inventory',            roles: ['super_admin','admin','manager','dispatcher'] },
   ];
-  fleetOperationsItems.push({ icon: FileBox, label: 'Lorry Receipts (LR)', path: '/trip-logs', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] });
-  fleetOperationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] });
+  fleetOperationsItems.push({ icon: FileCheck, label: 'Lorry Receipts & POD', path: '/lorry-receipts', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] });
   fleetOperationsItems.push({ icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher'] });
 
   const menuGroups = [
@@ -244,7 +243,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                       const currentFullPath = location.pathname + location.search;
                       const isActive = item.path.includes('?')
                         ? currentFullPath === item.path
-                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) ));
+                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) ) || (item.path === '/lorry-receipts' && location.pathname === '/pod-management'));
 
                       return (
                         <li key={itemIdx}>
