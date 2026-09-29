@@ -57,7 +57,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
     { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
     { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
-    { icon: QrCode,       label: 'Vehicle QR Pass Hub',path: '/truck-docs?view=qr_pass',roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
     { icon: Wrench,        label: 'Fleet Maintenance',path: '/fleet-maintenance',    roles: ['super_admin','admin','dispatcher'] },
     { icon: Droplet,       label: 'Fuel Tracker',     path: '/fuel-tracker',         roles: ['super_admin','admin','manager','dispatcher'] },
     { icon: ClipboardList, label: 'Trip Logs',       path: '/trip-logs',            roles: ['super_admin','admin','manager','dispatcher'] },
@@ -245,7 +244,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
                       const currentFullPath = location.pathname + location.search;
                       const isActive = item.path.includes('?')
                         ? currentFullPath === item.path
-                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) && !location.search.includes('view=qr_pass')));
+                        : (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path) ));
 
                       return (
                         <li key={itemIdx}>
