@@ -16,9 +16,9 @@ import driverRouter, { deleteEmployeeRecord } from './routes/driver.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
-import pb from './utils/pocketbaseClient.js';
 import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
+import * as auditService from './services/auditService.js';
 
 
 const app = express();
@@ -75,6 +75,71 @@ app.use(morgan('combined'));
 app.use(globalRateLimit);
 app.use(express.json({ limit: BodyLimit }));
 app.use(express.urlencoded({ extended: true, limit: BodyLimit }));
+
+// ── Enterprise Audit & Anti-Fraud Express Endpoints ───────────────
+const auditRouter = express.Router();
+
+auditRouter.post('/event', (req, res) => {
+  try {
+    const meta = {
+      ip: req.ip || req.socket.remoteAddress,
+      userAgent: req.headers['user-agent'],
+      actorId: req.headers['x-actor-id'],
+      actorRole: req.headers['x-actor-role']
+    };
+    const event = auditService.ingestEvent(req.body, meta);
+    return res.status(201).json({ success: true, event });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+auditRouter.get('/events', (req, res) => {
+  const events = auditService.getEvents(req.query);
+  return res.json({ success: true, count: events.length, events });
+});
+
+auditRouter.get('/verify', (req, res) => {
+  const verification = auditService.verifyIntegrity();
+  return res.json({ success: true, verification });
+});
+
+auditRouter.get('/health', (req, res) => {
+  const health = auditService.getHealthMetrics();
+  return res.json({ success: true, health });
+});
+
+auditRouter.get('/alerts', (req, res) => {
+  const alerts = auditService.getAlerts();
+  return res.json({ success: true, alerts });
+});
+
+auditRouter.post('/alerts/review', (req, res) => {
+  try {
+    const { alertId, action, notes, reviewer } = req.body;
+    const reviewed = auditService.reviewAlert(alertId, action, notes, reviewer);
+    return res.json({ success: true, alert: reviewed });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+auditRouter.get('/cases', (req, res) => {
+  const cases = auditService.getCases();
+  return res.json({ success: true, cases });
+});
+
+auditRouter.post('/cases', (req, res) => {
+  try {
+    const { caseId, updateData } = req.body;
+    const updated = auditService.updateCase(caseId, updateData);
+    return res.json({ success: true, case: updated });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/audit', auditRouter);
 
 // ----------------------------------------------------
 // Supabase Sync Persistence Configurations

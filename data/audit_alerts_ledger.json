@@ -1,0 +1,47 @@
+[
+  {
+    "id": "alt_1790761853670_84wl",
+    "rule_id": "RULE_06_EXCESS_FUEL_QUANTITY",
+    "title": "Fuel Volume Exceeds Standard Tank Capacity",
+    "severity": "HIGH",
+    "description": "Fuel entry of 650 L exceeds physical tank capacity threshold of 400 L for vehicle TS 08 UB 7711.",
+    "entity_id": "FUEL-9981",
+    "related_user": "system@jaibhavanicargo.com",
+    "event_id": "evt_1790761853669_658pfv",
+    "timestamp": "2026-09-30T09:50:53.669Z",
+    "status": "OPEN",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "review_action": null
+  },
+  {
+    "id": "alt_1790761853661_5ynl",
+    "rule_id": "RULE_07_ODOMETER_ROLLBACK",
+    "title": "Odometer Rollback Detected",
+    "severity": "CRITICAL",
+    "description": "Odometer reading was updated from 145000 KM down to 130000 KM (negative delta of 15000 KM).",
+    "entity_id": "AP 39 V 8821",
+    "related_user": "system@jaibhavanicargo.com",
+    "event_id": "evt_1790761853659_ymwv2l",
+    "timestamp": "2026-09-30T09:50:53.659Z",
+    "status": "OPEN",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "review_action": null
+  },
+  {
+    "id": "alt_1790761542641_uqfb",
+    "rule_id": "RULE_13_SYSTEM_CONFIGURATION_CHANGE",
+    "title": "Core System Configuration Alteration",
+    "severity": "LOW",
+    "description": "System settings or operational parameters modified by operations@jaibhavanicargo.com.",
+    "entity_id": "SYS_BOOTSTRAP",
+    "related_user": "operations@jaibhavanicargo.com",
+    "event_id": "evt_1790761542638_gof73f",
+    "timestamp": "2026-09-30T09:45:42.638Z",
+    "status": "OPEN",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "review_action": null
+  }
+]
