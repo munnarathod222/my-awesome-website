@@ -97,6 +97,7 @@ import OfficialLetterheadPage from './pages/OfficialLetterheadPage.jsx';
 import DataBackupPage from './pages/DataBackupPage.jsx';
 import BusinessCardStudioPage from './pages/BusinessCardStudioPage.jsx';
 import BrandingStudioHub from './pages/BrandingStudioHub.jsx';
+import SupportTicketsPage from './SupportTicketsPage.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';

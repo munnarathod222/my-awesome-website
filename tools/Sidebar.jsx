@@ -107,6 +107,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: Users,     label: 'Clients List',               path: '/clients',       roles: ['super_admin','admin','manager'] },
         { icon: Building2, label: 'Vendor Registration Tracker',path: '/vendor-tracker', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Contact2,  label: 'Contacts Directory',         path: '/contacts',      roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: ShieldAlert, label: 'Support & Complaints',     path: '/support-tickets', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     {
