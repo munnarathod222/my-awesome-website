@@ -139,6 +139,16 @@ auditRouter.post('/cases', (req, res) => {
   }
 });
 
+auditRouter.post('/clear', (req, res) => {
+  const result = auditService.clearAll();
+  return res.json(result);
+});
+
+auditRouter.post('/reset', (req, res) => {
+  const result = auditService.clearAll();
+  return res.json(result);
+});
+
 app.use('/api/audit', auditRouter);
 
 // ----------------------------------------------------

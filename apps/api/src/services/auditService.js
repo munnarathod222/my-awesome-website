@@ -574,3 +574,13 @@ export function updateCase(caseId, updateData) {
   }
   return caseItem;
 }
+
+export function clearAll() {
+  eventsCache = [];
+  alertsCache = [];
+  casesCache = [];
+  saveEvents();
+  saveAlerts();
+  saveCases();
+  return { success: true, message: 'All audit events, alerts, and cases cleared successfully.' };
+}
