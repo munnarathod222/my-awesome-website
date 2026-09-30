@@ -601,5 +601,14 @@ module.exports = {
       saveCases();
     }
     return caseItem;
+  },
+  clearAll: () => {
+    eventsCache = [];
+    alertsCache = [];
+    casesCache = [];
+    saveEvents();
+    saveAlerts();
+    saveCases();
+    return { success: true, message: 'All audit events, alerts, and cases cleared successfully.' };
   }
 };

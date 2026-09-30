@@ -143,6 +143,13 @@ const server = http.createServer((req, res) => {
       return;
     }
 
+    // Clear/Purge all dummy audit events: POST /api/audit/clear or /api/audit/reset
+    if ((reqPath === '/api/audit/clear' || reqPath === '/api/audit/reset') && req.method === 'POST') {
+      const result = auditService.clearAll();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    }
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: false, error: 'Audit endpoint not found' }));
   }

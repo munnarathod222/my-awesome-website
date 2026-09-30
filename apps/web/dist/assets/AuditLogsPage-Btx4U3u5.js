@@ -217,29 +217,34 @@ function EnterpriseAuditLogsPage() {
     setLoading(true);
     try {
       let evts = [];
+      let serverSuccess = false;
       try {
         const res = await fetch("/api/audit/events");
         if (res.ok) {
           const json = await res.json();
-          if (json.success && Array.isArray(json.events)) evts = json.events;
-        }
-      } catch (e) {
-      }
-      try {
-        const raw = localStorage.getItem("jc_enterprise_audit_events");
-        if (raw) {
-          const local = JSON.parse(raw);
-          if (Array.isArray(local)) {
-            const seen = new Set(evts.map((e) => e && e.id).filter(Boolean));
-            local.forEach((l) => {
-              if (l && l.id && !seen.has(l.id)) {
-                seen.add(l.id);
-                evts.push(l);
-              }
-            });
+          if (json.success && Array.isArray(json.events)) {
+            evts = json.events;
+            serverSuccess = true;
           }
         }
       } catch (e) {
+      }
+      if (!serverSuccess) {
+        try {
+          const raw = localStorage.getItem("jc_enterprise_audit_events");
+          if (raw) {
+            const local = JSON.parse(raw);
+            if (Array.isArray(local)) evts = local;
+          }
+        } catch (e) {
+        }
+      } else if (evts.length === 0) {
+        try {
+          localStorage.removeItem("jc_enterprise_audit_events");
+          localStorage.removeItem("jc_document_audit_logs");
+          localStorage.removeItem("jbc_audit_logs");
+        } catch (e) {
+        }
       }
       evts.sort((a, b) => safeGetTime(b && (b.recorded_at || b.timestamp)) - safeGetTime(a && (a.recorded_at || a.timestamp)));
       setEvents(evts);
@@ -471,6 +476,25 @@ function EnterpriseAuditLogsPage() {
       toast.error("Failed to export Excel");
     }
   };
+  const handleClearAuditData = async () => {
+    if (!window.confirm("Delete all audit events, fraud alerts, and cases? This clears dummy records so the audit trail starts completely clean.")) {
+      return;
+    }
+    try {
+      await fetch("/api/audit/clear", { method: "POST" });
+      localStorage.removeItem("jc_enterprise_audit_events");
+      localStorage.removeItem("jc_document_audit_logs");
+      localStorage.removeItem("jbc_audit_logs");
+      setEvents([]);
+      setAlerts([]);
+      setCases([]);
+      setVerification({ valid: true, total_events: 0, genesis_root: "00000000000000000000GENESIS_ROOT_JAI_BHAVANI_CARGO_2026_SECURITY_SYSTEM", issues: [] });
+      toast.success("All dummy audit logs and alerts cleared successfully.");
+      setTimeout(() => loadData(), 400);
+    } catch (e) {
+      toast.error("Failed to clear audit ledgers: " + e.message);
+    }
+  };
   if (!isAuthorized) {
     return React.createElement(
       "div",
@@ -550,7 +574,13 @@ function EnterpriseAuditLogsPage() {
           size: "sm",
           onClick: exportExcel,
           className: "rounded-xl font-bold text-xs gap-1.5 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
-        }, "\u{1F4CA} Export Excel")
+        }, "\u{1F4CA} Export Excel"),
+        React.createElement(Button, {
+          variant: "outline",
+          size: "sm",
+          onClick: handleClearAuditData,
+          className: "rounded-xl font-bold text-xs gap-1.5 text-rose-400 border-rose-500/50 hover:bg-rose-500/15 cursor-pointer"
+        }, "\u{1F5D1}\uFE0F Delete Dummy Events")
       )
     ),
     // ── KPI Cards ───────────────────────────────────────────────────
