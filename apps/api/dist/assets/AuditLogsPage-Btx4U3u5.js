@@ -60,6 +60,40 @@ const SEVERITY_COLORS = {
   HIGH: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   CRITICAL: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse"
 };
+function formatDateTime(val, fallback = "N/A") {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? fallback : d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+  } catch (e) {
+    return fallback;
+  }
+}
+function formatTimeOnly(val, fallback = "N/A") {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? fallback : d.toLocaleTimeString("en-IN");
+  } catch (e) {
+    return fallback;
+  }
+}
+function safeGetTime(val) {
+  if (!val) return 0;
+  try {
+    const t = new Date(val).getTime();
+    return isNaN(t) ? 0 : t;
+  } catch (e) {
+    return 0;
+  }
+}
 function EnterpriseAuditLogsPage() {
   const { currentUser } = useAuth();
   const isAuthorized = currentUser?.role === "superuser" || currentUser?.role === "super_admin" || currentUser?.role === "auditor" || currentUser?.email === "munnarathod222@gmail.com" || currentUser?.email === "operations@jaibhavanicargo.com";
@@ -91,17 +125,22 @@ function EnterpriseAuditLogsPage() {
       } catch (e) {
       }
       try {
-        const local = JSON.parse(localStorage.getItem("jc_enterprise_audit_events") || "[]");
-        const seen = new Set(evts.map((e) => e.id));
-        local.forEach((l) => {
-          if (!seen.has(l.id)) {
-            seen.add(l.id);
-            evts.push(l);
+        const raw = localStorage.getItem("jc_enterprise_audit_events");
+        if (raw) {
+          const local = JSON.parse(raw);
+          if (Array.isArray(local)) {
+            const seen = new Set(evts.map((e) => e && e.id).filter(Boolean));
+            local.forEach((l) => {
+              if (l && l.id && !seen.has(l.id)) {
+                seen.add(l.id);
+                evts.push(l);
+              }
+            });
           }
-        });
+        }
       } catch (e) {
       }
-      evts.sort((a, b) => new Date(b.recorded_at || b.timestamp) - new Date(a.recorded_at || a.timestamp));
+      evts.sort((a, b) => safeGetTime(b && (b.recorded_at || b.timestamp)) - safeGetTime(a && (a.recorded_at || a.timestamp)));
       setEvents(evts);
       try {
         const aRes = await fetch("/api/audit/alerts");
@@ -255,11 +294,14 @@ function EnterpriseAuditLogsPage() {
   }, [events, activeTab, moduleFilter, actionFilter, severityFilter, searchTerm]);
   const kpis = React.useMemo(() => {
     const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    const eventsToday = events.filter((e) => (e.recorded_at || e.timestamp || "").startsWith(todayStr)).length;
-    const failedOps = events.filter((e) => e.outcome === "FAILURE" || e.outcome === "DENIED" || e.outcome === "ERROR").length;
-    const criticalAlerts = alerts.filter((a) => a.severity === "CRITICAL").length;
-    const openCases = cases.filter((c) => c.status === "OPEN" || c.status === "UNDER_REVIEW").length;
-    const uniqueActors = new Set(events.map((e) => e.actor?.email || e.actor?.name)).size;
+    const eventsToday = events.filter((e) => {
+      const ts = e && (e.recorded_at || e.timestamp);
+      return typeof ts === "string" && ts.startsWith(todayStr);
+    }).length;
+    const failedOps = events.filter((e) => e && (e.outcome === "FAILURE" || e.outcome === "DENIED" || e.outcome === "ERROR")).length;
+    const criticalAlerts = alerts.filter((a) => a && a.severity === "CRITICAL").length;
+    const openCases = cases.filter((c) => c && (c.status === "OPEN" || c.status === "UNDER_REVIEW")).length;
+    const uniqueActors = new Set(events.map((e) => e && e.actor && (e.actor.email || e.actor.name)).filter(Boolean)).size;
     return {
       total: events.length,
       today: eventsToday,
@@ -274,13 +316,13 @@ function EnterpriseAuditLogsPage() {
   const exportPdf = async () => {
     try {
       const rows = filteredEvents.slice(0, 300).map((e) => ({
-        Sequence: "#" + e.sequence_number,
-        Timestamp: new Date(e.recorded_at || e.timestamp).toLocaleString("en-IN"),
+        Sequence: "#" + (e.sequence_number || "0"),
+        Timestamp: formatDateTime(e.recorded_at || e.timestamp),
         Actor: `${e.actor?.name || "N/A"} (${e.actor?.role || "N/A"})`,
-        Module: e.module,
-        Action: e.action,
-        Entity: `${e.entity_type} [${e.entity_id}]`,
-        Details: e.details
+        Module: e.module || "SYSTEM",
+        Action: e.action || "UNKNOWN",
+        Entity: `${e.entity_type || "N/A"} [${e.entity_id || "N/A"}]`,
+        Details: e.details || ""
       }));
       await downloadPdf(
         rows,
@@ -309,8 +351,8 @@ function EnterpriseAuditLogsPage() {
           return val;
         };
         return {
-          Sequence: e.sequence_number,
-          Timestamp: new Date(e.recorded_at || e.timestamp).toLocaleString("en-IN"),
+          Sequence: e.sequence_number || 0,
+          Timestamp: formatDateTime(e.recorded_at || e.timestamp),
           "Actor Name": sanitizeFormula(e.actor?.name),
           "Actor Email": sanitizeFormula(e.actor?.email),
           "Actor Role": e.actor?.role,
@@ -637,14 +679,7 @@ function EnterpriseAuditLogsPage() {
                   React.createElement(
                     TableCell,
                     { className: "font-mono text-muted-foreground text-[11px] whitespace-nowrap" },
-                    new Date(e.recorded_at || e.timestamp).toLocaleString("en-IN", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit"
-                    })
+                    formatDateTime(e.recorded_at || e.timestamp)
                   ),
                   React.createElement(
                     TableCell,
@@ -777,7 +812,7 @@ function EnterpriseAuditLogsPage() {
                 React.createElement("span", null, "\u2022"),
                 React.createElement("span", null, `Actor: ${a.related_user}`),
                 React.createElement("span", null, "\u2022"),
-                React.createElement("span", null, new Date(a.timestamp).toLocaleString("en-IN")),
+                React.createElement("span", null, formatDateTime(a.timestamp)),
                 React.createElement("span", null, "\u2022"),
                 React.createElement(Badge, {
                   variant: "outline",
@@ -900,7 +935,7 @@ function EnterpriseAuditLogsPage() {
                 "div",
                 null,
                 React.createElement("span", { className: "text-muted-foreground block text-[10px] uppercase font-bold" }, "Created At"),
-                React.createElement("span", { className: "font-mono text-foreground" }, new Date(c.created_at).toLocaleString("en-IN"))
+                React.createElement("span", { className: "font-mono text-foreground" }, formatDateTime(c.created_at))
               )
             ),
             React.createElement(
@@ -921,7 +956,7 @@ function EnterpriseAuditLogsPage() {
                       "div",
                       { className: "flex justify-between items-center text-[10px] text-muted-foreground font-mono" },
                       React.createElement("span", { className: "font-bold text-foreground" }, note.author),
-                      React.createElement("span", null, new Date(note.timestamp).toLocaleString("en-IN"))
+                      React.createElement("span", null, formatDateTime(note.timestamp))
                     ),
                     React.createElement("p", { className: "text-foreground" }, note.note)
                   )
@@ -1026,7 +1061,7 @@ function EnterpriseAuditLogsPage() {
               "div",
               null,
               React.createElement("span", { className: "text-muted-foreground block text-[10px] uppercase font-bold" }, "Last Verified At"),
-              React.createElement("span", { className: "text-foreground block" }, new Date(verification.verified_at).toLocaleString("en-IN"))
+              React.createElement("span", { className: "text-foreground block" }, formatDateTime(verification?.verified_at))
             )
           )
         )
@@ -1092,7 +1127,7 @@ function EnterpriseAuditLogsPage() {
             React.createElement(
               "h4",
               { className: "text-xs font-mono font-bold text-foreground mt-2" },
-              health.latest_event_at ? new Date(health.latest_event_at).toLocaleTimeString("en-IN") : "N/A"
+              formatTimeOnly(health?.latest_event_at)
             ),
             React.createElement("p", { className: "text-[10px] text-muted-foreground" }, "Synchronized with server")
           )

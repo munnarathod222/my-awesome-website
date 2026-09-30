@@ -1,5 +1,35 @@
 [
   {
+    "id": "alt_1790763848252_xzpb",
+    "rule_id": "RULE_06_EXCESS_FUEL_QUANTITY",
+    "title": "Fuel Volume Exceeds Standard Tank Capacity",
+    "severity": "HIGH",
+    "description": "Fuel entry of 650 L exceeds physical tank capacity threshold of 400 L for vehicle TS 08 UB 7711.",
+    "entity_id": "FUEL-9981",
+    "related_user": "system@jaibhavanicargo.com",
+    "event_id": "evt_1790763848250_h0knbn",
+    "timestamp": "2026-09-30T10:24:08.250Z",
+    "status": "OPEN",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "review_action": null
+  },
+  {
+    "id": "alt_1790763848245_ctof",
+    "rule_id": "RULE_07_ODOMETER_ROLLBACK",
+    "title": "Odometer Rollback Detected",
+    "severity": "CRITICAL",
+    "description": "Odometer reading was updated from 145000 KM down to 130000 KM (negative delta of 15000 KM).",
+    "entity_id": "AP 39 V 8821",
+    "related_user": "system@jaibhavanicargo.com",
+    "event_id": "evt_1790763848243_zknbq1",
+    "timestamp": "2026-09-30T10:24:08.243Z",
+    "status": "OPEN",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "review_action": null
+  },
+  {
     "id": "alt_1790761853670_84wl",
     "rule_id": "RULE_06_EXCESS_FUEL_QUANTITY",
     "title": "Fuel Volume Exceeds Standard Tank Capacity",

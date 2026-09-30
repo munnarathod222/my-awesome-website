@@ -67,6 +67,40 @@ const SEVERITY_COLORS = {
   CRITICAL: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse"
 };
 
+// Safe date helpers to prevent RangeError: Invalid time value
+function formatDateTime(val, fallback = 'N/A') {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? fallback : d.toLocaleString('en-IN', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function formatTimeOnly(val, fallback = 'N/A') {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? fallback : d.toLocaleTimeString('en-IN');
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function safeGetTime(val) {
+  if (!val) return 0;
+  try {
+    const t = new Date(val).getTime();
+    return isNaN(t) ? 0 : t;
+  } catch (e) {
+    return 0;
+  }
+}
+
 export default function EnterpriseAuditLogsPage() {
   const { currentUser } = useAuth();
   
@@ -113,17 +147,22 @@ export default function EnterpriseAuditLogsPage() {
 
       // Fallback merge with local events
       try {
-        const local = JSON.parse(localStorage.getItem('jc_enterprise_audit_events') || '[]');
-        const seen = new Set(evts.map(e => e.id));
-        local.forEach(l => {
-          if (!seen.has(l.id)) {
-            seen.add(l.id);
-            evts.push(l);
+        const raw = localStorage.getItem('jc_enterprise_audit_events');
+        if (raw) {
+          const local = JSON.parse(raw);
+          if (Array.isArray(local)) {
+            const seen = new Set(evts.map(e => e && e.id).filter(Boolean));
+            local.forEach(l => {
+              if (l && l.id && !seen.has(l.id)) {
+                seen.add(l.id);
+                evts.push(l);
+              }
+            });
           }
-        });
+        }
       } catch (e) {}
 
-      evts.sort((a, b) => new Date(b.recorded_at || b.timestamp) - new Date(a.recorded_at || a.timestamp));
+      evts.sort((a, b) => safeGetTime(b && (b.recorded_at || b.timestamp)) - safeGetTime(a && (a.recorded_at || a.timestamp)));
       setEvents(evts);
 
       // 2. Fetch Alerts
@@ -302,11 +341,14 @@ export default function EnterpriseAuditLogsPage() {
   // KPIs
   const kpis = React.useMemo(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
-    const eventsToday = events.filter(e => (e.recorded_at || e.timestamp || '').startsWith(todayStr)).length;
-    const failedOps = events.filter(e => e.outcome === 'FAILURE' || e.outcome === 'DENIED' || e.outcome === 'ERROR').length;
-    const criticalAlerts = alerts.filter(a => a.severity === 'CRITICAL').length;
-    const openCases = cases.filter(c => c.status === 'OPEN' || c.status === 'UNDER_REVIEW').length;
-    const uniqueActors = new Set(events.map(e => e.actor?.email || e.actor?.name)).size;
+    const eventsToday = events.filter(e => {
+      const ts = e && (e.recorded_at || e.timestamp);
+      return typeof ts === 'string' && ts.startsWith(todayStr);
+    }).length;
+    const failedOps = events.filter(e => e && (e.outcome === 'FAILURE' || e.outcome === 'DENIED' || e.outcome === 'ERROR')).length;
+    const criticalAlerts = alerts.filter(a => a && a.severity === 'CRITICAL').length;
+    const openCases = cases.filter(c => c && (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')).length;
+    const uniqueActors = new Set(events.map(e => e && e.actor && (e.actor.email || e.actor.name)).filter(Boolean)).size;
     return {
       total: events.length,
       today: eventsToday,
@@ -323,13 +365,13 @@ export default function EnterpriseAuditLogsPage() {
   const exportPdf = async () => {
     try {
       const rows = filteredEvents.slice(0, 300).map(e => ({
-        Sequence: '#' + e.sequence_number,
-        Timestamp: new Date(e.recorded_at || e.timestamp).toLocaleString('en-IN'),
+        Sequence: '#' + (e.sequence_number || '0'),
+        Timestamp: formatDateTime(e.recorded_at || e.timestamp),
         Actor: `${e.actor?.name || 'N/A'} (${e.actor?.role || 'N/A'})`,
-        Module: e.module,
-        Action: e.action,
-        Entity: `${e.entity_type} [${e.entity_id}]`,
-        Details: e.details
+        Module: e.module || 'SYSTEM',
+        Action: e.action || 'UNKNOWN',
+        Entity: `${e.entity_type || 'N/A'} [${e.entity_id || 'N/A'}]`,
+        Details: e.details || ''
       }));
       await downloadPdf(
         rows,
@@ -359,8 +401,8 @@ export default function EnterpriseAuditLogsPage() {
           return val;
         };
         return {
-          Sequence: e.sequence_number,
-          Timestamp: new Date(e.recorded_at || e.timestamp).toLocaleString('en-IN'),
+          Sequence: e.sequence_number || 0,
+          Timestamp: formatDateTime(e.recorded_at || e.timestamp),
           'Actor Name': sanitizeFormula(e.actor?.name),
           'Actor Email': sanitizeFormula(e.actor?.email),
           'Actor Role': e.actor?.role,
@@ -607,10 +649,7 @@ export default function EnterpriseAuditLogsPage() {
                         '#' + e.sequence_number
                       ),
                       React.createElement(TableCell, { className: 'font-mono text-muted-foreground text-[11px] whitespace-nowrap' },
-                        new Date(e.recorded_at || e.timestamp).toLocaleString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit', second: '2-digit'
-                        })
+                        formatDateTime(e.recorded_at || e.timestamp)
                       ),
                       React.createElement(TableCell, null,
                         React.createElement('div', { className: 'flex flex-col' },
@@ -706,7 +745,7 @@ export default function EnterpriseAuditLogsPage() {
                     React.createElement('span', null, '•'),
                     React.createElement('span', null, `Actor: ${a.related_user}`),
                     React.createElement('span', null, '•'),
-                    React.createElement('span', null, new Date(a.timestamp).toLocaleString('en-IN')),
+                    React.createElement('span', null, formatDateTime(a.timestamp)),
                     React.createElement('span', null, '•'),
                     React.createElement(Badge, {
                       variant: 'outline',
@@ -799,7 +838,7 @@ export default function EnterpriseAuditLogsPage() {
                   ),
                   React.createElement('div', null,
                     React.createElement('span', { className: 'text-muted-foreground block text-[10px] uppercase font-bold' }, 'Created At'),
-                    React.createElement('span', { className: 'font-mono text-foreground' }, new Date(c.created_at).toLocaleString('en-IN'))
+                    React.createElement('span', { className: 'font-mono text-foreground' }, formatDateTime(c.created_at))
                   )
                 ),
                 React.createElement('div', { className: 'space-y-2' },
@@ -812,7 +851,7 @@ export default function EnterpriseAuditLogsPage() {
                       },
                         React.createElement('div', { className: 'flex justify-between items-center text-[10px] text-muted-foreground font-mono' },
                           React.createElement('span', { className: 'font-bold text-foreground' }, note.author),
-                          React.createElement('span', null, new Date(note.timestamp).toLocaleString('en-IN'))
+                          React.createElement('span', null, formatDateTime(note.timestamp))
                         ),
                         React.createElement('p', { className: 'text-foreground' }, note.note)
                       )
@@ -889,7 +928,7 @@ export default function EnterpriseAuditLogsPage() {
             ),
             React.createElement('div', null,
               React.createElement('span', { className: 'text-muted-foreground block text-[10px] uppercase font-bold' }, 'Last Verified At'),
-              React.createElement('span', { className: 'text-foreground block' }, new Date(verification.verified_at).toLocaleString('en-IN'))
+              React.createElement('span', { className: 'text-foreground block' }, formatDateTime(verification?.verified_at))
             )
           )
         )
@@ -931,7 +970,7 @@ export default function EnterpriseAuditLogsPage() {
           React.createElement('div', { className: 'p-4 rounded-2xl bg-card border border-border/60 space-y-1' },
             React.createElement('span', { className: 'text-[11px] font-bold uppercase tracking-wider text-muted-foreground' }, 'Last Write Timestamp'),
             React.createElement('h4', { className: 'text-xs font-mono font-bold text-foreground mt-2' }, 
-              health.latest_event_at ? new Date(health.latest_event_at).toLocaleTimeString('en-IN') : 'N/A'
+              formatTimeOnly(health?.latest_event_at)
             ),
             React.createElement('p', { className: 'text-[10px] text-muted-foreground' }, 'Synchronized with server')
           )
