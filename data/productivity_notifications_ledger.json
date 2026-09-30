@@ -1,0 +1,47 @@
+[
+  {
+    "id": "NOTIF-2026-E8ECD0",
+    "task_id": "TSK-2026-76E731",
+    "recipient_id": "all",
+    "recipient_name": "Operations Senior Management",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "⚠️ SLA ESCALATION: Task Overdue [TSK-2026-76E731]",
+      "notes": "Task \"Overdue Fastag Blacklist Resolution for Fleet Truck 18\" assigned to Chief Logistics Officer has breached its deadline. Immediate intervention required.",
+      "priority": "CRITICAL",
+      "escalation": true
+    },
+    "status": "DELIVERED",
+    "created_at": "2026-09-30T11:32:08.641Z"
+  },
+  {
+    "id": "NOTIF-2026-27BEC1",
+    "task_id": "TSK-2026-501AFA",
+    "recipient_id": "all",
+    "recipient_name": "Operations Senior Management",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "⚠️ SLA ESCALATION: Task Overdue [TSK-2026-501AFA]",
+      "notes": "Task \"Overdue Fastag Blacklist Resolution for Fleet Truck 18\" assigned to Chief Logistics Officer has breached its deadline. Immediate intervention required.",
+      "priority": "CRITICAL",
+      "escalation": true
+    },
+    "status": "DELIVERED",
+    "created_at": "2026-09-30T11:29:58.588Z"
+  },
+  {
+    "id": "NOTIF-2026-3590D4",
+    "task_id": "TSK-2026-5F281D",
+    "recipient_id": "all",
+    "recipient_name": "Operations Senior Management",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "⚠️ SLA ESCALATION: Task Overdue [TSK-2026-5F281D]",
+      "notes": "Task \"Overdue Fastag Blacklist Resolution for Fleet Truck 18\" assigned to Chief Logistics Officer has breached its deadline. Immediate intervention required.",
+      "priority": "CRITICAL",
+      "escalation": true
+    },
+    "status": "DELIVERED",
+    "created_at": "2026-09-30T11:29:58.588Z"
+  }
+]

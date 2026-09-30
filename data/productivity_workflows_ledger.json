@@ -1,0 +1,273 @@
+[
+  {
+    "id": "WFK-2026-CB4D46",
+    "workflow_type": "EXPENSE_REIMBURSEMENT",
+    "title": "Unscheduled Route Deviation Toll Reimbursement",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Finance",
+    "amount": 3200,
+    "requested_amount": 3200,
+    "current_stage": 1,
+    "total_stages": 1,
+    "status": "REJECTED",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "role": "manager",
+        "label": "Department Manager Review"
+      },
+      {
+        "stage": 2,
+        "role": "super_admin",
+        "label": "Executive Board Approval"
+      }
+    ],
+    "stages": [],
+    "approval_history": [
+      {
+        "stage": 1,
+        "approver_id": "user_director_02",
+        "approver_name": "Executive Director",
+        "action": "REJECTED",
+        "reason": "Route deviation was not authorized by Fleet Dispatcher. Non-compliant toll route.",
+        "timestamp": "2026-09-30T11:32:08.626Z"
+      }
+    ],
+    "rejection_reason": "Route deviation was not authorized by Fleet Dispatcher. Non-compliant toll route.",
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:32:08.618Z",
+    "updated_at": "2026-09-30T11:32:08.626Z"
+  },
+  {
+    "id": "WFK-2026-3FDED1",
+    "workflow_type": "FLEET_EXPENSE",
+    "title": "Emergency Tyre Replacement Approval - MH-12-RN-8812",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Fleet",
+    "amount": 45000,
+    "requested_amount": 45000,
+    "current_stage": 2,
+    "total_stages": 2,
+    "status": "PENDING_APPROVAL",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "name": "Fleet Supervisor Review",
+        "role": "supervisor",
+        "status": "PENDING"
+      },
+      {
+        "stage": 2,
+        "name": "Finance Controller Approval",
+        "role": "admin",
+        "status": "PENDING"
+      }
+    ],
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Fleet Supervisor Review",
+        "role": "supervisor",
+        "status": "PENDING"
+      },
+      {
+        "stage": 2,
+        "name": "Finance Controller Approval",
+        "role": "admin",
+        "status": "PENDING"
+      }
+    ],
+    "approval_history": [
+      {
+        "stage": 1,
+        "approver_id": "user_director_02",
+        "approver_name": "Executive Director",
+        "action": "APPROVED",
+        "notes": "Verified puncture damage on front steer axle. Replacement authorized.",
+        "timestamp": "2026-09-30T11:32:08.613Z"
+      }
+    ],
+    "rejection_reason": null,
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:32:08.604Z",
+    "updated_at": "2026-09-30T11:32:08.613Z"
+  },
+  {
+    "id": "WFK-2026-B34B91",
+    "workflow_type": "EXPENSE_REIMBURSEMENT",
+    "title": "Unscheduled Route Deviation Toll Reimbursement",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Finance",
+    "amount": 3200,
+    "requested_amount": 3200,
+    "current_stage": 1,
+    "total_stages": 1,
+    "status": "REJECTED",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "role": "manager",
+        "label": "Department Manager Review"
+      },
+      {
+        "stage": 2,
+        "role": "super_admin",
+        "label": "Executive Board Approval"
+      }
+    ],
+    "stages": [],
+    "approval_history": [
+      {
+        "stage": 1,
+        "approver_id": "user_director_02",
+        "approver_name": "Executive Director",
+        "action": "REJECTED",
+        "reason": "Route deviation was not authorized by Fleet Dispatcher. Non-compliant toll route.",
+        "timestamp": "2026-09-30T11:29:58.568Z"
+      }
+    ],
+    "rejection_reason": "Route deviation was not authorized by Fleet Dispatcher. Non-compliant toll route.",
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:29:58.560Z",
+    "updated_at": "2026-09-30T11:29:58.568Z"
+  },
+  {
+    "id": "WFK-2026-95710C",
+    "workflow_type": "FLEET_EXPENSE",
+    "title": "Emergency Tyre Replacement Approval - MH-12-RN-8812",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Fleet",
+    "amount": 45000,
+    "requested_amount": 45000,
+    "current_stage": 2,
+    "total_stages": 2,
+    "status": "PENDING_APPROVAL",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "name": "Fleet Supervisor Review",
+        "role": "supervisor",
+        "status": "PENDING"
+      },
+      {
+        "stage": 2,
+        "name": "Finance Controller Approval",
+        "role": "admin",
+        "status": "PENDING"
+      }
+    ],
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Fleet Supervisor Review",
+        "role": "supervisor",
+        "status": "PENDING"
+      },
+      {
+        "stage": 2,
+        "name": "Finance Controller Approval",
+        "role": "admin",
+        "status": "PENDING"
+      }
+    ],
+    "approval_history": [
+      {
+        "stage": 1,
+        "approver_id": "user_director_02",
+        "approver_name": "Executive Director",
+        "action": "APPROVED",
+        "notes": "Verified puncture damage on front steer axle. Replacement authorized.",
+        "timestamp": "2026-09-30T11:29:58.553Z"
+      }
+    ],
+    "rejection_reason": null,
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:29:58.545Z",
+    "updated_at": "2026-09-30T11:29:58.553Z"
+  },
+  {
+    "id": "WF-2026-EBE7DA",
+    "workflow_type": "EXPENSE_REIMBURSEMENT",
+    "title": "Unscheduled Route Deviation Toll Reimbursement",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Finance",
+    "amount": 3200,
+    "current_stage": 1,
+    "total_stages": 1,
+    "status": "PENDING_APPROVAL",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "role": "manager",
+        "label": "Department Manager Review"
+      },
+      {
+        "stage": 2,
+        "role": "super_admin",
+        "label": "Executive Board Approval"
+      }
+    ],
+    "approval_history": [],
+    "rejection_reason": null,
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:28:38.763Z",
+    "updated_at": "2026-09-30T11:28:38.768Z"
+  },
+  {
+    "id": "WF-2026-AFA621",
+    "workflow_type": "FLEET_EXPENSE",
+    "title": "Emergency Tyre Replacement Approval - MH-12-RN-8812",
+    "description": "",
+    "requester_id": "user_audit_test_01",
+    "requester_name": "Chief Logistics Officer",
+    "department": "Fleet",
+    "amount": 45000,
+    "current_stage": 2,
+    "total_stages": 2,
+    "status": "PENDING_APPROVAL",
+    "stages_configuration": [
+      {
+        "stage": 1,
+        "name": "Fleet Supervisor Review",
+        "role": "supervisor",
+        "status": "PENDING"
+      },
+      {
+        "stage": 2,
+        "name": "Finance Controller Approval",
+        "role": "admin",
+        "status": "PENDING"
+      }
+    ],
+    "approval_history": [
+      {
+        "stage": 1,
+        "approver_id": "user_director_02",
+        "approver_name": "Executive Director",
+        "action": "APPROVED",
+        "notes": "Verified puncture damage on front steer axle. Replacement authorized.",
+        "timestamp": "2026-09-30T11:28:38.760Z"
+      }
+    ],
+    "rejection_reason": null,
+    "related_entity_type": null,
+    "related_entity_id": null,
+    "created_at": "2026-09-30T11:28:38.754Z",
+    "updated_at": "2026-09-30T11:28:38.760Z"
+  }
+]
