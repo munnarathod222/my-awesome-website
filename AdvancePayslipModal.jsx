@@ -1,0 +1,464 @@
+import React, { useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { FileText, Download, Printer, Mail, Loader2, History, SplitSquareHorizontal, FileSpreadsheet, Share2, MessageSquare, Globe } from 'lucide-react';
+import pb from '@/lib/pocketbaseClient.js';
+import { toast } from 'sonner';
+import { generateAdvancePayslipPDF } from '@/lib/AdvancePayslipGenerator.js';
+import { downloadFile } from '@/lib/downloadUtils.js';
+import { LANGUAGES, getTranslation } from '@/lib/payslipTranslations.js';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+
+import EnhancedPayslipPreview from './EnhancedPayslipPreview.jsx';
+import PayslipHistory from './PayslipHistory.jsx';
+import PayslipComparison from './PayslipComparison.jsx';
+import EmailPayslipDialog from './EmailPayslipDialog.jsx';
+import PayslipExportDialog from './PayslipExportDialog.jsx';
+
+export default function AdvancePayslipModal({ isOpen, onClose, payrollId, employeeId, calculatedPayroll }) {
+  const [includeSignature, setIncludeSignature] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [payroll, setPayroll] = useState(null);
+  const [employee, setEmployee] = useState(null);
+  const [advances, setAdvances] = useState([]);
+  
+  const [activeTab, setActiveTab] = useState('preview');
+  const [language, setLanguage] = useState('en');
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('printing-payslip');
+      if (payrollId || employeeId) {
+        setActiveTab('preview');
+        fetchData();
+      }
+    } else {
+      document.body.classList.remove('printing-payslip');
+    }
+    return () => {
+      document.body.classList.remove('printing-payslip');
+    };
+  }, [isOpen, payrollId, employeeId]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      let currentPayroll = null;
+      let emp = null;
+      const targetEmpId = typeof employeeId === 'object' && employeeId ? (employeeId.id || employeeId.employeeId) : employeeId;
+      const calc = calculatedPayroll || (typeof employeeId === 'object' && employeeId ? employeeId : null);
+
+      if (payrollId) {
+        currentPayroll = await pb.collection('payroll').getOne(payrollId, { expand: 'employee_id_relation', $autoCancel: false });
+        emp = currentPayroll.expand?.employee_id_relation;
+      } else if (targetEmpId) {
+        try {
+          emp = await pb.collection('employees').getOne(targetEmpId, { $autoCancel: false });
+        } catch (e) {
+          emp = calc;
+        }
+        try {
+          currentPayroll = await pb.collection('payroll').getFirstListItem(`employee_id='${targetEmpId}'`, { sort: '-created', $autoCancel: false });
+        } catch (e) {
+          console.log("No payroll found for employee");
+        }
+      }
+
+      if (!emp && calc) emp = calc;
+
+      if (calc || !currentPayroll) {
+        const now = new Date();
+        const bSal = Number(calc?.baseSalary ?? currentPayroll?.base_salary ?? emp?.salary_amount ?? 0);
+        const aSal = Number(calc?.adjustedBaseSalary ?? currentPayroll?.net_salary ?? bSal);
+        const attDed = calc ? Math.max(0, Math.round((bSal - aSal) * 100) / 100) : (Number(currentPayroll?.attendance_deduction) || 0);
+        const pDays = calc?.presentDays ?? currentPayroll?.attendance_days ?? 30;
+        const tDays = calc?.totalWorkingDays ?? currentPayroll?.total_days ?? 30;
+        const adv = Number(calc?.totalAdvances ?? currentPayroll?.driver_advances ?? 0);
+        const net = calc ? Number(calc.netPayout) : (Number(currentPayroll?.net_salary) || Math.max(0, bSal - attDed - adv));
+
+        currentPayroll = {
+          ...currentPayroll,
+          id: currentPayroll?.id || `calc_${targetEmpId}`,
+          employee_id: targetEmpId,
+          employee_name: calc?.name || emp?.name,
+          designation: calc?.position || calc?.employee_type || emp?.position || emp?.employee_type || 'Staff',
+          base_salary: bSal,
+          gross_salary: bSal,
+          total_salary: bSal,
+          attendance_days: pDays,
+          total_days: tDays,
+          absent_days: Math.max(0, tDays - pDays),
+          attendance_deduction: attDed,
+          driver_advances: adv,
+          advance_deduction: adv,
+          taxes: Number(currentPayroll?.taxes) || 0,
+          trip_bonus: Number(currentPayroll?.trip_bonus) || 0,
+          net_salary: net,
+          payment_status: calc?.isSettled ? 'Paid' : (currentPayroll?.payment_status || 'Pending'),
+          status: calc?.isSettled ? 'Paid' : (currentPayroll?.status || 'Pending'),
+          payment_date: calc?.payDate || currentPayroll?.payment_date,
+          payroll_month: currentPayroll?.payroll_month || (now.getMonth() + 1),
+          payroll_year: currentPayroll?.payroll_year || now.getFullYear(),
+          cycle_range: calc?.cycleInfo?.formattedCycleRange || currentPayroll?.cycle_range
+        };
+      }
+
+      setEmployee(emp);
+      setPayroll(currentPayroll);
+
+      let advs = [];
+      if (calc?.pendingAdvances && calc.pendingAdvances.length > 0) {
+        advs = calc.pendingAdvances;
+      } else {
+        try {
+          const raw = await pb.collection('advances').getFullList({ filter: `employee_id='${targetEmpId}' || staff_member='${targetEmpId}'`, sort: '-date', $autoCancel: false });
+          advs = raw.filter(a => a.status === 'Pending' || (a.date && a.date.startsWith(`${currentPayroll?.payroll_year}-${String(currentPayroll?.payroll_month).padStart(2, '0')}`)));
+        } catch (err) {
+          console.error("Failed to load advances in modal:", err);
+          advs = [];
+        }
+      }
+      setAdvances(advs);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to load payslip details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    setExporting(true);
+    try {
+      const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
+      const empId = employee?.id || payroll?.employee_id || 'Unknown';
+      const mStr = payroll?.payroll_month ? payroll.payroll_month.toString().padStart(2, '0') : 'Cur';
+      const yStr = payroll?.payroll_year || new Date().getFullYear();
+      downloadFile(blob, `Advance_Payslip_${empId}_${mStr}${yStr}_${language}.pdf`);
+      toast.success('Payslip PDF downloaded');
+    } catch (e) {
+      toast.error('Failed to download PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleWhatsAppShare = async () => {
+    if (!employee && !payroll) {
+      toast.error('Payslip data not ready');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const t = (key) => getTranslation(language, key);
+      const empName = employee?.name || payroll?.expand?.employee_id_relation?.name || 'Employee';
+      const empPhone = employee?.phone_number || employee?.phone || payroll?.expand?.employee_id_relation?.phone_number || '';
+      const empId = employee?.id || payroll?.employee_id || 'N/A';
+      const month = payroll?.payroll_month ? `${payroll.payroll_month}/${payroll.payroll_year}` : 'Current Month';
+      const gross = payroll?.gross_salary || payroll?.base_salary || 0;
+      const net = payroll?.net_salary || 0;
+      const totalAdv = advances ? advances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0) : 0;
+      const status = payroll?.status || 'Pending';
+
+      let shareText = `📄 *JAI BHAVANI CARGO - ${t('titleAdvancePayslip')}*\n\n`;
+      shareText += `👤 *${t('empName')}* ${empName}\n`;
+      shareText += `🆔 *${t('empId')}* ${empId}\n`;
+      shareText += `📅 *${t('forPeriod')}* ${month}\n`;
+      shareText += `💳 *${t('paymentStatus')}* ${status}\n\n`;
+
+      shareText += `--- *${t('earningsHeader')}* ---\n`;
+      if (gross > 0) shareText += `• *${t('grossSalary')}:* ₹${gross.toLocaleString('en-IN')}\n`;
+      if (totalAdv > 0) shareText += `• *${t('totalAdvances')}:* ₹${totalAdv.toLocaleString('en-IN')}\n`;
+      if (net > 0) shareText += `• *${t('netPayable')}:* ₹${net.toLocaleString('en-IN')}\n\n`;
+
+      if (advances && advances.length > 0) {
+        shareText += `--- *${t('advanceRecordsHeader')} (${advances.length})* ---\n`;
+        advances.forEach((a, i) => {
+          const dateStr = a.date ? a.date.split('T')[0] : '';
+          shareText += `${i + 1}. ${dateStr} - ${a.reason || 'Advance'}: ₹${Number(a.amount).toLocaleString('en-IN')}\n`;
+        });
+        shareText += `\n`;
+      }
+
+      shareText += `Thank you for your service!\n`;
+      shareText += `Shared via Jai Bhavani Cargo Portal`;
+
+      // 1. Try PDF Generation
+      try {
+        const blob = await generateAdvancePayslipPDF(payroll, employee, advances, language);
+        if (blob) {
+          const fileName = `Advance_Payslip_${empName.replace(/\s+/g, '_')}_${month.replace('/', '-')}_${language}.pdf`;
+          
+          // Mobile Native Web Share
+          const file = new File([blob], fileName, { type: 'application/pdf' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: `Payslip Statement - ${empName}`,
+                text: shareText
+              });
+              toast.success('Payslip PDF shared to WhatsApp');
+              return;
+            } catch (shareErr) {
+              if (shareErr.name === 'AbortError') return;
+            }
+          }
+          
+          // Fallback: auto download PDF
+          downloadFile(blob, fileName);
+        }
+      } catch (pdfErr) {
+        console.warn('PDF blob generation warning:', pdfErr);
+      }
+
+      // 2. Open WhatsApp link with pre-filled formatted text statement
+      const cleanPhone = empPhone ? empPhone.replace(/\D/g, '') : '';
+      let waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      if (cleanPhone && cleanPhone.length >= 10) {
+        const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+        waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(shareText)}`;
+      }
+
+      window.open(waUrl, '_blank');
+      toast.success(`Opening WhatsApp for ${empName}...`);
+    } catch (err) {
+      console.error('WhatsApp share error:', err);
+      toast.error('Failed to open WhatsApp');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handlePrint = () => {
+    setActiveTab('preview');
+
+    setTimeout(() => {
+      const elem = document.getElementById('payslip-preview-content');
+      if (!elem) {
+        window.print();
+        return;
+      }
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+
+    // Extract all page styles (Tailwind, Google Fonts, inline stylesheets)
+    const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(node => node.outerHTML)
+      .join('\n');
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="${language}">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Jai Bhavani Cargo - Payslip Statement</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+          ${styleTags}
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 6mm 8mm;
+            }
+            * {
+              box-sizing: border-box !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              font-family: 'Noto Sans', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif !important;
+            }
+            html, body {
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            }
+            .payslip-container, #payslip-preview-content {
+              width: 100% !important;
+              max-width: 100% !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              padding: 16px 20px !important;
+              margin: 0 !important;
+              border: 1px solid #cbd5e1 !important;
+              border-radius: 12px !important;
+              box-shadow: none !important;
+              box-sizing: border-box !important;
+            }
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+            }
+          </style>
+        </head>
+        <body class="bg-white text-black p-0 m-0">
+          <div style="padding: 4px;">
+            ${elem.outerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }, 350);
+    }, 150);
+  };
+
+  // Listen to keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'p') {
+          e.preventDefault();
+          handlePrint();
+        }
+        if (e.key === 's') {
+          e.preventDefault();
+          handleDownloadPDF();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, payroll, employee, advances, language]);
+
+  const hasAdvance = advances.length > 0;
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden bg-background border-border rounded-2xl">
+          <DialogHeader className="px-6 py-4 border-b border-border bg-muted/20 shrink-0 no-print">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                {hasAdvance ? 'Advance & Payslip Center' : 'Payslip Center'}
+              </DialogTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 mr-2 shrink-0 bg-muted/65 py-1 px-3 rounded-lg border border-border">
+                  <Switch id="payslip-sig-toggle" checked={includeSignature} onCheckedChange={setIncludeSignature} />
+                  <Label htmlFor="payslip-sig-toggle" className="text-[11px] font-black text-slate-300 select-none cursor-pointer">E-Sign</Label>
+                </div>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger className="h-9 w-[140px] text-xs font-bold border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg shrink-0">
+                    <Globe className="w-3.5 h-3.5 mr-1 text-emerald-400 shrink-0" />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {LANGUAGES.map((l) => (
+                      <SelectItem key={l.code} value={l.code} className="text-xs font-medium cursor-pointer">
+                        <span className="mr-1.5">{l.flag}</span>{l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={handleWhatsAppShare} disabled={loading || exporting} className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 font-semibold shadow-sm">
+                  <MessageSquare className="w-4 h-4 mr-2 text-emerald-500 fill-emerald-500/20" /> WhatsApp
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowEmailDialog(true)} disabled={loading}>
+                  <Mail className="w-4 h-4 mr-2" /> Email
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowExportDialog(true)} disabled={loading}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
+                </Button>
+                <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:flex" disabled={loading}>
+                  <Printer className="w-4 h-4 mr-2" /> Print
+                </Button>
+                <Button size="sm" onClick={handleDownloadPDF} disabled={loading || exporting} className="bg-primary text-primary-foreground font-semibold">
+                  {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                  Download PDF
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto bg-muted/5 flex flex-col">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground opacity-50" />
+              </div>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
+                <div className="px-6 pt-4 shrink-0 bg-background border-b border-border no-print">
+                  <TabsList className="w-full sm:w-auto grid grid-cols-3 bg-muted/50 p-1 rounded-xl mb-4">
+                    <TabsTrigger value="preview" className="rounded-lg text-xs sm:text-sm"><FileText className="w-3.5 h-3.5 mr-2" /> Preview</TabsTrigger>
+                    <TabsTrigger value="compare" className="rounded-lg text-xs sm:text-sm"><SplitSquareHorizontal className="w-3.5 h-3.5 mr-2" /> Compare</TabsTrigger>
+                    <TabsTrigger value="history" className="rounded-lg text-xs sm:text-sm"><History className="w-3.5 h-3.5 mr-2" /> History</TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-6">
+                  <TabsContent value="preview" className="m-0 border-none outline-none">
+                    <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} language={language} includeSignature={includeSignature} />
+                  </TabsContent>
+                  
+                  <TabsContent value="compare" className="m-0 border-none outline-none">
+                    <PayslipComparison currentPayroll={payroll} employeeId={employee?.id || payroll?.employee_id} />
+                  </TabsContent>
+                  
+                  <TabsContent value="history" className="m-0 border-none outline-none">
+                    <PayslipHistory employeeId={employee?.id || payroll?.employee_id} />
+                  </TabsContent>
+                </div>
+              </Tabs>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <EmailPayslipDialog 
+        isOpen={showEmailDialog} 
+        onClose={() => setShowEmailDialog(false)} 
+        payroll={payroll} 
+        employee={employee} 
+        advances={advances} 
+      />
+      
+      <PayslipExportDialog 
+        isOpen={showExportDialog} 
+        onClose={() => setShowExportDialog(false)} 
+        payroll={payroll} 
+        employee={employee} 
+        advances={advances} 
+      />
+
+      {/* Hidden print container for raw printing if needed, though media queries usually suffice */}
+      <div className="hidden print-only print:block print:w-full">
+        {activeTab === 'preview' && !loading && (
+          <EnhancedPayslipPreview payroll={payroll} employee={employee} advances={advances} includeSignature={includeSignature} />
+        )}
+      </div>
+    </>
+  );
+}
