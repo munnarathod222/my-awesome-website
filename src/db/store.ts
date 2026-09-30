@@ -1,5 +1,6 @@
 import { employeesData, trucksData, tyresData, routesData, clientsData, tripsData, cashbookData, fuelLogsData, billingCyclesData, creditCardsData, inventoryData, remindersData, expenseCategoriesData, expensesData, initialCompanySettings, lorryReceiptsData, podRecordsData, documentSequencesData, supportTicketsData } from './seedData';
-import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem, LorryReceipt, PodRecord, DocumentSequence, DocumentAuditLog, SupportTicket } from '../types';
+import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem, LorryReceipt, PodRecord, DocumentSequence, DocumentAuditLog, SupportTicket, AuditAction, AuditModule } from '../types';
+import { enterpriseAuditService } from '../services/enterpriseAuditService';
 
 const TODAY_DATE = '2026-09-02';
 
@@ -21,10 +22,122 @@ function getItem(key: string, defaultValue: any) {
   }
 }
 
+function auditDiff(key: string, oldValue: any, newValue: any) {
+  try {
+    const moduleMap: Record<string, { module: AuditModule; entity_type: string }> = {
+      jc_trips: { module: 'LOGISTICS', entity_type: 'TRIP' },
+      jc_trucks: { module: 'FLEET', entity_type: 'TRUCK' },
+      jc_tyres: { module: 'FLEET', entity_type: 'TYRE' },
+      jc_cashbook: { module: 'FINANCIAL', entity_type: 'CASHBOOK' },
+      jc_expenses: { module: 'FINANCIAL', entity_type: 'EXPENSE' },
+      jc_fuel_logs: { module: 'FLEET', entity_type: 'FUEL_LOG' },
+      jc_employees: { module: 'ADMINISTRATION', entity_type: 'EMPLOYEE' },
+      jc_users: { module: 'ADMINISTRATION', entity_type: 'USER' },
+      jc_lorry_receipts: { module: 'LOGISTICS', entity_type: 'LORRY_RECEIPT' },
+      jc_pod_records: { module: 'LOGISTICS', entity_type: 'POD_RECORD' },
+      jc_support_tickets: { module: 'LOGISTICS', entity_type: 'SUPPORT_TICKET' },
+      jc_company_settings: { module: 'SETTINGS', entity_type: 'COMPANY_SETTINGS' }
+    };
+
+    const target = moduleMap[key];
+    if (!target) return;
+
+    if (key === 'jc_company_settings') {
+      enterpriseAuditService.logEvent({
+        module: target.module,
+        entity_type: target.entity_type,
+        entity_id: 'GLOBAL_SETTINGS',
+        action: 'CONFIGURATION_CHANGE',
+        details: 'Company operational parameters updated',
+        previous_values: oldValue,
+        new_values: newValue
+      });
+      return;
+    }
+
+    if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+      const oldMap = new Map(oldValue.map(i => [i.id || i.trip_number || i.truck_number || i.ticket_number, i]));
+      const newMap = new Map(newValue.map(i => [i.id || i.trip_number || i.truck_number || i.ticket_number, i]));
+
+      // 1. Detect creations
+      for (const [id, item] of newMap.entries()) {
+        if (!oldMap.has(id)) {
+          enterpriseAuditService.logEvent({
+            module: target.module,
+            entity_type: target.entity_type,
+            entity_id: String(id),
+            action: 'CREATE',
+            details: `Created new ${target.entity_type} [${id}]`,
+            new_values: item
+          });
+        }
+      }
+
+      // 2. Detect deletions
+      for (const [id, item] of oldMap.entries()) {
+        if (!newMap.has(id)) {
+          enterpriseAuditService.logEvent({
+            module: target.module,
+            entity_type: target.entity_type,
+            entity_id: String(id),
+            action: 'DELETE',
+            severity: 'HIGH',
+            details: `Deleted ${target.entity_type} [${id}]`,
+            previous_values: item
+          });
+        }
+      }
+
+      // 3. Detect updates
+      for (const [id, newItem] of newMap.entries()) {
+        if (oldMap.has(id)) {
+          const oldItem = oldMap.get(id);
+          const changedFields: string[] = [];
+          const allKeys = new Set([...Object.keys(oldItem || {}), ...Object.keys(newItem || {})]);
+          allKeys.forEach(k => {
+            if (JSON.stringify(oldItem[k]) !== JSON.stringify(newItem[k])) {
+              changedFields.push(k);
+            }
+          });
+
+          if (changedFields.length > 0) {
+            let action: AuditAction = 'UPDATE';
+            if (changedFields.includes('clientPaymentStatus') || changedFields.includes('payment_status')) {
+              action = 'PAYMENT';
+            } else if (changedFields.includes('status')) {
+              action = (newItem.status === 'Completed' || newItem.status === 'Delivered') ? 'APPROVE' : 'UPDATE';
+            }
+
+            enterpriseAuditService.logEvent({
+              module: target.module,
+              entity_type: target.entity_type,
+              entity_id: String(id),
+              action,
+              details: `Updated ${changedFields.join(', ')} on ${target.entity_type} [${id}]`,
+              previous_values: oldItem,
+              new_values: newItem,
+              changed_fields: changedFields
+            });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Audit Diff Warning]', e);
+  }
+}
+
 function setItem(key: string, value: any) {
   try {
+    const rawOld = localStorage.getItem(key);
+    const oldValue = rawOld ? JSON.parse(rawOld) : null;
+    
     localStorage.setItem(key, JSON.stringify(value));
     window.dispatchEvent(new Event('jc-store-update'));
+
+    if (oldValue !== null) {
+      auditDiff(key, oldValue, value);
+    }
   } catch (e) {
     console.error(e);
   }

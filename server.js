@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as auditService from './apps/api/src/services/auditService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,7 +25,127 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-  const reqPath = req.url.split('?')[0];
+  const [reqPath, queryString] = req.url.split('?');
+  const queryParams = new URLSearchParams(queryString || '');
+
+  // Enable CORS headers for API endpoints
+  if (reqPath.startsWith('/api/')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Actor-Id, X-Actor-Role');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      return res.end();
+    }
+  }
+
+  // ── Enterprise Audit & Anti-Fraud Endpoints ─────────────────────
+  if (reqPath.startsWith('/api/audit')) {
+    const meta = {
+      ip: req.socket.remoteAddress || '127.0.0.1',
+      userAgent: req.headers['user-agent'] || 'WebClient',
+      actorId: req.headers['x-actor-id'],
+      actorRole: req.headers['x-actor-role']
+    };
+
+    // Ingest event: POST /api/audit/event
+    if (reqPath === '/api/audit/event' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const event = auditService.ingestEvent(payload, meta);
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, event }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Query events: GET /api/audit/events
+    if (reqPath === '/api/audit/events' && req.method === 'GET') {
+      const filters = {
+        module: queryParams.get('module') || 'all',
+        action: queryParams.get('action') || 'all',
+        severity: queryParams.get('severity') || 'all',
+        search: queryParams.get('search') || ''
+      };
+      const events = auditService.getEvents(filters);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, count: events.length, events }));
+    }
+
+    // Verify integrity: GET /api/audit/verify
+    if (reqPath === '/api/audit/verify' && req.method === 'GET') {
+      const verification = auditService.verifyIntegrity();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, verification }));
+    }
+
+    // Health metrics: GET /api/audit/health
+    if (reqPath === '/api/audit/health' && req.method === 'GET') {
+      const health = auditService.getHealthMetrics();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, health }));
+    }
+
+    // Alerts: GET /api/audit/alerts
+    if (reqPath === '/api/audit/alerts' && req.method === 'GET') {
+      const alerts = auditService.getAlerts();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, alerts }));
+    }
+
+    // Review alert: POST /api/audit/alerts/review
+    if (reqPath === '/api/audit/alerts/review' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { alertId, action, notes, reviewer } = JSON.parse(b);
+          const reviewed = auditService.reviewAlert(alertId, action, notes, reviewer);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, alert: reviewed }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Cases: GET /api/audit/cases
+    if (reqPath === '/api/audit/cases' && req.method === 'GET') {
+      const cases = auditService.getCases();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, cases }));
+    }
+
+    // Update case: POST /api/audit/cases
+    if (reqPath === '/api/audit/cases' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { caseId, updateData } = JSON.parse(b);
+          const updated = auditService.updateCase(caseId, updateData);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, case: updated }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: false, error: 'Audit endpoint not found' }));
+  }
 
   // API handler for quotation rates
   if (reqPath === '/api/quotation/rates' || reqPath === '/hcgi/api/quotation/rates') {

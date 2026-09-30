@@ -636,3 +636,137 @@ export interface SupportTicket {
   created_at: string;
   updated_at: string;
 }
+
+export type AuditAction = 
+  | 'CREATE' 
+  | 'UPDATE' 
+  | 'DELETE' 
+  | 'SOFT_DELETE' 
+  | 'RESTORE' 
+  | 'APPROVE' 
+  | 'REJECT' 
+  | 'PAYMENT' 
+  | 'PAYMENT_REVERSAL' 
+  | 'LOGIN' 
+  | 'LOGOUT' 
+  | 'LOGIN_FAILED' 
+  | 'ACCESS_DENIED' 
+  | 'EXPORT' 
+  | 'DOWNLOAD' 
+  | 'PERMISSION_CHANGE' 
+  | 'CONFIGURATION_CHANGE' 
+  | 'SECURITY_ALERT' 
+  | 'SYSTEM_ERROR';
+
+export type AuditModule = 
+  | 'FINANCIAL' 
+  | 'FLEET' 
+  | 'LOGISTICS' 
+  | 'ADMINISTRATION' 
+  | 'AUTH' 
+  | 'SECURITY' 
+  | 'SETTINGS';
+
+export interface AuditActor {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  tenant_id?: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  sequence_number: number;
+  schema_version: string;
+  timestamp: string;
+  recorded_at: string;
+  actor: AuditActor;
+  module: AuditModule;
+  entity_type: string;
+  entity_id: string;
+  action: AuditAction;
+  outcome: 'SUCCESS' | 'FAILURE' | 'DENIED' | 'ERROR';
+  severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  details: string;
+  previous_values?: Record<string, any> | null;
+  new_values?: Record<string, any> | null;
+  changed_fields?: string[];
+  reason?: string | null;
+  request_id: string;
+  correlation_id: string;
+  session_ref_hash: string;
+  source_ip?: string;
+  user_agent?: string;
+  previous_event_hash: string;
+  current_event_hash: string;
+}
+
+export interface AuditAlert {
+  id: string;
+  rule_id: string;
+  title: string;
+  severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  description: string;
+  entity_id: string;
+  related_user: string;
+  event_id: string;
+  timestamp: string;
+  status: 'OPEN' | 'UNDER_REVIEW' | 'CLOSED';
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_action?: string | null;
+}
+
+export interface AuditInvestigationNote {
+  timestamp: string;
+  author: string;
+  note: string;
+}
+
+export interface AuditCase {
+  id: string;
+  case_number: string;
+  detection_rule: string;
+  title: string;
+  severity: 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  related_user: string;
+  related_record: string;
+  supporting_event_ids: string[];
+  assigned_reviewer: string;
+  status: 'OPEN' | 'UNDER_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED' | 'FALSE_POSITIVE';
+  investigation_notes: AuditInvestigationNote[];
+  findings?: string | null;
+  resolution?: string | null;
+  created_at: string;
+  closed_at?: string | null;
+}
+
+export interface AuditVerificationResult {
+  valid: boolean;
+  total_events: number;
+  verified_at: string;
+  genesis_root: string;
+  latest_event_hash: string;
+  issues: Array<{
+    type: string;
+    event_id?: string;
+    sequence_number?: number;
+    message: string;
+  }>;
+}
+
+export interface AuditHealthMetrics {
+  status: 'HEALTHY' | 'DEGRADED_INTEGRITY_BREACH';
+  total_events: number;
+  latest_event_at: string | null;
+  latest_event_id: string | null;
+  total_alerts: number;
+  open_alerts: number;
+  total_cases: number;
+  open_cases: number;
+  hash_chain_valid: boolean;
+  sequence_continuity_valid: boolean;
+  storage_size_bytes: number;
+  server_time: string;
+}
