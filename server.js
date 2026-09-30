@@ -3,6 +3,21 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as auditService from './apps/api/src/services/auditService.js';
+import * as productivityService from './apps/api/src/services/productivityService.js';
+
+// Start persistent background reminder & SLA escalation scheduler (runs every 60s)
+setInterval(() => {
+  try {
+    productivityService.runBackgroundSchedulerTick();
+  } catch (err) {
+    console.error('[Productivity Scheduler Error]:', err.message);
+  }
+}, 60000);
+
+// Recover missed reminders on server start
+try {
+  productivityService.runBackgroundSchedulerTick();
+} catch (e) {}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -152,6 +167,229 @@ const server = http.createServer((req, res) => {
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: false, error: 'Audit endpoint not found' }));
+  }
+
+  // ── Enterprise Productivity & Workflow Endpoints ───────────────
+  if (reqPath.startsWith('/api/productivity')) {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_operations',
+      role: req.headers['x-actor-role'] || 'manager',
+      name: req.headers['x-actor-name'] || 'Operations Lead'
+    };
+
+    // Summary KPIs: GET /api/productivity/summary
+    if (reqPath === '/api/productivity/summary' && req.method === 'GET') {
+      const summary = productivityService.getProductivitySummary(queryParams.get('userId'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(summary));
+    }
+
+    // Tasks list: GET /api/productivity/tasks
+    if (reqPath === '/api/productivity/tasks' && req.method === 'GET') {
+      const filters = {
+        status: queryParams.get('status'),
+        department: queryParams.get('department'),
+        priority: queryParams.get('priority'),
+        search: queryParams.get('search'),
+        assigned_to: queryParams.get('assigned_to')
+      };
+      const tasks = productivityService.getTasks(filters);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, count: tasks.length, tasks }));
+    }
+
+    // Create task: POST /api/productivity/tasks
+    if (reqPath === '/api/productivity/tasks' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const task = productivityService.createTask(payload, actor);
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, task }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Update task: POST /api/productivity/tasks/update
+    if (reqPath === '/api/productivity/tasks/update' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { taskId, updates } = JSON.parse(b);
+          const task = productivityService.updateTask(taskId, updates, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, task }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Delete task: POST /api/productivity/tasks/delete
+    if (reqPath === '/api/productivity/tasks/delete' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { taskId } = JSON.parse(b);
+          const success = productivityService.deleteTask(taskId, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Reminders list: GET /api/productivity/reminders
+    if (reqPath === '/api/productivity/reminders' && req.method === 'GET') {
+      const reminders = productivityService.getReminders({ status: queryParams.get('status') });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, count: reminders.length, reminders }));
+    }
+
+    // Create reminder: POST /api/productivity/reminders
+    if (reqPath === '/api/productivity/reminders' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const reminder = productivityService.createReminder(payload, actor);
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, reminder }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Snooze reminder: POST /api/productivity/reminders/snooze
+    if (reqPath === '/api/productivity/reminders/snooze' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { reminderId, minutes } = JSON.parse(b);
+          const reminder = productivityService.snoozeReminder(reminderId, minutes);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, reminder }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Complete reminder: POST /api/productivity/reminders/complete
+    if (reqPath === '/api/productivity/reminders/complete' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { reminderId } = JSON.parse(b);
+          const reminder = productivityService.completeReminder(reminderId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, reminder }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Notifications: GET /api/productivity/notifications
+    if (reqPath === '/api/productivity/notifications' && req.method === 'GET') {
+      const notifications = productivityService.getNotifications(queryParams.get('recipientId'));
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, notifications }));
+    }
+
+    // Acknowledge notification: POST /api/productivity/notifications/ack
+    if (reqPath === '/api/productivity/notifications/ack' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { notificationId } = JSON.parse(b);
+          const notif = productivityService.acknowledgeNotification(notificationId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, notification: notif }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Workflows: GET /api/productivity/workflows
+    if (reqPath === '/api/productivity/workflows' && req.method === 'GET') {
+      const workflows = productivityService.getWorkflows({ status: queryParams.get('status') });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: true, workflows }));
+    }
+
+    // Create workflow: POST /api/productivity/workflows
+    if (reqPath === '/api/productivity/workflows' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const workflow = productivityService.createWorkflow(payload, actor);
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, workflow }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Process approval/rejection: POST /api/productivity/workflows/review
+    if (reqPath === '/api/productivity/workflows/review' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { workflowId, action, reason } = JSON.parse(b);
+          const workflow = productivityService.processApproval(workflowId, action, reason, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, workflow }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Clear all: POST /api/productivity/clear
+    if (reqPath === '/api/productivity/clear' && req.method === 'POST') {
+      const result = productivityService.clearAll();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: false, error: 'Productivity endpoint not found' }));
   }
 
   // API handler for quotation rates

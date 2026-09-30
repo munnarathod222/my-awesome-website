@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ESC-2026-5D1B2C",
+    "task_id": "TSK-2026-76E731",
+    "breach_type": "RESOLUTION_BREACH",
+    "severity": "HIGH",
+    "notified_party": "operations@jaibhavanicargo.com",
+    "escalation_timestamp": "2026-09-30T11:32:08.641Z",
+    "resolution_timestamp": null,
+    "resolution_notes": "Automated SLA escalation: Task TSK-2026-76E731 breached SLA deadline (2026-09-28T11:32:08.631Z)"
+  },
+  {
+    "id": "ESC-2026-4B3A61",
+    "task_id": "TSK-2026-501AFA",
+    "breach_type": "RESOLUTION_BREACH",
+    "severity": "HIGH",
+    "notified_party": "operations@jaibhavanicargo.com",
+    "escalation_timestamp": "2026-09-30T11:29:58.588Z",
+    "resolution_timestamp": null,
+    "resolution_notes": "Automated SLA escalation: Task TSK-2026-501AFA breached SLA deadline (2026-09-28T11:28:38.769Z)"
+  },
+  {
+    "id": "ESC-2026-46E8D7",
+    "task_id": "TSK-2026-5F281D",
+    "breach_type": "RESOLUTION_BREACH",
+    "severity": "HIGH",
+    "notified_party": "operations@jaibhavanicargo.com",
+    "escalation_timestamp": "2026-09-30T11:29:58.588Z",
+    "resolution_timestamp": null,
+    "resolution_notes": "Automated SLA escalation: Task TSK-2026-5F281D breached SLA deadline (2026-09-28T11:29:58.580Z)"
+  }
+]
