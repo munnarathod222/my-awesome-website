@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 
-console.log('=== Building Enterprise Audit & Anti-Fraud Security Dashboard ===');
+console.log('=== Building Bulletproof Enterprise Audit & Anti-Fraud Security Dashboard ===');
 
 const sourceCode = `
 import { r as React } from "./vendor-react-Bs5V2qFE.js";
@@ -15,24 +15,40 @@ import {
   q as CardTitle, 
   r as CardDescription, 
   I as Input, 
-  S as Select, 
-  e as SelectTrigger, 
-  g as SelectValue, 
-  h as SelectContent, 
-  d as SelectItem, 
-  y as Table, 
-  oe as TableHeader, 
-  E as TableRow, 
-  m as TableHead, 
-  ie as TableBody, 
-  n as TableCell, 
-  p as Badge, 
   k as cn, 
   t as toast 
 } from "./index-C7kP9xL2.js";
 import { g as downloadPdf, a as downloadExcel } from "./downloadUtils-2aSgxB0V.js";
 
-const GENESIS_ROOT = "00000000000000000000GENESIS_ROOT_JAI_BHAVANI_CARGO_2026_SECURITY_SYSTEM";
+// Bulletproof self-contained UI primitives
+function Badge({ className, variant, children }) {
+  return React.createElement('span', {
+    className: cn(
+      'inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-colors',
+      variant === 'outline' ? 'bg-transparent border-border/70' : 'bg-secondary/40 text-secondary-foreground border-transparent',
+      className
+    )
+  }, children);
+}
+
+function Table({ className, children }) {
+  return React.createElement('table', { className: cn('w-full caption-bottom text-sm border-collapse', className) }, children);
+}
+function TableHeader({ className, children }) {
+  return React.createElement('thead', { className: cn('[&_tr]:border-b bg-secondary/15', className) }, children);
+}
+function TableBody({ className, children }) {
+  return React.createElement('tbody', { className: cn('[&_tr:last-child]:border-0', className) }, children);
+}
+function TableRow({ className, children }) {
+  return React.createElement('tr', { className: cn('border-b border-border/40 transition-colors hover:bg-muted/40', className) }, children);
+}
+function TableHead({ className, children }) {
+  return React.createElement('th', { className: cn('h-10 px-3 text-left align-middle font-bold text-muted-foreground', className) }, children);
+}
+function TableCell({ className, children }) {
+  return React.createElement('td', { className: cn('p-3 align-middle', className) }, children);
+}
 
 const ACTION_COLORS = {
   CREATE: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -380,7 +396,7 @@ export default function EnterpriseAuditLogsPage() {
       React.createElement('p', { className: 'text-muted-foreground max-w-md mx-auto text-sm' }, 
         'System Audit & Anti-Fraud Security Logs are strictly protected and accessible exclusively by Master Superusers and authorized Compliance Officers.'
       ),
-      React.createElement(Button, { asChild: true, className: 'rounded-xl font-bold px-6' },
+      React.createElement(Button, { asChild: true, className: 'rounded-xl font-bold px-6 cursor-pointer' },
         React.createElement('a', { href: '/dashboard' }, 'Return to Dashboard')
       )
     );
@@ -537,33 +553,31 @@ export default function EnterpriseAuditLogsPage() {
               onChange: e => setSearchTerm(e.target.value),
               className: 'h-9 text-xs rounded-xl w-full sm:w-64 bg-background'
             }),
-            React.createElement(Select, { value: moduleFilter, onValueChange: setModuleFilter },
-              React.createElement(SelectTrigger, { className: 'h-9 text-xs rounded-xl w-32 bg-background' },
-                React.createElement(SelectValue, { placeholder: 'Module' })
-              ),
-              React.createElement(SelectContent, null,
-                React.createElement(SelectItem, { value: 'all' }, 'All Modules'),
-                React.createElement(SelectItem, { value: 'FINANCIAL' }, 'Financial'),
-                React.createElement(SelectItem, { value: 'FLEET' }, 'Fleet'),
-                React.createElement(SelectItem, { value: 'LOGISTICS' }, 'Logistics'),
-                React.createElement(SelectItem, { value: 'ADMINISTRATION' }, 'Admin & Staff'),
-                React.createElement(SelectItem, { value: 'SECURITY' }, 'Security & Auth'),
-                React.createElement(SelectItem, { value: 'SETTINGS' }, 'Settings')
-              )
+            React.createElement('select', {
+              value: moduleFilter,
+              onChange: e => setModuleFilter(e.target.value),
+              className: 'h-9 text-xs rounded-xl px-2.5 bg-background border border-border/80 text-foreground cursor-pointer outline-none'
+            },
+              React.createElement('option', { value: 'all' }, 'All Modules'),
+              React.createElement('option', { value: 'FINANCIAL' }, 'Financial'),
+              React.createElement('option', { value: 'FLEET' }, 'Fleet'),
+              React.createElement('option', { value: 'LOGISTICS' }, 'Logistics'),
+              React.createElement('option', { value: 'ADMINISTRATION' }, 'Admin & Staff'),
+              React.createElement('option', { value: 'SECURITY' }, 'Security & Auth'),
+              React.createElement('option', { value: 'SETTINGS' }, 'Settings')
             ),
-            React.createElement(Select, { value: actionFilter, onValueChange: setActionFilter },
-              React.createElement(SelectTrigger, { className: 'h-9 text-xs rounded-xl w-28 bg-background' },
-                React.createElement(SelectValue, { placeholder: 'Action' })
-              ),
-              React.createElement(SelectContent, null,
-                React.createElement(SelectItem, { value: 'all' }, 'All Actions'),
-                React.createElement(SelectItem, { value: 'CREATE' }, 'CREATE'),
-                React.createElement(SelectItem, { value: 'UPDATE' }, 'UPDATE'),
-                React.createElement(SelectItem, { value: 'DELETE' }, 'DELETE'),
-                React.createElement(SelectItem, { value: 'PAYMENT' }, 'PAYMENT'),
-                React.createElement(SelectItem, { value: 'APPROVE' }, 'APPROVE'),
-                React.createElement(SelectItem, { value: 'EXPORT' }, 'EXPORT')
-              )
+            React.createElement('select', {
+              value: actionFilter,
+              onChange: e => setActionFilter(e.target.value),
+              className: 'h-9 text-xs rounded-xl px-2.5 bg-background border border-border/80 text-foreground cursor-pointer outline-none'
+            },
+              React.createElement('option', { value: 'all' }, 'All Actions'),
+              React.createElement('option', { value: 'CREATE' }, 'CREATE'),
+              React.createElement('option', { value: 'UPDATE' }, 'UPDATE'),
+              React.createElement('option', { value: 'DELETE' }, 'DELETE'),
+              React.createElement('option', { value: 'PAYMENT' }, 'PAYMENT'),
+              React.createElement('option', { value: 'APPROVE' }, 'APPROVE'),
+              React.createElement('option', { value: 'EXPORT' }, 'EXPORT')
             )
           )
         )
@@ -577,16 +591,16 @@ export default function EnterpriseAuditLogsPage() {
             )
           : React.createElement('div', { className: 'overflow-x-auto' },
               React.createElement(Table, null,
-                React.createElement(TableHeader, { className: 'bg-secondary/15 text-[11px] uppercase tracking-wider' },
+                React.createElement(TableHeader, null,
                   React.createElement(TableRow, null,
-                    React.createElement(TableHead, { className: 'w-16 font-mono' }, 'Seq'),
-                    React.createElement(TableHead, { className: 'w-36' }, 'Timestamp'),
-                    React.createElement(TableHead, { className: 'w-48' }, 'Operator / Identity'),
-                    React.createElement(TableHead, { className: 'w-24' }, 'Action'),
-                    React.createElement(TableHead, { className: 'w-28' }, 'Module'),
-                    React.createElement(TableHead, { className: 'w-36 font-mono' }, 'Entity ID'),
-                    React.createElement(TableHead, null, 'Change Details & Diff'),
-                    React.createElement(TableHead, { className: 'w-24 text-right' }, 'Inspect')
+                    React.createElement(TableHead, { className: 'w-16 font-mono text-[11px]' }, 'Seq'),
+                    React.createElement(TableHead, { className: 'w-36 text-[11px]' }, 'Timestamp'),
+                    React.createElement(TableHead, { className: 'w-48 text-[11px]' }, 'Operator / Identity'),
+                    React.createElement(TableHead, { className: 'w-24 text-[11px]' }, 'Action'),
+                    React.createElement(TableHead, { className: 'w-28 text-[11px]' }, 'Module'),
+                    React.createElement(TableHead, { className: 'w-36 font-mono text-[11px]' }, 'Entity ID'),
+                    React.createElement(TableHead, { className: 'text-[11px]' }, 'Change Details & Diff'),
+                    React.createElement(TableHead, { className: 'w-24 text-right text-[11px]' }, 'Inspect')
                   )
                 ),
                 React.createElement(TableBody, null,
@@ -794,7 +808,6 @@ export default function EnterpriseAuditLogsPage() {
                     React.createElement('span', { className: 'font-mono text-foreground' }, new Date(c.created_at).toLocaleString('en-IN'))
                   )
                 ),
-                // Investigation Notes Log
                 React.createElement('div', { className: 'space-y-2' },
                   React.createElement('h4', { className: 'text-xs font-bold text-foreground uppercase tracking-wider' }, 'Investigation Timeline & Notes'),
                   React.createElement('div', { className: 'space-y-2 max-h-48 overflow-y-auto pr-1' },
@@ -1004,7 +1017,6 @@ export default function EnterpriseAuditLogsPage() {
 fs.writeFileSync(path.resolve(__dirname, 'AuditLogsPage.jsx'), sourceCode, 'utf8');
 console.log('✓ Generated tools/AuditLogsPage.jsx');
 
-// Build with esbuild into dist/assets/AuditLogsPage-Btx4U3u5.js
 const destTargets = [
   'dist/assets/AuditLogsPage-Btx4U3u5.js',
   'apps/web/dist/assets/AuditLogsPage-Btx4U3u5.js',
@@ -1033,4 +1045,4 @@ try {
   process.exit(1);
 }
 
-console.log('=== Enterprise Audit Dashboard compiled successfully! ===');
+console.log('=== Bulletproof Enterprise Audit Dashboard compiled successfully! ===');
