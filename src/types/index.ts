@@ -589,3 +589,50 @@ export interface DocumentAuditLog {
   details: string;
   metadata?: Record<string, any>;
 }
+
+export interface TicketMessage {
+  id: string;
+  sender_type: 'client' | 'admin';
+  sender_name: string;
+  is_internal_note?: boolean;
+  message: string;
+  attachments?: string[];
+  created_at: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  ticket_number: string;
+  client_id: string;
+  client_name: string;
+  trip_id?: string;
+  trip_number?: string;
+  lr_number?: string;
+  truck_number?: string;
+  driver_name?: string;
+  driver_phone?: string;
+  
+  category: 'delay' | 'damage' | 'billing' | 'pod' | 'driver' | 'other';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  subject: string;
+  description: string;
+  attachments: string[];
+  
+  status: 'open' | 'investigating' | 'escalated' | 'resolved' | 'closed';
+  is_escalated: boolean;
+  escalated_at?: string;
+  escalation_reason?: string;
+  
+  messages: TicketMessage[];
+  
+  resolution_summary?: string;
+  resolved_at?: string;
+  resolved_by?: string;
+  
+  rating?: number;
+  rating_feedback?: string;
+  rated_at?: string;
+  
+  created_at: string;
+  updated_at: string;
+}

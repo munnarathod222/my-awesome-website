@@ -55,7 +55,6 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
 
   const fleetOperationsItems = [
     { icon: Truck,        label: 'Truck Manager',     path: '/truck-manager',        roles: ['super_admin','admin','dispatcher','supervisor'] },
-    { icon: MapPin,       label: 'GPS',               path: '/gps',                  roles: ['super_admin','admin','dispatcher','manager','supervisor','user'] },
     { icon: CircleDashed, label: 'Tyres & Battery',   path: '/tyres',                roles: ['super_admin','admin','dispatcher','manager','supervisor'] },
     { icon: FileBox,      label: 'Vehicle Docs',      path: '/truck-docs',           roles: ['super_admin','admin','dispatcher','supervisor'] },
     { icon: Wrench,        label: 'Fleet Maintenance',path: '/fleet-maintenance',    roles: ['super_admin','admin','dispatcher'] },
@@ -65,9 +64,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
     { icon: MapPin,        label: 'Route Master',     path: '/routes-master',        roles: ['super_admin','admin','dispatcher'] },
     { icon: Package,       label: 'Inventory',        path: '/inventory',            roles: ['super_admin','admin','manager','dispatcher'] },
   ];
-  if (showPodManagement) {
-    fleetOperationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
-  }
+  fleetOperationsItems.push({ icon: FileCheck, label: 'Lorry Receipts & POD', path: '/lorry-receipts', roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] });
   fleetOperationsItems.push({ icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher'] });
 
   const menuGroups = [
@@ -110,6 +107,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: Users,     label: 'Clients List',               path: '/clients',       roles: ['super_admin','admin','manager'] },
         { icon: Building2, label: 'Vendor Registration Tracker',path: '/vendor-tracker', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Contact2,  label: 'Contacts Directory',         path: '/contacts',      roles: ['super_admin','admin','manager','dispatcher'] },
+        { icon: ShieldAlert, label: 'Support & Complaints',     path: '/support-tickets', roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
       ]
     },
     {

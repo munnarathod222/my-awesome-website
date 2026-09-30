@@ -1,5 +1,5 @@
-import { employeesData, trucksData, tyresData, routesData, clientsData, tripsData, cashbookData, fuelLogsData, billingCyclesData, creditCardsData, inventoryData, remindersData, expenseCategoriesData, expensesData, initialCompanySettings, lorryReceiptsData, podRecordsData, documentSequencesData } from './seedData';
-import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem, LorryReceipt, PodRecord, DocumentSequence, DocumentAuditLog } from '../types';
+import { employeesData, trucksData, tyresData, routesData, clientsData, tripsData, cashbookData, fuelLogsData, billingCyclesData, creditCardsData, inventoryData, remindersData, expenseCategoriesData, expensesData, initialCompanySettings, lorryReceiptsData, podRecordsData, documentSequencesData, supportTicketsData } from './seedData';
+import { Employee, Truck, TruckTyre, Route, ClientProfile, TripLog, CashbookTransaction, FuelLog, BillingCycle, CreditCard, InventoryItem, Reminder, DriverAccidentReport, MailboxMessage, FleetPart, MaintenanceProblem, Expense, ExpenseCategoryItem, LorryReceipt, PodRecord, DocumentSequence, DocumentAuditLog, SupportTicket } from '../types';
 
 const TODAY_DATE = '2026-09-02';
 
@@ -135,5 +135,7 @@ export const dbtabeses = {
   getDocumentSequences: (): DocumentSequence[] => getItem('jc_document_sequences', documentSequencesData),
   setDocumentSequences: (data: DocumentSequence[]) => setItem('jc_document_sequences', data),
   getAuditLogs: (): DocumentAuditLog[] => getItem('jc_document_audit_logs', []),
-  setAuditLogs: (data: DocumentAuditLog[]) => setItem('jc_document_audit_logs', data)
+  setAuditLogs: (data: DocumentAuditLog[]) => setItem('jc_document_audit_logs', data),
+  getSupportTickets: (): SupportTicket[] => getItem('jc_support_tickets', supportTicketsData),
+  setSupportTickets: (data: SupportTicket[]) => setItem('jc_support_tickets', data)
 };

@@ -924,6 +924,135 @@ export const initialDocumentSequences = [
   }
 ];
 
+export const initialSupportTickets = [
+  {
+    id: 'tkt-001',
+    ticket_number: 'JBC/TKT/0001',
+    client_id: 'client-001',
+    client_name: 'Amazon India Transportation',
+    trip_id: 'trip-280',
+    trip_number: 'TRIP-280',
+    lr_number: 'JBC/26-27/000280',
+    truck_number: 'TG12U2637',
+    driver_name: 'Ramesh Kumar',
+    driver_phone: '+91 98480 12345',
+    category: 'delay' as const,
+    priority: 'urgent' as const,
+    subject: 'Transit Delay on Hyderabad to Warangal Highway',
+    description: 'Shipment #TRIP-280 has been stationary near Aler bypass for over 3 hours. Urgent dock delivery scheduled for 15:30 today.',
+    attachments: [],
+    status: 'investigating' as const,
+    is_escalated: false,
+    messages: [
+      {
+        id: 'msg-1',
+        sender_type: 'client' as const,
+        sender_name: 'Amazon Logistics Team',
+        message: 'Dock slot D1 at Warangal FC requires this container by 15:30. Driver is not responding to our IVR.',
+        created_at: '2026-09-30T10:15:00Z'
+      },
+      {
+        id: 'msg-2',
+        sender_type: 'admin' as const,
+        sender_name: 'JBC Operations (Suresh)',
+        is_internal_note: false,
+        message: 'Spoke directly with Driver Ramesh. Minor tyre puncture near highway dhaba. Tyre technician has reached and truck will resume transit within 25 mins. Revised ETA 15:15.',
+        created_at: '2026-09-30T10:35:00Z'
+      }
+    ],
+    created_at: '2026-09-30T10:10:00Z',
+    updated_at: '2026-09-30T10:35:00Z'
+  },
+  {
+    id: 'tkt-002',
+    ticket_number: 'JBC/TKT/0002',
+    client_id: 'client-002',
+    client_name: 'Flipkart India Pvt Ltd',
+    trip_id: 'trip-279',
+    trip_number: 'TRIP-279',
+    lr_number: 'JBC/26-27/000279',
+    truck_number: 'TS09UB8844',
+    driver_name: 'Mahesh Rathod',
+    driver_phone: '+91 98765 43210',
+    category: 'damage' as const,
+    priority: 'high' as const,
+    subject: 'Outer Carton Water Damage on Electronics Consignment',
+    description: 'Upon unloading at Bengaluru Hub, 2 corrugated master cartons were found damp due to rain seepage near rear container seal.',
+    attachments: [
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
+    ],
+    status: 'escalated' as const,
+    is_escalated: true,
+    escalated_at: '2026-09-30T11:00:00Z',
+    escalation_reason: 'High-value electronics claim exceeding ₹50,000 threshold. Escalated to senior management.',
+    messages: [
+      {
+        id: 'msg-3',
+        sender_type: 'client' as const,
+        sender_name: 'Flipkart QC Inward',
+        message: 'Attached photograph of water ingress on carton barcode #FK-99210. Claim surveyor needs to be assigned.',
+        attachments: [
+          'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
+        ],
+        created_at: '2026-09-29T16:20:00Z'
+      },
+      {
+        id: 'msg-4',
+        sender_type: 'admin' as const,
+        sender_name: 'Vinod Rathod (Director)',
+        is_internal_note: false,
+        message: 'Escalated to operations@jaibhavanicargo.com. Transit insurance surveyor notified. Our Bengaluru field supervisor is visiting your warehouse at 11:30 AM to inspect inner sealed contents.',
+        created_at: '2026-09-30T09:00:00Z'
+      }
+    ],
+    created_at: '2026-09-29T16:15:00Z',
+    updated_at: '2026-09-30T09:00:00Z'
+  },
+  {
+    id: 'tkt-003',
+    ticket_number: 'JBC/TKT/0003',
+    client_id: 'client-003',
+    client_name: 'Reliance Retail Supply Chain',
+    trip_id: 'trip-275',
+    trip_number: 'TRIP-275',
+    lr_number: 'JBC/26-27/000275',
+    truck_number: 'TG12U2637',
+    driver_name: 'Ramesh Kumar',
+    driver_phone: '+91 98480 12345',
+    category: 'pod' as const,
+    priority: 'medium' as const,
+    subject: 'Request for Clean Stamped Physical POD Copy',
+    description: 'Client finance requires physical copy with receiver round rubber stamp for invoice clearance of ₹45,000.',
+    attachments: [],
+    status: 'resolved' as const,
+    is_escalated: false,
+    resolution_summary: 'Clean stamped POD re-scanned in high resolution and uploaded to client POD vault. Physical original couriered via DTDC #DT12345.',
+    resolved_at: '2026-09-29T14:00:00Z',
+    resolved_by: 'JBC Dispatch Officer',
+    rating: 5,
+    rating_feedback: 'Fast resolution and very cooperative dispatch team. Thanks!',
+    rated_at: '2026-09-29T15:30:00Z',
+    messages: [
+      {
+        id: 'msg-5',
+        sender_type: 'client' as const,
+        sender_name: 'Reliance Accounts',
+        message: 'The uploaded POD copy has a faint stamp. Can you provide a re-scan?',
+        created_at: '2026-09-29T11:00:00Z'
+      },
+      {
+        id: 'msg-6',
+        sender_type: 'admin' as const,
+        sender_name: 'JBC Admin',
+        message: 'Re-uploaded HD scan to your POD vault. Physical bill couriered.',
+        created_at: '2026-09-29T14:00:00Z'
+      }
+    ],
+    created_at: '2026-09-29T10:45:00Z',
+    updated_at: '2026-09-29T15:30:00Z'
+  }
+];
+
 export const expenseCategoriesData: ExpenseCategoryItem[] = initialExpenseCategories;
 export const expensesData: Expense[] = initialExpenses;
 export const routesData: Route[] = initialRoutes;
@@ -942,3 +1071,4 @@ export const employeesData: Employee[] = initialEmployees;
 export const lorryReceiptsData = initialLorryReceipts;
 export const podRecordsData = initialPodRecords;
 export const documentSequencesData = initialDocumentSequences;
+export const supportTicketsData = initialSupportTickets;
