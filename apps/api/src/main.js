@@ -19,6 +19,7 @@ import logger from './utils/logger.js';
 import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
 import * as auditService from './services/auditService.js';
+import * as productivityService from './services/productivityService.js';
 
 
 const app = express();
@@ -150,6 +151,209 @@ auditRouter.post('/reset', (req, res) => {
 });
 
 app.use('/api/audit', auditRouter);
+
+// ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
+const productivityRouter = express.Router();
+
+productivityRouter.get('/summary', (req, res) => {
+  try {
+    const summary = productivityService.getProductivitySummary(req.query.userId);
+    return res.json(summary);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.get('/tasks', (req, res) => {
+  try {
+    const tasks = productivityService.getTasks(req.query);
+    return res.json({ success: true, count: tasks.length, tasks });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/tasks', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.createTask(req.body, actor);
+    return res.status(201).json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.put('/tasks/:id', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.updateTask(req.params.id, req.body, actor);
+    if (!task) return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/tasks/update', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.updateTask(req.body.id, req.body, actor);
+    if (!task) return res.status(404).json({ success: false, error: 'Task not found' });
+    return res.json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.delete('/tasks/:id', (req, res) => {
+  try {
+    const ok = productivityService.deleteTask(req.params.id);
+    return res.json({ success: ok });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/tasks/delete', (req, res) => {
+  try {
+    const ok = productivityService.deleteTask(req.body.id);
+    return res.json({ success: ok });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.get('/reminders', (req, res) => {
+  try {
+    const reminders = productivityService.getReminders(req.query);
+    return res.json({ success: true, count: reminders.length, reminders });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/reminders', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const reminder = productivityService.createReminder(req.body, actor);
+    return res.status(201).json({ success: true, reminder });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/reminders/snooze', (req, res) => {
+  try {
+    const reminder = productivityService.snoozeReminder(req.body.id, req.body.minutes || 30);
+    if (!reminder) return res.status(404).json({ success: false, error: 'Reminder not found' });
+    return res.json({ success: true, reminder });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/reminders/complete', (req, res) => {
+  try {
+    const reminder = productivityService.completeReminder(req.body.id);
+    if (!reminder) return res.status(404).json({ success: false, error: 'Reminder not found' });
+    return res.json({ success: true, reminder });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.get('/notifications', (req, res) => {
+  try {
+    const notifications = productivityService.getNotifications(req.query.recipientId);
+    return res.json({ success: true, count: notifications.length, notifications });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/notifications/ack', (req, res) => {
+  try {
+    const notif = productivityService.acknowledgeNotification(req.body.id);
+    return res.json({ success: true, notification: notif });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.get('/workflows', (req, res) => {
+  try {
+    const workflows = productivityService.getWorkflows(req.query);
+    return res.json({ success: true, count: workflows.length, workflows });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/workflows', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const wf = productivityService.createWorkflow(req.body, actor);
+    return res.status(201).json({ success: true, workflow: wf });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/workflows/review', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_approver',
+      name: req.headers['x-actor-name'] || 'Authorised Reviewer',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const wf = productivityService.processApproval(req.body.id, req.body.action, req.body.reason, actor);
+    if (!wf) return res.status(404).json({ success: false, error: 'Workflow request not found' });
+    return res.json({ success: true, workflow: wf });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/clear', (req, res) => {
+  try {
+    const result = productivityService.clearAll();
+    return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/productivity', productivityRouter);
+
+// Persistent Background Scheduler Ticker (Runs in Node.js server independently of browser tabs)
+// Operates purely on local container memory/disk (data/productivity_*.json) with ZERO outbound network bandwidth!
+setInterval(() => {
+  try {
+    productivityService.processSchedulerTick();
+  } catch (e) {
+    // Fail-safe protection
+  }
+}, 60000);
 
 // ----------------------------------------------------
 // Supabase Sync Persistence Configurations
