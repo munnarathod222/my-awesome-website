@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as auditService from './apps/api/src/services/auditService.js';
 import * as productivityService from './apps/api/src/services/productivityService.js';
+import * as orgService from './apps/api/src/services/orgService.js';
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -397,6 +398,188 @@ const server = http.createServer((req, res) => {
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: false, error: 'Productivity endpoint not found' }));
+  }
+
+  // ── Enterprise User Management, Roles & Organization API Endpoints ─
+  if (reqPath.startsWith('/api/org')) {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      role: req.headers['x-actor-role'] || 'superuser',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com'
+    };
+
+    // State: GET /api/org/state
+    if (reqPath === '/api/org/state' && req.method === 'GET') {
+      const state = orgService.getOrgState();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify(state));
+    }
+
+    // Save User: POST /api/org/user/save
+    if (reqPath === '/api/org/user/save' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const result = orgService.saveUser(payload, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Revoke User Access: POST /api/org/user/revoke
+    if (reqPath === '/api/org/user/revoke' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { userId, reason } = JSON.parse(b);
+          const result = orgService.revokeAccess(userId, reason, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Restore User Access: POST /api/org/user/restore
+    if (reqPath === '/api/org/user/restore' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { userId } = JSON.parse(b);
+          const result = orgService.restoreAccess(userId, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Delete User: POST /api/org/user/delete
+    if (reqPath === '/api/org/user/delete' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { userId } = JSON.parse(b);
+          const result = orgService.deleteUser(userId, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Save Role: POST /api/org/role/save
+    if (reqPath === '/api/org/role/save' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const result = orgService.saveRole(payload, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Delete Role: POST /api/org/role/delete
+    if (reqPath === '/api/org/role/delete' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { roleId } = JSON.parse(b);
+          const result = orgService.deleteRole(roleId, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Save Team: POST /api/org/team/save
+    if (reqPath === '/api/org/team/save' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const result = orgService.saveTeam(payload, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Delete Team: POST /api/org/team/delete
+    if (reqPath === '/api/org/team/delete' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { teamId } = JSON.parse(b);
+          const result = orgService.deleteTeam(teamId, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // Update Hierarchy: POST /api/org/hierarchy/update
+    if (reqPath === '/api/org/hierarchy/update' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { hierarchyChanges } = JSON.parse(b);
+          const result = orgService.updateHierarchy(hierarchyChanges, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: false, error: 'Org endpoint not found' }));
   }
 
   // API handler for quotation rates
