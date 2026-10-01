@@ -137,7 +137,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: Building2,   label: 'Transport CRM',          path: '/transport-crm',        roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Building2,   label: 'Sales & Vendor Leads',  path: '/sales-leads',          roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: Briefcase,   label: 'Branding Hub',          path: '/branding-hub',         roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
-        { icon: Bell,        label: 'Reminders',             path: '/reminders',            roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Bell,        label: 'Payment Reminders',     path: '/reminders',            roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: CheckSquare, label: 'To-Do List',            path: '/todo',                 roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: ShieldCheck, label: 'Audit & Security Logs', path: '/dashboard/audit-logs',roles: ['superuser', 'super_admin'] },
         { icon: FileText,    label: 'Reports Center',        path: '/reports',              roles: ['super_admin','admin'] },
