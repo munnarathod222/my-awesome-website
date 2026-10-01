@@ -20,7 +20,7 @@ import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
 import * as auditService from './services/auditService.js';
 import * as productivityService from './services/productivityService.js';
-
+import * as orgService from './services/orgService.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -156,6 +156,161 @@ auditRouter.post('/reset', (req, res) => {
 });
 
 app.use('/api/audit', auditRouter);
+
+// ── Enterprise MNC Organization & User Management Endpoints ─────
+const orgRouter = express.Router();
+
+orgRouter.get('/state', (req, res) => {
+  try {
+    const state = orgService.getOrgState();
+    return res.json(state);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/user/save', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const result = orgService.saveUser(req.body, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/user/revoke', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { userId, reason } = req.body;
+    const result = orgService.revokeAccess(userId, reason, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/user/restore', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { userId } = req.body;
+    const result = orgService.restoreAccess(userId, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/user/delete', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { userId } = req.body;
+    const result = orgService.deleteUser(userId, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/role/save', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const result = orgService.saveRole(req.body, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/role/delete', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { roleId } = req.body;
+    const result = orgService.deleteRole(roleId, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/team/save', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const result = orgService.saveTeam(req.body, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/team/delete', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { teamId } = req.body;
+    const result = orgService.deleteTeam(teamId, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+orgRouter.post('/hierarchy/update', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+      role: req.headers['x-actor-role'] || 'superuser'
+    };
+    const { hierarchyChanges } = req.body;
+    const result = orgService.updateHierarchy(hierarchyChanges, actor);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/org', orgRouter);
 
 // ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
 const productivityRouter = express.Router();

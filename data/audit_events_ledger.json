@@ -387,5 +387,130 @@
     "user_agent": "JBC-Client-Web",
     "previous_event_hash": "e2d10e3666b7b1a87f6c97d5f113aacf54b77b913286525b95ce3c21ae72b343",
     "current_event_hash": "b236a633526707ed55afe8e61c54e66f771eb19fb9827ae610d12435441d45f1"
+  },
+  {
+    "id": "evt_1790883904015_ukw1vh",
+    "sequence_number": 11,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-01T19:45:04.015Z",
+    "recorded_at": "2026-10-01T19:45:04.015Z",
+    "actor": {
+      "id": "usr_vinod_admin",
+      "name": "Vinod Kumar Rathod",
+      "email": "munnarathod222@gmail.com",
+      "role": "superuser",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "AUTH",
+    "entity_type": "ORGANIZATION",
+    "entity_id": "HIERARCHY",
+    "action": "UPDATE",
+    "outcome": "SUCCESS",
+    "severity": "HIGH",
+    "details": "Superuser restructured enterprise reporting hierarchy across 1 reporting lines",
+    "previous_values": null,
+    "new_values": null,
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1790883904017_aopj",
+    "correlation_id": "corr_1790883904017",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "b236a633526707ed55afe8e61c54e66f771eb19fb9827ae610d12435441d45f1",
+    "current_event_hash": "e55fc8fea5df4ddb77400fc3f4de21558d8f1102603518d2e67e8f89141c78f0"
+  },
+  {
+    "id": "evt_1790883904021_76ymuw",
+    "sequence_number": 12,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-01T19:45:04.021Z",
+    "recorded_at": "2026-10-01T19:45:04.021Z",
+    "actor": {
+      "id": "usr_vinod_admin",
+      "name": "Vinod Kumar Rathod",
+      "email": "munnarathod222@gmail.com",
+      "role": "superuser",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "AUTH",
+    "entity_type": "ROLE",
+    "entity_id": "role_custom_1790883904020",
+    "action": "CREATE",
+    "outcome": "SUCCESS",
+    "severity": "MEDIUM",
+    "details": "Superuser created custom role: \"Regional Route Auditor\" (regional_route_auditor)",
+    "previous_values": null,
+    "new_values": {
+      "id": "role_custom_1790883904020",
+      "name": "Regional Route Auditor",
+      "slug": "regional_route_auditor",
+      "tier": 3,
+      "tier_name": "Tier 3 — Operational Specialist",
+      "badge_color": "bg-blue-500/10 text-blue-400 border-blue-500/30",
+      "description": "Audits physical consignment movement across state checkpoints",
+      "is_system": false,
+      "permissions": {
+        "fleet": [
+          "view"
+        ],
+        "logistics": [
+          "view"
+        ],
+        "finance": [
+          "view"
+        ],
+        "maintenance": [
+          "view"
+        ],
+        "documents": [
+          "view"
+        ],
+        "users": [],
+        "audit": []
+      },
+      "created_at": "2026-10-01T19:45:04.020Z"
+    },
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1790883904022_13mu",
+    "correlation_id": "corr_1790883904022",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "e55fc8fea5df4ddb77400fc3f4de21558d8f1102603518d2e67e8f89141c78f0",
+    "current_event_hash": "701addd4c823c63d09fe42e3ca9a20b62b74e44c1b454de4b1aa23cec94bb126"
+  },
+  {
+    "id": "evt_1790883904025_r4fbnr",
+    "sequence_number": 13,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-01T19:45:04.025Z",
+    "recorded_at": "2026-10-01T19:45:04.025Z",
+    "actor": {
+      "id": "usr_vinod_admin",
+      "name": "Vinod Kumar Rathod",
+      "email": "munnarathod222@gmail.com",
+      "role": "superuser",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "AUTH",
+    "entity_type": "ROLE",
+    "entity_id": "role_custom_1790883904020",
+    "action": "DELETE",
+    "outcome": "SUCCESS",
+    "severity": "MEDIUM",
+    "details": "Superuser deleted custom role: \"Regional Route Auditor\" (regional_route_auditor)",
+    "previous_values": null,
+    "new_values": null,
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1790883904025_0x4j",
+    "correlation_id": "corr_1790883904025",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "701addd4c823c63d09fe42e3ca9a20b62b74e44c1b454de4b1aa23cec94bb126",
+    "current_event_hash": "ba2327648910939d894376e99dd478f4cb555f3db85980c78206e0cbb52ec415"
   }
 ]

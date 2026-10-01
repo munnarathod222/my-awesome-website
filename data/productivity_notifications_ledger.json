@@ -1,5 +1,68 @@
 [
   {
+    "id": "NOTIF-2026-1CD32A",
+    "reminder_id": "REM-2026-3D265A",
+    "task_id": null,
+    "recipient_id": "user_audit_test_01",
+    "recipient_name": "Chief Logistics Officer",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "🔔 Reminder: Diesel Price Revision & Pump Credit Settlement",
+      "notes": "",
+      "priority": "HIGH",
+      "trigger_time": "2026-09-30T11:43:38.751Z"
+    },
+    "status": "DELIVERED",
+    "attempt_count": 1,
+    "max_attempts": 5,
+    "last_attempt_at": "2026-10-01T19:45:18.447Z",
+    "failure_reason": null,
+    "read_at": null,
+    "created_at": "2026-10-01T19:45:18.447Z"
+  },
+  {
+    "id": "NOTIF-2026-43FC26",
+    "reminder_id": "REM-2026-312823",
+    "task_id": null,
+    "recipient_id": "user_audit_test_01",
+    "recipient_name": "Chief Logistics Officer",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "🔔 Reminder: Diesel Price Revision & Pump Credit Settlement",
+      "notes": "",
+      "priority": "HIGH",
+      "trigger_time": "2026-09-30T13:44:58.531Z"
+    },
+    "status": "DELIVERED",
+    "attempt_count": 1,
+    "max_attempts": 5,
+    "last_attempt_at": "2026-10-01T19:45:18.447Z",
+    "failure_reason": null,
+    "read_at": null,
+    "created_at": "2026-10-01T19:45:18.447Z"
+  },
+  {
+    "id": "NOTIF-2026-473999",
+    "reminder_id": "REM-2026-DFA26A",
+    "task_id": null,
+    "recipient_id": "user_audit_test_01",
+    "recipient_name": "Chief Logistics Officer",
+    "channel": "IN_APP",
+    "payload": {
+      "title": "🔔 Reminder: Diesel Price Revision & Pump Credit Settlement",
+      "notes": "",
+      "priority": "HIGH",
+      "trigger_time": "2026-09-30T13:47:08.588Z"
+    },
+    "status": "DELIVERED",
+    "attempt_count": 1,
+    "max_attempts": 5,
+    "last_attempt_at": "2026-10-01T19:45:18.447Z",
+    "failure_reason": null,
+    "read_at": null,
+    "created_at": "2026-10-01T19:45:18.447Z"
+  },
+  {
     "id": "NOTIF-2026-E8ECD0",
     "task_id": "TSK-2026-76E731",
     "recipient_id": "all",

@@ -1,15 +1,1815 @@
-import{r as c,j as e,aW as Ye,az as te,aq as is,bU as ds,b2 as ms,c6 as us,aE as Ne,bF as xs,R as hs,a5 as ps,bs as gs,a_ as fs,ca as qe,at as Fe,bG as V,bR as js,n as bs,cc as Je,cd as Be,a2 as vs,af as Ns,aU as ws}from"./vendor-react-Bs5V2qFE.js";import{D as we,a as ye,b as Ce,c as Se,d as _e,w as E,B as m,j as ce,L as se,S as Ae,e as Re,g as Pe,h as ke,i as G,I as U,t as u,u as ys,p as j,N as Cs,_ as Ss,$ as _s,a0 as As,a1 as Rs,a2 as Ps,r as Ve,n as ue,s as xe,v as _,x as H,C as he,o as pe,q as He,O as ze,y as ge,z as fe,A,E as b,F as je,G as d,l as ae,k as be,a3 as Ge,a4 as We,a5 as Ke,a6 as ks,a7 as Xe,a8 as z,W as Ls}from"./index-DLxf9dwO.js";import{u as Ds}from"./usePageData-SCPADote.js";import{A as Es,R as Us}from"./RejectionModal-C0YhdmVZ.js";import{l as Ms}from"./auditLogger-6WQ95Cvr.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";const ve=[{value:"dispatcher",label:"Dispatcher",description:"Manages trip logs, routes, and vehicle dispatching",badgeBg:"bg-blue-500/10 text-blue-500 border-blue-500/20"},{value:"manager",label:"Fleet Manager",description:"Oversight of fleet, maintenance, fuel, and daily operations",badgeBg:"bg-emerald-500/10 text-emerald-500 border-emerald-500/20"},{value:"admin",label:"System Admin",description:"Full administrative access, user permissions, and reports",badgeBg:"bg-purple-500/10 text-purple-500 border-purple-500/20"},{value:"client",label:"Client User",description:"Client Portal access to view shipments, invoices, and PODs",badgeBg:"bg-amber-500/10 text-amber-500 border-amber-500/20"},{value:"superuser",label:"Superuser",description:"Unrestricted master system access & security controls",badgeBg:"bg-rose-500/10 text-rose-500 border-rose-500/20"}];function Ts({isOpen:R,onClose:W,editUser:x=null,onSuccess:M}){const[$,q]=c.useState(""),[K,C]=c.useState(""),[T,X]=c.useState(""),[N,F]=c.useState("dispatcher"),[p,P]=c.useState(""),[Y,k]=c.useState(""),[w,I]=c.useState(!1),[L,O]=c.useState(!1),[h,Z]=c.useState(null);c.useEffect(()=>{R&&(Z(null),I(!1),x?(q(x.name||x.full_name||""),C(x.email||""),X(x.phone_number||x.phone||""),F(x.role?x.role.toLowerCase():"dispatcher"),P(""),k("")):(q(""),C(""),X(""),F("dispatcher"),P(""),k("")))},[R,x]);const re=()=>{const n="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#$";let o="";for(let f=0;f<10;f++)o+=n.charAt(Math.floor(Math.random()*n.length));P(o),k(o)},ie=async n=>{if(n.preventDefault(),!K||!$){u.error("Please fill in Full Name and Email ID");return}if(!x&&!p){u.error("Please enter or generate a password");return}if(p){if(p.length<8){u.error("Password must be at least 8 characters long");return}if(p!==Y){u.error("Passwords do not match");return}}O(!0);try{const o=K.trim().toLowerCase(),f=$.trim(),y=T.trim();let J=null,S=null;try{const v=await window.fetch("/hcgi/api/driver/approve-signup-request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:o,fullName:f,phone:y,role:N,tempPassword:p||void 0})}),g=await v.json().catch(()=>({}));v.ok&&g.success&&g.credentials&&(S=g.credentials,J=g.user)}catch{}if(!S)try{const v=await window.fetch("/api/driver/approve-signup-request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:o,fullName:f,phone:y,role:N,tempPassword:p||void 0})}),g=await v.json().catch(()=>({}));v.ok&&g.success&&g.credentials&&(S=g.credentials,J=g.user)}catch{}S||(S={name:f,email:o,password:p||"(Unchanged)",role:N.toUpperCase(),phone:y}),u.success(`${x?"Updated":"Created"} ${N.toUpperCase()} account for ${f}`),Z({name:f,email:o,password:p||"(Unchanged)",role:N.toUpperCase()});try{const v=JSON.parse(localStorage.getItem("jbc_local_users")||"[]"),g={id:J?.id||"usr_"+Date.now(),name:f,full_name:f,email:o,phone_number:y,role:N,status:"active",created:J?.created||new Date().toISOString()},me=v.filter(oe=>oe.email?.toLowerCase()!==o);localStorage.setItem("jbc_local_users",JSON.stringify([g,...me])),window.dispatchEvent(new Event("storage")),Ms({action:x?.id?"UPDATE":"CREATE",module:"User Management",recordId:o,details:`${x?.id?"Updated":"Created"} user account credentials for "${f}" (${o}) with assigned role "${N.toUpperCase()}"`})}catch(v){console.warn("Failed to update local users cache:",v)}M&&M()}catch(o){console.error("Failed to save user credentials:",o),u.error(o.message||"Failed to save credentials. Please check details.")}finally{O(!1)}},le=()=>{if(!h)return;const n=`🔑 *JAI BHAVANI CARGO LOGIN CREDENTIALS*
-
-👤 *Name:* ${h.name}
-🛡️ *Role:* ${h.role}
-📧 *Email:* ${h.email}
-🔐 *Password:* ${h.password}
-🌐 *Portal URL:* ${window.location.origin}/login`;navigator.clipboard.writeText(n),u.success("Login credentials copied to clipboard!")},de=()=>{if(!h)return;const n=`🔑 *JAI BHAVANI CARGO LOGIN CREDENTIALS*
-
-👤 *Name:* ${h.name}
-🛡️ *Role:* ${h.role}
-📧 *Email:* ${h.email}
-🔐 *Password:* ${h.password}
-🌐 *Portal URL:* ${window.location.origin}/login
-
-Please login and change your password.`,o=T?T.replace(/\D/g,""):"";let f=`https://wa.me/?text=${encodeURIComponent(n)}`;o&&(o.length===10||o.length===12)&&(f=`https://wa.me/${o.length===10?`91${o}`:o}?text=${encodeURIComponent(n)}`),window.open(f,"_blank")},ne=ve.find(n=>n.value===N)||ve[0];return e.jsx(we,{open:R,onOpenChange:W,children:e.jsxs(ye,{className:"sm:max-w-[520px] bg-card text-card-foreground border-border rounded-2xl shadow-xl",children:[e.jsxs(Ce,{children:[e.jsxs(Se,{className:"text-xl font-extrabold font-heading flex items-center gap-2",children:[e.jsx("div",{className:"p-2 bg-blue-500/10 rounded-xl text-blue-500",children:e.jsx(Ye,{className:"w-5 h-5"})}),x?"Edit User Credentials":"Create Staff & User Login Credentials"]}),e.jsx(_e,{children:"Assign roles (Dispatcher, Manager, Admin, Client) and setup login credentials."})]}),h?e.jsxs("div",{className:"py-4 space-y-4",children:[e.jsxs("div",{className:"p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl space-y-3",children:[e.jsxs("div",{className:"flex items-center gap-2 text-emerald-500 font-bold text-sm",children:[e.jsx(te,{className:"w-5 h-5"}),"User Account Successfully Created!"]}),e.jsxs("div",{className:"bg-background/80 p-3.5 rounded-xl border border-border/50 space-y-2 text-xs font-mono",children:[e.jsxs("div",{className:"flex justify-between border-b border-border/40 pb-1.5",children:[e.jsx("span",{className:"text-muted-foreground font-sans",children:"Full Name:"}),e.jsx("span",{className:"font-bold text-foreground",children:h.name})]}),e.jsxs("div",{className:"flex justify-between border-b border-border/40 pb-1.5",children:[e.jsx("span",{className:"text-muted-foreground font-sans",children:"Assigned Role:"}),e.jsx(E,{variant:"outline",className:"font-bold text-[10px] uppercase",children:h.role})]}),e.jsxs("div",{className:"flex justify-between border-b border-border/40 pb-1.5",children:[e.jsx("span",{className:"text-muted-foreground font-sans",children:"Email ID:"}),e.jsx("span",{className:"font-bold text-foreground",children:h.email})]}),e.jsxs("div",{className:"flex justify-between",children:[e.jsx("span",{className:"text-muted-foreground font-sans",children:"Password:"}),e.jsx("span",{className:"font-bold text-blue-500",children:h.password})]})]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-3 pt-2",children:[e.jsxs(m,{onClick:le,variant:"outline",className:"w-full rounded-xl font-bold",children:[e.jsx(is,{className:"w-4 h-4 mr-2"})," Copy Credentials"]}),e.jsxs(m,{onClick:de,className:"w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold",children:[e.jsx(ds,{className:"w-4 h-4 mr-2"})," Share on WhatsApp"]})]}),e.jsx(ce,{className:"pt-2",children:e.jsx(m,{onClick:W,className:"w-full rounded-xl font-bold bg-primary text-primary-foreground",children:"Done"})})]}):e.jsxs("form",{onSubmit:ie,className:"space-y-4 py-2",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(se,{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Assign System Role *"}),e.jsxs(Ae,{value:N,onValueChange:F,children:[e.jsx(Re,{className:"bg-background border-border rounded-xl font-bold text-sm",children:e.jsx(Pe,{placeholder:"Select Role"})}),e.jsx(ke,{children:ve.map(n=>e.jsx(G,{value:n.value,className:"py-2",children:e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"font-bold text-sm text-foreground flex items-center gap-2",children:n.label}),e.jsx("span",{className:"text-[11px] text-muted-foreground",children:n.description})]})},n.value))})]}),e.jsxs("div",{className:"text-[11px] text-muted-foreground mt-1 bg-muted/40 p-2 rounded-xl border border-border/30",children:["📌 Role: ",e.jsx("strong",{className:"text-foreground",children:ne.label})," — ",ne.description]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(se,{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Full Name *"}),e.jsx(U,{required:!0,placeholder:"e.g. Ramesh Kumar",value:$,onChange:n=>q(n.target.value),className:"bg-background border-border rounded-xl text-sm"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(se,{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Phone Number"}),e.jsx(U,{placeholder:"e.g. 9876543210",value:T,onChange:n=>X(n.target.value),className:"bg-background border-border rounded-xl text-sm font-mono"})]})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(se,{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Email Address (Login Username) *"}),e.jsx(U,{type:"email",required:!0,placeholder:"dispatcher@jaibhavanicargo.com",value:K,onChange:n=>C(n.target.value),className:"bg-background border-border rounded-xl text-sm"})]}),e.jsxs("div",{className:"space-y-2 pt-1 border-t border-border/40",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx(se,{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:x?"New Password (Leave blank to keep unchanged)":"Login Password *"}),e.jsxs(m,{type:"button",onClick:re,variant:"ghost",size:"sm",className:"h-7 text-[11px] text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 font-bold px-2 rounded-lg",children:[e.jsx(ms,{className:"w-3 h-3 mr-1"})," Auto-Generate"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"relative",children:[e.jsx(U,{type:w?"text":"password",placeholder:"Enter password",value:p,onChange:n=>P(n.target.value),className:"bg-background border-border rounded-xl text-sm font-mono pr-9"}),e.jsx("button",{type:"button",onClick:()=>I(!w),className:"absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground",children:w?e.jsx(us,{className:"w-4 h-4"}):e.jsx(Ne,{className:"w-4 h-4"})})]}),e.jsx("div",{children:e.jsx(U,{type:w?"text":"password",placeholder:"Confirm password",value:Y,onChange:n=>k(n.target.value),className:"bg-background border-border rounded-xl text-sm font-mono"})})]})]}),e.jsxs(ce,{className:"pt-3 gap-2",children:[e.jsx(m,{type:"button",variant:"outline",onClick:W,className:"rounded-xl",children:"Cancel"}),e.jsx(m,{type:"submit",disabled:L,className:"rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold",children:L?"Saving...":x?"Update Credentials":"Create User Credentials"})]})]})]})})}const Is=[{id:"usr_madhavi",name:"Madhavi",full_name:"Madhavi",email:"madhavi123456@gmail.com",phone_number:"6281618046",role:"manager",status:"active",created:"2026-07-24T00:00:00.000Z"},{id:"usr_superuser_munna",name:"Munna Rathod",full_name:"Munna Rathod",email:"munnarathod222@gmail.com",phone_number:"9876543212",role:"superuser",status:"active",created:"2026-07-01T00:00:00.000Z"}],Hs=()=>{const{currentUser:R}=ys(),[W,x]=xs(),M=W.get("tab")||"users",$=()=>{let s=[],a=[];try{const i=localStorage.getItem("jbc_local_users");i&&(s=JSON.parse(i));const D=localStorage.getItem("jbc_deleted_users_emails");D&&(a=JSON.parse(D))}catch{}const r=["dispatcher@jaibhavanicargo.com","admin@jaibhavanicargo.com",...Array.isArray(a)?a.map(i=>String(i).toLowerCase()):[]],t=new Map;Is.forEach(i=>{r.includes(i.email.toLowerCase())||t.set(i.email.toLowerCase(),i)}),(Array.isArray(s)?s:[]).forEach(i=>{i.email&&!r.includes(i.email.toLowerCase())&&t.set(i.email.toLowerCase(),i)});const l=Array.from(t.values());return localStorage.setItem("jbc_local_users",JSON.stringify(l)),l},[q,K]=c.useState($),C=()=>{K($())},[T,X]=c.useState(""),[N,F]=c.useState(!1),[p,P]=c.useState({email:"",role:"dispatcher"}),[Y,k]=c.useState({open:!1,user:null}),[w,I]=c.useState({open:!1,user:null}),[L,O]=c.useState({}),[h,Z]=c.useState(!1),[re,ie]=c.useState([]),[le,de]=c.useState([]),[ne,n]=c.useState(!1),[o,f]=c.useState(""),[y,J]=c.useState("Pending"),[S,v]=c.useState("-requested_date"),[g,me]=c.useState({Pending:0,Approved:0,Rejected:0}),[oe,Le]=c.useState({open:!1,data:null}),[De,Ee]=c.useState({open:!1,data:null}),{data:Ue,loading:Ze,error:Me,retry:Q}=Ds("users",{sort:"-created"}),Qe=s=>{x({tab:s})},es=async s=>{s.preventDefault();try{const a=crypto.randomUUID(),r=new Date;r.setDate(r.getDate()+7),await j.collection("invitations").create({email:p.email,role:p.role,invited_by:j.authStore.model?.id||"usr_admin",invitation_token:a,status:"pending",expires_at:r.toISOString()},{$autoCancel:!1}),u.success(`Invitation sent to ${p.email}`),F(!1),P({email:"",role:"dispatcher"})}catch(a){console.error(a),u.error("Failed to send invitation")}},ss=async(s,a)=>{const r=(a||"").trim().toLowerCase(),t=s||"";try{const l=JSON.parse(localStorage.getItem("jbc_deleted_users_emails")||"[]");r&&!l.includes(r)&&(l.push(r),localStorage.setItem("jbc_deleted_users_emails",JSON.stringify(l)));const D=JSON.parse(localStorage.getItem("jbc_local_users")||"[]").filter($e=>$e.id!==t&&$e.email?.toLowerCase()!==r);localStorage.setItem("jbc_local_users",JSON.stringify(D)),C()}catch{}try{await window.fetch("/hcgi/api/driver/delete-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:t,email:r})}).catch(async()=>{await window.fetch("/api/driver/delete-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({userId:t,email:r})})})}catch(l){console.warn("Backend delete-user call error:",l)}if(t&&t.length===15&&!t.startsWith("usr_"))try{await j.collection("users").delete(t,{$autoCancel:!1})}catch{}u.success("User deleted successfully"),Q(),B(),ee()},as=async s=>{try{const a=s.status==="inactive"?"active":"inactive";await j.collection("users").update(s.id,{status:a},{$autoCancel:!1}),u.success(`User marked as ${a}`),Q()}catch{u.error("Failed to update user status")}},ts=async s=>{try{await j.collection("users").requestPasswordReset(s,{$autoCancel:!1}),u.success(`Password reset link sent to ${s}`)}catch{u.error("Failed to send reset link")}},rs=async s=>{O({}),I({open:!0,user:s});try{const a=await j.collection("user_permission_overrides").getFullList({filter:`user_id = "${s.id}"`,$autoCancel:!1}),r={};a.forEach(t=>{r[t.resource]=t.is_allowed}),O(r)}catch(a){console.error(a),u.error("Failed to load permission overrides")}},ls=async()=>{Z(!0);const s=w.user;try{const a=["cashbook","expenses","payment_requests","credit_cards","payroll","emi_calculator"],r=await j.collection("user_permission_overrides").getFullList({filter:`user_id = "${s.id}"`,$autoCancel:!1}),t={};r.forEach(l=>{t[l.resource]=l});for(const l of a){const i=!!L[l],D=t[l];D?D.is_allowed!==i&&await j.collection("user_permission_overrides").update(D.id,{is_allowed:i,granted_by:R.id},{$autoCancel:!1}):i&&await j.collection("user_permission_overrides").create({user_id:s.id,resource:l,is_allowed:!0,granted_by:R.id},{$autoCancel:!1})}u.success("Financial permissions updated successfully"),I({open:!1,user:null})}catch(a){console.error(a),u.error("Failed to save permission overrides")}finally{Z(!1)}},ee=async()=>{try{const[s,a,r]=await Promise.all([j.collection("signup_requests").getList(1,1,{filter:'status="Pending"',$autoCancel:!1}),j.collection("signup_requests").getList(1,1,{filter:'status="Approved"',$autoCancel:!1}),j.collection("signup_requests").getList(1,1,{filter:'status="Rejected"',$autoCancel:!1})]);me({Pending:s.totalItems,Approved:a.totalItems,Rejected:r.totalItems})}catch(s){console.error("Failed to fetch counts",s)}},B=async()=>{n(!0);try{const s=await j.collection("signup_requests").getFullList({sort:"-requested_date",$autoCancel:!1}).catch(()=>[]);ie(s);const a=[`status = "${y}"`];o&&a.push(`(email ~ "${o}" || full_name ~ "${o}" || company_name ~ "${o}")`);const r=a.join(" && "),t=await j.collection("signup_requests").getList(1,100,{filter:r,sort:S,expand:"approved_by",$autoCancel:!1}).catch(()=>({items:[]}));de(t.items),ee()}catch(s){console.error("Failed to fetch signup requests",s)}finally{n(!1)}};c.useEffect(()=>(ee(),B(),C(),window.addEventListener("storage",C),j.collection("users").subscribe("*",()=>{Q(),B(),C()}).catch(s=>console.log("Users subscription notice:",s)),()=>{window.removeEventListener("storage",C),j.collection("users").unsubscribe("*").catch(()=>{})}),[]),c.useEffect(()=>{if(M==="signup-requests"){const s=setTimeout(()=>{B()},400);return()=>clearTimeout(s)}},[o,y,S,M]);const Te=hs.useMemo(()=>{let s=[];try{const t=localStorage.getItem("jbc_deleted_users_emails");t&&(s=JSON.parse(t).map(l=>String(l).toLowerCase()))}catch{}const a=new Map;return(q||[]).forEach(t=>{t.email&&!s.includes(t.email.toLowerCase())&&a.set(t.email.toLowerCase(),t)}),(Ue||[]).forEach(t=>{if(t.email&&!s.includes(t.email.toLowerCase())){const l=t.email.toLowerCase(),i=a.get(l)||{};a.set(l,{...i,...t})}}),(re||[]).forEach(t=>{if(t.email&&t.status==="Approved"&&!s.includes(t.email.toLowerCase())){const l=t.email.toLowerCase();a.has(l)||a.set(l,{id:t.id,name:t.full_name||t.name||"Unnamed User",full_name:t.full_name||t.name||"Unnamed User",email:t.email,phone_number:t.phone_number||t.phone||"",role:t.role||"Fleet Manager",status:"active",created:t.created||t.requested_date||new Date().toISOString()})}}),Array.from(a.values()).filter(t=>{const l=(t.role||"").toLowerCase();return l!=="superuser"&&l!=="superadmin"}).sort((t,l)=>new Date(l.created||0)-new Date(t.created||0))},[Ue,re,q]),Ie=Te.filter(s=>{const a=T.toLowerCase(),r=(s.full_name?.toLowerCase()||s.name?.toLowerCase()||"").includes(a),t=(s.email?.toLowerCase()||"").includes(a),l=(s.role?.toLowerCase()||"").includes(a);return!a||r||t||l}),ns=Ie.filter(s=>{const a=(s.status||"").toLowerCase();return a!=="inactive"&&a!=="rejected"&&a!=="disabled"}),os=Ie.filter(s=>{const a=(s.status||"").toLowerCase();return a==="inactive"||a==="rejected"||a==="disabled"}),cs=s=>{switch(s){case"Approved":return e.jsxs(E,{variant:"outline",className:"bg-success/10 text-success border-success/20 font-normal",children:[e.jsx(ws,{className:"w-3 h-3 mr-1"})," Approved"]});case"Rejected":return e.jsxs(E,{variant:"outline",className:"bg-destructive/10 text-destructive border-destructive/20 font-normal",children:[e.jsx(V,{className:"w-3 h-3 mr-1"})," Rejected"]});case"Pending":return e.jsxs(E,{variant:"outline",className:"bg-warning/10 text-warning border-warning/20 font-normal",children:[e.jsx(Ns,{className:"w-3 h-3 mr-1"})," Pending"]});default:return e.jsx(E,{variant:"outline",className:"font-normal",children:s})}},Oe=(s,a)=>e.jsx("div",{className:"rounded-xl border border-border overflow-hidden bg-card",children:e.jsxs(ge,{children:[e.jsx(fe,{className:"bg-muted/50",children:e.jsxs(A,{children:[e.jsx(b,{children:"User Details"}),e.jsx(b,{children:"Role"}),e.jsx(b,{children:"Status"}),e.jsx(b,{className:"hidden md:table-cell",children:"Joined"}),e.jsx(b,{className:"text-right",children:"Actions"})]})}),e.jsx(je,{children:s.length===0?e.jsx(A,{children:e.jsx(d,{colSpan:5,className:"text-center py-12 text-muted-foreground",children:a})}):s.map(r=>e.jsxs(A,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(d,{children:e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"font-medium text-foreground",children:r.full_name||r.name||"Unnamed"}),e.jsx("span",{className:"text-sm text-muted-foreground",children:r.email})]})}),e.jsx(d,{children:e.jsx(E,{variant:"outline",className:"capitalize bg-secondary/5 text-secondary border-secondary/20",children:r.role?.replace("_"," ")})}),e.jsx(d,{children:e.jsx(E,{variant:"outline",className:!r.status||r.status==="active"?"bg-success/10 text-success border-success/20":"bg-destructive/10 text-destructive border-destructive/20",children:r.status||"Active"})}),e.jsx(d,{className:"hidden md:table-cell text-muted-foreground text-sm",children:be(new Date(r.created),"MMM d, yyyy")}),e.jsx(d,{className:"text-right",children:e.jsxs(Ge,{children:[e.jsx(We,{asChild:!0,children:e.jsx(m,{variant:"ghost",className:"h-8 w-8 p-0 border border-transparent hover:border-border hover:bg-muted",children:e.jsx(Je,{className:"h-4 w-4 text-muted-foreground"})})}),e.jsxs(Ke,{align:"end",className:"w-52",children:[e.jsxs(z,{onClick:()=>k({open:!0,user:r}),className:"cursor-pointer font-bold text-blue-500",children:[e.jsx(Be,{className:"w-4 h-4 mr-2"})," Edit Credentials & Role"]}),e.jsxs(z,{onClick:()=>ts(r.email),className:"cursor-pointer",children:[e.jsx(Be,{className:"w-4 h-4 mr-2 text-muted-foreground"})," Send Reset Link"]}),e.jsx(z,{onClick:()=>as(r),className:"cursor-pointer",children:r.status==="inactive"?e.jsxs(e.Fragment,{children:[e.jsx(te,{className:"w-4 h-4 mr-2 text-success"})," Activate User"]}):e.jsxs(e.Fragment,{children:[e.jsx(V,{className:"w-4 h-4 mr-2 text-warning"})," Deactivate User"]})}),(r.role==="supervisor"||r.role==="dispatcher")&&e.jsxs(z,{onClick:()=>rs(r),className:"cursor-pointer",children:[e.jsx(qe,{className:"w-4 h-4 mr-2 text-primary"})," Financial Permissions"]}),e.jsx(Xe,{}),e.jsxs(we,{children:[e.jsx(Ls,{asChild:!0,children:e.jsxs(z,{onSelect:t=>t.preventDefault(),className:"text-destructive focus:bg-destructive/10 cursor-pointer",children:[e.jsx(vs,{className:"w-4 h-4 mr-2"})," Delete Permanently"]})}),e.jsxs(ye,{children:[e.jsxs(Ce,{children:[e.jsx(Se,{children:"Delete User Account"}),e.jsxs(_e,{children:["Are you sure you want to delete ",e.jsx("span",{className:"font-semibold text-foreground",children:r.email}),"? This action cannot be undone and will remove their access to the system."]})]}),e.jsxs(ce,{className:"mt-6",children:[e.jsx(m,{variant:"outline",children:"Cancel"}),e.jsx(m,{variant:"destructive",onClick:()=>ss(r.id,r.email),children:"Yes, Delete User"})]})]})]})]})]})})]},r.id))})]})});return Ze?e.jsx(Cs,{text:"Loading user directory..."}):Me?e.jsxs("div",{className:"p-12 text-center flex flex-col items-center min-h-[50vh] justify-center",children:[e.jsx(ps,{className:"w-12 h-12 text-destructive mx-auto mb-4"}),e.jsx("h2",{className:"text-xl font-bold mb-2",children:"Failed to load data"}),e.jsx("p",{className:"text-muted-foreground mb-4",children:Me}),e.jsx(m,{onClick:Q,children:"Try Again"})]}):e.jsxs(e.Fragment,{children:[e.jsx(gs,{children:e.jsx("title",{children:"User Management - Jai Bhavani Cargo"})}),e.jsxs("div",{className:"p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8 animate-in fade-in duration-500",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4",children:[e.jsxs("div",{children:[e.jsx("h1",{className:"text-3xl font-extrabold tracking-tight text-foreground",style:{letterSpacing:"-0.02em"},children:"User Management"}),e.jsx("p",{className:"text-muted-foreground mt-1",children:"Manage staff access, system roles, and account requests."})]}),M==="users"&&e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsxs(m,{onClick:()=>k({open:!0,user:null}),className:"bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md gap-2 rounded-xl",children:[e.jsx(Ye,{className:"w-4 h-4"})," Create User Credentials"]}),e.jsxs(Ss,{open:N,onOpenChange:F,children:[e.jsx(_s,{asChild:!0,children:e.jsxs(m,{variant:"outline",className:"bg-card shadow-sm gap-2 rounded-xl hover:border-primary/50",children:[e.jsx(fs,{className:"w-4 h-4"})," Send Email Invite"]})}),e.jsxs(As,{className:"border-l border-border bg-background",children:[e.jsxs(Rs,{className:"mb-8",children:[e.jsx(Ps,{className:"text-2xl font-bold",children:"Send Invitation"}),e.jsx(Ve,{children:"Invite a new staff member to join the platform."})]}),e.jsxs("form",{onSubmit:es,className:"space-y-6",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-sm font-medium text-foreground",children:"Email Address"}),e.jsx(U,{type:"email",placeholder:"staff@company.com",required:!0,value:p.email,onChange:s=>P({...p,email:s.target.value}),className:"bg-input"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-sm font-medium text-foreground",children:"Assign Role"}),e.jsxs(Ae,{value:p.role,onValueChange:s=>P({...p,role:s}),children:[e.jsx(Re,{className:"bg-input",children:e.jsx(Pe,{})}),e.jsxs(ke,{children:[e.jsx(G,{value:"admin",children:"Administrator"}),e.jsx(G,{value:"manager",children:"Manager"}),e.jsx(G,{value:"dispatcher",children:"Dispatcher"})]})]})]}),e.jsxs("div",{className:"p-4 bg-primary/5 rounded-xl border border-primary/10 text-sm text-primary/90 flex gap-3 items-start",children:[e.jsx(qe,{className:"w-5 h-5 shrink-0 mt-0.5"}),e.jsx("p",{children:"They will receive an email with a secure link to set their password. The link expires in 7 days."})]}),e.jsx(m,{type:"submit",className:"w-full h-12 text-base rounded-xl mt-4",children:"Send Invitation Email"})]})]})]})]})]}),e.jsxs(ue,{value:M,onValueChange:Qe,className:"w-full",children:[e.jsxs(xe,{className:"grid w-full sm:w-auto grid-cols-2 bg-muted/50 p-1 rounded-xl mb-6",children:[e.jsx(_,{value:"users",className:"rounded-lg data-[state=active]:shadow-sm",children:"User Directory"}),e.jsxs(_,{value:"signup-requests",className:"rounded-lg data-[state=active]:shadow-sm flex items-center gap-2",children:["Signup Requests",g.Pending>0&&e.jsx("span",{className:"flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground",children:g.Pending})]})]}),e.jsx(H,{value:"users",className:"space-y-6 m-0 animate-in fade-in duration-300",children:e.jsxs(ue,{defaultValue:"active",className:"w-full",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6",children:[e.jsxs(xe,{className:"bg-muted/50 p-1 rounded-xl w-full sm:w-auto overflow-x-auto justify-start",children:[e.jsx(_,{value:"active",className:"rounded-lg",children:"Active Users"}),e.jsx(_,{value:"inactive",className:"rounded-lg",children:"Inactive"}),e.jsx(_,{value:"roles",className:"rounded-lg",children:"Roles & Access"}),e.jsx(_,{value:"permissions",className:"rounded-lg hidden md:flex",children:"Permissions"})]}),e.jsxs("div",{className:"relative w-full sm:max-w-xs shrink-0",children:[e.jsx(Fe,{className:"absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"}),e.jsx(U,{placeholder:"Search by name or email...",className:"pl-9 bg-card border-border shadow-sm rounded-lg",value:T,onChange:s=>X(s.target.value)})]})]}),e.jsx(H,{value:"active",className:"m-0 animate-in fade-in duration-300",children:Oe(ns,"No active users match your search.")}),e.jsx(H,{value:"inactive",className:"m-0 animate-in fade-in duration-300",children:Oe(os,"No inactive users found.")}),e.jsx(H,{value:"roles",className:"m-0 animate-in fade-in duration-300",children:e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",children:["admin","manager","dispatcher","supervisor","client"].map(s=>{const a=Te.filter(r=>(r.role||"").toLowerCase()===s.toLowerCase());return e.jsxs(he,{className:"border-border shadow-sm bg-card",children:[e.jsx(pe,{className:"pb-3 border-b border-border/50",children:e.jsxs("div",{className:"flex justify-between items-center",children:[e.jsx(He,{className:"capitalize text-lg",children:s}),e.jsx(E,{variant:"secondary",className:"font-bold",children:a.length})]})}),e.jsx(ze,{className:"p-4 pt-4",children:a.length===0?e.jsx("p",{className:"text-sm text-muted-foreground text-center py-4",children:"No users assigned to this role."}):e.jsxs("div",{className:"space-y-3",children:[a.slice(0,5).map(r=>e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsx("div",{className:"w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs",children:(r.full_name||r.name||r.email)?.[0]?.toUpperCase()||"U"}),e.jsxs("div",{className:"min-w-0",children:[e.jsx("p",{className:"text-sm font-medium truncate",children:r.full_name||r.name||"Unnamed"}),e.jsx("p",{className:"text-xs text-muted-foreground truncate",children:r.email})]})]},r.id)),a.length>5&&e.jsxs("p",{className:"text-xs text-center text-muted-foreground pt-2",children:["+ ",a.length-5," more"]})]})})]},s)})})}),e.jsx(H,{value:"permissions",className:"m-0 animate-in fade-in duration-300",children:e.jsxs(he,{className:"border-border shadow-sm bg-card",children:[e.jsxs(pe,{children:[e.jsx(He,{children:"Role Permissions Matrix"}),e.jsx(Ve,{children:"Overview of what each role is permitted to do in the system."})]}),e.jsx(ze,{children:e.jsx("div",{className:"overflow-x-auto rounded-lg border border-border",children:e.jsxs(ge,{children:[e.jsx(fe,{className:"bg-muted/50",children:e.jsxs(A,{children:[e.jsx(b,{children:"Module / Action"}),e.jsx(b,{className:"text-center",children:"Admin"}),e.jsx(b,{className:"text-center",children:"Manager"}),e.jsx(b,{className:"text-center",children:"Dispatcher"})]})}),e.jsx(je,{children:[{module:"Manage Users & Roles",admin:!0,mgr:!1,disp:!1},{module:"Delete Trip Records",admin:!0,mgr:!1,disp:!1},{module:"Payroll & Salary",admin:!0,mgr:!1,disp:!1},{module:"Create/Edit Trips",admin:!0,mgr:!0,disp:!0},{module:"View Reports",admin:!0,mgr:!0,disp:!1},{module:"Log Expenses",admin:!0,mgr:!0,disp:!0}].map((s,a)=>e.jsxs(A,{children:[e.jsx(d,{className:"font-medium",children:s.module}),e.jsx(d,{className:"text-center",children:s.admin?e.jsx(te,{className:"w-4 h-4 mx-auto text-success"}):e.jsx(V,{className:"w-4 h-4 mx-auto text-muted-foreground/30"})}),e.jsx(d,{className:"text-center",children:s.mgr?e.jsx(te,{className:"w-4 h-4 mx-auto text-success"}):e.jsx(V,{className:"w-4 h-4 mx-auto text-muted-foreground/30"})}),e.jsx(d,{className:"text-center",children:s.disp?e.jsx(te,{className:"w-4 h-4 mx-auto text-success"}):e.jsx(V,{className:"w-4 h-4 mx-auto text-muted-foreground/30"})})]},a))})]})})})]})})]})}),e.jsxs(H,{value:"signup-requests",className:"space-y-6 m-0 animate-in fade-in duration-300",children:[e.jsxs(ue,{value:y,onValueChange:J,className:"w-full",children:[e.jsxs(xe,{className:"grid w-full sm:w-auto grid-cols-3 bg-muted/50 p-1 rounded-xl mb-6",children:[e.jsxs(_,{value:"Pending",className:"rounded-lg data-[state=active]:shadow-sm",children:["Pending (",g.Pending,")"]}),e.jsxs(_,{value:"Approved",className:"rounded-lg data-[state=active]:shadow-sm",children:["Approved (",g.Approved,")"]}),e.jsxs(_,{value:"Rejected",className:"rounded-lg data-[state=active]:shadow-sm",children:["Rejected (",g.Rejected,")"]})]}),e.jsxs(he,{className:"border-border shadow-sm",children:[e.jsx(pe,{className:"pb-4",children:e.jsxs("div",{className:"flex flex-col lg:flex-row gap-4 justify-between",children:[e.jsx("div",{className:"flex-1 flex flex-col sm:flex-row gap-4",children:e.jsxs("div",{className:"relative flex-1 max-w-md",children:[e.jsx(Fe,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"}),e.jsx(U,{placeholder:"Search by name, email, or company...",className:"pl-9 bg-background",value:o,onChange:s=>f(s.target.value)})]})}),e.jsx("div",{className:"flex gap-3",children:e.jsxs(Ae,{value:S,onValueChange:v,children:[e.jsx(Re,{className:"w-[180px] bg-background",children:e.jsx(Pe,{placeholder:"Sort By"})}),e.jsxs(ke,{children:[e.jsx(G,{value:"-requested_date",children:"Newest First"}),e.jsx(G,{value:"requested_date",children:"Oldest First"})]})]})})]})}),e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(ge,{children:[e.jsx(fe,{className:"bg-muted/30",children:e.jsxs(A,{children:[e.jsx(b,{children:"Requester"}),e.jsx(b,{children:"Company"}),e.jsx(b,{children:"Requested On"}),e.jsx(b,{children:"Status"}),e.jsx(b,{className:"text-right",children:"Actions"})]})}),e.jsx(je,{children:ne?Array.from({length:5}).map((s,a)=>e.jsxs(A,{children:[e.jsx(d,{children:e.jsx(ae,{className:"h-10 w-48"})}),e.jsx(d,{children:e.jsx(ae,{className:"h-4 w-24"})}),e.jsx(d,{children:e.jsx(ae,{className:"h-4 w-32"})}),e.jsx(d,{children:e.jsx(ae,{className:"h-6 w-20 rounded-full"})}),e.jsx(d,{className:"text-right",children:e.jsx(ae,{className:"h-8 w-8 ml-auto"})})]},a)):le.length===0?e.jsx(A,{children:e.jsx(d,{colSpan:5,className:"h-48 text-center",children:e.jsxs("div",{className:"flex flex-col items-center justify-center text-muted-foreground",children:[e.jsx(js,{className:"w-10 h-10 mb-3 opacity-20"}),e.jsx("p",{className:"text-base font-medium text-foreground",children:"No requests found"}),e.jsxs("p",{className:"text-sm",children:["No ",y.toLowerCase()," signup requests match your current filters."]})]})})}):le.map(s=>e.jsxs(A,{className:"hover:bg-muted/20",children:[e.jsxs(d,{children:[e.jsx("div",{className:"font-medium text-foreground",children:s.full_name}),e.jsx("div",{className:"text-xs text-muted-foreground",children:s.email}),s.phone&&e.jsx("div",{className:"text-xs text-muted-foreground",children:s.phone})]}),e.jsx(d,{className:"text-foreground",children:s.company_name||"—"}),e.jsxs(d,{className:"text-muted-foreground",children:[be(new Date(s.requested_date),"MMM dd, yyyy"),e.jsx("div",{className:"text-xs",children:be(new Date(s.requested_date),"HH:mm")})]}),e.jsx(d,{children:cs(s.status)}),e.jsx(d,{className:"text-right",children:s.status==="Pending"?e.jsxs("div",{className:"flex items-center justify-end gap-2",children:[e.jsxs(m,{size:"sm",variant:"outline",className:"border-success/50 text-success hover:bg-success/10 hover:text-success",onClick:()=>Le({open:!0,data:s}),children:[e.jsx(bs,{className:"w-4 h-4 mr-1"})," Approve"]}),e.jsxs(m,{size:"sm",variant:"outline",className:"border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive",onClick:()=>Ee({open:!0,data:s}),children:[e.jsx(V,{className:"w-4 h-4 mr-1"})," Reject"]}),e.jsx(m,{size:"icon",variant:"ghost",className:"text-muted-foreground",onClick:()=>{u.info(e.jsxs("div",{className:"space-y-1",children:[e.jsx("p",{className:"font-semibold",children:"Reason:"}),e.jsxs("p",{className:"text-sm italic",children:['"',s.reason||"No reason provided.",'"']})]}),{duration:8e3})},children:e.jsx(Ne,{className:"w-4 h-4"})})]}):e.jsxs(Ge,{children:[e.jsx(We,{asChild:!0,children:e.jsx(m,{variant:"ghost",size:"icon",className:"h-8 w-8 text-muted-foreground",children:e.jsx(Je,{className:"h-4 w-4"})})}),e.jsxs(Ke,{align:"end",className:"w-[180px]",children:[e.jsx(ks,{children:"Actions"}),e.jsx(Xe,{}),e.jsxs(z,{onClick:()=>{u.info(e.jsxs("div",{className:"space-y-1",children:[e.jsx("p",{className:"font-semibold",children:"Reason:"}),e.jsxs("p",{className:"text-sm italic",children:['"',s.reason||"No reason provided.",'"']}),s.notes&&e.jsxs(e.Fragment,{children:[e.jsx("p",{className:"font-semibold mt-2",children:"Admin Notes:"}),e.jsxs("p",{className:"text-sm",children:['"',s.notes,'"']})]})]}),{duration:8e3})},className:"cursor-pointer",children:[e.jsx(Ne,{className:"h-4 w-4 mr-2"})," View Details"]})]})]})})]},s.id))})]})})]})]}),e.jsx(Es,{isOpen:oe.open,onClose:()=>Le({open:!1,data:null}),requestData:oe.data,currentUser:R,onSuccess:()=>{B(),ee()}}),e.jsx(Us,{isOpen:De.open,onClose:()=>Ee({open:!1,data:null}),requestData:De.data,currentUser:R,onSuccess:()=>{B(),ee()}}),e.jsx(we,{open:w.open,onOpenChange:s=>I({open:s,user:s?w.user:null}),children:e.jsxs(ye,{className:"sm:max-w-md bg-background border-border",children:[e.jsxs(Ce,{children:[e.jsx(Se,{children:"Financial Permissions Delegation"}),e.jsxs(_e,{children:["Grant specific financial access overrides to ",e.jsx("span",{className:"font-semibold text-foreground",children:w.user?.full_name||w.user?.email}),"."]})]}),e.jsx("div",{className:"space-y-4 my-6",children:[{id:"cashbook",label:"Cashbook",desc:"Allow read/write access to cash transactions and ledgers."},{id:"expenses",label:"Expenses",desc:"Allow logging and viewing operational expenses."},{id:"payment_requests",label:"Payment Requests",desc:"Allow submitting and viewing vendor/staff payment requests."},{id:"credit_cards",label:"Credit Cards",desc:"Allow managing credit cards and limits."},{id:"payroll",label:"Payroll",desc:"Allow payroll calculations and disbursements."},{id:"emi_calculator",label:"EMI Calculator",desc:"Allow accessing loan and EMI calculators."}].map(s=>e.jsxs("div",{className:"flex items-start space-x-3 p-3 rounded-lg border border-border/50 hover:bg-muted/20",children:[e.jsx("input",{type:"checkbox",id:`perm-${s.id}`,checked:!!L[s.id],onChange:a=>O({...L,[s.id]:a.target.checked}),className:"h-4.5 w-4.5 rounded border-border text-primary focus:ring-primary mt-1 cursor-pointer"}),e.jsxs("div",{className:"space-y-1 cursor-pointer select-none",onClick:()=>O({...L,[s.id]:!L[s.id]}),children:[e.jsx("label",{htmlFor:`perm-${s.id}`,className:"text-sm font-semibold text-foreground cursor-pointer",children:s.label}),e.jsx("p",{className:"text-xs text-muted-foreground",children:s.desc})]})]},s.id))}),e.jsxs(ce,{className:"gap-2 sm:gap-0",children:[e.jsx(m,{variant:"outline",onClick:()=>I({open:!1,user:null}),children:"Cancel"}),e.jsx(m,{onClick:ls,disabled:h,children:h?"Saving...":"Save Permissions"})]})]})})]})]})]}),e.jsx(Ts,{isOpen:Y.open,onClose:()=>k({open:!1,user:null}),editUser:Y.user,onSuccess:Q})]})};export{Hs as default};
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { r as React } from "./vendor-react-Bs5V2qFE.js";
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+function showToast(message, type = "success") {
+  try {
+    const el = document.createElement("div");
+    el.className = `fixed bottom-5 right-5 z-[99999] px-4 py-3 rounded-xl shadow-2xl text-xs font-bold transition-all transform duration-300 flex items-center gap-2 ${type === "error" ? "bg-rose-600 text-white" : type === "warning" ? "bg-amber-600 text-white" : "bg-emerald-600 text-white"}`;
+    el.innerHTML = `<span>${type === "error" ? "\u26A0\uFE0F" : type === "warning" ? "\u{1F514}" : "\u2705"}</span> <span>${message}</span>`;
+    document.body.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 350);
+    }, 3500);
+  } catch (e) {
+  }
+}
+function IconUser({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" }) });
+}
+function IconUsers({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" }) });
+}
+function IconShield({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" }) });
+}
+function IconHierarchy({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsxs("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: [
+    /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" }),
+    /* @__PURE__ */ jsx("rect", { x: "2", y: "2", width: "6", height: "4", rx: "1" }),
+    /* @__PURE__ */ jsx("rect", { x: "16", y: "18", width: "6", height: "4", rx: "1" }),
+    /* @__PURE__ */ jsx("rect", { x: "16", y: "2", width: "6", height: "4", rx: "1" })
+  ] });
+}
+function IconDepartment({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" }) });
+}
+function IconLock({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" }) });
+}
+function IconUnlock({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" }) });
+}
+function IconSlash({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsxs("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: [
+    /* @__PURE__ */ jsx("circle", { cx: "12", cy: "12", r: "10" }),
+    /* @__PURE__ */ jsx("line", { x1: "4.93", y1: "4.93", x2: "19.07", y2: "19.07" })
+  ] });
+}
+function IconPlus({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 4v16m8-8H4" }) });
+}
+function IconSearch({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" }) });
+}
+function IconCheck({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 13l4 4L19 7" }) });
+}
+function IconX({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" }) });
+}
+function IconRefresh({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" }) });
+}
+function IconEdit({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" }) });
+}
+function IconTrash({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" }) });
+}
+function IconCrown({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 16l3-8 4 5 4-5 3 8H5z" }) });
+}
+function IconPhone({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" }) });
+}
+function IconMail({ className = "w-4 h-4" }) {
+  return /* @__PURE__ */ jsx("svg", { className, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2, children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" }) });
+}
+const COLOR_MAP = {
+  rose: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+  emerald: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  blue: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  amber: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  purple: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  cyan: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+  indigo: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20"
+};
+const MODULE_NAMES = {
+  fleet: { name: "Fleet & Vehicles", icon: "\u{1F69B}" },
+  logistics: { name: "Logistics & Consignments", icon: "\u{1F4E6}" },
+  finance: { name: "Finance & Cashbook", icon: "\u{1F4B0}" },
+  maintenance: { name: "Workshop & Jobcards", icon: "\u{1F527}" },
+  documents: { name: "Compliance & Permits", icon: "\u{1F4C4}" },
+  users: { name: "User Management & Access", icon: "\u{1F465}" },
+  audit: { name: "Security Audit & Anti-Fraud", icon: "\u{1F512}" }
+};
+const ALL_PERMS = ["view", "create", "edit", "delete", "approve", "export"];
+function EnterpriseUserManagementPage() {
+  const [activeTab, setActiveTab] = React.useState("directory");
+  const [loading, setLoading] = React.useState(true);
+  const [users, setUsers] = React.useState([]);
+  const [roles, setRoles] = React.useState([]);
+  const [teams, setTeams] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [filterTeam, setFilterTeam] = React.useState("ALL");
+  const [filterRole, setFilterRole] = React.useState("ALL");
+  const [filterStatus, setFilterStatus] = React.useState("ALL");
+  const [userModalOpen, setUserModalOpen] = React.useState(false);
+  const [editingUser, setEditingUser] = React.useState(null);
+  const [revokeModalOpen, setRevokeModalOpen] = React.useState(false);
+  const [revokingUser, setRevokingUser] = React.useState(null);
+  const [revocationReason, setRevocationReason] = React.useState("");
+  const [roleModalOpen, setRoleModalOpen] = React.useState(false);
+  const [editingRole, setEditingRole] = React.useState(null);
+  const [teamModalOpen, setTeamModalOpen] = React.useState(false);
+  const [editingTeam, setEditingTeam] = React.useState(null);
+  const [reassignModalOpen, setReassignModalOpen] = React.useState(false);
+  const [reassignTargetUser, setReassignTargetUser] = React.useState(null);
+  const [selectedNewManagerId, setSelectedNewManagerId] = React.useState("");
+  const [permissionsModalOpen, setPermissionsModalOpen] = React.useState(false);
+  const [inspectingRole, setInspectingRole] = React.useState(null);
+  const fetchOrgState = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/org/state");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setUsers(data.users || []);
+          setRoles(data.roles || []);
+          setTeams(data.teams || []);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("API org fetch failed, falling back to local storage:", err);
+    }
+    setLoading(false);
+  };
+  React.useEffect(() => {
+    fetchOrgState();
+  }, []);
+  const totalUsers = users.length;
+  const activeCount = users.filter((u) => u.status === "ACTIVE").length;
+  const revokedCount = users.filter((u) => u.status === "REVOKED").length;
+  const teamsCount = teams.length;
+  const rolesCount = roles.length;
+  const filteredUsers = React.useMemo(() => {
+    return users.filter((u) => {
+      const matchesSearch = !searchQuery || u.name && u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone && u.phone.toLowerCase().includes(searchQuery.toLowerCase()) || u.designation && u.designation.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTeam = filterTeam === "ALL" || u.team_id === filterTeam;
+      const matchesRole = filterRole === "ALL" || u.role_id === filterRole || u.role_slug === filterRole;
+      const matchesStatus = filterStatus === "ALL" || u.status === filterStatus;
+      return matchesSearch && matchesTeam && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, filterTeam, filterRole, filterStatus]);
+  const handleSaveUser = async (userData) => {
+    try {
+      const res = await fetch("/api/org/user/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.users);
+        showToast(editingUser ? "Workforce profile updated successfully" : "New employee onboarded successfully");
+        setUserModalOpen(false);
+        setEditingUser(null);
+      } else {
+        showToast(data.error || "Failed to save user", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleRevokeAccess = async () => {
+    if (!revokingUser) return;
+    if (!revocationReason.trim()) {
+      showToast("Please provide an official justification for revocation", "warning");
+      return;
+    }
+    try {
+      const res = await fetch("/api/org/user/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: revokingUser.id, reason: revocationReason.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.users);
+        showToast(`Access privileges revoked for ${revokingUser.name}`, "warning");
+        setRevokeModalOpen(false);
+        setRevokingUser(null);
+        setRevocationReason("");
+      } else {
+        showToast(data.error || "Failed to revoke access", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleRestoreAccess = async (user) => {
+    try {
+      const res = await fetch("/api/org/user/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.users);
+        showToast(`Access privileges restored for ${user.name}`);
+      } else {
+        showToast(data.error || "Failed to restore access", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleDeleteUser = async (user) => {
+    if (user.role_slug === "superuser") {
+      showToast("Primary Superuser account is permanent and cannot be deleted", "error");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete employee record ${user.name}? This will reassign direct reports to Superuser.`)) {
+      return;
+    }
+    try {
+      const res = await fetch("/api/org/user/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.users);
+        showToast(`Employee ${user.name} removed from organization`);
+      } else {
+        showToast(data.error || "Failed to delete user", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleSaveRole = async (roleData) => {
+    try {
+      const res = await fetch("/api/org/role/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(roleData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoles(data.roles);
+        showToast(editingRole ? "Custom role updated successfully" : "New organizational role created");
+        setRoleModalOpen(false);
+        setEditingRole(null);
+      } else {
+        showToast(data.error || "Failed to save role", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleDeleteRole = async (role) => {
+    if (role.is_system) {
+      showToast("Protected system roles cannot be deleted", "error");
+      return;
+    }
+    if (!confirm(`Delete role "${role.name}"? Staff currently on this role will need reassignment.`)) return;
+    try {
+      const res = await fetch("/api/org/role/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roleId: role.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRoles(data.roles);
+        showToast(`Role "${role.name}" deleted`);
+      } else {
+        showToast(data.error || "Failed to delete role", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleSaveTeam = async (teamData) => {
+    try {
+      const res = await fetch("/api/org/team/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(teamData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTeams(data.teams);
+        showToast(editingTeam ? "Team group updated" : "New team group created");
+        setTeamModalOpen(false);
+        setEditingTeam(null);
+      } else {
+        showToast(data.error || "Failed to save team", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleDeleteTeam = async (team) => {
+    if (team.is_system) {
+      showToast("Core organizational divisions cannot be deleted", "error");
+      return;
+    }
+    if (!confirm(`Delete team "${team.name}"? Members will be automatically transferred to Freight Operations.`)) return;
+    try {
+      const res = await fetch("/api/org/team/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: team.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTeams(data.teams);
+        fetchOrgState();
+        showToast(`Team "${team.name}" deleted`);
+      } else {
+        showToast(data.error || "Failed to delete team", "error");
+      }
+    } catch (e) {
+      showToast("Error communicating with server", "error");
+    }
+  };
+  const handleReassignManager = async () => {
+    if (!reassignTargetUser || !selectedNewManagerId) return;
+    try {
+      const res = await fetch("/api/org/hierarchy/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hierarchyChanges: [
+            { user_id: reassignTargetUser.id, manager_id: selectedNewManagerId }
+          ]
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.users);
+        showToast(`Reporting manager updated for ${reassignTargetUser.name}`);
+        setReassignModalOpen(false);
+        setReassignTargetUser(null);
+      } else {
+        showToast(data.error || "Failed to update hierarchy", "error");
+      }
+    } catch (e) {
+      showToast("Error updating hierarchy", "error");
+    }
+  };
+  return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 space-y-6", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-6", children: [
+      /* @__PURE__ */ jsx("div", { children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-gradient-to-br from-indigo-500/20 to-blue-600/20 border border-indigo-500/30 rounded-2xl text-indigo-400 shadow-inner", children: /* @__PURE__ */ jsx(IconHierarchy, { className: "w-7 h-7" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx("h1", { className: "text-2xl md:text-3xl font-black tracking-tight text-white font-heading", children: "Enterprise Organization & Access Control" }),
+            /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/30", children: "MNC Suite" })
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs md:text-sm text-slate-400 mt-0.5", children: "Master workforce directory, department divisions, role-based access control (RBAC), and enterprise reporting hierarchy." })
+        ] })
+      ] }) }),
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2.5", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => fetchOrgState(),
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-slate-700/60 hover:border-slate-500 text-slate-300 hover:text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm",
+            title: "Refresh Organization State",
+            children: [
+              /* @__PURE__ */ jsx(IconRefresh, { className: cn("w-3.5 h-3.5", loading && "animate-spin") }),
+              /* @__PURE__ */ jsx("span", { children: "Sync" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setEditingTeam(null);
+              setTeamModalOpen(true);
+            },
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-slate-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm",
+            children: [
+              /* @__PURE__ */ jsx(IconDepartment, { className: "w-3.5 h-3.5 text-blue-400" }),
+              /* @__PURE__ */ jsx("span", { children: "+ New Division" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setEditingRole(null);
+              setRoleModalOpen(true);
+            },
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 border border-slate-600/60 text-slate-200 transition flex items-center gap-1.5 cursor-pointer shadow-sm",
+            children: [
+              /* @__PURE__ */ jsx(IconShield, { className: "w-3.5 h-3.5 text-amber-400" }),
+              /* @__PURE__ */ jsx("span", { children: "+ Create Role" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setEditingUser(null);
+              setUserModalOpen(true);
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-500/20",
+            children: [
+              /* @__PURE__ */ jsx(IconPlus, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx("span", { children: "Onboard Employee" })
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm relative overflow-hidden group", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Headcount" }),
+          /* @__PURE__ */ jsx("span", { className: "p-1.5 rounded-lg bg-blue-500/10 text-blue-400", children: /* @__PURE__ */ jsx(IconUsers, { className: "w-4 h-4" }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-2 text-2xl font-black text-white", children: totalUsers }),
+        /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-500 mt-1", children: "Verified Corporate Workforce" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm relative overflow-hidden group", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Active Staff" }),
+          /* @__PURE__ */ jsx("span", { className: "p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400", children: /* @__PURE__ */ jsx(IconCheck, { className: "w-4 h-4" }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-2 text-2xl font-black text-emerald-400", children: activeCount }),
+        /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-500 mt-1", children: "Full operational credentials" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm relative overflow-hidden group", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Access Revoked" }),
+          /* @__PURE__ */ jsx("span", { className: "p-1.5 rounded-lg bg-rose-500/10 text-rose-400", children: /* @__PURE__ */ jsx(IconSlash, { className: "w-4 h-4" }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-2 text-2xl font-black text-rose-400", children: revokedCount }),
+        /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-500 mt-1", children: "Security quarantined accounts" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm relative overflow-hidden group", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Divisions" }),
+          /* @__PURE__ */ jsx("span", { className: "p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400", children: /* @__PURE__ */ jsx(IconDepartment, { className: "w-4 h-4" }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-2 text-2xl font-black text-indigo-300", children: teamsCount }),
+        /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-500 mt-1", children: "Structured Cost Centers" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm relative overflow-hidden group", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Active Roles" }),
+          /* @__PURE__ */ jsx("span", { className: "p-1.5 rounded-lg bg-amber-500/10 text-amber-400", children: /* @__PURE__ */ jsx(IconShield, { className: "w-4 h-4" }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "mt-2 text-2xl font-black text-amber-300", children: rolesCount }),
+        /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-500 mt-1", children: "Standard & Custom Roles" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "flex border-b border-slate-800 space-x-1 overflow-x-auto", children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("directory"),
+          className: cn(
+            "px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer",
+            activeTab === "directory" ? "border-blue-500 text-blue-400 bg-blue-500/5" : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+          ),
+          children: [
+            /* @__PURE__ */ jsx(IconUsers, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxs("span", { children: [
+              "Workforce Directory (",
+              users.length,
+              ")"
+            ] })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("hierarchy"),
+          className: cn(
+            "px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer",
+            activeTab === "hierarchy" ? "border-indigo-500 text-indigo-400 bg-indigo-500/5" : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+          ),
+          children: [
+            /* @__PURE__ */ jsx(IconHierarchy, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsx("span", { children: "Organization Tree & Hierarchy" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("roles"),
+          className: cn(
+            "px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer",
+            activeTab === "roles" ? "border-amber-500 text-amber-400 bg-amber-500/5" : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+          ),
+          children: [
+            /* @__PURE__ */ jsx(IconShield, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxs("span", { children: [
+              "Roles & Permissions Matrix (",
+              roles.length,
+              ")"
+            ] })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          onClick: () => setActiveTab("teams"),
+          className: cn(
+            "px-4 py-3 text-xs md:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer",
+            activeTab === "teams" ? "border-emerald-500 text-emerald-400 bg-emerald-500/5" : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+          ),
+          children: [
+            /* @__PURE__ */ jsx(IconDepartment, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxs("span", { children: [
+              "Department & Team Divisions (",
+              teams.length,
+              ")"
+            ] })
+          ]
+        }
+      )
+    ] }),
+    activeTab === "directory" && /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col md:flex-row gap-3 items-center justify-between", children: [
+        /* @__PURE__ */ jsxs("div", { className: "relative w-full md:w-80", children: [
+          /* @__PURE__ */ jsx(IconSearch, { className: "w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              placeholder: "Search staff by name, email, designation...",
+              value: searchQuery,
+              onChange: (e) => setSearchQuery(e.target.value),
+              className: "w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap items-center gap-2 w-full md:w-auto", children: [
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: filterTeam,
+              onChange: (e) => setFilterTeam(e.target.value),
+              className: "px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "ALL", children: "All Departments" }),
+                teams.map((t) => /* @__PURE__ */ jsx("option", { value: t.id, children: t.name }, t.id))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: filterRole,
+              onChange: (e) => setFilterRole(e.target.value),
+              className: "px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "ALL", children: "All Roles" }),
+                roles.map((r) => /* @__PURE__ */ jsx("option", { value: r.id, children: r.name }, r.id))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: filterStatus,
+              onChange: (e) => setFilterStatus(e.target.value),
+              className: "px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "ALL", children: "All Statuses" }),
+                /* @__PURE__ */ jsx("option", { value: "ACTIVE", children: "Active Privileges" }),
+                /* @__PURE__ */ jsx("option", { value: "REVOKED", children: "Revoked / Locked" })
+              ]
+            }
+          ),
+          (searchQuery || filterTeam !== "ALL" || filterRole !== "ALL" || filterStatus !== "ALL") && /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => {
+                setSearchQuery("");
+                setFilterTeam("ALL");
+                setFilterRole("ALL");
+                setFilterStatus("ALL");
+              },
+              className: "px-2.5 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 transition",
+              children: "Clear Filters"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl", children: /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left text-xs", children: [
+        /* @__PURE__ */ jsx("thead", { className: "bg-slate-950/80 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400", children: /* @__PURE__ */ jsxs("tr", { children: [
+          /* @__PURE__ */ jsx("th", { className: "p-4", children: "Personnel & Contact" }),
+          /* @__PURE__ */ jsx("th", { className: "p-4", children: "Assigned Department" }),
+          /* @__PURE__ */ jsx("th", { className: "p-4", children: "Role & Privilege Tier" }),
+          /* @__PURE__ */ jsx("th", { className: "p-4", children: "Reporting Line" }),
+          /* @__PURE__ */ jsx("th", { className: "p-4", children: "Access Status" }),
+          /* @__PURE__ */ jsx("th", { className: "p-4 text-right", children: "Superuser Actions" })
+        ] }) }),
+        /* @__PURE__ */ jsx("tbody", { className: "divide-y divide-slate-800/60", children: filteredUsers.length === 0 ? /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 6, className: "text-center py-12 text-slate-500", children: "No workforce members match your search filters." }) }) : filteredUsers.map((user) => {
+          const isSuper = user.role_slug === "superuser";
+          const isRevoked = user.status === "REVOKED";
+          return /* @__PURE__ */ jsxs("tr", { className: "hover:bg-slate-850/40 transition", children: [
+            /* @__PURE__ */ jsx("td", { className: "p-4", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+              /* @__PURE__ */ jsx("div", { className: cn(
+                "w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm uppercase shrink-0 border shadow-sm",
+                isSuper ? "bg-rose-500/20 text-rose-300 border-rose-500/40" : "bg-slate-800 text-slate-200 border-slate-700"
+              ), children: user.name ? user.name.charAt(0) : "U" }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 font-bold text-white text-sm", children: [
+                  /* @__PURE__ */ jsx("span", { children: user.name }),
+                  isSuper && /* @__PURE__ */ jsx("span", { title: "Executive Superuser", children: /* @__PURE__ */ jsx(IconCrown, { className: "w-3.5 h-3.5 text-rose-400 fill-rose-400/20 inline" }) })
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "text-[11px] text-slate-400 font-medium", children: user.designation || "Staff" }),
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mt-0.5 text-[11px] text-slate-500", children: [
+                  /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1", children: [
+                    /* @__PURE__ */ jsx(IconMail, { className: "w-3 h-3" }),
+                    " ",
+                    user.email
+                  ] }),
+                  user.phone && /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1", children: [
+                    /* @__PURE__ */ jsx(IconPhone, { className: "w-3 h-3" }),
+                    " ",
+                    user.phone
+                  ] })
+                ] })
+              ] })
+            ] }) }),
+            /* @__PURE__ */ jsx("td", { className: "p-4", children: /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700", children: [
+              /* @__PURE__ */ jsx(IconDepartment, { className: "w-3 h-3 text-blue-400" }),
+              /* @__PURE__ */ jsx("span", { children: user.team_name })
+            ] }) }),
+            /* @__PURE__ */ jsx("td", { className: "p-4", children: /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs("span", { className: cn(
+                "inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border",
+                isSuper ? COLOR_MAP.rose : COLOR_MAP.blue
+              ), children: [
+                /* @__PURE__ */ jsx(IconShield, { className: "w-3 h-3" }),
+                /* @__PURE__ */ jsx("span", { children: user.role_name })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "text-[10px] text-slate-500 mt-1", children: [
+                "Hierarchy Level ",
+                user.hierarchy_level || 3
+              ] })
+            ] }) }),
+            /* @__PURE__ */ jsx("td", { className: "p-4", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ jsx("div", { className: "w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" }),
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsx("div", { className: "text-slate-300 font-medium text-xs", children: user.manager_name || "Executive Board" }),
+                /* @__PURE__ */ jsx("div", { className: "text-[10px] text-slate-500", children: "Direct Manager" })
+              ] })
+            ] }) }),
+            /* @__PURE__ */ jsx("td", { className: "p-4", children: isRevoked ? /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/30", children: [
+                /* @__PURE__ */ jsx(IconLock, { className: "w-3 h-3" }),
+                /* @__PURE__ */ jsx("span", { children: "REVOKED" })
+              ] }),
+              user.revocation_reason && /* @__PURE__ */ jsx("p", { className: "text-[10px] text-rose-300/80 mt-1 max-w-xs truncate", title: user.revocation_reason, children: user.revocation_reason })
+            ] }) : /* @__PURE__ */ jsxs("span", { className: "inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30", children: [
+              /* @__PURE__ */ jsx(IconUnlock, { className: "w-3 h-3" }),
+              /* @__PURE__ */ jsx("span", { children: "ACTIVE" })
+            ] }) }),
+            /* @__PURE__ */ jsx("td", { className: "p-4 text-right", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-1.5", children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setEditingUser(user);
+                    setUserModalOpen(true);
+                  },
+                  className: "p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer",
+                  title: "Edit Profile & Role",
+                  children: /* @__PURE__ */ jsx(IconEdit, { className: "w-3.5 h-3.5" })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setReassignTargetUser(user);
+                    setSelectedNewManagerId(user.manager_id || "usr_vinod_admin");
+                    setReassignModalOpen(true);
+                  },
+                  className: "p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer",
+                  title: "Reassign Reporting Manager",
+                  children: /* @__PURE__ */ jsx(IconHierarchy, { className: "w-3.5 h-3.5" })
+                }
+              ),
+              !isSuper && /* @__PURE__ */ jsxs(Fragment, { children: [
+                isRevoked ? /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    onClick: () => handleRestoreAccess(user),
+                    className: "px-2.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition text-[11px] font-bold flex items-center gap-1 cursor-pointer",
+                    title: "Restore Access",
+                    children: [
+                      /* @__PURE__ */ jsx(IconUnlock, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsx("span", { children: "Restore" })
+                    ]
+                  }
+                ) : /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    onClick: () => {
+                      setRevokingUser(user);
+                      setRevocationReason("");
+                      setRevokeModalOpen(true);
+                    },
+                    className: "px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 transition text-[11px] font-bold flex items-center gap-1 cursor-pointer",
+                    title: "Revoke Access Instantly",
+                    children: [
+                      /* @__PURE__ */ jsx(IconSlash, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsx("span", { children: "Revoke" })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    onClick: () => handleDeleteUser(user),
+                    className: "p-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition cursor-pointer",
+                    title: "Delete Record",
+                    children: /* @__PURE__ */ jsx(IconTrash, { className: "w-3.5 h-3.5" })
+                  }
+                )
+              ] })
+            ] }) })
+          ] }, user.id);
+        }) })
+      ] }) }) })
+    ] }),
+    activeTab === "hierarchy" && /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("h3", { className: "text-base font-bold text-white flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(IconHierarchy, { className: "w-5 h-5 text-indigo-400" }),
+            /* @__PURE__ */ jsx("span", { children: "Enterprise Reporting Tree (Levels 1 to 4)" })
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Visual corporate chain of command. Superusers can reassign reporting lines for any staff member in 1 click." })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              if (users.length > 0) {
+                setReassignTargetUser(users[1] || users[0]);
+                setSelectedNewManagerId("usr_vinod_admin");
+                setReassignModalOpen(true);
+              }
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-md",
+            children: [
+              /* @__PURE__ */ jsx(IconHierarchy, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx("span", { children: "Reassign Direct Line" })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "space-y-8", children: [1, 2, 3, 4].map((lvl) => {
+        const levelUsers = users.filter((u) => (u.hierarchy_level || 1) === lvl);
+        if (levelUsers.length === 0) return null;
+        const levelTitles = {
+          1: "Level 1: Executive Board & Managing Directorate",
+          2: "Level 2: Department Heads & Functional Controllers",
+          3: "Level 3: Operational Superintendents & Supervisors",
+          4: "Level 4: Field Staff & Fleet Captains"
+        };
+        return /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 border-b border-slate-800 pb-2", children: [
+            /* @__PURE__ */ jsx("span", { className: "w-2 h-2 rounded-full bg-indigo-500" }),
+            /* @__PURE__ */ jsxs("h4", { className: "text-xs font-black uppercase tracking-wider text-slate-300", children: [
+              levelTitles[lvl] || `Tier Level ${lvl}`,
+              " (",
+              levelUsers.length,
+              ")"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: levelUsers.map((user) => {
+            const isSuper = user.role_slug === "superuser";
+            const directReports = users.filter((u) => u.manager_id === user.id);
+            return /* @__PURE__ */ jsxs(
+              "div",
+              {
+                className: "p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition shadow-lg relative group",
+                children: [
+                  /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+                      /* @__PURE__ */ jsx("div", { className: cn(
+                        "w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm uppercase shrink-0 border",
+                        isSuper ? "bg-rose-500/20 text-rose-300 border-rose-500/40" : "bg-slate-800 text-slate-200 border-slate-700"
+                      ), children: user.name ? user.name.charAt(0) : "U" }),
+                      /* @__PURE__ */ jsxs("div", { children: [
+                        /* @__PURE__ */ jsxs("h5", { className: "font-bold text-white text-sm flex items-center gap-1.5", children: [
+                          user.name,
+                          isSuper && /* @__PURE__ */ jsx(IconCrown, { className: "w-3.5 h-3.5 text-rose-400" })
+                        ] }),
+                        /* @__PURE__ */ jsx("div", { className: "text-xs text-indigo-400 font-semibold", children: user.designation }),
+                        /* @__PURE__ */ jsx("div", { className: "text-[11px] text-slate-400", children: user.email })
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ jsx("span", { className: cn(
+                      "px-2 py-0.5 rounded-lg text-[10px] font-bold border shrink-0",
+                      user.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                    ), children: user.status })
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { className: "mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs", children: [
+                    /* @__PURE__ */ jsxs("div", { className: "text-slate-400 text-[11px]", children: [
+                      /* @__PURE__ */ jsx("span", { children: "Reports to: " }),
+                      /* @__PURE__ */ jsx("strong", { className: "text-slate-200", children: user.manager_name || "Board of Directors" })
+                    ] }),
+                    /* @__PURE__ */ jsxs("div", { className: "text-[11px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20", children: [
+                      directReports.length,
+                      " Direct Report",
+                      directReports.length === 1 ? "" : "s"
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxs("div", { className: "mt-3 flex items-center justify-end gap-2", children: [
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        onClick: () => {
+                          setReassignTargetUser(user);
+                          setSelectedNewManagerId(user.manager_id || "usr_vinod_admin");
+                          setReassignModalOpen(true);
+                        },
+                        className: "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer",
+                        children: [
+                          /* @__PURE__ */ jsx(IconHierarchy, { className: "w-3 h-3 text-indigo-400" }),
+                          /* @__PURE__ */ jsx("span", { children: "Reassign" })
+                        ]
+                      }
+                    ),
+                    /* @__PURE__ */ jsxs(
+                      "button",
+                      {
+                        onClick: () => {
+                          setEditingUser(user);
+                          setUserModalOpen(true);
+                        },
+                        className: "px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1 cursor-pointer",
+                        children: [
+                          /* @__PURE__ */ jsx(IconEdit, { className: "w-3 h-3 text-blue-400" }),
+                          /* @__PURE__ */ jsx("span", { children: "Edit" })
+                        ]
+                      }
+                    )
+                  ] })
+                ]
+              },
+              user.id
+            );
+          }) })
+        ] }, lvl);
+      }) })
+    ] }),
+    activeTab === "roles" && /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("h3", { className: "text-base font-bold text-white flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(IconShield, { className: "w-5 h-5 text-amber-400" }),
+            /* @__PURE__ */ jsx("span", { children: "Enterprise Roles & Granular Permissions (RBAC)" })
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Configure custom system roles and granular module authorizations (Fleet, Logistics, Finance, Workshop, Legal, Users, Audit)." })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setEditingRole(null);
+              setRoleModalOpen(true);
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-md",
+            children: [
+              /* @__PURE__ */ jsx(IconPlus, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx("span", { children: "+ Create Custom Role" })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: roles.map((role) => {
+        const membersCount = users.filter((u) => u.role_id === role.id || u.role_slug === role.slug).length;
+        return /* @__PURE__ */ jsxs("div", { className: "p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between shadow-lg", children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between gap-2", children: [
+              /* @__PURE__ */ jsxs("div", { children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsx("h4", { className: "font-bold text-white text-base", children: role.name }),
+                  role.is_system && /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700", children: "System Protected" })
+                ] }),
+                /* @__PURE__ */ jsx("div", { className: "text-[11px] text-amber-400/90 font-medium mt-0.5", children: role.tier_name })
+              ] }),
+              /* @__PURE__ */ jsxs("span", { className: "px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700", children: [
+                membersCount,
+                " ",
+                membersCount === 1 ? "user" : "users"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400 mt-3 line-clamp-2", children: role.description }),
+            /* @__PURE__ */ jsxs("div", { className: "mt-4 pt-3 border-t border-slate-800/80 space-y-2", children: [
+              /* @__PURE__ */ jsx("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-500", children: "Module Authorizations" }),
+              /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5", children: Object.entries(role.permissions || {}).map(([mod, perms]) => {
+                if (!Array.isArray(perms) || perms.length === 0) return null;
+                const modInfo = MODULE_NAMES[mod] || { name: mod, icon: "\u26A1" };
+                const hasFull = perms.includes("*") || perms.length >= 5;
+                return /* @__PURE__ */ jsxs(
+                  "span",
+                  {
+                    className: cn(
+                      "px-2 py-1 rounded-lg text-[10px] font-semibold border flex items-center gap-1",
+                      hasFull ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-800 text-slate-300 border-slate-700"
+                    ),
+                    title: `${modInfo.name}: ${perms.join(", ")}`,
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: modInfo.icon }),
+                      /* @__PURE__ */ jsx("span", { children: modInfo.name }),
+                      /* @__PURE__ */ jsxs("span", { className: "opacity-70 text-[9px]", children: [
+                        "(",
+                        perms.length,
+                        ")"
+                      ] })
+                    ]
+                  },
+                  mod
+                );
+              }) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "mt-5 pt-3 border-t border-slate-800 flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                onClick: () => {
+                  setInspectingRole(role);
+                  setPermissionsModalOpen(true);
+                },
+                className: "text-xs text-amber-400 hover:text-amber-300 font-bold transition cursor-pointer",
+                children: "View Matrix \u2192"
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  onClick: () => {
+                    setEditingRole(role);
+                    setRoleModalOpen(true);
+                  },
+                  className: "px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer",
+                  children: "Edit"
+                }
+              ),
+              !role.is_system && /* @__PURE__ */ jsx(
+                "button",
+                {
+                  onClick: () => handleDeleteRole(role),
+                  className: "p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition cursor-pointer",
+                  title: "Delete Role",
+                  children: /* @__PURE__ */ jsx(IconTrash, { className: "w-3.5 h-3.5" })
+                }
+              )
+            ] })
+          ] })
+        ] }, role.id);
+      }) })
+    ] }),
+    activeTab === "teams" && /* @__PURE__ */ jsxs("div", { className: "space-y-6", children: [
+      /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("h3", { className: "text-base font-bold text-white flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(IconDepartment, { className: "w-5 h-5 text-emerald-400" }),
+            /* @__PURE__ */ jsx("span", { children: "Enterprise Department & Team Divisions" })
+          ] }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Organize company personnel into operational divisions, financial cost centers, and specialized functional teams." })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setEditingTeam(null);
+              setTeamModalOpen(true);
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white transition flex items-center gap-1.5 cursor-pointer shadow-md",
+            children: [
+              /* @__PURE__ */ jsx(IconPlus, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsx("span", { children: "+ Create Team Division" })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", children: teams.map((team) => {
+        const teamMembers = users.filter((u) => u.team_id === team.id);
+        return /* @__PURE__ */ jsxs("div", { className: "p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between shadow-lg", children: [
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between gap-2", children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+                /* @__PURE__ */ jsx("div", { className: cn(
+                  "w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm uppercase shrink-0 border",
+                  COLOR_MAP[team.color] || COLOR_MAP.blue
+                ), children: team.code || "DIV" }),
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ jsx("h4", { className: "font-bold text-white text-base leading-snug", children: team.name }) }),
+                  /* @__PURE__ */ jsxs("div", { className: "text-[11px] text-slate-400 font-mono mt-0.5", children: [
+                    "Cost Center: ",
+                    /* @__PURE__ */ jsx("span", { className: "text-emerald-400", children: team.cost_center || "CC-GEN-000" })
+                  ] })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("span", { className: "px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700 shrink-0", children: [
+                teamMembers.length,
+                " ",
+                teamMembers.length === 1 ? "member" : "members"
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400 mt-3", children: team.description }),
+            /* @__PURE__ */ jsxs("div", { className: "mt-4 pt-3 border-t border-slate-800", children: [
+              /* @__PURE__ */ jsx("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1", children: "Division Lead / Head" }),
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-xs font-semibold text-slate-200", children: [
+                /* @__PURE__ */ jsx(IconUser, { className: "w-3.5 h-3.5 text-blue-400" }),
+                /* @__PURE__ */ jsx("span", { children: team.lead_name || "Unassigned" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "mt-4 pt-3 border-t border-slate-800", children: [
+              /* @__PURE__ */ jsx("div", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2", children: "Assigned Personnel" }),
+              /* @__PURE__ */ jsx("div", { className: "space-y-1.5 max-h-36 overflow-y-auto pr-1", children: teamMembers.length === 0 ? /* @__PURE__ */ jsx("div", { className: "text-xs text-slate-600 italic", children: "No staff assigned yet" }) : teamMembers.map((m) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-950/60 border border-slate-800/60", children: [
+                /* @__PURE__ */ jsx("span", { className: "font-medium text-slate-300", children: m.name }),
+                /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-500", children: m.designation || m.role_name })
+              ] }, m.id)) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "mt-5 pt-3 border-t border-slate-800 flex items-center justify-end gap-2", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                onClick: () => {
+                  setEditingTeam(team);
+                  setTeamModalOpen(true);
+                },
+                className: "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer",
+                children: "Edit Division"
+              }
+            ),
+            !team.is_system && /* @__PURE__ */ jsx(
+              "button",
+              {
+                onClick: () => handleDeleteTeam(team),
+                className: "p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition cursor-pointer",
+                title: "Delete Division",
+                children: /* @__PURE__ */ jsx(IconTrash, { className: "w-3.5 h-3.5" })
+              }
+            )
+          ] })
+        ] }, team.id);
+      }) })
+    ] }),
+    userModalOpen && /* @__PURE__ */ jsx(
+      UserFormModal,
+      {
+        user: editingUser,
+        roles,
+        teams,
+        allUsers: users,
+        onClose: () => {
+          setUserModalOpen(false);
+          setEditingUser(null);
+        },
+        onSave: handleSaveUser
+      }
+    ),
+    revokeModalOpen && revokingUser && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-rose-500/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 text-rose-400", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-3 bg-rose-500/10 border border-rose-500/30 rounded-2xl", children: /* @__PURE__ */ jsx(IconSlash, { className: "w-6 h-6" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: "Emergency Access Revocation" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-rose-400/80", children: "Immediate security killswitch & session termination" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-slate-400", children: "Target Personnel:" }),
+        /* @__PURE__ */ jsx("div", { className: "font-bold text-white text-sm", children: revokingUser.name }),
+        /* @__PURE__ */ jsxs("div", { className: "text-slate-400", children: [
+          revokingUser.email,
+          " \u2022 ",
+          revokingUser.role_name
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-xs font-bold uppercase tracking-wider text-slate-400", children: "Official Revocation Justification (Required for Audit Trail) *" }),
+        /* @__PURE__ */ jsx(
+          "textarea",
+          {
+            rows: 3,
+            placeholder: "e.g. Employee offboarding, pending compliance audit, security quarantine...",
+            value: revocationReason,
+            onChange: (e) => setRevocationReason(e.target.value),
+            className: "w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-3 rounded-xl bg-rose-950/30 border border-rose-800/40 text-[11px] text-rose-300", children: [
+        "\u26A0\uFE0F ",
+        /* @__PURE__ */ jsx("strong", { children: "Warning:" }),
+        " Revoking access will immediately invalidate all active sessions and block portal entry. The event will be indelibly recorded in the Enterprise Audit Ledger."
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 pt-2", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setRevokeModalOpen(false);
+              setRevokingUser(null);
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer",
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: handleRevokeAccess,
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white cursor-pointer shadow-lg shadow-rose-600/30",
+            children: "Execute Revocation Now"
+          }
+        )
+      ] })
+    ] }) }),
+    roleModalOpen && /* @__PURE__ */ jsx(
+      RoleFormModal,
+      {
+        role: editingRole,
+        onClose: () => {
+          setRoleModalOpen(false);
+          setEditingRole(null);
+        },
+        onSave: handleSaveRole
+      }
+    ),
+    teamModalOpen && /* @__PURE__ */ jsx(
+      TeamFormModal,
+      {
+        team: editingTeam,
+        allUsers: users,
+        onClose: () => {
+          setTeamModalOpen(false);
+          setEditingTeam(null);
+        },
+        onSave: handleSaveTeam
+      }
+    ),
+    reassignModalOpen && reassignTargetUser && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-indigo-500/40 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 text-indigo-400", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl", children: /* @__PURE__ */ jsx(IconHierarchy, { className: "w-6 h-6" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: "Reassign Reporting Manager" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-indigo-400/80", children: "Corporate hierarchy & organizational chart update" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-slate-400", children: "Target Personnel:" }),
+        /* @__PURE__ */ jsx("div", { className: "font-bold text-white text-sm", children: reassignTargetUser.name }),
+        /* @__PURE__ */ jsxs("div", { className: "text-slate-400", children: [
+          "Current Manager: ",
+          /* @__PURE__ */ jsx("span", { className: "text-slate-200 font-semibold", children: reassignTargetUser.manager_name || "Board of Directors" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-xs font-bold uppercase tracking-wider text-slate-400", children: "Select New Direct Reporting Manager *" }),
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            value: selectedNewManagerId,
+            onChange: (e) => setSelectedNewManagerId(e.target.value),
+            className: "w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500",
+            children: users.filter((u) => u.id !== reassignTargetUser.id).map((u) => /* @__PURE__ */ jsxs("option", { value: u.id, children: [
+              u.name,
+              " \u2014 ",
+              u.designation,
+              " (Level ",
+              u.hierarchy_level || 1,
+              ")"
+            ] }, u.id))
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 pt-2", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setReassignModalOpen(false);
+              setReassignTargetUser(null);
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer",
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: handleReassignManager,
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer shadow-lg shadow-indigo-600/30",
+            children: "Save Reporting Line"
+          }
+        )
+      ] })
+    ] }) }),
+    permissionsModalOpen && inspectingRole && /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-4", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400", children: /* @__PURE__ */ jsx(IconShield, { className: "w-5 h-5" }) }),
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: inspectingRole.name }),
+            /* @__PURE__ */ jsx("p", { className: "text-xs text-amber-400/80", children: inspectingRole.tier_name })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => {
+              setPermissionsModalOpen(false);
+              setInspectingRole(null);
+            },
+            className: "p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white",
+            children: /* @__PURE__ */ jsx(IconX, { className: "w-5 h-5" })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: inspectingRole.description }),
+      /* @__PURE__ */ jsx("div", { className: "border border-slate-800 rounded-xl overflow-hidden", children: /* @__PURE__ */ jsxs("table", { className: "w-full text-left text-xs", children: [
+        /* @__PURE__ */ jsx("thead", { className: "bg-slate-950 text-[11px] font-bold uppercase text-slate-400 border-b border-slate-800", children: /* @__PURE__ */ jsxs("tr", { children: [
+          /* @__PURE__ */ jsx("th", { className: "p-3", children: "Enterprise Module" }),
+          ALL_PERMS.map((p) => /* @__PURE__ */ jsx("th", { className: "p-3 text-center uppercase", children: p }, p))
+        ] }) }),
+        /* @__PURE__ */ jsx("tbody", { className: "divide-y divide-slate-800/60", children: Object.entries(MODULE_NAMES).map(([modKey, modInfo]) => {
+          const rolePerms = inspectingRole.permissions?.[modKey] || [];
+          const isAll = rolePerms.includes("*");
+          return /* @__PURE__ */ jsxs("tr", { className: "hover:bg-slate-850/40", children: [
+            /* @__PURE__ */ jsxs("td", { className: "p-3 font-semibold text-slate-200 flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx("span", { children: modInfo.icon }),
+              /* @__PURE__ */ jsx("span", { children: modInfo.name })
+            ] }),
+            ALL_PERMS.map((p) => {
+              const has = isAll || rolePerms.includes(p);
+              return /* @__PURE__ */ jsx("td", { className: "p-3 text-center", children: has ? /* @__PURE__ */ jsx("span", { className: "inline-block p-1 rounded-md bg-emerald-500/10 text-emerald-400", children: /* @__PURE__ */ jsx(IconCheck, { className: "w-3.5 h-3.5" }) }) : /* @__PURE__ */ jsx("span", { className: "inline-block p-1 text-slate-700", children: /* @__PURE__ */ jsx(IconX, { className: "w-3.5 h-3.5" }) }) }, p);
+            })
+          ] }, modKey);
+        }) })
+      ] }) }),
+      /* @__PURE__ */ jsx("div", { className: "flex justify-end pt-2", children: /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => {
+            setPermissionsModalOpen(false);
+            setInspectingRole(null);
+          },
+          className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer",
+          children: "Close"
+        }
+      ) })
+    ] }) })
+  ] });
+}
+function UserFormModal({ user, roles, teams, allUsers, onClose, onSave }) {
+  const [formData, setFormData] = React.useState({
+    id: user?.id || "",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    designation: user?.designation || "",
+    role_id: user?.role_id || (roles[0]?.id || "role_operations_lead"),
+    team_id: user?.team_id || (teams[0]?.id || "team_operations"),
+    manager_id: user?.manager_id || "usr_vinod_admin",
+    status: user?.status || "ACTIVE"
+  });
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.email.trim()) {
+      showToast("Name and Email are required", "warning");
+      return;
+    }
+    const role = roles.find((r) => r.id === formData.role_id);
+    const team = teams.find((t) => t.id === formData.team_id);
+    const manager = allUsers.find((u) => u.id === formData.manager_id);
+    onSave({
+      ...formData,
+      role_name: role ? role.name : "Operations Lead",
+      role_slug: role ? role.slug : "operations_lead",
+      team_name: team ? team.name : "Logistics & Freight Operations Division",
+      manager_name: manager ? manager.name : "Executive Board"
+    });
+  };
+  return /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400", children: /* @__PURE__ */ jsx(IconUser, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: user ? "Edit Workforce Profile" : "Onboard New Employee" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Enterprise credentials, division assignment & reporting hierarchy" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("button", { onClick: onClose, className: "p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white", children: /* @__PURE__ */ jsx(IconX, { className: "w-5 h-5" }) })
+    ] }),
+    /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Full Name *" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              required: true,
+              value: formData.name,
+              onChange: (e) => setFormData({ ...formData, name: e.target.value }),
+              placeholder: "e.g. Ramesh Kumar",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Email Address (Login ID) *" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "email",
+              required: true,
+              value: formData.email,
+              onChange: (e) => setFormData({ ...formData, email: e.target.value }),
+              placeholder: "ramesh@jaibhavanicargo.com",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Mobile Phone" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formData.phone,
+              onChange: (e) => setFormData({ ...formData, phone: e.target.value }),
+              placeholder: "+91 98765 43210",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Official Designation" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: formData.designation,
+              onChange: (e) => setFormData({ ...formData, designation: e.target.value }),
+              placeholder: "e.g. Senior Dispatch Controller",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Department Division *" }),
+          /* @__PURE__ */ jsx(
+            "select",
+            {
+              value: formData.team_id,
+              onChange: (e) => setFormData({ ...formData, team_id: e.target.value }),
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500",
+              children: teams.map((t) => /* @__PURE__ */ jsxs("option", { value: t.id, children: [
+                t.name,
+                " (",
+                t.code,
+                ")"
+              ] }, t.id))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Privilege Role *" }),
+          /* @__PURE__ */ jsx(
+            "select",
+            {
+              value: formData.role_id,
+              onChange: (e) => setFormData({ ...formData, role_id: e.target.value }),
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500",
+              children: roles.map((r) => /* @__PURE__ */ jsxs("option", { value: r.id, children: [
+                r.name,
+                " (",
+                r.tier_name,
+                ")"
+              ] }, r.id))
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Direct Reporting Manager *" }),
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            value: formData.manager_id,
+            onChange: (e) => setFormData({ ...formData, manager_id: e.target.value }),
+            className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500",
+            children: allUsers.filter((u) => u.id !== formData.id).map((u) => /* @__PURE__ */ jsxs("option", { value: u.id, children: [
+              u.name,
+              " \u2014 ",
+              u.designation,
+              " (Level ",
+              u.hierarchy_level || 1,
+              ")"
+            ] }, u.id))
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 pt-4 border-t border-slate-800", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer",
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "submit",
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow-lg shadow-blue-600/30",
+            children: user ? "Save Profile Changes" : "Confirm Onboarding"
+          }
+        )
+      ] })
+    ] })
+  ] }) });
+}
+function RoleFormModal({ role, onClose, onSave }) {
+  const [name, setName] = React.useState(role?.name || "");
+  const [tier, setTier] = React.useState(role?.tier || 3);
+  const [description, setDescription] = React.useState(role?.description || "");
+  const [permissions, setPermissions] = React.useState(
+    role?.permissions || {
+      fleet: ["view"],
+      logistics: ["view"],
+      finance: ["view"],
+      maintenance: ["view"],
+      documents: ["view"],
+      users: [],
+      audit: []
+    }
+  );
+  const togglePermission = (moduleKey, perm) => {
+    setPermissions((prev) => {
+      const current = prev[moduleKey] || [];
+      const updated = current.includes(perm) ? current.filter((p) => p !== perm) : [...current, perm];
+      return { ...prev, [moduleKey]: updated };
+    });
+  };
+  const handleSelectAllModule = (moduleKey) => {
+    setPermissions((prev) => {
+      const current = prev[moduleKey] || [];
+      const updated = current.length === ALL_PERMS.length ? [] : [...ALL_PERMS];
+      return { ...prev, [moduleKey]: updated };
+    });
+  };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      showToast("Role Name is required", "warning");
+      return;
+    }
+    const slug = role?.slug || name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    onSave({
+      id: role?.id,
+      name: name.trim(),
+      slug,
+      tier: Number(tier),
+      tier_name: `Tier ${tier} \u2014 ${tier === 1 ? "Executive Board" : tier === 2 ? "Division Head" : tier === 3 ? "Operational Lead" : "Field Staff"}`,
+      description: description.trim() || "Custom organizational role",
+      permissions
+    });
+  };
+  return /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400", children: /* @__PURE__ */ jsx(IconShield, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: role ? "Edit Custom Role" : "Create Custom Organizational Role" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Granular module-by-module permission configuration" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("button", { onClick: onClose, className: "p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white", children: /* @__PURE__ */ jsx(IconX, { className: "w-5 h-5" }) })
+    ] }),
+    /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Role Title *" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              required: true,
+              value: name,
+              onChange: (e) => setName(e.target.value),
+              placeholder: "e.g. Regional Fleet Controller",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Hierarchy Tier *" }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: tier,
+              onChange: (e) => setTier(Number(e.target.value)),
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: 1, children: "Tier 1 \u2014 Executive Board & Directorate" }),
+                /* @__PURE__ */ jsx("option", { value: 2, children: "Tier 2 \u2014 Department Division Head" }),
+                /* @__PURE__ */ jsx("option", { value: 3, children: "Tier 3 \u2014 Operational Lead / Controller" }),
+                /* @__PURE__ */ jsx("option", { value: 4, children: "Tier 4 \u2014 Field Staff & Driver Captain" })
+              ]
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Role Description & Scope" }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "text",
+            value: description,
+            onChange: (e) => setDescription(e.target.value),
+            placeholder: "Responsibilities and access scope of this role...",
+            className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-2 pt-2 border-t border-slate-800", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-300", children: "Module Permission Checklists (Granular Access)" }),
+          /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-500", children: "Toggle actions granted to this role" })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800/60", children: Object.entries(MODULE_NAMES).map(([modKey, modInfo]) => {
+          const currentPerms = permissions[modKey] || [];
+          const allSelected = currentPerms.length === ALL_PERMS.length;
+          return /* @__PURE__ */ jsxs("div", { className: "p-3 bg-slate-950/40 hover:bg-slate-950/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-2", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-base", children: modInfo.icon }),
+              /* @__PURE__ */ jsx("span", { className: "font-semibold text-xs text-white", children: modInfo.name }),
+              /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  onClick: () => handleSelectAllModule(modKey),
+                  className: "text-[10px] text-amber-400 hover:underline font-bold ml-1 cursor-pointer",
+                  children: allSelected ? "Deselect All" : "Select All"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2", children: ALL_PERMS.map((p) => {
+              const checked = currentPerms.includes(p);
+              return /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none", children: [
+                /* @__PURE__ */ jsx(
+                  "input",
+                  {
+                    type: "checkbox",
+                    checked,
+                    onChange: () => togglePermission(modKey, p),
+                    className: "rounded border-slate-700 bg-slate-900 text-amber-500 focus:ring-amber-500 cursor-pointer"
+                  }
+                ),
+                /* @__PURE__ */ jsx("span", { className: "capitalize text-[11px]", children: p })
+              ] }, p);
+            }) })
+          ] }, modKey);
+        }) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 pt-4 border-t border-slate-800", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer",
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "submit",
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white cursor-pointer shadow-lg shadow-amber-600/30",
+            children: role ? "Save Role Changes" : "Create Role"
+          }
+        )
+      ] })
+    ] })
+  ] }) });
+}
+function TeamFormModal({ team, allUsers, onClose, onSave }) {
+  const [name, setName] = React.useState(team?.name || "");
+  const [code, setCode] = React.useState(team?.code || "");
+  const [costCenter, setCostCenter] = React.useState(team?.cost_center || "");
+  const [leadId, setLeadId] = React.useState(team?.lead_id || (allUsers[0]?.id || ""));
+  const [description, setDescription] = React.useState(team?.description || "");
+  const [color, setColor] = React.useState(team?.color || "blue");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      showToast("Division Name is required", "warning");
+      return;
+    }
+    const lead = allUsers.find((u) => u.id === leadId);
+    onSave({
+      id: team?.id,
+      name: name.trim(),
+      code: (code || name.substring(0, 3)).toUpperCase(),
+      cost_center: costCenter.trim() || "CC-GEN-001",
+      lead_id: leadId,
+      lead_name: lead ? lead.name : "Unassigned",
+      description: description.trim() || "Corporate operational division",
+      color
+    });
+  };
+  return /* @__PURE__ */ jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400", children: /* @__PURE__ */ jsx(IconDepartment, { className: "w-5 h-5" }) }),
+        /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("h3", { className: "text-lg font-black text-white", children: team ? "Edit Team Division" : "Create Department / Team Division" }),
+          /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400", children: "Operational group, cost center & division lead assignment" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx("button", { onClick: onClose, className: "p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white", children: /* @__PURE__ */ jsx(IconX, { className: "w-5 h-5" }) })
+    ] }),
+    /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "space-y-4", children: [
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Division Full Name *" }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "text",
+            required: true,
+            value: name,
+            onChange: (e) => setName(e.target.value),
+            placeholder: "e.g. Central Dispatch & Highway Telematics Division",
+            className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-2 gap-3", children: [
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Division Code *" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              required: true,
+              value: code,
+              onChange: (e) => setCode(e.target.value.toUpperCase()),
+              placeholder: "e.g. DSP, FIN, OPS",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+          /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Cost Center Code" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: costCenter,
+              onChange: (e) => setCostCenter(e.target.value),
+              placeholder: "CC-DSP-404",
+              className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Division Lead / Head *" }),
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            value: leadId,
+            onChange: (e) => setLeadId(e.target.value),
+            className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500",
+            children: allUsers.map((u) => /* @__PURE__ */ jsxs("option", { value: u.id, children: [
+              u.name,
+              " \u2014 ",
+              u.designation
+            ] }, u.id))
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Division Operational Scope" }),
+        /* @__PURE__ */ jsx(
+          "textarea",
+          {
+            rows: 2,
+            value: description,
+            onChange: (e) => setDescription(e.target.value),
+            placeholder: "Describe tasks, mandate and responsibilities of this team...",
+            className: "w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+        /* @__PURE__ */ jsx("label", { className: "text-[11px] font-bold uppercase tracking-wider text-slate-400", children: "Color Theme Badge" }),
+        /* @__PURE__ */ jsx("div", { className: "flex gap-2", children: ["blue", "emerald", "amber", "purple", "rose", "cyan"].map((c) => /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setColor(c),
+            className: cn(
+              "w-8 h-8 rounded-xl border flex items-center justify-center cursor-pointer transition",
+              COLOR_MAP[c],
+              color === c ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"
+            ),
+            children: color === c && /* @__PURE__ */ jsx(IconCheck, { className: "w-4 h-4" })
+          },
+          c
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-2 pt-4 border-t border-slate-800", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer",
+            children: "Cancel"
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "submit",
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-lg shadow-emerald-600/30",
+            children: team ? "Save Division Changes" : "Create Division"
+          }
+        )
+      ] })
+    ] })
+  ] }) });
+}
+class OrgErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Enterprise Organization Error Boundary caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return /* @__PURE__ */ jsxs("div", { className: "min-h-screen bg-slate-950 text-white p-8 flex flex-col items-center justify-center text-center", children: [
+        /* @__PURE__ */ jsx("div", { className: "p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-400 mb-4", children: /* @__PURE__ */ jsx(IconSlash, { className: "w-8 h-8" }) }),
+        /* @__PURE__ */ jsx("h2", { className: "text-xl font-bold mb-2", children: "Organization View Encountered an Error" }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-400 max-w-md mb-4", children: this.state.error?.message || "Unexpected runtime error" }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            },
+            className: "px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white cursor-pointer",
+            children: "Reload Module"
+          }
+        )
+      ] });
+    }
+    return this.props.children;
+  }
+}
+function EnterpriseUserManagementPageWrapper() {
+  return React.createElement(OrgErrorBoundary, null, React.createElement(EnterpriseUserManagementPage));
+}
+export {
+  EnterpriseUserManagementPage,
+  EnterpriseUserManagementPageWrapper as default
+};

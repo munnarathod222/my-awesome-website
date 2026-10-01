@@ -1,0 +1,67 @@
+[
+  {
+    "id": "team_accounts",
+    "name": "Accounts & Financial Controller Division",
+    "code": "FIN",
+    "icon": "Wallet",
+    "color": "emerald",
+    "lead_id": "usr_fin_lead",
+    "lead_name": "Sunil Sharma",
+    "description": "Ledger maintenance, cashbook disbursements, FASTag, diesel reconciliation, GST filing, and client invoicing.",
+    "cost_center": "CC-FIN-101",
+    "is_system": true,
+    "created_at": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "team_operations",
+    "name": "Logistics & Freight Operations Division",
+    "code": "OPS",
+    "icon": "Truck",
+    "color": "blue",
+    "lead_id": "usr_ops_lead",
+    "lead_name": "Rajesh Varma",
+    "description": "Freight dispatch, consignment scheduling, route optimization, POD digitization, and carrier bidding.",
+    "cost_center": "CC-OPS-202",
+    "is_system": true,
+    "created_at": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "team_fleet",
+    "name": "Fleet Engineering & Maintenance Division",
+    "code": "FLT",
+    "icon": "Wrench",
+    "color": "amber",
+    "lead_id": "usr_fleet_lead",
+    "lead_name": "Mohammed Qureshi",
+    "description": "Heavy commercial vehicle fitness, workshop job cards, tyre tread rotation, and breakdown roadside assistance.",
+    "cost_center": "CC-FLT-303",
+    "is_system": true,
+    "created_at": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "team_compliance",
+    "name": "Executive Legal, Audit & Regulatory Division",
+    "code": "CMP",
+    "icon": "ShieldCheck",
+    "color": "purple",
+    "lead_id": "usr_vinod_admin",
+    "lead_name": "Vinod Kumar Rathod",
+    "description": "Corporate vault governance, National Goods Permits, RTO road taxes, insurance policies, and enterprise security.",
+    "cost_center": "CC-EXEC-001",
+    "is_system": true,
+    "created_at": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "team_support",
+    "name": "Enterprise Client Relations & CRM Division",
+    "code": "CRM",
+    "icon": "Headphones",
+    "color": "cyan",
+    "lead_id": "usr_crm_lead",
+    "lead_name": "Kavita Reddy",
+    "description": "B2B client portal assistance, demurrage dispute arbitration, SLA tracking, and rate quotation desk.",
+    "cost_center": "CC-CRM-404",
+    "is_system": true,
+    "created_at": "2026-01-01T00:00:00.000Z"
+  }
+]

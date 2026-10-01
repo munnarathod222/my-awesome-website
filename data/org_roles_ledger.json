@@ -1,0 +1,208 @@
+[
+  {
+    "id": "role_superuser",
+    "name": "Superuser / Managing Director",
+    "slug": "superuser",
+    "tier": 1,
+    "tier_name": "Tier 1 — Executive Board",
+    "badge_color": "bg-purple-500/10 text-purple-400 border-purple-500/30",
+    "description": "Unrestricted master authority across all corporate systems, financial reserves, user management, and audit logs.",
+    "is_system": true,
+    "permissions": {
+      "fleet": [
+        "view",
+        "create",
+        "edit",
+        "delete",
+        "approve"
+      ],
+      "logistics": [
+        "view",
+        "create",
+        "edit",
+        "delete",
+        "dispatch",
+        "rate_override"
+      ],
+      "finance": [
+        "view",
+        "create",
+        "edit",
+        "delete",
+        "approve_payout",
+        "export_reports"
+      ],
+      "maintenance": [
+        "view",
+        "create",
+        "edit",
+        "close_job"
+      ],
+      "documents": [
+        "view",
+        "upload",
+        "verify",
+        "delete"
+      ],
+      "users": [
+        "view",
+        "manage_members",
+        "grant_roles",
+        "revoke_access",
+        "manage_hierarchy"
+      ],
+      "audit": [
+        "view_logs",
+        "review_alerts",
+        "purge_system"
+      ]
+    }
+  },
+  {
+    "id": "role_financial_controller",
+    "name": "Chief Financial Controller",
+    "slug": "financial_controller",
+    "tier": 2,
+    "tier_name": "Tier 2 — Department Head",
+    "badge_color": "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    "description": "Full authorization over cashbook disbursements, vendor payments, GST invoicing, bank reconciliation, and driver advances.",
+    "is_system": true,
+    "permissions": {
+      "fleet": [
+        "view"
+      ],
+      "logistics": [
+        "view"
+      ],
+      "finance": [
+        "view",
+        "create",
+        "edit",
+        "approve_payout",
+        "export_reports"
+      ],
+      "maintenance": [
+        "view"
+      ],
+      "documents": [
+        "view",
+        "upload"
+      ],
+      "users": [
+        "view"
+      ],
+      "audit": [
+        "view_logs"
+      ]
+    }
+  },
+  {
+    "id": "role_operations_lead",
+    "name": "Operations Logistics Director",
+    "slug": "operations_lead",
+    "tier": 2,
+    "tier_name": "Tier 2 — Department Head",
+    "badge_color": "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    "description": "Complete command over fleet dispatch, multi-drop route allocations, driver scheduling, and freight rate negotiation.",
+    "is_system": true,
+    "permissions": {
+      "fleet": [
+        "view",
+        "edit"
+      ],
+      "logistics": [
+        "view",
+        "create",
+        "edit",
+        "dispatch",
+        "rate_override"
+      ],
+      "finance": [
+        "view"
+      ],
+      "maintenance": [
+        "view"
+      ],
+      "documents": [
+        "view",
+        "upload",
+        "verify"
+      ],
+      "users": [
+        "view"
+      ],
+      "audit": [
+        "view_logs"
+      ]
+    }
+  },
+  {
+    "id": "role_fleet_engineer",
+    "name": "Fleet Workshop Engineer",
+    "slug": "fleet_engineer",
+    "tier": 3,
+    "tier_name": "Tier 3 — Operational Specialist",
+    "badge_color": "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    "description": "Manages commercial vehicle maintenance job cards, tyre tread depth logs, spare parts replenishment, and fitness certification.",
+    "is_system": true,
+    "permissions": {
+      "fleet": [
+        "view",
+        "create",
+        "edit"
+      ],
+      "logistics": [
+        "view"
+      ],
+      "finance": [
+        "view"
+      ],
+      "maintenance": [
+        "view",
+        "create",
+        "edit",
+        "close_job"
+      ],
+      "documents": [
+        "view",
+        "upload"
+      ],
+      "users": [
+        "view"
+      ],
+      "audit": [
+        "view_logs"
+      ]
+    }
+  },
+  {
+    "id": "role_driver_lead",
+    "name": "Commercial Fleet Captain",
+    "slug": "driver_lead",
+    "tier": 4,
+    "tier_name": "Tier 4 — Field Operator",
+    "badge_color": "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
+    "description": "Mobile app navigation, en-route toll verification, physical POD capture, and daily vehicle pre-trip checklists.",
+    "is_system": true,
+    "permissions": {
+      "fleet": [
+        "view"
+      ],
+      "logistics": [
+        "view"
+      ],
+      "finance": [
+        "view"
+      ],
+      "maintenance": [
+        "view"
+      ],
+      "documents": [
+        "view",
+        "upload"
+      ],
+      "users": [],
+      "audit": []
+    }
+  }
+]
