@@ -2043,6 +2043,13 @@ try {
     bundle: false,
     format: 'esm',
     target: 'es2020',
+    tsconfigRaw: {
+      compilerOptions: {
+        jsx: 'react',
+        jsxFactory: 'React.createElement',
+        jsxFragmentFactory: 'React.Fragment'
+      }
+    },
     write: false
   });
 
