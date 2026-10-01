@@ -1,0 +1,31 @@
+{
+  "bpuppzyfbttdf1i": {
+    "employee_id": "bpuppzyfbttdf1i",
+    "employee_name": "Vinod Kumar Rathod",
+    "account_holder_name": "Vinod Kumar Rathod",
+    "bank_name": "State Bank of India",
+    "account_number": "38291048591",
+    "ifsc_code": "SBIN0020188",
+    "branch_name": "Ghatkesar Main Branch",
+    "account_type": "Salary",
+    "upi_id": "6281618046@sbi",
+    "verification_status": "Verified",
+    "notes": "Primary executive disbursement account",
+    "updated_at": "2026-02-15T10:30:00.000Z"
+  },
+  "k7jaz5lqellbxtb": {
+    "employee_id": "k7jaz5lqellbxtb",
+    "employee_name": "Dayanand surwase",
+    "account_holder_name": "Dayanand Surwase",
+    "bank_name": "Bank of Baroda",
+    "account_number": "49200100018472",
+    "ifsc_code": "BARB0VAPIND",
+    "branch_name": "Vapi Industrial Estate",
+    "account_type": "Savings",
+    "upi_id": "8341571334@barodampay",
+    "verification_status": "Verified",
+    "notes": "Verified via passbook copy",
+    "updated_at": "2026-10-01T21:33:09.703Z",
+    "updated_by": "Vinod Kumar Rathod"
+  }
+}

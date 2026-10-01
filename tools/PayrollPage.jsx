@@ -56,21 +56,26 @@ export default function PayrollPage() {
   const [isSavingCycle, setIsSavingCycle] = useState(false);
   
   const [activeTab, setActiveTab] = useState('overview');
+  const [bankDetailsMap, setBankDetailsMap] = useState({});
   
   const { validateSync, syncResults } = useAdvanceSyncStatus();
 
   const fetchData = async () => {
     try {
-      const [emps, advs, pays, atts] = await Promise.all([
+      const [emps, advs, pays, atts, bankRes] = await Promise.all([
         pb.collection('employees').getFullList({ $autoCancel: false }),
         pb.collection('advances').getFullList({ $autoCancel: false }),
         pb.collection('payroll').getFullList({ sort: '-created', $autoCancel: false }),
-        pb.collection('attendance').getFullList({ $autoCancel: false })
+        pb.collection('attendance').getFullList({ $autoCancel: false }),
+        fetch('/api/employee/bank-details').then(r => r.json()).catch(() => ({ bankDetails: {} }))
       ]);
       setEmployees(emps || []);
       setAdvances(advs || []);
       setPayments(pays || []);
       setAttendanceRecords(atts || []);
+      if (bankRes?.bankDetails) {
+        setBankDetailsMap(bankRes.bankDetails);
+      }
     } catch (error) {
       console.error("[PayrollPage] Error fetching payroll data:", error);
     } finally {
@@ -235,17 +240,23 @@ export default function PayrollPage() {
 
   // Export Payroll to Bank NEFT/RTGS CSV format
   const handleExportPayrollExcel = () => {
-    const headers = ['Employee Name', 'Role / Position', 'Base Salary (INR)', 'Attendance (Present/Working)', 'Pending Advances (INR)', 'Net Payout (INR)', 'Pay Date', 'Status'];
-    const rows = filteredCalculatedPayroll.map(e => [
-      `"${e.name}"`,
-      `"${e.position || e.employee_type || 'Staff'}"`,
-      e.baseSalary,
-      `"${e.presentDays}/${e.totalWorkingDays} Days"`,
-      e.totalAdvances,
-      e.netPayout,
-      `"${e.cycleInfo?.formattedPayDate || '10th'}"`,
-      `"${e.isSettled ? 'Settled' : 'Pending'}"`
-    ]);
+    const headers = ['Employee Name', 'Role / Position', 'Bank Name', 'Account Number', 'IFSC Code', 'Base Salary (INR)', 'Attendance (Present/Working)', 'Pending Advances (INR)', 'Net Payout (INR)', 'Pay Date', 'Status'];
+    const rows = filteredCalculatedPayroll.map(e => {
+      const b = bankDetailsMap[e.id] || {};
+      return [
+        `"${e.name}"`,
+        `"${e.position || e.employee_type || 'Staff'}"`,
+        `"${b.bank_name || 'Not Linked'}"`,
+        `"${b.account_number ? "'" + b.account_number : 'N/A'}"`,
+        `"${b.ifsc_code || 'N/A'}"`,
+        e.baseSalary,
+        `"${e.presentDays}/${e.totalWorkingDays} Days"`,
+        e.totalAdvances,
+        e.netPayout,
+        `"${e.cycleInfo?.formattedPayDate || '10th'}"`,
+        `"${e.isSettled ? 'Settled' : 'Pending'}"`
+      ];
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -255,7 +266,7 @@ export default function PayrollPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success(`Exported ${filteredCalculatedPayroll.length} Payroll Records for Bank Transfer!`);
+    toast.success(`Exported ${filteredCalculatedPayroll.length} Payroll Records with Bank NEFT Details!`);
   };
 
   return (
@@ -413,6 +424,15 @@ export default function PayrollPage() {
                         <div className="text-[10px] text-muted-foreground capitalize mt-0.5">
                           {emp.position || emp.employee_type || 'Staff'} • Joined {emp.joining_date ? emp.joining_date.split(' ')[0] : 'N/A'}
                         </div>
+                        {bankDetailsMap[emp.id] ? (
+                          <div className="text-[10px] text-emerald-400 font-mono font-semibold mt-0.5">
+                            🏦 {bankDetailsMap[emp.id].bank_name.split(' ')[0]} ••••{String(bankDetailsMap[emp.id].account_number).slice(-4)}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-amber-400/80 font-mono mt-0.5">
+                            ⚠️ Bank Pending
+                          </div>
+                        )}
                       </TableCell>
 
                       <TableCell className="text-right font-mono font-semibold text-muted-foreground">

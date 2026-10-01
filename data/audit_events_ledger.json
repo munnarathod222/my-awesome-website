@@ -512,5 +512,37 @@
     "user_agent": "JBC-Client-Web",
     "previous_event_hash": "701addd4c823c63d09fe42e3ca9a20b62b74e44c1b454de4b1aa23cec94bb126",
     "current_event_hash": "ba2327648910939d894376e99dd478f4cb555f3db85980c78206e0cbb52ec415"
+  },
+  {
+    "id": "evt_1790890389709_tn6i5l",
+    "sequence_number": 14,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-01T21:33:09.709Z",
+    "recorded_at": "2026-10-01T21:33:09.709Z",
+    "actor": {
+      "id": "usr_admin",
+      "name": "Vinod Kumar Rathod",
+      "email": "system@jaibhavanicargo.com",
+      "role": "superuser",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "HR_PAYROLL",
+    "entity_type": "GENERAL",
+    "entity_id": "N/A",
+    "action": "UPDATE_BANK_DETAILS",
+    "outcome": "SUCCESS",
+    "severity": "HIGH",
+    "details": "UPDATE_BANK_DETAILS on undefined undefined",
+    "previous_values": null,
+    "new_values": null,
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1790890389711_5ki2",
+    "correlation_id": "corr_1790890389711",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "ba2327648910939d894376e99dd478f4cb555f3db85980c78206e0cbb52ec415",
+    "current_event_hash": "c7986f64232f1fcf393f31960205bfddd78a0eef282651a18c079ab4b3563c33"
   }
 ]
