@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import * as auditService from './apps/api/src/services/auditService.js';
 import * as productivityService from './apps/api/src/services/productivityService.js';
 import * as orgService from './apps/api/src/services/orgService.js';
+import * as employeeBankService from './apps/api/src/services/employeeBankService.js';
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -580,6 +581,55 @@ const server = http.createServer((req, res) => {
 
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: false, error: 'Org endpoint not found' }));
+  }
+
+  // ── Employee Bank Account & Settlement Details Endpoints ───────
+  if (reqPath.startsWith('/api/employee/bank-details') || reqPath.startsWith('/api/driver/employee-bank-details')) {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_admin',
+      role: req.headers['x-actor-role'] || 'superuser',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com'
+    };
+
+    // Get all bank details: GET /api/employee/bank-details
+    if ((reqPath === '/api/employee/bank-details' || reqPath === '/api/driver/employee-bank-details') && req.method === 'GET') {
+      const details = employeeBankService.getAllBankDetails();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify({ success: true, bankDetails: details }));
+    }
+
+    // Get bank details for single employee: GET /api/employee/bank-details/:id
+    if (req.method === 'GET' && (reqPath.startsWith('/api/employee/bank-details/') || reqPath.startsWith('/api/driver/employee-bank-details/'))) {
+      const parts = reqPath.split('/');
+      const empId = parts[parts.length - 1];
+      const record = employeeBankService.getBankDetails(empId);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      return res.end(JSON.stringify({ success: true, bankDetails: record }));
+    }
+
+    // Save/Update bank details: POST /api/employee/bank-details
+    if (req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const body = JSON.parse(b);
+          const empId = body.employee_id || body.employeeId || body.id;
+          if (!empId) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'employee_id is required' }));
+          }
+          const saved = employeeBankService.saveBankDetails(empId, body, actor);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, record: saved }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
   }
 
   // API handler for quotation rates

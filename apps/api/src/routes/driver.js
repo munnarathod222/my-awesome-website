@@ -1,6 +1,7 @@
 import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
+import * as employeeBankService from '../services/employeeBankService.js';
 
 // ─── Security: sanitise strings used in PocketBase filter expressions ─────────
 // Strips characters that could break out of a filter string literal.
@@ -253,8 +254,27 @@ router.post('/create-employee', async (req, res) => {
       }
     } catch (_) {}
 
+    // Save bank details if provided
+    let bankRecord = null;
+    if (data.bank_name || data.account_number || data.ifsc_code) {
+      try {
+        bankRecord = employeeBankService.saveBankDetails(record.id, {
+          employee_name: record.name,
+          account_holder_name: data.account_holder_name || record.name,
+          bank_name: data.bank_name,
+          account_number: data.account_number,
+          ifsc_code: data.ifsc_code,
+          branch_name: data.branch_name,
+          account_type: data.account_type || 'Savings',
+          upi_id: data.upi_id
+        }, { id: 'usr_admin', name: 'Administrator', role: 'superuser' });
+      } catch (bErr) {
+        logger.warn(`Notice: Could not save bank details during create-employee: ${bErr.message}`);
+      }
+    }
+
     logger.info(`Employee created via backend API: ${record.id} (#${empNum} - ${empCode} - ${record.name})`);
-    return res.json({ success: true, record: { ...record, employee_number: empNum, employee_code: empCode } });
+    return res.json({ success: true, record: { ...record, employee_number: empNum, employee_code: empCode, bank_details: bankRecord } });
   } catch (err) {
     logger.error('Failed to create employee:', err?.data || err.message);
     return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
@@ -284,11 +304,63 @@ router.post('/update-employee/:id', async (req, res) => {
     }
 
     const record = await pb.collection('employees').update(id, payload, { $autoCancel: false });
+
+    // Save bank details if provided
+    let bankRecord = null;
+    if (data.bank_name || data.account_number || data.ifsc_code) {
+      try {
+        bankRecord = employeeBankService.saveBankDetails(id, {
+          employee_name: record.name,
+          account_holder_name: data.account_holder_name || record.name,
+          bank_name: data.bank_name,
+          account_number: data.account_number,
+          ifsc_code: data.ifsc_code,
+          branch_name: data.branch_name,
+          account_type: data.account_type || 'Savings',
+          upi_id: data.upi_id
+        }, { id: 'usr_admin', name: 'Administrator', role: 'superuser' });
+      } catch (bErr) {
+        logger.warn(`Notice: Could not save bank details during update-employee: ${bErr.message}`);
+      }
+    }
+
     logger.info(`Employee updated via backend API: ${record.id} (${record.name})`);
-    return res.json({ success: true, record });
+    return res.json({ success: true, record: { ...record, bank_details: bankRecord } });
   } catch (err) {
     logger.error('Failed to update employee:', err?.data || err.message);
     return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
+  }
+});
+
+/**
+ * GET /api/driver/employee-bank-details
+ * Fetch all employee bank details
+ */
+router.get('/employee-bank-details', (req, res) => {
+  return res.json({ success: true, bankDetails: employeeBankService.getAllBankDetails() });
+});
+
+/**
+ * GET /api/driver/employee-bank-details/:id
+ * Fetch bank details for single employee
+ */
+router.get('/employee-bank-details/:id', (req, res) => {
+  return res.json({ success: true, bankDetails: employeeBankService.getBankDetails(req.params.id) });
+});
+
+/**
+ * POST /api/driver/employee-bank-details
+ * Save bank details for employee
+ */
+router.post('/employee-bank-details', (req, res) => {
+  try {
+    const data = req.body || {};
+    const empId = data.employee_id || data.id;
+    if (!empId) return res.status(400).json({ success: false, error: 'employee_id is required' });
+    const saved = employeeBankService.saveBankDetails(empId, data, { id: 'usr_admin', name: 'Administrator', role: 'superuser' });
+    return res.json({ success: true, record: saved });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
