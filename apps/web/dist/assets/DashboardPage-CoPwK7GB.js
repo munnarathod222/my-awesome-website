@@ -29,7 +29,619 @@ Period: ${f.month}
 ⚠️ *Receivables:*
 • Pending Balance: ₹${Number(f.outstandingDue).toLocaleString("en-IN")}
 
-_Jai Bhavani Cargo Enterprise System_`,Q=w.replace(/[^0-9]/g,""),Z=encodeURIComponent(C);window.open(`https://api.whatsapp.com/send?phone=${Q}&text=${Z}`,"_blank"),oe.success("Executive report dispatched to WhatsApp!"),i()}catch{oe.error("Failed to send report")}finally{L(!1)}};return e.jsx(bs,{open:c,onOpenChange:i,children:e.jsxs(fs,{className:"max-w-lg rounded-2xl p-6 bg-slate-900 text-white border border-slate-800 shadow-2xl",children:[e.jsxs(js,{children:[e.jsxs("div",{className:"flex items-center gap-2 text-emerald-400",children:[e.jsx(ts,{className:"w-5 h-5"}),e.jsx("span",{className:"text-xs uppercase font-semibold tracking-wider",children:"Executive WhatsApp Snapshot"})]}),e.jsxs(vs,{className:"text-xl font-bold font-heading text-slate-100",children:["Monthly P&L Snapshot: ",f.month]}),e.jsx(Ns,{className:"text-slate-400 text-sm",children:"Dispatches a private executive performance and collection report to Management on WhatsApp."})]}),e.jsx("div",{className:"bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3 my-2 text-xs",children:e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Completed Trips"}),e.jsxs("span",{className:"text-slate-200 font-bold text-base",children:[f.completedTrips," Trips"]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Gross Revenue"}),e.jsxs("span",{className:"text-emerald-400 font-bold text-base",children:["₹",Number(f.grossRevenue).toLocaleString("en-IN")]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Diesel Fuel Cost"}),e.jsxs("span",{className:"text-rose-400 font-bold text-base",children:["₹",Number(f.fuelCost).toLocaleString("en-IN")]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Net Profit Margin"}),e.jsxs("span",{className:"text-amber-400 font-bold text-base",children:["₹",Number(f.netProfit).toLocaleString("en-IN")]})]})]})}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx("span",{className:"text-xs font-semibold text-slate-300",children:"Recipient WhatsApp Number"}),e.jsx(Oe,{value:w,onChange:C=>m(C.target.value),placeholder:"+917794072244",className:"bg-slate-950 border-slate-700 text-white text-sm rounded-xl"})]}),e.jsxs(ws,{className:"gap-2 sm:gap-0 mt-3",children:[e.jsx(v,{variant:"ghost",onClick:i,className:"text-slate-400 hover:text-white",children:"Cancel"}),e.jsxs(v,{disabled:t,onClick:O,className:"bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl",children:[t?e.jsx(us,{className:"w-4 h-4 mr-1.5 animate-spin"}):e.jsx(Ls,{className:"w-4 h-4 mr-1.5"}),"Send Report to WhatsApp"]})]})]})})}function lt(c,i=900){const[I,w]=a.useState(0),m=a.useRef(null);return a.useEffect(()=>{const t=performance.now(),L=f=>{const O=f-t,C=Math.min(O/i,1),Q=1-Math.pow(1-C,3);w(Math.round(c*Q)),C<1&&(m.current=requestAnimationFrame(L))};return m.current=requestAnimationFrame(L),()=>cancelAnimationFrame(m.current)},[c,i]),I}const be=({title:c,rawValue:i,displayValue:I,icon:w,description:m,accentColor:t,onClick:L,loading:f})=>{const O=lt(typeof i=="number"?i:0);return e.jsx(k.div,{whileHover:{y:-3,scale:1.01},transition:{type:"spring",stiffness:300},children:e.jsxs(Y,{onClick:L,className:`relative overflow-hidden border border-white/5 bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg transition-shadow duration-300 ${L?"cursor-pointer hover:shadow-xl hover:border-white/15":""}`,children:[e.jsx("div",{className:"absolute inset-x-0 top-0 h-[2px] rounded-t-2xl",style:{background:t||"hsl(var(--primary))"}}),e.jsxs(De,{className:"p-5",children:[e.jsxs("div",{className:"flex items-start justify-between mb-4",children:[e.jsx("p",{className:"text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground",children:c}),e.jsx("div",{className:"p-2 rounded-xl bg-white/5 border border-white/5",children:e.jsx(w,{className:"h-4 w-4 text-primary"})})]}),f?e.jsx(p,{className:"h-9 w-28 rounded-lg"}):e.jsx("div",{className:"text-3xl font-extrabold tracking-tight text-foreground font-heading",children:I!==void 0?I:typeof i=="number"?O.toLocaleString():i}),m&&e.jsx("p",{className:"text-[11px] text-muted-foreground mt-2 leading-relaxed",children:m})]})]})})},nt=({trip:c})=>{const I={Dispatched:"bg-blue-500/15 text-blue-400 border-blue-500/30",Delivered:"bg-emerald-500/15 text-emerald-400 border-emerald-500/30",Upcoming:"bg-amber-500/15 text-amber-400 border-amber-500/30",Cancelled:"bg-red-500/15 text-red-400 border-red-500/30"}[c.trip_status]||"bg-secondary text-muted-foreground border-border/40";return e.jsxs("div",{className:"flex items-center justify-between px-4 py-3 rounded-xl border border-border/30 bg-secondary/10 hover:bg-secondary/25 transition-colors group",children:[e.jsxs("div",{className:"flex items-center gap-3 min-w-0",children:[e.jsx("div",{className:"w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 transition-colors",children:e.jsx(ve,{className:"w-3.5 h-3.5"})}),e.jsxs("div",{className:"min-w-0",children:[e.jsx("p",{className:"font-semibold text-sm text-foreground truncate max-w-[170px]",children:c.route||"—"}),e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-0.5 truncate",children:[c.truck_number," · ",c.driver_name]})]})]}),e.jsxs("div",{className:"flex items-center gap-3 shrink-0",children:[e.jsx("span",{className:`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${I} hidden sm:inline-flex`,children:c.trip_status}),e.jsxs("div",{className:"text-right",children:[e.jsxs("p",{className:"font-bold text-sm text-foreground",children:["₹",(c.revenue||0).toLocaleString()]}),e.jsx("p",{className:"text-[10px] text-muted-foreground",children:(()=>{if(!c.date)return"Today";try{const w=new Date(c.date);return isNaN(w.getTime())?"Today":se(w,"dd MMM")}catch{return"Today"}})()})]})]})]})},ut=()=>{const{currentUser:c}=gs(),{isSuperAdmin:i,isAdmin:I}=Gs(),{t:w}=Js(),m=hs();
+_Jai Bhavani Cargo Enterprise System_`,Q=w.replace(/[^0-9]/g,""),Z=encodeURIComponent(C);window.open(`https://api.whatsapp.com/send?phone=${Q}&text=${Z}`,"_blank"),oe.success("Executive report dispatched to WhatsApp!"),i()}catch{oe.error("Failed to send report")}finally{L(!1)}};return e.jsx(bs,{open:c,onOpenChange:i,children:e.jsxs(fs,{className:"max-w-lg rounded-2xl p-6 bg-slate-900 text-white border border-slate-800 shadow-2xl",children:[e.jsxs(js,{children:[e.jsxs("div",{className:"flex items-center gap-2 text-emerald-400",children:[e.jsx(ts,{className:"w-5 h-5"}),e.jsx("span",{className:"text-xs uppercase font-semibold tracking-wider",children:"Executive WhatsApp Snapshot"})]}),e.jsxs(vs,{className:"text-xl font-bold font-heading text-slate-100",children:["Monthly P&L Snapshot: ",f.month]}),e.jsx(Ns,{className:"text-slate-400 text-sm",children:"Dispatches a private executive performance and collection report to Management on WhatsApp."})]}),e.jsx("div",{className:"bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3 my-2 text-xs",children:e.jsxs("div",{className:"grid grid-cols-2 gap-2",children:[e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Completed Trips"}),e.jsxs("span",{className:"text-slate-200 font-bold text-base",children:[f.completedTrips," Trips"]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Gross Revenue"}),e.jsxs("span",{className:"text-emerald-400 font-bold text-base",children:["₹",Number(f.grossRevenue).toLocaleString("en-IN")]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Diesel Fuel Cost"}),e.jsxs("span",{className:"text-rose-400 font-bold text-base",children:["₹",Number(f.fuelCost).toLocaleString("en-IN")]})]}),e.jsxs("div",{className:"bg-slate-900/90 p-2.5 rounded-lg",children:[e.jsx("span",{className:"text-slate-500 block text-[10px] uppercase",children:"Net Profit Margin"}),e.jsxs("span",{className:"text-amber-400 font-bold text-base",children:["₹",Number(f.netProfit).toLocaleString("en-IN")]})]})]})}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx("span",{className:"text-xs font-semibold text-slate-300",children:"Recipient WhatsApp Number"}),e.jsx(Oe,{value:w,onChange:C=>m(C.target.value),placeholder:"+917794072244",className:"bg-slate-950 border-slate-700 text-white text-sm rounded-xl"})]}),e.jsxs(ws,{className:"gap-2 sm:gap-0 mt-3",children:[e.jsx(v,{variant:"ghost",onClick:i,className:"text-slate-400 hover:text-white",children:"Cancel"}),e.jsxs(v,{disabled:t,onClick:O,className:"bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl",children:[t?e.jsx(us,{className:"w-4 h-4 mr-1.5 animate-spin"}):e.jsx(Ls,{className:"w-4 h-4 mr-1.5"}),"Send Report to WhatsApp"]})]})]})})}function lt(c,i=900){const[I,w]=a.useState(0),m=a.useRef(null);return a.useEffect(()=>{const t=performance.now(),L=f=>{const O=f-t,C=Math.min(O/i,1),Q=1-Math.pow(1-C,3);w(Math.round(c*Q)),C<1&&(m.current=requestAnimationFrame(L))};return m.current=requestAnimationFrame(L),()=>cancelAnimationFrame(m.current)},[c,i]),I}const be=({title:c,rawValue:i,displayValue:I,icon:w,description:m,accentColor:t,onClick:L,loading:f})=>{const O=lt(typeof i=="number"?i:0);return e.jsx(k.div,{whileHover:{y:-3,scale:1.01},transition:{type:"spring",stiffness:300},children:e.jsxs(Y,{onClick:L,className:`relative overflow-hidden border border-white/5 bg-card/60 backdrop-blur-sm rounded-2xl shadow-lg transition-shadow duration-300 ${L?"cursor-pointer hover:shadow-xl hover:border-white/15":""}`,children:[e.jsx("div",{className:"absolute inset-x-0 top-0 h-[2px] rounded-t-2xl",style:{background:t||"hsl(var(--primary))"}}),e.jsxs(De,{className:"p-5",children:[e.jsxs("div",{className:"flex items-start justify-between mb-4",children:[e.jsx("p",{className:"text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground",children:c}),e.jsx("div",{className:"p-2 rounded-xl bg-white/5 border border-white/5",children:e.jsx(w,{className:"h-4 w-4 text-primary"})})]}),f?e.jsx(p,{className:"h-9 w-28 rounded-lg"}):e.jsx("div",{className:"text-3xl font-extrabold tracking-tight text-foreground font-heading",children:I!==void 0?I:typeof i=="number"?O.toLocaleString():i}),m&&e.jsx("p",{className:"text-[11px] text-muted-foreground mt-2 leading-relaxed",children:m})]})]})})},nt=({trip:c})=>{const I={Dispatched:"bg-blue-500/15 text-blue-400 border-blue-500/30",Delivered:"bg-emerald-500/15 text-emerald-400 border-emerald-500/30",Upcoming:"bg-amber-500/15 text-amber-400 border-amber-500/30",Cancelled:"bg-red-500/15 text-red-400 border-red-500/30"}[c.trip_status]||"bg-secondary text-muted-foreground border-border/40";return e.jsxs("div",{className:"flex items-center justify-between px-4 py-3 rounded-xl border border-border/30 bg-secondary/10 hover:bg-secondary/25 transition-colors group",children:[e.jsxs("div",{className:"flex items-center gap-3 min-w-0",children:[e.jsx("div",{className:"w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary/20 transition-colors",children:e.jsx(ve,{className:"w-3.5 h-3.5"})}),e.jsxs("div",{className:"min-w-0",children:[e.jsx("p",{className:"font-semibold text-sm text-foreground truncate max-w-[170px]",children:c.route||"—"}),e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-0.5 truncate",children:[c.truck_number," · ",c.driver_name]})]})]}),e.jsxs("div",{className:"flex items-center gap-3 shrink-0",children:[e.jsx("span",{className:`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${I} hidden sm:inline-flex`,children:c.trip_status}),e.jsxs("div",{className:"text-right",children:[e.jsxs("p",{className:"font-bold text-sm text-foreground",children:["₹",(c.revenue||0).toLocaleString()]}),e.jsx("p",{className:"text-[10px] text-muted-foreground",children:(()=>{if(!c.date)return"Today";try{const w=new Date(c.date);return isNaN(w.getTime())?"Today":se(w,"dd MMM")}catch{return"Today"}})()})]})]})]})};
+
+// ── 33. CUSTOM DASHBOARD BUILDER (Modular Widgets & Presets) ───────────────────
+function CustomDashboardBuilder({ summaryData = {}, onNavigate }) {
+  const PRESET_LAYOUTS = {
+    owner: {
+      name: "Owner Dashboard",
+      icon: "👑",
+      description: "High-level financial yields, receivables, net margin, and risk compliance.",
+      widgets: [
+        { id: "revenue", size: "medium" },
+        { id: "contribution", size: "medium" },
+        { id: "receivables", size: "small" },
+        { id: "fleet_status", size: "small" },
+        { id: "alerts", size: "medium" },
+        { id: "calendar", size: "medium" },
+        { id: "tasks", size: "small" },
+        { id: "fastag", size: "small" }
+      ]
+    },
+    operations: {
+      name: "Operations Dashboard",
+      icon: "🚛",
+      description: "Real-time dispatch, active highway trips, fuel logs, driver batas & maintenance.",
+      widgets: [
+        { id: "active_trips", size: "large" },
+        { id: "fleet_status", size: "medium" },
+        { id: "fuel", size: "small" },
+        { id: "fastag", size: "small" },
+        { id: "tyres", size: "small" },
+        { id: "attendance", size: "small" },
+        { id: "alerts", size: "medium" },
+        { id: "calendar", size: "medium" }
+      ]
+    },
+    finance: {
+      name: "Finance & Cashbook",
+      icon: "💰",
+      description: "Cashflow health, pending client payments, trip freight collections & expenses.",
+      widgets: [
+        { id: "revenue", size: "medium" },
+        { id: "receivables", size: "medium" },
+        { id: "contribution", size: "large" },
+        { id: "fastag", size: "small" },
+        { id: "fuel", size: "small" },
+        { id: "tasks", size: "medium" }
+      ]
+    }
+  };
+
+  const WIDGET_CATALOG = [
+    { id: "revenue", title: "Revenue & Net Margin", category: "Finance", tabSource: "/cashbook", icon: "💰", defaultSize: "medium", description: "Live billing, variable costs deduction, and gross operational profit." },
+    { id: "active_trips", title: "Active Trips & Live Dispatches", category: "Operations", tabSource: "/trip-logs", icon: "🛣️", defaultSize: "large", description: "En-route trucks, destinations, live ETA, and delay tracking." },
+    { id: "contribution", title: "Truck Contribution Ranking", category: "Finance", tabSource: "/truck-manager", icon: "📊", defaultSize: "medium", description: "13. Financial diagnostic: Benchmark Truck A vs lagging Truck B." },
+    { id: "receivables", title: "Outstanding Receivables", category: "Finance", tabSource: "/cashbook", icon: "📑", defaultSize: "small", description: "Pending payments from clients, overdue alerts, and uncollected freights." },
+    { id: "fleet_status", title: "Fleet Availability & Health", category: "Fleet", tabSource: "/truck-manager", icon: "🚛", defaultSize: "small", description: "Available vs In-transit vs Workshop trucks and utilization rate." },
+    { id: "calendar", title: "Calendar & Dispatch Schedule", category: "Schedule", tabSource: "/calendar", icon: "📅", defaultSize: "medium", description: "Scheduled pickups, deliveries, document renewals, and staff roster." },
+    { id: "alerts", title: "Compliance & Document Alerts", category: "Compliance", tabSource: "/truck-docs", icon: "⚠️", defaultSize: "medium", description: "Fitness, Insurance, Road Tax, National Permit, and PUC expiries." },
+    { id: "tasks", title: "Operations To-Do List", category: "Management", tabSource: "/todo", icon: "✅", defaultSize: "small", description: "Actionable items, driver advance approvals, and pending checklists." },
+    { id: "fuel", title: "Fuel Tracker & Economy", category: "Fleet", tabSource: "/fuel-tracker", icon: "⛽", defaultSize: "small", description: "Fleet average mileage (km/L), monthly diesel spend, and pump logs." },
+    { id: "fastag", title: "FASTag Toll Wallet", category: "Finance", tabSource: "/fastag", icon: "💳", defaultSize: "small", description: "ICICI FASTag balances, daily toll burn, and low balance warnings." },
+    { id: "tyres", title: "Tyres & Maintenance Health", category: "Fleet", tabSource: "/tyres", icon: "🔧", defaultSize: "small", description: "Tyres due for rotation, open workshop job cards, and spare parts." },
+    { id: "attendance", title: "Staff & Driver Attendance", category: "HR", tabSource: "/employees", icon: "👨‍✈️", defaultSize: "small", description: "On-duty drivers, leave status, and available relief staff." }
+  ];
+
+  const [selectedPreset, setSelectedPreset] = a.useState(() => {
+    try { return localStorage.getItem("jbc_dashboard_active_preset") || "owner"; } catch { return "owner"; }
+  });
+
+  const [activeWidgets, setActiveWidgets] = a.useState(() => {
+    try {
+      const saved = localStorage.getItem("jbc_custom_dashboard_widgets");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return PRESET_LAYOUTS.owner.widgets;
+  });
+
+  const [isEditMode, setIsEditMode] = a.useState(!1);
+  const [isAddModalOpen, setIsAddModalOpen] = a.useState(!1);
+  const [addCategoryFilter, setAddCategoryFilter] = a.useState("All");
+
+  const saveWidgets = (newWidgets) => {
+    setActiveWidgets(newWidgets);
+    try { localStorage.setItem("jbc_custom_dashboard_widgets", JSON.stringify(newWidgets)); } catch(e) {}
+  };
+
+  const handleApplyPreset = (presetKey) => {
+    setSelectedPreset(presetKey);
+    try { localStorage.setItem("jbc_dashboard_active_preset", presetKey); } catch(e) {}
+    const p = PRESET_LAYOUTS[presetKey];
+    if (p) saveWidgets(p.widgets);
+  };
+
+  const handleResizeWidget = (widgetId, newSize) => {
+    const updated = activeWidgets.map(w => w.id === widgetId ? { ...w, size: newSize } : w);
+    saveWidgets(updated);
+  };
+
+  const handleRemoveWidget = (widgetId) => {
+    const updated = activeWidgets.filter(w => w.id !== widgetId);
+    saveWidgets(updated);
+  };
+
+  const handleMoveWidget = (index, direction) => {
+    const newIdx = index + direction;
+    if (newIdx < 0 || newIdx >= activeWidgets.length) return;
+    const copy = [...activeWidgets];
+    const [moved] = copy.splice(index, 1);
+    copy.splice(newIdx, 0, moved);
+    saveWidgets(copy);
+  };
+
+  const handleAddWidget = (widgetDef) => {
+    if (activeWidgets.some(w => w.id === widgetDef.id)) return;
+    const updated = [...activeWidgets, { id: widgetDef.id, size: widgetDef.defaultSize || "small" }];
+    saveWidgets(updated);
+    setIsAddModalOpen(!1);
+  };
+
+  const handleResetLayout = () => {
+    const p = PRESET_LAYOUTS[selectedPreset] || PRESET_LAYOUTS.owner;
+    saveWidgets(p.widgets);
+    setIsEditMode(!1);
+  };
+
+  const renderWidget = (wConf, idx) => {
+    const meta = WIDGET_CATALOG.find(w => w.id === wConf.id);
+    if (!meta) return null;
+    const size = wConf.size || "small";
+    const isSmall = size === "small";
+    const isMed = size === "medium";
+    const isLrg = size === "large";
+
+    const colSpan = isLrg ? "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4" : isMed ? "col-span-1 sm:col-span-2" : "col-span-1";
+
+    return e.jsxs("div", {
+      key: wConf.id,
+      className: colSpan + " group relative bg-slate-900/90 hover:bg-slate-900 backdrop-blur-xl border " + (isEditMode ? "border-amber-400 ring-2 ring-amber-400/20 animate-pulse" : "border-slate-800 hover:border-slate-700") + " rounded-3xl p-4 sm:p-5 shadow-xl transition-all duration-200 flex flex-col justify-between overflow-hidden select-none",
+      children: [
+        /* Mobile-style edit controls */
+        isEditMode && e.jsxs("div", {
+          className: "absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-slate-950/95 border border-slate-700 rounded-xl p-1 shadow-2xl",
+          children: [
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleMoveWidget(idx, -1),
+              disabled: idx === 0,
+              className: "w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs font-bold cursor-pointer",
+              title: "Move backward",
+              children: "←"
+            }),
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleMoveWidget(idx, 1),
+              disabled: idx === activeWidgets.length - 1,
+              className: "w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs font-bold cursor-pointer",
+              title: "Move forward",
+              children: "→"
+            }),
+            e.jsx("div", { className: "w-px h-3.5 bg-slate-700 mx-0.5" }),
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleResizeWidget(wConf.id, "small"),
+              className: "px-1.5 h-6 rounded text-[10px] font-bold cursor-pointer " + (isSmall ? "bg-amber-500 text-slate-950" : "text-slate-400 hover:text-white hover:bg-slate-800"),
+              title: "Small tile",
+              children: "S"
+            }),
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleResizeWidget(wConf.id, "medium"),
+              className: "px-1.5 h-6 rounded text-[10px] font-bold cursor-pointer " + (isMed ? "bg-amber-500 text-slate-950" : "text-slate-400 hover:text-white hover:bg-slate-800"),
+              title: "Medium banner",
+              children: "M"
+            }),
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleResizeWidget(wConf.id, "large"),
+              className: "px-1.5 h-6 rounded text-[10px] font-bold cursor-pointer " + (isLrg ? "bg-amber-500 text-slate-950" : "text-slate-400 hover:text-white hover:bg-slate-800"),
+              title: "Large full width",
+              children: "L"
+            }),
+            e.jsx("div", { className: "w-px h-3.5 bg-slate-700 mx-0.5" }),
+            e.jsx("button", {
+              type: "button",
+              onClick: () => handleRemoveWidget(wConf.id),
+              className: "w-6 h-6 rounded-lg text-rose-400 hover:text-white hover:bg-rose-600 flex items-center justify-center text-xs font-black cursor-pointer",
+              title: "Remove widget",
+              children: "✕"
+            })
+          ]
+        }),
+
+        /* Header */
+        e.jsxs("div", {
+          className: "flex items-center justify-between gap-2 mb-3",
+          children: [
+            e.jsxs("div", {
+              className: "flex items-center gap-2 min-w-0 pr-12",
+              children: [
+                e.jsx("span", { className: "text-lg p-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 shrink-0", children: meta.icon }),
+                e.jsxs("div", {
+                  className: "min-w-0",
+                  children: [
+                    e.jsx("h4", { className: "font-extrabold text-xs sm:text-sm text-white truncate tracking-tight", children: meta.title }),
+                    e.jsx("span", { className: "text-[10px] font-mono text-slate-400 block truncate", children: meta.tabSource })
+                  ]
+                })
+              ]
+            }),
+            !isEditMode && onNavigate && e.jsx("button", {
+              type: "button",
+              onClick: () => onNavigate(meta.tabSource),
+              className: "text-[11px] font-bold text-amber-400 hover:text-amber-300 shrink-0 cursor-pointer",
+              children: "Open →"
+            })
+          ]
+        }),
+
+        /* Content */
+        e.jsx("div", {
+          className: "flex-1 py-1 font-medium",
+          children: wConf.id === "revenue" ? e.jsxs("div", {
+            className: "space-y-2",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-baseline justify-between",
+                children: [
+                  e.jsxs("span", { className: "text-2xl sm:text-3xl font-black text-white font-mono", children: ["₹", (summaryData.grossRevenue || 284000).toLocaleString("en-IN")] }),
+                  e.jsx("span", { className: "text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20", children: "+18.4% MoM" })
+                ]
+              }),
+              e.jsxs("div", {
+                className: "text-xs text-slate-400 flex items-center justify-between pt-1",
+                children: [
+                  e.jsxs("span", { children: ["Net Margin: ", e.jsxs("strong", { className: "text-emerald-400 font-mono", children: ["₹", (summaryData.fleetProfit || 132000).toLocaleString("en-IN")] })] }),
+                  e.jsx("span", { children: "Health: 46.5%" })
+                ]
+              }),
+              !isSmall && e.jsxs("div", {
+                className: "mt-3 p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 grid grid-cols-3 gap-2 text-center text-xs",
+                children: [
+                  e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 block", children: "Trips Freight" }), e.jsx("span", { className: "font-mono font-bold text-white", children: "₹2.45L" })] }),
+                  e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 block", children: "Variable Cost" }), e.jsx("span", { className: "font-mono font-bold text-rose-400", children: "₹1.52L" })] }),
+                  e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 block", children: "Daily Run" }), e.jsx("span", { className: "font-mono font-bold text-cyan-400", children: "₹9,460" })] })
+                ]
+              })
+            ]
+          }) : wConf.id === "active_trips" ? e.jsxs("div", {
+            className: "space-y-2.5",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  e.jsxs("div", { className: "flex items-baseline gap-2", children: [e.jsx("span", { className: "text-2xl sm:text-3xl font-black text-white font-mono", children: "8" }), e.jsx("span", { className: "text-xs text-slate-400 font-medium", children: "Trucks En-Route" })] }),
+                  e.jsx("span", { className: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono px-2 py-0.5 rounded-full font-bold", children: "94% On-Time" })
+                ]
+              }),
+              !isSmall && e.jsxs("div", {
+                className: "space-y-1.5 pt-1",
+                children: [
+                  e.jsxs("div", {
+                    className: "p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs",
+                    children: [
+                      e.jsxs("div", { className: "flex items-center gap-2", children: [e.jsx("span", { className: "font-mono font-bold text-amber-400", children: "TG12U2637" }), e.jsx("span", { className: "text-slate-400 text-[11px]", children: "Hyderabad → Warangal" })] }),
+                      e.jsx("span", { className: "text-emerald-400 font-mono text-[11px] font-bold", children: "In-Transit (28km left)" })
+                    ]
+                  }),
+                  e.jsxs("div", {
+                    className: "p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs",
+                    children: [
+                      e.jsxs("div", { className: "flex items-center gap-2", children: [e.jsx("span", { className: "font-mono font-bold text-amber-400", children: "TS29AB1999" }), e.jsx("span", { className: "text-slate-400 text-[11px]", children: "Nizamabad → Medchal" })] }),
+                      e.jsx("span", { className: "text-cyan-400 font-mono text-[11px] font-bold", children: "Unloading Dock" })
+                    ]
+                  })
+                ]
+              })
+            ]
+          }) : wConf.id === "contribution" ? e.jsxs("div", {
+            className: "space-y-2",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  e.jsxs("div", { children: [e.jsx("span", { className: "text-[10px] text-slate-400 block font-bold uppercase", children: "Benchmark #1" }), e.jsx("span", { className: "text-base sm:text-lg font-black text-emerald-400 font-mono", children: "Truck A: ₹1.3L" })] }),
+                  e.jsxs("div", { className: "text-right", children: [e.jsx("span", { className: "text-[10px] text-slate-400 block font-bold uppercase", children: "Lagging #2" }), e.jsx("span", { className: "text-base sm:text-lg font-black text-rose-400 font-mono", children: "Truck B: ₹50K" })] })
+                ]
+              }),
+              e.jsxs("div", {
+                className: "p-2 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-between text-[11px]",
+                children: [e.jsx("span", { className: "text-slate-300", children: "Diagnostic Gap:" }), e.jsx("span", { className: "font-mono font-bold text-amber-400", children: "-₹80,000 (Diesel & Deadhead)" })]
+              })
+            ]
+          }) : wConf.id === "receivables" ? e.jsxs("div", {
+            className: "space-y-1.5",
+            children: [
+              e.jsx("span", { className: "text-2xl sm:text-3xl font-black text-rose-400 font-mono block", children: "₹1,98,800" }),
+              e.jsxs("div", {
+                className: "flex items-center justify-between text-xs text-slate-400",
+                children: [e.jsx("span", { children: "Pending: 3 Clients" }), e.jsx("span", { className: "text-amber-400 font-bold", children: "1 Overdue" })]
+              })
+            ]
+          }) : wConf.id === "fleet_status" ? e.jsxs("div", {
+            className: "space-y-2",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-baseline justify-between",
+                children: [e.jsx("span", { className: "text-2xl sm:text-3xl font-black text-white font-mono", children: "8 / 8" }), e.jsx("span", { className: "text-xs text-emerald-400 font-bold", children: "100% Ready" })]
+              }),
+              e.jsxs("div", {
+                className: "grid grid-cols-3 gap-1 text-center text-[10px] pt-1 font-mono",
+                children: [
+                  e.jsx("span", { className: "p-1 rounded bg-slate-950 text-emerald-400", children: "6 Active" }),
+                  e.jsx("span", { className: "p-1 rounded bg-slate-950 text-cyan-400", children: "2 Workshop" }),
+                  e.jsx("span", { className: "p-1 rounded bg-slate-950 text-slate-400", children: "0 Idle" })
+                ]
+              })
+            ]
+          }) : wConf.id === "alerts" ? e.jsxs("div", {
+            className: "space-y-2",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  e.jsx("span", { className: "text-xs font-bold text-white", children: "⚠️ 2 Expiring in 90 Days" }),
+                  e.jsx("span", { className: "text-[10px] text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded", children: "Urgent" })
+                ]
+              }),
+              e.jsxs("div", {
+                className: "text-xs space-y-1 pt-1",
+                children: [
+                  e.jsxs("div", { className: "flex justify-between text-slate-300", children: [e.jsx("span", { children: "TG12U2637 Road Tax" }), e.jsx("span", { className: "font-mono text-amber-400 font-bold", children: "31-Dec-2026" })] }),
+                  e.jsxs("div", { className: "flex justify-between text-slate-300", children: [e.jsx("span", { children: "TG12U2637 Insurance" }), e.jsx("span", { className: "font-mono text-cyan-400 font-bold", children: "09-Dec-2026" })] })
+                ]
+              })
+            ]
+          }) : wConf.id === "calendar" ? e.jsxs("div", {
+            className: "space-y-2",
+            children: [
+              e.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  e.jsx("span", { className: "text-xs font-bold text-slate-300", children: new Date().toLocaleDateString("en-IN", { month: "short", day: "numeric", weekday: "short" }) }),
+                  e.jsx("span", { className: "text-[10px] text-amber-400 font-mono", children: "3 Scheduled Dispatches" })
+                ]
+              }),
+              e.jsx("div", { className: "p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300", children: "📦 Hyderabad Hub: 14:00 Warangal Line Haul" })
+            ]
+          }) : wConf.id === "tasks" ? e.jsxs("div", {
+            className: "space-y-1.5 text-xs",
+            children: [
+              e.jsxs("div", { className: "flex items-center justify-between pb-1 border-b border-slate-800", children: [e.jsx("span", { className: "text-slate-300 font-medium", children: "Pending Approvals" }), e.jsx("span", { className: "font-mono font-bold text-amber-400", children: "3 Tasks" })] }),
+              e.jsx("p", { className: "text-slate-400 text-[11px] truncate", children: "• Approve Warangal fuel reimbursement (₹3,114)" }),
+              e.jsx("p", { className: "text-slate-400 text-[11px] truncate", children: "• Verify tyre rotation log for TG12U2637" })
+            ]
+          }) : wConf.id === "fuel" ? e.jsxs("div", {
+            className: "space-y-1.5",
+            children: [
+              e.jsxs("div", { className: "flex items-baseline justify-between", children: [e.jsx("span", { className: "text-2xl font-black text-white font-mono", children: "4.7 km/L" }), e.jsx("span", { className: "text-xs text-emerald-400 font-bold", children: "Optimal" })] }),
+              e.jsx("span", { className: "text-[11px] text-slate-400 block", children: "Monthly Spend: ₹94,500" })
+            ]
+          }) : wConf.id === "fastag" ? e.jsxs("div", {
+            className: "space-y-1.5",
+            children: [
+              e.jsxs("div", { className: "flex items-baseline justify-between", children: [e.jsx("span", { className: "text-2xl font-black text-cyan-400 font-mono", children: "₹1,558" }), e.jsx("span", { className: "text-[10px] text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded", children: "ICICI Bank" })] }),
+              e.jsx("span", { className: "text-[11px] text-slate-400 block", children: "Last recharge: ₹10,000 on 22-Sep" })
+            ]
+          }) : wConf.id === "tyres" ? e.jsxs("div", {
+            className: "space-y-1.5",
+            children: [
+              e.jsxs("div", { className: "flex items-baseline justify-between", children: [e.jsx("span", { className: "text-2xl font-black text-white font-mono", children: "2 Due" }), e.jsx("span", { className: "text-xs text-amber-400 font-bold", children: "Rotation Window" })] }),
+              e.jsx("span", { className: "text-[11px] text-slate-400 block", children: "Axle 2 Right Duals reached 80k threshold" })
+            ]
+          }) : e.jsxs("div", {
+            className: "space-y-1.5",
+            children: [
+              e.jsxs("div", { className: "flex items-baseline justify-between", children: [e.jsx("span", { className: "text-2xl font-black text-emerald-400 font-mono", children: "92%" }), e.jsx("span", { className: "text-xs text-slate-400", children: "11/12 Present" })] }),
+              e.jsx("span", { className: "text-[11px] text-slate-400 block", children: "1 on leave • 2 relief drivers active" })
+            ]
+          })
+        }),
+
+        /* Footer category */
+        e.jsxs("div", {
+          className: "pt-2 mt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500",
+          children: [e.jsx("span", { children: meta.category }), e.jsxs("span", { className: "uppercase font-mono font-bold text-slate-400", children: [size, " Tile"] })]
+        })
+      ]
+    });
+  };
+
+  return e.jsxs("div", {
+    className: "space-y-6 pb-6 select-none",
+    children: [
+      /* Top Custom Builder Toolbar */
+      e.jsx("div", {
+        className: "bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 rounded-3xl border border-slate-800 p-4 sm:p-6 shadow-2xl relative overflow-hidden",
+        children: e.jsxs("div", {
+          className: "flex flex-col md:flex-row md:items-center justify-between gap-4",
+          children: [
+            e.jsxs("div", {
+              className: "space-y-1",
+              children: [
+                e.jsxs("div", {
+                  className: "flex items-center gap-2",
+                  children: [
+                    e.jsx("span", { className: "text-xl", children: "🧩" }),
+                    e.jsx("h3", { className: "text-lg sm:text-xl font-black text-white tracking-tight", children: "33. Custom Dashboard Builder" }),
+                    e.jsx("span", { className: "border border-amber-500/30 text-amber-400 bg-amber-500/10 font-mono text-[10px] px-2 py-0.5 rounded-full font-bold", children: "Modular Widgets" })
+                  ]
+                }),
+                e.jsx("p", { className: "text-xs sm:text-sm text-slate-400", children: "Custom dashboard with small widgets of all tabs. Resize (S/M/L), add, or switch presets like mobile." })
+              ]
+            }),
+
+            /* Edit / Add Actions */
+            e.jsx("div", {
+              className: "flex flex-wrap items-center gap-2",
+              children: !isEditMode ? e.jsxs(e.Fragment, {
+                children: [
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: () => setIsEditMode(!0),
+                    className: "h-9 px-3.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 shadow-md flex items-center gap-1.5 cursor-pointer transition-all",
+                    children: [e.jsx("span", { children: "✏️" }), " Customize Dashboard"]
+                  }),
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: () => setIsAddModalOpen(!0),
+                    className: "h-9 px-3.5 text-xs font-black rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md flex items-center gap-1.5 cursor-pointer transition-transform hover:scale-105 active:scale-95",
+                    children: [e.jsx("span", { children: "➕" }), " Add Widget"]
+                  })
+                ]
+              }) : e.jsxs(e.Fragment, {
+                children: [
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: () => setIsAddModalOpen(!0),
+                    className: "h-9 px-3.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 cursor-pointer flex items-center gap-1.5",
+                    children: [e.jsx("span", { className: "text-amber-400", children: "➕" }), " Add Widget"]
+                  }),
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: handleResetLayout,
+                    className: "h-9 px-3 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 text-slate-400 hover:text-white cursor-pointer",
+                    children: [e.jsx("span", { children: "↺" }), " Reset"]
+                  }),
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: () => setIsEditMode(!1),
+                    className: "h-9 px-4 text-xs font-black rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md cursor-pointer flex items-center gap-1.5 transition-transform hover:scale-105 active:scale-95",
+                    children: [e.jsx("span", { children: "✓" }), " Done & Save"]
+                  })
+                ]
+              })
+            })
+          ]
+        })
+      }),
+
+      /* Presets Bar */
+      e.jsxs("div", {
+        className: "flex flex-wrap items-center justify-between gap-3 px-1",
+        children: [
+          e.jsxs("div", {
+            className: "flex flex-wrap items-center gap-2",
+            children: [
+              e.jsx("span", { className: "text-xs font-bold text-slate-400 mr-1", children: "Save Layouts:" }),
+              Object.keys(PRESET_LAYOUTS).map(key => {
+                const p = PRESET_LAYOUTS[key];
+                const isActive = (selectedPreset === key);
+                return e.jsxs("button", {
+                  key: key,
+                  type: "button",
+                  onClick: () => handleApplyPreset(key),
+                  className: "h-8 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer " + (isActive ? "bg-amber-500 text-slate-950 shadow-md scale-105 font-black" : "bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"),
+                  children: [e.jsx("span", { children: p.icon }), p.name]
+                });
+              })
+            ]
+          }),
+          e.jsxs("div", { className: "text-[11px] text-slate-400 font-mono", children: [activeWidgets.length, " Active Widgets • Saved in Browser"] })
+        ]
+      }),
+
+      /* Edit Mode Notice */
+      isEditMode && e.jsxs("div", {
+        className: "p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 animate-in fade-in",
+        children: [
+          e.jsx("span", { children: "📱 Mobile Edit Mode: Click S, M, or L on any card to resize. Use arrows ← / → to reorder, or ✕ to remove." }),
+          e.jsx("button", {
+            type: "button",
+            onClick: () => setIsEditMode(!1),
+            className: "text-xs font-bold text-white bg-amber-500/20 hover:bg-amber-500/30 px-3 py-1 rounded-xl cursor-pointer",
+            children: "Exit Edit Mode"
+          })
+        ]
+      }),
+
+      /* Dynamic Widgets Grid */
+      e.jsxs("div", {
+        className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4",
+        children: [
+          activeWidgets.map((wConf, idx) => renderWidget(wConf, idx)),
+          isEditMode && e.jsxs("button", {
+            type: "button",
+            onClick: () => setIsAddModalOpen(!0),
+            className: "col-span-1 min-h-[160px] rounded-3xl border-2 border-dashed border-slate-800 hover:border-amber-400/80 bg-slate-900/40 hover:bg-slate-900/80 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-amber-400 transition-all cursor-pointer",
+            children: [
+              e.jsx("span", { className: "text-2xl", children: "➕" }),
+              e.jsx("span", { className: "font-bold text-xs text-white", children: "Add Another Widget" }),
+              e.jsx("span", { className: "text-[10px] text-slate-500", children: "Choose from 12+ tabs" })
+            ]
+          })
+        ]
+      }),
+
+      /* Add Widget Catalog Modal */
+      isAddModalOpen && e.jsx(bs, {
+        open: isAddModalOpen,
+        onOpenChange: setIsAddModalOpen,
+        children: e.jsxs(fs, {
+          className: "max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto bg-slate-950 text-white border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl select-none",
+          children: [
+            e.jsx(js, {
+              className: "border-b border-slate-800 pb-3",
+              children: e.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  e.jsxs("div", {
+                    children: [
+                      e.jsxs(vs, { className: "text-lg font-black text-white flex items-center gap-2", children: [e.jsx("span", { children: "➕" }), " Add Widgets to Dashboard"] }),
+                      e.jsx("p", { className: "text-xs text-slate-400 mt-1", children: "Choose small modular widgets from all tabs across the system." })
+                    ]
+                  }),
+                  e.jsx("button", {
+                    type: "button",
+                    onClick: () => setIsAddModalOpen(!1),
+                    className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm cursor-pointer",
+                    children: "✕"
+                  })
+                ]
+              })
+            }),
+
+            /* Filter pills */
+            e.jsx("div", {
+              className: "flex flex-wrap items-center gap-1.5 pt-3",
+              children: ["All", "Finance", "Operations", "Fleet", "Schedule", "Compliance", "HR"].map(cat => e.jsx("button", {
+                key: cat,
+                type: "button",
+                onClick: () => setAddCategoryFilter(cat),
+                className: "h-7 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer " + (addCategoryFilter === cat ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-900 text-slate-400 hover:text-white border border-slate-800"),
+                children: cat
+              }))
+            }),
+
+            /* Catalog Grid */
+            e.jsx("div", {
+              className: "grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3",
+              children: WIDGET_CATALOG
+                .filter(w => addCategoryFilter === "All" || w.category === addCategoryFilter)
+                .map(item => {
+                  const isAdded = activeWidgets.some(w => w.id === item.id);
+                  return e.jsxs("div", {
+                    key: item.id,
+                    className: "p-3.5 rounded-2xl border transition-all " + (isAdded ? "bg-slate-900/40 border-slate-800/60 opacity-60" : "bg-slate-900 border-slate-800 hover:border-amber-400/50"),
+                    children: [
+                      e.jsxs("div", {
+                        className: "flex items-start justify-between gap-2",
+                        children: [
+                          e.jsxs("div", {
+                            className: "flex items-center gap-2 min-w-0",
+                            children: [
+                              e.jsx("span", { className: "text-xl p-1.5 rounded-xl bg-slate-800 border border-slate-700 shrink-0", children: item.icon }),
+                              e.jsxs("div", {
+                                children: [
+                                  e.jsx("span", { className: "font-bold text-xs text-white block truncate", children: item.title }),
+                                  e.jsx("span", { className: "text-[10px] text-amber-400 font-mono", children: item.tabSource })
+                                ]
+                              })
+                            ]
+                          }),
+                          isAdded ? e.jsx("span", { className: "text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0", children: "✓ Added" }) : e.jsx("button", {
+                            type: "button",
+                            onClick: () => handleAddWidget(item),
+                            className: "h-7 px-2.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 shrink-0 cursor-pointer",
+                            children: "+ Add"
+                          })
+                        ]
+                      }),
+                      e.jsx("p", { className: "text-[11px] text-slate-400 mt-2 leading-relaxed", children: item.description })
+                    ]
+                  });
+                })
+            }),
+
+            e.jsx("div", {
+              className: "flex justify-end pt-3 border-t border-slate-800 mt-4",
+              children: e.jsx("button", {
+                type: "button",
+                onClick: () => setIsAddModalOpen(!1),
+                className: "h-8 px-4 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white cursor-pointer",
+                children: "Close Catalog"
+              })
+            })
+          ]
+        })
+      })
+    ]
+  });
+}
+
+const ut=()=>{const{currentUser:c}=gs(),{isSuperAdmin:i,isAdmin:I}=Gs(),{t:w}=Js(),m=hs();const[dashMode,setDashMode]=a.useState(()=>{try{return localStorage.getItem("jbc_dashboard_main_mode")||"custom";}catch{return"custom";}});const handleSwitchDashMode=(mode)=>{setDashMode(mode);try{localStorage.setItem("jbc_dashboard_main_mode",mode);}catch{}};
   const[jbcSimRole,setJbcSimRole]=a.useState(()=>{try{return localStorage.getItem("jbc_simulated_role")||(i?"super_admin":I?"admin":"operations");}catch{return"super_admin";}});
   const jbcCurrentRole=c?.role||(i?"super_admin":I?"admin":"operations");
   const jbcHandleChangeRole=(newRole)=>{
@@ -38,4 +650,12 @@ _Jai Bhavani Cargo Enterprise System_`,Q=w.replace(/[^0-9]/g,""),Z=encodeURIComp
     window.dispatchEvent(new Event("jbc-role-change"));
   };
   const jbcResetRole=()=>{localStorage.removeItem("jbc_simulated_role");setJbcSimRole(jbcCurrentRole);window.dispatchEvent(new Event("jbc-role-change"));};
-  a.useEffect(()=>{(c?.role==="Client"||c?.role==="client")&&m("/client-portal",{replace:!0})},[c,m]);const[t,L]=a.useState({users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,x,y,A,F,T,D]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getList(1,500,{fields:"id,amount",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]}))]);let P=0,U=0,qe=0;const Be=J?.items||[],He=s?.items||[],Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=He.reduce((N,pe)=>N+(pe.amount||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);L({users:H?.totalItems||0,trips:Re?.totalItems||0,deliveredTrips:J?.totalItems||0,upcomingTrips:A?.totalItems||0,dispatchedTrips:F?.totalItems||0,inTransitTrips:T?.totalItems||0,trucks:Fe.length,pods:K?.totalItems||0,revenue:z+U,grossRevenue:Be.reduce((N,pe)=>N+(Number(pe.revenue)||0),0),expenses:b,fleetProfit:W,brokerageProfit:U,retainedEarnings:W+U,lowFastagCount:he,expiringDocsCount:ke,totalAlertsCount:he+ke}),O(x?.items||[]),Ie(D?.items||[]),Ae(ls),r(new Date)}catch(h){console.error("[Dashboard] fetch error:",h),re("Failed to load dashboard statistics. Please check your connection."),oe.error("Dashboard load failed")}finally{de(!1),S(!1)}},Qe=async()=>{if(!(!I&&!i)){ce(!0);try{const l=await g.collection("signup_requests").getList(1,1,{filter:'status = "Pending"',$autoCancel:!1});Q(l.totalItems)}catch(l){console.error("[Dashboard] signup_requests error:",l)}finally{ce(!1)}}};if(a.useEffect(()=>{V(),Qe()},[]),M)return e.jsx(Ks,{text:"Compiling fleet data…"});if(ae)return e.jsxs("div",{className:"flex flex-col items-center justify-center min-h-[60vh] text-center px-6",children:[e.jsx("div",{className:"w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-5",children:e.jsx(ds,{className:"w-8 h-8 text-destructive"})}),e.jsx("h2",{className:"text-2xl font-bold mb-2",children:"Dashboard Error"}),e.jsx("p",{className:"text-muted-foreground mb-6 max-w-sm text-sm",children:ae}),e.jsxs(v,{onClick:()=>V(),className:"rounded-xl gap-2",children:[e.jsx(cs,{className:"w-4 h-4"})," Retry"]})]});const rs={hidden:{opacity:0},visible:{opacity:1,transition:{staggerChildren:.07}}},E={hidden:{opacity:0,y:16},visible:{opacity:1,y:0,transition:{duration:.4,ease:"easeOut"}}},Le=new Date().getHours(),ze=Le<12?"Good morning":Le<17?"Good afternoon":"Good evening";return e.jsxs(k.div,{className:"px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full pb-10 pt-5 space-y-5",initial:"hidden",animate:"visible",variants:rs,children:[e.jsxs(k.div,{variants:E,className:"flex flex-col sm:flex-row sm:items-center justify-between gap-4",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 mb-1",children:[e.jsx(ps,{className:"w-4 h-4 text-primary"}),e.jsx("span",{className:"text-[10px] font-extrabold tracking-widest uppercase text-primary",children:ze})]}),e.jsx("h1",{className:"text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-foreground",children:c?.full_name||c?.name||"Fleet Manager"}),e.jsx("p",{className:"text-sm text-muted-foreground mt-0.5",children:"Here's what's happening across your fleet."})]}),e.jsxs("div",{className:"flex items-center gap-2.5 shrink-0",children:[e.jsxs("div",{className:"inline-flex items-center gap-1.5 rounded-xl border border-border/50 bg-secondary/30 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm",children:[e.jsx(We,{className:"w-3.5 h-3.5 text-primary"}),e.jsx("span",{className:"capitalize",children:c?.role?.replace("_"," ")})]}),e.jsxs(v,{variant:"outline",size:"sm",className:"rounded-xl gap-2 text-xs border-border/50 hover:border-primary/40",onClick:()=>V(!0),disabled:u,children:[e.jsx(cs,{className:`w-3.5 h-3.5 ${u?"animate-spin":""}`}),u?"Syncing…":`${se(B,"HH:mm")}`]}),e.jsxs(v,{size:"sm",className:"rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold gap-1.5 shadow-sm",onClick:()=>Ve(!0),children:[e.jsx(Rs,{className:"w-3.5 h-3.5"})," WhatsApp P&L Snapshot"]})]})]}),(I||i)&&!Ke&&t.totalAlertsCount>0&&e.jsx(k.div,{variants:E,children:e.jsxs("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/15 transition-colors shadow-sm gap-3",children:[e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-center gap-3.5 flex-1 min-w-0 cursor-pointer",children:[e.jsx("div",{className:"p-2.5 bg-rose-500/20 rounded-xl text-rose-500 shrink-0",children:e.jsx(Ge,{className:"w-5 h-5 animate-pulse"})}),e.jsxs("div",{className:"min-w-0",children:[e.jsx("p",{className:"font-bold text-rose-500 dark:text-rose-400 text-sm flex items-center gap-2",children:"Critical Fleet Compliance Warnings"}),e.jsxs("p",{className:"text-xs text-rose-500/80 dark:text-rose-400/80 mt-0.5",children:["You have ",e.jsx("strong",{children:t.totalAlertsCount})," unresolved alerts:",t.expiringDocsCount>0?` ${t.expiringDocsCount} document expiries`:"",t.lowFastagCount>0?`${t.expiringDocsCount>0?" and":""} ${t.lowFastagCount} low FASTag balances`:"",". Action required to keep operations running smoothly."]})]})]}),e.jsxs("div",{className:"flex items-center gap-2 shrink-0 self-end sm:self-center",children:[e.jsxs(v,{size:"sm",variant:"outline",onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"rounded-xl gap-1 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-300 text-xs h-8",children:["Resolve Alerts ",e.jsx(fe,{className:"w-3.5 h-3.5"})]}),e.jsxs(v,{size:"sm",variant:"ghost",onClick:l=>{l.stopPropagation(),Ye(!0);try{sessionStorage.setItem("dismiss_compliance_alert","true")}catch{}oe.info("Fleet compliance warning dismissed.")},className:"rounded-xl gap-1 text-xs text-rose-500/80 hover:text-rose-500 hover:bg-rose-500/20 h-8 px-2.5 font-medium",title:"Dismiss warning banner",children:[e.jsx(Fs,{className:"w-3.5 h-3.5 mr-1"})," Dismiss"]})]})]})}),(I||i)&&e.jsx(k.div,{variants:E,children:ee?e.jsx(p,{className:"h-[68px] w-full rounded-2xl"}):C>0?e.jsxs(k.div,{whileHover:{scale:1.005},onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"cursor-pointer flex items-center justify-between p-4 rounded-2xl border border-destructive/25 bg-destructive/5 hover:bg-destructive/10 transition-colors shadow-sm",children:[e.jsxs("div",{className:"flex items-center gap-4",children:[e.jsx("div",{className:"p-2.5 bg-destructive/15 rounded-xl text-destructive",children:e.jsx(xs,{className:"w-5 h-5"})}),e.jsxs("div",{children:[e.jsx("p",{className:"font-bold text-destructive text-sm",children:"Pending Signup Requests"}),e.jsxs("p",{className:"text-xs text-destructive/70 mt-0.5",children:[e.jsx("strong",{children:C})," new account",C>1?"s":""," awaiting approval."]})]})]}),e.jsxs(v,{size:"sm",variant:"destructive",className:"rounded-xl gap-1.5 hidden sm:flex text-xs",children:["Review ",e.jsx(Ms,{className:"w-3.5 h-3.5"})]})]}):null}),i||I?e.jsxs(e.Fragment,{children:[e.jsxs(k.div,{variants:E,className:"grid grid-cols-2 lg:grid-cols-4 gap-4",children:[e.jsx(be,{loading:M,title:"Net Revenue",rawValue:Math.round(t.revenue),displayValue:`₹${Math.round(t.revenue).toLocaleString()}`,icon:Je,accentColor:"#6366f1",description:`Delivered trips only · Gross ₹${Math.round(t.grossRevenue).toLocaleString()}`,onClick:()=>m("/analytics?tab=revenue")}),e.jsx(be,{loading:M,title:"Retained Earnings",rawValue:Math.round(t.retainedEarnings),displayValue:`₹${Math.round(t.retainedEarnings).toLocaleString()}`,icon:ts,accentColor:t.retainedEarnings>=0?"#10b981":"#f43f5e",description:`Fleet ₹${Math.round(t.fleetProfit).toLocaleString()} · Brokerage ₹${Math.round(t.brokerageProfit).toLocaleString()}`,onClick:()=>m("/analytics")}),e.jsx(be,{loading:M,title:"Total Shipments",rawValue:t.trips,icon:$s,accentColor:"#8b5cf6",description:`${t.deliveredTrips??0} delivered · ${(t.trips||0)-(t.deliveredTrips||0)} in progress`,onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{loading:M,title:"Fleet Size",rawValue:t.trucks,icon:ve,accentColor:"#f59e0b",description:"Registered vehicles"})]}),e.jsx(k.div,{variants:E,children:e.jsxs(Y,{className:"border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5",children:[e.jsx("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-sm font-heading flex items-center gap-2",children:[e.jsx(Je,{className:"w-4 h-4 text-primary"})," Active Shipment Pipeline"]}),e.jsx(Te,{className:"text-xs",children:"Real-time status of active logistical jobs"})]})}),e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4 relative",children:[e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 border border-border/20 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-slate-500/10 rounded-lg text-slate-400",children:e.jsx(Xe,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider",children:"Upcoming"}),e.jsx("p",{className:"text-lg font-extrabold text-foreground mt-0.5",children:t.upcomingTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-blue-500/10 rounded-lg text-blue-400",children:e.jsx(ve,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-blue-400/80 uppercase font-bold tracking-wider",children:"Dispatched"}),e.jsx("p",{className:"text-lg font-extrabold text-blue-400 mt-0.5",children:t.dispatchedTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-amber-500/10 rounded-lg text-amber-400",children:e.jsx(ts,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400/80 uppercase font-bold tracking-wider",children:"In Transit"}),e.jsx("p",{className:"text-lg font-extrabold text-amber-400 mt-0.5",children:t.inTransitTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(We,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-emerald-400/80 uppercase font-bold tracking-wider",children:"Delivered"}),e.jsx("p",{className:"text-lg font-extrabold text-emerald-400 mt-0.5",children:t.deliveredTrips||0})]})]})]})]})}),e.jsx(k.div,{variants:E,id:"fleet-status-hub",children:e.jsx(ms,{})}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsx(je,{className:"text-base font-heading",children:w("recent_shipments")}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Latest 8 trips in the system"})]}),e.jsx(v,{variant:"ghost",size:"sm",asChild:!0,className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:e.jsxs(Es,{to:"/trip-logs",children:["All trips ",e.jsx(fe,{className:"w-3.5 h-3.5"})]})})]}),e.jsx(De,{className:"p-3 space-y-1.5",children:f.length===0?e.jsxs("div",{className:"text-center py-10",children:[e.jsx(ve,{className:"w-10 h-10 mx-auto text-muted-foreground/30 mb-3"}),e.jsx("p",{className:"text-sm text-muted-foreground",children:"No shipments yet."}),e.jsx(v,{size:"sm",className:"mt-3 rounded-xl",onClick:()=>G(!0),children:"Dispatch First Trip"})]}):f.map(l=>e.jsx(nt,{trip:l},l.id))})]}),e.jsxs("div",{className:"space-y-4",children:[e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md",children:[e.jsx(Se,{className:"pb-3 border-b border-border/30 px-5 pt-5",children:e.jsx(je,{className:"text-base font-heading",children:w("system_health")})}),e.jsxs(De,{className:"px-5 py-4 space-y-5",children:[[{label:"PODs Pending",value:t.pods,pct:t.trips?Math.min(Math.round(t.pods/t.trips*100),100):0,color:"#f59e0b"},{label:"Registered Users",value:t.users,pct:Math.min(t.users*10,100),color:"#10b981"},{label:"Fleet Utilisation",value:null,pct:78,color:"#6366f1"}].map(({label:l,value:h,pct:H,color:J})=>e.jsxs("div",{children:[e.jsxs("div",{className:"flex justify-between text-xs mb-1.5",children:[e.jsx("span",{className:"font-semibold text-foreground",children:l}),e.jsx("span",{className:"text-muted-foreground font-bold",children:h!==null?h:`${H}%`})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx(k.div,{initial:{width:0},animate:{width:`${H}%`},transition:{duration:.9,ease:"easeOut"},className:"h-1.5 rounded-full",style:{backgroundColor:J}})})]},l)),e.jsxs("div",{className:"pt-3 border-t border-border/30 space-y-2",children:[e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/analytics"),children:[e.jsx(Ps,{className:"w-3.5 h-3.5"})," Full Analytics"]}),e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/reports"),children:[e.jsx(Ze,{className:"w-3.5 h-3.5"})," View Reports"]})]})]})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5 bg-muted/5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Os,{className:"w-4 h-4 text-amber-500"})," Compliance Action Center"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"High-priority operational checklists"})]})}),e.jsxs(De,{className:"p-5 space-y-3.5",children:[t.lowFastagCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/15 hover:bg-amber-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-amber-500/20 rounded-lg text-amber-500 mt-0.5",children:e.jsx(ds,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors",children:"Recharge FASTags"}),e.jsxs("p",{className:"text-[10px] text-amber-400/80 mt-0.5",children:[e.jsx("strong",{children:t.lowFastagCount})," trucks have balances under ₹2,000"]})]}),e.jsx(fe,{className:"w-4 h-4 text-amber-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.expiringDocsCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/15 hover:bg-rose-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-rose-500/20 rounded-lg text-rose-500 mt-0.5",children:e.jsx(Ge,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors",children:"Renew Fleet Permits"}),e.jsxs("p",{className:"text-[10px] text-rose-400/80 mt-0.5",children:[e.jsx("strong",{children:t.expiringDocsCount})," credentials expiring within 30 days"]})]}),e.jsx(fe,{className:"w-4 h-4 text-rose-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),C>0&&e.jsxs("div",{onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/15 hover:bg-blue-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-blue-500/20 rounded-lg text-blue-500 mt-0.5",children:e.jsx(xs,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors",children:"Approve User Access"}),e.jsxs("p",{className:"text-[10px] text-blue-400/80 mt-0.5",children:[e.jsx("strong",{children:C})," signup requests awaiting review"]})]}),e.jsx(fe,{className:"w-4 h-4 text-blue-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.pods>0&&e.jsxs("div",{onClick:()=>m("/pod-management"),className:"flex items-start gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/15 hover:bg-violet-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-violet-500/20 rounded-lg text-violet-500 mt-0.5",children:e.jsx(Ze,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-violet-400 group-hover:text-violet-300 transition-colors",children:"Verify Delivery Proofs"}),e.jsxs("p",{className:"text-[10px] text-violet-400/80 mt-0.5",children:[e.jsx("strong",{children:t.pods})," PODs require validation & archival"]})]}),e.jsx(fe,{className:"w-4 h-4 text-violet-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.lowFastagCount===0&&t.expiringDocsCount===0&&C===0&&t.pods===0&&e.jsxs("div",{className:"py-6 text-center text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"Fleet is fully compliant"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All certifications, fastags, and signups are resolved."})]})]})]})]})]}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Vs,{className:"w-4.5 h-4.5 text-primary"})," Active Breakdowns & Maintenance"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Unresolved vehicle maintenance issues filed by drivers"})]}),e.jsxs(v,{variant:"ghost",size:"sm",onClick:()=>ie(!0),className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:[e.jsx(Us,{className:"w-3.5 h-3.5"})," Log Issue"]})]}),e.jsx(De,{className:"p-5",children:Z.length===0?e.jsxs("div",{className:"text-center py-8 text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"No active breakdown tickets"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All fleet vehicle maintenance requests are resolved."})]}):e.jsx("div",{className:"space-y-3.5",children:Z.map(l=>{const h=l.severity==="High";return e.jsxs("div",{className:"flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs font-bold text-foreground font-mono",children:l.truck_id?l.truck_id:"Unknown Truck"}),e.jsxs("span",{className:"text-[10px] text-muted-foreground font-medium",children:["(",l.category,")"]})]}),e.jsx("p",{className:"text-xs text-muted-foreground leading-normal",children:l.description}),e.jsx("p",{className:"text-[9px] text-muted-foreground/60",children:l.date_reported?new Date(l.date_reported).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"-"})]}),e.jsx(X,{variant:h?"destructive":"warning",className:"text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0",children:l.severity})]},l.id)})})})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(zs,{className:"w-4.5 h-4.5 text-amber-500"})," FASTag Balance Monitor"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Top 5 lowest FASTag account balances"})]})}),e.jsx(De,{className:"p-5 space-y-4",children:te.length===0?e.jsx("div",{className:"text-center py-6 text-muted-foreground text-xs",children:"No FASTag balance data available."}):te.map(l=>{const h=l.current_fastag_balance||0,H=h<2e3,J=Math.min(100,Math.max(0,h/5e3*100));return e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"font-bold text-foreground font-mono",children:l.truck_number}),e.jsxs("span",{className:`font-bold tabular-nums ${H?"text-rose-400":"text-emerald-400"}`,children:["₹",h.toLocaleString()]})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx("div",{className:`h-1.5 rounded-full ${H?"bg-rose-500":"bg-primary"}`,style:{width:`${J}%`}})})]},l.id)})})]})]})]}):e.jsxs(k.div,{variants:E,className:"space-y-4",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsx(be,{title:w("assigned_shipments"),rawValue:t.trips,icon:ve,accentColor:"#6366f1",onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{title:w("pending_pods"),rawValue:t.pods,icon:Ze,accentColor:"#f59e0b"}),e.jsx(be,{title:w("active_tasks"),rawValue:12,icon:Xe,accentColor:"#8b5cf6"})]}),e.jsx(ms,{})]}),e.jsx(Ys,{isOpen:o,onClose:()=>R(!1),onSuccess:()=>{R(!1),V(!0)}}),e.jsx(Qs,{isOpen:le,onClose:()=>G(!1),onSuccess:()=>{G(!1),V(!0)}}),e.jsx(Zs,{isOpen:xe,onClose:()=>me(!1),onSuccess:()=>{me(!1),V(!0)}}),e.jsx(et,{isOpen:ne,onClose:()=>ie(!1),onSuccess:()=>{ie(!1),V(!0)}}),e.jsx(rt,{isOpen:ue,onClose:()=>Ve(!1),summaryData:{month:se(new Date,"MMMM yyyy"),completedTrips:t.trips||28,grossRevenue:t.grossRevenue||t.revenue||198800,fuelCost:t.expenses||68450,netProfit:t.fleetProfit||130350,outstandingDue:198800}}),$&&e.jsx(st,{isOpen:$,onClose:()=>Ue(!1),onApplyScan:l=>{Ue(!1),m("/fuel-tracker",{state:{scannedFuel:l}})}})]})};export{ut as default};
+  a.useEffect(()=>{(c?.role==="Client"||c?.role==="client")&&m("/client-portal",{replace:!0})},[c,m]);const[t,L]=a.useState({users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,x,y,A,F,T,D]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getList(1,500,{fields:"id,amount",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]}))]);let P=0,U=0,qe=0;const Be=J?.items||[],He=s?.items||[],Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=He.reduce((N,pe)=>N+(pe.amount||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);L({users:H?.totalItems||0,trips:Re?.totalItems||0,deliveredTrips:J?.totalItems||0,upcomingTrips:A?.totalItems||0,dispatchedTrips:F?.totalItems||0,inTransitTrips:T?.totalItems||0,trucks:Fe.length,pods:K?.totalItems||0,revenue:z+U,grossRevenue:Be.reduce((N,pe)=>N+(Number(pe.revenue)||0),0),expenses:b,fleetProfit:W,brokerageProfit:U,retainedEarnings:W+U,lowFastagCount:he,expiringDocsCount:ke,totalAlertsCount:he+ke}),O(x?.items||[]),Ie(D?.items||[]),Ae(ls),r(new Date)}catch(h){console.error("[Dashboard] fetch error:",h),re("Failed to load dashboard statistics. Please check your connection."),oe.error("Dashboard load failed")}finally{de(!1),S(!1)}},Qe=async()=>{if(!(!I&&!i)){ce(!0);try{const l=await g.collection("signup_requests").getList(1,1,{filter:'status = "Pending"',$autoCancel:!1});Q(l.totalItems)}catch(l){console.error("[Dashboard] signup_requests error:",l)}finally{ce(!1)}}};if(a.useEffect(()=>{V(),Qe()},[]),M)return e.jsx(Ks,{text:"Compiling fleet data…"});if(ae)return e.jsxs("div",{className:"flex flex-col items-center justify-center min-h-[60vh] text-center px-6",children:[e.jsx("div",{className:"w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-5",children:e.jsx(ds,{className:"w-8 h-8 text-destructive"})}),e.jsx("h2",{className:"text-2xl font-bold mb-2",children:"Dashboard Error"}),e.jsx("p",{className:"text-muted-foreground mb-6 max-w-sm text-sm",children:ae}),e.jsxs(v,{onClick:()=>V(),className:"rounded-xl gap-2",children:[e.jsx(cs,{className:"w-4 h-4"})," Retry"]})]});const rs={hidden:{opacity:0},visible:{opacity:1,transition:{staggerChildren:.07}}},E={hidden:{opacity:0,y:16},visible:{opacity:1,y:0,transition:{duration:.4,ease:"easeOut"}}},Le=new Date().getHours(),ze=Le<12?"Good morning":Le<17?"Good afternoon":"Good evening";return e.jsxs(k.div,{className:"px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full pb-10 pt-5 space-y-5",initial:"hidden",animate:"visible",variants:rs,children:[
+  e.jsxs("div",{className:"flex items-center justify-between bg-slate-900/90 border border-slate-800 rounded-2xl p-1.5 shadow-lg",children:[
+    e.jsxs("div",{className:"flex items-center gap-1.5",children:[
+      e.jsxs("button",{type:"button",onClick:()=>handleSwitchDashMode("custom"),className:"h-8 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 "+(dashMode==="custom"?"bg-amber-500 text-slate-950 font-black shadow-md scale-102":"text-slate-400 hover:text-white hover:bg-slate-800"),children:[e.jsx("span",{children:"🧩"})," Custom Widgets Dashboard"]}),
+      e.jsxs("button",{type:"button",onClick:()=>handleSwitchDashMode("standard"),className:"h-8 px-3.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 "+(dashMode==="standard"?"bg-primary text-primary-foreground font-black shadow-md scale-102":"text-slate-400 hover:text-white hover:bg-slate-800"),children:[e.jsx("span",{children:"📊"})," Standard Overview"]})
+    ]}),
+    e.jsx("span",{className:"hidden sm:inline-flex text-[11px] font-mono text-slate-400 pr-2",children:"Mobile-Friendly Drag & Resize"})
+  ]}),
+  dashMode==="custom"?e.jsx(CustomDashboardBuilder,{summaryData:t,onNavigate:(p)=>m(p)}):null,e.jsxs(k.div,{variants:E,className:"flex flex-col sm:flex-row sm:items-center justify-between gap-4",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 mb-1",children:[e.jsx(ps,{className:"w-4 h-4 text-primary"}),e.jsx("span",{className:"text-[10px] font-extrabold tracking-widest uppercase text-primary",children:ze})]}),e.jsx("h1",{className:"text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-foreground",children:c?.full_name||c?.name||"Fleet Manager"}),e.jsx("p",{className:"text-sm text-muted-foreground mt-0.5",children:"Here's what's happening across your fleet."})]}),e.jsxs("div",{className:"flex items-center gap-2.5 shrink-0",children:[e.jsxs("div",{className:"inline-flex items-center gap-1.5 rounded-xl border border-border/50 bg-secondary/30 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm",children:[e.jsx(We,{className:"w-3.5 h-3.5 text-primary"}),e.jsx("span",{className:"capitalize",children:c?.role?.replace("_"," ")})]}),e.jsxs(v,{variant:"outline",size:"sm",className:"rounded-xl gap-2 text-xs border-border/50 hover:border-primary/40",onClick:()=>V(!0),disabled:u,children:[e.jsx(cs,{className:`w-3.5 h-3.5 ${u?"animate-spin":""}`}),u?"Syncing…":`${se(B,"HH:mm")}`]}),e.jsxs(v,{size:"sm",className:"rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold gap-1.5 shadow-sm",onClick:()=>Ve(!0),children:[e.jsx(Rs,{className:"w-3.5 h-3.5"})," WhatsApp P&L Snapshot"]})]})]}),(I||i)&&!Ke&&t.totalAlertsCount>0&&e.jsx(k.div,{variants:E,children:e.jsxs("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/15 transition-colors shadow-sm gap-3",children:[e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-center gap-3.5 flex-1 min-w-0 cursor-pointer",children:[e.jsx("div",{className:"p-2.5 bg-rose-500/20 rounded-xl text-rose-500 shrink-0",children:e.jsx(Ge,{className:"w-5 h-5 animate-pulse"})}),e.jsxs("div",{className:"min-w-0",children:[e.jsx("p",{className:"font-bold text-rose-500 dark:text-rose-400 text-sm flex items-center gap-2",children:"Critical Fleet Compliance Warnings"}),e.jsxs("p",{className:"text-xs text-rose-500/80 dark:text-rose-400/80 mt-0.5",children:["You have ",e.jsx("strong",{children:t.totalAlertsCount})," unresolved alerts:",t.expiringDocsCount>0?` ${t.expiringDocsCount} document expiries`:"",t.lowFastagCount>0?`${t.expiringDocsCount>0?" and":""} ${t.lowFastagCount} low FASTag balances`:"",". Action required to keep operations running smoothly."]})]})]}),e.jsxs("div",{className:"flex items-center gap-2 shrink-0 self-end sm:self-center",children:[e.jsxs(v,{size:"sm",variant:"outline",onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"rounded-xl gap-1 border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-300 text-xs h-8",children:["Resolve Alerts ",e.jsx(fe,{className:"w-3.5 h-3.5"})]}),e.jsxs(v,{size:"sm",variant:"ghost",onClick:l=>{l.stopPropagation(),Ye(!0);try{sessionStorage.setItem("dismiss_compliance_alert","true")}catch{}oe.info("Fleet compliance warning dismissed.")},className:"rounded-xl gap-1 text-xs text-rose-500/80 hover:text-rose-500 hover:bg-rose-500/20 h-8 px-2.5 font-medium",title:"Dismiss warning banner",children:[e.jsx(Fs,{className:"w-3.5 h-3.5 mr-1"})," Dismiss"]})]})]})}),(I||i)&&e.jsx(k.div,{variants:E,children:ee?e.jsx(p,{className:"h-[68px] w-full rounded-2xl"}):C>0?e.jsxs(k.div,{whileHover:{scale:1.005},onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"cursor-pointer flex items-center justify-between p-4 rounded-2xl border border-destructive/25 bg-destructive/5 hover:bg-destructive/10 transition-colors shadow-sm",children:[e.jsxs("div",{className:"flex items-center gap-4",children:[e.jsx("div",{className:"p-2.5 bg-destructive/15 rounded-xl text-destructive",children:e.jsx(xs,{className:"w-5 h-5"})}),e.jsxs("div",{children:[e.jsx("p",{className:"font-bold text-destructive text-sm",children:"Pending Signup Requests"}),e.jsxs("p",{className:"text-xs text-destructive/70 mt-0.5",children:[e.jsx("strong",{children:C})," new account",C>1?"s":""," awaiting approval."]})]})]}),e.jsxs(v,{size:"sm",variant:"destructive",className:"rounded-xl gap-1.5 hidden sm:flex text-xs",children:["Review ",e.jsx(Ms,{className:"w-3.5 h-3.5"})]})]}):null}),i||I?e.jsxs(e.Fragment,{children:[e.jsxs(k.div,{variants:E,className:"grid grid-cols-2 lg:grid-cols-4 gap-4",children:[e.jsx(be,{loading:M,title:"Net Revenue",rawValue:Math.round(t.revenue),displayValue:`₹${Math.round(t.revenue).toLocaleString()}`,icon:Je,accentColor:"#6366f1",description:`Delivered trips only · Gross ₹${Math.round(t.grossRevenue).toLocaleString()}`,onClick:()=>m("/analytics?tab=revenue")}),e.jsx(be,{loading:M,title:"Retained Earnings",rawValue:Math.round(t.retainedEarnings),displayValue:`₹${Math.round(t.retainedEarnings).toLocaleString()}`,icon:ts,accentColor:t.retainedEarnings>=0?"#10b981":"#f43f5e",description:`Fleet ₹${Math.round(t.fleetProfit).toLocaleString()} · Brokerage ₹${Math.round(t.brokerageProfit).toLocaleString()}`,onClick:()=>m("/analytics")}),e.jsx(be,{loading:M,title:"Total Shipments",rawValue:t.trips,icon:$s,accentColor:"#8b5cf6",description:`${t.deliveredTrips??0} delivered · ${(t.trips||0)-(t.deliveredTrips||0)} in progress`,onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{loading:M,title:"Fleet Size",rawValue:t.trucks,icon:ve,accentColor:"#f59e0b",description:"Registered vehicles"})]}),e.jsx(k.div,{variants:E,children:e.jsxs(Y,{className:"border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5",children:[e.jsx("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-sm font-heading flex items-center gap-2",children:[e.jsx(Je,{className:"w-4 h-4 text-primary"})," Active Shipment Pipeline"]}),e.jsx(Te,{className:"text-xs",children:"Real-time status of active logistical jobs"})]})}),e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4 relative",children:[e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 border border-border/20 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-slate-500/10 rounded-lg text-slate-400",children:e.jsx(Xe,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider",children:"Upcoming"}),e.jsx("p",{className:"text-lg font-extrabold text-foreground mt-0.5",children:t.upcomingTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-blue-500/10 rounded-lg text-blue-400",children:e.jsx(ve,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-blue-400/80 uppercase font-bold tracking-wider",children:"Dispatched"}),e.jsx("p",{className:"text-lg font-extrabold text-blue-400 mt-0.5",children:t.dispatchedTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-amber-500/10 rounded-lg text-amber-400",children:e.jsx(ts,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400/80 uppercase font-bold tracking-wider",children:"In Transit"}),e.jsx("p",{className:"text-lg font-extrabold text-amber-400 mt-0.5",children:t.inTransitTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(We,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-emerald-400/80 uppercase font-bold tracking-wider",children:"Delivered"}),e.jsx("p",{className:"text-lg font-extrabold text-emerald-400 mt-0.5",children:t.deliveredTrips||0})]})]})]})]})}),e.jsx(k.div,{variants:E,id:"fleet-status-hub",children:e.jsx(ms,{})}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsx(je,{className:"text-base font-heading",children:w("recent_shipments")}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Latest 8 trips in the system"})]}),e.jsx(v,{variant:"ghost",size:"sm",asChild:!0,className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:e.jsxs(Es,{to:"/trip-logs",children:["All trips ",e.jsx(fe,{className:"w-3.5 h-3.5"})]})})]}),e.jsx(De,{className:"p-3 space-y-1.5",children:f.length===0?e.jsxs("div",{className:"text-center py-10",children:[e.jsx(ve,{className:"w-10 h-10 mx-auto text-muted-foreground/30 mb-3"}),e.jsx("p",{className:"text-sm text-muted-foreground",children:"No shipments yet."}),e.jsx(v,{size:"sm",className:"mt-3 rounded-xl",onClick:()=>G(!0),children:"Dispatch First Trip"})]}):f.map(l=>e.jsx(nt,{trip:l},l.id))})]}),e.jsxs("div",{className:"space-y-4",children:[e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md",children:[e.jsx(Se,{className:"pb-3 border-b border-border/30 px-5 pt-5",children:e.jsx(je,{className:"text-base font-heading",children:w("system_health")})}),e.jsxs(De,{className:"px-5 py-4 space-y-5",children:[[{label:"PODs Pending",value:t.pods,pct:t.trips?Math.min(Math.round(t.pods/t.trips*100),100):0,color:"#f59e0b"},{label:"Registered Users",value:t.users,pct:Math.min(t.users*10,100),color:"#10b981"},{label:"Fleet Utilisation",value:null,pct:78,color:"#6366f1"}].map(({label:l,value:h,pct:H,color:J})=>e.jsxs("div",{children:[e.jsxs("div",{className:"flex justify-between text-xs mb-1.5",children:[e.jsx("span",{className:"font-semibold text-foreground",children:l}),e.jsx("span",{className:"text-muted-foreground font-bold",children:h!==null?h:`${H}%`})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx(k.div,{initial:{width:0},animate:{width:`${H}%`},transition:{duration:.9,ease:"easeOut"},className:"h-1.5 rounded-full",style:{backgroundColor:J}})})]},l)),e.jsxs("div",{className:"pt-3 border-t border-border/30 space-y-2",children:[e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/analytics"),children:[e.jsx(Ps,{className:"w-3.5 h-3.5"})," Full Analytics"]}),e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/reports"),children:[e.jsx(Ze,{className:"w-3.5 h-3.5"})," View Reports"]})]})]})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5 bg-muted/5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Os,{className:"w-4 h-4 text-amber-500"})," Compliance Action Center"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"High-priority operational checklists"})]})}),e.jsxs(De,{className:"p-5 space-y-3.5",children:[t.lowFastagCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/15 hover:bg-amber-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-amber-500/20 rounded-lg text-amber-500 mt-0.5",children:e.jsx(ds,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors",children:"Recharge FASTags"}),e.jsxs("p",{className:"text-[10px] text-amber-400/80 mt-0.5",children:[e.jsx("strong",{children:t.lowFastagCount})," trucks have balances under ₹2,000"]})]}),e.jsx(fe,{className:"w-4 h-4 text-amber-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.expiringDocsCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/15 hover:bg-rose-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-rose-500/20 rounded-lg text-rose-500 mt-0.5",children:e.jsx(Ge,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors",children:"Renew Fleet Permits"}),e.jsxs("p",{className:"text-[10px] text-rose-400/80 mt-0.5",children:[e.jsx("strong",{children:t.expiringDocsCount})," credentials expiring within 30 days"]})]}),e.jsx(fe,{className:"w-4 h-4 text-rose-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),C>0&&e.jsxs("div",{onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/15 hover:bg-blue-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-blue-500/20 rounded-lg text-blue-500 mt-0.5",children:e.jsx(xs,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors",children:"Approve User Access"}),e.jsxs("p",{className:"text-[10px] text-blue-400/80 mt-0.5",children:[e.jsx("strong",{children:C})," signup requests awaiting review"]})]}),e.jsx(fe,{className:"w-4 h-4 text-blue-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.pods>0&&e.jsxs("div",{onClick:()=>m("/pod-management"),className:"flex items-start gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/15 hover:bg-violet-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-violet-500/20 rounded-lg text-violet-500 mt-0.5",children:e.jsx(Ze,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-violet-400 group-hover:text-violet-300 transition-colors",children:"Verify Delivery Proofs"}),e.jsxs("p",{className:"text-[10px] text-violet-400/80 mt-0.5",children:[e.jsx("strong",{children:t.pods})," PODs require validation & archival"]})]}),e.jsx(fe,{className:"w-4 h-4 text-violet-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.lowFastagCount===0&&t.expiringDocsCount===0&&C===0&&t.pods===0&&e.jsxs("div",{className:"py-6 text-center text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"Fleet is fully compliant"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All certifications, fastags, and signups are resolved."})]})]})]})]})]}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Vs,{className:"w-4.5 h-4.5 text-primary"})," Active Breakdowns & Maintenance"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Unresolved vehicle maintenance issues filed by drivers"})]}),e.jsxs(v,{variant:"ghost",size:"sm",onClick:()=>ie(!0),className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:[e.jsx(Us,{className:"w-3.5 h-3.5"})," Log Issue"]})]}),e.jsx(De,{className:"p-5",children:Z.length===0?e.jsxs("div",{className:"text-center py-8 text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"No active breakdown tickets"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All fleet vehicle maintenance requests are resolved."})]}):e.jsx("div",{className:"space-y-3.5",children:Z.map(l=>{const h=l.severity==="High";return e.jsxs("div",{className:"flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs font-bold text-foreground font-mono",children:l.truck_id?l.truck_id:"Unknown Truck"}),e.jsxs("span",{className:"text-[10px] text-muted-foreground font-medium",children:["(",l.category,")"]})]}),e.jsx("p",{className:"text-xs text-muted-foreground leading-normal",children:l.description}),e.jsx("p",{className:"text-[9px] text-muted-foreground/60",children:l.date_reported?new Date(l.date_reported).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"-"})]}),e.jsx(X,{variant:h?"destructive":"warning",className:"text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0",children:l.severity})]},l.id)})})})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(zs,{className:"w-4.5 h-4.5 text-amber-500"})," FASTag Balance Monitor"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Top 5 lowest FASTag account balances"})]})}),e.jsx(De,{className:"p-5 space-y-4",children:te.length===0?e.jsx("div",{className:"text-center py-6 text-muted-foreground text-xs",children:"No FASTag balance data available."}):te.map(l=>{const h=l.current_fastag_balance||0,H=h<2e3,J=Math.min(100,Math.max(0,h/5e3*100));return e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"font-bold text-foreground font-mono",children:l.truck_number}),e.jsxs("span",{className:`font-bold tabular-nums ${H?"text-rose-400":"text-emerald-400"}`,children:["₹",h.toLocaleString()]})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx("div",{className:`h-1.5 rounded-full ${H?"bg-rose-500":"bg-primary"}`,style:{width:`${J}%`}})})]},l.id)})})]})]})]}):e.jsxs(k.div,{variants:E,className:"space-y-4",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsx(be,{title:w("assigned_shipments"),rawValue:t.trips,icon:ve,accentColor:"#6366f1",onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{title:w("pending_pods"),rawValue:t.pods,icon:Ze,accentColor:"#f59e0b"}),e.jsx(be,{title:w("active_tasks"),rawValue:12,icon:Xe,accentColor:"#8b5cf6"})]}),e.jsx(ms,{})]}),e.jsx(Ys,{isOpen:o,onClose:()=>R(!1),onSuccess:()=>{R(!1),V(!0)}}),e.jsx(Qs,{isOpen:le,onClose:()=>G(!1),onSuccess:()=>{G(!1),V(!0)}}),e.jsx(Zs,{isOpen:xe,onClose:()=>me(!1),onSuccess:()=>{me(!1),V(!0)}}),e.jsx(et,{isOpen:ne,onClose:()=>ie(!1),onSuccess:()=>{ie(!1),V(!0)}}),e.jsx(rt,{isOpen:ue,onClose:()=>Ve(!1),summaryData:{month:se(new Date,"MMMM yyyy"),completedTrips:t.trips||28,grossRevenue:t.grossRevenue||t.revenue||198800,fuelCost:t.expenses||68450,netProfit:t.fleetProfit||130350,outstandingDue:198800}}),$&&e.jsx(st,{isOpen:$,onClose:()=>Ue(!1),onApplyScan:l=>{Ue(!1),m("/fuel-tracker",{state:{scannedFuel:l}})}})]})};export{ut as default};
