@@ -537,6 +537,44 @@ const ExpensesPage = () => {
     }
   };
 
+  const getExpenseImages = useCallback((expense) => {
+    if (!expense) return [];
+    const images = [];
+    const seen = new Set();
+    const add = (name, url) => {
+      if (url && !seen.has(url)) {
+        seen.add(url);
+        images.push({ name: name || 'Receipt', url });
+      }
+    };
+    (expense.image_urls || []).forEach(f => {
+      if (!f) return;
+      const u = (typeof f === 'string' && (f.startsWith('http') || f.startsWith('/'))) ? f : pb.files.getUrl(expense, f);
+      add(typeof f === 'string' ? f : 'Receipt', u);
+    });
+    (expense.documents || []).forEach(f => {
+      if (!f) return;
+      if (typeof f === 'string' && f.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+        const u = (f.startsWith('http') || f.startsWith('/')) ? f : pb.files.getUrl(expense, f);
+        add(f, u);
+      }
+    });
+    if (expense.notes && expense.notes.includes('<!-- BILLS_JSON:')) {
+      try {
+        const raw = expense.notes.split('<!-- BILLS_JSON:')[1].split('-->')[0];
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(b => {
+            const u = typeof b === 'string' ? b : (b?.url || '');
+            const n = typeof b === 'string' ? b : (b?.name || 'Job Card Bill');
+            add(n, u);
+          });
+        }
+      } catch (e) {}
+    }
+    return images;
+  }, []);
+
   const filteredExpenses = useMemo(() => {
     let result = [...expenses];
     if (filters.search) {
@@ -967,8 +1005,8 @@ const ExpensesPage = () => {
                             <TableCell className="text-right font-bold tabular-nums text-foreground">₹{expense.amount?.toLocaleString()}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end items-center gap-1.5">
-                                {expense.image_urls?.map((img, idx) => {
-                                  const url = pb.files.getUrl(expense, img);
+                                {getExpenseImages(expense).map((imgObj, idx) => {
+                                  const url = imgObj.url;
                                   return (
                                     <div 
                                       key={idx}
@@ -984,7 +1022,7 @@ const ExpensesPage = () => {
                                         setActiveLightboxImage(url);
                                       }}
                                       className="w-7 h-7 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-110 transition-transform bg-muted shrink-0 shadow-sm"
-                                      title="View Receipt Snapshot"
+                                      title={`View ${imgObj.name || 'Receipt Snapshot'}`}
                                     >
                                       <img 
                                         src={url} 
@@ -1003,10 +1041,10 @@ const ExpensesPage = () => {
                                     </div>
                                   );
                                 })}
-                                {expense.documents?.length > 0 && (
+                                {expense.documents?.filter(doc => !(expense.image_urls || []).includes(doc) && !doc.match(/\.(jpg|jpeg|png|webp|gif)$/i)).length > 0 && (
                                   <Button variant="ghost" size="icon" onClick={() => window.open(pb.files.getUrl(expense, expense.documents[0]), '_blank')} className="h-8 w-8 text-primary" title="View attached document"><ExternalLink className="w-4 h-4" /></Button>
                                 )}
-                                {(!expense.image_urls || expense.image_urls.length === 0) && (!expense.documents || expense.documents.length === 0) && (
+                                {getExpenseImages(expense).length === 0 && (!expense.documents || expense.documents.filter(doc => !(expense.image_urls || []).includes(doc) && !doc.match(/\.(jpg|jpeg|png|webp|gif)$/i)).length === 0) && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
@@ -1069,8 +1107,8 @@ const ExpensesPage = () => {
                           <div className="text-right">
                             <p className="font-extrabold text-sm text-foreground">₹{expense.amount?.toLocaleString()}</p>
                             <div className="flex flex-wrap justify-end gap-1 mt-1">
-                              {expense.image_urls?.map((img, idx) => {
-                                const url = pb.files.getUrl(expense, img);
+                              {getExpenseImages(expense).map((imgObj, idx) => {
+                                const url = imgObj.url;
                                 return (
                                   <div 
                                     key={idx}
@@ -1086,7 +1124,7 @@ const ExpensesPage = () => {
                                       setActiveLightboxImage(url);
                                     }}
                                     className="w-6 h-6 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-muted shrink-0 shadow-sm"
-                                    title="View Receipt Snapshot"
+                                    title={`View ${imgObj.name || 'Receipt Snapshot'}`}
                                   >
                                     <img 
                                       src={url} 
