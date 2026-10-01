@@ -145,6 +145,11 @@ auditRouter.post('/clear', (req, res) => {
   return res.json(result);
 });
 
+auditRouter.post('/seed-baseline', (req, res) => {
+  const result = auditService.seedAuthenticBaseline();
+  return res.json(result);
+});
+
 auditRouter.post('/reset', (req, res) => {
   const result = auditService.clearAll();
   return res.json(result);
@@ -4094,14 +4099,84 @@ app.use('/hcgi/platform', async (req, res) => {
       headers['vary'] = 'Accept-Encoding';
     }
 
-    // 🛡️ Mutation Auto-Sync: detect successful data creation/update/deletion (e.g. expenses, cashbook)
-    // and automatically schedule a 3-second debounced cloud backup to Supabase.
+    // 🛡️ Mutation Auto-Sync & Audit Tracking:
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) &&
         proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
       const pathname = parsedUrl.pathname;
-      if (!pathname.includes('/auth-with-') && !pathname.includes('/auth-refresh') && !pathname.includes('/api/health')) {
+      if (!pathname.includes('/auth-with-') && !pathname.includes('/auth-refresh') && !pathname.includes('/api/health') && !pathname.includes('/api/audit')) {
         logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling debounced cloud backup in 3s...`);
         triggerDebouncedCloudSync(3000);
+
+        try {
+          const pathSegments = pathname.split('/').filter(Boolean);
+          const collIdx = pathSegments.indexOf('collections');
+          if (collIdx !== -1 && pathSegments[collIdx + 1]) {
+            const collectionName = pathSegments[collIdx + 1];
+            const entityId = pathSegments[collIdx + 3] || 'new';
+
+            let module = 'FLEET';
+            let entityType = collectionName.toUpperCase();
+            if (['trip_logs', 'trips', 'lorry_receipts', 'pods', 'contracts'].includes(collectionName)) {
+              module = 'LOGISTICS';
+              entityType = 'TRIP';
+            } else if (['expenses', 'cashbook', 'payments', 'payment_requests', 'salaries', 'advances'].includes(collectionName)) {
+              module = 'FINANCE';
+              entityType = 'EXPENSE';
+            } else if (['trucks', 'vehicles', 'maintenance_problems', 'tyres', 'job_cards'].includes(collectionName)) {
+              module = 'FLEET';
+              entityType = 'TRUCK';
+            } else if (['truck_documents', 'documents', 'vault_files'].includes(collectionName)) {
+              module = 'DOCUMENTS';
+              entityType = 'DOCUMENT';
+            } else if (['users', '_superusers', 'drivers'].includes(collectionName)) {
+              module = 'AUTH';
+              entityType = 'USER';
+            }
+
+            let action = 'UPDATE';
+            if (req.method === 'POST') action = 'CREATE';
+            else if (req.method === 'DELETE') action = 'DELETE';
+
+            let actor = {
+              id: req.headers['x-actor-id'] || 'usr_vinod_admin',
+              name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+              email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com',
+              role: req.headers['x-actor-role'] || 'superuser',
+              tenant_id: 'JBC_MAIN'
+            };
+
+            const authHeader = req.headers['authorization'];
+            if (authHeader && authHeader.includes('.')) {
+              try {
+                const tokenParts = authHeader.replace(/^Bearer\s+/i, '').split('.');
+                if (tokenParts[1]) {
+                  const decoded = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString('utf8'));
+                  if (decoded.id) actor.id = decoded.id;
+                  if (decoded.email) actor.email = decoded.email;
+                  if (decoded.name) actor.name = decoded.name;
+                }
+              } catch (e) {}
+            }
+
+            const bodyPayload = (req.body && typeof req.body === 'object') ? req.body : null;
+            auditService.ingestEvent({
+              module,
+              entity_type: entityType,
+              entity_id: entityId,
+              action,
+              outcome: 'SUCCESS',
+              severity: action === 'DELETE' ? 'HIGH' : 'INFO',
+              details: `${action} operation on ${collectionName} (${entityId})`,
+              actor,
+              new_values: bodyPayload
+            }, {
+              ip: req.ip || req.socket.remoteAddress,
+              userAgent: req.headers['user-agent']
+            });
+          }
+        } catch (auditErr) {
+          logger.error('Audit Proxy Interceptor Error:', auditErr.message);
+        }
       }
     }
 

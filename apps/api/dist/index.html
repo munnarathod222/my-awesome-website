@@ -9,7 +9,7 @@
 		<meta http-equiv="Pragma" content="no-cache" />
 		<meta http-equiv="Expires" content="0" />
 		<title>Jai Bhavani Cargo</title>
-		<script type="module" crossorigin src="/assets/index-C7kP9xL2.js?v=20261001_clean_overview_and_client_portal_v60"></script>
+		<script type="module" crossorigin src="/assets/index-C7kP9xL2.js?v=20261002_live_audit_system_v61"></script>
 		<link rel="modulepreload" crossorigin href="/assets/vendor-radix-BQCqNqg0.js">
 		<link rel="modulepreload" crossorigin href="/assets/vendor-react-Bs5V2qFE.js">
 		<link rel="modulepreload" crossorigin href="/assets/vendor-pdf-DtmgLs_2.js">
@@ -173,6 +173,127 @@ window.fetch = function(...args) {
 					const errorFromRes = await responseClone.text();
 					const requestUrl = response.url;
 					console.error(`Fetch error from ${requestUrl}: ${errorFromRes}`);
+			}
+
+			// 🛡️ Live Enterprise Audit Mutation Interceptor
+			if (response.ok) {
+				try {
+					const method = (args[1]?.method || (args[0] instanceof Request ? args[0].method : 'GET')).toUpperCase();
+					if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+						const urlStr = String(url);
+						if (!urlStr.includes('/api/audit') && !urlStr.match(/\.(css|js|html|png|jpg|jpeg|svg|ico|pdf)($|\?)/i)) {
+							let module = 'FLEET';
+							let entityType = 'RECORD';
+							let entityId = 'N/A';
+							const m = urlStr.match(/\/collections\/([^\/]+)(?:\/records(?:\/([^\/?]+))?)?/);
+							if (m) {
+								const coll = m[1];
+								entityId = m[2] || 'new';
+								if (['trip_logs', 'trips', 'lorry_receipts', 'pods', 'contracts'].includes(coll)) {
+									module = 'LOGISTICS';
+									entityType = 'TRIP';
+								} else if (['expenses', 'cashbook', 'payments', 'payment_requests', 'salaries', 'advances'].includes(coll)) {
+									module = 'FINANCE';
+									entityType = 'EXPENSE';
+								} else if (['trucks', 'vehicles', 'maintenance_problems', 'tyres', 'job_cards'].includes(coll)) {
+									module = 'FLEET';
+									entityType = 'TRUCK';
+								} else if (['truck_documents', 'documents', 'vault_files'].includes(coll)) {
+									module = 'DOCUMENTS';
+									entityType = 'DOCUMENT';
+								} else if (['users', '_superusers', 'drivers'].includes(coll)) {
+									module = 'AUTH';
+									entityType = 'USER';
+								} else {
+									entityType = coll.toUpperCase();
+								}
+							} else if (urlStr.includes('/api/productivity/tasks')) {
+								module = 'PRODUCTIVITY';
+								entityType = 'TASK';
+							} else if (urlStr.includes('/api/productivity/reminders')) {
+								module = 'PRODUCTIVITY';
+								entityType = 'REMINDER';
+							} else if (urlStr.includes('/api/productivity/workflows')) {
+								module = 'PRODUCTIVITY';
+								entityType = 'WORKFLOW';
+							} else if (urlStr.includes('/api/quotation/rates')) {
+								module = 'LOGISTICS';
+								entityType = 'RATE_MATRIX';
+							}
+
+							let action = 'UPDATE';
+							if (method === 'POST') action = 'CREATE';
+							else if (method === 'DELETE') action = 'DELETE';
+
+							let actor = {
+								id: 'usr_vinod_admin',
+								name: 'Vinod Kumar Rathod',
+								email: 'munnarathod222@gmail.com',
+								role: 'superuser',
+								tenant_id: 'JBC_MAIN'
+							};
+
+							try {
+								const rawAuth = localStorage.getItem('pocketbase_auth');
+								if (rawAuth) {
+									const parsedAuth = JSON.parse(rawAuth);
+									if (parsedAuth.model) {
+										actor.id = parsedAuth.model.id || actor.id;
+										actor.name = parsedAuth.model.name || parsedAuth.model.full_name || actor.name;
+										actor.email = parsedAuth.model.email || actor.email;
+										actor.role = parsedAuth.model.role || actor.role;
+									}
+								} else {
+									const rawUser = localStorage.getItem('jbc_user') || localStorage.getItem('jc_current_user');
+									if (rawUser) {
+										const u = JSON.parse(rawUser);
+										actor.id = u.id || actor.id;
+										actor.name = u.name || u.full_name || actor.name;
+										actor.email = u.email || actor.email;
+										actor.role = u.role || actor.role;
+									}
+								}
+							} catch (e) {}
+
+							let newValues = null;
+							try {
+								if (args[1]?.body && typeof args[1].body === 'string') {
+									newValues = JSON.parse(args[1].body);
+								}
+							} catch (e) {}
+
+							originalFetch.call(window, '/api/audit/event', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-Actor-Id': actor.id,
+									'X-Actor-Role': actor.role
+								},
+								body: JSON.stringify({
+									module,
+									entity_type: entityType,
+									entity_id: entityId,
+									action,
+									outcome: 'SUCCESS',
+									severity: action === 'DELETE' ? 'HIGH' : 'INFO',
+									details: `${action} operation on ${entityType} (${entityId})`,
+									actor,
+									new_values: newValues
+								})
+							}).then(r => r.json()).then(data => {
+								if (data && data.event) {
+									try {
+										const cur = JSON.parse(localStorage.getItem('jc_enterprise_audit_events') || '[]');
+										cur.unshift(data.event);
+										if (cur.length > 500) cur.length = 500;
+										localStorage.setItem('jc_enterprise_audit_events', JSON.stringify(cur));
+									} catch (e) {}
+									window.dispatchEvent(new CustomEvent('audit_event_logged', { detail: data.event }));
+								}
+							}).catch(() => {});
+						}
+					}
+				} catch (err) {}
 			}
 
 			return response;

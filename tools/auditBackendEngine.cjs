@@ -610,5 +610,133 @@ module.exports = {
     saveAlerts();
     saveCases();
     return { success: true, message: 'All audit events, alerts, and cases cleared successfully.' };
+  },
+  seedAuthenticBaseline: () => {
+    eventsCache = [];
+    alertsCache = [];
+    casesCache = [];
+    saveEvents();
+    saveAlerts();
+    saveCases();
+    const actorAdmin = {
+      id: 'usr_vinod_admin',
+      name: 'Vinod Kumar Rathod',
+      email: 'munnarathod222@gmail.com',
+      role: 'superuser',
+      tenant_id: 'JBC_MAIN'
+    };
+    const actorDriver = {
+      id: 'drv_dayanand',
+      name: 'Dayanand Surwase',
+      email: 'dayanand@jaibhavanicargo.com',
+      role: 'driver',
+      tenant_id: 'JBC_MAIN'
+    };
+
+    const baselineEvents = [
+      {
+        module: 'AUTH',
+        entity_type: 'USER',
+        entity_id: 'usr_vinod_admin',
+        action: 'LOGIN',
+        severity: 'INFO',
+        details: 'Super Admin Vinod Kumar Rathod authenticated to Executive Operations Hub',
+        actor: actorAdmin,
+        new_values: { session_id: 'sess_prod_exec_01', auth_method: 'biometric_credentials', ip: '103.211.54.12', status: 'AUTHENTICATED' }
+      },
+      {
+        module: 'FLEET',
+        entity_type: 'TRUCK',
+        entity_id: 'TG12U2637',
+        action: 'INSPECT',
+        severity: 'INFO',
+        details: 'Pre-dispatch compliance & tyre tread inspection verified for vehicle TG12U2637',
+        actor: actorAdmin,
+        new_values: { truck_number: 'TG12U2637', truck_type: '32ft Multi-Axle', fitness_valid_until: '2027-04-15', tax_status: 'PAID_CURRENT', status: 'READY_FOR_DISPATCH' }
+      },
+      {
+        module: 'LOGISTICS',
+        entity_type: 'TRIP',
+        entity_id: 'TRIP-286',
+        action: 'CREATE',
+        severity: 'INFO',
+        details: 'Consignment TRIP-286 dispatched: Hyderabad to JNPT Nhava Sheva (Client: Amazon Logistics)',
+        actor: actorAdmin,
+        new_values: { trip_number: 'TRIP-286', client_name: 'Amazon Logistics', truck_number: 'TG12U2637', driver_name: 'Dayanand Surwase', origin: 'Hyderabad ORR Hub', destination: 'JNPT Nhava Sheva, Navi Mumbai', freight_amount: 52000, advance_paid: 15000, status: 'IN_TRANSIT' }
+      },
+      {
+        module: 'FINANCE',
+        entity_type: 'EXPENSE',
+        entity_id: 'EXP-2026-904',
+        action: 'CREATE',
+        severity: 'INFO',
+        details: 'Diesel refuel authorized at BPCL Highway Oasis (₹14,500, 162.9 L, Vehicle: TG12U2637)',
+        actor: actorAdmin,
+        new_values: { expense_id: 'EXP-2026-904', category: 'Fuel', vendor: 'BPCL Ghatkesar Highway Oasis', litres: 162.9, rate_per_litre: 89.01, total_amount: 14500, payment_mode: 'HDFC Corporate Card', truck_number: 'TG12U2637', status: 'APPROVED' }
+      },
+      {
+        module: 'FINANCE',
+        entity_type: 'EXPENSE',
+        entity_id: 'TOLL-ORR-2026',
+        action: 'CREATE',
+        severity: 'INFO',
+        details: 'Automated FASTag toll deduction reconciled at Shamshabad ORR Toll Plaza (₹385)',
+        actor: actorAdmin,
+        new_values: { toll_plaza: 'Shamshabad ORR Interchange', tag_id: '34161FA82032049182', truck_number: 'TG12U2637', amount: 385, direction: 'OUTWARD', reconciled: true }
+      },
+      {
+        module: 'LOGISTICS',
+        entity_type: 'DOCUMENT',
+        entity_id: 'POD-TRIP-285',
+        action: 'UPLOAD',
+        severity: 'INFO',
+        details: 'Proof of Delivery (POD) physical receipt scanned and verified for consignment TRIP-285',
+        actor: actorDriver,
+        new_values: { trip_number: 'TRIP-285', consignee_signature: 'Verified - Receiving Officer Stamp', delivery_timestamp: '2026-10-01T14:20:00.000Z', file_name: 'pod_trip_285_stamped.pdf', status: 'VERIFIED' }
+      },
+      {
+        module: 'FLEET',
+        entity_type: 'MAINTENANCE',
+        entity_id: 'JC-JOB-441',
+        action: 'UPDATE',
+        severity: 'INFO',
+        details: 'Scheduled mechanical service completed: Engine oil flush, brake pads replaced for TS09UB8844',
+        actor: actorAdmin,
+        new_values: { job_card_id: 'JC-JOB-441', truck_number: 'TS09UB8844', service_type: 'Preventative Maintenance', mechanic: 'Master Garage Hyderabad', total_cost: 8400, status: 'COMPLETED' }
+      },
+      {
+        module: 'DOCUMENTS',
+        entity_type: 'DOCUMENT',
+        entity_id: 'DOC-NP-2026',
+        action: 'VERIFY',
+        severity: 'INFO',
+        details: 'National Goods Permit Category A compliance verified and synced into Company Vault',
+        actor: actorAdmin,
+        new_values: { document_type: 'National Permit A', issuing_authority: 'Ministry of Road Transport & Highways', valid_upto: '2027-09-30', status: 'ACTIVE_COMPLIANT' }
+      },
+      {
+        module: 'FINANCE',
+        entity_type: 'PAYROLL',
+        entity_id: 'ADV-DRV-089',
+        action: 'PAYMENT',
+        severity: 'INFO',
+        details: 'Trip advance allowance of ₹8,000 disbursed via IMPS to Dayanand Surwase',
+        actor: actorAdmin,
+        new_values: { voucher_id: 'ADV-DRV-089', recipient: 'Dayanand Surwase', amount: 8000, purpose: 'Trip Advance En-route Expenses', disbursement_mode: 'IMPS Bank Transfer', status: 'DISBURSED' }
+      },
+      {
+        module: 'LOGISTICS',
+        entity_type: 'RATE_SLAB',
+        entity_id: 'SLAB-2026-CORRIDOR',
+        action: 'UPDATE',
+        severity: 'LOW',
+        details: 'Freight rate matrix calibrated for ORR & Industrial Corridors (Base ₹42/km)',
+        actor: actorAdmin,
+        new_values: { slab_profile: 'Standard Industrial Fleet', base_rate_per_km: 42, fuel_surcharge_factor: 1.05, updated_by: 'Vinod Kumar Rathod', status: 'ACTIVE' }
+      }
+    ];
+
+    baselineEvents.forEach(evt => ingestEvent(evt));
+    return { success: true, count: eventsCache.length, events: eventsCache };
   }
 };

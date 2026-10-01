@@ -165,6 +165,13 @@ const server = http.createServer((req, res) => {
       return res.end(JSON.stringify(result));
     }
 
+    // Seed Authentic Fleet Baseline: POST /api/audit/seed-baseline
+    if (reqPath === '/api/audit/seed-baseline' && req.method === 'POST') {
+      const result = auditService.seedAuthenticBaseline();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(result));
+    }
+
     res.writeHead(404, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: false, error: 'Audit endpoint not found' }));
   }

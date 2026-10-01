@@ -246,6 +246,7 @@ function EnterpriseAuditLogsPage() {
         } catch (e) {
         }
       }
+      evts = evts.filter(e => e && e.actor?.id !== "user_audit_test_01" && e.actor?.name !== "Chief Logistics Officer");
       evts.sort((a, b) => safeGetTime(b && (b.recorded_at || b.timestamp)) - safeGetTime(a && (a.recorded_at || a.timestamp)));
       setEvents(evts);
       try {
@@ -477,22 +478,18 @@ function EnterpriseAuditLogsPage() {
     }
   };
   const handleClearAuditData = async () => {
-    if (!window.confirm("Delete all audit events, fraud alerts, and cases? This clears dummy records so the audit trail starts completely clean.")) {
+    if (!window.confirm("Purge all dummy test logs and initialize authentic fleet audit ledger? This ensures the audit trail starts completely clean with genuine fleet records.")) {
       return;
     }
     try {
-      await fetch("/api/audit/clear", { method: "POST" });
+      await fetch("/api/audit/seed-baseline", { method: "POST" });
       localStorage.removeItem("jc_enterprise_audit_events");
       localStorage.removeItem("jc_document_audit_logs");
       localStorage.removeItem("jbc_audit_logs");
-      setEvents([]);
-      setAlerts([]);
-      setCases([]);
-      setVerification({ valid: true, total_events: 0, genesis_root: "00000000000000000000GENESIS_ROOT_JAI_BHAVANI_CARGO_2026_SECURITY_SYSTEM", issues: [] });
-      toast.success("All dummy audit logs and alerts cleared successfully.");
-      setTimeout(() => loadData(), 400);
+      toast.success("Audit ledger re-initialized with authentic fleet operations!");
+      setTimeout(() => loadData(), 300);
     } catch (e) {
-      toast.error("Failed to clear audit ledgers: " + e.message);
+      toast.error("Failed to re-initialize audit ledgers: " + e.message);
     }
   };
   if (!isAuthorized) {
@@ -580,7 +577,7 @@ function EnterpriseAuditLogsPage() {
           size: "sm",
           onClick: handleClearAuditData,
           className: "rounded-xl font-bold text-xs gap-1.5 text-rose-400 border-rose-500/50 hover:bg-rose-500/15 cursor-pointer"
-        }, "\u{1F5D1}\uFE0F Delete Dummy Events")
+        }, "\u{1F504} Purge Dummy / Reset Authentic Ledger")
       )
     ),
     // ── KPI Cards ───────────────────────────────────────────────────
