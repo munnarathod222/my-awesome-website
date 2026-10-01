@@ -21,6 +21,7 @@ import { startMonthEndCron } from './cron/monthEndProcessor.js';
 import * as auditService from './services/auditService.js';
 import * as productivityService from './services/productivityService.js';
 import * as orgService from './services/orgService.js';
+import * as employeeBankService from './services/employeeBankService.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -311,6 +312,49 @@ orgRouter.post('/hierarchy/update', (req, res) => {
 });
 
 app.use('/api/org', orgRouter);
+
+// ── Employee Bank Details Router ─────────────────────────────────────
+const bankRouter = express.Router();
+
+bankRouter.get('/', (req, res) => {
+  try {
+    const details = employeeBankService.getAllBankDetails();
+    return res.json({ success: true, bankDetails: details });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+bankRouter.get('/:id', (req, res) => {
+  try {
+    const record = employeeBankService.getBankDetails(req.params.id);
+    return res.json({ success: true, bankDetails: record });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+bankRouter.post('/', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_admin',
+      role: req.headers['x-actor-role'] || 'superuser',
+      name: req.headers['x-actor-name'] || 'Vinod Kumar Rathod',
+      email: req.headers['x-actor-email'] || 'munnarathod222@gmail.com'
+    };
+    const empId = req.body.employee_id || req.body.employeeId || req.body.id;
+    if (!empId) {
+      return res.status(400).json({ success: false, error: 'employee_id is required' });
+    }
+    const saved = employeeBankService.saveBankDetails(empId, req.body, actor);
+    return res.json({ success: true, record: saved });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/employee/bank-details', bankRouter);
+app.use('/hcgi/api/employee/bank-details', bankRouter);
 
 // ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
 const productivityRouter = express.Router();
