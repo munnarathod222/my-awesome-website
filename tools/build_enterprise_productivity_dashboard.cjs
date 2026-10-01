@@ -8,6 +8,8 @@ const sourceCode = `
 import { r as React } from "./vendor-react-Bs5V2qFE.js";
 import { g as downloadPdf, a as downloadExcel } from "./downloadUtils-2aSgxB0V.js";
 
+const CreditControlView = React.lazy(() => import("./CreditControlPage-ChjcFypa.js"));
+
 // Bulletproof self-contained classnames helper
 function cn(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -176,7 +178,16 @@ function useSafeAuth() {
 function EnterpriseProductivityDashboard() {
   const { currentUser } = useSafeAuth();
 
-  const [activeTab, setActiveTab] = React.useState('tasks'); // 'tasks', 'reminders', 'workflows', 'calendar', 'analytics'
+  const [activeTab, setActiveTab] = React.useState(() => {
+    try {
+      const p = window.location.pathname;
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('tab') === 'credit_control' || p.includes('credit-control')) return 'credit_control';
+      if (p.includes('reminders')) return 'reminders';
+      if (p.includes('todo') || p.includes('tasks')) return 'tasks';
+    } catch (e) {}
+    return 'reminders';
+  });
   const [viewMode, setViewMode] = React.useState('list'); // 'list', 'kanban'
   const [loading, setLoading] = React.useState(true);
 
@@ -608,8 +619,9 @@ function EnterpriseProductivityDashboard() {
     React.createElement('div', { className: 'flex flex-wrap items-center justify-between border-b border-border/70 pb-3 gap-2' },
       React.createElement('div', { className: 'flex items-center gap-1.5' },
         [
+          { id: 'reminders', label: '🔔 Payment Reminders' },
+          { id: 'credit_control', label: '🛡️ Credit Control & Limits' },
           { id: 'tasks', label: '📋 Task Management' },
-          { id: 'reminders', label: '🔔 Reminders & Scheduler' },
           { id: 'workflows', label: '⚖️ Approvals & Workflows' },
           { id: 'notifications', label: '📫 Notifications' }
         ].map(tab => 
@@ -829,6 +841,17 @@ function EnterpriseProductivityDashboard() {
               )
         )
       )
+    ),
+
+    // ── TAB: Credit Control & Risk Limits ────────────────────────────
+    activeTab === 'credit_control' && React.createElement('div', { className: 'space-y-4' },
+      React.createElement(React.Suspense, {
+        fallback: React.createElement('div', { className: 'py-16 text-center text-muted-foreground bg-card rounded-2xl border border-border/50' },
+          React.createElement('p', { className: 'text-2xl animate-pulse' }, '🛡️'),
+          React.createElement('p', { className: 'font-bold mt-2 text-foreground' }, 'Loading Credit Control & Risk Limits...'),
+          React.createElement('p', { className: 'text-xs text-muted-foreground' }, 'Fetching customer limits, exposure balances, and payment terms.')
+        )
+      }, React.createElement(CreditControlView, null))
     ),
 
     // ── TAB 3: Multi-Stage Approval Workflows ────────────────────────
@@ -1354,6 +1377,16 @@ try {
     bundle: false,
     format: 'esm',
     target: 'es2020',
+    jsx: 'transform',
+    jsxFactory: 'React.createElement',
+    jsxFragment: 'React.Fragment',
+    tsconfigRaw: {
+      compilerOptions: {
+        jsx: 'react',
+        jsxFactory: 'React.createElement',
+        jsxFragmentFactory: 'React.Fragment'
+      }
+    },
     write: false
   });
 
