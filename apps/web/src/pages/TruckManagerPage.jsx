@@ -27,6 +27,7 @@ import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 import FamilyOwnerSettlementModal from '@/components/FamilyOwnerSettlementModal.jsx';
+import TruckContributionRanking from '@/components/TruckContributionRanking.jsx';
 
 export const parseImageList = (raw) => {
   if (!raw) return [];
@@ -253,6 +254,14 @@ export default function TruckManagerPage() {
             >
               🔲 Grid Tiles
             </Button>
+            <Button
+              variant={viewMode === 'contribution' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-semibold rounded-lg ${viewMode === 'contribution' ? 'shadow-xs text-amber-500 font-bold bg-amber-500/10' : 'text-muted-foreground'}`}
+              onClick={() => setViewMode('contribution')}
+            >
+              💰 Contribution Ranking
+            </Button>
           </div>
 
           <Button 
@@ -289,6 +298,8 @@ export default function TruckManagerPage() {
           <Truck className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>No trucks found. Add your first truck to get started.</p>
         </div>
+      ) : viewMode === 'contribution' ? (
+        <TruckContributionRanking trucks={trucks} drivers={drivers} onBackToFleet={() => setViewMode('compact')} />
       ) : viewMode === 'compact' ? (
         /* ULTRA-COMPACT LIST ROW TILES (Height ~72px) */
         <div className="space-y-2.5">
