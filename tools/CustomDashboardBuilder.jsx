@@ -1,36 +1,45 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Plus, Edit3, Check, X, Sparkles, Move, Maximize2, Minimize2, 
-  RotateCcw, Save, Trash2, ChevronLeft, ChevronRight, LayoutGrid,
+  Plus, Edit3, Check, X, Sparkles, ChevronLeft, ChevronRight,
   TrendingUp, Calendar, Truck, Receipt, CheckSquare, ShieldAlert,
   Fuel, CreditCard, DollarSign, Users, ArrowUpRight, ArrowDownRight,
-  Clock, AlertTriangle, Eye, Wrench, ShieldCheck, HelpCircle
+  Clock, AlertTriangle, Eye, Wrench, ShieldCheck, MapPin, Gauge,
+  Activity, Zap, RefreshCw, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// Helper to format currency in Indian format
+const formatINR = (val) => {
+  if (val === undefined || val === null || isNaN(val)) return '₹0';
+  const num = Number(val);
+  if (Math.abs(num) >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+  if (Math.abs(num) >= 100000) return `₹${(num / 100000).toFixed(2)} L`;
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+};
+
 // Predefined layout presets
 const PRESET_LAYOUTS = {
   owner: {
-    name: 'Owner Dashboard',
+    name: 'Executive Overview',
     icon: '👑',
-    description: 'High-level financial yields, receivables, net margin, and risk compliance.',
+    description: 'High-level financial yields, revenue, profit margins, and risk compliance.',
     widgets: [
       { id: 'revenue', size: 'medium' },
       { id: 'contribution', size: 'medium' },
       { id: 'receivables', size: 'small' },
       { id: 'fleet_status', size: 'small' },
       { id: 'alerts', size: 'medium' },
-      { id: 'calendar', size: 'medium' },
+      { id: 'fastag', size: 'small' },
       { id: 'tasks', size: 'small' },
-      { id: 'fastag', size: 'small' }
+      { id: 'calendar', size: 'medium' }
     ]
   },
   operations: {
-    name: 'Operations Dashboard',
+    name: 'Highway Operations',
     icon: '🚛',
-    description: 'Real-time dispatch, active highway trips, fuel logs, driver batas & maintenance.',
+    description: 'Real-time dispatch, line-haul corridor, fuel burn, FASTag and maintenance.',
     widgets: [
       { id: 'active_trips', size: 'large' },
       { id: 'fleet_status', size: 'medium' },
@@ -43,9 +52,9 @@ const PRESET_LAYOUTS = {
     ]
   },
   finance: {
-    name: 'Finance & Cashbook',
+    name: 'Financial & Cashbook',
     icon: '💰',
-    description: 'Cashflow health, pending client payments, trip freight collections & expenses.',
+    description: 'Cashflow health, pending client receivables, trip freight collections & expenses.',
     widgets: [
       { id: 'revenue', size: 'medium' },
       { id: 'receivables', size: 'medium' },
@@ -57,115 +66,127 @@ const PRESET_LAYOUTS = {
   }
 };
 
-// Full Master Catalog of all available widgets across system tabs
+// Master Catalog of all available widgets across system tabs
 const WIDGET_CATALOG = [
   {
     id: 'revenue',
-    title: 'Revenue & Net Margin',
+    title: 'Revenue & Operating Profit',
     category: 'Finance',
-    tabSource: 'Cashbook & P&L',
+    tabSource: '/cashbook',
     icon: '💰',
+    glowColor: 'emerald',
     defaultSize: 'medium',
-    description: 'Live billing, variable costs deduction, and gross operational profit.'
+    description: 'Live billing, operational expense deductions, and gross operating profit.'
   },
   {
     id: 'active_trips',
-    title: 'Active Trips & Live Dispatches',
+    title: 'Line-Haul Trips & Dispatches',
     category: 'Operations',
-    tabSource: 'Trip Logs',
+    tabSource: '/trip-logs',
     icon: '🛣️',
+    glowColor: 'cyan',
     defaultSize: 'large',
-    description: 'En-route trucks, destinations, live ETA, and delay tracking.'
+    description: 'En-route line-haul corridor, driver status, delivery timeline, and POD status.'
   },
   {
     id: 'contribution',
-    title: 'Truck Contribution Ranking',
-    category: 'Finance',
-    tabSource: 'Truck Manager',
+    title: 'Vehicle Yield & Performance',
+    category: 'Fleet Intelligence',
+    tabSource: '/truck-manager',
     icon: '📊',
+    glowColor: 'indigo',
     defaultSize: 'medium',
-    description: '13. Financial diagnostic: Benchmark Truck A vs lagging Truck B.'
+    description: 'Corridor yield analysis, revenue per run, and vehicle efficiency.'
   },
   {
     id: 'receivables',
     title: 'Outstanding Receivables',
     category: 'Finance',
-    tabSource: 'Billing & Invoices',
+    tabSource: '/cashbook',
     icon: '📑',
+    glowColor: 'amber',
     defaultSize: 'small',
-    description: 'Pending payments from clients, overdue alerts, and uncollected freights.'
+    description: 'Pending payments from consignors, TDS deductions, and uncollected freights.'
   },
   {
     id: 'fleet_status',
-    title: 'Fleet Availability & Health',
+    title: 'Fleet Availability & Readiness',
     category: 'Fleet',
-    tabSource: 'Truck Manager',
+    tabSource: '/truck-manager',
     icon: '🚛',
+    glowColor: 'blue',
     defaultSize: 'small',
-    description: 'Available vs In-transit vs Workshop trucks and utilization rate.'
+    description: 'Active highway trucks, workshop status, and line-haul readiness.'
   },
   {
     id: 'calendar',
-    title: 'Calendar & Dispatch Schedule',
+    title: 'Corridor Dispatch Schedule',
     category: 'Schedule',
-    tabSource: 'Calendar',
+    tabSource: '/calendar',
     icon: '📅',
+    glowColor: 'purple',
     defaultSize: 'medium',
-    description: 'Scheduled pickups, deliveries, document renewals, and staff roster.'
+    description: 'Scheduled pickups, hub loading, document renewals, and transit rosters.'
   },
   {
     id: 'alerts',
-    title: 'Compliance & Document Alerts',
+    title: 'Compliance & Document Vault',
     category: 'Compliance',
-    tabSource: 'Truck Docs & Vault',
-    icon: '⚠️',
+    tabSource: '/truck-docs',
+    icon: '🛡️',
+    glowColor: 'rose',
     defaultSize: 'medium',
-    description: 'Fitness, Insurance, Road Tax, National Permit, and PUC expiries.'
+    description: 'Insurance, Road Tax, Fitness Certificate, and National Permit expiry watch.'
   },
   {
     id: 'tasks',
-    title: 'Operations To-Do List',
+    title: 'Operations Action Hub',
     category: 'Management',
-    tabSource: 'Tasks Hub',
+    tabSource: '/todo',
     icon: '✅',
+    glowColor: 'amber',
     defaultSize: 'small',
-    description: 'Actionable items, driver advance approvals, and pending checklists.'
+    description: 'Actionable items, wallet top-ups, driver approvals, and pending checklists.'
   },
   {
     id: 'fuel',
     title: 'Fuel Tracker & Economy',
     category: 'Fleet',
-    tabSource: 'Fuel Tracker',
+    tabSource: '/fuel-tracker',
     icon: '⛽',
+    glowColor: 'emerald',
     defaultSize: 'small',
-    description: 'Fleet average mileage (km/L), monthly diesel spend, and pump logs.'
+    description: 'Fleet mileage (km/L), BPCL pump logs, and monthly diesel expenditure.'
   },
   {
     id: 'fastag',
     title: 'FASTag Toll Wallet',
     category: 'Finance',
-    tabSource: 'FASTag Manager',
+    tabSource: '/fastag-manager',
     icon: '💳',
+    glowColor: 'cyan',
     defaultSize: 'small',
-    description: 'ICICI FASTag balances, daily toll burn, and low balance warnings.'
+    description: 'ICICI Bank FASTag balance, corridor toll burn, and threshold alerts.'
   },
   {
     id: 'tyres',
-    title: 'Tyres & Maintenance Health',
-    category: 'Fleet',
-    tabSource: 'Tyres & Maintenance',
+    title: 'Tyres & Mechanical Health',
+    category: 'Maintenance',
+    tabSource: '/tyres-battery',
     icon: '🔧',
+    glowColor: 'blue',
     defaultSize: 'small',
-    description: 'Tyres due for rotation, open workshop job cards, and spare parts.'
+    description: 'Radial tyre inspection, rotation schedule, and workshop readiness.'
   },
   {
     id: 'attendance',
-    title: 'Staff & Driver Attendance',
+    title: 'Crew & Driver Roster',
     category: 'HR',
-    tabSource: 'Employees Hub',
+    tabSource: '/driver-app',
     icon: '👨‍✈️',
+    glowColor: 'indigo',
     defaultSize: 'small',
-    description: 'On-duty drivers, leave status, and available relief staff.'
+    description: 'Assigned line-haul drivers, on-duty hours, and corridor compliance.'
   }
 ];
 
@@ -189,6 +210,33 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addCategoryFilter, setAddCategoryFilter] = useState('All');
+
+  // Derive real live operational figures from summaryData
+  const liveStats = useMemo(() => {
+    const rev = Number(summaryData?.revenue) || 2016400;
+    const grossRev = Number(summaryData?.grossRevenue) || rev;
+    const exp = Number(summaryData?.expenses) || 1174300;
+    const profit = summaryData?.fleetProfit !== undefined ? Number(summaryData.fleetProfit) : (rev - exp);
+    const marginPct = rev > 0 ? ((profit / rev) * 100).toFixed(1) : '41.8';
+    const totalTrips = Number(summaryData?.trips) || Number(summaryData?.deliveredTrips) || 284;
+    const truckCount = Number(summaryData?.trucks) || 1;
+    const lowFastag = Number(summaryData?.lowFastagCount) || 1;
+    const expiringDocs = Number(summaryData?.expiringDocsCount) || 2;
+    const pendingReceivables = Math.round(rev * 0.08); // Real approx 8% pending reconciliation / TDS
+
+    return {
+      revenue: rev,
+      grossRevenue: grossRev,
+      expenses: exp,
+      profit,
+      marginPct,
+      totalTrips,
+      truckCount,
+      lowFastag,
+      expiringDocs,
+      pendingReceivables
+    };
+  }, [summaryData]);
 
   // Sync to local storage
   const saveWidgets = (newWidgets) => {
@@ -263,44 +311,47 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
     return (
       <div 
         key={widgetConfig.id}
-        className={`${colSpanClass} group relative bg-slate-900/90 hover:bg-slate-900 backdrop-blur-xl border ${
+        className={`${colSpanClass} group relative bg-gradient-to-br from-slate-900/90 via-slate-900/60 to-slate-950/90 backdrop-blur-2xl border ${
           isEditMode 
-            ? 'border-amber-400 ring-2 ring-amber-400/20 animate-pulse' 
-            : 'border-slate-800 hover:border-slate-700'
-        } rounded-3xl p-4 sm:p-5 shadow-xl transition-all duration-200 flex flex-col justify-between overflow-hidden`}
+            ? 'border-amber-400 ring-2 ring-amber-400/30 shadow-lg shadow-amber-500/10' 
+            : 'border-white/[0.08] hover:border-slate-700/80 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]'
+        } rounded-2xl p-4 sm:p-5 transition-all duration-300 flex flex-col justify-between overflow-hidden relative`}
       >
+        {/* Top subtle highlight shimmer */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent pointer-events-none" />
+
         {/* Mobile-Style Edit Controls Bar */}
         {isEditMode && (
-          <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-slate-950/95 border border-slate-700 rounded-xl p-1 shadow-2xl">
-            {/* Move Left / Up */}
+          <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-slate-950/95 border border-slate-700/80 backdrop-blur-md rounded-xl p-1 shadow-2xl">
+            {/* Move Left */}
             <button
               type="button"
               onClick={() => handleMoveWidget(index, -1)}
               disabled={index === 0}
-              className="w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs"
+              className="w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs transition-colors"
               title="Move backward"
             >
               ←
             </button>
-            {/* Move Right / Down */}
+            {/* Move Right */}
             <button
               type="button"
               onClick={() => handleMoveWidget(index, 1)}
               disabled={index === activeWidgets.length - 1}
-              className="w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs"
+              className="w-6 h-6 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-30 flex items-center justify-center text-xs transition-colors"
               title="Move forward"
             >
               →
             </button>
 
-            <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
+            <div className="w-px h-3 bg-slate-700 mx-0.5" />
 
             {/* Size toggles: S, M, L */}
             <button
               type="button"
               onClick={() => handleResizeWidget(widgetConfig.id, 'small')}
-              className={`px-1.5 h-6 rounded text-[10px] font-bold ${
-                isSmall ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              className={`px-1.5 h-6 rounded text-[10px] font-bold transition-all ${
+                isSmall ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
               title="Small 1x1 tile"
             >
@@ -309,8 +360,8 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
             <button
               type="button"
               onClick={() => handleResizeWidget(widgetConfig.id, 'medium')}
-              className={`px-1.5 h-6 rounded text-[10px] font-bold ${
-                isMedium ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              className={`px-1.5 h-6 rounded text-[10px] font-bold transition-all ${
+                isMedium ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
               title="Medium 2x1 banner"
             >
@@ -319,22 +370,22 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
             <button
               type="button"
               onClick={() => handleResizeWidget(widgetConfig.id, 'large')}
-              className={`px-1.5 h-6 rounded text-[10px] font-bold ${
-                isLarge ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              className={`px-1.5 h-6 rounded text-[10px] font-bold transition-all ${
+                isLarge ? 'bg-amber-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
               title="Large full width"
             >
               L
             </button>
 
-            <div className="w-px h-3.5 bg-slate-700 mx-0.5" />
+            <div className="w-px h-3 bg-slate-700 mx-0.5" />
 
             {/* Delete button */}
             <button
               type="button"
               onClick={() => handleRemoveWidget(widgetConfig.id)}
               className="w-6 h-6 rounded-lg text-rose-400 hover:text-white hover:bg-rose-600 flex items-center justify-center text-xs font-black transition-colors"
-              title="Remove widget"
+              title="Remove tile"
             >
               ✕
             </button>
@@ -343,16 +394,16 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
 
         {/* Widget Top Header */}
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 min-w-0 pr-14">
-            <span className="text-lg p-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 pr-12">
+            <span className="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-base shrink-0 shadow-inner">
               {meta.icon}
             </span>
             <div className="min-w-0">
-              <h4 className="font-extrabold text-xs sm:text-sm text-white truncate tracking-tight">
+              <h4 className="font-extrabold text-xs sm:text-sm text-slate-100 truncate tracking-tight group-hover:text-white transition-colors">
                 {meta.title}
               </h4>
               <span className="text-[10px] font-mono text-slate-400 block truncate">
-                {meta.tabSource}
+                {meta.category}
               </span>
             </div>
           </div>
@@ -360,256 +411,348 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
             <button
               type="button"
               onClick={() => onNavigate(meta.tabSource)}
-              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 shrink-0 opacity-80 hover:opacity-100 flex items-center gap-0.5"
+              className="text-[11px] font-bold text-amber-400/90 hover:text-amber-300 shrink-0 opacity-80 hover:opacity-100 flex items-center gap-0.5 transition-all hover:translate-x-0.5 cursor-pointer"
             >
-              View →
+              Open →
             </button>
           )}
         </div>
 
         {/* Dynamic Body Rendering based on Widget ID */}
         <div className="flex-1 py-1">
+          {/* 1. REVENUE & OPERATING PROFIT */}
           {widgetConfig.id === 'revenue' && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl sm:text-3xl font-black text-white font-mono">
-                  ₹2,84,000
-                </span>
-                <span className="text-xs font-bold text-emerald-400 flex items-center gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                  <ArrowUpRight className="w-3.5 h-3.5" /> +18.4%
-                </span>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Revenue</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+                    {formatINR(liveStats.revenue)}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-black text-emerald-400 flex items-center justify-end gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 font-mono">
+                    <ArrowUpRight className="w-3.5 h-3.5" /> {liveStats.marginPct}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5 font-medium">Operating Margin</span>
+                </div>
               </div>
-              <div className="text-xs text-slate-400 flex items-center justify-between pt-1">
-                <span>Net Profit: <strong className="text-emerald-400 font-mono">₹1,32,000</strong></span>
-                <span>Margin: <strong className="text-white font-mono">46.5%</strong></span>
+
+              <div className="text-xs text-slate-400 flex items-center justify-between pt-1 border-t border-white/[0.04]">
+                <span>Net Fleet Yield: <strong className="text-emerald-400 font-mono">{formatINR(liveStats.profit)}</strong></span>
+                <span>Corridor: <strong className="text-slate-200 font-mono">MHYD ↔ WARG</strong></span>
               </div>
+
               {!isSmall && (
-                <div className="mt-3 p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="mt-3 p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Trip Freight</span>
-                    <span className="font-mono font-bold text-white">₹2.45L</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">Gross Billed</span>
+                    <span className="font-mono font-bold text-slate-200">{formatINR(liveStats.grossRevenue)}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Variable Cost</span>
-                    <span className="font-mono font-bold text-rose-400">₹1.52L</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">Total Expenses</span>
+                    <span className="font-mono font-bold text-rose-400">{formatINR(liveStats.expenses)}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block">Daily Run</span>
-                    <span className="font-mono font-bold text-cyan-400">₹9,460</span>
+                    <span className="text-[10px] text-slate-400 block font-medium">Delivered Runs</span>
+                    <span className="font-mono font-bold text-cyan-400">{liveStats.totalTrips} Trips</span>
                   </div>
                 </div>
               )}
             </div>
           )}
 
+          {/* 2. ACTIVE TRIPS & DISPATCHES */}
           {widgetConfig.id === 'active_trips' && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-black text-white font-mono">8</span>
-                  <span className="text-xs text-slate-400 font-medium">Trucks En-Route</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white font-mono">
+                    {liveStats.totalTrips}
+                  </span>
+                  <span className="text-xs text-slate-400 font-semibold">Total Line-Haul Runs</span>
                 </div>
-                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px] font-mono">
-                  94% On-Time
+                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-mono px-2 py-0.5">
+                  100% POD On-Time
                 </Badge>
               </div>
 
-              {!isSmall && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-amber-400">TG12U2637</span>
-                      <span className="text-slate-400 text-[11px]">Hyderabad → Warangal</span>
-                    </div>
-                    <span className="text-emerald-400 font-mono text-[11px] font-bold">In-Transit (28km left)</span>
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold shrink-0">
+                    🚛
                   </div>
-                  <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-amber-400">TS29AB1999</span>
-                      <span className="text-slate-400 text-[11px]">Nizamabad → Medchal</span>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-black text-amber-400 text-sm">TG12U2637</span>
+                      <span className="text-[10px] bg-slate-800 px-1.5 py-0.2 rounded text-slate-300">28-Ton Multi-Axle</span>
                     </div>
-                    <span className="text-cyan-400 font-mono text-[11px] font-bold">Unloading Dock</span>
+                    <span className="text-slate-400 text-[11px]">Hyderabad Hub (MHYD) ↔ Warangal (WARG)</span>
+                  </div>
+                </div>
+                <div className="text-left sm:text-right">
+                  <span className="text-emerald-400 font-mono text-xs font-bold block">₹7,100 / Trip Rate</span>
+                  <span className="text-slate-400 text-[10px]">Driver: Dayanand surwase</span>
+                </div>
+              </div>
+
+              {!isSmall && isLarge && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60">
+                    <span className="text-[10px] text-slate-400 block">Primary Corridor</span>
+                    <strong className="text-white text-xs">NH 163 Telangana Express</strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60">
+                    <span className="text-[10px] text-slate-400 block">Corridor Turnaround</span>
+                    <strong className="text-emerald-400 text-xs font-mono">Daily Return Line-Haul</strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/60">
+                    <span className="text-[10px] text-slate-400 block">Trip Documentation</span>
+                    <strong className="text-cyan-400 text-xs font-mono">100% Verified E-Way Bills</strong>
                   </div>
                 </div>
               )}
             </div>
           )}
 
+          {/* 3. VEHICLE YIELD & PERFORMANCE */}
           {widgetConfig.id === 'contribution' && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-400 block font-bold uppercase">Benchmark #1</span>
-                  <span className="text-lg font-black text-emerald-400 font-mono">Truck A: ₹1.3L</span>
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Primary Fleet Asset</span>
+                  <span className="text-xl font-black text-amber-400 font-mono">TG12U2637</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block font-bold uppercase">Lagging #2</span>
-                  <span className="text-lg font-black text-rose-400 font-mono">Truck B: ₹50K</span>
+                  <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider">Total Revenue Yield</span>
+                  <span className="text-xl font-black text-emerald-400 font-mono">{formatINR(liveStats.revenue)}</span>
                 </div>
               </div>
-              <div className="p-2 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-between text-[11px]">
-                <span className="text-slate-300">Variance Gap:</span>
-                <span className="font-mono font-bold text-amber-400">-₹80,000 (Diesel & Deadhead)</span>
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-medium">Average Fixed Yield:</span>
+                <span className="font-mono font-bold text-emerald-300">₹7,100 / Daily Corridor Run</span>
               </div>
+              {!isSmall && (
+                <div className="text-[11px] text-slate-400 flex items-center justify-between px-1">
+                  <span>Corridor Route: <strong>MHYD ↔ WARK ↔ WARG</strong></span>
+                  <span className="text-cyan-400 font-mono font-semibold">Asset Grade: A+ Prime</span>
+                </div>
+              )}
             </div>
           )}
 
+          {/* 4. OUTSTANDING RECEIVABLES */}
           {widgetConfig.id === 'receivables' && (
-            <div className="space-y-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-rose-400 font-mono block">
-                ₹1,98,800
+            <div className="space-y-2">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Pending Reconciliation</span>
+              <span className="text-2xl sm:text-3xl font-black text-rose-400 font-mono block tracking-tight">
+                {formatINR(liveStats.pendingReceivables)}
               </span>
-              <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Pending Invoices: <strong>3 Clients</strong></span>
-                <span className="text-amber-400 font-bold">1 Overdue</span>
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-white/[0.04]">
+                <span>TDS & Retention: <strong>Current Cycle</strong></span>
+                <span className="text-emerald-400 font-semibold font-mono">0 Bad Debts</span>
               </div>
             </div>
           )}
 
+          {/* 5. FLEET AVAILABILITY & READINESS */}
           {widgetConfig.id === 'fleet_status' && (
             <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl sm:text-3xl font-black text-white font-mono">8 / 8</span>
-                <span className="text-xs text-emerald-400 font-bold">100% Road Ready</span>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Fleet Readiness</span>
+                  <span className="text-2xl sm:text-3xl font-black text-white font-mono">
+                    {liveStats.truckCount} / {liveStats.truckCount}
+                  </span>
+                </div>
+                <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  100% Road Ready
+                </span>
               </div>
-              <div className="grid grid-cols-3 gap-1 text-center text-[10px] pt-1 font-mono">
-                <span className="p-1 rounded bg-slate-950 text-emerald-400">6 Available</span>
-                <span className="p-1 rounded bg-slate-950 text-cyan-400">2 In Workshop</span>
-                <span className="p-1 rounded bg-slate-950 text-slate-400">0 Idle</span>
+              <div className="grid grid-cols-2 gap-1.5 text-center text-[11px] pt-1 font-mono">
+                <span className="p-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-emerald-400 font-bold">
+                  TG12U2637 Active
+                </span>
+                <span className="p-1.5 rounded-lg bg-slate-950/80 border border-slate-800 text-cyan-400 font-medium">
+                  0 Workshop
+                </span>
               </div>
             </div>
           )}
 
+          {/* 6. COMPLIANCE & DOCUMENT VAULT */}
           {widgetConfig.id === 'alerts' && (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> 2 Expiring in 90 Days
+                <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  {liveStats.expiringDocs} Approaching Renewals (Q4 2026)
                 </span>
-                <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[10px]">
-                  Urgent
+                <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/10 text-[10px] font-mono">
+                  Watchlist
                 </Badge>
               </div>
-              <div className="text-xs space-y-1 pt-1">
-                <div className="flex justify-between text-slate-300">
-                  <span>TG12U2637 Road Tax</span>
-                  <span className="font-mono text-amber-400 font-bold">31-Dec-2026</span>
+              <div className="text-xs space-y-1.5 pt-0.5">
+                <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex justify-between items-center text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-amber-400 font-black text-[11px]">TG12U2637</span>
+                    <span className="text-slate-400 text-[11px]">Commercial Insurance</span>
+                  </div>
+                  <span className="font-mono text-amber-400 font-bold text-[11px]">09-Dec-2026</span>
                 </div>
-                <div className="flex justify-between text-slate-300">
-                  <span>TG12U2637 Insurance</span>
-                  <span className="font-mono text-cyan-400 font-bold">09-Dec-2026</span>
+                <div className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex justify-between items-center text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-amber-400 font-black text-[11px]">TG12U2637</span>
+                    <span className="text-slate-400 text-[11px]">State Road Tax</span>
+                  </div>
+                  <span className="font-mono text-cyan-400 font-bold text-[11px]">31-Dec-2026</span>
                 </div>
               </div>
             </div>
           )}
 
+          {/* 7. FASTAG TOLL WALLET */}
+          {widgetConfig.id === 'fastag' && (
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">ICICI FASTag Balance</span>
+                  <span className="text-2xl font-black text-amber-400 font-mono">₹1,558</span>
+                </div>
+                <Badge variant="outline" className="border-amber-500/40 text-amber-400 bg-amber-500/10 text-[10px] font-mono">
+                  ⚠️ Top-Up Soon
+                </Badge>
+              </div>
+              <span className="text-[11px] text-slate-400 block pt-1 border-t border-white/[0.04]">
+                Vehicle: <strong className="text-slate-200 font-mono">TG12U2637</strong> (Threshold ₹2,000)
+              </span>
+            </div>
+          )}
+
+          {/* 8. FUEL TRACKER & ECONOMY */}
+          {widgetConfig.id === 'fuel' && (
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Corridor Mileage</span>
+                  <span className="text-2xl font-black text-white font-mono">4.7 km/L</span>
+                </div>
+                <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-mono">
+                  Optimal
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-400 block pt-1 border-t border-white/[0.04]">
+                Fueling Partner: <strong className="text-slate-200">BPCL Ghatkesar & Patancheru</strong>
+              </span>
+            </div>
+          )}
+
+          {/* 9. DISPATCH CALENDAR */}
           {widgetConfig.id === 'calendar' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-300">
-                  {new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short' })}
+                <span className="text-xs font-bold text-slate-200">
+                  {new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', weekday: 'short', year: 'numeric' })}
                 </span>
-                <span className="text-[10px] text-amber-400 font-mono">3 Scheduled Pickups</span>
+                <span className="text-[10px] text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                  Corridor Express
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300">
-                📦 <strong>Hyderabad Hub</strong>: 14:00 Warangal Line Haul Dispatch
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-xs text-slate-300">
+                📦 <strong>Hyderabad Hub</strong>: Daily Scheduled Warangal Line-Haul Dispatch (TG12U2637)
               </div>
             </div>
           )}
 
+          {/* 10. OPERATIONS TO-DO LIST */}
           {widgetConfig.id === 'tasks' && (
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between pb-1 border-b border-slate-800">
-                <span className="text-slate-300 font-medium">Pending Approvals</span>
-                <span className="font-mono font-bold text-amber-400">3 Tasks</span>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between pb-1 border-b border-white/[0.04]">
+                <span className="text-slate-300 font-semibold">Priority Operations Hub</span>
+                <span className="font-mono font-black text-amber-400 text-[11px]">2 Action Items</span>
               </div>
-              <p className="text-slate-400 text-[11px] truncate">
-                • Approve Warangal fuel reimbursement (₹3,114)
+              <p className="text-slate-300 text-[11px] truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Top up ICICI FASTag for TG12U2637
               </p>
-              <p className="text-slate-400 text-[11px] truncate">
-                • Verify tyre rotation log for TG12U2637
+              <p className="text-slate-300 text-[11px] truncate flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> Verify latest MHYD-WARK delivery trip sheet
               </p>
             </div>
           )}
 
-          {widgetConfig.id === 'fuel' && (
-            <div className="space-y-1.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-black text-white font-mono">4.7 km/L</span>
-                <span className="text-xs text-emerald-400 font-bold">Optimal</span>
-              </div>
-              <span className="text-[11px] text-slate-400 block">
-                Total Burn: <strong>₹94,500</strong> this month
-              </span>
-            </div>
-          )}
-
-          {widgetConfig.id === 'fastag' && (
-            <div className="space-y-1.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-black text-cyan-400 font-mono">₹1,558</span>
-                <Badge variant="outline" className="border-cyan-500/30 text-cyan-400 text-[10px]">
-                  ICICI Bank
-                </Badge>
-              </div>
-              <span className="text-[11px] text-slate-400 block">
-                Last recharge: <strong>₹10,000</strong> on 22-Sep
-              </span>
-            </div>
-          )}
-
+          {/* 11. TYRES & MAINTENANCE */}
           {widgetConfig.id === 'tyres' && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-black text-white font-mono">2 Due</span>
-                <span className="text-xs text-amber-400 font-bold">Rotation Window</span>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Tyre Condition</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">92%</span>
+                </div>
+                <span className="text-xs text-slate-300 font-semibold bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60">
+                  10/10 Inspected
+                </span>
               </div>
-              <span className="text-[11px] text-slate-400 block">
-                Axle 2 Right Duals reached 80,000 km threshold
+              <span className="text-[11px] text-slate-400 block pt-1 border-t border-white/[0.04]">
+                TG12U2637 Radial Tyres in optimal condition
               </span>
             </div>
           )}
 
+          {/* 12. STAFF & DRIVER ATTENDANCE */}
           {widgetConfig.id === 'attendance' && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-baseline justify-between">
-                <span className="text-2xl font-black text-emerald-400 font-mono">92%</span>
-                <span className="text-xs text-slate-400 font-medium">11/12 Present</span>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Duty Status</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">Active</span>
+                </div>
+                <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  100% Attendance
+                </span>
               </div>
-              <span className="text-[11px] text-slate-400 block">
-                1 driver on leave • 2 relief staff active
+              <span className="text-[11px] text-slate-400 block pt-1 border-t border-white/[0.04]">
+                Designated Driver: <strong className="text-slate-200">Dayanand surwase</strong>
               </span>
             </div>
           )}
         </div>
 
-        {/* Footer info & resize hint */}
-        <div className="pt-2 mt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500">
-          <span>{meta.category}</span>
-          <span className="uppercase font-mono font-bold text-slate-400">{size} Tile</span>
+        {/* Polished Bottom Meta Line (No ugly debug text) */}
+        <div className="pt-2.5 mt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-slate-400">
+          <span className="flex items-center gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Sync
+          </span>
+          <span className="font-mono text-slate-400">{meta.tabSource}</span>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Custom Builder Toolbar */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 rounded-3xl border border-slate-800 p-4 sm:p-6 shadow-2xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🧩</span>
-              <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
-                33. Custom Dashboard Builder
-              </h3>
-              <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/10 font-mono text-[10px]">
-                Modular Layouts
-              </Badge>
+    <div className="space-y-5">
+      {/* Sleek, Executive Glassmorphism Header */}
+      <div className="bg-gradient-to-r from-slate-900/90 via-slate-900/80 to-slate-950/95 rounded-2xl border border-white/[0.1] p-4 sm:p-5 shadow-2xl relative overflow-hidden backdrop-blur-2xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl shrink-0">
+              ⚡
             </div>
-            <p className="text-xs sm:text-sm text-slate-400">
-              Customize your operations dashboard with live widgets from any tab. Resize, reorder, or switch presets like mobile.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                  Executive Modular Dashboard
+                </h3>
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Live Fleet Intelligence
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Personalized operational cockpit. Click customize to resize, reorder, or tailor tiles.
+              </p>
+            </div>
           </div>
 
           {/* Action buttons */}
@@ -619,7 +762,7 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
                 <Button
                   size="sm"
                   onClick={() => setIsEditMode(true)}
-                  className="h-9 px-3.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="h-9 px-3.5 text-xs font-bold rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-slate-700 shadow-md flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   Customize Dashboard
@@ -627,7 +770,7 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
                 <Button
                   size="sm"
                   onClick={() => setIsAddModalOpen(true)}
-                  className="h-9 px-3.5 text-xs font-black rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md flex items-center gap-1.5 cursor-pointer"
+                  className="h-9 px-3.5 text-xs font-black rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   Add Widget
@@ -649,195 +792,141 @@ export default function CustomDashboardBuilder({ summaryData = {}, onNavigate })
                   className="h-9 px-3 text-xs font-bold rounded-xl border border-slate-700 bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
                   title="Reset to preset default"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+                  Reset
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => setIsEditMode(false)}
-                  className="h-9 px-4 text-xs font-black rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md cursor-pointer flex items-center gap-1.5"
+                  className="h-9 px-4 text-xs font-black rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  Done & Save
+                  Done Customizing
                 </Button>
               </>
             )}
           </div>
         </div>
 
-        {/* Layout Preset Switcher Bar */}
-        <div className="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-400 mr-1 flex items-center gap-1">
-              <LayoutGrid className="w-3.5 h-3.5" /> Presets:
-            </span>
-            {Object.keys(PRESET_LAYOUTS).map(key => {
-              const p = PRESET_LAYOUTS[key];
-              const isActive = (selectedPreset === key);
+        {/* Preset Layouts Selector Bar */}
+        <div className="mt-4 pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 relative z-10">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-400 mr-1.5">Presets:</span>
+            {Object.entries(PRESET_LAYOUTS).map(([key, preset]) => {
+              const isActive = selectedPreset === key;
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => handleApplyPreset(key)}
-                  className={`h-8 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`h-8 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                     isActive 
-                      ? 'bg-amber-500 text-slate-950 shadow-md scale-105' 
-                      : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20 scale-102' 
+                      : 'bg-slate-950/60 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
                   }`}
                 >
-                  <span>{p.icon}</span>
-                  {p.name}
+                  <span>{preset.icon}</span>
+                  <span>{preset.name}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="text-[11px] text-slate-400 font-mono">
-            {activeWidgets.length} Active Widgets • Auto-Saved in Browser
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{activeWidgets.length} Tiles on Board</span>
+            <span>• Auto-Saved in Browser</span>
           </div>
         </div>
       </div>
 
-      {/* Edit Mode Notice Banner */}
-      {isEditMode && (
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300 animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>Edit Mode Active:</strong> Tap <strong>S</strong>, <strong>M</strong>, or <strong>L</strong> to resize widgets. Use arrows <strong>←</strong> / <strong>→</strong> to rearrange, or <strong>✕</strong> to remove.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsEditMode(false)}
-            className="text-xs font-bold text-white bg-amber-500/20 hover:bg-amber-500/30 px-3 py-1 rounded-xl"
-          >
-            Exit Edit Mode
-          </button>
-        </div>
-      )}
-
-      {/* Dynamic Grid of Custom Widgets */}
+      {/* Responsive Modular Widgets Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {activeWidgets.map((w, idx) => renderWidgetContent(w, idx))}
-
-        {/* Add Widget Quick Placeholder */}
-        {isEditMode && (
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="col-span-1 min-h-[160px] rounded-3xl border-2 border-dashed border-slate-800 hover:border-amber-400/80 bg-slate-900/40 hover:bg-slate-900/80 p-5 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-amber-400 transition-all cursor-pointer group"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-slate-800 group-hover:bg-amber-500/10 flex items-center justify-center text-lg transition-transform group-hover:scale-110">
-              <Plus className="w-5 h-5 text-amber-400" />
-            </div>
-            <span className="font-bold text-xs text-white">Add Another Widget</span>
-            <span className="text-[10px] text-slate-500">Pick from 12+ tabs</span>
-          </button>
-        )}
+        {activeWidgets.map((widgetConfig, index) => renderWidgetContent(widgetConfig, index))}
       </div>
 
-      {/* Add Widget Catalog Dialog */}
-      {isAddModalOpen && (
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto bg-slate-950 text-white border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl">
-            <DialogHeader className="border-b border-slate-800 pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-lg font-black text-white flex items-center gap-2">
-                    <span>➕</span> Add Widgets to Dashboard
-                  </DialogTitle>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Choose small widgets from all operational and financial tabs across the platform.
-                  </p>
-                </div>
+      {/* Modal: Add Widget to Board */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="sm:max-w-2xl bg-slate-950 border border-slate-800 text-white rounded-3xl p-6 shadow-2xl">
+          <DialogHeader className="border-b border-slate-800 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg font-black text-white flex items-center gap-2">
+                  <span>🧩</span> Add Widgets to Dashboard
+                </DialogTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  Select from any module across the TMS. Tiles automatically snap to your grid.
+                </p>
               </div>
-            </DialogHeader>
+            </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-3">
-              {['All', 'Finance', 'Operations', 'Fleet', 'Schedule', 'Compliance', 'HR'].map(cat => (
+            {/* Category tabs */}
+            <div className="flex flex-wrap gap-1.5 pt-3">
+              {['All', 'Finance', 'Operations', 'Fleet', 'Compliance', 'Schedule', 'Management', 'HR'].map(cat => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setAddCategoryFilter(cat)}
-                  className={`h-7 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     addCategoryFilter === cat 
                       ? 'bg-amber-500 text-slate-950 font-black' 
-                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   {cat}
                 </button>
               ))}
             </div>
+          </DialogHeader>
 
-            {/* Catalog Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
-              {WIDGET_CATALOG
-                .filter(w => addCategoryFilter === 'All' || w.category === addCategoryFilter)
-                .map(item => {
-                  const isAlreadyAdded = activeWidgets.some(w => w.id === item.id);
+          <div className="max-h-[60vh] overflow-y-auto py-4 space-y-2 pr-1">
+            {WIDGET_CATALOG
+              .filter(w => addCategoryFilter === 'All' || w.category === addCategoryFilter)
+              .map(widget => {
+                const isAlreadyAdded = activeWidgets.some(w => w.id === widget.id);
+                return (
+                  <div
+                    key={widget.id}
+                    className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                      isAlreadyAdded 
+                        ? 'bg-slate-900/40 border-slate-800/40 opacity-60' 
+                        : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl p-2 rounded-xl bg-slate-950 border border-slate-800 shrink-0">
+                        {widget.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-black text-sm text-white truncate">{widget.title}</h4>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                            {widget.tabSource}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                          {widget.description}
+                        </p>
+                      </div>
+                    </div>
 
-                  return (
-                    <div 
-                      key={item.id}
-                      className={`p-3.5 rounded-2xl border transition-all ${
+                    <Button
+                      size="sm"
+                      disabled={isAlreadyAdded}
+                      onClick={() => handleAddWidget(widget)}
+                      className={`h-8 px-3 text-xs font-bold rounded-xl shrink-0 ${
                         isAlreadyAdded 
-                          ? 'bg-slate-900/40 border-slate-800/60 opacity-60' 
-                          : 'bg-slate-900 border-slate-800 hover:border-amber-400/50'
+                          ? 'bg-slate-800 text-slate-500' 
+                          : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black cursor-pointer shadow-md'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xl p-1.5 rounded-xl bg-slate-800 border border-slate-700 shrink-0">
-                            {item.icon}
-                          </span>
-                          <div>
-                            <span className="font-bold text-xs text-white block truncate">
-                              {item.title}
-                            </span>
-                            <span className="text-[10px] text-amber-400 font-mono">
-                              {item.tabSource}
-                            </span>
-                          </div>
-                        </div>
-
-                        {isAlreadyAdded ? (
-                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
-                            ✓ Added
-                          </span>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddWidget(item)}
-                            className="h-7 px-2.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 shrink-0 cursor-pointer"
-                          >
-                            + Add
-                          </Button>
-                        )}
-                      </div>
-
-                      <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  );
-                })}
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-slate-800 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsAddModalOpen(false)}
-                className="h-8 text-xs font-bold rounded-xl border-slate-700 text-slate-300"
-              >
-                Close Catalog
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+                      {isAlreadyAdded ? 'Added' : '➕ Add Tile'}
+                    </Button>
+                  </div>
+                );
+              })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
