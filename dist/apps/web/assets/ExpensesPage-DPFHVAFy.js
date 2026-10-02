@@ -261,7 +261,15 @@ function ExpenseBillsViewerModal({ isOpen, onClose, bills = [], initialIndex = 0
             /* @__PURE__ */ e.jsx(
               "div",
               {
-                className: "relative flex-1 min-h-[50vh] max-h-[72vh] bg-zinc-950/90 flex items-center justify-center overflow-hidden p-4 select-none cursor-default",
+                className: "relative flex-1 min-h-[350px] bg-zinc-950/90 flex items-center justify-center overflow-hidden p-4 select-none cursor-default",
+                style: { height: "70vh", maxHeight: "70vh" },
+                onWheel: (e) => {
+                  if (e.deltaY < 0) {
+                    setZoom((z) => Math.min(3, +(z + 0.15).toFixed(2)));
+                  } else {
+                    setZoom((z) => Math.max(0.5, +(z - 0.15).toFixed(2)));
+                  }
+                },
                 onMouseDown: handleMouseDown,
                 onMouseMove: handleMouseMove,
                 onMouseUp: handleMouseUp,
@@ -302,17 +310,25 @@ function ExpenseBillsViewerModal({ isOpen, onClose, bills = [], initialIndex = 0
                       }
                     )
                   ] })
-                ] }) : /* @__PURE__ */ e.jsx("div", { className: "relative flex items-center justify-center w-full h-full overflow-hidden", children: /* @__PURE__ */ e.jsx(
+                ] }) : /* @__PURE__ */ e.jsx("div", { className: "relative flex items-center justify-center w-full h-full overflow-hidden", style: { width: "100%", height: "100%" }, children: /* @__PURE__ */ e.jsx(
                   "img",
                   {
                     src: getActiveUrl(),
                     alt: cur.name || "Bill Preview",
                     style: {
-                      transform: `rotate(${rot}deg) scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      maxHeight: "66vh",
+                      maxWidth: "100%",
+                      width: "auto",
+                      height: "auto",
+                      objectFit: "contain",
+                      display: "block",
+                      margin: "auto",
+                      transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rot}deg)`,
+                      transformOrigin: "center center",
                       transition: isDragging ? "none" : "transform 0.15s ease-out",
                       cursor: zoom > 1 ? isDragging ? "grabbing" : "grab" : "default"
                     },
-                    className: "max-w-full max-h-[66vh] object-contain rounded-lg shadow-2xl border border-zinc-800/80 bg-white",
+                    className: "rounded-lg shadow-2xl border border-zinc-800/80 bg-white",
                     onError: () => {
                       if (!fallbackTried && cur?.url && cur.url.includes("/hcgi/platform/api/files/")) {
                         setFallbackTried(true);
