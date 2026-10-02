@@ -47,11 +47,18 @@ const ExpensesPage = () => {
   const [editingAdvance, setEditingAdvance] = useState(null);
   
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [viewerData, setViewerData] = useState(null);
   const [activeLightboxImage, setActiveLightboxImage] = useState(null);
   const [activeLightboxExpense, setActiveLightboxExpense] = useState(null);
   const [lightboxLoading, setLightboxLoading] = useState(true);
   const [lightboxError, setLightboxError] = useState(false);
   const [directUploadExpense, setDirectUploadExpense] = useState(null);
+
+  const openExpenseBillsViewer = (expense, initialIndex = 0) => {
+    const bills = getExpenseImages(expense);
+    if (!bills || bills.length === 0) return;
+    setViewerData({ bills, initialIndex, expense });
+  };
   const directFileInputRef = useRef(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -1005,42 +1012,54 @@ const ExpensesPage = () => {
                             <TableCell className="text-right font-bold tabular-nums text-foreground">₹{expense.amount?.toLocaleString()}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end items-center gap-1.5">
-                                {getExpenseImages(expense).map((imgObj, idx) => {
-                                  const url = imgObj.url;
+                                {(() => {
+                                  const bills = getExpenseImages(expense);
+                                  if (!bills || bills.length === 0) return null;
                                   return (
-                                    <div 
-                                      key={idx}
-                                      onClick={(e) => {
-                                        if (e.currentTarget.dataset.missing === 'true') {
-                                          e.stopPropagation();
-                                          triggerDirectFileUpload(expense);
-                                          return;
-                                        }
-                                        setActiveLightboxExpense(expense);
-                                        setLightboxError(false);
-                                        setLightboxLoading(true);
-                                        setActiveLightboxImage(url);
-                                      }}
-                                      className="w-7 h-7 rounded border border-border/80 overflow-hidden cursor-pointer hover:scale-110 transition-transform bg-muted shrink-0 shadow-sm"
-                                      title={`View ${imgObj.name || 'Receipt Snapshot'}`}
-                                    >
-                                      <img 
-                                        src={url} 
-                                        alt="receipt" 
-                                        className="w-full h-full object-cover" 
-                                        onError={(e) => {
-                                          e.currentTarget.style.display = 'none';
-                                          const p = e.currentTarget.parentElement;
-                                          if (p) {
-                                            p.dataset.missing = 'true';
-                                            p.title = 'Bill missing from server - Click to upload bill';
-                                            p.innerHTML = '<span class="flex items-center justify-center w-full h-full bg-amber-500/20 text-amber-500 font-bold text-[10px]" title="Bill missing - click to attach bill">📷+</span>';
-                                          }
-                                        }}
-                                      />
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); openExpenseBillsViewer(expense, 0); }}
+                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 px-2 py-0.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
+                                        title={`View ${bills.length === 1 ? "attached bill / receipt" : `${bills.length} attached bills`}`}
+                                      >
+                                        <span className="text-xs shrink-0">🧾</span>
+                                        <span>{bills.length === 1 ? " Bill" : ` ${bills.length} Bills`}</span>
+                                      </button>
+                                      <div className="flex items-center -space-x-1.5 overflow-hidden">
+                                        {bills.slice(0, 3).map((item, idx) => (
+                                          <div
+                                            key={idx}
+                                            onClick={(e) => { e.stopPropagation(); openExpenseBillsViewer(expense, idx); }}
+                                            className="w-6 h-6 rounded border border-zinc-700 bg-zinc-900 overflow-hidden cursor-pointer hover:scale-110 transition-transform shadow-md shrink-0 ring-1 ring-black/40"
+                                            title={`View ${item.name || `Bill #${idx+1}`}`}
+                                          >
+                                            <img
+                                              src={item.url}
+                                              alt={item.name || "receipt"}
+                                              className="w-full h-full object-cover"
+                                              onError={(e) => {
+                                                if (item.url && item.url.includes('/hcgi/platform/api/files/')) {
+                                                  const alt = item.url.replace('/hcgi/platform/api/files/', '/api/files/');
+                                                  if (e.currentTarget.src !== alt) {
+                                                    e.currentTarget.src = alt;
+                                                    return;
+                                                  }
+                                                }
+                                                e.currentTarget.style.display = 'none';
+                                                const p = e.currentTarget.parentElement;
+                                                if (p) {
+                                                  p.title = 'Bill needs re-upload';
+                                                  p.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:rgba(245,158,11,0.2);color:#f59e0b;font-size:9px;font-weight:bold">⚠️</span>';
+                                                }
+                                              }}
+                                            />
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   );
-                                })}
+                                })()}
                                 {expense.documents?.filter(doc => !(expense.image_urls || []).includes(doc) && !doc.match(/\.(jpg|jpeg|png|webp|gif)$/i)).length > 0 && (
                                   <Button variant="ghost" size="icon" onClick={() => window.open(pb.files.getUrl(expense, expense.documents[0]), '_blank')} className="h-8 w-8 text-primary" title="View attached document"><ExternalLink className="w-4 h-4" /></Button>
                                 )}
@@ -1170,22 +1189,32 @@ const ExpensesPage = () => {
 
                         <div className="flex justify-between items-center pt-2 border-t border-border/20">
                           <div>
-                            {expense.documents?.length > 0 && (
-                              <Button variant="ghost" size="sm" onClick={() => window.open(pb.files.getUrl(expense, expense.documents[0]), '_blank')} className="h-7 text-xs text-primary" title="View attached document">
-                                <ExternalLink className="w-3.5 h-3.5 mr-1" /> View Bill
-                              </Button>
-                            )}
-                            {(!expense.image_urls || expense.image_urls.length === 0) && (!expense.documents || expense.documents.length === 0) && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => triggerDirectFileUpload(expense)} 
-                                className="h-7 text-xs text-muted-foreground hover:text-primary" 
-                                title="Upload Bill/Receipt"
-                              >
-                                <UploadCloud className="w-3.5 h-3.5 mr-1" /> Upload Bill
-                              </Button>
-                            )}
+                            {(() => {
+                              const bills = getExpenseImages(expense);
+                              if (!bills || bills.length === 0) {
+                                return (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => triggerDirectFileUpload(expense)} 
+                                    className="h-7 text-xs text-muted-foreground hover:text-primary" 
+                                    title="Upload Bill/Receipt"
+                                  >
+                                    <UploadCloud className="w-3.5 h-3.5 mr-1" /> Upload Bill
+                                  </Button>
+                                );
+                              }
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); openExpenseBillsViewer(expense, 0); }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 px-2.5 py-1 rounded-lg cursor-pointer transition-all active:scale-95 shadow-sm"
+                                >
+                                  <span>🧾</span>
+                                  <span>{bills.length === 1 ? "View Bill" : `${bills.length} Bills`}</span>
+                                </button>
+                              );
+                            })()}
                           </div>
 
                           <div className="flex items-center gap-1">
@@ -1460,69 +1489,19 @@ const ExpensesPage = () => {
         />
       )}
 
-      {activeLightboxImage && (
-        <Dialog open={!!activeLightboxImage} onOpenChange={() => { setActiveLightboxImage(null); setLightboxError(false); setLightboxLoading(true); }}>
-          <DialogContent className="max-w-2xl border border-white/20 bg-zinc-950 p-6 overflow-hidden rounded-2xl text-white shadow-2xl">
-            <div className="relative w-full min-h-[50vh] max-h-[80vh] flex flex-col items-center justify-center p-2">
-              {!lightboxError ? (
-                <>
-                  {lightboxLoading && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-400">
-                      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs">Loading receipt snapshot...</span>
-                    </div>
-                  )}
-                  <img 
-                    src={activeLightboxImage} 
-                    alt="Receipt Bill" 
-                    className={`max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl transition-opacity duration-200 ${lightboxLoading ? 'opacity-0' : 'opacity-100'}`}
-                    onLoad={() => setLightboxLoading(false)}
-                    onError={() => { setLightboxLoading(false); setLightboxError(true); }}
-                  />
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center p-6 bg-zinc-900/90 rounded-2xl border border-dashed border-amber-500/40 max-w-md w-full my-auto space-y-4">
-                  <div className="w-14 h-14 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-2xl font-bold">
-                    ⚠️
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white mb-1">Bill File Missing from Server</h4>
-                    <p className="text-xs text-zinc-300 leading-relaxed mb-4">
-                      This bill attachment was cleared during a previous cloud redeploy. You can attach or re-upload the bill now.
-                    </p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2.5 w-full pt-1">
-                    <Button 
-                      onClick={() => {
-                        const targetExp = activeLightboxExpense;
-                        setActiveLightboxImage(null);
-                        setLightboxError(false);
-                        if (targetExp) triggerDirectFileUpload(targetExp);
-                      }}
-                      className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg transition-all"
-                    >
-                      <UploadCloud className="w-4 h-4" />
-                      Upload / Replace Bill
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => { setActiveLightboxImage(null); setLightboxError(false); }}
-                      className="py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium text-xs transition-all border-zinc-700"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              )}
-              <button 
-                onClick={() => { setActiveLightboxImage(null); setLightboxError(false); setLightboxLoading(true); }} 
-                className="absolute top-2 right-2 bg-black/60 hover:bg-black text-white rounded-full p-2 text-sm w-8 h-8 flex items-center justify-center font-bold z-10"
-              >
-                ✕
-              </button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {viewerData && (
+        <ExpenseBillsViewerModal 
+          isOpen={!!viewerData} 
+          onClose={() => setViewerData(null)} 
+          bills={viewerData.bills} 
+          initialIndex={viewerData.initialIndex} 
+          expense={viewerData.expense} 
+          onReupload={() => {
+            const exp = viewerData.expense;
+            setViewerData(null);
+            if (exp) triggerDirectFileUpload(exp);
+          }}
+        />
       )}
       <SendMailDialog
         isOpen={mailOpen}

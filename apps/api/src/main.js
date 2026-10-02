@@ -1895,11 +1895,6 @@ const uploadNewStorageToSupabase = async (storageDir) => {
   const isSyncEnabled = process.env.NODE_ENV === 'production' || process.env.ENABLE_SUPABASE_SYNC === 'true';
   if (!isSyncEnabled || !fs.existsSync(storageDir)) return;
 
-  if (!_storageTrackerInitialized) {
-    initStorageTracker(storageDir);
-    return;
-  }
-
   const localFiles = getLocalFilesRecursive(storageDir, storageDir);
   const newFiles = Object.keys(localFiles).filter(f => !_uploadedStorageFiles.has(f));
 
@@ -1934,7 +1929,34 @@ global.uploadNewStorageToSupabase = uploadNewStorageToSupabase;
 global.uploadAllStorageToSupabase = uploadNewStorageToSupabase;
 
 const startStorageBackgroundSync = (storageDir) => {
-  logger.info('📁 Storage background sync initialized (syncs on demand and shutdown)');
+  logger.info(`📁 Starting persistent storage background sync for: ${storageDir}`);
+  if (!fs.existsSync(storageDir)) {
+    try { fs.mkdirSync(storageDir, { recursive: true }); } catch (_) {}
+  }
+
+  // 1. Initial sync after 3 seconds
+  setTimeout(() => {
+    uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Initial storage sync error: ${e.message}`));
+  }, 3000);
+
+  // 2. Watch storage directory recursively
+  try {
+    let watchDebounce = null;
+    fs.watch(storageDir, { recursive: true }, (eventType, filename) => {
+      clearTimeout(watchDebounce);
+      watchDebounce = setTimeout(() => {
+        uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Storage watch sync error: ${e.message}`));
+      }, 1500);
+    });
+    logger.info('✓ Storage file system watcher active.');
+  } catch (err) {
+    logger.warn(`Storage watcher not available on this OS/FS: ${err.message}`);
+  }
+
+  // 3. Periodic safety interval (every 30 seconds)
+  setInterval(() => {
+    uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Interval storage sync error: ${e.message}`));
+  }, 30000);
 };
 
 // ----------------------------------------------------
