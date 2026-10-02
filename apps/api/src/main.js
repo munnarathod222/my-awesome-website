@@ -22,6 +22,7 @@ import * as auditService from './services/auditService.js';
 import * as productivityService from './services/productivityService.js';
 import * as orgService from './services/orgService.js';
 import * as employeeBankService from './services/employeeBankService.js';
+import * as businessCalendarService from './services/businessCalendarService.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -355,6 +356,42 @@ bankRouter.post('/', (req, res) => {
 
 app.use('/api/employee/bank-details', bankRouter);
 app.use('/hcgi/api/employee/bank-details', bankRouter);
+
+// ── Unified Enterprise Business Calendar Router ───────────────────
+const businessCalendarRouter = express.Router();
+
+businessCalendarRouter.get('/events', async (req, res) => {
+  try {
+    const { year, month, category } = req.query;
+    const events = await businessCalendarService.getBusinessCalendarEvents(null, { year, month, category });
+    return res.json({ success: true, count: events.length, events });
+  } catch (err) {
+    console.error('[BusinessCalendar] API error:', err);
+    return res.status(500).json({ success: false, error: err.message, events: [] });
+  }
+});
+
+businessCalendarRouter.post('/events', (req, res) => {
+  try {
+    const event = businessCalendarService.addCustomBusinessEvent(req.body);
+    return res.json({ success: true, event });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+businessCalendarRouter.delete('/events/:id', (req, res) => {
+  try {
+    businessCalendarService.deleteCustomBusinessEvent(req.params.id);
+    return res.json({ success: true, deleted: true });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/business-calendar', businessCalendarRouter);
+app.use('/hcgi/api/business-calendar', businessCalendarRouter);
+
 
 // ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
 const productivityRouter = express.Router();
