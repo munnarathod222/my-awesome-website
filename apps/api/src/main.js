@@ -23,6 +23,7 @@ import * as productivityService from './services/productivityService.js';
 import * as orgService from './services/orgService.js';
 import * as employeeBankService from './services/employeeBankService.js';
 import * as businessCalendarService from './services/businessCalendarService.js';
+import * as routeCorridorService from './services/routeCorridorService.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -391,6 +392,39 @@ businessCalendarRouter.delete('/events/:id', (req, res) => {
 
 app.use('/api/business-calendar', businessCalendarRouter);
 app.use('/hcgi/api/business-calendar', businessCalendarRouter);
+
+// ── Route Corridor Database & Spot Quoting Router ──────────────────
+const corridorRouter = express.Router();
+
+corridorRouter.get('/', (req, res) => {
+  try {
+    const data = routeCorridorService.getAllCorridors();
+    return res.json({ success: true, count: data.length, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+corridorRouter.post('/', (req, res) => {
+  try {
+    const saved = routeCorridorService.saveCorridor(req.body);
+    return res.json({ success: true, data: saved });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+corridorRouter.delete('/:id', (req, res) => {
+  try {
+    const ok = routeCorridorService.deleteCorridor(req.params.id);
+    return res.json({ success: true, deleted: ok });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/corridors', corridorRouter);
+app.use('/hcgi/api/corridors', corridorRouter);
 
 
 // ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
