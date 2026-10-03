@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, CheckCircle, AlertCircle, Filter, ArrowUpRight, FileCheck, Edit, ShieldCheck, X, FileText, Camera, Eye } from 'lucide-react';
+import { Truck, Plus, CheckCircle, AlertCircle, Filter, ArrowUpRight, FileCheck, Edit, ShieldCheck, X, FileText, Camera, Eye, Calculator, ClipboardList } from 'lucide-react';
 import { dbtabeses } from '../db/store';
 import { cashbookService } from '../services/cashbookService';
 import { TripLog, Truck as TruckType, ClientProfile, Employee, LorryReceipt, PodRecord } from '../types';
@@ -7,8 +7,10 @@ import { LorryReceiptViewModal } from '../components/documents/LorryReceiptViewM
 import { LorryReceiptFormModal } from '../components/documents/LorryReceiptFormModal';
 import { PodViewModal } from '../components/documents/PodViewModal';
 import { DriverPodCaptureModal } from '../components/documents/DriverPodCaptureModal';
+import { TripOverviewPage } from './TripOverviewPage';
 
 export const TripLogsPage: React.FC = () => {
+  const [activeSubTab, setActiveSubTab] = useState<'logs' | 'overview'>('logs');
   const [trips, setTrips] = useState<TripLog[]>(dbtabeses.getTrips());
   const [trucks] = useState<TruckType[]>(dbtabeses.getTrucks());
   const [clients] = useState<ClientProfile[]>(dbtabeses.getClients());
@@ -112,21 +114,53 @@ export const TripLogsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-white flex items-center gap-3">
-            <Truck className="w-7 h-7 text-orange-400" /> Operational Trip Logs &amp; Scheduler
+            <Truck className="w-7 h-7 text-orange-400" /> Route Master
           </h1>
-          <p className="text-sm text-slate-400">Manage fleet dispatch, trip delivery lifecycle, and client payment linkages.</p>
+          <p className="text-sm text-slate-400">Manage fleet dispatch, trip delivery lifecycle, cost calculator &amp; bidding intelligence.</p>
         </div>
+        {activeSubTab === 'logs' && (
+          <button
+            onClick={() => setAddModal(true)}
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-orange-900/30 transition"
+          >
+            <Plus className="w-4 h-4" /> Create New Trip
+          </button>
+        )}
+      </div>
+
+      {/* Sub-Tab Switcher */}
+      <div className="flex items-center gap-1 p-1 bg-slate-900/80 border border-slate-800 rounded-2xl w-fit">
         <button
-          onClick={() => setAddModal(true)}
-          className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-xl flex items-center gap-2 shadow-lg shadow-orange-900/30 transition"
+          onClick={() => setActiveSubTab('logs')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+            activeSubTab === 'logs'
+              ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
         >
-          <Plus className="w-4 h-4" /> Create New Trip
+          <ClipboardList className="w-4 h-4" /> Trip Logs &amp; Scheduler
+        </button>
+        <button
+          onClick={() => setActiveSubTab('overview')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+            activeSubTab === 'overview'
+              ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Calculator className="w-4 h-4" /> Trip Cost Calculator
         </button>
       </div>
 
+      {/* Trip Overview (Cost Calculator) Sub-Tab */}
+      {activeSubTab === 'overview' && <TripOverviewPage />}
+
+      {/* Trip Logs Sub-Tab */}
+      {activeSubTab === 'logs' && (<>
       {successNotif && (
         <div className="p-3.5 bg-emerald-950/80 border border-emerald-700 text-emerald-300 rounded-xl flex items-center gap-2 font-medium text-sm">
           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" /> {successNotif}
@@ -461,6 +495,7 @@ export const TripLogsPage: React.FC = () => {
           }}
         />
       )}
+      </>)}
     </div>
   );
 };

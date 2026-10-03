@@ -27,7 +27,7 @@ export const Sidebar: React.FC<Props> = ({ currentPage, onNavigate }) => {
     { id: 'analytics', label: 'Analytics Hub', icon: TrendingUp },
     { id: 'payment-requests', label: 'Payment Requests & Collections', icon: CreditCard },
     { id: 'cashbook', label: 'Live Cashbook', icon: Wallet },
-    { id: 'trips', label: 'Trip Logs & Scheduler', icon: Truck },
+    { id: 'trips', label: 'Route Master', icon: Truck },
     { id: 'recurring', label: 'Batch Recurring Trips', icon: RefreshCw },
     { id: 'inventory', label: 'Inventory Management', icon: Package },
     { id: 'maintenance', label: 'Fleet Maintenance', icon: Wrench },

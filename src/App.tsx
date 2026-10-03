@@ -6,7 +6,6 @@ import { ExpensesPage } from './pages/ExpensesPage';
 import { AnalyticsHubPage } from './pages/AnalyticsHubPage';
 import { PaymentRequestsPage } from './pages/PaymentRequestsPage';
 import { LiveCashbookPage } from './pages/LiveCashbookPage';
-import { TripOverviewPage } from './pages/TripOverviewPage';
 import { TripLogsPage } from './pages/TripLogsPage';
 import { RecurringTripsPage } from './pages/RecurringTripsPage';
 import { FuelTrackerPage } from './pages/FuelTrackerPage';
@@ -80,7 +79,6 @@ export const App: React.FC = () => {
           {activeTab === 'analytics' && <AnalyticsHubPage />}
           {activeTab === 'payment-requests' && <PaymentRequestsPage />}
           {activeTab === 'cashbook' && <LiveCashbookPage />}
-          {activeTab === 'trip-overview' && <TripOverviewPage />}
           {activeTab === 'trips' && <TripLogsPage />}
           {activeTab === 'recurring' && <RecurringTripsPage />}
           {activeTab === 'fuel' && <FuelTrackerPage />}
