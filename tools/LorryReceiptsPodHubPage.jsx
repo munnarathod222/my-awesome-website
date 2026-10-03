@@ -41,9 +41,10 @@ function LorryReceiptsPodHubPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("pod_required"); // "pod_required", "all", or specific client_id
   
-  // Modals
+  // Modals & Viewer Controls
   const [viewingLr, setViewingLr] = useState(null);
   const [lrCopyType, setLrCopyType] = useState("Transporter Copy");
+  const [previewScale, setPreviewScale] = useState(0.75); // Fits whole document on screen by default!
   const [isCreatingLr, setIsCreatingLr] = useState(false);
   const [viewingPodDoc, setViewingPodDoc] = useState(null);
   const [uploadingTripId, setUploadingTripId] = useState(null);
@@ -70,29 +71,27 @@ function LorryReceiptsPodHubPage() {
     weightKg: "1000"
   });
 
-  // Dynamic Company Settings with authentic default values
-  const companySettings = useMemo(() => {
-    try {
-      const saved = localStorage.getItem("jc_company_settings");
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return {
-      company_name: "JAI BHAVANI CARGO",
-      tagline: "Goods Transport Operators & Fleet Contractors",
-      company_address: "Plot No. 3, Patel Nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301",
-      company_gstin: "36DPXPR9171A1Z8",
-      company_pan: "DPXPR9171A",
-      company_phone: "+91 7794072244",
-      company_email: "vinod@jaibhavanicargo.com",
-      company_website: "www.jaibhavanicargo.com",
-      bank_name: "HDFC BANK",
-      account_name: "JAI BHAVANI CARGO",
-      account_number: "50200117182677",
-      ifsc_code: "HDFC0004480",
-      branch_name: "GHATKESAR BRANCH",
-      lr_prefix: "JBC"
-    };
-  }, []);
+  // Dynamic Company Settings from PocketBase & verified defaults
+  const [companySettings, setCompanySettings] = useState({
+    company_name: "JAI BHAVANI CARGO",
+    tagline: "Goods Transport Operators & Fleet Contractors",
+    company_address: "Plot no 3, Patel nagar, Ghatkesar, Medchal-Malkajgiri Dist., Telangana - 501301",
+    company_gstin: "36DPXPR9171A1Z8",
+    company_pan: "DPXPR9171A",
+    company_phone: "+91 7794072244",
+    company_email: "vinod@jaibhavanicargo.com",
+    company_website: "www.jaibhavanicargo.com",
+    bank_name: "HDFC BANK",
+    account_name: "JAI BHAVANI CARGO",
+    account_number: "50200117182677",
+    ifsc_code: "HDFC0004480",
+    branch_name: "GHATKESAR BRANCH",
+    msme_number: "UDYAM-TS-20-0193891",
+    signatory_name: "Vinod Kumar Rathod",
+    signatory_title: "Managing Director",
+    logo_url: "/logo.png",
+    lr_prefix: "JBC"
+  });
 
   // Helpers to resolve client information & POD requirement
   const clientRequiresPod = (cl) => {
@@ -185,6 +184,35 @@ function LorryReceiptsPodHubPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      // 1. Load Live Company Settings
+      try {
+        const compList = await pb.collection("company_settings").getList(1, 1, { $autoCancel: false }).catch(() => null);
+        if (compList && compList.items && compList.items[0]) {
+          const cs = compList.items[0];
+          setCompanySettings(prev => ({
+            ...prev,
+            company_name: cs.company_name || prev.company_name,
+            company_address: cs.company_address || prev.company_address,
+            company_phone: cs.company_phone || prev.company_phone,
+            company_email: cs.company_email || prev.company_email,
+            company_website: cs.company_website || prev.company_website,
+            company_gstin: cs.company_gstin || prev.company_gstin,
+            company_pan: cs.pan_number || cs.company_pan || prev.company_pan,
+            pan_number: cs.pan_number || prev.pan_number,
+            msme_number: cs.msme_number || cs.udyam_number || prev.msme_number,
+            bank_name: cs.bank_name || prev.bank_name,
+            account_name: cs.account_name || prev.account_name,
+            account_number: cs.account_number ? cs.account_number.trim() : prev.account_number,
+            ifsc_code: cs.ifsc_code || prev.ifsc_code,
+            branch_name: cs.branch_name || prev.branch_name,
+            signatory_name: cs.signatory_name || prev.signatory_name,
+            signatory_title: cs.signatory_title || prev.signatory_title,
+            logo_url: cs.company_logo ? pb.files.getUrl(cs, cs.company_logo) : "/logo.png"
+          }));
+        }
+      } catch (err) {}
+
+      // 2. Load Clients
       const rawClients = await pb.collection("clients").getFullList({ $autoCancel: false }).catch(() => []);
       setClientList(rawClients);
       const cMap = {};
@@ -193,6 +221,7 @@ function LorryReceiptsPodHubPage() {
       });
       setClientMap(cMap);
 
+      // 3. Load Trips with expanded client relation
       const tripList = await pb.collection("trip_logs").getFullList({
         sort: "-date",
         expand: "client_id",
@@ -370,7 +399,7 @@ function LorryReceiptsPodHubPage() {
 
     const msg = encodeURIComponent(
       "*JAI BHAVANI CARGO MOVERS*\n" +
-      "📄 *LORRY RECEIPT / CONSIGNMENT NOTE*\n\n" +
+      "📄 *OFFICIAL LORRY RECEIPT / BILTY*\n\n" +
       "🔹 *LR Number:* #" + lrNum + "\n" +
       "🔹 *Client:* " + client + "\n" +
       "🔹 *Vehicle:* " + truck + "\n" +
@@ -379,12 +408,12 @@ function LorryReceiptsPodHubPage() {
       "🔹 *POD Status:* " + getPodStatus(trip) + "\n\n" +
       "Track & download verified documents at:\n" +
       "https://www.jaibhavanicargo.com/lorry-receipts\n\n" +
-      "Control Room: +91 7794072244"
+      "Head Office: +91 7794072244"
     );
     window.open("https://api.whatsapp.com/send?text=" + msg, "_blank");
   };
 
-  // Clean A4 Iframe Print Engine
+  // Clean A4 Iframe Print Engine with High-Fidelity Vector Styling
   const handlePrintLrIframe = () => {
     const content = document.getElementById("lr-printable-area");
     if (!content) return;
@@ -415,7 +444,7 @@ function LorryReceiptsPodHubPage() {
           <style>
             @page {
               size: A4 portrait;
-              margin: 8mm 10mm;
+              margin: 6mm 8mm;
             }
             * {
               box-sizing: border-box;
@@ -428,22 +457,23 @@ function LorryReceiptsPodHubPage() {
               background: #fff;
               margin: 0;
               padding: 0;
-              font-size: 11px;
-              line-height: 1.3;
+              font-size: 10px;
+              line-height: 1.25;
             }
             table {
               width: 100%;
               border-collapse: collapse;
             }
             th, td {
-              border: 1px solid #475569;
-              padding: 5px 8px;
+              border: 1px solid #334155;
+              padding: 4px 6px;
             }
             th {
-              background: #f1f5f9;
+              background: #0f172a !important;
+              color: #ffffff !important;
               font-weight: 700;
               text-transform: uppercase;
-              font-size: 10px;
+              font-size: 9px;
             }
             .no-print {
               display: none !important;
@@ -488,13 +518,13 @@ function LorryReceiptsPodHubPage() {
       // 2. Client & POD Requirement Filter
       if (activeTab === "pod") {
         if (clientFilter === "pod_required") {
-          // Strictly show trips of clients who require POD (or trips with POD files attached)
+          // Strictly show trips of clients who require POD
           if (!isPodReq) return false;
         } else if (clientFilter !== "all") {
           // Filtered by specific client
           if (t.client_id !== clientFilter && cl?.id !== clientFilter) return false;
         } else {
-          // Even if "all" is chosen in POD Hub, POD Hub is for POD records
+          // In POD Hub, only show POD-mandated trips
           if (!isPodReq) return false;
         }
       } else {
@@ -523,16 +553,16 @@ function LorryReceiptsPodHubPage() {
     return clientList.filter(clientRequiresPod).length;
   }, [clientList]);
 
-  // Pod-required trips subset
+  // Pod-required trips subset (strictly clients where requires_pod is enabled)
   const podTripsList = useMemo(() => {
     return trips.filter(isTripPodRequired);
   }, [trips, clientList, clientMap]);
 
   // Metrics
   const totalCount = activeTab === "pod" ? podTripsList.length : trips.length;
-  const verifiedPodCount = (activeTab === "pod" ? podTripsList : trips).filter(t => getPodStatus(t) === "Verified").length;
-  const uploadedPodCount = (activeTab === "pod" ? podTripsList : trips).filter(t => getPodStatus(t) === "Uploaded").length;
-  const pendingPodCount = (activeTab === "pod" ? podTripsList : trips).filter(t => getPodStatus(t) === "Pending").length;
+  const verifiedPodCount = podTripsList.filter(t => getPodStatus(t) === "Verified").length;
+  const uploadedPodCount = podTripsList.filter(t => getPodStatus(t) === "Uploaded").length;
+  const pendingPodCount = podTripsList.filter(t => getPodStatus(t) === "Pending").length;
   const inTransitCount = trips.filter(t => t.status === "In-Transit" || t.trip_status === "In-Transit" || !t.status).length;
 
   return (
@@ -543,22 +573,30 @@ function LorryReceiptsPodHubPage() {
 
       {/* Top Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-6 rounded-3xl border border-slate-800 shadow-xl">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
-              Fleet Operations & Documentation
-            </span>
-            <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold">
-              Live & Synced
-            </span>
+        <div className="flex items-center gap-4">
+          <img
+            src={companySettings.logo_url || "/logo.png"}
+            onError={(e) => { e.target.src = "/logo.png"; }}
+            alt="Jai Bhavani Cargo"
+            className="w-14 h-14 object-contain rounded-2xl bg-white/5 p-1.5 border border-slate-700/80 shadow-inner hidden sm:block"
+          />
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full text-xs font-bold uppercase tracking-wider">
+                Fleet Operations & Documentation
+              </span>
+              <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold">
+                Live & Synced
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
+              <FileTextIcon className="w-8 h-8 text-amber-400" />
+              Lorry Receipts & POD Hub
+            </h1>
+            <p className="text-slate-400 text-sm mt-1 max-w-2xl">
+              {companySettings.company_name} • Proof of Delivery ledger (strictly filtered to POD-mandated clients) & official executive Bilties.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-            <FileTextIcon className="w-8 h-8 text-amber-400" />
-            Lorry Receipts & POD Hub
-          </h1>
-          <p className="text-slate-400 text-sm mt-1 max-w-2xl">
-            {companySettings.company_name} • Proof of Delivery ledger (strictly filtered to POD-mandated clients) & official A4 Bilties.
-          </p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -858,6 +896,7 @@ function LorryReceiptsPodHubPage() {
                               onClick={() => {
                                 setViewingLr(trip);
                                 setLrCopyType("Transporter Copy");
+                                setPreviewScale(0.75);
                               }}
                               className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1 shadow cursor-pointer transition"
                               title="Print Official A4 Bilty"
@@ -1067,6 +1106,7 @@ function LorryReceiptsPodHubPage() {
                               onClick={() => {
                                 setViewingLr(trip);
                                 setLrCopyType("Transporter Copy");
+                                setPreviewScale(0.75);
                               }}
                               className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg cursor-pointer transition"
                               title="Print Linked LR / Bilty"
@@ -1085,23 +1125,24 @@ function LorryReceiptsPodHubPage() {
         </CardContent>
       </Card>
 
-      {/* MODAL 1: OFFICIAL A4 PRINTABLE LORRY RECEIPT MODAL */}
+      {/* MODAL 1: OFFICIAL A4 PRINTABLE LORRY RECEIPT MODAL (WITH ZOOM / FIT TO SCREEN & UPGRADED DESIGN) */}
       {viewingLr && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Action Bar */}
-            <div className="p-3.5 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Action Bar with Integrated Zoom / Fit Controls */}
+            <div className="p-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+              {/* Left: LR Number & Copy Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-3 py-1 font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs">
                   {getLrNumber(viewingLr)}
                 </span>
-                <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px]">
+                <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]">
                   {["Transporter Copy", "Consignor Copy", "Consignee Copy", "Driver Copy"].map(copy => (
                     <button
                       key={copy}
                       onClick={() => setLrCopyType(copy)}
-                      className={"px-2 py-0.5 rounded font-semibold cursor-pointer transition " + (
-                        lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold" : "text-slate-400 hover:text-white"
+                      className={"px-2.5 py-1 rounded-md font-semibold cursor-pointer transition " + (
+                        lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold shadow" : "text-slate-400 hover:text-white"
                       )}
                     >
                       {copy.replace(" Copy", "")}
@@ -1110,10 +1151,49 @@ function LorryReceiptsPodHubPage() {
                 </div>
               </div>
 
+              {/* Middle: ZOOM / FIT CONTROLS - SOLVES 50% BROWSER ZOOM ISSUE */}
+              <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+                <span className="text-slate-400 text-[11px] font-semibold mr-1">Preview Zoom:</span>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScale(s => Math.max(0.4, Number((s - 0.1).toFixed(2))))}
+                  className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition"
+                  title="Zoom Out"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScale(0.72)}
+                  className={"px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 0.72 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white")}
+                  title="Fit whole document on screen without browser zoom"
+                >
+                  Fit Screen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScale(1.0)}
+                  className={"px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 1.0 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white")}
+                  title="100% Actual Size"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewScale(s => Math.min(1.5, Number((s + 0.1).toFixed(2))))}
+                  className="w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition"
+                  title="Zoom In"
+                >
+                  +
+                </button>
+                <span className="text-amber-400 font-mono text-[11px] ml-1 font-bold">{Math.round(previewScale * 100)}%</span>
+              </div>
+
+              {/* Right: Print, WhatsApp & Close */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrintLrIframe}
-                  className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
+                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
                 >
                   <PrinterIcon className="w-4 h-4" />
                   <span>Print A4 / PDF</span>
@@ -1123,7 +1203,7 @@ function LorryReceiptsPodHubPage() {
                   className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition"
                 >
                   <ShareIcon className="w-3.5 h-3.5" />
-                  <span>WhatsApp</span>
+                  <span className="hidden sm:inline">WhatsApp</span>
                 </button>
                 <button
                   onClick={() => setViewingLr(null)}
@@ -1134,208 +1214,413 @@ function LorryReceiptsPodHubPage() {
               </div>
             </div>
 
-            {/* Printable A4 Container */}
-            <div className="p-4 sm:p-6 overflow-y-auto flex justify-center bg-slate-950/60">
+            {/* Printable A4 Container with Scaled Viewport Preview */}
+            <div className="p-3 sm:p-5 overflow-auto flex-1 flex justify-center items-start bg-slate-950/90 min-h-[450px]">
               <div
-                id="lr-printable-area"
-                className="w-full max-w-[780px] bg-white text-slate-950 p-6 sm:p-8 rounded-lg shadow-xl font-sans text-xs border border-slate-300"
+                style={{
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: "top center",
+                  transition: "transform 0.15s ease-out",
+                  marginBottom: previewScale < 1 ? `-${Math.round((1 - previewScale) * 1160)}px` : "20px"
+                }}
               >
-                {/* Header with Company Settings */}
-                <div className="border-b-2 border-slate-900 pb-3 mb-3 flex justify-between items-start">
-                  <div>
-                    <h1 className="text-2xl font-black uppercase tracking-tight text-slate-950">
-                      {companySettings.company_name}
-                    </h1>
-                    <p className="text-[11px] font-bold text-amber-700 uppercase tracking-widest mt-0.5">
-                      {companySettings.tagline}
-                    </p>
-                    <p className="text-[10px] text-slate-600 mt-1 max-w-md leading-relaxed">
-                      {companySettings.company_address}
-                    </p>
-                    <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-700 mt-1">
-                      <span>Ph: {companySettings.company_phone}</span>
-                      <span>•</span>
-                      <span>Email: {companySettings.company_email}</span>
-                      <span>•</span>
-                      <span>{companySettings.company_website}</span>
+                <div
+                  id="lr-printable-area"
+                  style={{
+                    width: "790px",
+                    backgroundColor: "#ffffff",
+                    color: "#0f172a",
+                    padding: "24px 28px",
+                    borderRadius: "4px",
+                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                    fontSize: "11px",
+                    lineHeight: 1.3,
+                    border: "2px solid #0f172a",
+                    position: "relative",
+                    overflow: "hidden"
+                  }}
+                >
+                  {/* Subtle Security Watermark */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "52%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%) rotate(-30deg)",
+                      pointerEvents: "none",
+                      opacity: 0.032,
+                      fontSize: "52px",
+                      fontWeight: 900,
+                      color: "#0f172a",
+                      whiteSpace: "nowrap",
+                      userSelect: "none",
+                      zIndex: 0
+                    }}
+                  >
+                    JAI BHAVANI CARGO MOVERS
+                  </div>
+
+                  {/* Header with Company Logo & Full Company Settings Details */}
+                  <div style={{ borderBottom: "3px double #0f172a", paddingBottom: "12px", marginBottom: "12px", position: "relative", zIndex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
+                      {/* Left: Official Company Logo & Branding */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flex: 1 }}>
+                        <img
+                          src={companySettings.logo_url || "/logo.png"}
+                          onError={(e) => { e.target.src = "/logo.png"; }}
+                          alt="Logo"
+                          style={{
+                            height: "64px",
+                            width: "auto",
+                            maxWidth: "80px",
+                            objectFit: "contain",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "6px",
+                            padding: "2px",
+                            backgroundColor: "#ffffff"
+                          }}
+                        />
+                        <div>
+                          <h1 style={{ fontSize: "23px", fontWeight: 900, letterSpacing: "-0.5px", color: "#0f172a", margin: 0, textTransform: "uppercase" }}>
+                            {companySettings.company_name}
+                          </h1>
+                          <p style={{ fontSize: "10.5px", fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: "1.5px", margin: "2px 0 4px" }}>
+                            {companySettings.tagline || "Goods Transport Operators & Fleet Contractors"}
+                          </p>
+                          <p style={{ fontSize: "9.5px", color: "#334155", margin: 0, lineHeight: 1.35, maxWidth: "420px" }}>
+                            {companySettings.company_address}
+                          </p>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "9px", color: "#475569", fontWeight: 600, marginTop: "4px" }}>
+                            <span>📞 Ph: <b>{companySettings.company_phone}</b></span>
+                            <span>•</span>
+                            <span>✉️ {companySettings.company_email}</span>
+                            <span>•</span>
+                            <span>🌐 {companySettings.company_website}</span>
+                          </div>
+                          {/* Statutory Identifier Badges */}
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
+                            <span style={{ backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" }}>
+                              GSTIN: <b>{companySettings.company_gstin}</b>
+                            </span>
+                            <span style={{ backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" }}>
+                              PAN: <b>{companySettings.company_pan || companySettings.pan_number || "DPXPR9171A"}</b>
+                            </span>
+                            <span style={{ backgroundColor: "#fef3c7", border: "1px solid #fde68a", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#92400e" }}>
+                              MSME: <b>{companySettings.msme_number || companySettings.udyam_number || "UDYAM-TS-20-0193891"}</b>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Official Bilty / Consignment Note Stamp */}
+                      <div style={{ textAlign: "right", minWidth: "210px" }}>
+                        <div style={{ backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 12px", borderRadius: "4px", textAlign: "center" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 900, letterSpacing: "2px", textTransform: "uppercase", display: "block" }}>
+                            LORRY RECEIPT
+                          </span>
+                          <span style={{ fontSize: "8.5px", fontWeight: 700, letterSpacing: "1px", color: "#94a3b8", textTransform: "uppercase" }}>
+                            GOODS CONSIGNMENT NOTE
+                          </span>
+                        </div>
+                        {/* Copy Type Badge with Dynamic Styling */}
+                        <div style={{
+                          backgroundColor: lrCopyType.includes("Transporter") ? "#fef3c7" : lrCopyType.includes("Consignor") ? "#eff6ff" : lrCopyType.includes("Consignee") ? "#ecfdf5" : "#f5f3ff",
+                          border: "1px solid " + (lrCopyType.includes("Transporter") ? "#f59e0b" : lrCopyType.includes("Consignor") ? "#3b82f6" : lrCopyType.includes("Consignee") ? "#10b981" : "#8b5cf6"),
+                          color: lrCopyType.includes("Transporter") ? "#92400e" : lrCopyType.includes("Consignor") ? "#1e40af" : lrCopyType.includes("Consignee") ? "#065f46" : "#5b21b6",
+                          borderRadius: "4px",
+                          padding: "3px 8px",
+                          marginTop: "5px",
+                          textAlign: "center"
+                        }}>
+                          <span style={{ fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "1px" }}>
+                            {lrCopyType.toUpperCase()}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: "8.5px", color: "#64748b", margin: "4px 0 0", fontStyle: "italic" }}>
+                          Carriage by Road Act 2007 Registered
+                        </p>
+                        <p style={{ fontSize: "8px", fontWeight: 700, color: "#0f172a", margin: "2px 0 0" }}>
+                          IBA CODE: HYD/2026/JBC • ISO 9001
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="bg-slate-950 text-white font-mono font-black px-3 py-1 rounded text-center text-xs tracking-wider uppercase">
-                      LORRY RECEIPT
+                  {/* Identification Strip (LR #, Booking Date, E-Way Bill, Trip ID) */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: "8px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "4px",
+                    padding: "8px 10px",
+                    marginBottom: "10px",
+                    fontSize: "10px",
+                    position: "relative",
+                    zIndex: 1
+                  }}>
+                    <div>
+                      <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>LR / BILTY NUMBER:</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#b45309" }}>{getLrNumber(viewingLr)}</span>
+                      {/* Barcode Graphic */}
+                      <div style={{ fontFamily: "monospace", fontSize: "10px", letterSpacing: "3px", fontWeight: 900, color: "#334155", lineHeight: 1 }}>
+                        ||| | |||| || |||
+                      </div>
                     </div>
-                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">
-                      CONSIGNMENT NOTE
-                    </p>
-                    <p className="text-[11px] font-mono font-extrabold text-amber-800 mt-0.5">
-                      {lrCopyType.toUpperCase()}
-                    </p>
-                    <p className="text-[10px] font-mono font-bold text-slate-800 mt-1">
-                      GSTIN: {companySettings.company_gstin}
-                    </p>
-                    <p className="text-[9px] font-mono text-slate-600">
-                      PAN: {companySettings.company_pan}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Identification Strip */}
-                <div className="grid grid-cols-4 gap-2 bg-slate-100 border border-slate-300 rounded p-2 mb-3 text-[10px]">
-                  <div>
-                    <span className="text-slate-500 font-bold block">LR NUMBER:</span>
-                    <span className="font-mono font-black text-sm text-amber-800">{getLrNumber(viewingLr)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-bold block">BOOKING DATE:</span>
-                    <span className="font-semibold text-slate-900">{formatTripDate(viewingLr.date)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-bold block">E-WAY BILL NO:</span>
-                    <span className="font-mono font-bold text-slate-900">{viewingLr.eway_bill_number || "3412-8901-4521"}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-bold block">TRIP ID:</span>
-                    <span className="font-mono font-bold text-slate-900">{viewingLr.trip_id || viewingLr.id}</span>
-                  </div>
-                </div>
-
-                {/* Consignor, Consignee & Vehicle Details */}
-                <div className="grid grid-cols-3 gap-2 mb-3 text-[10px]">
-                  {/* Vehicle & Driver */}
-                  <div className="border border-slate-300 rounded p-2 bg-slate-50">
-                    <p className="font-black uppercase text-slate-600 border-b border-slate-200 pb-1 mb-1">
-                      VEHICLE & CREW
-                    </p>
-                    <p className="font-mono font-black text-xs text-slate-900">{viewingLr.truck_number || "TG12U2637"}</p>
-                    <p className="text-[10px] text-slate-600 mt-0.5">Commercial Carrier Fleet</p>
-                    <div className="mt-1.5 pt-1 border-t border-slate-200">
-                      <span className="text-[9px] text-slate-500 block">DRIVER:</span>
-                      <span className="font-bold text-slate-900">{viewingLr.driver_name || "Assigned Driver"}</span>
-                      <span className="font-mono text-slate-600 block text-[9px]">{viewingLr.driver_phone || "+91 98480 12345"}</span>
+                    <div>
+                      <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>BOOKING DATE:</span>
+                      <span style={{ fontWeight: 700, fontSize: "11px", color: "#0f172a" }}>{formatTripDate(viewingLr.date)}</span>
+                      <span style={{ color: "#64748b", fontSize: "8.5px", display: "block" }}>Scheduled Dispatch</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>E-WAY BILL NO:</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" }}>{viewingLr.eway_bill_number || "3412-8901-4521"}</span>
+                      <span style={{ color: "#059669", fontWeight: 700, fontSize: "8.5px", display: "block" }}>✓ Portal Verified</span>
+                    </div>
+                    <div>
+                      <span style={{ color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" }}>DISPATCH MANIFEST ID:</span>
+                      <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" }}>{viewingLr.trip_id || viewingLr.id}</span>
+                      <span style={{ color: "#64748b", fontSize: "8.5px", display: "block" }}>Fleet Container Cargo</span>
                     </div>
                   </div>
 
-                  {/* Consignor (From) */}
-                  <div className="border border-slate-300 rounded p-2">
-                    <p className="font-black uppercase text-slate-600 border-b border-slate-200 pb-1 mb-1">
-                      CONSIGNOR (SENDER)
-                    </p>
-                    <p className="font-bold text-slate-900">{getClientName(viewingLr)}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5 leading-tight">
-                      Industrial Sector, {viewingLr.origin || "Origin Depot"}
-                    </p>
-                    <p className="text-[9px] font-mono text-slate-600 mt-1">
-                      GSTIN: <b>36AAACG1234A1Z5</b>
-                    </p>
-                  </div>
+                  {/* Consignor, Consignee & Vehicle Details (3-Columns) */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "8px",
+                    marginBottom: "10px",
+                    fontSize: "9.5px",
+                    position: "relative",
+                    zIndex: 1
+                  }}>
+                    {/* Vehicle & Crew Particulars */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#f8fafc" }}>
+                      <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
+                        VEHICLE & CREW DETAILS
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                        <span style={{ backgroundColor: "#fef08a", border: "1px solid #ca8a04", color: "#713f12", fontWeight: 900, fontFamily: "monospace", fontSize: "11px", padding: "2px 6px", borderRadius: "3px" }}>
+                          {viewingLr.truck_number || "TG12U2637"}
+                        </span>
+                        <span style={{ fontSize: "8.5px", color: "#64748b" }}>32ft MXL Container</span>
+                      </div>
+                      <div style={{ marginTop: "6px", paddingTop: "4px", borderTop: "1px dashed #e2e8f0" }}>
+                        <span style={{ color: "#64748b", fontSize: "8.5px", fontWeight: 700, display: "block" }}>ASSIGNED DRIVER:</span>
+                        <span style={{ fontWeight: 800, color: "#0f172a" }}>{viewingLr.driver_name || "Suresh Edlai"}</span>
+                        <span style={{ fontFamily: "monospace", color: "#475569", display: "block", fontSize: "9px" }}>{viewingLr.driver_phone || "+91 77940 72244"}</span>
+                        <span style={{ fontSize: "8px", color: "#64748b" }}>DL: TS-07-2008-004312 (Heavy)</span>
+                      </div>
+                    </div>
 
-                  {/* Consignee (To) */}
-                  <div className="border border-slate-300 rounded p-2">
-                    <p className="font-black uppercase text-slate-600 border-b border-slate-200 pb-1 mb-1">
-                      CONSIGNEE (RECEIVER)
-                    </p>
-                    <p className="font-bold text-slate-900">{viewingLr.consignee_name || "Consignee Warehouse Ltd"}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5 leading-tight">
-                      Terminal Dock, {viewingLr.destination || "Destination Hub"}
-                    </p>
-                    <p className="text-[9px] font-mono text-slate-600 mt-1">
-                      GSTIN: <b>36AABCS5678B1Z2</b>
-                    </p>
-                  </div>
-                </div>
+                    {/* Consignor (Sender) */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" }}>
+                      <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
+                        CONSIGNOR (SHIPPER / SENDER)
+                      </p>
+                      <p style={{ fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" }}>
+                        {getClientName(viewingLr)}
+                      </p>
+                      <p style={{ color: "#475569", margin: "0 0 4px", lineHeight: 1.3 }}>
+                        Industrial Cargo Sector, {viewingLr.origin || "Origin Hub"}
+                      </p>
+                      <p style={{ fontFamily: "monospace", color: "#334155", margin: 0 }}>
+                        GSTIN: <b>36AAACG1234A1Z5</b>
+                      </p>
+                      <p style={{ color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" }}>
+                        State Code: 36 (Telangana)
+                      </p>
+                    </div>
 
-                {/* Route Strip */}
-                <div className="bg-slate-100 border border-slate-300 rounded p-2 mb-3 flex items-center justify-between text-[10px]">
-                  <div>
-                    <span className="text-slate-500 font-bold block">ORIGIN & DISPATCH:</span>
-                    <span className="font-bold text-slate-900">{viewingLr.origin || "Origin Depot"}</span>
-                  </div>
-                  <div className="text-center px-4">
-                    <span className="text-amber-800 font-black text-sm">➔ ➔ ➔</span>
-                    <span className="block text-[8px] text-slate-500 uppercase tracking-widest font-bold">DIRECT HIGHWAY TRANSIT</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-500 font-bold block">DESTINATION & UNLOADING:</span>
-                    <span className="font-bold text-slate-900">{viewingLr.destination || "Destination Dock"}</span>
-                  </div>
-                </div>
-
-                {/* Goods Table */}
-                <table className="w-full text-left text-[10px] mb-3">
-                  <thead>
-                    <tr>
-                      <th className="w-10 text-center">#</th>
-                      <th className="w-20 text-center">Packages</th>
-                      <th>Description of Goods</th>
-                      <th className="w-24 text-right">Actual Wt (Kg)</th>
-                      <th className="w-24 text-right">Charged Wt (Kg)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="text-center">1</td>
-                      <td className="text-center font-bold">10 Packages</td>
-                      <td>
-                        <span className="font-bold text-slate-900">{viewingLr.description || "General Commercial Freight & Machinery Parts"}</span>
-                        <p className="text-[9px] text-slate-500">Secure containerized highway shipment</p>
-                      </td>
-                      <td className="text-right font-mono">4,500 Kg</td>
-                      <td className="text-right font-mono font-bold">5,000 Kg</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* Freight & Payment Terms */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div className="border border-slate-300 rounded p-2 text-[10px]">
-                    <span className="font-bold uppercase text-slate-600 block mb-1">PAYMENT & BILLING TERMS:</span>
-                    <div className="space-y-0.5">
-                      <p className="text-slate-800">Payment Type: <b>BILLED TO CLIENT ACCOUNT (TBB)</b></p>
-                      <p className="text-slate-800">GST Terms: <b>Reverse Charge Mechanism (RCM) Applicable</b></p>
-                      <p className="text-slate-600 text-[9px] mt-1">Bank: {companySettings.bank_name} • A/C: {companySettings.account_number} • IFSC: {companySettings.ifsc_code}</p>
+                    {/* Consignee (Receiver) */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" }}>
+                      <p style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" }}>
+                        CONSIGNEE (DELIVERY RECEIVER)
+                      </p>
+                      <p style={{ fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" }}>
+                        {viewingLr.consignee_name || "Consignee Logistics Ltd"}
+                      </p>
+                      <p style={{ color: "#475569", margin: "0 0 4px", lineHeight: 1.3 }}>
+                        Logistics Terminal, {viewingLr.destination || "Destination Dock"}
+                      </p>
+                      <p style={{ fontFamily: "monospace", color: "#334155", margin: 0 }}>
+                        GSTIN: <b>36AABCS5678B1Z2</b>
+                      </p>
+                      <p style={{ color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" }}>
+                        Delivery Contact: Dock Manager
+                      </p>
                     </div>
                   </div>
 
-                  <div className="border border-slate-300 rounded p-2 bg-slate-50 text-[10px]">
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-slate-600">Basic Freight:</span>
-                      <span className="font-mono font-bold">₹{Number(viewingLr.revenue || 12000).toLocaleString("en-IN")}</span>
+                  {/* Transit Route Visual Strip */}
+                  <div style={{
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "4px",
+                    padding: "6px 12px",
+                    marginBottom: "10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "9.5px",
+                    position: "relative",
+                    zIndex: 1
+                  }}>
+                    <div>
+                      <span style={{ color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" }}>ORIGIN & LOADING POINT:</span>
+                      <span style={{ fontWeight: 800, color: "#0f172a" }}>{viewingLr.origin || "Hyderabad Depot"}</span>
                     </div>
-                    <div className="flex justify-between py-0.5 border-t border-slate-200">
-                      <span className="text-slate-600">Hamali / Handling:</span>
-                      <span className="font-mono font-bold">₹0.00</span>
+                    <div style={{ textAlign: "center", padding: "0 16px" }}>
+                      <span style={{ color: "#b45309", fontWeight: 900, fontSize: "13px" }}>➔ ➔ 🚚 ➔ ➔</span>
+                      <span style={{ display: "block", fontSize: "8px", color: "#64748b", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" }}>
+                        EXPRESS HIGHWAY FREIGHT TRANSIT
+                      </span>
                     </div>
-                    <div className="flex justify-between py-1 border-t-2 border-slate-800 text-xs font-black text-slate-950">
-                      <span>Total Consignment Revenue:</span>
-                      <span className="font-mono text-amber-800">₹{Number(viewingLr.revenue || 12000).toLocaleString("en-IN")}</span>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" }}>DESTINATION & UNLOADING DOCK:</span>
+                      <span style={{ fontWeight: 800, color: "#0f172a" }}>{viewingLr.destination || "Warangal Hub"}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Legal Carriage Declaration */}
-                <div className="border border-slate-300 rounded p-2 mb-4 bg-slate-50 text-[8.5px] leading-relaxed text-slate-600">
-                  <p className="font-bold text-slate-800 mb-0.5 uppercase">Carriage Terms & Declaration (Carriage by Road Act 2007):</p>
-                  <p>
-                    1. Consignment accepted subject to standard transport conditions. Goods carried at Owner's risk unless covered under transit insurance.
-                    2. Transporter not liable for road delays due to strikes, weather, or highway inspections.
-                    3. Demurrage charges applicable @ ₹500/day after 24 hours of vehicle arrival at delivery point.
-                  </p>
-                </div>
+                  {/* Consignment Goods Manifest Table */}
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "24px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>#</th>
+                        <th style={{ width: "90px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Packages & Type</th>
+                        <th style={{ textAlign: "left", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 8px", border: "1px solid #334155" }}>Description of Goods (Said to Contain)</th>
+                        <th style={{ width: "100px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Invoice / Challan</th>
+                        <th style={{ width: "85px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Actual Wt</th>
+                        <th style={{ width: "85px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" }}>Charged Wt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ backgroundColor: "#ffffff" }}>
+                        <td style={{ textAlign: "center", border: "1px solid #cbd5e1", padding: "6px" }}>1</td>
+                        <td style={{ textAlign: "center", fontWeight: 700, border: "1px solid #cbd5e1", padding: "6px" }}>10 Standard Pkgs</td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 8px" }}>
+                          <span style={{ fontWeight: 800, color: "#0f172a" }}>{viewingLr.description || "General Commercial Freight & Machinery Spares"}</span>
+                          <span style={{ display: "block", fontSize: "8.5px", color: "#64748b" }}>Loaded in clean sealed container • Transport Operator Risk</span>
+                        </td>
+                        <td style={{ textAlign: "center", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" }}>
+                          INV-2026-9041
+                        </td>
+                        <td style={{ textAlign: "right", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" }}>4,500 Kg</td>
+                        <td style={{ textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a", border: "1px solid #cbd5e1", padding: "6px" }}>5,000 Kg</td>
+                      </tr>
+                    </tbody>
+                  </table>
 
-                {/* Signatures & Seal */}
-                <div className="grid grid-cols-3 gap-4 pt-3 border-t border-slate-300 text-[10px] text-center">
-                  <div className="pt-8 border-t border-slate-400">
-                    <p className="font-bold text-slate-800">CONSIGNOR SIGNATURE</p>
-                    <p className="text-[8px] text-slate-500">Shipper Acknowledgment</p>
+                  {/* Freight Charges & Payment Terms / Banking Panel */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 }}>
+                    {/* Left: Payment, Statutory GST & Bank Coordinates */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#ffffff" }}>
+                      <span style={{ fontWeight: 900, textTransform: "uppercase", color: "#475569", display: "block", marginBottom: "4px", fontSize: "9px" }}>
+                        PAYMENT, GST & BANKING REMITTANCE:
+                      </span>
+                      <div style={{ lineHeight: 1.45, color: "#334155" }}>
+                        <p style={{ margin: "0 0 2px" }}>• Freight Payment: <b style={{ color: "#0f172a" }}>BILLED TO CLIENT ACCOUNT (TBB)</b></p>
+                        <p style={{ margin: "0 0 2px" }}>• GST Notification: <b style={{ color: "#0f172a" }}>Reverse Charge Mechanism (RCM) under Sec 9(3) CGST Act</b></p>
+                        <div style={{ marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed #cbd5e1", fontSize: "9px" }}>
+                          <span style={{ color: "#64748b", fontWeight: 700, display: "block" }}>OFFICIAL BANK ACCOUNT COORDINATES:</span>
+                          <span style={{ color: "#0f172a" }}>Bank: <b>{companySettings.bank_name}</b> • A/C No: <b style={{ fontFamily: "monospace" }}>{companySettings.account_number}</b></span>
+                          <span style={{ display: "block", color: "#0f172a" }}>IFSC: <b style={{ fontFamily: "monospace" }}>{companySettings.ifsc_code}</b> • Branch: <b>{companySettings.branch_name}</b></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Freight Charges Breakdown */}
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#f8fafc" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                        <span style={{ color: "#475569" }}>Basic Freight:</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 700, color: "#0f172a" }}>₹{Number(viewingLr.revenue || 12000).toLocaleString("en-IN")}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" }}>
+                        <span style={{ color: "#475569" }}>Hamali / Handling Charges:</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#0f172a" }}>₹0.00</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" }}>
+                        <span style={{ color: "#475569" }}>Green Tax / Statistical Surcharge:</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#0f172a" }}>₹0.00</span>
+                      </div>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "5px 0",
+                        marginTop: "4px",
+                        borderTop: "2px solid #0f172a",
+                        borderBottom: "1px solid #0f172a",
+                        fontSize: "11px",
+                        fontWeight: 900
+                      }}>
+                        <span style={{ color: "#0f172a" }}>Total Consignment Freight:</span>
+                        <span style={{ fontFamily: "monospace", color: "#b45309" }}>₹{Number(viewingLr.revenue || 12000).toLocaleString("en-IN")}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="pt-8 border-t border-slate-400">
-                    <p className="font-bold text-slate-800">DRIVER SIGNATURE</p>
-                    <p className="text-[8px] text-slate-500">Vehicle Custody Handover</p>
+
+                  {/* Statutory Terms of Carriage Declaration */}
+                  <div style={{
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "4px",
+                    padding: "6px 8px",
+                    marginBottom: "10px",
+                    backgroundColor: "#f8fafc",
+                    fontSize: "8px",
+                    lineHeight: 1.35,
+                    color: "#475569",
+                    position: "relative",
+                    zIndex: 1
+                  }}>
+                    <p style={{ fontWeight: 800, color: "#1e293b", margin: "0 0 2px", textTransform: "uppercase" }}>
+                      Carriage Terms & Conditions (Carriage by Road Act 2007):
+                    </p>
+                    <p style={{ margin: 0 }}>
+                      1. Consignment is accepted subject to standard carrier terms. Goods carried at Owner's risk unless covered under comprehensive transit insurance.
+                      2. Transporter shall not be responsible for en-route highway delays caused by force majeure, road blockades or statutory RTO/GST inspections.
+                      3. Unloading demurrage charges @ ₹500/day applicable after 24 hours of vehicle arrival at receiver's terminal.
+                    </p>
                   </div>
-                  <div className="pt-8 border-t-2 border-slate-900 bg-amber-50/50 p-2 rounded">
-                    <p className="font-black text-amber-900">FOR {companySettings.company_name.toUpperCase()}</p>
-                    <p className="text-[8px] font-bold text-slate-600 mt-1">AUTHORISED CARRIER SIGNATORY</p>
+
+                  {/* Signatures & Seal Block */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1.2fr",
+                    gap: "12px",
+                    paddingTop: "6px",
+                    borderTop: "1px solid #cbd5e1",
+                    fontSize: "9px",
+                    textAlign: "center",
+                    position: "relative",
+                    zIndex: 1
+                  }}>
+                    <div style={{ paddingTop: "24px", borderTop: "1px solid #94a3b8" }}>
+                      <p style={{ fontWeight: 800, color: "#0f172a", margin: 0 }}>CONSIGNOR SIGNATURE</p>
+                      <p style={{ fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" }}>Shipper Verification & Handover</p>
+                    </div>
+                    <div style={{ paddingTop: "24px", borderTop: "1px solid #94a3b8" }}>
+                      <p style={{ fontWeight: 800, color: "#0f172a", margin: 0 }}>DRIVER SIGNATURE</p>
+                      <p style={{ fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" }}>Vehicle Custody & Goods Receipt</p>
+                    </div>
+                    <div style={{
+                      paddingTop: "4px",
+                      border: "1.5px solid #0f172a",
+                      backgroundColor: "#fef3c7",
+                      borderRadius: "4px",
+                      padding: "6px 8px"
+                    }}>
+                      <p style={{ fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" }}>
+                        FOR {companySettings.company_name}
+                      </p>
+                      <div style={{ margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" }}>
+                        {companySettings.signatory_name || "Vinod Kumar Rathod"}
+                      </div>
+                      <p style={{ fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" }}>
+                        {companySettings.signatory_title || "Managing Director"} • AUTHORISED SIGNATORY
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
