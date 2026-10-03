@@ -370,87 +370,75 @@ function _renderExpBillBadges(t, g, e, he, et) {
   if (!bills || bills.length === 0) return null;
   const count = bills.length;
   return (
-    <div className="flex items-center gap-1.5 shrink-0">
-      <button
-        type="button"
-        onClick={(E) => {
-          E.stopPropagation();
-          he({ bills, initialIndex: 0, expense: t });
-        }}
-        className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 px-2 py-0.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
-        title={count === 1 ? "View attached bill / receipt" : count + " attached bills"}
-      >
-        <span className="text-xs shrink-0">🧾</span>
-        {count === 1 ? " Bill" : " " + count + " Bills"}
-      </button>
-      <div className="flex items-center -space-x-1.5 overflow-hidden">
-        {bills.slice(0, 3).map((item, idx) => (
-          <div
-            key={idx}
-            onClick={(E) => {
-              E.stopPropagation();
-              he({ bills, initialIndex: idx, expense: t });
-            }}
-            className="w-6 h-6 rounded border border-zinc-700 bg-zinc-900 overflow-hidden cursor-pointer hover:scale-110 transition-transform shadow-md shrink-0 ring-1 ring-black/40"
-            title={item.name || ("Bill #" + (idx + 1))}
-          >
-            <img
-              src={item.url}
-              alt={item.name || "receipt"}
-              className="w-full h-full object-cover"
-              onError={(E) => {
-                if (item.url && item.url.includes("/hcgi/platform/api/files/")) {
-                  const alt = item.url.replace("/hcgi/platform/api/files/", "/api/files/");
-                  if (E.currentTarget.src !== alt) {
-                    E.currentTarget.src = alt;
-                    return;
-                  }
-                }
-                E.currentTarget.style.display = "none";
-                const p = E.currentTarget.parentElement;
-                if (p) {
-                  p.title = "Bill needs re-upload";
-                  p.innerHTML = '<span style=\"display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:rgba(245,158,11,0.2);color:#f59e0b;font-size:9px;font-weight:bold\">⚠️</span>';
-                }
-              }}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={(E) => {
+        E.stopPropagation();
+        he({ bills, initialIndex: 0, expense: t });
+      }}
+      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 px-2.5 py-1 rounded-lg cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm shrink-0"
+      title={count === 1 ? "Click to view attached bill receipt" : ("Click to view " + count + " attached bills")}
+    >
+      <span className="text-xs shrink-0">🧾</span>
+      <span>{count > 1 ? (count + " Bills") : "View Bill"}</span>
+    </button>
   );
 }
 `;
 
 const helpersSource = `
 function _getExpImgs(t, g) {
+  if (!t) return [];
   const I = [];
-  const S = new Set();
-  const add = (n, u) => {
-    if (u && !S.has(u)) {
-      S.add(u);
-      I.push({ name: n || "Receipt", url: u });
-    }
+  const canonicalSet = new Set();
+  const baseNameSet = new Set();
+
+  const getCleanKey = (str) => {
+    if (!str || typeof str !== "string") return "";
+    let clean = str.split("?")[0];
+    clean = clean.split("/").pop() || "";
+    // Strip timestamp prefixes like bill_17909..._
+    clean = clean.replace(/^bill_\\d+_/i, "");
+    // Strip pocketbase random hash suffixes like _a1b2c3d4 before extension
+    clean = clean.replace(/_[a-zA-Z0-9]{8,15}(?=\\.[a-z0-9]+$)/i, "");
+    return clean.toLowerCase().trim();
   };
 
-  (t.image_urls || []).forEach(f => {
-    if (!f) return;
-    const u = typeof f === "string" && (f.startsWith("http") || f.startsWith("/")) ? f : g.files.getUrl(t, f);
+  const add = (n, u) => {
+    if (!u || typeof u !== "string") return;
+    // Canonical relative path
+    const canonical = u.replace(/^(?:https?:\\/\\/[^\\/]+)?(?:\\/hcgi\\/platform)?/, "");
+    const cleanKey = getCleanKey(u) || getCleanKey(n);
+
+    if (canonicalSet.has(canonical)) return;
+    if (cleanKey && cleanKey.length >= 4 && baseNameSet.has(cleanKey)) return;
+
+    canonicalSet.add(canonical);
+    if (cleanKey && cleanKey.length >= 4) baseNameSet.add(cleanKey);
+
+    I.push({ name: n || "Receipt", url: u });
+  };
+
+  // Process items in reverse to prioritize the latest/freshest upload if re-uploaded
+  const rawImages = (Array.isArray(t.image_urls) ? t.image_urls : []).filter(Boolean).slice().reverse();
+  rawImages.forEach(f => {
+    const u = typeof f === "string" && (f.startsWith("http") || f.startsWith("/")) ? f : (g && g.files && g.files.getUrl ? g.files.getUrl(t, f) : f);
     add(typeof f === "string" ? f : "Receipt", u);
   });
 
-  (t.documents || []).forEach(f => {
-    if (!f) return;
-    const u = typeof f === "string" && (f.startsWith("http") || f.startsWith("/")) ? f : g.files.getUrl(t, f);
+  const rawDocs = (Array.isArray(t.documents) ? t.documents : []).filter(Boolean).slice().reverse();
+  rawDocs.forEach(f => {
+    if (typeof f === "string" && !f.match(/\\.(jpg|jpeg|png|webp|gif|pdf)$/i)) return;
+    const u = typeof f === "string" && (f.startsWith("http") || f.startsWith("/")) ? f : (g && g.files && g.files.getUrl ? g.files.getUrl(t, f) : f);
     add(typeof f === "string" ? f : "Document", u);
   });
 
   if (t.bill && typeof t.bill === "string") {
-    const u = t.bill.startsWith("http") || t.bill.startsWith("/") ? t.bill : g.files.getUrl(t, t.bill);
+    const u = t.bill.startsWith("http") || t.bill.startsWith("/") ? t.bill : (g && g.files && g.files.getUrl ? g.files.getUrl(t, t.bill) : t.bill);
     add("Bill", u);
   }
   if (t.receipt && typeof t.receipt === "string") {
-    const u = t.receipt.startsWith("http") || t.receipt.startsWith("/") ? t.receipt : g.files.getUrl(t, t.receipt);
+    const u = t.receipt.startsWith("http") || t.receipt.startsWith("/") ? t.receipt : (g && g.files && g.files.getUrl ? g.files.getUrl(t, t.receipt) : t.receipt);
     add("Receipt", u);
   }
 
