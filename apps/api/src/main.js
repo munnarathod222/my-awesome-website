@@ -555,7 +555,9 @@ productivityRouter.post('/tasks/update', (req, res) => {
       name: req.headers['x-actor-name'] || 'Staff Member',
       role: req.headers['x-actor-role'] || 'manager'
     };
-    const task = productivityService.updateTask(req.body.id, req.body, actor);
+    const taskId = req.body.taskId || req.body.id;
+    const updates = req.body.updates || req.body;
+    const task = productivityService.updateTask(taskId, updates, actor);
     if (!task) return res.status(404).json({ success: false, error: 'Task not found' });
     return res.json({ success: true, task });
   } catch (err) {
@@ -574,7 +576,8 @@ productivityRouter.delete('/tasks/:id', (req, res) => {
 
 productivityRouter.post('/tasks/delete', (req, res) => {
   try {
-    const ok = productivityService.deleteTask(req.body.id);
+    const taskId = req.body.taskId || req.body.id;
+    const ok = productivityService.deleteTask(taskId);
     return res.json({ success: ok });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
@@ -606,7 +609,8 @@ productivityRouter.post('/reminders', (req, res) => {
 
 productivityRouter.post('/reminders/snooze', (req, res) => {
   try {
-    const reminder = productivityService.snoozeReminder(req.body.id, req.body.minutes || 30);
+    const reminderId = req.body.reminderId || req.body.id;
+    const reminder = productivityService.snoozeReminder(reminderId, req.body.minutes || 30);
     if (!reminder) return res.status(404).json({ success: false, error: 'Reminder not found' });
     return res.json({ success: true, reminder });
   } catch (err) {
@@ -616,7 +620,8 @@ productivityRouter.post('/reminders/snooze', (req, res) => {
 
 productivityRouter.post('/reminders/complete', (req, res) => {
   try {
-    const reminder = productivityService.completeReminder(req.body.id);
+    const reminderId = req.body.reminderId || req.body.id;
+    const reminder = productivityService.completeReminder(reminderId);
     if (!reminder) return res.status(404).json({ success: false, error: 'Reminder not found' });
     return res.json({ success: true, reminder });
   } catch (err) {
@@ -635,7 +640,8 @@ productivityRouter.get('/notifications', (req, res) => {
 
 productivityRouter.post('/notifications/ack', (req, res) => {
   try {
-    const notif = productivityService.acknowledgeNotification(req.body.id);
+    const notificationId = req.body.notificationId || req.body.id;
+    const notif = productivityService.acknowledgeNotification(notificationId);
     return res.json({ success: true, notification: notif });
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
@@ -672,7 +678,8 @@ productivityRouter.post('/workflows/review', (req, res) => {
       name: req.headers['x-actor-name'] || 'Authorised Reviewer',
       role: req.headers['x-actor-role'] || 'manager'
     };
-    const wf = productivityService.processApproval(req.body.id, req.body.action, req.body.reason, actor);
+    const workflowId = req.body.workflowId || req.body.id;
+    const wf = productivityService.processApproval(workflowId, req.body.action, req.body.reason || '', actor);
     if (!wf) return res.status(404).json({ success: false, error: 'Workflow request not found' });
     return res.json({ success: true, workflow: wf });
   } catch (err) {

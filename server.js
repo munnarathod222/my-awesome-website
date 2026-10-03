@@ -233,8 +233,14 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { taskId, updates } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const taskId = body.taskId || body.id;
+          const updates = body.updates || body;
           const task = productivityService.updateTask(taskId, updates, actor);
+          if (!task) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Task not found' }));
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, task }));
         } catch (err) {
@@ -251,7 +257,8 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { taskId } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const taskId = body.taskId || body.id;
           const success = productivityService.deleteTask(taskId, actor);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success }));
@@ -294,8 +301,14 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { reminderId, minutes } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const reminderId = body.reminderId || body.id;
+          const minutes = body.minutes || 30;
           const reminder = productivityService.snoozeReminder(reminderId, minutes);
+          if (!reminder) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Reminder not found' }));
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, reminder }));
         } catch (err) {
@@ -312,8 +325,13 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { reminderId } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const reminderId = body.reminderId || body.id;
           const reminder = productivityService.completeReminder(reminderId);
+          if (!reminder) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Reminder not found' }));
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, reminder }));
         } catch (err) {
@@ -337,7 +355,8 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { notificationId } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const notificationId = body.notificationId || body.id;
           const notif = productivityService.acknowledgeNotification(notificationId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, notification: notif }));
@@ -380,8 +399,15 @@ const server = http.createServer((req, res) => {
       req.on('data', c => b += c);
       req.on('end', () => {
         try {
-          const { workflowId, action, reason } = JSON.parse(b);
+          const body = JSON.parse(b);
+          const workflowId = body.workflowId || body.id;
+          const action = body.action;
+          const reason = body.reason || '';
           const workflow = productivityService.processApproval(workflowId, action, reason, actor);
+          if (!workflow) {
+            res.writeHead(404, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'Workflow not found' }));
+          }
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, workflow }));
         } catch (err) {
