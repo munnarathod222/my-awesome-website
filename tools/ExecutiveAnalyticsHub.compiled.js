@@ -513,9 +513,10 @@ const defaultRoutes = [
   }
 ];
 function ExecutiveAnalyticsHub() {
-  const jsx = e.jsx;
-  const jsxs = e.jsxs;
-  const Fragment = c.Fragment;
+  const c = C;
+  const _jsx = (e && e.jsx) ? e.jsx : (f, d, m) => (c.createElement ? c.createElement(f, d) : null);
+  const _jsxs = (e && (e.jsxs || e.jsx)) ? (e.jsxs || e.jsx) : _jsx;
+  const Fragment = (c && c.Fragment) ? c.Fragment : 'div';
   const [trips, setTrips] = c.useState(() => {
     try {
       const saved = localStorage.getItem("jc_trips");
@@ -881,19 +882,19 @@ function ExecutiveAnalyticsHub() {
   const closeDrilldown = () => {
     setDrilldownModal({ isOpen: false, type: "", title: "", subtitle: "", data: null });
   };
-  return /* @__PURE__ */ e.jsxs("div", { className: "space-y-6 select-none animate-in fade-in duration-300 pb-12 font-sans text-slate-100 relative", children: [
-    /* @__PURE__ */ e.jsxs("div", { className: "flex flex-col xl:flex-row xl:items-center justify-between gap-4", children: [
-      /* @__PURE__ */ e.jsxs("div", { children: [
-        /* @__PURE__ */ e.jsxs("h1", { className: "text-3xl font-black tracking-tight text-white flex items-center gap-3", children: [
-          /* @__PURE__ */ e.jsx("span", { children: "Analytics Hub" }),
-          /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", children: "Live Fleet Command" })
+  return /* @__PURE__ */ _jsxs("div", { className: "space-y-6 select-none animate-in fade-in duration-300 pb-12 font-sans text-slate-100 relative", children: [
+    /* @__PURE__ */ _jsxs("div", { className: "flex flex-col xl:flex-row xl:items-center justify-between gap-4", children: [
+      /* @__PURE__ */ _jsxs("div", { children: [
+        /* @__PURE__ */ _jsxs("h1", { className: "text-3xl font-black tracking-tight text-white flex items-center gap-3", children: [
+          /* @__PURE__ */ _jsx("span", { children: "Analytics Hub" }),
+          /* @__PURE__ */ _jsx("span", { className: "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", children: "Live Fleet Command" })
         ] }),
-        /* @__PURE__ */ e.jsx("p", { className: "text-sm text-slate-400 mt-1", children: "Financial and operational performance overview for your logistics business." })
+        /* @__PURE__ */ _jsx("p", { className: "text-sm text-slate-400 mt-1", children: "Financial and operational performance overview for your logistics business." })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-3 relative", children: [
-        /* @__PURE__ */ e.jsxs("div", { className: "relative min-w-[260px] sm:min-w-[300px]", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-sm", children: "\u{1F50D}" }),
-          /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ _jsxs("div", { className: "flex flex-wrap items-center gap-3 relative", children: [
+        /* @__PURE__ */ _jsxs("div", { className: "relative min-w-[260px] sm:min-w-[300px]", children: [
+          /* @__PURE__ */ _jsx("span", { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-sm", children: "\u{1F50D}" }),
+          /* @__PURE__ */ _jsx(
             "input",
             {
               type: "text",
@@ -903,9 +904,9 @@ function ExecutiveAnalyticsHub() {
               className: "w-full pl-9 pr-14 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition shadow-inner"
             }
           ),
-          /* @__PURE__ */ e.jsx("span", { className: "absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none", children: /* @__PURE__ */ e.jsx("kbd", { className: "px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded", children: "\u2318K" }) })
+          /* @__PURE__ */ _jsx("span", { className: "absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none", children: /* @__PURE__ */ _jsx("kbd", { className: "px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded", children: "\u2318K" }) })
         ] }),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "button",
           {
             type: "button",
@@ -913,42 +914,42 @@ function ExecutiveAnalyticsHub() {
             className: "relative p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition cursor-pointer",
             title: "View Active Fleet Notifications",
             children: [
-              /* @__PURE__ */ e.jsx("span", { children: "\u{1F514}" }),
-              /* @__PURE__ */ e.jsx("span", { className: "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center shadow-xs", children: fleetAlerts.length })
+              /* @__PURE__ */ _jsx("span", { children: "\u{1F514}" }),
+              /* @__PURE__ */ _jsx("span", { className: "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center shadow-xs", children: fleetAlerts.length })
             ]
           }
         ),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "div",
           {
             onClick: () => setIsProfileModalOpen(true),
             className: "flex items-center gap-2.5 pl-1 pr-3 py-1 bg-slate-900 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition",
             children: [
-              /* @__PURE__ */ e.jsx("div", { className: "w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs", children: "JB" }),
-              /* @__PURE__ */ e.jsxs("div", { className: "text-left hidden sm:block", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-xs font-bold text-white leading-tight", children: "Vinod Kumar Rathod" }),
-                /* @__PURE__ */ e.jsx("div", { className: "text-[10px] text-slate-400 leading-tight", children: "Fleet Manager" })
+              /* @__PURE__ */ _jsx("div", { className: "w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs", children: "JB" }),
+              /* @__PURE__ */ _jsxs("div", { className: "text-left hidden sm:block", children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-xs font-bold text-white leading-tight", children: "Vinod Kumar Rathod" }),
+                /* @__PURE__ */ _jsx("div", { className: "text-[10px] text-slate-400 leading-tight", children: "Fleet Manager" })
               ] })
             ]
           }
         ),
-        /* @__PURE__ */ e.jsxs("div", { className: "relative", children: [
-          /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs("div", { className: "relative", children: [
+          /* @__PURE__ */ _jsxs(
             "button",
             {
               type: "button",
               onClick: () => setIsExportMenuOpen(!isExportMenuOpen),
               className: "px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 transition flex items-center gap-2 cursor-pointer",
               children: [
-                /* @__PURE__ */ e.jsx("span", { children: "\u{1F4E5}" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Export Report" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-[10px] opacity-70", children: "\u25BC" })
+                /* @__PURE__ */ _jsx("span", { children: "\u{1F4E5}" }),
+                /* @__PURE__ */ _jsx("span", { children: "Export Report" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-[10px] opacity-70", children: "\u25BC" })
               ]
             }
           ),
-          isExportMenuOpen && /* @__PURE__ */ e.jsxs("div", { className: "absolute right-0 top-12 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in zoom-in-95 duration-150", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider", children: "Export Options" }),
-            /* @__PURE__ */ e.jsxs(
+          isExportMenuOpen && /* @__PURE__ */ _jsxs("div", { className: "absolute right-0 top-12 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in zoom-in-95 duration-150", children: [
+            /* @__PURE__ */ _jsx("div", { className: "px-3 py-1.5 text-[10px] font-bold uppercase text-slate-500 tracking-wider", children: "Export Options" }),
+            /* @__PURE__ */ _jsxs(
               "button",
               {
                 type: "button",
@@ -958,12 +959,12 @@ function ExecutiveAnalyticsHub() {
                 },
                 className: "w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition cursor-pointer",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-emerald-400", children: "\u{1F4CA}" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-emerald-400", children: "\u{1F4CA}" }),
                   " Download Excel (.xlsx)"
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "button",
               {
                 type: "button",
@@ -973,12 +974,12 @@ function ExecutiveAnalyticsHub() {
                 },
                 className: "w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition cursor-pointer",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-rose-400", children: "\u{1F4C4}" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-rose-400", children: "\u{1F4C4}" }),
                   " Download PDF Report (.pdf)"
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "button",
               {
                 type: "button",
@@ -998,7 +999,7 @@ function ExecutiveAnalyticsHub() {
                 },
                 className: "w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-200 hover:bg-slate-800 flex items-center gap-2.5 transition cursor-pointer",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-blue-400", children: "\u{1F4CB}" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-blue-400", children: "\u{1F4CB}" }),
                   " Copy Summary to Clipboard"
                 ]
               }
@@ -1007,17 +1008,17 @@ function ExecutiveAnalyticsHub() {
         ] })
       ] })
     ] }),
-    isNotificationsOpen && /* @__PURE__ */ e.jsxs("div", { className: "absolute right-0 top-16 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 animate-in zoom-in-95 duration-150", children: [
-      /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center border-b border-slate-800 pb-2 mb-3", children: [
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-sm", children: "\u{1F514}" }),
-          /* @__PURE__ */ e.jsxs("span", { className: "text-xs font-bold text-white", children: [
+    isNotificationsOpen && /* @__PURE__ */ _jsxs("div", { className: "absolute right-0 top-16 w-80 sm:w-96 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 z-50 animate-in zoom-in-95 duration-150", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center border-b border-slate-800 pb-2 mb-3", children: [
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-sm", children: "\u{1F514}" }),
+          /* @__PURE__ */ _jsxs("span", { className: "text-xs font-bold text-white", children: [
             "Active Fleet Notifications (",
             fleetAlerts.length,
             ")"
           ] })
         ] }),
-        /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ _jsx(
           "button",
           {
             type: "button",
@@ -1027,7 +1028,7 @@ function ExecutiveAnalyticsHub() {
           }
         )
       ] }),
-      /* @__PURE__ */ e.jsx("div", { className: "space-y-2 max-h-80 overflow-y-auto pr-1", children: fleetAlerts.map((alt) => /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsx("div", { className: "space-y-2 max-h-80 overflow-y-auto pr-1", children: fleetAlerts.map((alt) => /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => {
@@ -1042,16 +1043,16 @@ function ExecutiveAnalyticsHub() {
           },
           className: "p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 transition cursor-pointer",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between text-[11px] font-bold text-slate-200", children: [
-              /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5", children: [
-                /* @__PURE__ */ e.jsx("span", { children: alt.icon }),
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between text-[11px] font-bold text-slate-200", children: [
+              /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5", children: [
+                /* @__PURE__ */ _jsx("span", { children: alt.icon }),
                 " ",
                 alt.title
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 font-normal", children: alt.time })
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500 font-normal", children: alt.time })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "text-[10px] text-blue-400 mt-1 font-semibold flex items-center gap-1", children: [
-              /* @__PURE__ */ e.jsx("span", { children: "\u26A1 Action:" }),
+            /* @__PURE__ */ _jsxs("div", { className: "text-[10px] text-blue-400 mt-1 font-semibold flex items-center gap-1", children: [
+              /* @__PURE__ */ _jsx("span", { children: "\u26A1 Action:" }),
               " ",
               alt.actionTitle
             ] })
@@ -1060,12 +1061,12 @@ function ExecutiveAnalyticsHub() {
         alt.id
       )) })
     ] }),
-    /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 px-4 shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs", children: [
-      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "START" }),
-          /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
-          /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ _jsxs("div", { className: "bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 px-4 shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "START" }),
+          /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
+          /* @__PURE__ */ _jsx(
             "input",
             {
               type: "date",
@@ -1075,11 +1076,11 @@ function ExecutiveAnalyticsHub() {
             }
           )
         ] }),
-        /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 font-bold", children: "\u2794" }),
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "END" }),
-          /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
-          /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ _jsx("span", { className: "text-slate-600 font-bold", children: "\u2794" }),
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "END" }),
+          /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
+          /* @__PURE__ */ _jsx(
             "input",
             {
               type: "date",
@@ -1089,38 +1090,38 @@ function ExecutiveAnalyticsHub() {
             }
           )
         ] }),
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "VIEW" }),
-          /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "VIEW" }),
+          /* @__PURE__ */ _jsxs(
             "select",
             {
               value: viewType,
               onChange: (e) => setViewType(e.target.value),
               className: "bg-transparent text-white font-semibold text-xs focus:outline-hidden cursor-pointer",
               children: [
-                /* @__PURE__ */ e.jsx("option", { value: "Daily View", className: "bg-slate-900", children: "Daily View" }),
-                /* @__PURE__ */ e.jsx("option", { value: "Weekly View", className: "bg-slate-900", children: "Weekly View" }),
-                /* @__PURE__ */ e.jsx("option", { value: "Monthly View", className: "bg-slate-900", children: "Monthly View" }),
-                /* @__PURE__ */ e.jsx("option", { value: "Quarterly View", className: "bg-slate-900", children: "Quarterly View" })
+                /* @__PURE__ */ _jsx("option", { value: "Daily View", className: "bg-slate-900", children: "Daily View" }),
+                /* @__PURE__ */ _jsx("option", { value: "Weekly View", className: "bg-slate-900", children: "Weekly View" }),
+                /* @__PURE__ */ _jsx("option", { value: "Monthly View", className: "bg-slate-900", children: "Monthly View" }),
+                /* @__PURE__ */ _jsx("option", { value: "Quarterly View", className: "bg-slate-900", children: "Quarterly View" })
               ]
             }
           )
         ] }),
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-emerald-400", children: "CLIENT" }),
-          /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold uppercase text-emerald-400", children: "CLIENT" }),
+          /* @__PURE__ */ _jsx(
             "select",
             {
               value: selectedClient,
               onChange: (e) => setSelectedClient(e.target.value),
               className: "bg-transparent text-white font-semibold text-xs focus:outline-hidden cursor-pointer max-w-[190px] truncate",
-              children: clientsList.map((c) => /* @__PURE__ */ e.jsx("option", { value: c.id, className: "bg-slate-900", children: c.name }, c.id))
+              children: clientsList.map((c) => /* @__PURE__ */ _jsx("option", { value: c.id, className: "bg-slate-900", children: c.name }, c.id))
             }
           )
         ] })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-        /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1", children: ["7D", "30D", "3M", "6M", "1Y", "Custom"].map((pill) => /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ _jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+        /* @__PURE__ */ _jsx("div", { className: "bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1", children: ["7D", "30D", "3M", "6M", "1Y", "Custom"].map((pill) => /* @__PURE__ */ _jsx(
           "button",
           {
             type: "button",
@@ -1130,7 +1131,7 @@ function ExecutiveAnalyticsHub() {
           },
           pill
         )) }),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "button",
           {
             type: "button",
@@ -1142,12 +1143,12 @@ function ExecutiveAnalyticsHub() {
             },
             className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer",
             children: [
-              /* @__PURE__ */ e.jsx("span", { children: "\u{1F504}" }),
+              /* @__PURE__ */ _jsx("span", { children: "\u{1F504}" }),
               " Reset"
             ]
           }
         ),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "button",
           {
             type: "button",
@@ -1156,15 +1157,15 @@ function ExecutiveAnalyticsHub() {
             },
             className: "px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/20 transition cursor-pointer",
             children: [
-              /* @__PURE__ */ e.jsx("span", { children: "\u26A1" }),
+              /* @__PURE__ */ _jsx("span", { children: "\u26A1" }),
               " Apply Filters"
             ]
           }
         )
       ] })
     ] }),
-    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4", children: [
-      /* @__PURE__ */ e.jsxs(
+    /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4", children: [
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1177,33 +1178,33 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-emerald-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Revenue Analytics",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u20B9" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Revenue" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u20B9" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Revenue" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-emerald-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-emerald-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
                   "\u20B9",
                   currentMetrics.revenue.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +18.4%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +18.4%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,28 Q15,35 30,22 T60,18 T85,8 T100,5", fill: "none", stroke: "#10b981", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "5", r: "3", fill: "#10b981" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,28 Q15,35 30,22 T60,18 T85,8 T100,5", fill: "none", stroke: "#10b981", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "5", r: "3", fill: "#10b981" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1216,33 +1217,33 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-rose-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Expenses Audit",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F4B3}" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Expenses" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F4B3}" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Expenses" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-rose-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-rose-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
                   "\u20B9",
                   currentMetrics.expenses.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2198 -6.2%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2198 -6.2%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,15 Q20,10 40,25 T70,18 T90,30 T100,28", fill: "none", stroke: "#f43f5e", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "28", r: "3", fill: "#f43f5e" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,15 Q20,10 40,25 T70,18 T90,30 T100,28", fill: "none", stroke: "#f43f5e", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "28", r: "3", fill: "#f43f5e" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1255,33 +1256,33 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-cyan-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Profitability Matrix",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F4CA}" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Net Profit" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F4CA}" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Net Profit" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-cyan-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-cyan-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsxs("div", { className: "text-2xl font-black text-white tracking-tight", children: [
                   "\u20B9",
                   currentMetrics.netProfit.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-cyan-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +42.7%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-cyan-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +42.7%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,32 Q25,30 45,22 T75,15 T90,8 T100,4", fill: "none", stroke: "#06b6d4", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "4", r: "3", fill: "#06b6d4" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,32 Q25,30 45,22 T75,15 T90,8 T100,4", fill: "none", stroke: "#06b6d4", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "4", r: "3", fill: "#06b6d4" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1294,30 +1295,30 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-purple-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Margin Trajectory",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "%" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Profit Margin" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "%" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Profit Margin" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-purple-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-purple-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.margin }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-purple-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +2.1%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.margin }),
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-purple-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +2.1%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,28 Q30,22 55,20 T80,12 T100,8", fill: "none", stroke: "#a855f7", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "8", r: "3", fill: "#a855f7" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,28 Q30,22 55,20 T80,12 T100,8", fill: "none", stroke: "#a855f7", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "8", r: "3", fill: "#a855f7" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1330,30 +1331,30 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-blue-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Trip Manifest",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F69B}" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Trips" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F69B}" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total Trips" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-blue-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-blue-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.trips }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +12.5%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.trips }),
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +12.5%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,30 Q20,32 40,20 T70,16 T90,10 T100,6", fill: "none", stroke: "#3b82f6", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "6", r: "3", fill: "#3b82f6" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,30 Q20,32 40,20 T70,16 T90,10 T100,6", fill: "none", stroke: "#3b82f6", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "6", r: "3", fill: "#3b82f6" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1366,30 +1367,30 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-amber-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Distance Analytics",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F6E3}\uFE0F" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total KMs Driven" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F6E3}\uFE0F" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Total KMs Driven" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-amber-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-amber-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.kms }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +9.8%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.kms }),
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +9.8%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,25 Q25,28 50,18 T80,14 T100,9", fill: "none", stroke: "#f59e0b", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "9", r: "3", fill: "#f59e0b" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,25 Q25,28 50,18 T80,14 T100,9", fill: "none", stroke: "#f59e0b", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "9", r: "3", fill: "#f59e0b" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1402,30 +1403,30 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-teal-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Utilization Breakdown",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u23F1\uFE0F" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Fleet Utilization" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u23F1\uFE0F" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Fleet Utilization" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-teal-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-teal-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.utilization }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-teal-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2197 +6.3%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.utilization }),
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-teal-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2197 +6.3%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,28 Q30,30 55,20 T80,15 T100,10", fill: "none", stroke: "#14b8a6", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "10", r: "3", fill: "#14b8a6" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,28 Q30,30 55,20 T80,15 T100,10", fill: "none", stroke: "#14b8a6", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "10", r: "3", fill: "#14b8a6" })
               ] }) })
             ] })
           ]
         }
       ),
-      /* @__PURE__ */ e.jsxs(
+      /* @__PURE__ */ _jsxs(
         "div",
         {
           onClick: () => setDrilldownModal({
@@ -1438,53 +1439,53 @@ function ExecutiveAnalyticsHub() {
           className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-indigo-500/50 hover:bg-slate-850/80 transition-all duration-200 cursor-pointer group",
           title: "Click to Deep-Drill Driver Matrix",
           children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
-                /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F465}" }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Active Drivers" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ _jsx("div", { className: "w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm font-black group-hover:scale-110 transition", children: "\u{1F465}" }),
+                /* @__PURE__ */ _jsx("span", { className: "text-xs font-bold text-slate-400 group-hover:text-slate-200 transition", children: "Active Drivers" })
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 group-hover:text-indigo-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-600 group-hover:text-indigo-400 transition text-xs font-bold", children: "\u{1F50D} Drill" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
-                /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.drivers }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { children: "\u2192 0%" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
+                /* @__PURE__ */ _jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: currentMetrics.drivers }),
+                /* @__PURE__ */ _jsxs("div", { className: "text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-1", children: [
+                  /* @__PURE__ */ _jsx("span", { children: "\u2192 0%" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
                 ] })
               ] }),
-              /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
-                /* @__PURE__ */ e.jsx("path", { d: "M0,20 Q30,18 60,20 T100,20", fill: "none", stroke: "#6366f1", strokeWidth: "2.5", strokeLinecap: "round" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "20", r: "3", fill: "#6366f1" })
+              /* @__PURE__ */ _jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+                /* @__PURE__ */ _jsx("path", { d: "M0,20 Q30,18 60,20 T100,20", fill: "none", stroke: "#6366f1", strokeWidth: "2.5", strokeLinecap: "round" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "100", cy: "20", r: "3", fill: "#6366f1" })
               ] }) })
             ] })
           ]
         }
       )
     ] }),
-    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-cyan-400 text-sm", children: "\u{1F4C8}" }),
-              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Revenue vs Expenses" })
+    /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-cyan-400 text-sm", children: "\u{1F4C8}" }),
+              /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Revenue vs Expenses" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ _jsxs(
                 "select",
                 {
                   value: revExpView,
                   onChange: (e) => setRevExpView(e.target.value),
                   className: "text-[11px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 focus:outline-hidden cursor-pointer",
                   children: [
-                    /* @__PURE__ */ e.jsx("option", { value: "Daily", children: "Daily \u2304" }),
-                    /* @__PURE__ */ e.jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
-                    /* @__PURE__ */ e.jsx("option", { value: "Monthly", children: "Monthly \u2304" })
+                    /* @__PURE__ */ _jsx("option", { value: "Daily", children: "Daily \u2304" }),
+                    /* @__PURE__ */ _jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
+                    /* @__PURE__ */ _jsx("option", { value: "Monthly", children: "Monthly \u2304" })
                   ]
                 }
               ),
-              /* @__PURE__ */ e.jsx(
+              /* @__PURE__ */ _jsx(
                 "button",
                 {
                   type: "button",
@@ -1501,8 +1502,8 @@ function ExecutiveAnalyticsHub() {
               )
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
-            /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -1514,16 +1515,16 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-xs shadow-cyan-400" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Revenue" }),
-                  /* @__PURE__ */ e.jsxs("span", { className: "font-bold text-white font-mono", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-xs shadow-cyan-400" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Revenue" }),
+                  /* @__PURE__ */ _jsxs("span", { className: "font-bold text-white font-mono", children: [
                     "\u20B9",
                     currentMetrics.revenue.toLocaleString("en-IN")
                   ] })
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -1535,9 +1536,9 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-purple-500 shadow-xs shadow-purple-500" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Expenses" }),
-                  /* @__PURE__ */ e.jsxs("span", { className: "font-bold text-white font-mono", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-purple-500 shadow-xs shadow-purple-500" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Expenses" }),
+                  /* @__PURE__ */ _jsxs("span", { className: "font-bold text-white font-mono", children: [
                     "\u20B9",
                     currentMetrics.expenses.toLocaleString("en-IN")
                   ] })
@@ -1546,7 +1547,7 @@ function ExecutiveAnalyticsHub() {
             )
           ] })
         ] }),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "div",
           {
             onClick: () => setDrilldownModal({
@@ -1559,63 +1560,63 @@ function ExecutiveAnalyticsHub() {
             className: "w-full h-56 mt-4 relative cursor-pointer group",
             title: "Click to view detailed ledger",
             children: [
-              /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 400 200", preserveAspectRatio: "none", children: [
-                /* @__PURE__ */ e.jsxs("defs", { children: [
-                  /* @__PURE__ */ e.jsxs("linearGradient", { id: "cyanRevGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
-                    /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.4" }),
-                    /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
+              /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 400 200", preserveAspectRatio: "none", children: [
+                /* @__PURE__ */ _jsxs("defs", { children: [
+                  /* @__PURE__ */ _jsxs("linearGradient", { id: "cyanRevGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+                    /* @__PURE__ */ _jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.4" }),
+                    /* @__PURE__ */ _jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
                   ] }),
-                  /* @__PURE__ */ e.jsxs("linearGradient", { id: "purpleExpGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
-                    /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#a855f7", stopOpacity: "0.3" }),
-                    /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#a855f7", stopOpacity: "0.0" })
+                  /* @__PURE__ */ _jsxs("linearGradient", { id: "purpleExpGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+                    /* @__PURE__ */ _jsx("stop", { offset: "0%", stopColor: "#a855f7", stopOpacity: "0.3" }),
+                    /* @__PURE__ */ _jsx("stop", { offset: "100%", stopColor: "#a855f7", stopOpacity: "0.0" })
                   ] })
                 ] }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "40", x2: "400", y2: "40", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "80", x2: "400", y2: "80", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "120", x2: "400", y2: "120", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "160", x2: "400", y2: "160", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30 L400,200 L0,200 Z", fill: "url(#cyanRevGrad)" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30", fill: "none", stroke: "#06b6d4", strokeWidth: "3" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60 L400,200 L0,200 Z", fill: "url(#purpleExpGrad)" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60", fill: "none", stroke: "#a855f7", strokeWidth: "2.5" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "150", cy: "85", r: "4", fill: "#06b6d4" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "280", cy: "70", r: "4", fill: "#06b6d4" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "400", cy: "30", r: "4", fill: "#06b6d4" })
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "40", x2: "400", y2: "40", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "80", x2: "400", y2: "80", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "120", x2: "400", y2: "120", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "160", x2: "400", y2: "160", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30 L400,200 L0,200 Z", fill: "url(#cyanRevGrad)" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30", fill: "none", stroke: "#06b6d4", strokeWidth: "3" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60 L400,200 L0,200 Z", fill: "url(#purpleExpGrad)" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60", fill: "none", stroke: "#a855f7", strokeWidth: "2.5" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "150", cy: "85", r: "4", fill: "#06b6d4" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "280", cy: "70", r: "4", fill: "#06b6d4" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "400", cy: "30", r: "4", fill: "#06b6d4" })
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2", children: [
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+              /* @__PURE__ */ _jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2", children: [
+                /* @__PURE__ */ _jsx("span", { children: "Mar 1" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 5" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 10" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 15" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 20" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 25" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 31" })
               ] })
             ]
           }
         )
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsx("div", { children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ e.jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CA}" }),
-            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Trip Volume" })
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsx("div", { children: /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ _jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CA}" }),
+            /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Trip Volume" })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ _jsxs(
               "select",
               {
                 value: tripVolView,
                 onChange: (e) => setTripVolView(e.target.value),
                 className: "text-[11px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 focus:outline-hidden cursor-pointer",
                 children: [
-                  /* @__PURE__ */ e.jsx("option", { value: "Daily", children: "Daily \u2304" }),
-                  /* @__PURE__ */ e.jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
-                  /* @__PURE__ */ e.jsx("option", { value: "Corridor", children: "By Corridor \u2304" })
+                  /* @__PURE__ */ _jsx("option", { value: "Daily", children: "Daily \u2304" }),
+                  /* @__PURE__ */ _jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
+                  /* @__PURE__ */ _jsx("option", { value: "Corridor", children: "By Corridor \u2304" })
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsx(
+            /* @__PURE__ */ _jsx(
               "button",
               {
                 type: "button",
@@ -1632,8 +1633,8 @@ function ExecutiveAnalyticsHub() {
             )
           ] })
         ] }) }),
-        /* @__PURE__ */ e.jsxs("div", { className: "w-full h-56 mt-3 relative flex flex-col justify-end", children: [
-          /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs("div", { className: "w-full h-56 mt-3 relative flex flex-col justify-end", children: [
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1650,23 +1651,23 @@ function ExecutiveAnalyticsHub() {
               },
               title: "Click to view trips dispatched on this date",
               children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "text-[10px] text-slate-400 font-mono", children: [
+                /* @__PURE__ */ _jsxs("div", { className: "text-[10px] text-slate-400 font-mono", children: [
                   "Mar ",
                   activeTooltipDay,
                   ", 2024"
                 ] }),
-                /* @__PURE__ */ e.jsxs("div", { className: "text-xs font-black text-cyan-400 font-mono", children: [
+                /* @__PURE__ */ _jsxs("div", { className: "text-xs font-black text-cyan-400 font-mono", children: [
                   tripVolumeData[activeTooltipDay - 1],
                   " trips \u{1F50D}"
                 ] })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsx("div", { className: "flex items-end justify-between h-44 gap-1 px-1", children: tripVolumeData.map((val, idx) => {
+          /* @__PURE__ */ _jsx("div", { className: "flex items-end justify-between h-44 gap-1 px-1", children: tripVolumeData.map((val, idx) => {
             const day = idx + 1;
             const isSelected = day === activeTooltipDay;
             const heightPct = Math.round(val / 45 * 100);
-            return /* @__PURE__ */ e.jsx(
+            return /* @__PURE__ */ _jsx(
               "div",
               {
                 onMouseEnter: () => setActiveTooltipDay(day),
@@ -1678,7 +1679,7 @@ function ExecutiveAnalyticsHub() {
                   data: { day, trips: val, list: sampleTripsManifest }
                 }),
                 className: "flex-1 flex flex-col items-center group cursor-pointer h-full justify-end",
-                children: /* @__PURE__ */ e.jsx(
+                children: /* @__PURE__ */ _jsx(
                   "div",
                   {
                     className: `w-full rounded-t-sm transition-all duration-150 ${isSelected ? "bg-cyan-400 shadow-md shadow-cyan-500/50 scale-y-105" : "bg-blue-600 hover:bg-blue-400 opacity-80"}`,
@@ -1689,26 +1690,26 @@ function ExecutiveAnalyticsHub() {
               day
             );
           }) }),
-          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
-            /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+          /* @__PURE__ */ _jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
+            /* @__PURE__ */ _jsx("span", { children: "Mar 1" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 5" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 10" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 15" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 20" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 25" }),
+            /* @__PURE__ */ _jsx("span", { children: "Mar 31" })
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsx("div", { children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ e.jsx("span", { className: "text-purple-400 text-sm", children: "\u{1F369}" }),
-            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Expense Breakdown" })
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsx("div", { children: /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ _jsx("span", { className: "text-purple-400 text-sm", children: "\u{1F369}" }),
+            /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Expense Breakdown" })
           ] }),
-          /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "This Month \u2304" })
+          /* @__PURE__ */ _jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "This Month \u2304" })
         ] }) }),
-        /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ _jsx(
           "div",
           {
             onClick: () => setDrilldownModal({
@@ -1720,27 +1721,27 @@ function ExecutiveAnalyticsHub() {
             }),
             className: "flex flex-col items-center justify-center my-3 relative cursor-pointer group",
             title: "Click to view detailed itemized expenses",
-            children: /* @__PURE__ */ e.jsxs("div", { className: "w-32 h-32 relative flex items-center justify-center group-hover:scale-105 transition duration-200", children: [
-              /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full transform -rotate-90", viewBox: "0 0 100 100", children: [
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#06b6d4", strokeWidth: "16", strokeDasharray: "101 138", strokeDashoffset: "0" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#a855f7", strokeWidth: "16", strokeDasharray: "44 195", strokeDashoffset: "-101" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#f59e0b", strokeWidth: "16", strokeDasharray: "29 210", strokeDashoffset: "-145" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#3b82f6", strokeWidth: "16", strokeDasharray: "27 212", strokeDashoffset: "-174" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#ec4899", strokeWidth: "16", strokeDasharray: "20 219", strokeDashoffset: "-201" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#64748b", strokeWidth: "16", strokeDasharray: "17 222", strokeDashoffset: "-221" })
+            children: /* @__PURE__ */ _jsxs("div", { className: "w-32 h-32 relative flex items-center justify-center group-hover:scale-105 transition duration-200", children: [
+              /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full transform -rotate-90", viewBox: "0 0 100 100", children: [
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#06b6d4", strokeWidth: "16", strokeDasharray: "101 138", strokeDashoffset: "0" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#a855f7", strokeWidth: "16", strokeDasharray: "44 195", strokeDashoffset: "-101" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#f59e0b", strokeWidth: "16", strokeDasharray: "29 210", strokeDashoffset: "-145" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#3b82f6", strokeWidth: "16", strokeDasharray: "27 212", strokeDashoffset: "-174" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#ec4899", strokeWidth: "16", strokeDasharray: "20 219", strokeDashoffset: "-201" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#64748b", strokeWidth: "16", strokeDasharray: "17 222", strokeDashoffset: "-221" })
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { className: "absolute inset-0 flex flex-col items-center justify-center text-center", children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "text-xs font-black text-white font-mono", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "absolute inset-0 flex flex-col items-center justify-center text-center", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "text-xs font-black text-white font-mono", children: [
                   "\u20B9",
                   currentMetrics.expenses >= 1e5 ? (currentMetrics.expenses / 1e5).toFixed(2) + "L" : (currentMetrics.expenses / 1e3).toFixed(1) + "k"
                 ] }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-[9px] text-slate-400 uppercase tracking-tighter", children: "Total Exp" })
+                /* @__PURE__ */ _jsx("span", { className: "text-[9px] text-slate-400 uppercase tracking-tighter", children: "Total Exp" })
               ] })
             ] })
           }
         ),
-        /* @__PURE__ */ e.jsxs("div", { className: "space-y-1.5 text-[11px] pt-1 border-t border-slate-800", children: [
-          /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs("div", { className: "space-y-1.5 text-[11px] pt-1 border-t border-slate-800", children: [
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1752,20 +1753,20 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "flex justify-between items-center cursor-pointer p-1 rounded-lg hover:bg-slate-800/60 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }),
+                /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }),
                   " Fuel (",
                   expenseBreakdown.fuelPct,
                   "%)"
                 ] }),
-                /* @__PURE__ */ e.jsxs("span", { className: "font-mono text-white font-bold", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "font-mono text-white font-bold", children: [
                   "\u20B9",
                   expenseBreakdown.fuel.toLocaleString("en-IN")
                 ] })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1777,20 +1778,20 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "flex justify-between items-center cursor-pointer p-1 rounded-lg hover:bg-slate-800/60 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-purple-500" }),
+                /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2 h-2 rounded-full bg-purple-500" }),
                   " Tolls (",
                   expenseBreakdown.tollPct,
                   "%)"
                 ] }),
-                /* @__PURE__ */ e.jsxs("span", { className: "font-mono text-white font-bold", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "font-mono text-white font-bold", children: [
                   "\u20B9",
                   expenseBreakdown.toll.toLocaleString("en-IN")
                 ] })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1802,20 +1803,20 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "flex justify-between items-center cursor-pointer p-1 rounded-lg hover:bg-slate-800/60 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-amber-500" }),
+                /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2 h-2 rounded-full bg-amber-500" }),
                   " Maintenance (",
                   expenseBreakdown.maintPct,
                   "%)"
                 ] }),
-                /* @__PURE__ */ e.jsxs("span", { className: "font-mono text-white font-bold", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "font-mono text-white font-bold", children: [
                   "\u20B9",
                   expenseBreakdown.maint.toLocaleString("en-IN")
                 ] })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1827,20 +1828,20 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "flex justify-between items-center cursor-pointer p-1 rounded-lg hover:bg-slate-800/60 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-blue-500" }),
+                /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2 h-2 rounded-full bg-blue-500" }),
                   " Driver Allowance (",
                   expenseBreakdown.driverPct,
                   "%)"
                 ] }),
-                /* @__PURE__ */ e.jsxs("span", { className: "font-mono text-white font-bold", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "font-mono text-white font-bold", children: [
                   "\u20B9",
                   expenseBreakdown.driver.toLocaleString("en-IN")
                 ] })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1852,13 +1853,13 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "flex justify-between items-center cursor-pointer p-1 rounded-lg hover:bg-slate-800/60 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-pink-500" }),
+                /* @__PURE__ */ _jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "w-2 h-2 rounded-full bg-pink-500" }),
                   " Operations (",
                   expenseBreakdown.opsPct,
                   "%)"
                 ] }),
-                /* @__PURE__ */ e.jsxs("span", { className: "font-mono text-slate-400", children: [
+                /* @__PURE__ */ _jsxs("span", { className: "font-mono text-slate-400", children: [
                   "\u20B9",
                   expenseBreakdown.ops.toLocaleString("en-IN")
                 ] })
@@ -1867,13 +1868,13 @@ function ExecutiveAnalyticsHub() {
           )
         ] })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-2 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-teal-400 text-sm", children: "\u2699\uFE0F" }),
-          /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Operations" })
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-2 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsx("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-teal-400 text-sm", children: "\u2699\uFE0F" }),
+          /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Operations" })
         ] }) }),
-        /* @__PURE__ */ e.jsxs("div", { className: "space-y-3.5 my-2 text-xs", children: [
-          /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs("div", { className: "space-y-3.5 my-2 text-xs", children: [
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1885,15 +1886,15 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "cursor-pointer p-1.5 rounded-lg hover:bg-slate-850 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mb-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "On-Time Delivery" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400 font-mono", children: "100%" })
+                /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center mb-1", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "On-Time Delivery" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-emerald-400 font-mono", children: "100%" })
                 ] }),
-                /* @__PURE__ */ e.jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ e.jsx("div", { className: "bg-emerald-500 h-full rounded-full", style: { width: "100%" } }) })
+                /* @__PURE__ */ _jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ _jsx("div", { className: "bg-emerald-500 h-full rounded-full", style: { width: "100%" } }) })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1905,15 +1906,15 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "cursor-pointer p-1.5 rounded-lg hover:bg-slate-850 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mb-1", children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Active Routes" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-blue-400 font-mono", children: allRoutesData.length })
+                /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center mb-1", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Active Routes" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-blue-400 font-mono", children: allRoutesData.length })
                 ] }),
-                /* @__PURE__ */ e.jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ e.jsx("div", { className: "bg-blue-500 h-full rounded-full", style: { width: "75%" } }) })
+                /* @__PURE__ */ _jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ _jsx("div", { className: "bg-blue-500 h-full rounded-full", style: { width: "75%" } }) })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -1925,26 +1926,26 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-amber-500/50 transition",
               children: [
-                /* @__PURE__ */ e.jsxs("div", { children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Top Driver" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white text-xs", children: "Ravi Kumar" })
+                /* @__PURE__ */ _jsxs("div", { children: [
+                  /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Top Driver" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white text-xs", children: "Ravi Kumar" })
                 ] }),
-                /* @__PURE__ */ e.jsx("span", { className: "text-amber-400 text-sm", children: "\u2B50" })
+                /* @__PURE__ */ _jsx("span", { className: "text-amber-400 text-sm", children: "\u2B50" })
               ]
             }
           ),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between", children: [
-            /* @__PURE__ */ e.jsxs("div", { children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Avg Trip Distance" }),
-              /* @__PURE__ */ e.jsxs("span", { className: "font-bold text-cyan-400 font-mono text-xs", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between", children: [
+            /* @__PURE__ */ _jsxs("div", { children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Avg Trip Distance" }),
+              /* @__PURE__ */ _jsxs("span", { className: "font-bold text-cyan-400 font-mono text-xs", children: [
                 currentMetrics.trips > 0 ? Math.round(Number(currentMetrics.kms) / currentMetrics.trips) : 150,
                 " km"
               ] })
             ] }),
-            /* @__PURE__ */ e.jsx("span", { className: "text-xs text-slate-500", children: "Per Trip" })
+            /* @__PURE__ */ _jsx("span", { className: "text-xs text-slate-500", children: "Per Trip" })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "pt-1 flex flex-col gap-1.5 text-[11px]", children: [
-            /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs("div", { className: "pt-1 flex flex-col gap-1.5 text-[11px]", children: [
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -1956,12 +1957,12 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex justify-between items-center cursor-pointer p-1 rounded hover:bg-slate-800/60 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Top Route:" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white", children: "Delhi \u2794 Mumbai \u{1F3C6}" })
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Top Route:" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white", children: "Delhi \u2794 Mumbai \u{1F3C6}" })
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -1973,15 +1974,15 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex justify-between items-center cursor-pointer p-1 rounded hover:bg-slate-800/60 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Delayed Trips:" }),
-                  /* @__PURE__ */ e.jsxs("span", { className: "px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Delayed Trips:" }),
+                  /* @__PURE__ */ _jsxs("span", { className: "px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold", children: [
                     trips.filter((t) => t.status === "In Transit").length,
                     " In Transit"
                   ] })
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -1993,8 +1994,8 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex justify-between items-center cursor-pointer p-1 rounded hover:bg-slate-800/60 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Healthy Trucks:" }),
-                  /* @__PURE__ */ e.jsxs("span", { className: "px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold", children: [
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Healthy Trucks:" }),
+                  /* @__PURE__ */ _jsxs("span", { className: "px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold", children: [
                     fleetTrucks.length,
                     " / ",
                     fleetTrucks.length
@@ -2006,14 +2007,14 @@ function ExecutiveAnalyticsHub() {
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-5 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl", children: [
-        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-            /* @__PURE__ */ e.jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CD}" }),
-            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Route Performance" })
+    /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-5 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl", children: [
+        /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ _jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CD}" }),
+            /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Route Performance" })
           ] }),
-          /* @__PURE__ */ e.jsx(
+          /* @__PURE__ */ _jsx(
             "button",
             {
               type: "button",
@@ -2029,16 +2030,16 @@ function ExecutiveAnalyticsHub() {
             }
           )
         ] }),
-        /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left text-xs", children: [
-          /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "#" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Route" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Trips" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Dist (km)" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Revenue" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Profit Margin" })
+        /* @__PURE__ */ _jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left text-xs", children: [
+          /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+            /* @__PURE__ */ _jsx("th", { className: "py-2", children: "#" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Route" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Trips" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Dist (km)" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Revenue" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Profit Margin" })
           ] }) }),
-          /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: filteredRoutes.map((r, i) => /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: filteredRoutes.map((r, i) => /* @__PURE__ */ _jsxs(
             "tr",
             {
               onClick: () => setDrilldownModal({
@@ -2050,46 +2051,46 @@ function ExecutiveAnalyticsHub() {
               }),
               className: "hover:bg-slate-850/80 transition cursor-pointer",
               children: [
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: i + 1 }),
-                /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 font-bold text-white", children: [
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: i + 1 }),
+                /* @__PURE__ */ _jsxs("td", { className: "py-2.5 font-bold text-white", children: [
                   r.route,
-                  /* @__PURE__ */ e.jsx("span", { className: "block text-[10px] text-slate-500 font-normal", children: r.highway })
+                  /* @__PURE__ */ _jsx("span", { className: "block text-[10px] text-slate-500 font-normal", children: r.highway })
                 ] }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: r.trips }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: r.distance.toLocaleString() }),
-                /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: [
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: r.trips }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: r.distance.toLocaleString() }),
+                /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: [
                   "\u20B9",
                   r.revenue.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${r.color === "emerald" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/15 text-amber-400 border border-amber-500/20"}`, children: r.margin }) })
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ _jsx("span", { className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${r.color === "emerald" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/15 text-amber-400 border border-amber-500/20"}`, children: r.margin }) })
               ]
             },
             r.id
           )) })
         ] }) })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-cyan-400 text-sm", children: "\u26FD" }),
-              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Fuel vs Toll Expenses" })
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-cyan-400 text-sm", children: "\u26FD" }),
+              /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Fuel vs Toll Expenses" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ _jsxs(
                 "select",
                 {
                   value: fuelTollView,
                   onChange: (e) => setFuelTollView(e.target.value),
                   className: "text-[11px] text-slate-300 bg-slate-950 px-2 py-0.5 rounded border border-slate-800 focus:outline-hidden cursor-pointer",
                   children: [
-                    /* @__PURE__ */ e.jsx("option", { value: "Daily", children: "Daily \u2304" }),
-                    /* @__PURE__ */ e.jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
-                    /* @__PURE__ */ e.jsx("option", { value: "Monthly", children: "Monthly \u2304" })
+                    /* @__PURE__ */ _jsx("option", { value: "Daily", children: "Daily \u2304" }),
+                    /* @__PURE__ */ _jsx("option", { value: "Weekly", children: "Weekly \u2304" }),
+                    /* @__PURE__ */ _jsx("option", { value: "Monthly", children: "Monthly \u2304" })
                   ]
                 }
               ),
-              /* @__PURE__ */ e.jsx(
+              /* @__PURE__ */ _jsx(
                 "button",
                 {
                   type: "button",
@@ -2106,8 +2107,8 @@ function ExecutiveAnalyticsHub() {
               )
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
-            /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -2119,13 +2120,13 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-cyan-400 shadow-xs shadow-cyan-400" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Fuel" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9872,410" })
+                  /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-cyan-400 shadow-xs shadow-cyan-400" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Fuel" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9872,410" })
                 ]
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "div",
               {
                 onClick: () => setDrilldownModal({
@@ -2137,15 +2138,15 @@ function ExecutiveAnalyticsHub() {
                 }),
                 className: "flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition",
                 children: [
-                  /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Tolls" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9383,120" })
+                  /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Tolls" }),
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9383,120" })
                 ]
               }
             )
           ] })
         ] }),
-        /* @__PURE__ */ e.jsxs(
+        /* @__PURE__ */ _jsxs(
           "div",
           {
             onClick: () => setDrilldownModal({
@@ -2158,41 +2159,41 @@ function ExecutiveAnalyticsHub() {
             className: "w-full h-44 mt-3 relative cursor-pointer group",
             title: "Click to view detailed reconciliation",
             children: [
-              /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 350 150", preserveAspectRatio: "none", children: [
-                /* @__PURE__ */ e.jsx("defs", { children: /* @__PURE__ */ e.jsxs("linearGradient", { id: "fuelLineGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
-                  /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.3" }),
-                  /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
+              /* @__PURE__ */ _jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 350 150", preserveAspectRatio: "none", children: [
+                /* @__PURE__ */ _jsx("defs", { children: /* @__PURE__ */ _jsxs("linearGradient", { id: "fuelLineGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+                  /* @__PURE__ */ _jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.3" }),
+                  /* @__PURE__ */ _jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
                 ] }) }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "35", x2: "350", y2: "35", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "75", x2: "350", y2: "75", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "115", x2: "350", y2: "115", stroke: "#1e293b", strokeDasharray: "3 3" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25 L350,150 L0,150 Z", fill: "url(#fuelLineGrad)" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25", fill: "none", stroke: "#06b6d4", strokeWidth: "2.5" }),
-                /* @__PURE__ */ e.jsx("path", { d: "M0,135 C50,140 90,115 140,110 C190,105 220,125 260,95 C300,75 330,85 350,65", fill: "none", stroke: "#a855f7", strokeWidth: "2" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "140", cy: "80", r: "3", fill: "#06b6d4" }),
-                /* @__PURE__ */ e.jsx("circle", { cx: "260", cy: "65", r: "3", fill: "#06b6d4" })
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "35", x2: "350", y2: "35", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "75", x2: "350", y2: "75", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("line", { x1: "0", y1: "115", x2: "350", y2: "115", stroke: "#1e293b", strokeDasharray: "3 3" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25 L350,150 L0,150 Z", fill: "url(#fuelLineGrad)" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25", fill: "none", stroke: "#06b6d4", strokeWidth: "2.5" }),
+                /* @__PURE__ */ _jsx("path", { d: "M0,135 C50,140 90,115 140,110 C190,105 220,125 260,95 C300,75 330,85 350,65", fill: "none", stroke: "#a855f7", strokeWidth: "2" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "140", cy: "80", r: "3", fill: "#06b6d4" }),
+                /* @__PURE__ */ _jsx("circle", { cx: "260", cy: "65", r: "3", fill: "#06b6d4" })
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
-                /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+              /* @__PURE__ */ _jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
+                /* @__PURE__ */ _jsx("span", { children: "Mar 1" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 5" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 10" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 15" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 20" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 25" }),
+                /* @__PURE__ */ _jsx("span", { children: "Mar 31" })
               ] })
             ]
           }
         )
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-rose-400 text-sm", children: "\u{1F514}" }),
-              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Alerts & Reminders" })
+      /* @__PURE__ */ _jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-rose-400 text-sm", children: "\u{1F514}" }),
+              /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-sm", children: "Alerts & Reminders" })
             ] }),
-            /* @__PURE__ */ e.jsx(
+            /* @__PURE__ */ _jsx(
               "button",
               {
                 type: "button",
@@ -2208,7 +2209,7 @@ function ExecutiveAnalyticsHub() {
               }
             )
           ] }),
-          /* @__PURE__ */ e.jsx("div", { className: "space-y-2.5 text-xs", children: fleetAlerts.slice(0, 4).map((alt) => /* @__PURE__ */ e.jsxs(
+          /* @__PURE__ */ _jsx("div", { className: "space-y-2.5 text-xs", children: fleetAlerts.slice(0, 4).map((alt) => /* @__PURE__ */ _jsxs(
             "div",
             {
               onClick: () => setDrilldownModal({
@@ -2221,16 +2222,16 @@ function ExecutiveAnalyticsHub() {
               className: `p-2.5 bg-slate-950/80 rounded-xl border flex items-start gap-2.5 cursor-pointer hover:border-slate-600 transition ${alt.severity === "high" ? "border-rose-500/30" : alt.severity === "medium" ? "border-amber-500/30" : "border-blue-500/30"}`,
               title: "Click to resolve alert",
               children: [
-                /* @__PURE__ */ e.jsx("span", { className: "text-sm mt-0.5", children: alt.icon }),
-                /* @__PURE__ */ e.jsxs("div", { className: "flex-1", children: [
-                  /* @__PURE__ */ e.jsx("div", { className: "font-bold text-slate-200 leading-tight", children: alt.title }),
-                  /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mt-1", children: [
-                    /* @__PURE__ */ e.jsxs("span", { className: "text-[10px] text-slate-500", children: [
+                /* @__PURE__ */ _jsx("span", { className: "text-sm mt-0.5", children: alt.icon }),
+                /* @__PURE__ */ _jsxs("div", { className: "flex-1", children: [
+                  /* @__PURE__ */ _jsx("div", { className: "font-bold text-slate-200 leading-tight", children: alt.title }),
+                  /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center mt-1", children: [
+                    /* @__PURE__ */ _jsxs("span", { className: "text-[10px] text-slate-500", children: [
                       alt.time,
                       " \u2022 ",
                       alt.category
                     ] }),
-                    /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-blue-400", children: "Resolve \u2192" })
+                    /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold text-blue-400", children: "Resolve \u2192" })
                   ] })
                 ] })
               ]
@@ -2238,17 +2239,17 @@ function ExecutiveAnalyticsHub() {
             alt.id
           )) })
         ] }),
-        /* @__PURE__ */ e.jsx("div", { className: "pt-3 border-t border-slate-800 text-center", children: /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-500", children: "Automated reminders connected to Enterprise Audit Engine" }) })
+        /* @__PURE__ */ _jsx("div", { className: "pt-3 border-t border-slate-800 text-center", children: /* @__PURE__ */ _jsx("span", { className: "text-[11px] text-slate-500", children: "Automated reminders connected to Enterprise Audit Engine" }) })
       ] })
     ] }),
-    drilldownModal.isOpen && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto", children: [
-      /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-start border-b border-slate-800 pb-4", children: [
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30", children: "Deep Analytics Drilldown" }),
-          /* @__PURE__ */ e.jsx("h2", { className: "text-xl font-black text-white mt-1.5", children: drilldownModal.title }),
-          /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: drilldownModal.subtitle })
+    drilldownModal.isOpen && /* @__PURE__ */ _jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ _jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-start border-b border-slate-800 pb-4", children: [
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30", children: "Deep Analytics Drilldown" }),
+          /* @__PURE__ */ _jsx("h2", { className: "text-xl font-black text-white mt-1.5", children: drilldownModal.title }),
+          /* @__PURE__ */ _jsx("p", { className: "text-xs text-slate-400 mt-0.5", children: drilldownModal.subtitle })
         ] }),
-        /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ _jsx(
           "button",
           {
             type: "button",
@@ -2258,349 +2259,349 @@ function ExecutiveAnalyticsHub() {
           }
         )
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "space-y-4 text-xs", children: [
-        drilldownModal.type === "revenue" && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-4 gap-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Invoiced" }),
-              /* @__PURE__ */ e.jsxs("div", { className: "text-lg font-black text-emerald-400 mt-1", children: [
+      /* @__PURE__ */ _jsxs("div", { className: "space-y-4 text-xs", children: [
+        drilldownModal.type === "revenue" && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-4 gap-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Invoiced" }),
+              /* @__PURE__ */ _jsxs("div", { className: "text-lg font-black text-emerald-400 mt-1", children: [
                 "\u20B9",
                 currentMetrics.revenue.toLocaleString("en-IN")
               ] }),
-              /* @__PURE__ */ e.jsxs("span", { className: "text-[10px] text-slate-500", children: [
+              /* @__PURE__ */ _jsxs("span", { className: "text-[10px] text-slate-500", children: [
                 "Across ",
                 currentMetrics.trips,
                 " trips"
               ] })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Revenue Per KM" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-cyan-400 mt-1", children: "\u20B934.42 / km" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Benchmark: \u20B932.00 / km" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Revenue Per KM" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-cyan-400 mt-1", children: "\u20B934.42 / km" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Benchmark: \u20B932.00 / km" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Avg Revenue / Trip" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-blue-400 mt-1", children: "\u20B97,100 / trip" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "+\u20B9700 vs Feb 2024" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Avg Revenue / Trip" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-blue-400 mt-1", children: "\u20B97,100 / trip" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "+\u20B9700 vs Feb 2024" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Outstanding" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-amber-400 mt-1", children: "\u20B9345,000" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Within 14-day credit terms" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Outstanding" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-amber-400 mt-1", children: "\u20B9345,000" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Within 14-day credit terms" })
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Corporate Client Contribution & Aging Matrix:" }),
-            /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left", children: [
-              /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Client Name" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Contract Agreement" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Trips" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Billed Freight" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Net Margin" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Outstanding" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "DSO Terms" })
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Corporate Client Contribution & Aging Matrix:" }),
+            /* @__PURE__ */ _jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left", children: [
+              /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Client Name" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Contract Agreement" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Trips" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Billed Freight" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Net Margin" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Outstanding" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "DSO Terms" })
               ] }) }),
-              /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: clientsList.filter((c) => c.id !== "all").map((c) => /* @__PURE__ */ e.jsxs("tr", { className: "hover:bg-slate-900/60", children: [
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: c.name }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-400", children: c.contractType }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: c.trips }),
-                /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: [
+              /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: clientsList.filter((c) => c.id !== "all").map((c) => /* @__PURE__ */ _jsxs("tr", { className: "hover:bg-slate-900/60", children: [
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-bold text-white", children: c.name }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-400", children: c.contractType }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: c.trips }),
+                /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: [
                   "\u20B9",
                   c.revenue.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-white font-bold", children: c.margin }),
-                /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono text-amber-400", children: [
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-white font-bold", children: c.margin }),
+                /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono text-amber-400", children: [
                   "\u20B9",
                   c.outstanding.toLocaleString("en-IN")
                 ] }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: c.dso })
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: c.dso })
               ] }, c.id)) })
             ] }) })
           ] })
         ] }),
-        (drilldownModal.type === "expenses" || drilldownModal.type === "expense_slice") && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Fuel (Diesel)" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-base font-black text-cyan-400 mt-1", children: "\u20B9872,410" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "42.3% \u2022 9,431 L @ \u20B992.5" })
+        (drilldownModal.type === "expenses" || drilldownModal.type === "expense_slice") && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Fuel (Diesel)" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-base font-black text-cyan-400 mt-1", children: "\u20B9872,410" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "42.3% \u2022 9,431 L @ \u20B992.5" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "FASTag Tolls" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-base font-black text-purple-400 mt-1", children: "\u20B9383,120" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "18.6% \u2022 1,280 plaza tags" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "FASTag Tolls" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-base font-black text-purple-400 mt-1", children: "\u20B9383,120" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "18.6% \u2022 1,280 plaza tags" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Workshop Maint" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-base font-black text-amber-400 mt-1", children: "\u20B9249,350" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "12.1% \u2022 Spares & Bushings" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Workshop Maint" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-base font-black text-amber-400 mt-1", children: "\u20B9249,350" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "12.1% \u2022 Spares & Bushings" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Driver Wages & Bata" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-base font-black text-blue-400 mt-1", children: "\u20B9236,620" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "11.5% \u2022 10 Crew Members" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Driver Wages & Bata" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-base font-black text-blue-400 mt-1", children: "\u20B9236,620" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "11.5% \u2022 10 Crew Members" })
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs", children: "Recent Expense Vouchers & Invoices:" }),
-            /* @__PURE__ */ e.jsxs("div", { className: "space-y-2", children: [
-              /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
-                /* @__PURE__ */ e.jsxs("div", { children: [
-                  /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white", children: "HPCL Bulk Depot Diesel Invoice #HP-9982" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400", children: "TG 12 U 2637 \u2022 420 Litres @ \u20B990.30/L \u2022 Dispensed at Hyderabad Hub" })
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs", children: "Recent Expense Vouchers & Invoices:" }),
+            /* @__PURE__ */ _jsxs("div", { className: "space-y-2", children: [
+              /* @__PURE__ */ _jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
+                /* @__PURE__ */ _jsxs("div", { children: [
+                  /* @__PURE__ */ _jsx("div", { className: "font-bold text-white", children: "HPCL Bulk Depot Diesel Invoice #HP-9982" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-400", children: "TG 12 U 2637 \u2022 420 Litres @ \u20B990.30/L \u2022 Dispensed at Hyderabad Hub" })
                 ] }),
-                /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-cyan-400", children: "\u20B937,926" })
+                /* @__PURE__ */ _jsx("span", { className: "font-mono font-bold text-cyan-400", children: "\u20B937,926" })
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
-                /* @__PURE__ */ e.jsxs("div", { children: [
-                  /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white", children: "IHMCL NHAI FASTag Monthly Recharge #NHAI-4421" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400", children: "Monthly Pass renewal for 6 trucks on NH44 Shamshabad & Devanahalli" })
+              /* @__PURE__ */ _jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
+                /* @__PURE__ */ _jsxs("div", { children: [
+                  /* @__PURE__ */ _jsx("div", { className: "font-bold text-white", children: "IHMCL NHAI FASTag Monthly Recharge #NHAI-4421" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-400", children: "Monthly Pass renewal for 6 trucks on NH44 Shamshabad & Devanahalli" })
                 ] }),
-                /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-purple-400", children: "\u20B922,800" })
+                /* @__PURE__ */ _jsx("span", { className: "font-mono font-bold text-purple-400", children: "\u20B922,800" })
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
-                /* @__PURE__ */ e.jsxs("div", { children: [
-                  /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white", children: "Ashok Leyland Authorized Service Job Card #AL-7741" }),
-                  /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400", children: "Turbo pressure hose renewal + Injector ultrasonic cleaning (TG 12 U 2637)" })
+              /* @__PURE__ */ _jsxs("div", { className: "p-2.5 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center", children: [
+                /* @__PURE__ */ _jsxs("div", { children: [
+                  /* @__PURE__ */ _jsx("div", { className: "font-bold text-white", children: "Ashok Leyland Authorized Service Job Card #AL-7741" }),
+                  /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-400", children: "Turbo pressure hose renewal + Injector ultrasonic cleaning (TG 12 U 2637)" })
                 ] }),
-                /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-amber-400", children: "\u20B914,200" })
+                /* @__PURE__ */ _jsx("span", { className: "font-mono font-bold text-amber-400", children: "\u20B914,200" })
               ] })
             ] })
           ] })
         ] }),
-        (drilldownModal.type === "profit" || drilldownModal.type === "margin") && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Gross Margin" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-white mt-1", children: "\u20B9388,400" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "17.4% before fleet overheads" })
+        (drilldownModal.type === "profit" || drilldownModal.type === "margin") && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Gross Margin" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-white mt-1", children: "\u20B9388,400" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "17.4% before fleet overheads" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Fleet Overheads" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-rose-400 mt-1", children: "\u20B9221,529.56" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Insurance, permits, workshop rent" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Fleet Overheads" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-rose-400 mt-1", children: "\u20B9221,529.56" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Insurance, permits, workshop rent" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Net Operational Profit" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-cyan-400 mt-1", children: "\u20B9166,870.44" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "7.5% Net Margin (Target: 8.0%)" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Net Operational Profit" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-cyan-400 mt-1", children: "\u20B9166,870.44" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "7.5% Net Margin (Target: 8.0%)" })
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs mb-2", children: "Quarterly Profit Trajectory:" }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center text-xs py-2 border-b border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "January 2024:" }),
-              /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white", children: "\u20B9134,200 (6.1% Margin)" })
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs mb-2", children: "Quarterly Profit Trajectory:" }),
+            /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center text-xs py-2 border-b border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "January 2024:" }),
+              /* @__PURE__ */ _jsx("span", { className: "font-mono text-white", children: "\u20B9134,200 (6.1% Margin)" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center text-xs py-2 border-b border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "February 2024:" }),
-              /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white", children: "\u20B9148,600 (6.8% Margin)" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center text-xs py-2 border-b border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "February 2024:" }),
+              /* @__PURE__ */ _jsx("span", { className: "font-mono text-white", children: "\u20B9148,600 (6.8% Margin)" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center text-xs py-2", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "March 2024 (Current):" }),
-              /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-emerald-400", children: "\u20B9166,870.44 (7.5% Margin)" })
+            /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center text-xs py-2", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "March 2024 (Current):" }),
+              /* @__PURE__ */ _jsx("span", { className: "font-mono font-bold text-emerald-400", children: "\u20B9166,870.44 (7.5% Margin)" })
             ] })
           ] })
         ] }),
-        (drilldownModal.type === "trips" || drilldownModal.type === "manifest") && /* @__PURE__ */ e.jsx("div", { className: "space-y-4", children: /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mb-3", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs", children: drilldownModal.type === "manifest" ? `Dispatches on Mar ${drilldownModal.data?.day}, 2024 (${drilldownModal.data?.trips} Trips Recorded):` : "Fleet Trip Status Breakdown (314 Trips):" }),
-            /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 font-mono", children: "Real-Time Dispatch Feed" })
+        (drilldownModal.type === "trips" || drilldownModal.type === "manifest") && /* @__PURE__ */ _jsx("div", { className: "space-y-4", children: /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "flex justify-between items-center mb-3", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs", children: drilldownModal.type === "manifest" ? `Dispatches on Mar ${drilldownModal.data?.day}, 2024 (${drilldownModal.data?.trips} Trips Recorded):` : "Fleet Trip Status Breakdown (314 Trips):" }),
+            /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500 font-mono", children: "Real-Time Dispatch Feed" })
           ] }),
-          /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto max-h-80 overflow-y-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left", children: [
-            /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "LR Number" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Truck No" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Driver" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Client" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Corridor Route" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Freight" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Status" })
+          /* @__PURE__ */ _jsx("div", { className: "overflow-x-auto max-h-80 overflow-y-auto", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left", children: [
+            /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "LR Number" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Truck No" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Driver" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Client" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Corridor Route" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Freight" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Status" })
             ] }) }),
-            /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: (drilldownModal.data?.list || sampleTripsManifest).map((t, idx) => /* @__PURE__ */ e.jsxs("tr", { className: "hover:bg-slate-900/60", children: [
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-mono text-cyan-400 font-bold", children: t.lrNo }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: t.truck }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-300", children: t.driver }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-400", children: t.client }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-semibold text-white", children: t.route }),
-              /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: [
+            /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: (drilldownModal.data?.list || sampleTripsManifest).map((t, idx) => /* @__PURE__ */ _jsxs("tr", { className: "hover:bg-slate-900/60", children: [
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-mono text-cyan-400 font-bold", children: t.lrNo }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-bold text-white", children: t.truck }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-300", children: t.driver }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-400", children: t.client }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-semibold text-white", children: t.route }),
+              /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: [
                 "\u20B9",
                 t.freight.toLocaleString("en-IN")
               ] }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${t.status === "Delivered" ? "bg-emerald-500/20 text-emerald-300" : t.status === "In Transit" ? "bg-blue-500/20 text-blue-300" : "bg-amber-500/20 text-amber-300"}`, children: t.status }) })
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ _jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${t.status === "Delivered" ? "bg-emerald-500/20 text-emerald-300" : t.status === "In Transit" ? "bg-blue-500/20 text-blue-300" : "bg-amber-500/20 text-amber-300"}`, children: t.status }) })
             ] }, idx)) })
           ] }) })
         ] }) }),
-        drilldownModal.type === "utilization" && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-3 gap-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Commercial Trucks" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-white mt-1", children: "12 Heavy Trucks" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "100% RC & Tax Compliant" })
+        drilldownModal.type === "utilization" && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-3 gap-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Commercial Trucks" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-white mt-1", children: "12 Heavy Trucks" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "100% RC & Tax Compliant" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Active in Transit" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-blue-400 mt-1", children: "9 Commercial Trucks" }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Live on highways" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Active in Transit" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-blue-400 mt-1", children: "9 Commercial Trucks" }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Live on highways" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Overall Fleet Utilization" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-teal-400 mt-1", children: currentMetrics.utilization }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Target: 80%" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Overall Fleet Utilization" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-teal-400 mt-1", children: currentMetrics.utilization }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Target: 80%" })
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Live Fleet Roster (12 Commercial Trucks):" }),
-            /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto max-h-72 overflow-y-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left", children: [
-              /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Truck Number" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Vehicle Model" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Assigned Driver" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Current Location" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Odometer (km)" }),
-                /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Health Status" })
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Live Fleet Roster (12 Commercial Trucks):" }),
+            /* @__PURE__ */ _jsx("div", { className: "overflow-x-auto max-h-72 overflow-y-auto", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left", children: [
+              /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Truck Number" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Vehicle Model" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Assigned Driver" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Current Location" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Odometer (km)" }),
+                /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Health Status" })
               ] }) }),
-              /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: fleetTrucks.map((t) => /* @__PURE__ */ e.jsxs("tr", { className: "hover:bg-slate-900/60", children: [
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white font-mono", children: t.number }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-300", children: t.brand }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-300 font-semibold", children: t.driver }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-400", children: t.location }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: t.odometer.toLocaleString() }),
-                /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${t.health.includes("Service Due") ? "bg-rose-500/20 text-rose-300" : "bg-emerald-500/20 text-emerald-300"}`, children: t.health }) })
+              /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: fleetTrucks.map((t) => /* @__PURE__ */ _jsxs("tr", { className: "hover:bg-slate-900/60", children: [
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-bold text-white font-mono", children: t.number }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-300", children: t.brand }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-300 font-semibold", children: t.driver }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-400", children: t.location }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: t.odometer.toLocaleString() }),
+                /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ _jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${t.health.includes("Service Due") ? "bg-rose-500/20 text-rose-300" : "bg-emerald-500/20 text-emerald-300"}`, children: t.health }) })
               ] }, t.number)) })
             ] }) })
           ] })
         ] }),
-        (drilldownModal.type === "drivers" || drilldownModal.type === "driver_detail") && /* @__PURE__ */ e.jsx("div", { className: "space-y-4", children: /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-          /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Driver Crew Performance & Telematics Scorecards (10 Drivers):" }),
-          /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto max-h-80 overflow-y-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left", children: [
-            /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Driver Name" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Experience" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Assigned Truck" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Decoupled Mileage" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Safety Score" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Trips Done" }),
-              /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Performance Tag" })
+        (drilldownModal.type === "drivers" || drilldownModal.type === "driver_detail") && /* @__PURE__ */ _jsx("div", { className: "space-y-4", children: /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+          /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs mb-3", children: "Driver Crew Performance & Telematics Scorecards (10 Drivers):" }),
+          /* @__PURE__ */ _jsx("div", { className: "overflow-x-auto max-h-80 overflow-y-auto", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left", children: [
+            /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Driver Name" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Experience" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Assigned Truck" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Decoupled Mileage" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Safety Score" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Trips Done" }),
+              /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Performance Tag" })
             ] }) }),
-            /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: fleetDrivers.map((d) => /* @__PURE__ */ e.jsxs("tr", { className: "hover:bg-slate-900/60", children: [
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: d.name }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-400", children: d.exp }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-mono text-slate-300", children: d.truck }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: d.mileage }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-cyan-400", children: d.score }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: d.trips }),
-              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${d.status.includes("Eco-Training") ? "bg-rose-500/20 text-rose-300" : "bg-emerald-500/20 text-emerald-300"}`, children: d.status }) })
+            /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: fleetDrivers.map((d) => /* @__PURE__ */ _jsxs("tr", { className: "hover:bg-slate-900/60", children: [
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-bold text-white", children: d.name }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-400", children: d.exp }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-mono text-slate-300", children: d.truck }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: d.mileage }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-cyan-400", children: d.score }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: d.trips }),
+              /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ _jsx("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${d.status.includes("Eco-Training") ? "bg-rose-500/20 text-rose-300" : "bg-emerald-500/20 text-emerald-300"}`, children: d.status }) })
             ] }, d.name)) })
           ] }) })
         ] }) }),
-        drilldownModal.type === "all_routes" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4", children: /* @__PURE__ */ e.jsx("div", { className: "max-h-96 overflow-y-auto pr-1", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left", children: [
-          /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
-            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "#" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Route Corridor" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Highway Link" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Trips" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Distance (km)" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Revenue" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Fuel Cost" }),
-            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Profit Margin" })
+        drilldownModal.type === "all_routes" && /* @__PURE__ */ _jsx("div", { className: "space-y-4", children: /* @__PURE__ */ _jsx("div", { className: "max-h-96 overflow-y-auto pr-1", children: /* @__PURE__ */ _jsxs("table", { className: "w-full text-left", children: [
+          /* @__PURE__ */ _jsx("thead", { className: "text-[10px] text-slate-500 uppercase border-b border-slate-800 pb-2", children: /* @__PURE__ */ _jsxs("tr", { children: [
+            /* @__PURE__ */ _jsx("th", { className: "py-2", children: "#" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Route Corridor" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2", children: "Highway Link" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Trips" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Distance (km)" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Revenue" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Fuel Cost" }),
+            /* @__PURE__ */ _jsx("th", { className: "py-2 text-right", children: "Profit Margin" })
           ] }) }),
-          /* @__PURE__ */ e.jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: allRoutesData.map((r, idx) => /* @__PURE__ */ e.jsxs("tr", { className: "hover:bg-slate-800/40", children: [
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: idx + 1 }),
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: r.route }),
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-400 text-[11px]", children: r.highway }),
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: r.trips }),
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: r.distance.toLocaleString() }),
-            /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: [
+          /* @__PURE__ */ _jsx("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: allRoutesData.map((r, idx) => /* @__PURE__ */ _jsxs("tr", { className: "hover:bg-slate-800/40", children: [
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: idx + 1 }),
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 font-bold text-white", children: r.route }),
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-slate-400 text-[11px]", children: r.highway }),
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: r.trips }),
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: r.distance.toLocaleString() }),
+            /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: [
               "\u20B9",
               r.revenue.toLocaleString("en-IN")
             ] }),
-            /* @__PURE__ */ e.jsxs("td", { className: "py-2.5 text-right font-mono text-cyan-400", children: [
+            /* @__PURE__ */ _jsxs("td", { className: "py-2.5 text-right font-mono text-cyan-400", children: [
               "\u20B9",
               r.fuelCost.toLocaleString("en-IN")
             ] }),
-            /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: r.margin })
+            /* @__PURE__ */ _jsx("td", { className: "py-2.5 text-right font-mono font-bold text-emerald-400", children: r.margin })
           ] }, idx)) })
         ] }) }) }),
-        drilldownModal.type === "route" && drilldownModal.data && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Trips" }),
-              /* @__PURE__ */ e.jsxs("div", { className: "text-lg font-black text-white mt-1", children: [
+        drilldownModal.type === "route" && drilldownModal.data && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "grid grid-cols-2 sm:grid-cols-4 gap-3", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Trips" }),
+              /* @__PURE__ */ _jsxs("div", { className: "text-lg font-black text-white mt-1", children: [
                 drilldownModal.data.trips,
                 " Trips"
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "March 2024" })
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "March 2024" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Distance" }),
-              /* @__PURE__ */ e.jsxs("div", { className: "text-lg font-black text-cyan-400 mt-1", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Total Distance" }),
+              /* @__PURE__ */ _jsxs("div", { className: "text-lg font-black text-cyan-400 mt-1", children: [
                 drilldownModal.data.distance,
                 " km"
               ] }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "Across convoys" })
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500", children: "Across convoys" })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Billed Revenue" }),
-              /* @__PURE__ */ e.jsxs("div", { className: "text-lg font-black text-emerald-400 mt-1", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Billed Revenue" }),
+              /* @__PURE__ */ _jsxs("div", { className: "text-lg font-black text-emerald-400 mt-1", children: [
                 "\u20B9",
                 drilldownModal.data.revenue.toLocaleString("en-IN")
               ] }),
-              /* @__PURE__ */ e.jsxs("span", { className: "text-[10px] text-slate-500", children: [
+              /* @__PURE__ */ _jsxs("span", { className: "text-[10px] text-slate-500", children: [
                 "Top: ",
                 drilldownModal.data.topClient
               ] })
             ] }),
-            /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Profit Margin" }),
-              /* @__PURE__ */ e.jsx("div", { className: "text-lg font-black text-purple-400 mt-1", children: drilldownModal.data.margin }),
-              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "Optimal Corridor" })
+            /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-slate-400 text-[10px] uppercase font-bold", children: "Profit Margin" }),
+              /* @__PURE__ */ _jsx("div", { className: "text-lg font-black text-purple-400 mt-1", children: drilldownModal.data.margin }),
+              /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-emerald-400 font-bold", children: "Optimal Corridor" })
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2", children: [
-            /* @__PURE__ */ e.jsx("div", { className: "font-bold text-white text-xs", children: "Corridor Logistics Profile:" }),
-            /* @__PURE__ */ e.jsxs("div", { className: "text-slate-300 space-y-1", children: [
-              /* @__PURE__ */ e.jsxs("div", { children: [
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2", children: [
+            /* @__PURE__ */ _jsx("div", { className: "font-bold text-white text-xs", children: "Corridor Logistics Profile:" }),
+            /* @__PURE__ */ _jsxs("div", { className: "text-slate-300 space-y-1", children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
                 "\u2022 ",
-                /* @__PURE__ */ e.jsx("strong", { children: "Primary Highway Link:" }),
+                /* @__PURE__ */ _jsx("strong", { children: "Primary Highway Link:" }),
                 " ",
                 drilldownModal.data.highway
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
                 "\u2022 ",
-                /* @__PURE__ */ e.jsx("strong", { children: "Major Corporate Shipper:" }),
+                /* @__PURE__ */ _jsx("strong", { children: "Major Corporate Shipper:" }),
                 " ",
                 drilldownModal.data.topClient
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
                 "\u2022 ",
-                /* @__PURE__ */ e.jsx("strong", { children: "Return Load Availability:" }),
+                /* @__PURE__ */ _jsx("strong", { children: "Return Load Availability:" }),
                 " High (88% backhaul availability from industrial clusters)"
               ] }),
-              /* @__PURE__ */ e.jsxs("div", { children: [
+              /* @__PURE__ */ _jsxs("div", { children: [
                 "\u2022 ",
-                /* @__PURE__ */ e.jsx("strong", { children: "Average Door-to-Door Transit:" }),
+                /* @__PURE__ */ _jsx("strong", { children: "Average Door-to-Door Transit:" }),
                 " 42 hours with GPS geofenced waypoints"
               ] })
             ] })
           ] })
         ] }),
-        drilldownModal.type === "all_alerts" && /* @__PURE__ */ e.jsx("div", { className: "space-y-3 max-h-96 overflow-y-auto pr-1", children: fleetAlerts.map((alt) => /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center", children: [
-          /* @__PURE__ */ e.jsxs("div", { children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "font-bold text-white text-xs flex items-center gap-1.5", children: [
-              /* @__PURE__ */ e.jsx("span", { children: alt.icon }),
+        drilldownModal.type === "all_alerts" && /* @__PURE__ */ _jsx("div", { className: "space-y-3 max-h-96 overflow-y-auto pr-1", children: fleetAlerts.map((alt) => /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center", children: [
+          /* @__PURE__ */ _jsxs("div", { children: [
+            /* @__PURE__ */ _jsxs("div", { className: "font-bold text-white text-xs flex items-center gap-1.5", children: [
+              /* @__PURE__ */ _jsx("span", { children: alt.icon }),
               " ",
               alt.title
             ] }),
-            /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-slate-400 mt-1", children: alt.description }),
-            /* @__PURE__ */ e.jsxs("span", { className: "text-[10px] text-slate-500 mt-1 inline-block", children: [
+            /* @__PURE__ */ _jsx("p", { className: "text-[11px] text-slate-400 mt-1", children: alt.description }),
+            /* @__PURE__ */ _jsxs("span", { className: "text-[10px] text-slate-500 mt-1 inline-block", children: [
               alt.time,
               " \u2022 ",
               alt.category
             ] })
           ] }),
-          /* @__PURE__ */ e.jsx(
+          /* @__PURE__ */ _jsx(
             "button",
             {
               type: "button",
@@ -2612,23 +2613,23 @@ function ExecutiveAnalyticsHub() {
             }
           )
         ] }, alt.id)) }),
-        drilldownModal.type === "alert_action" && drilldownModal.data && /* @__PURE__ */ e.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ e.jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
-            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 mb-2", children: [
-              /* @__PURE__ */ e.jsx("span", { className: "text-xl", children: drilldownModal.data.icon }),
-              /* @__PURE__ */ e.jsx("h4", { className: "font-bold text-white text-sm", children: drilldownModal.data.title })
+        drilldownModal.type === "alert_action" && drilldownModal.data && /* @__PURE__ */ _jsxs("div", { className: "space-y-4", children: [
+          /* @__PURE__ */ _jsxs("div", { className: "p-4 bg-slate-950 rounded-2xl border border-slate-800", children: [
+            /* @__PURE__ */ _jsxs("div", { className: "flex items-center gap-2 mb-2", children: [
+              /* @__PURE__ */ _jsx("span", { className: "text-xl", children: drilldownModal.data.icon }),
+              /* @__PURE__ */ _jsx("h4", { className: "font-bold text-white text-sm", children: drilldownModal.data.title })
             ] }),
-            /* @__PURE__ */ e.jsx("p", { className: "text-slate-300 text-xs mb-3", children: drilldownModal.data.description }),
-            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] text-slate-400 bg-slate-900 p-2.5 rounded-xl border border-slate-800", children: [
-              /* @__PURE__ */ e.jsx("strong", { children: "Audit Classification:" }),
+            /* @__PURE__ */ _jsx("p", { className: "text-slate-300 text-xs mb-3", children: drilldownModal.data.description }),
+            /* @__PURE__ */ _jsxs("div", { className: "text-[11px] text-slate-400 bg-slate-900 p-2.5 rounded-xl border border-slate-800", children: [
+              /* @__PURE__ */ _jsx("strong", { children: "Audit Classification:" }),
               " ",
               drilldownModal.data.category,
               " \u2022 Logged: ",
               drilldownModal.data.time
             ] })
           ] }),
-          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-end gap-2 pt-2", children: [
-            /* @__PURE__ */ e.jsx(
+          /* @__PURE__ */ _jsxs("div", { className: "flex justify-end gap-2 pt-2", children: [
+            /* @__PURE__ */ _jsx(
               "button",
               {
                 type: "button",
@@ -2637,7 +2638,7 @@ function ExecutiveAnalyticsHub() {
                 children: "Dismiss"
               }
             ),
-            /* @__PURE__ */ e.jsxs(
+            /* @__PURE__ */ _jsxs(
               "button",
               {
                 type: "button",
@@ -2655,7 +2656,7 @@ function ExecutiveAnalyticsHub() {
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ e.jsx("div", { className: "flex justify-end pt-3 border-t border-slate-800", children: /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ _jsx("div", { className: "flex justify-end pt-3 border-t border-slate-800", children: /* @__PURE__ */ _jsx(
         "button",
         {
           type: "button",
@@ -2665,33 +2666,33 @@ function ExecutiveAnalyticsHub() {
         }
       ) })
     ] }) }),
-    isProfileModalOpen && /* @__PURE__ */ e.jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 text-center", children: [
-      /* @__PURE__ */ e.jsx("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg mx-auto", children: "JB" }),
-      /* @__PURE__ */ e.jsxs("div", { children: [
-        /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-base", children: "John B." }),
-        /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-400", children: "Chief Fleet Operations & Telematics" })
+    isProfileModalOpen && /* @__PURE__ */ _jsx("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4", children: /* @__PURE__ */ _jsxs("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 text-center", children: [
+      /* @__PURE__ */ _jsx("div", { className: "w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-2xl flex items-center justify-center shadow-lg mx-auto", children: "JB" }),
+      /* @__PURE__ */ _jsxs("div", { children: [
+        /* @__PURE__ */ _jsx("h3", { className: "font-bold text-white text-base", children: "John B." }),
+        /* @__PURE__ */ _jsx("p", { className: "text-xs text-slate-400", children: "Chief Fleet Operations & Telematics" })
       ] }),
-      /* @__PURE__ */ e.jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 text-left text-xs space-y-1.5 text-slate-300", children: [
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsx("strong", { children: "Role:" }),
+      /* @__PURE__ */ _jsxs("div", { className: "p-3 bg-slate-950 rounded-xl border border-slate-800 text-left text-xs space-y-1.5 text-slate-300", children: [
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsx("strong", { children: "Role:" }),
           " Super Admin / Fleet Dispatcher"
         ] }),
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsx("strong", { children: "Portal:" }),
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsx("strong", { children: "Portal:" }),
           " Jai Bhavani Cargo ERP v78"
         ] }),
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsx("strong", { children: "Access Level:" }),
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsx("strong", { children: "Access Level:" }),
           " Complete Read/Write/Export"
         ] }),
-        /* @__PURE__ */ e.jsxs("div", { children: [
-          /* @__PURE__ */ e.jsx("strong", { children: "Active Fleet Scope:" }),
+        /* @__PURE__ */ _jsxs("div", { children: [
+          /* @__PURE__ */ _jsx("strong", { children: "Active Fleet Scope:" }),
           " ",
           fleetTrucks.length,
           " Heavy Commercial Trucks"
         ] })
       ] }),
-      /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ _jsx(
         "button",
         {
           type: "button",
