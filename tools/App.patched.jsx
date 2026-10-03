@@ -49,6 +49,7 @@ import CashbookPage from './pages/CashbookPage.jsx';
 import EmployeeDatabasePage from './pages/EmployeeDatabasePage.jsx';
 import IdCardGeneratorPage from './pages/IdCardGeneratorPage.jsx';
 import TruckManagerPage from './pages/TruckManagerPage.jsx';
+import GPSPage from './pages/GPSPage.jsx';
 import TripManagerPage from './pages/TripManagerPage.jsx';
 import AttendanceManagerPage from './pages/AttendanceManagerPage.jsx';
 import RoutesPage from './pages/RoutesPage.jsx';
@@ -97,7 +98,6 @@ import OfficialLetterheadPage from './pages/OfficialLetterheadPage.jsx';
 import DataBackupPage from './pages/DataBackupPage.jsx';
 import BusinessCardStudioPage from './pages/BusinessCardStudioPage.jsx';
 import BrandingStudioHub from './pages/BrandingStudioHub.jsx';
-import SupportTicketsPage from './SupportTicketsPage.jsx';
 
 // Google Maps Logistics Platform Pages
 import PublicShipmentTrackingPage from './pages/PublicShipmentTrackingPage.jsx';
@@ -252,6 +252,7 @@ function App() {
                   
                   {/* Truck & Tyre Management */}
                   <Route path="/truck-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'supervisor']}><TruckManagerPage /></ProtectedRoute>} />
+            <Route path="/gps" element={<ProtectedRoute><GPSPage /></ProtectedRoute>} />
                   <Route path="/tyres" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TyreManagementPage /></ProtectedRoute>} />
                   <Route path="/tyres/:truckId" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor']}><TyreManagementPage /></ProtectedRoute>} />
                   <Route path="/tyre-manager/:truckId" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><TyreManagementPage /></ProtectedRoute>} />
@@ -291,8 +292,6 @@ function App() {
                   <Route path="/dashboard/shipments" element={<Navigate to="/trip-logs" replace />} />
                   <Route path="/dashboard/delivery-proof" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'dispatcher']}><DeliveryProofUploadPage /></ProtectedRoute>} />
                   <Route path="/pod-management" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PODManagementPage /></ProtectedRoute>} />
-                  <Route path="/lorry-receipts" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><PODManagementPage /></ProtectedRoute>} />
-                  <Route path="/lr" element={<Navigate to="/lorry-receipts" replace />} />
                   <Route path="/business-mail" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><BusinessMailPage /></ProtectedRoute>} />
                   <Route path="/branding-hub" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><BrandingStudioHub /></ProtectedRoute>} />
                   <Route path="/letterhead" element={<Navigate to="/branding-hub?tab=letterhead" replace />} />
