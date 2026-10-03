@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, 
-  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2, UploadCloud, Building2
+  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2, UploadCloud, Building2, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,7 @@ import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 import FamilyOwnerSettlementModal from '@/components/FamilyOwnerSettlementModal.jsx';
 import TruckContributionRanking from '@/components/TruckContributionRanking.jsx';
+import TruckAccidentsView from '@/components/TruckAccidentsView.jsx';
 
 export const parseImageList = (raw) => {
   if (!raw) return [];
@@ -56,6 +57,8 @@ export default function TruckManagerPage() {
   const [drivers, setDrivers] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [loanProfiles, setLoanProfiles] = useState([]);
+  const [accidents, setAccidents] = useState([]);
+  const [selectedAccidentTruckId, setSelectedAccidentTruckId] = useState('all');
   const [loading, setLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
@@ -96,7 +99,7 @@ export default function TruckManagerPage() {
   const fetchTrucks = async () => {
     try {
       setLoading(true);
-      const [trucksRes, empsRes, loanProfilesRes, docsRes] = await Promise.all([
+      const [trucksRes, empsRes, loanProfilesRes, docsRes, accidentsRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
           expand: 'manager_id',
@@ -112,6 +115,11 @@ export default function TruckManagerPage() {
         pb.collection('truck_documents').getFullList({
           sort: '-created',
           $autoCancel: false
+        }).catch(() => []),
+        pb.collection('driver_accident_reports').getFullList({
+          expand: 'employee_id,truck_id',
+          sort: '-accident_date',
+          $autoCancel: false
         }).catch(() => [])
       ]);
       
@@ -124,6 +132,7 @@ export default function TruckManagerPage() {
       setDrivers(driverList);
       setDocuments(docsRes || []);
       setLoanProfiles(loanProfilesRes);
+      setAccidents(accidentsRes || []);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load fleet data');
@@ -262,6 +271,19 @@ export default function TruckManagerPage() {
             >
               💰 Contribution Ranking
             </Button>
+            <Button
+              variant={viewMode === 'accidents' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 ${viewMode === 'accidents' ? 'shadow-xs text-rose-500 font-bold bg-rose-500/10' : 'text-rose-400 hover:text-rose-300'}`}
+              onClick={() => setViewMode('accidents')}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" /> Accident History
+              {accidents.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${viewMode === 'accidents' ? 'bg-rose-500 text-white' : 'bg-rose-500/20 text-rose-400'}`}>
+                  {accidents.length}
+                </span>
+              )}
+            </Button>
           </div>
 
           <Button 
@@ -298,6 +320,16 @@ export default function TruckManagerPage() {
           <Truck className="w-12 h-12 mx-auto mb-4 opacity-20" />
           <p>No trucks found. Add your first truck to get started.</p>
         </div>
+      ) : viewMode === 'accidents' ? (
+        <TruckAccidentsView
+          trucks={trucks}
+          drivers={drivers}
+          accidents={accidents}
+          filterTruckId={selectedAccidentTruckId}
+          setFilterTruckId={setSelectedAccidentTruckId}
+          onRefreshAccidents={fetchTrucks}
+          onBackToFleet={() => setViewMode('compact')}
+        />
       ) : viewMode === 'contribution' ? (
         <TruckContributionRanking trucks={trucks} drivers={drivers} onBackToFleet={() => setViewMode('compact')} />
       ) : viewMode === 'compact' ? (
@@ -378,6 +410,24 @@ export default function TruckManagerPage() {
                       <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-1.5 py-0 rounded text-[10px] font-bold text-blue-600 dark:text-blue-400">
                         FASTag: ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
                       </Badge>
+                      {(() => {
+                        const trkAccs = accidents.filter(a => a.truck_id === truck.id || a.truck_id === truck.truck_number);
+                        if (trkAccs.length === 0) return null;
+                        const dmg = trkAccs.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+                        return (
+                          <Badge 
+                            variant="outline" 
+                            onClick={() => {
+                              setSelectedAccidentTruckId(truck.id);
+                              setViewMode('accidents');
+                            }}
+                            className="border-rose-500/40 bg-rose-500/10 px-1.5 py-0 rounded text-[10px] font-bold text-rose-600 dark:text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors"
+                            title="Click to view full accident history for this truck"
+                          >
+                            ⚠️ {trkAccs.length} {trkAccs.length === 1 ? 'Accident' : 'Accidents'}{dmg > 0 ? ` (₹${dmg.toLocaleString('en-IN')})` : ''}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -538,6 +588,16 @@ export default function TruckManagerPage() {
                       <DropdownMenuItem onSelect={() => setModalConfig({ isOpen: true, truck })}>
                         <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Edit Details
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-rose-500 font-semibold cursor-pointer" 
+                        onSelect={() => {
+                          setSelectedAccidentTruckId(truck.id);
+                          setViewMode('accidents');
+                        }}
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 mr-2 text-rose-500" />
+                        Accident History ({accidents.filter(a => a.truck_id === truck.id || a.truck_id === truck.truck_number).length})
+                      </DropdownMenuItem>
                       {truck.ownership_type === 'AttachedFamily' && (
                         <DropdownMenuItem className="text-purple-400 font-bold" onSelect={() => setSettlementConfig({ isOpen: true, truck })}>
                           🤝 Owner Settlement Statement
@@ -617,6 +677,23 @@ export default function TruckManagerPage() {
                   <Badge variant="outline" className="border-blue-500/20 bg-blue-500/5 px-1.5 py-0 rounded text-[9px] font-bold text-blue-600">
                     ₹{(truck.current_fastag_balance || 0).toLocaleString('en-IN')}
                   </Badge>
+                  {(() => {
+                    const trkAccs = accidents.filter(a => a.truck_id === truck.id || a.truck_id === truck.truck_number);
+                    if (trkAccs.length === 0) return null;
+                    return (
+                      <Badge 
+                        variant="outline" 
+                        onClick={() => {
+                          setSelectedAccidentTruckId(truck.id);
+                          setViewMode('accidents');
+                        }}
+                        className="border-rose-500/40 bg-rose-500/10 px-1.5 py-0 rounded text-[9px] font-bold text-rose-600 dark:text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors"
+                        title="Click to view accident history for this truck"
+                      >
+                        ⚠️ {trkAccs.length} {trkAccs.length === 1 ? 'Accident' : 'Accidents'}
+                      </Badge>
+                    );
+                  })()}
                 </div>
 
                 {/* Actions bottom bar with Driver Assignment */}
@@ -714,6 +791,18 @@ export default function TruckManagerPage() {
                     </Button>
                     <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-amber-500" onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)} title="Maintenance">
                       <Wrench className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`w-6 h-6 rounded hover:bg-rose-500/20 ${accidents.some(a => a.truck_id === truck.id || a.truck_id === truck.truck_number) ? 'text-rose-500 bg-rose-500/10' : 'text-muted-foreground'}`}
+                      onClick={() => {
+                        setSelectedAccidentTruckId(truck.id);
+                        setViewMode('accidents');
+                      }} 
+                      title={`Accident History (${accidents.filter(a => a.truck_id === truck.id || a.truck_id === truck.truck_number).length})`}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
                     </Button>
                     <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-muted-foreground" onClick={() => setModalConfig({ isOpen: true, truck })} title="Edit">
                       <Edit className="w-3 h-3" />

@@ -2486,4 +2486,586 @@ _Issued by Fleet Attribution & Diagnostic Lab_`;
   ] });
 }
 
-function Ge(){const[p,T]=c.useState([]),[r,H]=c.useState([]),[q,X]=c.useState([]),[le,J]=c.useState(!0),[$,k]=c.useState({isOpen:!1,truck:null}),[N,K]=c.useState({isOpen:!1,truck:null,activeIndex:0}),[a,n]=c.useState({isOpen:!1,truck:null}),P=he(),[C,Y]=c.useState({isOpen:!1,truckId:null,employeeId:null,entityName:""}),[F,B]=c.useState({isOpen:!1,truck:null}),[E,Q]=c.useState("all"),[L,Z]=c.useState(""),[V,s]=c.useState("compact"),l=async()=>{try{J(!0);let t=[],d=[],g=[];try{const u=await ie.fetch("/trucks/list");if(u.ok){const f=await u.json();Array.isArray(f.trucks)&&f.trucks.length>0?t=f.trucks:Array.isArray(f.items)&&f.items.length>0&&(t=f.items)}}catch(u){console.warn("API truck list notice in TruckManagerPage:",u)}if(t.length===0)try{t=await v.collection("trucks").getFullList({sort:"-created",expand:"manager_id",$autoCancel:!1})}catch(u){console.warn("PocketBase SDK truck fetch notice in TruckManagerPage:",u)}try{d=await v.collection("employees").getFullList({filter:'employee_type="driver"',$autoCancel:!1}).catch(()=>[])}catch{}try{g=await v.collection("loan_profiles").getFullList({$autoCancel:!1}).catch(()=>[])}catch{}T($e(t||[])),H(d||[]),X(g||[])}catch(t){console.error(t),w.error("Failed to load fleet data")}finally{J(!1)}};c.useEffect(()=>{l()},[]);const i=async(t,d)=>{if(window.confirm(`Are you sure you want to delete vehicle ${d}? This will also remove associated tyre records.`))try{await v.collection("trucks").delete(t,{$autoCancel:!1}),w.success(`Vehicle ${d} deleted successfully`),l()}catch(g){console.error(g),w.error("Failed to delete truck")}},b=c.useMemo(()=>{const t=p.length,d=p.filter(_=>!_.ownership_type||_.ownership_type==="Owned").length,g=p.filter(_=>_.ownership_type==="Attached").length,u=p.filter(_=>_.ownership_type==="Leased").length,f=p.filter(_=>_.status==="active").length,W=p.reduce((_,S)=>_+(S.current_fastag_balance||0),0);return{total:t,owned:d,attached:g,leased:u,active:f,totalFastag:W}},[p]),m=c.useMemo(()=>p.filter(t=>{if(E!=="all"&&(t.ownership_type||"Owned")!==E)return!1;if(L.trim()){const d=L.toLowerCase();return(t.truck_number||"").toLowerCase().includes(d)||(t.truck_name||"").toLowerCase().includes(d)||(t.subcontractor_name||"").toLowerCase().includes(d)||(t.owner_name||"").toLowerCase().includes(d)||(t.assigned_driver_name||"").toLowerCase().includes(d)}return!0}),[p,E,L]);return e.jsxs("div",{className:"min-h-screen bg-background flex flex-col",children:[e.jsx(pe,{children:e.jsx("title",{children:"Truck Manager & Fleet Registry | Jai Bhavani Cargo"})}),e.jsxs("main",{className:"flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full animate-in fade-in duration-300",children:[e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4",children:[e.jsxs("div",{children:[e.jsx("h1",{className:"text-3xl font-extrabold tracking-tight text-foreground",style:{letterSpacing:"-0.02em"},children:"Fleet & Vehicle Registry"}),e.jsx("p",{className:"text-muted-foreground mt-1 text-sm",children:"Manage commercial trucks, driver assignments, FASTag wallets, tyres, and compliance."})]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-2.5",children:[e.jsxs("div",{className:"bg-card p-1 rounded-xl flex items-center border border-border/70 shadow-xs",children:[e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all",V==="compact"?"bg-primary text-primary-foreground shadow-xs":"text-muted-foreground hover:text-foreground"),onClick:()=>s("compact"),children:"☰ Compact List"}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all",V==="grid"?"bg-primary text-primary-foreground shadow-xs":"text-muted-foreground hover:text-foreground"),onClick:()=>s("grid"),children:"🔲 Grid Tiles"}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",V==="contribution"?"bg-amber-500 text-slate-950 font-black shadow-xs":"text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"),onClick:()=>s("contribution"),children:"💰 Contribution Ranking"}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",V==="attribution"?"bg-emerald-500 text-slate-950 font-black shadow-xs":"text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"),onClick:()=>s("attribution"),children:"🔬 Driver vs Truck Attribution Lab"})]}),e.jsxs(j,{variant:"outline",size:"sm",onClick:()=>P("/vehicle-tco"),className:"h-9 rounded-xl border-border text-xs font-bold shadow-xs hover:bg-muted",children:[e.jsx(be,{className:"w-3.5 h-3.5 mr-1.5 text-primary"})," TCO Signal"]}),e.jsxs(j,{size:"sm",onClick:()=>k({isOpen:!0,truck:null}),className:"h-9 rounded-xl text-xs font-bold shadow-sm bg-primary text-primary-foreground",children:[e.jsx(ge,{className:"w-3.5 h-3.5 mr-1.5"})," Add Truck"]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6",children:[e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Active Fleet"}),e.jsxs("p",{className:"text-2xl font-black text-foreground mt-1 font-mono",children:[b.total," Trucks"]}),e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:[b.active," operational on duty"]})]}),e.jsx("div",{className:"p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20 shrink-0",children:e.jsx(U,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Company Owned"}),e.jsx("p",{className:"text-2xl font-black text-blue-500 mt-1 font-mono",children:b.owned}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Jai Bhavani Cargo assets"})]}),e.jsx("div",{className:"p-3 bg-blue-500/10 text-blue-500 rounded-2xl border border-blue-500/20 shrink-0",children:e.jsx(te,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Market Attached"}),e.jsx("p",{className:"text-2xl font-black text-amber-500 mt-1 font-mono",children:b.attached}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Subcontractor vehicles"})]}),e.jsx("div",{className:"p-3 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20 shrink-0",children:e.jsx(_e,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"FASTag Balance"}),e.jsxs("p",{className:"text-2xl font-black text-emerald-500 mt-1 font-mono",children:["₹",b.totalFastag.toLocaleString("en-IN")]}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Combined toll wallet balance"})]}),e.jsx("div",{className:"p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20 shrink-0",children:e.jsx(ee,{className:"w-6 h-6"})})]})})]}),e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-3 rounded-2xl border border-border/60 shadow-xs mb-6",children:[e.jsx("div",{className:"flex flex-wrap items-center gap-1.5",children:[{id:"all",label:`All Fleet (${b.total})`},{id:"Owned",label:`🏢 Company Owned (${b.owned})`},{id:"Attached",label:`🤝 Subcontractor (${b.attached})`},{id:"Leased",label:`📑 Leased (${b.leased})`}].map(t=>e.jsx("button",{onClick:()=>Q(t.id),className:G("px-3 py-1.5 rounded-xl text-xs font-bold transition-all border",E===t.id?"bg-primary text-primary-foreground border-primary shadow-xs":"bg-background text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"),children:t.label},t.id))}),e.jsx("div",{className:"w-full sm:w-72",children:e.jsxs("div",{className:"relative",children:[e.jsx(fe,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"}),e.jsx(x,{placeholder:"Search Truck #, Model, Driver...",value:L,onChange:t=>Z(t.target.value),className:"pl-8 h-8 text-xs bg-background border-border/70 rounded-xl"})]})})]}),le?e.jsx("div",{className:"bg-card rounded-2xl border border-border/50 shadow-xs p-16 flex justify-center",children:e.jsx(Le,{text:"Loading fleet vehicles..."})}):m.length===0?e.jsxs(M,{className:"rounded-3xl border-border/60 p-12 text-center shadow-sm",children:[e.jsx(U,{className:"w-12 h-12 mx-auto mb-3 opacity-20 text-primary"}),e.jsx("h3",{className:"text-base font-extrabold text-foreground",children:"No vehicles found"}),e.jsx("p",{className:"text-xs text-muted-foreground mt-1",children:"Try adjusting your search query or filter category."})]}):V==="attribution"?e.jsx(DriverTruckAttributionLab,{onBackToFleet:()=>s("compact")}):V==="attribution"?e.jsx(DriverTruckAttributionLab,{onBackToFleet:()=>s("compact")}):V==="contribution"?e.jsx(TruckContributionRankingView,{trucks:p,drivers:r,onBackToFleet:()=>s("compact")}):V==="compact"?e.jsx("div",{className:"space-y-3",children:m.map(t=>{const d=re(t.body_images),g=d.length>0,u=g?ae(t,d[0],"100x100"):null,f=r.find(S=>S.assigned_truck===t.id);r.filter(S=>!S.assigned_truck);const W=t.ownership_type==="Attached",_=t.ownership_type==="Leased";return e.jsxs("div",{className:"group bg-card border border-border/60 hover:border-primary/40 rounded-2xl p-3 sm:px-5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",children:[e.jsxs("div",{className:"flex items-center gap-3.5 min-w-0 flex-1",children:[e.jsxs("div",{className:"w-14 h-14 rounded-2xl bg-muted relative overflow-hidden shrink-0 border border-border/60 cursor-pointer group/img shadow-xs",onClick:()=>g&&K({isOpen:!0,truck:{...t,body_images:d},activeIndex:0}),children:[g&&u?e.jsx("img",{src:u,alt:t.truck_number,loading:"lazy",decoding:"async",className:"w-full h-full object-cover group-hover/img:scale-110 transition-transform",onError:S=>{S.currentTarget.style.display="none"}}):e.jsx("div",{className:"w-full h-full flex items-center justify-center bg-primary/5 text-primary/40",children:e.jsx(U,{className:"w-6 h-6"})}),e.jsx("span",{className:`absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-background ${t.status==="active"?"bg-emerald-500":"bg-zinc-400"}`})]}),e.jsxs("div",{className:"min-w-0 flex-1 space-y-1",children:[e.jsxs("div",{className:"flex flex-wrap items-center gap-2",children:[e.jsxs(h,{className:"bg-primary/10 text-primary border-primary/30 font-black text-xs px-2 py-0.5 font-mono",children:["#",t.sequential_number]}),e.jsx("span",{className:"font-mono font-extrabold text-base text-foreground group-hover:text-primary transition-colors tracking-tight",children:t.truck_number}),e.jsx("span",{className:"text-xs font-semibold text-muted-foreground truncate max-w-[160px]",children:t.truck_name||"Fleet Truck"}),W?e.jsxs(h,{className:"bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold",children:["🤝 Sub: ",t.subcontractor_name||t.owner_name||"Market Vendor"]}):_?e.jsxs(h,{className:"bg-purple-500/15 text-purple-500 dark:text-purple-400 border-purple-500/30 text-[10px] font-bold",children:["📑 Leased: ",t.financier_name||"Financed"]}):e.jsx(h,{className:"bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold",children:"🏢 Company Owned"})]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-1.5 text-[11px]",children:[e.jsx(h,{variant:"outline",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium border-border/70",children:t.truck_size||"32ft MXL"}),e.jsxs(h,{variant:"secondary",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium",children:["Axle: ",t.truck_axle||"Multi"]}),e.jsxs(h,{variant:"outline",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium border-border/70",children:[t.tyre_count||6," Tyres"]}),t.payload_capacity&&e.jsxs(h,{variant:"outline",className:"border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded-lg text-[10px] font-bold text-emerald-600 dark:text-emerald-400",children:["🏋️ ",t.payload_capacity]}),e.jsxs(h,{variant:"outline",onClick:()=>B({isOpen:!0,truck:t}),className:"border-blue-500/30 bg-blue-500/10 px-2 py-0.5 rounded-lg text-[10px] font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-500/20 transition-colors",children:["💳 FASTag: ₹",(t.current_fastag_balance||0).toLocaleString("en-IN")]})]})]})]}),e.jsxs("div",{className:"flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/40 shrink-0 text-xs",children:[e.jsx(je,{className:"w-4 h-4 text-primary opacity-70"}),W?e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"font-bold text-foreground truncate max-w-[140px]",children:t.assigned_driver_name||"Driver Unassigned"}),t.driver_dl_number&&e.jsxs("span",{className:"text-[10px] font-mono text-emerald-500",children:["DL: ",t.driver_dl_number]})]}):e.jsx("span",{className:"font-bold text-foreground truncate max-w-[130px]",children:f?f.name:e.jsx("span",{className:"italic text-muted-foreground/60 text-xs",children:"Unassigned"})})]}),e.jsxs("div",{className:"flex items-center gap-1.5 shrink-0 self-end sm:self-center",children:[e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary",onClick:()=>k({isOpen:!0,truck:t}),children:[e.jsx(oe,{className:"w-3.5 h-3.5 mr-1"})," Edit"]}),e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-border/70 hover:bg-muted",onClick:()=>P(`/tyres/${t.id}`),children:[e.jsx(Ne,{className:"w-3.5 h-3.5 mr-1 text-primary"})," Tyres"]}),e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-border/70 hover:bg-muted",onClick:()=>P(`/fleet-maintenance?truckId=${t.id}`),children:[e.jsx(we,{className:"w-3.5 h-3.5 mr-1 text-amber-500"})," Maintenance"]}),e.jsxs(j,{variant:"secondary",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl text-blue-600 bg-blue-500/10 hover:bg-blue-500/20",onClick:()=>B({isOpen:!0,truck:t}),children:[e.jsx(ee,{className:"w-3.5 h-3.5 mr-1"})," FASTag"]}),e.jsxs(Oe,{children:[e.jsx(Ae,{asChild:!0,children:e.jsx(j,{variant:"ghost",size:"icon",className:"w-8 h-8 rounded-xl hover:bg-muted",children:e.jsx(ve,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsxs(De,{align:"end",className:"w-52 bg-card border border-border rounded-xl",children:[e.jsx(Ie,{className:"text-xs",children:"Vehicle Actions"}),e.jsxs(R,{onSelect:()=>k({isOpen:!0,truck:t}),className:"text-xs cursor-pointer",children:[e.jsx(oe,{className:"w-3.5 h-3.5 mr-2 text-muted-foreground"})," Edit Specifications"]}),e.jsxs(R,{onSelect:()=>n({isOpen:!0,truck:t}),className:"text-xs cursor-pointer font-semibold text-emerald-600",children:[e.jsx(ye,{className:"w-3.5 h-3.5 mr-2 text-emerald-500"})," Vehicle Health Passport"]}),e.jsxs(R,{onSelect:()=>B({isOpen:!0,truck:t}),className:"text-xs cursor-pointer text-blue-600",children:[e.jsx(ee,{className:"w-3.5 h-3.5 mr-2 text-blue-500"})," Recharge FASTag"]}),e.jsxs(R,{onSelect:()=>Y({isOpen:!0,truckId:t.id,employeeId:null,entityName:`Truck ${t.truck_number}`}),className:"text-xs cursor-pointer",children:[e.jsx(ke,{className:"w-3.5 h-3.5 mr-2 text-primary"})," Share Document Folder"]}),e.jsx(Me,{}),e.jsxs(R,{onSelect:()=>i(t.id,t.truck_number),className:"text-xs cursor-pointer text-destructive focus:text-destructive",children:[e.jsx(Ce,{className:"w-3.5 h-3.5 mr-2"})," Delete Vehicle"]})]})]})]})]},t.id)})}):e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",children:m.map(t=>{const d=re(t.body_images),g=d.length>0,u=g?ae(t,d[0],"200x200"):null;return t.ownership_type,e.jsxs(M,{className:"border-border/60 hover:border-primary/40 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all",children:[e.jsxs("div",{className:"relative aspect-[4/3] sm:h-52 bg-slate-950 overflow-hidden cursor-pointer group/img",onClick:()=>g&&K({isOpen:!0,truck:{...t,body_images:d},activeIndex:0}),children:[g&&u?e.jsx("img",{src:u,alt:t.truck_number,loading:"lazy",decoding:"async",className:"w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-200"}):e.jsx("div",{className:"w-full h-full flex items-center justify-center text-muted-foreground/30",children:e.jsx(U,{className:"w-16 h-16"})}),e.jsxs(h,{className:"absolute top-3 left-3 bg-primary text-primary-foreground font-mono font-black text-xs px-2.5 py-0.5 rounded-lg shadow-sm",children:["#",t.sequential_number]}),e.jsx(h,{className:G("absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-lg shadow-sm",t.status==="active"?"bg-emerald-500 text-white":"bg-zinc-500 text-white"),children:t.status==="active"?"Active":"Inactive"})]}),e.jsxs(z,{className:"p-5 space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsx("h3",{className:"font-black text-lg font-mono text-foreground",children:t.truck_number}),e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:t.truck_name||"Fleet Truck"})]}),e.jsx(h,{variant:"outline",className:"text-[10px] font-bold",children:t.truck_size||"32ft"})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 py-2 border-t border-b border-border/20 text-xs",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold block",children:"FASTag Balance"}),e.jsxs("span",{className:"font-bold text-blue-600 font-mono",children:["₹",(t.current_fastag_balance||0).toLocaleString()]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold block",children:"Capacity"}),e.jsx("span",{className:"font-bold text-foreground",children:t.payload_capacity||"N/A"})]})]}),e.jsxs("div",{className:"flex justify-between items-center pt-1 gap-2",children:[e.jsxs(j,{size:"sm",variant:"outline",onClick:()=>P(`/tyres/${t.id}`),className:"flex-1 text-xs font-bold rounded-xl",children:["Tyres (",t.tyre_count||6,")"]}),e.jsx(j,{size:"sm",onClick:()=>k({isOpen:!0,truck:t}),className:"flex-1 text-xs font-bold rounded-xl bg-primary text-primary-foreground",children:"Edit Details"})]})]})]},t.id)})})]}),e.jsx(Re,{isOpen:$.isOpen,onClose:()=>k({isOpen:!1,truck:null}),truck:$.truck,onSuccess:l}),F.truck&&e.jsx(Be,{isOpen:F.isOpen,onClose:()=>B({isOpen:!1,truck:null}),truck:F.truck,onSuccess:l}),a.truck&&e.jsx(Ee,{isOpen:a.isOpen,onClose:()=>n({isOpen:!1,truck:null}),truck:a.truck}),e.jsx(Pe,{isOpen:C.isOpen,onClose:()=>Y({isOpen:!1,truckId:null,employeeId:null,entityName:""}),truckId:C.truckId,employeeId:C.employeeId,entityName:C.entityName}),N.truck&&e.jsx(ce,{open:N.isOpen,onOpenChange:()=>K({isOpen:!1,truck:null,activeIndex:0}),children:e.jsxs(de,{className:"max-w-md sm:max-w-lg w-[95vw] h-[92vh] max-h-[92vh] bg-slate-950/95 border border-slate-800 text-white p-3 sm:p-4 rounded-3xl overflow-hidden flex flex-col gap-2.5 shadow-2xl backdrop-blur-xl",children:[e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-slate-800",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"font-black text-sm text-white",children:N.truck.truck_number}),e.jsx("span",{className:"text-xs text-slate-400",children:N.truck.truck_name||"Commercial Truck"}),N.truck.body_images&&N.truck.body_images.length>0&&e.jsxs(h,{className:"bg-primary/20 text-primary border-primary/30 text-xs font-mono font-bold px-2",children:["📸 ",(N.activeIndex||0)+1," / ",N.truck.body_images.length]})]}),e.jsxs("div",{className:"flex items-center gap-2 pr-8",children:[e.jsx("span",{className:"inline-flex text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",children:"📱 Portrait Mode"}),e.jsx("a",{href:ae(N.truck,N.truck.body_images[N.activeIndex||0]),target:"_blank",className:"text-xs px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-cyan-400 font-semibold transition-colors flex items-center gap-1",children:"Fullscreen ↗"}),e.jsx("a",{href:ae(N.truck,N.truck.body_images[N.activeIndex||0]),target:"_blank",download:!0,className:"text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors",children:"Download"})]})]}),e.jsxs("div",{className:"relative flex-1 flex items-center justify-center h-full min-h-[460px] bg-black/90 rounded-2xl p-2 overflow-hidden select-none",children:[N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("button",{type:"button",onClick:()=>K(s=>({...s,activeIndex:(s.activeIndex-1+s.truck.body_images.length)%s.truck.body_images.length})),className:"absolute left-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer",children:"‹"}),e.jsx("img",{src:ae(N.truck,N.truck.body_images[N.activeIndex||0]),alt:"Truck Photo",loading:"lazy",decoding:"async",crossOrigin:"anonymous",onError:ev=>{const u=ev.currentTarget.src;if(u.includes("?thumb="))ev.currentTarget.src=u.split("?thumb=")[0];else if(u.includes("/hcgi/platform/api/files/"))ev.currentTarget.src=u.replace("/hcgi/platform/api/files/","/api/files/");},className:"w-auto h-full max-h-[68vh] max-w-full object-contain rounded-xl shadow-2xl transition-all duration-200"}),N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("button",{type:"button",onClick:()=>K(s=>({...s,activeIndex:(s.activeIndex+1)%s.truck.body_images.length})),className:"absolute right-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer",children:"›"})]}),N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("div",{className:"flex items-center justify-center gap-2 pt-1 overflow-x-auto select-none",children:N.truck.body_images.map((img,idx)=>e.jsx("button",{key:idx,type:"button",onClick:()=>K(s=>({...s,activeIndex:idx})),className:`w-12 h-16 sm:w-14 sm:h-18 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${N.activeIndex===idx?"border-amber-400 ring-2 ring-amber-400/30 scale-105 opacity-100":"border-slate-800 opacity-50 hover:opacity-100 hover:border-slate-600"}`,children:e.jsx("img",{src:ae(N.truck,img,"100x100"),alt:`Thumb ${idx+1}`,loading:"lazy",decoding:"async",crossOrigin:"anonymous",onError:ev=>{const u=ev.currentTarget.src;if(u.includes("?thumb="))ev.currentTarget.src=u.split("?thumb=")[0];else if(u.includes("/hcgi/platform/api/files/"))ev.currentTarget.src=u.replace("/hcgi/platform/api/files/","/api/files/");},className:"w-full h-full object-cover"})}))})]})})]})}export{Ge as default};
+
+function TruckAccidentsView({
+  trucks = [],
+  drivers = [],
+  accidents = [],
+  filterTruckId = 'all',
+  setFilterTruckId,
+  onRefreshAccidents,
+  onBackToFleet
+}) {
+  const [searchQuery, setSearchQuery] = c.useState('');
+  const [liabilityFilter, setLiabilityFilter] = c.useState('all');
+  const [isModalOpen, setIsModalOpen] = c.useState(false);
+  const [editingAccident, setEditingAccident] = c.useState(null);
+  const [isSubmitting, setIsSubmitting] = c.useState(false);
+
+  const [formTruckId, setFormTruckId] = c.useState('');
+  const [formDriverId, setFormDriverId] = c.useState('');
+  const [formDate, setFormDate] = c.useState(() => new Date().toISOString().split('T')[0]);
+  const [formCost, setFormCost] = c.useState('');
+  const [formDesc, setFormDesc] = c.useState('');
+  const [formFined, setFormFined] = c.useState(false);
+  const [newPhotos, setNewPhotos] = c.useState([]);
+  const [photoPreviews, setPhotoPreviews] = c.useState([]);
+  const fileInputRef = c.useRef(null);
+
+  const [photoViewer, setPhotoViewer] = c.useState({ isOpen: false, record: null, activeIndex: 0 });
+
+  c.useEffect(() => {
+    if (!photoViewer.isOpen || !photoViewer.record) return;
+    const handleKeyDown = (e) => {
+      const imgs = Array.isArray(photoViewer.record?.image_urls) ? photoViewer.record.image_urls : (photoViewer.record?.image_urls ? [photoViewer.record.image_urls] : []);
+      if (imgs.length <= 1) return;
+      if (e.key === 'ArrowRight') {
+        setPhotoViewer(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % imgs.length }));
+      } else if (e.key === 'ArrowLeft') {
+        setPhotoViewer(prev => ({ ...prev, activeIndex: (prev.activeIndex - 1 + imgs.length) % imgs.length }));
+      } else if (e.key === 'Escape') {
+        setPhotoViewer({ isOpen: false, record: null, activeIndex: 0 });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [photoViewer]);
+
+  const openNewAccidentModal = (preselectedTruckId = null) => {
+    const truckIdToUse = preselectedTruckId || (filterTruckId !== 'all' ? filterTruckId : (trucks[0]?.id || ''));
+    const matchedTruck = trucks.find(t => t.id === truckIdToUse);
+    const assignedDriver = drivers.find(d => d.assigned_truck === truckIdToUse);
+
+    setEditingAccident(null);
+    setFormTruckId(truckIdToUse);
+    setFormDriverId(assignedDriver ? assignedDriver.id : '');
+    setFormDate(new Date().toISOString().split('T')[0]);
+    setFormCost('');
+    setFormDesc('');
+    setFormFined(false);
+    setNewPhotos([]);
+    setPhotoPreviews([]);
+    setIsModalOpen(true);
+  };
+
+  const openEditAccidentModal = (accident) => {
+    setEditingAccident(accident);
+    setFormTruckId(accident.truck_id || '');
+    setFormDriverId(accident.employee_id || '');
+    setFormDate(accident.accident_date ? accident.accident_date.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setFormCost(accident.damage_cost || '');
+    setFormDesc(accident.description || '');
+    setFormFined(accident.fined_to_employee === true || accident.fined_to_employee === 'true');
+    setNewPhotos([]);
+    setPhotoPreviews([]);
+    setIsModalOpen(true);
+  };
+
+  const handlePhotoSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setNewPhotos(prev => [...prev, ...files]);
+    const previews = files.map(f => URL.createObjectURL(f));
+    setPhotoPreviews(prev => [...prev, ...previews]);
+  };
+
+  const removeNewPhoto = (index) => {
+    setNewPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formTruckId) {
+      w.error('Please select a truck');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const costNum = Number(formCost) || 0;
+      const isoDate = new Date(formDate).toISOString();
+      const selectedTruck = trucks.find(t => t.id === formTruckId);
+      const selectedDriver = drivers.find(d => d.id === formDriverId);
+
+      const formData = new FormData();
+      formData.append('truck_id', formTruckId);
+      formData.append('employee_id', formDriverId || '');
+      formData.append('accident_date', isoDate);
+      formData.append('damage_cost', costNum);
+      formData.append('description', (formDesc || '').trim());
+      formData.append('fined_to_employee', formFined ? 'true' : 'false');
+
+      newPhotos.forEach(file => {
+        formData.append('image_urls', file);
+      });
+
+      if (editingAccident) {
+        await v.collection('driver_accident_reports').update(editingAccident.id, formData, { $autoCancel: false });
+        w.success('Accident report updated successfully');
+      } else {
+        await v.collection('driver_accident_reports').create(formData, { $autoCancel: false });
+        if (formFined && formDriverId) {
+          try {
+            const desc = 'Accident Fine: ' + (formDesc ? formDesc.slice(0, 40) : 'Vehicle damage') + ' (' + (selectedTruck?.truck_number || '') + ')';
+            const exp = await v.collection('expenses').create({
+              category: 'Employee',
+              subcategory: 'Employee Advance',
+              amount: costNum,
+              date: isoDate,
+              description: desc,
+              employee_id: formDriverId,
+              truck_id: formTruckId,
+              status: 'Approved',
+              payment_method: 'Cash'
+            }, { $autoCancel: false }).catch(() => null);
+
+            await v.collection('advances').create({
+              employee_id: formDriverId,
+              amount: costNum,
+              date: isoDate,
+              advance_date: isoDate,
+              reason: desc,
+              status: 'Pending',
+              expense_id: exp?.id || undefined
+            }, { $autoCancel: false }).catch(() => null);
+
+            await v.collection('cashbook').create({
+              date: isoDate,
+              description: desc,
+              amount: costNum,
+              transaction_type: 'Expense',
+              category: 'Employee - Employee Advance',
+              reference_id: exp?.id || '',
+              reference_type: 'expense',
+              status: 'Completed'
+            }, { $autoCancel: false }).catch(() => null);
+          } catch(err) {
+            console.warn('Syncing fine to cashbook notice:', err);
+          }
+        }
+        w.success('Accident report logged successfully');
+      }
+
+      setIsModalOpen(false);
+      if (onRefreshAccidents) await onRefreshAccidents();
+    } catch(err) {
+      console.error(err);
+      w.error('Failed to save accident report: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccident = async (accidentId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this accident report?')) return;
+    try {
+      await v.collection('driver_accident_reports').delete(accidentId, { $autoCancel: false });
+      w.success('Accident record deleted successfully');
+      if (onRefreshAccidents) await onRefreshAccidents();
+    } catch(err) {
+      console.error(err);
+      w.error('Failed to delete accident record');
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'Unknown Date';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const filteredAccidents = c.useMemo(() => {
+    return accidents.filter(ac => {
+      if (filterTruckId !== 'all') {
+        const matchesId = ac.truck_id === filterTruckId;
+        const truckObj = trucks.find(t => t.id === filterTruckId);
+        const matchesNumber = truckObj && ac.truck_id === truckObj.truck_number;
+        if (!matchesId && !matchesNumber) return false;
+      }
+      const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
+      if (liabilityFilter === 'driver_fined' && !isFined) return false;
+      if (liabilityFilter === 'company_expense' && isFined) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const trk = trucks.find(t => t.id === ac.truck_id || t.truck_number === ac.truck_id);
+        const drv = drivers.find(d => d.id === ac.employee_id);
+        const trkNo = (trk?.truck_number || ac.expand?.truck_id?.truck_number || ac.truck_id || '').toLowerCase();
+        const trkName = (trk?.truck_name || ac.expand?.truck_id?.truck_name || '').toLowerCase();
+        const drvName = (drv?.name || ac.expand?.employee_id?.name || '').toLowerCase();
+        const desc = (ac.description || '').toLowerCase();
+        const date = (ac.accident_date || '').toLowerCase();
+        return trkNo.includes(q) || trkName.includes(q) || drvName.includes(q) || desc.includes(q) || date.includes(q);
+      }
+      return true;
+    });
+  }, [accidents, filterTruckId, liabilityFilter, searchQuery, trucks, drivers]);
+
+  const kpis = c.useMemo(() => {
+    const list = filteredAccidents;
+    const totalCount = list.length;
+    const totalDamage = list.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+    const driverFinedList = list.filter(a => a.fined_to_employee === true || a.fined_to_employee === 'true');
+    const driverFinedCount = driverFinedList.length;
+    const driverFinedTotal = driverFinedList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+    const companyExpenseList = list.filter(a => !(a.fined_to_employee === true || a.fined_to_employee === 'true'));
+    const companyExpenseCount = companyExpenseList.length;
+    const companyExpenseTotal = companyExpenseList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+
+    const affectedTruckIds = new Set(accidents.map(a => a.truck_id));
+    const affectedTruckCount = trucks.filter(t => affectedTruckIds.has(t.id) || affectedTruckIds.has(t.truck_number)).length;
+    const cleanTruckCount = Math.max(0, trucks.length - affectedTruckCount);
+
+    return {
+      totalCount,
+      totalDamage,
+      driverFinedCount,
+      driverFinedTotal,
+      companyExpenseCount,
+      companyExpenseTotal,
+      affectedTruckCount,
+      cleanTruckCount
+    };
+  }, [filteredAccidents, accidents, trucks]);
+
+  const selectedTruckObj = trucks.find(t => t.id === filterTruckId);
+
+  return e.jsxs("div", { className: "space-y-6 animate-in fade-in duration-300", children: [
+    /* Top Banner & Control Strip */
+    e.jsxs("div", { className: "bg-card border border-border/70 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4", children: [
+      e.jsxs("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4", children: [
+        e.jsxs("div", { className: "space-y-1", children: [
+          e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            e.jsx("div", { className: "p-2 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20", children: e.jsx("span", { className: "text-lg", children: "⚠️" }) }),
+            e.jsxs("h2", { className: "text-xl font-bold text-foreground flex items-center gap-2", children: [
+              "Truck Accident & Damage History",
+              selectedTruckObj && e.jsx(h, { variant: "outline", className: "text-xs font-mono font-bold border-rose-500/30 text-rose-500 bg-rose-500/5", children: selectedTruckObj.truck_number })
+            ] })
+          ] }),
+          e.jsx("p", { className: "text-xs text-muted-foreground", children: "Complete collision logs, repair damage costs, driver accountability, and scene photos mapped directly to each vehicle." })
+        ] }),
+        e.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+          onBackToFleet && e.jsxs(j, { variant: "outline", size: "sm", onClick: onBackToFleet, className: "h-9 rounded-xl border-border text-xs font-bold hover:bg-muted", children: [
+            "← Back to Fleet"
+          ] }),
+          e.jsxs(j, { size: "sm", onClick: () => openNewAccidentModal(filterTruckId !== 'all' ? filterTruckId : null), className: "h-9 rounded-xl text-xs font-bold shadow-xs bg-rose-600 hover:bg-rose-500 text-white", children: [
+            "+ Log Accident Report"
+          ] })
+        ] })
+      ] }),
+
+      /* Filter Controls */
+      e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2 border-t border-border/50", children: [
+        e.jsxs("div", { className: "sm:col-span-4", children: [
+          e.jsx("label", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1", children: "Filter by Vehicle:" }),
+          e.jsxs("select", {
+            value: filterTruckId,
+            onChange: (e) => setFilterTruckId ? setFilterTruckId(e.target.value) : null,
+            className: "w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-hidden focus:border-rose-500",
+            children: [
+              e.jsxs("option", { value: "all", children: ["🚛 All Fleet Trucks (", accidents.length, " total incidents)"] }),
+              trucks.map(trk => {
+                const trkAccCount = accidents.filter(a => a.truck_id === trk.id || a.truck_id === trk.truck_number).length;
+                return e.jsxs("option", { value: trk.id, children: [trk.truck_number, " - ", trk.truck_name || "Fleet", " (", trkAccCount, " incidents)"] }, trk.id);
+              })
+            ]
+          })
+        ] }),
+        e.jsxs("div", { className: "sm:col-span-3", children: [
+          e.jsx("label", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1", children: "Financial Liability:" }),
+          e.jsxs("select", {
+            value: liabilityFilter,
+            onChange: (e) => setLiabilityFilter(e.target.value),
+            className: "w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-hidden focus:border-rose-500",
+            children: [
+              e.jsxs("option", { value: "all", children: ["⚖️ All Liabilities (", accidents.length, ")"] }),
+              e.jsx("option", { value: "driver_fined", children: "👤 Driver Fined / Deducted" }),
+              e.jsx("option", { value: "company_expense", children: "🏢 Company Misc Expense" })
+            ]
+          })
+        ] }),
+        e.jsxs("div", { className: "sm:col-span-5", children: [
+          e.jsx("label", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1", children: "Search Incident Details:" }),
+          e.jsx("input", {
+            type: "text",
+            placeholder: "Search truck #, driver name, collision notes...",
+            value: searchQuery,
+            onChange: (e) => setSearchQuery(e.target.value),
+            className: "w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-rose-500"
+          })
+        ] })
+      ] })
+    ] }),
+
+    /* KPI Summary Cards */
+    e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5", children: [
+      e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
+        e.jsxs("div", { children: [
+          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: filterTruckId === 'all' ? 'Fleet Incidents' : 'Vehicle Incidents' }),
+          e.jsxs("p", { className: "text-2xl font-black font-mono text-foreground mt-1", children: [kpis.totalCount, " ", e.jsx("span", { className: "text-xs text-muted-foreground font-normal", children: "records" })] }),
+          e.jsx("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: filterTruckId === 'all' ? (kpis.affectedTruckCount + " trucks affected, " + kpis.cleanTruckCount + " clean") : ("Logged for " + (selectedTruckObj?.truck_number || "selected truck")) })
+        ] }),
+        e.jsx("div", { className: "p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20", children: e.jsx("span", { className: "text-xl", children: "⚠️" }) })
+      ] }) }),
+
+      e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
+        e.jsxs("div", { children: [
+          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Total Repair & Damage" }),
+          e.jsxs("p", { className: "text-2xl font-black font-mono text-rose-500 mt-1", children: ["₹", kpis.totalDamage.toLocaleString('en-IN')] }),
+          e.jsx("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: "Cumulative collision impact cost" })
+        ] }),
+        e.jsx("div", { className: "p-3 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20", children: e.jsx("span", { className: "text-xl", children: "💸" }) })
+      ] }) }),
+
+      e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
+        e.jsxs("div", { children: [
+          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Fined to Driver" }),
+          e.jsxs("p", { className: "text-2xl font-black font-mono text-amber-500 mt-1", children: ["₹", kpis.driverFinedTotal.toLocaleString('en-IN')] }),
+          e.jsxs("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: [kpis.driverFinedCount, " incidents debited as salary fine"] })
+        ] }),
+        e.jsx("div", { className: "p-3 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20", children: e.jsx("span", { className: "text-xl", children: "👤" }) })
+      ] }) }),
+
+      e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
+        e.jsxs("div", { children: [
+          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Company Borne" }),
+          e.jsxs("p", { className: "text-2xl font-black font-mono text-blue-500 mt-1", children: ["₹", kpis.companyExpenseTotal.toLocaleString('en-IN')] }),
+          e.jsxs("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: [kpis.companyExpenseCount, " incidents logged as misc expense"] })
+        ] }),
+        e.jsx("div", { className: "p-3 bg-blue-500/10 text-blue-500 rounded-xl border border-blue-500/20", children: e.jsx("span", { className: "text-xl", children: "🏢" }) })
+      ] }) })
+    ] }),
+
+    /* Accidents List */
+    filteredAccidents.length === 0 ? e.jsxs("div", { className: "bg-card border border-border/70 rounded-2xl p-12 text-center shadow-xs space-y-3", children: [
+      e.jsx("div", { className: "w-14 h-14 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto text-2xl", children: "🛡️" }),
+      e.jsx("h3", { className: "text-lg font-bold text-foreground", children: filterTruckId !== 'all' ? ("Zero Accidents Logged for " + (selectedTruckObj?.truck_number || "This Vehicle")) : "No Accident Records Found" }),
+      e.jsx("p", { className: "text-xs text-muted-foreground max-w-md mx-auto", children: searchQuery ? "No accident reports matched your search criteria. Try modifying your search keywords." : "This vehicle maintains a clean safety profile with zero reported road collisions or body damage incidents." }),
+      e.jsx("div", { className: "pt-2", children: e.jsx(j, { size: "sm", onClick: () => openNewAccidentModal(filterTruckId !== 'all' ? filterTruckId : null), className: "rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white", children: "+ Log Incident for This Truck" }) })
+    ] }) : e.jsx("div", { className: "space-y-3", children: filteredAccidents.map(ac => {
+      const trk = trucks.find(t => t.id === ac.truck_id || t.truck_number === ac.truck_id);
+      const drv = drivers.find(d => d.id === ac.employee_id);
+      const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
+      const photos = Array.isArray(ac.image_urls) ? ac.image_urls.filter(Boolean) : (ac.image_urls ? [ac.image_urls] : []);
+
+      return e.jsxs("div", { key: ac.id, className: "bg-card border border-border/70 hover:border-rose-500/30 rounded-2xl p-4 sm:p-5 shadow-xs transition-all space-y-3.5", children: [
+        e.jsxs("div", { className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-border/50 pb-3", children: [
+          e.jsxs("div", { className: "flex flex-wrap items-center gap-2.5", children: [
+            e.jsxs("div", {
+              onClick: () => setFilterTruckId && setFilterTruckId(trk?.id || ac.truck_id),
+              className: "cursor-pointer flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-2.5 py-1 rounded-xl font-mono font-extrabold text-sm transition-colors",
+              title: "Filter exclusively for this truck",
+              children: [
+                "🚛 ",
+                trk?.truck_number || ac.expand?.truck_id?.truck_number || ac.truck_id || "Unknown Truck"
+              ]
+            }),
+            trk?.truck_name && e.jsx("span", { className: "text-xs text-muted-foreground font-semibold", children: trk.truck_name }),
+            e.jsxs(h, { variant: "outline", className: "border-border/70 text-xs px-2 py-0.5", children: ["📅 ", formatDate(ac.accident_date)] }),
+            isFined ? e.jsx(h, { className: "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold", children: "⚖️ Fined to Driver" }) : e.jsx(h, { className: "bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold", children: "🏢 Company Borne Expense" })
+          ] }),
+          e.jsxs("div", { className: "flex items-center gap-2 self-end sm:self-center", children: [
+            e.jsxs("div", { className: "text-right mr-1", children: [
+              e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: "Damage Cost" }),
+              e.jsxs("span", { className: "text-base font-black font-mono text-rose-500", children: ["₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN')] })
+            ] }),
+            e.jsx(j, { variant: "outline", size: "sm", onClick: () => openEditAccidentModal(ac), className: "h-8 px-2.5 rounded-xl border-border text-xs font-semibold hover:bg-muted", children: "✏️ Edit" }),
+            e.jsx(j, { variant: "ghost", size: "sm", onClick: () => handleDeleteAccident(ac.id), className: "h-8 w-8 p-0 rounded-xl text-destructive hover:bg-destructive/10", children: "🗑️" })
+          ] })
+        ] }),
+        e.jsxs("div", { className: "grid grid-cols-1 md:grid-cols-12 gap-4 text-xs", children: [
+          e.jsxs("div", { className: "md:col-span-3 bg-muted/40 p-3 rounded-xl border border-border/50 space-y-1", children: [
+            e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: "👤 Driver in Charge:" }),
+            e.jsx("p", { className: "font-bold text-foreground text-sm", children: drv?.name || ac.expand?.employee_id?.name || "Driver Unassigned / External" }),
+            drv?.contact && e.jsxs("p", { className: "text-[11px] text-muted-foreground font-mono", children: ["📞 ", drv.contact] }),
+            drv?.license_number && e.jsxs("p", { className: "text-[10px] text-muted-foreground font-mono", children: ["DL: ", drv.license_number] })
+          ] }),
+          e.jsxs("div", { className: "md:col-span-6 bg-muted/40 p-3 rounded-xl border border-border/50 space-y-1 flex flex-col justify-between", children: [
+            e.jsxs("div", { children: [
+              e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: "📝 Incident Description & Circumstances:" }),
+              e.jsx("p", { className: "text-foreground leading-relaxed mt-1", children: ac.description || "No detailed damage description entered for this record." })
+            ] }),
+            isFined && e.jsxs("p", { className: "text-[10px] text-amber-600 dark:text-amber-400 mt-2 font-medium", children: ["* ₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN'), " marked for payroll deduction / driver liability."] })
+          ] }),
+          e.jsxs("div", { className: "md:col-span-3 bg-muted/40 p-3 rounded-xl border border-border/50 space-y-1.5", children: [
+            e.jsxs("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: ["📷 Evidence Photos (", photos.length, "):"] }),
+            photos.length === 0 ? e.jsx("div", { className: "h-14 flex items-center justify-center text-muted-foreground/60 text-[11px] italic", children: "No photos attached" }) : e.jsx("div", { className: "flex flex-wrap gap-1.5", children: photos.map((img, idx) => {
+              const imgUrl = ae(ac, img, '100x100');
+              return e.jsx("div", {
+                key: idx,
+                onClick: () => setPhotoViewer({ isOpen: true, record: ac, activeIndex: idx }),
+                className: "w-12 h-12 rounded-lg bg-black/20 border border-border/60 overflow-hidden cursor-pointer hover:border-primary transition-all relative group",
+                title: "Click to view full photo",
+                children: e.jsx("img", {
+                  src: imgUrl,
+                  alt: "Accident photo",
+                  className: "w-full h-full object-cover group-hover:scale-110 transition-transform",
+                  onError: (e) => { e.currentTarget.src = ae(ac, img); }
+                })
+              });
+            }) })
+          ] })
+        ] })
+      ] });
+    }) }),
+
+    /* Log / Edit Accident Modal Dialog */
+    isModalOpen && e.jsx(ce, { open: isModalOpen, onOpenChange: setIsModalOpen, children: e.jsxs(de, { className: "max-w-xl w-[95vw] bg-card border border-border text-foreground p-5 rounded-3xl shadow-2xl space-y-4", children: [
+      e.jsxs("div", { className: "flex items-center justify-between border-b border-border/60 pb-3", children: [
+        e.jsxs("div", { className: "flex items-center gap-2", children: [
+          e.jsx("div", { className: "p-2 bg-rose-500/10 text-rose-500 rounded-xl", children: e.jsx("span", { children: "⚠️" }) }),
+          e.jsx("h3", { className: "font-bold text-base text-foreground", children: editingAccident ? "Edit Accident Report" : "Log Vehicle Accident & Damage" })
+        ] }),
+        e.jsx("button", { type: "button", onClick: () => setIsModalOpen(false), className: "text-muted-foreground hover:text-foreground p-1 rounded-lg text-sm", children: "✕" })
+      ] }),
+      e.jsxs("form", { onSubmit: handleSubmit, className: "space-y-4 text-xs", children: [
+        e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5", children: [
+          e.jsxs("div", { children: [
+            e.jsxs("label", { className: "block text-muted-foreground font-semibold mb-1", children: ["Vehicle Involved: ", e.jsx("span", { className: "text-rose-500", children: "*" })] }),
+            e.jsxs("select", {
+              value: formTruckId,
+              onChange: (e) => {
+                const tId = e.target.value;
+                setFormTruckId(tId);
+                const assigned = drivers.find(d => d.assigned_truck === tId);
+                if (assigned && !formDriverId) setFormDriverId(assigned.id);
+              },
+              required: true,
+              className: "w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:outline-hidden focus:border-rose-500",
+              children: [
+                e.jsx("option", { value: "", children: "-- Select Truck --" }),
+                trucks.map(t => e.jsxs("option", { value: t.id, children: [t.truck_number, " - ", t.truck_name || "Fleet"] }, t.id))
+              ]
+            })
+          ] }),
+          e.jsxs("div", { children: [
+            e.jsx("label", { className: "block text-muted-foreground font-semibold mb-1", children: "Driver in Charge:" }),
+            e.jsxs("select", {
+              value: formDriverId,
+              onChange: (e) => setFormDriverId(e.target.value),
+              className: "w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:outline-hidden focus:border-rose-500",
+              children: [
+                e.jsx("option", { value: "", children: "-- Driver Unassigned / External --" }),
+                drivers.map(d => e.jsxs("option", { value: d.id, children: [d.name, d.contact ? " (" + d.contact + ")" : ""] }, d.id))
+              ]
+            })
+          ] }),
+          e.jsxs("div", { children: [
+            e.jsxs("label", { className: "block text-muted-foreground font-semibold mb-1", children: ["Accident Date: ", e.jsx("span", { className: "text-rose-500", children: "*" })] }),
+            e.jsx("input", {
+              type: "date",
+              required: true,
+              value: formDate,
+              onChange: (e) => setFormDate(e.target.value),
+              className: "w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:outline-hidden focus:border-rose-500"
+            })
+          ] }),
+          e.jsxs("div", { children: [
+            e.jsxs("label", { className: "block text-muted-foreground font-semibold mb-1", children: ["Repair / Damage Cost (₹): ", e.jsx("span", { className: "text-rose-500", children: "*" })] }),
+            e.jsx("input", {
+              type: "number",
+              min: "0",
+              step: "1",
+              placeholder: "e.g. 25000",
+              required: true,
+              value: formCost,
+              onChange: (e) => setFormCost(e.target.value),
+              className: "w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-mono focus:outline-hidden focus:border-rose-500"
+            })
+          ] })
+        ] }),
+        e.jsxs("div", { children: [
+          e.jsx("label", { className: "block text-muted-foreground font-semibold mb-1", children: "Accident Circumstances & Damage Description:" }),
+          e.jsx("textarea", {
+            rows: 3,
+            placeholder: "Detail collision point, third party damage, location, mechanical impact, remarks...",
+            value: formDesc,
+            onChange: (e) => setFormDesc(e.target.value),
+            className: "w-full bg-background border border-border/80 rounded-xl p-3 text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-rose-500"
+          })
+        ] }),
+        e.jsxs("div", { className: "p-3.5 bg-muted/40 rounded-xl border border-border/60 flex items-start gap-3", children: [
+          e.jsx("input", {
+            type: "checkbox",
+            id: "modal_fined_to_employee",
+            checked: formFined,
+            onChange: (e) => setFormFined(e.target.checked),
+            className: "w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
+          }),
+          e.jsxs("label", { htmlFor: "modal_fined_to_employee", className: "text-xs text-foreground cursor-pointer select-none space-y-0.5", children: [
+            e.jsx("span", { className: "font-bold block text-amber-500", children: "Fine / Charge damage to driver" }),
+            e.jsx("span", { className: "text-[11px] text-muted-foreground block", children: "When checked, this cost will be debited as driver advance / salary deduction fine. When unchecked, it is logged under Company Miscellaneous Expenses." })
+          ] })
+        ] }),
+        e.jsxs("div", { className: "space-y-2", children: [
+          e.jsxs("div", { className: "flex items-center justify-between", children: [
+            e.jsx("label", { className: "text-muted-foreground font-semibold", children: "Attach Incident Photos:" }),
+            e.jsx(j, { type: "button", variant: "outline", size: "sm", onClick: () => fileInputRef.current?.click(), className: "h-7 text-xs rounded-lg", children: "📷 Add Photos" })
+          ] }),
+          e.jsx("input", {
+            ref: fileInputRef,
+            type: "file",
+            multiple: true,
+            accept: "image/*",
+            onChange: handlePhotoSelect,
+            className: "hidden"
+          }),
+          photoPreviews.length > 0 && e.jsx("div", { className: "flex flex-wrap gap-2 pt-1", children: photoPreviews.map((src, i) => e.jsxs("div", { key: i, className: "relative w-14 h-14 rounded-lg overflow-hidden border border-border", children: [
+            e.jsx("img", { src: src, alt: "Preview", className: "w-full h-full object-cover" }),
+            e.jsx("button", { type: "button", onClick: () => removeNewPhoto(i), className: "absolute top-0.5 right-0.5 bg-black/80 hover:bg-black text-white rounded-full p-0.5 text-[10px]", children: "✕" })
+          ] })) })
+        ] }),
+        e.jsxs("div", { className: "flex justify-end gap-2.5 pt-3 border-t border-border/60", children: [
+          e.jsx(j, { type: "button", variant: "outline", onClick: () => setIsModalOpen(false), disabled: isSubmitting, className: "rounded-xl text-xs", children: "Cancel" }),
+          e.jsx(j, { type: "submit", disabled: isSubmitting, className: "rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white", children: isSubmitting ? "Saving Incident..." : editingAccident ? "Update Accident Report" : "Save Accident Report" })
+        ] })
+      ] })
+    ] }) }),
+
+    /* Photo Viewer Modal */
+    photoViewer.isOpen && photoViewer.record && e.jsx(ce, { open: photoViewer.isOpen, onOpenChange: () => setPhotoViewer({ isOpen: false, record: null, activeIndex: 0 }), children: e.jsxs(de, { className: "max-w-3xl w-[95vw] h-[90vh] bg-slate-950/95 border border-slate-800 text-white p-4 rounded-3xl overflow-hidden flex flex-col gap-3 shadow-2xl backdrop-blur-xl", children: [
+      e.jsxs("div", { className: "flex items-center justify-between pb-2 border-b border-slate-800", children: [
+        e.jsxs("div", { className: "flex items-center gap-2", children: [
+          e.jsx("span", { className: "font-bold text-sm text-white", children: "Accident Evidence Photo" }),
+          Array.isArray(photoViewer.record.image_urls) && e.jsxs(h, { variant: "outline", className: "text-xs font-mono border-slate-700 text-slate-300", children: [photoViewer.activeIndex + 1, " / ", photoViewer.record.image_urls.length] })
+        ] }),
+        e.jsxs("div", { className: "flex items-center gap-2", children: [
+          Array.isArray(photoViewer.record.image_urls) && photoViewer.record.image_urls[photoViewer.activeIndex] && e.jsx("a", {
+            href: ae(photoViewer.record, photoViewer.record.image_urls[photoViewer.activeIndex]),
+            target: "_blank",
+            rel: "noreferrer",
+            className: "text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-semibold flex items-center gap-1",
+            children: "Fullscreen ↗"
+          }),
+          e.jsx("button", { type: "button", onClick: () => setPhotoViewer({ isOpen: false, record: null, activeIndex: 0 }), className: "text-slate-400 hover:text-white p-1 text-sm", children: "✕" })
+        ] })
+      ] }),
+      e.jsxs("div", { className: "relative flex-1 flex items-center justify-center bg-black/80 rounded-2xl overflow-hidden select-none", children: [
+        Array.isArray(photoViewer.record.image_urls) && photoViewer.record.image_urls.length > 1 && e.jsx("button", {
+          type: "button",
+          onClick: () => setPhotoViewer(prev => ({ ...prev, activeIndex: (prev.activeIndex - 1 + prev.record.image_urls.length) % prev.record.image_urls.length })),
+          className: "absolute left-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold cursor-pointer",
+          children: "‹"
+        }),
+        Array.isArray(photoViewer.record.image_urls) && photoViewer.record.image_urls[photoViewer.activeIndex] && e.jsx("img", {
+          src: ae(photoViewer.record, photoViewer.record.image_urls[photoViewer.activeIndex]),
+          alt: "Accident Full",
+          className: "max-h-full max-w-full object-contain rounded-xl"
+        }),
+        Array.isArray(photoViewer.record.image_urls) && photoViewer.record.image_urls.length > 1 && e.jsx("button", {
+          type: "button",
+          onClick: () => setPhotoViewer(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % prev.record.image_urls.length })),
+          className: "absolute right-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold cursor-pointer",
+          children: "›"
+        })
+      ] })
+    ] }) })
+  ] });
+}
+
+function Ge(){const[p,T]=c.useState([]),[accidents,setAccidents]=c.useState([]),[accidentFilterTruck,setAccidentFilterTruck]=c.useState("all"),[r,H]=c.useState([]),[q,X]=c.useState([]),[le,J]=c.useState(!0),[$,k]=c.useState({isOpen:!1,truck:null}),[N,K]=c.useState({isOpen:!1,truck:null,activeIndex:0}),[a,n]=c.useState({isOpen:!1,truck:null}),P=he(),[C,Y]=c.useState({isOpen:!1,truckId:null,employeeId:null,entityName:""}),[F,B]=c.useState({isOpen:!1,truck:null}),[E,Q]=c.useState("all"),[L,Z]=c.useState(""),[V,s]=c.useState("compact"),l=async()=>{try{J(!0);let t=[],d=[],g=[];try{const u=await ie.fetch("/trucks/list");if(u.ok){const f=await u.json();Array.isArray(f.trucks)&&f.trucks.length>0?t=f.trucks:Array.isArray(f.items)&&f.items.length>0&&(t=f.items)}}catch(u){console.warn("API truck list notice in TruckManagerPage:",u)}if(t.length===0)try{t=await v.collection("trucks").getFullList({sort:"-created",expand:"manager_id",$autoCancel:!1})}catch(u){console.warn("PocketBase SDK truck fetch notice in TruckManagerPage:",u)}try{d=await v.collection("employees").getFullList({filter:'employee_type="driver"',$autoCancel:!1}).catch(()=>[])}catch{}try{g=await v.collection("loan_profiles").getFullList({$autoCancel:!1}).catch(()=>[])}catch{}let _acc=[];try{_acc=await v.collection("driver_accident_reports").getFullList({expand:"employee_id,truck_id",sort:"-accident_date",$autoCancel:!1}).catch(()=>[])}catch{}setAccidents(_acc||[]);T($e(t||[])),H(d||[]),X(g||[])}catch(t){console.error(t),w.error("Failed to load fleet data")}finally{J(!1)}};c.useEffect(()=>{l()},[]);const i=async(t,d)=>{if(window.confirm(`Are you sure you want to delete vehicle ${d}? This will also remove associated tyre records.`))try{await v.collection("trucks").delete(t,{$autoCancel:!1}),w.success(`Vehicle ${d} deleted successfully`),l()}catch(g){console.error(g),w.error("Failed to delete truck")}},b=c.useMemo(()=>{const t=p.length,d=p.filter(_=>!_.ownership_type||_.ownership_type==="Owned").length,g=p.filter(_=>_.ownership_type==="Attached").length,u=p.filter(_=>_.ownership_type==="Leased").length,f=p.filter(_=>_.status==="active").length,W=p.reduce((_,S)=>_+(S.current_fastag_balance||0),0);return{total:t,owned:d,attached:g,leased:u,active:f,totalFastag:W}},[p]),m=c.useMemo(()=>p.filter(t=>{if(E!=="all"&&(t.ownership_type||"Owned")!==E)return!1;if(L.trim()){const d=L.toLowerCase();return(t.truck_number||"").toLowerCase().includes(d)||(t.truck_name||"").toLowerCase().includes(d)||(t.subcontractor_name||"").toLowerCase().includes(d)||(t.owner_name||"").toLowerCase().includes(d)||(t.assigned_driver_name||"").toLowerCase().includes(d)}return!0}),[p,E,L]);return e.jsxs("div",{className:"min-h-screen bg-background flex flex-col",children:[e.jsx(pe,{children:e.jsx("title",{children:"Truck Manager & Fleet Registry | Jai Bhavani Cargo"})}),e.jsxs("main",{className:"flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full animate-in fade-in duration-300",children:[e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4",children:[e.jsxs("div",{children:[e.jsx("h1",{className:"text-3xl font-extrabold tracking-tight text-foreground",style:{letterSpacing:"-0.02em"},children:"Fleet & Vehicle Registry"}),e.jsx("p",{className:"text-muted-foreground mt-1 text-sm",children:"Manage commercial trucks, driver assignments, FASTag wallets, tyres, and compliance."})]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-2.5",children:[e.jsxs("div",{className:"bg-card p-1 rounded-xl flex items-center border border-border/70 shadow-xs",children:[e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all",V==="compact"?"bg-primary text-primary-foreground shadow-xs":"text-muted-foreground hover:text-foreground"),onClick:()=>s("compact"),children:"☰ Compact List"}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all",V==="grid"?"bg-primary text-primary-foreground shadow-xs":"text-muted-foreground hover:text-foreground"),onClick:()=>s("grid"),children:"🔲 Grid Tiles"}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",V==="contribution"?"bg-amber-500 text-slate-950 font-black shadow-xs":"text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"),onClick:()=>s("contribution"),children:"💰 Contribution Ranking"}),e.jsxs("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",V==="accidents"?"bg-rose-500 text-white font-black shadow-xs":"text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"),onClick:()=>s("accidents"),children:["⚠️ Accident History",accidents.length>0&&e.jsx("span",{className:G("text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold",V==="accidents"?"bg-white text-rose-600":"bg-rose-500/20 text-rose-400 border border-rose-500/30"),children:accidents.length})]}),e.jsx("button",{type:"button",className:G("px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",V==="attribution"?"bg-emerald-500 text-slate-950 font-black shadow-xs":"text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"),onClick:()=>s("attribution"),children:"🔬 Driver vs Truck Attribution Lab"})]}),e.jsxs(j,{variant:"outline",size:"sm",onClick:()=>P("/vehicle-tco"),className:"h-9 rounded-xl border-border text-xs font-bold shadow-xs hover:bg-muted",children:[e.jsx(be,{className:"w-3.5 h-3.5 mr-1.5 text-primary"})," TCO Signal"]}),e.jsxs(j,{size:"sm",onClick:()=>k({isOpen:!0,truck:null}),className:"h-9 rounded-xl text-xs font-bold shadow-sm bg-primary text-primary-foreground",children:[e.jsx(ge,{className:"w-3.5 h-3.5 mr-1.5"})," Add Truck"]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6",children:[e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Active Fleet"}),e.jsxs("p",{className:"text-2xl font-black text-foreground mt-1 font-mono",children:[b.total," Trucks"]}),e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:[b.active," operational on duty"]})]}),e.jsx("div",{className:"p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20 shrink-0",children:e.jsx(U,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Company Owned"}),e.jsx("p",{className:"text-2xl font-black text-blue-500 mt-1 font-mono",children:b.owned}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Jai Bhavani Cargo assets"})]}),e.jsx("div",{className:"p-3 bg-blue-500/10 text-blue-500 rounded-2xl border border-blue-500/20 shrink-0",children:e.jsx(te,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Market Attached"}),e.jsx("p",{className:"text-2xl font-black text-amber-500 mt-1 font-mono",children:b.attached}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Subcontractor vehicles"})]}),e.jsx("div",{className:"p-3 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20 shrink-0",children:e.jsx(_e,{className:"w-6 h-6"})})]})}),e.jsx(M,{className:"border-border/60 bg-card shadow-sm rounded-2xl",children:e.jsxs(z,{className:"p-5 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"FASTag Balance"}),e.jsxs("p",{className:"text-2xl font-black text-emerald-500 mt-1 font-mono",children:["₹",b.totalFastag.toLocaleString("en-IN")]}),e.jsx("p",{className:"text-[11px] text-muted-foreground mt-0.5 font-medium",children:"Combined toll wallet balance"})]}),e.jsx("div",{className:"p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20 shrink-0",children:e.jsx(ee,{className:"w-6 h-6"})})]})})]}),e.jsxs("div",{className:"flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-3 rounded-2xl border border-border/60 shadow-xs mb-6",children:[e.jsx("div",{className:"flex flex-wrap items-center gap-1.5",children:[{id:"all",label:`All Fleet (${b.total})`},{id:"Owned",label:`🏢 Company Owned (${b.owned})`},{id:"Attached",label:`🤝 Subcontractor (${b.attached})`},{id:"Leased",label:`📑 Leased (${b.leased})`}].map(t=>e.jsx("button",{onClick:()=>Q(t.id),className:G("px-3 py-1.5 rounded-xl text-xs font-bold transition-all border",E===t.id?"bg-primary text-primary-foreground border-primary shadow-xs":"bg-background text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"),children:t.label},t.id))}),e.jsx("div",{className:"w-full sm:w-72",children:e.jsxs("div",{className:"relative",children:[e.jsx(fe,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"}),e.jsx(x,{placeholder:"Search Truck #, Model, Driver...",value:L,onChange:t=>Z(t.target.value),className:"pl-8 h-8 text-xs bg-background border-border/70 rounded-xl"})]})})]}),le?e.jsx("div",{className:"bg-card rounded-2xl border border-border/50 shadow-xs p-16 flex justify-center",children:e.jsx(Le,{text:"Loading fleet vehicles..."})}):m.length===0?e.jsxs(M,{className:"rounded-3xl border-border/60 p-12 text-center shadow-sm",children:[e.jsx(U,{className:"w-12 h-12 mx-auto mb-3 opacity-20 text-primary"}),e.jsx("h3",{className:"text-base font-extrabold text-foreground",children:"No vehicles found"}),e.jsx("p",{className:"text-xs text-muted-foreground mt-1",children:"Try adjusting your search query or filter category."})]}):V==="accidents"?e.jsx(TruckAccidentsView,{trucks:p,drivers:r,accidents:accidents,filterTruckId:accidentFilterTruck,setFilterTruckId:setAccidentFilterTruck,onRefreshAccidents:l,onBackToFleet:()=>s("compact")}):V==="attribution"?e.jsx(DriverTruckAttributionLab,{onBackToFleet:()=>s("compact")}):V==="contribution"?e.jsx(TruckContributionRankingView,{trucks:p,drivers:r,onBackToFleet:()=>s("compact")}):V==="compact"?e.jsx("div",{className:"space-y-3",children:m.map(t=>{const d=re(t.body_images),g=d.length>0,u=g?ae(t,d[0],"100x100"):null,f=r.find(S=>S.assigned_truck===t.id);r.filter(S=>!S.assigned_truck);const W=t.ownership_type==="Attached",_=t.ownership_type==="Leased";return e.jsxs("div",{className:"group bg-card border border-border/60 hover:border-primary/40 rounded-2xl p-3 sm:px-5 shadow-xs hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4",children:[e.jsxs("div",{className:"flex items-center gap-3.5 min-w-0 flex-1",children:[e.jsxs("div",{className:"w-14 h-14 rounded-2xl bg-muted relative overflow-hidden shrink-0 border border-border/60 cursor-pointer group/img shadow-xs",onClick:()=>g&&K({isOpen:!0,truck:{...t,body_images:d},activeIndex:0}),children:[g&&u?e.jsx("img",{src:u,alt:t.truck_number,loading:"lazy",decoding:"async",className:"w-full h-full object-cover group-hover/img:scale-110 transition-transform",onError:S=>{S.currentTarget.style.display="none"}}):e.jsx("div",{className:"w-full h-full flex items-center justify-center bg-primary/5 text-primary/40",children:e.jsx(U,{className:"w-6 h-6"})}),e.jsx("span",{className:`absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full border-2 border-background ${t.status==="active"?"bg-emerald-500":"bg-zinc-400"}`})]}),e.jsxs("div",{className:"min-w-0 flex-1 space-y-1",children:[e.jsxs("div",{className:"flex flex-wrap items-center gap-2",children:[e.jsxs(h,{className:"bg-primary/10 text-primary border-primary/30 font-black text-xs px-2 py-0.5 font-mono",children:["#",t.sequential_number]}),e.jsx("span",{className:"font-mono font-extrabold text-base text-foreground group-hover:text-primary transition-colors tracking-tight",children:t.truck_number}),e.jsx("span",{className:"text-xs font-semibold text-muted-foreground truncate max-w-[160px]",children:t.truck_name||"Fleet Truck"}),W?e.jsxs(h,{className:"bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold",children:["🤝 Sub: ",t.subcontractor_name||t.owner_name||"Market Vendor"]}):_?e.jsxs(h,{className:"bg-purple-500/15 text-purple-500 dark:text-purple-400 border-purple-500/30 text-[10px] font-bold",children:["📑 Leased: ",t.financier_name||"Financed"]}):e.jsx(h,{className:"bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold",children:"🏢 Company Owned"})]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-1.5 text-[11px]",children:[e.jsx(h,{variant:"outline",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium border-border/70",children:t.truck_size||"32ft MXL"}),e.jsxs(h,{variant:"secondary",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium",children:["Axle: ",t.truck_axle||"Multi"]}),e.jsxs(h,{variant:"outline",className:"px-2 py-0.5 rounded-lg text-[10px] font-medium border-border/70",children:[t.tyre_count||6," Tyres"]}),t.payload_capacity&&e.jsxs(h,{variant:"outline",className:"border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded-lg text-[10px] font-bold text-emerald-600 dark:text-emerald-400",children:["🏋️ ",t.payload_capacity]}),e.jsxs(h,{variant:"outline",onClick:()=>B({isOpen:!0,truck:t}),className:"border-blue-500/30 bg-blue-500/10 px-2 py-0.5 rounded-lg text-[10px] font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-500/20 transition-colors",children:["💳 FASTag: ₹",(t.current_fastag_balance||0).toLocaleString("en-IN")]}),(()=>{const trkAccs=accidents.filter(a=>a.truck_id===t.id||a.truck_id===t.truck_number);if(trkAccs.length===0)return null;const dmg=trkAccs.reduce((sum,a)=>sum+(Number(a.damage_cost)||0),0);return e.jsxs(h,{variant:"outline",onClick:()=>{setAccidentFilterTruck(t.id);s("accidents");},className:"border-rose-500/40 bg-rose-500/10 px-2 py-0.5 rounded-lg text-[10px] font-bold text-rose-600 dark:text-rose-400 cursor-pointer hover:bg-rose-500/20 transition-colors flex items-center gap-1",title:"Click to view accident history for this truck",children:["⚠️ ",trkAccs.length,trkAccs.length===1?" Accident":" Accidents",dmg>0?` (₹${dmg.toLocaleString("en-IN")})`:null]});})()]})]})]}),e.jsxs("div",{className:"flex items-center gap-2 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/40 shrink-0 text-xs",children:[e.jsx(je,{className:"w-4 h-4 text-primary opacity-70"}),W?e.jsxs("div",{className:"flex flex-col",children:[e.jsx("span",{className:"font-bold text-foreground truncate max-w-[140px]",children:t.assigned_driver_name||"Driver Unassigned"}),t.driver_dl_number&&e.jsxs("span",{className:"text-[10px] font-mono text-emerald-500",children:["DL: ",t.driver_dl_number]})]}):e.jsx("span",{className:"font-bold text-foreground truncate max-w-[130px]",children:f?f.name:e.jsx("span",{className:"italic text-muted-foreground/60 text-xs",children:"Unassigned"})})]}),e.jsxs("div",{className:"flex items-center gap-1.5 shrink-0 self-end sm:self-center",children:[e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary",onClick:()=>k({isOpen:!0,truck:t}),children:[e.jsx(oe,{className:"w-3.5 h-3.5 mr-1"})," Edit"]}),e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-border/70 hover:bg-muted",onClick:()=>P(`/tyres/${t.id}`),children:[e.jsx(Ne,{className:"w-3.5 h-3.5 mr-1 text-primary"})," Tyres"]}),e.jsxs(j,{variant:"outline",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl border-border/70 hover:bg-muted",onClick:()=>P(`/fleet-maintenance?truckId=${t.id}`),children:[e.jsx(we,{className:"w-3.5 h-3.5 mr-1 text-amber-500"})," Maintenance"]}),e.jsxs(j,{variant:"secondary",size:"sm",className:"h-8 px-2.5 text-xs font-bold rounded-xl text-blue-600 bg-blue-500/10 hover:bg-blue-500/20",onClick:()=>B({isOpen:!0,truck:t}),children:[e.jsx(ee,{className:"w-3.5 h-3.5 mr-1"})," FASTag"]}),e.jsxs(Oe,{children:[e.jsx(Ae,{asChild:!0,children:e.jsx(j,{variant:"ghost",size:"icon",className:"w-8 h-8 rounded-xl hover:bg-muted",children:e.jsx(ve,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsxs(De,{align:"end",className:"w-52 bg-card border border-border rounded-xl",children:[e.jsx(Ie,{className:"text-xs",children:"Vehicle Actions"}),e.jsxs(R,{onSelect:()=>k({isOpen:!0,truck:t}),className:"text-xs cursor-pointer",children:[e.jsx(oe,{className:"w-3.5 h-3.5 mr-2 text-muted-foreground"})," Edit Specifications"]}),e.jsxs(R,{onSelect:()=>{setAccidentFilterTruck(t.id);s("accidents");},className:"text-xs cursor-pointer font-semibold text-rose-500 hover:text-rose-400",children:[e.jsx("span",{className:"mr-2",children:"⚠️"}),"Accident & Damage History (",accidents.filter(a=>a.truck_id===t.id||a.truck_id===t.truck_number).length,")"]}),e.jsxs(R,{onSelect:()=>n({isOpen:!0,truck:t}),className:"text-xs cursor-pointer font-semibold text-emerald-600",children:[e.jsx(ye,{className:"w-3.5 h-3.5 mr-2 text-emerald-500"})," Vehicle Health Passport"]}),e.jsxs(R,{onSelect:()=>B({isOpen:!0,truck:t}),className:"text-xs cursor-pointer text-blue-600",children:[e.jsx(ee,{className:"w-3.5 h-3.5 mr-2 text-blue-500"})," Recharge FASTag"]}),e.jsxs(R,{onSelect:()=>Y({isOpen:!0,truckId:t.id,employeeId:null,entityName:`Truck ${t.truck_number}`}),className:"text-xs cursor-pointer",children:[e.jsx(ke,{className:"w-3.5 h-3.5 mr-2 text-primary"})," Share Document Folder"]}),e.jsx(Me,{}),e.jsxs(R,{onSelect:()=>i(t.id,t.truck_number),className:"text-xs cursor-pointer text-destructive focus:text-destructive",children:[e.jsx(Ce,{className:"w-3.5 h-3.5 mr-2"})," Delete Vehicle"]})]})]})]})]},t.id)})}):e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",children:m.map(t=>{const d=re(t.body_images),g=d.length>0,u=g?ae(t,d[0],"200x200"):null;return t.ownership_type,e.jsxs(M,{className:"border-border/60 hover:border-primary/40 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all",children:[e.jsxs("div",{className:"relative aspect-[4/3] sm:h-52 bg-slate-950 overflow-hidden cursor-pointer group/img",onClick:()=>g&&K({isOpen:!0,truck:{...t,body_images:d},activeIndex:0}),children:[g&&u?e.jsx("img",{src:u,alt:t.truck_number,loading:"lazy",decoding:"async",className:"w-full h-full object-contain group-hover/img:scale-105 transition-transform duration-200"}):e.jsx("div",{className:"w-full h-full flex items-center justify-center text-muted-foreground/30",children:e.jsx(U,{className:"w-16 h-16"})}),e.jsxs(h,{className:"absolute top-3 left-3 bg-primary text-primary-foreground font-mono font-black text-xs px-2.5 py-0.5 rounded-lg shadow-sm",children:["#",t.sequential_number]}),e.jsx(h,{className:G("absolute top-3 right-3 text-xs font-bold px-2 py-0.5 rounded-lg shadow-sm",t.status==="active"?"bg-emerald-500 text-white":"bg-zinc-500 text-white"),children:t.status==="active"?"Active":"Inactive"})]}),e.jsxs(z,{className:"p-5 space-y-3",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsx("h3",{className:"font-black text-lg font-mono text-foreground",children:t.truck_number}),e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:t.truck_name||"Fleet Truck"})]}),e.jsx(h,{variant:"outline",className:"text-[10px] font-bold",children:t.truck_size||"32ft"})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 py-2 border-t border-b border-border/20 text-xs",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold block",children:"FASTag Balance"}),e.jsxs("span",{className:"font-bold text-blue-600 font-mono",children:["₹",(t.current_fastag_balance||0).toLocaleString()]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold block",children:"Capacity"}),e.jsx("span",{className:"font-bold text-foreground",children:t.payload_capacity||"N/A"})]})]}),e.jsxs("div",{className:"flex justify-between items-center pt-1 gap-2",children:[e.jsxs(j,{size:"sm",variant:"outline",onClick:()=>P(`/tyres/${t.id}`),className:"flex-1 text-xs font-bold rounded-xl",children:["Tyres (",t.tyre_count||6,")"]}),e.jsx(j,{size:"sm",onClick:()=>k({isOpen:!0,truck:t}),className:"flex-1 text-xs font-bold rounded-xl bg-primary text-primary-foreground",children:"Edit Details"})]})]})]},t.id)})})]}),e.jsx(Re,{isOpen:$.isOpen,onClose:()=>k({isOpen:!1,truck:null}),truck:$.truck,onSuccess:l}),F.truck&&e.jsx(Be,{isOpen:F.isOpen,onClose:()=>B({isOpen:!1,truck:null}),truck:F.truck,onSuccess:l}),a.truck&&e.jsx(Ee,{isOpen:a.isOpen,onClose:()=>n({isOpen:!1,truck:null}),truck:a.truck}),e.jsx(Pe,{isOpen:C.isOpen,onClose:()=>Y({isOpen:!1,truckId:null,employeeId:null,entityName:""}),truckId:C.truckId,employeeId:C.employeeId,entityName:C.entityName}),N.truck&&e.jsx(ce,{open:N.isOpen,onOpenChange:()=>K({isOpen:!1,truck:null,activeIndex:0}),children:e.jsxs(de,{className:"max-w-md sm:max-w-lg w-[95vw] h-[92vh] max-h-[92vh] bg-slate-950/95 border border-slate-800 text-white p-3 sm:p-4 rounded-3xl overflow-hidden flex flex-col gap-2.5 shadow-2xl backdrop-blur-xl",children:[e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-slate-800",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"font-black text-sm text-white",children:N.truck.truck_number}),e.jsx("span",{className:"text-xs text-slate-400",children:N.truck.truck_name||"Commercial Truck"}),N.truck.body_images&&N.truck.body_images.length>0&&e.jsxs(h,{className:"bg-primary/20 text-primary border-primary/30 text-xs font-mono font-bold px-2",children:["📸 ",(N.activeIndex||0)+1," / ",N.truck.body_images.length]})]}),e.jsxs("div",{className:"flex items-center gap-2 pr-8",children:[e.jsx("span",{className:"inline-flex text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",children:"📱 Portrait Mode"}),e.jsx("a",{href:ae(N.truck,N.truck.body_images[N.activeIndex||0]),target:"_blank",className:"text-xs px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-cyan-400 font-semibold transition-colors flex items-center gap-1",children:"Fullscreen ↗"}),e.jsx("a",{href:ae(N.truck,N.truck.body_images[N.activeIndex||0]),target:"_blank",download:!0,className:"text-xs px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors",children:"Download"})]})]}),e.jsxs("div",{className:"relative flex-1 flex items-center justify-center h-full min-h-[460px] bg-black/90 rounded-2xl p-2 overflow-hidden select-none",children:[N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("button",{type:"button",onClick:()=>K(s=>({...s,activeIndex:(s.activeIndex-1+s.truck.body_images.length)%s.truck.body_images.length})),className:"absolute left-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer",children:"‹"}),e.jsx("img",{src:ae(N.truck,N.truck.body_images[N.activeIndex||0]),alt:"Truck Photo",loading:"lazy",decoding:"async",crossOrigin:"anonymous",onError:ev=>{const u=ev.currentTarget.src;if(u.includes("?thumb="))ev.currentTarget.src=u.split("?thumb=")[0];else if(u.includes("/hcgi/platform/api/files/"))ev.currentTarget.src=u.replace("/hcgi/platform/api/files/","/api/files/");},className:"w-auto h-full max-h-[68vh] max-w-full object-contain rounded-xl shadow-2xl transition-all duration-200"}),N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("button",{type:"button",onClick:()=>K(s=>({...s,activeIndex:(s.activeIndex+1)%s.truck.body_images.length})),className:"absolute right-3 z-10 w-10 h-10 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-700 flex items-center justify-center text-xl font-bold shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer",children:"›"})]}),N.truck.body_images&&N.truck.body_images.length>1&&e.jsx("div",{className:"flex items-center justify-center gap-2 pt-1 overflow-x-auto select-none",children:N.truck.body_images.map((img,idx)=>e.jsx("button",{key:idx,type:"button",onClick:()=>K(s=>({...s,activeIndex:idx})),className:`w-12 h-16 sm:w-14 sm:h-18 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${N.activeIndex===idx?"border-amber-400 ring-2 ring-amber-400/30 scale-105 opacity-100":"border-slate-800 opacity-50 hover:opacity-100 hover:border-slate-600"}`,children:e.jsx("img",{src:ae(N.truck,img,"100x100"),alt:`Thumb ${idx+1}`,loading:"lazy",decoding:"async",crossOrigin:"anonymous",onError:ev=>{const u=ev.currentTarget.src;if(u.includes("?thumb="))ev.currentTarget.src=u.split("?thumb=")[0];else if(u.includes("/hcgi/platform/api/files/"))ev.currentTarget.src=u.replace("/hcgi/platform/api/files/","/api/files/");},className:"w-full h-full object-cover"})}))})]})})]})}export{Ge as default};
