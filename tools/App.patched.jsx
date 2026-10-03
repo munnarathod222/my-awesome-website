@@ -241,7 +241,7 @@ function App() {
                   <Route path="/insurance" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><InsuranceManagerPage /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><CalendarPage /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><LeaderboardPage /></ProtectedRoute>} />
-                  <Route path="/client-analysis" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><ClientPaymentAnalysisPage /></ProtectedRoute>} />
+                  <Route path="/client-analysis" element={<Navigate to="/clients?tab=analysis" replace />} />
                   <Route path="/dashboard/trip-overview" element={<Navigate to="/routes-master?tab=trip-overview" replace />} />
                   
                   {/* Superuser & Admin only security routes */}
