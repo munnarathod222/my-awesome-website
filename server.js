@@ -6,6 +6,8 @@ import * as auditService from './apps/api/src/services/auditService.js';
 import * as productivityService from './apps/api/src/services/productivityService.js';
 import * as orgService from './apps/api/src/services/orgService.js';
 import * as employeeBankService from './apps/api/src/services/employeeBankService.js';
+import * as routeCorridorService from './apps/api/src/services/routeCorridorService.js';
+import * as attributionEngineService from './apps/api/src/services/attributionEngineService.js';
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -671,6 +673,146 @@ const server = http.createServer((req, res) => {
         }
       });
       return;
+    }
+  }
+
+  // ── Route Corridors & Spot Quoting ──────────────────────────────
+  if (reqPath.startsWith('/api/corridors') || reqPath.startsWith('/hcgi/api/corridors')) {
+    if (req.method === 'GET') {
+      try {
+        const data = routeCorridorService.getAllCorridors();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: data.length, data }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+    if (req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const saved = routeCorridorService.saveCorridor(JSON.parse(b));
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, data: saved }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      const parts = reqPath.split('/');
+      const id = parts[parts.length - 1];
+      try {
+        const ok = routeCorridorService.deleteCorridor(id);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, deleted: ok }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+  }
+
+  // ── Dual-Entity Attribution & Rotation Diagnostic Engine ────────
+  if (reqPath.startsWith('/api/attribution') || reqPath.startsWith('/hcgi/api/attribution')) {
+    const cleanPath = reqPath.replace('/hcgi', '');
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+    if (cleanPath === '/api/attribution/matrix' && req.method === 'GET') {
+      try {
+        const matrix = attributionEngineService.getAttributionMatrix();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, ...matrix }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+
+    if (cleanPath === '/api/attribution/drivers' && req.method === 'GET') {
+      try {
+        const driverId = urlObj.searchParams.get('driverId');
+        const data = attributionEngineService.getDriverBaselines(driverId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: Array.isArray(data) ? data.length : 1, data }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+
+    if (cleanPath === '/api/attribution/trucks' && req.method === 'GET') {
+      try {
+        const truckId = urlObj.searchParams.get('truckId');
+        const data = attributionEngineService.getTruckBaselines(truckId);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: Array.isArray(data) ? data.length : 1, data }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+
+    if (cleanPath === '/api/attribution/swaps' && req.method === 'GET') {
+      try {
+        const status = urlObj.searchParams.get('status');
+        const data = attributionEngineService.getSwapExperiments(status);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, count: data.length, data }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+
+    if (cleanPath === '/api/attribution/swaps' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const swap = attributionEngineService.initiateSwap(JSON.parse(b));
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, data: swap }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (cleanPath === '/api/attribution/swaps/evaluate' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const { swapId, testMetrics } = JSON.parse(b);
+          const evaluated = attributionEngineService.evaluateSwap(swapId, testMetrics);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: true, data: evaluated }));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (cleanPath === '/api/attribution/recommend' && req.method === 'GET') {
+      try {
+        const truckNumber = urlObj.searchParams.get('truckNumber');
+        const driverName = urlObj.searchParams.get('driverName');
+        const rec = attributionEngineService.recommendSwap(truckNumber, driverName);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: true, data: rec }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
     }
   }
 

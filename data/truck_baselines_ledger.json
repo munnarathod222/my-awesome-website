@@ -1,0 +1,110 @@
+[
+  {
+    "truck_id": "TRK_TG12U2637",
+    "truck_number": "TG 12 U 2637",
+    "brand": "Ashok Leyland",
+    "model": "3118 8x2 Multi-Axle",
+    "year": 2021,
+    "current_odometer_km": 142500,
+    "drivers_hosted_count": 3,
+    "fleet_target_kmpl": 4.10,
+    "actual_avg_kmpl": 3.22,
+    "mileage_deficit_pct": -21.46,
+    "maint_cost_per_km": 1.45,
+    "target_maint_per_km": 0.60,
+    "diagnosed_root_cause": "TRUCK_MECHANICAL_FAULT",
+    "fault_component": "Air Intake / Turbo Hose leak & Nozzle wear",
+    "evidence_drivers": [
+      { "driver_name": "Ramesh Rathod", "mileage": 3.13, "trips": 2 },
+      { "driver_name": "Vikram Singh", "mileage": 3.08, "trips": 3 },
+      { "driver_name": "Suresh Yadav (Master Driver)", "mileage": 3.45, "trips": 2 }
+    ],
+    "diagnostic_summary": "Even Suresh Yadav (Master Driver, fleet avg 4.3 km/l) only achieved 3.45 km/l on this truck. 100% confirmation of mechanical defect, not driver fault."
+  },
+  {
+    "truck_id": "TRK_TS07UE1234",
+    "truck_number": "TS 07 UE 1234",
+    "brand": "Tata Motors",
+    "model": "Signa 2823.K",
+    "year": 2022,
+    "current_odometer_km": 98400,
+    "drivers_hosted_count": 4,
+    "fleet_target_kmpl": 4.05,
+    "actual_avg_kmpl": 4.28,
+    "mileage_deficit_pct": 5.68,
+    "maint_cost_per_km": 0.42,
+    "target_maint_per_km": 0.60,
+    "diagnosed_root_cause": "BENCHMARK_HEALTHY",
+    "fault_component": "None - Fleet Benchmark",
+    "evidence_drivers": [
+      { "driver_name": "Ramesh Rathod", "mileage": 4.25, "trips": 6 },
+      { "driver_name": "Vikram Singh", "mileage": 3.52, "trips": 2 },
+      { "driver_name": "Suresh Yadav", "mileage": 4.48, "trips": 8 }
+    ],
+    "diagnostic_summary": "Superb mechanical health. Used as reference standard for driver rotation swap experiments."
+  },
+  {
+    "truck_id": "TRK_MH12AB1234",
+    "truck_number": "MH 12 AB 1234",
+    "brand": "Tata Motors",
+    "model": "Prima 3528.T",
+    "year": 2020,
+    "current_odometer_km": 178900,
+    "drivers_hosted_count": 3,
+    "fleet_target_kmpl": 3.80,
+    "actual_avg_kmpl": 3.75,
+    "mileage_deficit_pct": -1.32,
+    "maint_cost_per_km": 0.88,
+    "target_maint_per_km": 0.70,
+    "diagnosed_root_cause": "DRIVER_SENSITIVE_SUSPENSION",
+    "fault_component": "Leaf Spring Bushings (Driver Harsh Braking Wear)",
+    "evidence_drivers": [
+      { "driver_name": "Vikram Singh", "mileage": 3.32, "maint_per_km": 1.40, "trips": 4 },
+      { "driver_name": "Rajesh Patil", "mileage": 3.88, "maint_per_km": 0.52, "trips": 5 }
+    ],
+    "diagnostic_summary": "Mileage normal with calm drivers, but maintenance spikes drastically with aggressive drivers due to heavy payload chassis stress."
+  },
+  {
+    "truck_id": "TRK_TS08UB9012",
+    "truck_number": "TS 08 UB 9012",
+    "brand": "Eicher",
+    "model": "Pro 2049 Light Duty",
+    "year": 2023,
+    "current_odometer_km": 54200,
+    "drivers_hosted_count": 2,
+    "fleet_target_kmpl": 5.20,
+    "actual_avg_kmpl": 5.35,
+    "mileage_deficit_pct": 2.88,
+    "maint_cost_per_km": 0.31,
+    "target_maint_per_km": 0.45,
+    "diagnosed_root_cause": "OPTIMAL_SYNERGY",
+    "fault_component": "None",
+    "evidence_drivers": [
+      { "driver_name": "Mahesh Sharma", "mileage": 5.40, "trips": 12 },
+      { "driver_name": "Ramesh Rathod", "mileage": 5.30, "trips": 4 }
+    ],
+    "diagnostic_summary": "Top performing unit in regional feeder routes. Consistent high fuel efficiency."
+  },
+  {
+    "truck_id": "TRK_AP29TA5678",
+    "truck_number": "AP 29 TA 5678",
+    "brand": "BharatBenz",
+    "model": "2823R Heavy Truck",
+    "year": 2022,
+    "current_odometer_km": 112000,
+    "drivers_hosted_count": 3,
+    "fleet_target_kmpl": 3.90,
+    "actual_avg_kmpl": 3.65,
+    "mileage_deficit_pct": -6.41,
+    "maint_cost_per_km": 0.58,
+    "target_maint_per_km": 0.65,
+    "diagnosed_root_cause": "NORMAL_STABLE",
+    "fault_component": "None",
+    "evidence_drivers": [
+      { "driver_name": "Suresh Yadav", "mileage": 3.92, "trips": 5 },
+      { "driver_name": "Rajesh Patil", "mileage": 3.62, "trips": 4 },
+      { "driver_name": "Vikram Singh", "mileage": 3.41, "trips": 3 }
+    ],
+    "diagnostic_summary": "Solid mechanical baseline. Driver variations align with driver behavioral scores."
+  }
+]
