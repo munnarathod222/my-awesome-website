@@ -219,6 +219,12 @@ export function updateTask(taskId, updates, actor = {}) {
     updated.completion_date = null;
   }
 
+  if (updates.checklists) {
+    updated.checklist = updates.checklists;
+  } else if (updates.checklist) {
+    updated.checklists = updates.checklist;
+  }
+
   tasksCache[index] = updated;
   saveTasks();
 

@@ -180,14 +180,24 @@ function EnterpriseProductivityDashboard() {
 
   const [activeTab, setActiveTab] = React.useState(() => {
     try {
-      const p = window.location.pathname;
       const q = new URLSearchParams(window.location.search);
-      if (q.get('tab') === 'credit_control' || p.includes('credit-control')) return 'credit_control';
+      if (q.get('tab')) return q.get('tab');
+      const p = window.location.pathname;
+      if (p.includes('credit-control')) return 'credit_control';
       if (p.includes('reminders')) return 'reminders';
-      if (p.includes('todo') || p.includes('tasks')) return 'tasks';
+      if (p.includes('todo') || p.includes('tasks') || p.includes('workflow')) return 'tasks';
     } catch (e) {}
-    return 'reminders';
+    return 'tasks';
   });
+
+  const handleTabChange = (tId) => {
+    setActiveTab(tId);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('tab', tId);
+      window.history.replaceState({}, '', u.toString());
+    } catch (e) {}
+  };
   const [viewMode, setViewMode] = React.useState('list'); // 'list', 'kanban'
   const [loading, setLoading] = React.useState(true);
 
@@ -293,13 +303,15 @@ function EnterpriseProductivityDashboard() {
     e.preventDefault();
     if (!taskForm.title.trim()) return toast.error('Please enter a task title');
     try {
+      const payload = {
+        ...taskForm,
+        id: 'TSK-' + Date.now(),
+        due_date: new Date(taskForm.due_date).toISOString()
+      };
       const res = await fetch('/api/productivity/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({
-          ...taskForm,
-          due_date: new Date(taskForm.due_date).toISOString()
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
@@ -308,7 +320,7 @@ function EnterpriseProductivityDashboard() {
         setTaskForm({
           title: '', description: '', department: 'Operations', priority: 'MEDIUM',
           due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-          assigned_to_name: currentUser.name, related_entity_type: '', related_entity_id: ''
+          assigned_to_name: currentUser.name || 'Vinod Kumar Rathod', related_entity_type: '', related_entity_id: ''
         });
         loadData();
       } else {
@@ -324,13 +336,15 @@ function EnterpriseProductivityDashboard() {
     e.preventDefault();
     if (!reminderForm.title.trim()) return toast.error('Please enter a reminder title');
     try {
+      const payload = {
+        ...reminderForm,
+        id: 'REM-' + Date.now(),
+        trigger_time: new Date(reminderForm.trigger_time).toISOString()
+      };
       const res = await fetch('/api/productivity/reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({
-          ...reminderForm,
-          trigger_time: new Date(reminderForm.trigger_time).toISOString()
-        })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
@@ -354,10 +368,14 @@ function EnterpriseProductivityDashboard() {
     e.preventDefault();
     if (!workflowForm.title.trim()) return toast.error('Please enter a request title');
     try {
+      const payload = {
+        ...workflowForm,
+        id: 'WF-' + Date.now()
+      };
       const res = await fetch('/api/productivity/workflows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify(workflowForm)
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
@@ -379,18 +397,44 @@ function EnterpriseProductivityDashboard() {
       const res = await fetch('/api/productivity/tasks/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ taskId, updates: { status: newStatus } })
+        body: JSON.stringify({ taskId, id: taskId, updates: { status: newStatus }, status: newStatus })
       });
       const data = await res.json();
       if (data.success) {
         toast.success(\`Task updated to \${newStatus}\`);
         loadData();
         if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(data.task);
+          setSelectedTask(data.task || { ...selectedTask, status: newStatus });
         }
+      } else {
+        toast.error(data.error || 'Failed to update status');
       }
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  // Delete task
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    try {
+      const res = await fetch('/api/productivity/tasks/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
+        body: JSON.stringify({ taskId, id: taskId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Task deleted successfully');
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(null);
+        }
+        loadData();
+      } else {
+        toast.error(data.error || 'Failed to delete task');
+      }
+    } catch (err) {
+      toast.error('Network error deleting task');
     }
   };
 
@@ -402,37 +446,53 @@ function EnterpriseProductivityDashboard() {
       text: newChecklistText.trim(),
       completed: false
     };
-    const updatedChecklists = [...(selectedTask.checklists || []), newItem];
+    const prevList = selectedTask.checklists || selectedTask.checklist || [];
+    const updatedChecklists = [...prevList, newItem];
     try {
       const res = await fetch('/api/productivity/tasks/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ taskId: selectedTask.id, updates: { checklists: updatedChecklists } })
+        body: JSON.stringify({
+          taskId: selectedTask.id,
+          id: selectedTask.id,
+          updates: { checklists: updatedChecklists, checklist: updatedChecklists },
+          checklists: updatedChecklists,
+          checklist: updatedChecklists
+        })
       });
       const data = await res.json();
       if (data.success) {
-        setSelectedTask(data.task);
+        setSelectedTask(data.task || { ...selectedTask, checklists: updatedChecklists, checklist: updatedChecklists });
         setNewChecklistText('');
         loadData();
       }
-    } catch (err) {}
+    } catch (err) {
+      toast.error('Failed to add checklist item');
+    }
   };
 
   // Toggle checklist item
   const handleToggleChecklist = async (itemId) => {
     if (!selectedTask) return;
-    const updatedChecklists = (selectedTask.checklists || []).map(c => 
+    const prevList = selectedTask.checklists || selectedTask.checklist || [];
+    const updatedChecklists = prevList.map(c => 
       c.id === itemId ? { ...c, completed: !c.completed } : c
     );
     try {
       const res = await fetch('/api/productivity/tasks/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ taskId: selectedTask.id, updates: { checklists: updatedChecklists } })
+        body: JSON.stringify({
+          taskId: selectedTask.id,
+          id: selectedTask.id,
+          updates: { checklists: updatedChecklists, checklist: updatedChecklists },
+          checklists: updatedChecklists,
+          checklist: updatedChecklists
+        })
       });
       const data = await res.json();
       if (data.success) {
-        setSelectedTask(data.task);
+        setSelectedTask(data.task || { ...selectedTask, checklists: updatedChecklists, checklist: updatedChecklists });
         loadData();
       }
     } catch (err) {}
@@ -444,12 +504,14 @@ function EnterpriseProductivityDashboard() {
       const res = await fetch('/api/productivity/reminders/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reminderId })
+        body: JSON.stringify({ reminderId, id: reminderId })
       });
       const data = await res.json();
       if (data.success) {
         toast.success('Reminder marked completed');
         loadData();
+      } else {
+        toast.error(data.error || 'Failed to complete reminder');
       }
     } catch (err) {
       toast.error('Failed to complete reminder');
@@ -462,12 +524,14 @@ function EnterpriseProductivityDashboard() {
       const res = await fetch('/api/productivity/reminders/snooze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reminderId, minutes })
+        body: JSON.stringify({ reminderId, id: reminderId, minutes })
       });
       const data = await res.json();
       if (data.success) {
         toast.success(\`Snoozed for \${minutes} minutes\`);
         loadData();
+      } else {
+        toast.error(data.error || 'Failed to snooze reminder');
       }
     } catch (err) {
       toast.error('Failed to snooze reminder');
@@ -480,7 +544,7 @@ function EnterpriseProductivityDashboard() {
       const res = await fetch('/api/productivity/workflows/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ workflowId, action, reason })
+        body: JSON.stringify({ workflowId, id: workflowId, action, reason })
       });
       const data = await res.json();
       if (data.success) {
@@ -540,7 +604,7 @@ function EnterpriseProductivityDashboard() {
           React.createElement('div', { className: 'p-2.5 bg-primary/15 text-primary rounded-2xl border border-primary/30 text-xl font-bold' }, '⚡'),
           React.createElement('div', null,
             React.createElement('h1', { className: 'text-2xl sm:text-3xl font-black tracking-tight text-foreground' },
-              'Productivity & Workflow Command Center'
+              'Workflow Command Center'
             ),
             React.createElement('p', { className: 'text-xs text-muted-foreground mt-0.5' },
               'Enterprise task lifecycle, persistent background reminders, SLA escalation & multi-stage approvals.'
@@ -619,9 +683,9 @@ function EnterpriseProductivityDashboard() {
     React.createElement('div', { className: 'flex flex-wrap items-center justify-between border-b border-border/70 pb-3 gap-2' },
       React.createElement('div', { className: 'flex items-center gap-1.5' },
         [
-          { id: 'reminders', label: '🔔 Payment Reminders' },
-          { id: 'credit_control', label: '🛡️ Credit Control & Limits' },
           { id: 'tasks', label: '📋 Task Management' },
+          { id: 'reminders', label: '🔔 Scheduled Reminders' },
+          { id: 'credit_control', label: '🛡️ Credit Control & Limits' },
           { id: 'workflows', label: '⚖️ Approvals & Workflows' },
           { id: 'notifications', label: '📫 Notifications' }
         ].map(tab => 
@@ -629,8 +693,8 @@ function EnterpriseProductivityDashboard() {
             key: tab.id,
             size: 'sm',
             variant: activeTab === tab.id ? 'default' : 'ghost',
-            onClick: () => setActiveTab(tab.id),
-            className: cn('rounded-xl text-xs font-bold', activeTab === tab.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')
+            onClick: () => handleTabChange(tab.id),
+            className: cn('rounded-xl text-xs font-bold transition-all', activeTab === tab.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')
           }, tab.label)
         )
       ),
@@ -724,9 +788,12 @@ function EnterpriseProductivityDashboard() {
                     React.createElement('span', null, \`👤 \${t.assigned_to_name}\`),
                     React.createElement('span', null, \`📅 Due: \${formatDateTime(t.due_date)}\`),
                     t.related_entity_id && React.createElement('span', { className: 'font-mono text-primary font-bold' }, \`🔗 \${t.related_entity_id}\`),
-                    t.checklists && t.checklists.length > 0 && React.createElement('span', { className: 'text-emerald-400 font-bold' },
-                      \`✓ \${t.checklists.filter(c => c.completed).length}/\${t.checklists.length} Checklist\`
-                    )
+                    (() => {
+                      const chks = t.checklists || t.checklist || [];
+                      return chks.length > 0 ? React.createElement('span', { className: 'text-emerald-400 font-bold' },
+                        \`✓ \${chks.filter(c => c.completed).length}/\${chks.length} Checklist\`
+                      ) : null;
+                    })()
                   )
                 ),
                 React.createElement('div', { className: 'flex items-center gap-1.5 shrink-0' },
@@ -746,7 +813,13 @@ function EnterpriseProductivityDashboard() {
                     variant: 'outline',
                     onClick: () => setSelectedTask(t),
                     className: 'h-8 px-3 rounded-xl text-xs font-bold'
-                  }, 'Details 🔍')
+                  }, 'Details 🔍'),
+                  React.createElement(Button, {
+                    size: 'sm',
+                    variant: 'ghost',
+                    onClick: (e) => { e.stopPropagation(); handleDeleteTask(t.id); },
+                    className: 'h-8 px-2 rounded-xl text-xs text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10'
+                  }, '🗑️')
                 )
               )
             )
@@ -1010,7 +1083,7 @@ function EnterpriseProductivityDashboard() {
           React.createElement('div', { className: 'space-y-2 pt-2 border-t border-border/50' },
             React.createElement('h4', { className: 'text-xs font-bold text-foreground uppercase tracking-wider' }, 'Checklist & Subtasks'),
             React.createElement('div', { className: 'space-y-1.5' },
-              (selectedTask.checklists || []).map(chk => 
+              ((selectedTask.checklists || selectedTask.checklist || [])).map(chk => 
                 React.createElement('div', {
                   key: chk.id,
                   onClick: () => handleToggleChecklist(chk.id),
@@ -1044,7 +1117,13 @@ function EnterpriseProductivityDashboard() {
             )
           )
         ),
-        React.createElement('div', { className: 'p-4 border-t border-border bg-secondary/5 flex justify-end gap-2' },
+        React.createElement('div', { className: 'p-4 border-t border-border bg-secondary/5 flex justify-between items-center' },
+          React.createElement(Button, {
+            size: 'sm',
+            variant: 'outline',
+            onClick: () => handleDeleteTask(selectedTask.id),
+            className: 'rounded-xl font-bold px-3 text-rose-400 border-rose-500/30 hover:bg-rose-500/10'
+          }, '🗑️ Delete Task'),
           React.createElement(Button, {
             size: 'sm',
             onClick: () => setSelectedTask(null),
