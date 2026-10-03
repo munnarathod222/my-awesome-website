@@ -54,7 +54,7 @@ function xs({isOpen:fe,onClose:G,companyInfo:d={},document:m=null,allDocuments:R
 `),v.trim()&&(l+=`📝 *Note:* ${v.trim()}
 
 `),l+=`📞 Official Contact: ${d.company_phone||"+91 7794072244"} | ✉️ ${d.company_email||"vinod@jaibhavanicargo.com"}
-`,l+=`🌐 ${d.company_website||"www.jaibhavanicargo.com"}`,l},[d,I,a,v]),k=A==="single"?Y:je,$=o.useMemo(()=>{const x=String(i||"").replace(/[^0-9]/g,"");return x.length===10?`91${x}`:(x.length===12&&x.startsWith("91"),x)},[i]),O=async()=>{if(!$||$.length<10){u.error("Please enter a valid 10-digit mobile number");return}ce(!0);const x=a.trim()||"Valued Client";try{const f=await fetch("/hcgi/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignName:"general_update",destination:$,userName:x,templateParams:[x,k],rawText:k,media:A==="single"&&m?.file_url?{url:m.file_url,filename:`${m.title.replace(/[^a-zA-Z0-9_-]/g,"_")}.pdf`}:null})}),l=await f.json();f.ok&&l.success?(u.success(`WhatsApp message sent successfully via Aisensy API! Message ID: ${l.messageId||"DELIVERED"}`),G()):u.error(`Aisensy API Notice: ${l.error||"Could not dispatch message"}`)}catch(f){console.error("WhatsApp dispatch error:",f),u.error(`Network error: ${f.message}`)}finally{ce(!1)}},c=()=>{const x=encodeURIComponent(k),f=$?`https://wa.me/${$}?text=${x}`:`https://wa.me/?text=${x}`;window.open(f,"_blank")},de=()=>{navigator.clipboard.writeText(k),u.success("WhatsApp message & document links copied to clipboard!")};return e.jsx(le,{open:fe,onOpenChange:G,children:e.jsxs(re,{className:"max-w-2xl bg-slate-900 border-slate-800 text-slate-100 rounded-3xl p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]",children:[e.jsxs(ne,{className:"shrink-0 pb-3 border-b border-slate-800",children:[e.jsxs(oe,{className:"text-xl font-extrabold text-white flex items-center gap-2",children:[e.jsx(ie,{className:"w-5 h-5 text-emerald-400"}),"Share Company Documents via WhatsApp API"]}),e.jsx(Ce,{className:"text-xs text-slate-400",children:"Dispatch verified company certificates, tax filings, and corporate dossiers directly via Aisensy WhatsApp Business API."})]}),e.jsxs("div",{className:"space-y-4 py-3 overflow-y-auto flex-1 pr-1 scrollbar-none",children:[m&&e.jsx(Be,{value:A,onValueChange:q,className:"w-full",children:e.jsxs(Le,{className:"grid grid-cols-2 bg-slate-950 p-1 border border-slate-800 rounded-xl h-10",children:[e.jsxs(be,{value:"single",className:"text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white rounded-lg",children:["📄 Single Document (",m.title,")"]}),e.jsxs(be,{value:"dossier",className:"text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white rounded-lg",children:["🏢 Complete Corporate Dossier (",I.length," Docs)"]})]})}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(ss,{className:"w-3.5 h-3.5 text-primary"})," Recipient Name / Designation"]}),e.jsx(N,{placeholder:"e.g. Bank Manager / Auditor / Client",value:a,onChange:x=>z(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-white rounded-xl"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(as,{className:"w-3.5 h-3.5 text-emerald-400"})," WhatsApp Mobile Number *"]}),e.jsx(N,{type:"tel",placeholder:"e.g. 9876543210 or 919876543210",value:i,onChange:x=>H(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-emerald-300 font-mono rounded-xl"})]}),e.jsxs("div",{className:"sm:col-span-2 space-y-1.5 pt-1",children:[e.jsx(g,{className:"text-xs font-semibold text-slate-400",children:"Custom Note (Optional)"}),e.jsx(N,{placeholder:"e.g. Please find our audited financials for loan processing.",value:v,onChange:x=>Ne(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-slate-200 rounded-xl"})]})]}),A==="single"&&m&&e.jsxs("div",{className:"p-3 bg-slate-950/40 rounded-xl border border-slate-800/80 flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2.5",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(te,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("h5",{className:"font-bold text-xs text-white",children:m.title}),e.jsxs("p",{className:"text-[10px] text-slate-400",children:[m.category," • ",m.financial_year||"Current"]})]})]}),m.file_url&&e.jsx(K,{variant:"outline",className:"text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10",children:"Link Attached"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(ie,{className:"w-3.5 h-3.5 text-emerald-400"})," WhatsApp Message Live Preview"]}),e.jsxs(n,{variant:"ghost",size:"sm",onClick:de,className:"h-7 text-[11px] text-slate-400 hover:text-white px-2 rounded-lg",children:[e.jsx(D,{className:"w-3 h-3 mr-1"})," Copy"]})]}),e.jsx(Ge,{value:k,readOnly:!0,rows:8,className:"bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono rounded-xl p-3 leading-relaxed resize-none selection:bg-emerald-500/30"})]})]}),e.jsxs(ge,{className:"shrink-0 pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-2 justify-end",children:[e.jsx(n,{variant:"ghost",size:"sm",onClick:G,className:"w-full sm:w-auto text-xs text-slate-400 hover:text-white rounded-xl h-10",children:"Cancel"}),e.jsxs(n,{variant:"outline",size:"sm",onClick:c,className:"w-full sm:w-auto text-xs font-bold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-xl h-10",children:[e.jsx(_e,{className:"w-3.5 h-3.5 mr-1.5"})," WhatsApp Web / App"]}),e.jsx(n,{size:"sm",onClick:O,disabled:S,className:"w-full sm:w-auto text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-10 shadow-lg shadow-emerald-600/25 px-5",children:S?e.jsxs(e.Fragment,{children:[e.jsx(ts,{className:"w-4 h-4 mr-1.5 animate-spin"})," Dispatching API..."]}):e.jsxs(e.Fragment,{children:[e.jsx(ls,{className:"w-3.5 h-3.5 mr-1.5"})," Send Direct WhatsApp (Aisensy API)"]})})]})]})})}const Ee=["All","Registration & Identity","Tax Returns (ITR)","Tax Returns (GST)","Financials & Banking","Agreements & Contracts","Loans & Legal","Fleet & Vehicle Documents","Other"],Me={"Registration & Identity":["GST Registration Certificate","PAN Card","Certificate of Incorporation (COI)","MSME / Udyam Certificate","Shop & Establishment License","Trademark / ISO Certificate","Other License"],"Tax Returns (ITR)":["ITR-V (Acknowledgement)","Computation Sheet","Tax Audit Report (Form 3CD)","Advance Tax Receipt","Self Assessment Tax Challan"],"Tax Returns (GST)":["GSTR-1 Monthly Return","GSTR-3B Summary Return","GSTR-9 Annual Return","GST Payment Challan","GSTR-2B Recon Sheet"],"Financials & Banking":["Audited Balance Sheet","Profit & Loss Statement","Bank Statement (6-12 Months)","Cancelled Cheque / Bank Letter","Net Worth Certificate","Form 26AS / AIS Statement"],"Loans & Legal":["Sanction Letter","Loan Account Statement","Lease / Rental Agreement","Director / Partner Identity Proof","Board Resolution"],Other:["General Document","Client Contract","Insurance Policy"]},Ue=["N/A","FY 2026-27","FY 2025-26","FY 2024-25","FY 2023-24","FY 2022-23","FY 2021-22"];function fs(){const[activeVaultSpace,setActiveVaultSpace]=o.useState("financiers"),[contractCategoryFilter,setContractCategoryFilter]=o.useState("All"),[contractSearchQuery,setContractSearchQuery]=o.useState(""),[financierTruckFilter,setFinancierTruckFilter]=o.useState("all"),[isAgreementModalOpen,setIsAgreementModalOpen]=o.useState(!1),[editingAgreement,setEditingAgreement]=o.useState(null),[agreementForm,setAgreementForm]=o.useState({title:"",counterparty:"",agreement_type:"Client Freight Agreement / SLA",start_date:"",expiry_date:"",contract_value:"",notes:"",file_url:""}),[fleetTrucksList,setFleetTrucksList]=o.useState([]),[fe,G]=o.useState(!0),[d,m]=o.useState(!1),[editingDocId,setEditingDocId]=o.useState(null),[hasBackSide,setHasBackSide]=o.useState(!1),[selectedBackFile,setSelectedBackFile]=o.useState(null),[previewSide,setPreviewSide]=o.useState("front"),[pdfViewerMode,setPdfViewerMode]=o.useState("auto"),[batchRcOpen,setBatchRcOpen]=o.useState(!1),[batchRcFiles,setBatchRcFiles]=o.useState([]),[batchRcTitle,setBatchRcTitle]=o.useState("Fleet Commercial Vehicle RCs (Consolidated Compilation)"),[batchRcUploading,setBatchRcUploading]=o.useState(!1),[batchRcProgress,setBatchRcProgress]=o.useState(""),[batchRcTargetMode,setBatchRcTargetMode]=o.useState("append"),[selectedCompilationId,setSelectedCompilationId]=o.useState(null),[existingAttachedRcs,setExistingAttachedRcs]=o.useState([]),[activePreviewTruckIdx,setActivePreviewTruckIdx]=o.useState(0),[R,V]=o.useState(!1),[a,z]=o.useState({id:"companysettings",company_name:"JAI BHAVANI CARGO",company_gstin:"36DPXPR9171A1Z8",pan_number:"",tan_number:"",cin_number:"",msme_number:"",udyam_number:"",company_address:"Plot no 3, Patel nagar, Ghatkesar, pin: 501301",company_phone:"+91 7794072244",company_email:"vinod@jaibhavanicargo.com",company_website:"www.jaibhavanicargo.com",bank_name:"HDFC BANK",account_name:"JAI BHAVANI CARGO",account_number:"50200117182677",ifsc_code:"HDFC0004480",branch_name:"GHATKESAR BRANCH",company_docs_json:"[]"}),[i,H]=o.useState([]),[v,Ne]=o.useState(""),[S,ce]=o.useState("All"),[A,q]=o.useState("All"),[I,Y]=o.useState(!1),[je,k]=o.useState(!1),[$,O]=o.useState(!1),[c,de]=o.useState(null),[x,f]=o.useState(!1),[l,b]=o.useState({recipient:"",subject:"",body:"",html:"",label:""}),[me,xe]=o.useState({isOpen:!1,doc:null}),[F,Ve]=o.useState(!0),[P,he]=o.useState(new Set);o.useEffect(()=>{Array.isArray(i)&&he(new Set(i.map(s=>s.id)))},[i]);const ye=s=>{if(!s?.file_url)return u.error("No file URL available for download");const t=document.createElement("a");t.href=s.file_url,t.download=s.file_name||s.title||"document",t.target="_blank",document.body.appendChild(t),t.click(),document.body.removeChild(t),u.success(`Downloading "${s.title}"...`)},ze=s=>{he(t=>{const r=new Set(t);return r.has(s)?r.delete(s):r.add(s),r})},He=()=>{P.size===i.length?he(new Set):he(new Set(i.map(s=>s.id)))},Ye=()=>{const s=i.slice(0,15).map(r=>`<tr><td style="padding:5px 0;font-size:12px;color:#64748b">${r.category||"—"}</td><td style="padding:5px 0;font-size:12px;color:#1e293b">${r.title||"—"}</td><td style="padding:5px 0;font-size:12px;color:#6366f1">${r.financial_year||"—"}</td></tr>`).join(""),t=`<div style="font-family:sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Company Document Vault Index</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">${i.length} documents stored</p></div><div style="padding:20px 24px;background:#f8fafc"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">CATEGORY</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">DOCUMENT</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">FY</th></tr></thead><tbody>${s}</tbody></table>${i.length>15?`<p style="font-size:11px;color:#94a3b8;margin-top:10px">+ ${i.length-15} more documents</p>`:""}<p style="margin-top:14px;font-size:11px;color:#94a3b8">Company: ${a.company_name} | GSTIN: ${a.company_gstin}</p></div></div>`;b({recipient:"",subject:"Company Vault Document Index – Jai Bhavani Cargo",body:"Please find the company document vault index below.",html:t,label:"Vault Document Index"}),f(!0)},[h,E]=o.useState({title:"",category:"Tax Returns (ITR)",sub_category:"ITR-V (Acknowledgement)",financial_year:"FY 2024-25",notes:"",file_url:"",back_file_url:""}),[M,Ae]=o.useState(null),[p,y]=o.useState({...a});o.useEffect(()=>{We()},[]);const We=async()=>{G(!0);try{let s;try{s=await B.collection("company_settings").getOne("companysettings",{$autoCancel:!1})}catch{const r=await B.collection("company_settings").getList(1,1,{$autoCancel:!1});r.items?.length>0&&(s=r.items[0])}if(s){z({id:s.id,company_name:s.company_name||"JAI BHAVANI CARGO",company_gstin:s.company_gstin||"36DPXPR9171A1Z8",pan_number:s.pan_number||"",tan_number:s.tan_number||"",cin_number:s.cin_number||"",msme_number:s.msme_number||"",udyam_number:s.udyam_number||"",company_address:s.company_address||"",company_phone:s.company_phone||"",company_email:s.company_email||"",company_website:s.company_website||"",bank_name:s.bank_name||"",account_name:s.account_name||"",account_number:s.account_number||"",ifsc_code:s.ifsc_code||"",branch_name:s.branch_name||"",company_docs_json:s.company_docs_json||"[]"});try{const t=JSON.parse(s.company_docs_json||"[]");H(Array.isArray(t)?t:[])}catch{H([])}}}catch(s){console.error("Error loading company data:",s),u.error("Failed to load company vault details")}finally{G(!1)}},Je=async s=>{s.preventDefault(),m(!0);try{const t={...p};await B.collection("company_settings").update(a.id,t,{$autoCancel:!1}),z({...p}),u.success("Company profile & tax details updated successfully!"),O(!1)}catch(t){console.error("Error saving company details:",t),u.error("Failed to update company settings")}finally{m(!1)}},X=(s="Tax Returns (ITR)",t="ITR-V (Acknowledgement)")=>{
+`,l+=`🌐 ${d.company_website||"www.jaibhavanicargo.com"}`,l},[d,I,a,v]),k=A==="single"?Y:je,$=o.useMemo(()=>{const x=String(i||"").replace(/[^0-9]/g,"");return x.length===10?`91${x}`:(x.length===12&&x.startsWith("91"),x)},[i]),O=async()=>{if(!$||$.length<10){u.error("Please enter a valid 10-digit mobile number");return}ce(!0);const x=a.trim()||"Valued Client";try{const f=await fetch("/hcgi/api/whatsapp/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignName:"general_update",destination:$,userName:x,templateParams:[x,k],rawText:k,media:A==="single"&&m?.file_url?{url:m.file_url,filename:`${m.title.replace(/[^a-zA-Z0-9_-]/g,"_")}.pdf`}:null})}),l=await f.json();f.ok&&l.success?(u.success(`WhatsApp message sent successfully via Aisensy API! Message ID: ${l.messageId||"DELIVERED"}`),G()):u.error(`Aisensy API Notice: ${l.error||"Could not dispatch message"}`)}catch(f){console.error("WhatsApp dispatch error:",f),u.error(`Network error: ${f.message}`)}finally{ce(!1)}},c=()=>{const x=encodeURIComponent(k),f=$?`https://wa.me/${$}?text=${x}`:`https://wa.me/?text=${x}`;window.open(f,"_blank")},de=()=>{navigator.clipboard.writeText(k),u.success("WhatsApp message & document links copied to clipboard!")};return e.jsx(le,{open:fe,onOpenChange:G,children:e.jsxs(re,{className:"max-w-2xl bg-slate-900 border-slate-800 text-slate-100 rounded-3xl p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]",children:[e.jsxs(ne,{className:"shrink-0 pb-3 border-b border-slate-800",children:[e.jsxs(oe,{className:"text-xl font-extrabold text-white flex items-center gap-2",children:[e.jsx(ie,{className:"w-5 h-5 text-emerald-400"}),"Share Company Documents via WhatsApp API"]}),e.jsx(Ce,{className:"text-xs text-slate-400",children:"Dispatch verified company certificates, tax filings, and corporate dossiers directly via Aisensy WhatsApp Business API."})]}),e.jsxs("div",{className:"space-y-4 py-3 overflow-y-auto flex-1 pr-1 scrollbar-none",children:[m&&e.jsx(Be,{value:A,onValueChange:q,className:"w-full",children:e.jsxs(Le,{className:"grid grid-cols-2 bg-slate-950 p-1 border border-slate-800 rounded-xl h-10",children:[e.jsxs(be,{value:"single",className:"text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white rounded-lg",children:["📄 Single Document (",m.title,")"]}),e.jsxs(be,{value:"dossier",className:"text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white rounded-lg",children:["🏢 Complete Corporate Dossier (",I.length," Docs)"]})]})}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(ss,{className:"w-3.5 h-3.5 text-primary"})," Recipient Name / Designation"]}),e.jsx(N,{placeholder:"e.g. Bank Manager / Auditor / Client",value:a,onChange:x=>z(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-white rounded-xl"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(as,{className:"w-3.5 h-3.5 text-emerald-400"})," WhatsApp Mobile Number *"]}),e.jsx(N,{type:"tel",placeholder:"e.g. 9876543210 or 919876543210",value:i,onChange:x=>H(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-emerald-300 font-mono rounded-xl"})]}),e.jsxs("div",{className:"sm:col-span-2 space-y-1.5 pt-1",children:[e.jsx(g,{className:"text-xs font-semibold text-slate-400",children:"Custom Note (Optional)"}),e.jsx(N,{placeholder:"e.g. Please find our audited financials for loan processing.",value:v,onChange:x=>Ne(x.target.value),className:"bg-slate-900 border-slate-700 text-xs h-9 text-slate-200 rounded-xl"})]})]}),A==="single"&&m&&e.jsxs("div",{className:"p-3 bg-slate-950/40 rounded-xl border border-slate-800/80 flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2.5",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(te,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("h5",{className:"font-bold text-xs text-white",children:m.title}),e.jsxs("p",{className:"text-[10px] text-slate-400",children:[m.category," • ",m.financial_year||"Current"]})]})]}),m.file_url&&e.jsx(K,{variant:"outline",className:"text-[10px] font-mono text-emerald-400 border-emerald-500/30 bg-emerald-500/10",children:"Link Attached"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(g,{className:"text-xs font-bold text-slate-300 flex items-center gap-1.5",children:[e.jsx(ie,{className:"w-3.5 h-3.5 text-emerald-400"})," WhatsApp Message Live Preview"]}),e.jsxs(n,{variant:"ghost",size:"sm",onClick:de,className:"h-7 text-[11px] text-slate-400 hover:text-white px-2 rounded-lg",children:[e.jsx(D,{className:"w-3 h-3 mr-1"})," Copy"]})]}),e.jsx(Ge,{value:k,readOnly:!0,rows:8,className:"bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono rounded-xl p-3 leading-relaxed resize-none selection:bg-emerald-500/30"})]})]}),e.jsxs(ge,{className:"shrink-0 pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-center gap-2 justify-end",children:[e.jsx(n,{variant:"ghost",size:"sm",onClick:G,className:"w-full sm:w-auto text-xs text-slate-400 hover:text-white rounded-xl h-10",children:"Cancel"}),e.jsxs(n,{variant:"outline",size:"sm",onClick:c,className:"w-full sm:w-auto text-xs font-bold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 rounded-xl h-10",children:[e.jsx(_e,{className:"w-3.5 h-3.5 mr-1.5"})," WhatsApp Web / App"]}),e.jsx(n,{size:"sm",onClick:O,disabled:S,className:"w-full sm:w-auto text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl h-10 shadow-lg shadow-emerald-600/25 px-5",children:S?e.jsxs(e.Fragment,{children:[e.jsx(ts,{className:"w-4 h-4 mr-1.5 animate-spin"})," Dispatching API..."]}):e.jsxs(e.Fragment,{children:[e.jsx(ls,{className:"w-3.5 h-3.5 mr-1.5"})," Send Direct WhatsApp (Aisensy API)"]})})]})]})})}const Ee=["All","Registration & Identity","Tax Returns (ITR)","Tax Returns (GST)","Financials & Banking","Agreements & Contracts","Loans & Legal","Fleet & Vehicle Documents","Other"],Me={"Registration & Identity":["GST Registration Certificate","PAN Card","Certificate of Incorporation (COI)","MSME / Udyam Certificate","Shop & Establishment License","Trademark / ISO Certificate","Other License"],"Tax Returns (ITR)":["ITR-V (Acknowledgement)","Computation Sheet","Tax Audit Report (Form 3CD)","Advance Tax Receipt","Self Assessment Tax Challan"],"Tax Returns (GST)":["GSTR-1 Monthly Return","GSTR-3B Summary Return","GSTR-9 Annual Return","GST Payment Challan","GSTR-2B Recon Sheet"],"Financials & Banking":["Audited Balance Sheet","Profit & Loss Statement","Bank Statement (6-12 Months)","Cancelled Cheque / Bank Letter","Net Worth Certificate","Form 26AS / AIS Statement"],"Loans & Legal":["Sanction Letter","Loan Account Statement","Lease / Rental Agreement","Director / Partner Identity Proof","Board Resolution"],Other:["General Document","Client Contract","Insurance Policy"]},Ue=["N/A","FY 2026-27","FY 2025-26","FY 2024-25","FY 2023-24","FY 2022-23","FY 2021-22"];function fs(){const[activeVaultSpace,setActiveVaultSpace]=o.useState("financiers"),[contractCategoryFilter,setContractCategoryFilter]=o.useState("All"),[contractSearchQuery,setContractSearchQuery]=o.useState(""),[financierTruckFilter,setFinancierTruckFilter]=o.useState("all"),[isAgreementModalOpen,setIsAgreementModalOpen]=o.useState(!1),[editingAgreement,setEditingAgreement]=o.useState(null),[agreementForm,setAgreementForm]=o.useState({title:"",counterparty:"",agreement_type:"Client Freight Agreement / SLA",start_date:"",expiry_date:"",contract_value:"",notes:"",file_url:""}),[fe,G]=o.useState(!0),[d,m]=o.useState(!1),[editingDocId,setEditingDocId]=o.useState(null),[hasBackSide,setHasBackSide]=o.useState(!1),[selectedBackFile,setSelectedBackFile]=o.useState(null),[previewSide,setPreviewSide]=o.useState("front"),[pdfViewerMode,setPdfViewerMode]=o.useState("auto"),[batchRcOpen,setBatchRcOpen]=o.useState(!1),[batchRcFiles,setBatchRcFiles]=o.useState([]),[batchRcTitle,setBatchRcTitle]=o.useState("Fleet Commercial Vehicle RCs (Consolidated Compilation)"),[batchRcUploading,setBatchRcUploading]=o.useState(!1),[batchRcProgress,setBatchRcProgress]=o.useState(""),[batchRcTargetMode,setBatchRcTargetMode]=o.useState("append"),[selectedCompilationId,setSelectedCompilationId]=o.useState(null),[existingAttachedRcs,setExistingAttachedRcs]=o.useState([]),[activePreviewTruckIdx,setActivePreviewTruckIdx]=o.useState(0),[R,V]=o.useState(!1),[a,z]=o.useState({id:"companysettings",company_name:"JAI BHAVANI CARGO",company_gstin:"36DPXPR9171A1Z8",pan_number:"",tan_number:"",cin_number:"",msme_number:"",udyam_number:"",company_address:"Plot no 3, Patel nagar, Ghatkesar, pin: 501301",company_phone:"+91 7794072244",company_email:"vinod@jaibhavanicargo.com",company_website:"www.jaibhavanicargo.com",bank_name:"HDFC BANK",account_name:"JAI BHAVANI CARGO",account_number:"50200117182677",ifsc_code:"HDFC0004480",branch_name:"GHATKESAR BRANCH",company_docs_json:"[]"}),[i,H]=o.useState([]),[v,Ne]=o.useState(""),[S,ce]=o.useState("All"),[A,q]=o.useState("All"),[I,Y]=o.useState(!1),[je,k]=o.useState(!1),[$,O]=o.useState(!1),[c,de]=o.useState(null),[x,f]=o.useState(!1),[l,b]=o.useState({recipient:"",subject:"",body:"",html:"",label:""}),[me,xe]=o.useState({isOpen:!1,doc:null}),[F,Ve]=o.useState(!0),[P,he]=o.useState(new Set);o.useEffect(()=>{Array.isArray(i)&&he(new Set(i.map(s=>s.id)))},[i]);const ye=s=>{if(!s?.file_url)return u.error("No file URL available for download");const t=document.createElement("a");t.href=s.file_url,t.download=s.file_name||s.title||"document",t.target="_blank",document.body.appendChild(t),t.click(),document.body.removeChild(t),u.success(`Downloading "${s.title}"...`)},ze=s=>{he(t=>{const r=new Set(t);return r.has(s)?r.delete(s):r.add(s),r})},He=()=>{P.size===i.length?he(new Set):he(new Set(i.map(s=>s.id)))},Ye=()=>{const s=i.slice(0,15).map(r=>`<tr><td style="padding:5px 0;font-size:12px;color:#64748b">${r.category||"—"}</td><td style="padding:5px 0;font-size:12px;color:#1e293b">${r.title||"—"}</td><td style="padding:5px 0;font-size:12px;color:#6366f1">${r.financial_year||"—"}</td></tr>`).join(""),t=`<div style="font-family:sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"><div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px"><p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p><h2 style="color:#f8fafc;font-size:20px;font-weight:800;margin:0">Company Document Vault Index</h2><p style="color:#64748b;font-size:12px;margin:6px 0 0">${i.length} documents stored</p></div><div style="padding:20px 24px;background:#f8fafc"><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">CATEGORY</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">DOCUMENT</th><th style="text-align:left;font-size:10px;font-weight:700;color:#94a3b8;padding-bottom:8px;letter-spacing:1px">FY</th></tr></thead><tbody>${s}</tbody></table>${i.length>15?`<p style="font-size:11px;color:#94a3b8;margin-top:10px">+ ${i.length-15} more documents</p>`:""}<p style="margin-top:14px;font-size:11px;color:#94a3b8">Company: ${a.company_name} | GSTIN: ${a.company_gstin}</p></div></div>`;b({recipient:"",subject:"Company Vault Document Index – Jai Bhavani Cargo",body:"Please find the company document vault index below.",html:t,label:"Vault Document Index"}),f(!0)},[h,E]=o.useState({title:"",category:"Tax Returns (ITR)",sub_category:"ITR-V (Acknowledgement)",financial_year:"FY 2024-25",notes:"",file_url:"",back_file_url:""}),[M,Ae]=o.useState(null),[p,y]=o.useState({...a});o.useEffect(()=>{We()},[]);const We=async()=>{G(!0);try{let s;try{s=await B.collection("company_settings").getOne("companysettings",{$autoCancel:!1})}catch{const r=await B.collection("company_settings").getList(1,1,{$autoCancel:!1});r.items?.length>0&&(s=r.items[0])}if(s){z({id:s.id,company_name:s.company_name||"JAI BHAVANI CARGO",company_gstin:s.company_gstin||"36DPXPR9171A1Z8",pan_number:s.pan_number||"",tan_number:s.tan_number||"",cin_number:s.cin_number||"",msme_number:s.msme_number||"",udyam_number:s.udyam_number||"",company_address:s.company_address||"",company_phone:s.company_phone||"",company_email:s.company_email||"",company_website:s.company_website||"",bank_name:s.bank_name||"",account_name:s.account_name||"",account_number:s.account_number||"",ifsc_code:s.ifsc_code||"",branch_name:s.branch_name||"",company_docs_json:s.company_docs_json||"[]"});try{const t=JSON.parse(s.company_docs_json||"[]");H(Array.isArray(t)?t:[])}catch{H([])}}}catch(s){console.error("Error loading company data:",s),u.error("Failed to load company vault details")}finally{G(!1)}},Je=async s=>{s.preventDefault(),m(!0);try{const t={...p};await B.collection("company_settings").update(a.id,t,{$autoCancel:!1}),z({...p}),u.success("Company profile & tax details updated successfully!"),O(!1)}catch(t){console.error("Error saving company details:",t),u.error("Failed to update company settings")}finally{m(!1)}},X=(s="Tax Returns (ITR)",t="ITR-V (Acknowledgement)")=>{
   setEditingDocId(null),
   setHasBackSide(!1),
   setSelectedBackFile(null),
@@ -343,7 +343,6 @@ Please find the Jai Bhavani Cargo official company dossier and active documents 
 
 Regards,
 Vinod kumar Rathod`,html:s,label:"Company Vault Dossier"}),f(!0)};
-// ── COMPANY VAULT SPACE DIVISIONS: HELPERS & 1-CLICK DISPATCH ──
 const isAgreementDoc = (doc) => {
   if (!doc) return false;
   const cat = (doc.category || '').toLowerCase();
@@ -356,78 +355,55 @@ const isAgreementDoc = (doc) => {
          title.includes('mou') || title.includes('sla');
 };
 
-const getFinancierShareText = () => {
-  const verifiedList = [
-    { title: 'GST Registration Certificate', num: '36DPXPR9171A1Z8', url: 'https://www.jaibhavanicargo.com/assets/docs/gst_certificate_jaibhavanicargo.pdf' },
-    { title: 'PAN Card (Company / Director)', num: 'DPXPR9171A', url: 'https://www.jaibhavanicargo.com/assets/docs/pan_card_jaibhavanicargo.pdf' },
-    { title: 'MSME / Udyam Certificate', num: 'UDYAM-TS-02-0056912', url: 'https://www.jaibhavanicargo.com/assets/docs/msme_certificate_jaibhavanicargo.pdf' },
-    { title: 'Labour Department Registration License', num: 'SEA/MED/ALO-HYD/R/10243/2026', url: 'https://www.jaibhavanicargo.com/assets/docs/labour_license_jaibhavanicargo.pdf' },
-    { title: 'HDFC Current Bank Account Letter & Verification', num: 'A/c 50200117182677 | IFSC HDFC0004480', url: 'https://www.jaibhavanicargo.com/assets/docs/hdfc_bank_verification_letter.pdf' },
-    { title: 'HDFC Cancelled Cheque Leaf', num: 'Chq No 000214', url: 'https://www.jaibhavanicargo.com/assets/docs/hdfc_cancelled_cheque.pdf' },
-    { title: 'Fleet Commercial Vehicle RCs (Bulk Dossier)', num: '50+ Commercial Trucks', url: 'https://www.jaibhavanicargo.com/assets/docs/all_50_truck_rcs_batch.pdf' },
-    { title: 'Director Heavy Transport Driving License', num: 'TS-07-2008-004312', url: 'https://www.jaibhavanicargo.com/assets/docs/director_heavy_transport_dl.pdf' },
-    { title: 'Director Aadhaar Identity Verification', num: 'UID 7890 XXXX 4321', url: 'https://www.jaibhavanicargo.com/assets/docs/director_aadhaar_card.pdf' }
-  ];
-  
+const handle1ClickWhatsAppFinancier = () => {
+  const t2 = a; // company info is stored in 'a' in this bundle
   let msg = "*JAI BHAVANI CARGO - OFFICIAL FINANCIER & TRUCK LOAN DOSSIER*\n";
   msg += "========================================\n";
-  msg += "🏢 *Company Name:* " + (t.company_name || 'JAI BHAVANI CARGO') + "\n";
-  msg += "📋 *GSTIN:* " + (t.company_gstin || '36DPXPR9171A1Z8') + "\n";
+  msg += "🏢 *Company:* " + (t2.company_name || 'JAI BHAVANI CARGO') + "\n";
+  msg += "📋 *GSTIN:* " + (t2.company_gstin || '36DPXPR9171A1Z8') + "\n";
   msg += "💳 *PAN:* DPXPR9171A | *Udyam:* UDYAM-TS-02-0056912\n";
-  msg += "📍 *Registered Office:* " + (t.company_address || 'Plot no 3, Patel nagar, Ghatkesar, Hyderabad - 501301') + "\n";
-  msg += "📞 *Financing Desk Contact:* +91 7794072244 / " + (t.company_email || 'vinod@jaibhavanicargo.com') + "\n\n";
-  
-  msg += "🏦 *PRIMARY BANKING COORDINATES (FOR NACH / ECS / DISBURSEMENT):*\n";
-  msg += "• Bank: " + (t.bank_name || 'HDFC BANK') + " (" + (t.branch_name || 'GHATKESAR BRANCH') + ")\n";
-  msg += "• A/c Name: " + (t.account_name || 'JAI BHAVANI CARGO') + "\n";
-  msg += "• Current A/c No: *" + (t.account_number || '50200117182677') + "*\n";
-  msg += "• IFSC Code: *" + (t.ifsc_code || 'HDFC0004480') + "*\n\n";
-
-  if (financierTruckFilter && financierTruckFilter !== 'all') {
-    msg += "🚛 *VEHICLE SPECIFIC SELECTION:* " + financierTruckFilter + "\n";
-    const matchedTruck = (A || []).find(tk => (tk.truck_number || '').replace(/\s+/g, '').toUpperCase() === financierTruckFilter.replace(/\s+/g, '').toUpperCase());
-    if (matchedTruck && matchedTruck.rc_file_url) {
-      msg += "• Direct RC Document: " + matchedTruck.rc_file_url + "\n\n";
-    } else {
-      msg += "• RC status: Verified on active fleet records.\n\n";
-    }
-  }
-
-  msg += "📑 *VERIFIED COMPLIANCE & KYB DOCUMENTS (DIRECT DOWNLOAD LINKS):*\n";
-  verifiedList.forEach((d, idx) => {
-    msg += (idx + 1) + ". *" + d.title + "*\n";
-    if (d.num) msg += "   ID: " + d.num + "\n";
-    msg += "   Link: " + d.url + "\n\n";
-  });
-
-  msg += "All documents are pre-verified, authenticated, and available for instantaneous loan sanctioning.";
-  return msg;
-};
-
-const handle1ClickWhatsAppFinancier = () => {
-  const text = getFinancierShareText();
-  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  msg += "📍 *Office:* " + (t2.company_address || 'Plot no 3, Patel nagar, Ghatkesar - 501301') + "\n";
+  msg += "📞 *Contact:* " + (t2.company_phone || '+91 7794072244') + "\n\n";
+  msg += "🏦 *BANKING COORDINATES:*\n";
+  msg += "• Bank: " + (t2.bank_name || 'HDFC BANK') + " (" + (t2.branch_name || 'GHATKESAR BRANCH') + ")\n";
+  msg += "• A/c Name: " + (t2.account_name || 'JAI BHAVANI CARGO') + "\n";
+  msg += "• A/c No: *" + (t2.account_number || '50200117182677') + "*\n";
+  msg += "• IFSC: *" + (t2.ifsc_code || 'HDFC0004480') + "*\n\n";
+  msg += "📑 *DOCUMENTS (DIRECT DOWNLOAD):*\n";
+  msg += "1. GST Certificate (GSTIN: " + (t2.company_gstin || '36DPXPR9171A1Z8') + ")\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/gst_certificate_jaibhavanicargo.pdf\n\n";
+  msg += "2. PAN Card (DPXPR9171A)\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/pan_card_jaibhavanicargo.pdf\n\n";
+  msg += "3. MSME / Udyam Certificate\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/msme_certificate_jaibhavanicargo.pdf\n\n";
+  msg += "4. HDFC Bank Verification Letter\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/hdfc_bank_verification_letter.pdf\n\n";
+  msg += "5. Cancelled Cheque\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/hdfc_cancelled_cheque.pdf\n\n";
+  msg += "6. Fleet RCs Batch (50+ Trucks)\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/all_50_truck_rcs_batch.pdf\n\n";
+  msg += "7. Director Heavy DL\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/director_heavy_transport_dl.pdf\n\n";
+  msg += "8. Director Aadhaar\n";
+  msg += "   https://www.jaibhavanicargo.com/assets/docs/director_aadhaar_card.pdf\n";
+  const url = 'https://wa.me/?text=' + encodeURIComponent(msg);
   window.open(url, '_blank');
-  u.success('Financier WhatsApp Dossier opened with all document links & bank coordinates!');
+  u.success('WhatsApp Financier Dossier opened!');
 };
 
 const handle1ClickEmailFinancier = () => {
-  const subject = encodeURIComponent('JAI BHAVANI CARGO - Truck Loan & Equipment Finance Dossier (' + (financierTruckFilter === 'all' ? 'All Fleet Documents' : financierTruckFilter) + ')');
-  const body = encodeURIComponent(getFinancierShareText());
+  const subject = encodeURIComponent('JAI BHAVANI CARGO - Truck Loan & Equipment Finance Dossier');
+  const bodyText = 'Please find our complete financier dossier at: https://www.jaibhavanicargo.com';
+  const body = encodeURIComponent(bodyText);
   window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
-  u.success('Opened email client with complete financier KYC & vehicle documentation!');
+  u.success('Email client opened with financier dossier!');
 };
 
 const handle1ClickCopyFinancier = () => {
-  const text = getFinancierShareText();
+  const t2 = a;
+  const text = 'JAI BHAVANI CARGO - Financier Docs\nGSTIN: ' + (t2.company_gstin || '36DPXPR9171A1Z8') + '\nBank A/c: ' + (t2.account_number || '50200117182677') + ' IFSC: ' + (t2.ifsc_code || 'HDFC0004480') + '\nGST: https://www.jaibhavanicargo.com/assets/docs/gst_certificate_jaibhavanicargo.pdf\nFleet RCs: https://www.jaibhavanicargo.com/assets/docs/all_50_truck_rcs_batch.pdf';
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      u.success('Complete Financier Dossier & Document Links copied to clipboard!');
-    }).catch(() => {
-      u.error('Could not copy to clipboard.');
-    });
-  } else {
-    u.error('Clipboard access not available');
+    navigator.clipboard.writeText(text).then(() => u.success('Financier dossier links copied!')).catch(() => u.error('Could not copy'));
   }
 };
 
@@ -437,7 +413,7 @@ const handleOpenUploadAgreement = (doc = null) => {
     setAgreementForm({
       title: doc.title || '',
       counterparty: doc.counterparty_name || doc.counterparty || '',
-      agreement_type: doc.sub_category || doc.category || 'Client Freight Agreement / SLA',
+      agreement_type: doc.sub_category || 'Client Freight Agreement / SLA',
       start_date: doc.effective_date || doc.start_date || '',
       expiry_date: doc.expiry_date || '',
       contract_value: doc.contract_value || '',
@@ -446,26 +422,14 @@ const handleOpenUploadAgreement = (doc = null) => {
     });
   } else {
     setEditingAgreement(null);
-    setAgreementForm({
-      title: '',
-      counterparty: '',
-      agreement_type: 'Client Freight Agreement / SLA',
-      start_date: '',
-      expiry_date: '',
-      contract_value: '',
-      notes: '',
-      file_url: ''
-    });
+    setAgreementForm({ title: '', counterparty: '', agreement_type: 'Client Freight Agreement / SLA', start_date: '', expiry_date: '', contract_value: '', notes: '', file_url: '' });
   }
   setIsAgreementModalOpen(true);
 };
 
-const handleSaveAgreement = async (e) => {
-  e.preventDefault();
-  if (!agreementForm.title) {
-    u.error('Please enter an agreement / contract title');
-    return;
-  }
+const handleSaveAgreement = async (ev) => {
+  ev.preventDefault();
+  if (!agreementForm.title) { u.error('Please enter an agreement title'); return; }
   V(true);
   try {
     const formData = new FormData();
@@ -478,26 +442,20 @@ const handleSaveAgreement = async (e) => {
     formData.append('expiry_date', agreementForm.expiry_date);
     formData.append('contract_value', agreementForm.contract_value);
     formData.append('notes', agreementForm.notes);
-    if (agreementForm.file_url) {
-      formData.append('file_url', agreementForm.file_url);
-    }
-    if (h) {
-      formData.append('file', h);
-    }
-
+    if (agreementForm.file_url) formData.append('file_url', agreementForm.file_url);
+    if (h) formData.append('file', h);
     if (editingAgreement && editingAgreement.id) {
-      await ve.collection('company_documents').update(editingAgreement.id, formData);
-      u.success('Agreement / Contract updated successfully!');
+      await B.collection('company_documents').update(editingAgreement.id, formData);
+      u.success('Agreement updated!');
     } else {
-      await ve.collection('company_documents').create(formData);
-      u.success('Agreement / Contract saved to Vault successfully!');
+      await B.collection('company_documents').create(formData);
+      u.success('Agreement saved to Vault!');
     }
     setIsAgreementModalOpen(false);
     Ae(null);
     C();
   } catch (err) {
-    console.error('Error saving agreement:', err);
-    u.error('Failed to save agreement: ' + (err.message || 'Unknown error'));
+    u.error('Failed to save: ' + (err.message || 'Unknown error'));
   } finally {
     V(false);
   }
@@ -505,12 +463,11 @@ const handleSaveAgreement = async (e) => {
 
 return e.jsxs("div",{className:"space-y-3 sm:space-y-6 pb-24 sm:pb-12 p-2 sm:p-4 animate-in fade-in duration-300 overflow-x-hidden min-w-0",children:[e.jsxs("div",{className:"flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card/60 backdrop-blur p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-border",children:[e.jsx("div",{children:e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"p-2 bg-primary/10 rounded-xl text-primary",children:e.jsx(Te,{className:"w-6 h-6"})}),e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-2xl font-bold tracking-tight text-foreground flex flex-wrap items-center gap-2",children:["Company Document Vault",e.jsx(K,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20 font-mono",children:"🔒 Secure Corporate Hub"})]}),e.jsx("p",{className:"text-sm text-muted-foreground",children:"Centralized vault for loan applications, bank compliance, ITR returns & GST filings."})]})]})}),e.jsxs("div",{className:"flex flex-wrap items-center gap-2.5",children:[e.jsxs(n,{variant:"outline",size:"sm",className:"h-8 sm:h-10 text-xs sm:text-sm border-primary/30 text-primary hover:bg-primary/10 font-medium rounded-lg sm:rounded-xl px-2.5 sm:px-4",onClick:()=>{y({...a}),O(!0)},children:[e.jsx(W,{className:"w-4 h-4 mr-2"}),"Edit Company Info & Tax IDs"]}),e.jsxs(n,{variant:"secondary",size:"sm",className:"h-8 sm:h-10 text-xs sm:text-sm bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/30 font-semibold rounded-lg sm:rounded-xl px-2.5 sm:px-4",onClick:()=>k(!0),children:[e.jsx(ve,{className:"w-4 h-4 mr-2"}),"⚡ 1-Click Share Company Dossier"]}),e.jsxs(n,{size:"sm",className:"h-10 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 px-4 border-none",onClick:()=>xe({isOpen:!0,doc:null}),children:[e.jsx(ie,{className:"w-4 h-4 mr-2"}),"WhatsApp API Share"]}),e.jsxs(n,{size:"sm",variant:"outline",className:"h-8 sm:h-10 text-xs sm:text-sm font-semibold text-blue-400 border-blue-500/30 hover:bg-blue-500/10 rounded-lg sm:rounded-xl px-2.5 sm:px-4",onClick:Ye,children:[e.jsx(De,{className:"w-4 h-4 mr-2"}),"Email Vault Index"]}),e.jsxs(n,{size:"sm",className:"h-10 font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 cursor-pointer mr-1",onClick:()=>openBatchRcModal(),children:[e.jsx("span",{className:"mr-1.5"},"🚛"),"+ Upload / Manage Truck RCs"]}),
 e.jsxs(n,{size:"sm",className:"h-8 sm:h-10 text-xs sm:text-sm font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 rounded-lg sm:rounded-xl px-2.5 sm:px-4",onClick:()=>X(),children:[e.jsx(we,{className:"w-4 h-4 mr-2"}),"+ Upload Vault Document"]})]})]}),
-/* ── Top Space Division Tabs ── */
-e.jsxs("div",{className:"bg-card/80 p-1.5 rounded-2xl border border-border flex flex-wrap items-center gap-2 shadow-xs",children:[
+e.jsxs("div",{className:"bg-card/80 p-1.5 rounded-2xl border border-border flex flex-wrap items-center gap-2",children:[
   e.jsxs(n,{
     variant:activeVaultSpace==="financiers"?"default":"ghost",
     onClick:()=>setActiveVaultSpace("financiers"),
-    className:`h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${activeVaultSpace==="financiers"?"bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/30":"text-muted-foreground hover:text-foreground"}`,
+    className:"h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer " + (activeVaultSpace==="financiers"?"bg-emerald-600 hover:bg-emerald-500 text-white shadow-md":"text-muted-foreground hover:text-foreground"),
     children:[
       e.jsx("span",{className:"text-base"},"🏦"),
       "Truck Loans & Financier Hub",
@@ -520,242 +477,147 @@ e.jsxs("div",{className:"bg-card/80 p-1.5 rounded-2xl border border-border flex 
   e.jsxs(n,{
     variant:activeVaultSpace==="contracts"?"default":"ghost",
     onClick:()=>setActiveVaultSpace("contracts"),
-    className:`h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${activeVaultSpace==="contracts"?"bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-900/30":"text-muted-foreground hover:text-foreground"}`,
+    className:"h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer " + (activeVaultSpace==="contracts"?"bg-purple-600 hover:bg-purple-500 text-white shadow-md":"text-muted-foreground hover:text-foreground"),
     children:[
       e.jsx("span",{className:"text-base"},"📜"),
       "Agreements, Contracts & Legal Docs",
       e.jsxs(K,{className:"bg-purple-500/20 text-purple-200 border-purple-500/40 text-[10px] py-0 px-1.5 ml-1 font-mono",children:[
-        (i||[]).filter(isAgreementDoc).length,
-        " Files"
+        (i||[]).filter(isAgreementDoc).length," Files"
       ]})
     ]
   }),
   e.jsxs(n,{
     variant:activeVaultSpace==="all"?"default":"ghost",
     onClick:()=>setActiveVaultSpace("all"),
-    className:`h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${activeVaultSpace==="all"?"bg-primary text-primary-foreground shadow-md":"text-muted-foreground hover:text-foreground"}`,
+    className:"h-10 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer " + (activeVaultSpace==="all"?"bg-primary text-primary-foreground shadow-md":"text-muted-foreground hover:text-foreground"),
     children:[
       e.jsx("span",{className:"text-base"},"📁"),
       "Corporate Records & Tax Filings",
-      e.jsxs(K,{variant:"outline",className:"text-[10px] py-0 px-1.5 ml-1 border-border font-mono",children:[
-        (i||[]).length,
-        " Total"
-      ]})
+      e.jsxs(K,{variant:"outline",className:"text-[10px] py-0 px-1.5 ml-1 border-border font-mono",children:[(i||[]).length," Total"]})
     ]
   })
 ]}),
 
-/* ── Conditional Space Rendering ── */
 activeVaultSpace==="financiers" ? (
-  /* ══ SPACE 1: FINANCIERS & TRUCK LOAN 1-CLICK SHARE HUB ══ */
   e.jsxs("div",{className:"space-y-6 animate-in fade-in duration-300",children:[
-    /* Hero Action Banner */
     e.jsxs("div",{className:"p-6 bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-950/40 rounded-3xl border border-emerald-500/30 shadow-xl space-y-5",children:[
       e.jsxs("div",{className:"flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-slate-800/80 pb-5",children:[
-        e.jsxs("div",{className:"space-y-1.5",children:[
-          e.jsxs("div",{className:"flex items-center gap-2.5",children:[
-            e.jsx("div",{className:"p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 text-xl",children:"🏦"}),
-            e.jsxs("div",{children:[
-              e.jsxs("h2",{className:"text-xl font-black text-white flex items-center gap-2",children:[
-                "Truck Loan Financier & Bank Compliance Hub",
-                e.jsx(K,{className:"bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-xs font-mono",children:"Ready for 1-Click Dispatch"})
-              ]}),
-              e.jsx("p",{className:"text-xs text-slate-300",children:"Instantly dispatch complete commercial vehicle loan packages, verified bank coordinates, and vehicle RCs to loan officers."})
-            ]})
+        e.jsxs("div",{className:"flex items-center gap-2.5",children:[
+          e.jsx("div",{className:"p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 text-xl",children:"🏦"}),
+          e.jsxs("div",{children:[
+            e.jsxs("h2",{className:"text-xl font-black text-white flex items-center gap-2",children:[
+              "Truck Loan Financier & Bank Compliance Hub",
+              e.jsx(K,{className:"bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-xs font-mono",children:"Ready for 1-Click Dispatch"})
+            ]}),
+            e.jsx("p",{className:"text-xs text-slate-300",children:"Instantly dispatch complete truck loan packages, banking coordinates, and vehicle RCs to loan officers."})
           ]})
         ]}),
-        /* 1-Click Action Buttons */
         e.jsxs("div",{className:"flex flex-wrap items-center gap-2.5 w-full lg:w-auto",children:[
           e.jsxs(n,{
             onClick:handle1ClickWhatsAppFinancier,
-            className:"h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center gap-2 cursor-pointer transition-all",
-            children:[
-              e.jsx("span",{className:"text-base"},"📲"),
-              "1-Click WhatsApp to Financier"
-            ]
+            className:"h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center gap-2 cursor-pointer",
+            children:[e.jsx("span",{className:"text-base"},"📲"),"1-Click WhatsApp to Financier"]
           }),
           e.jsxs(n,{
             variant:"outline",
             onClick:handle1ClickEmailFinancier,
-            className:"h-10 px-4 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer transition-all",
-            children:[
-              e.jsx("span",{className:"text-base"},"📧"),
-              "1-Click Email Dossier"
-            ]
+            className:"h-10 px-4 border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer",
+            children:[e.jsx("span",{className:"text-base"},"📧"),"1-Click Email Dossier"]
           }),
           e.jsxs(n,{
             variant:"outline",
             onClick:handle1ClickCopyFinancier,
-            className:"h-10 px-3.5 border-slate-700 bg-slate-800/80 text-slate-200 hover:text-white hover:bg-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all",
-            children:[
-              e.jsx("span",{className:"text-sm"},"📋"),
-              "Copy Links"
-            ]
+            className:"h-10 px-3.5 border-slate-700 bg-slate-800/80 text-slate-200 hover:text-white hover:bg-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer",
+            children:[e.jsx("span",{className:"text-sm"},"📋"),"Copy Links"]
           }),
           e.jsxs(n,{
             onClick:()=>openBatchRcModal(),
             className:"h-10 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer",
-            children:[
-              e.jsx("span",{className:"text-sm"},"🚛"),
-              "+ Manage Fleet RCs"
-            ]
+            children:[e.jsx("span",{className:"text-sm"},"🚛"),"+ Manage Fleet RCs"]
           })
         ]})
       ]}),
-
-      /* Vehicle Specific Filter Selector */
-      e.jsxs("div",{className:"flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-950/60 p-3 rounded-2xl border border-slate-800",children:[
-        e.jsxs("div",{className:"flex items-center gap-2 text-slate-300",children:[
-          e.jsx("span",{className:"font-bold text-emerald-400"},"🎯 Select Specific Vehicle to Finance:"),
-          e.jsxs("select",{
-            value:financierTruckFilter,
-            onChange:e=>setFinancierTruckFilter(e.target.value),
-            className:"bg-slate-900 border border-slate-700 text-white rounded-xl px-3 py-1.5 font-mono text-xs focus:ring-1 focus:ring-emerald-500",
-            children:[
-              e.jsx("option",{value:"all",children:"✨ All Commercial Fleet Vehicles (General Loan Facility)"}),
-              (A||[]).map(tk=>e.jsx("option",{value:tk.truck_number,children:`🚛 ${tk.truck_number} (${tk.truck_name||'Truck'})`},tk.id))
-            ]
-          })
-        ]}),
-        e.jsxs("div",{className:"flex items-center gap-2 text-[11px] text-slate-400 font-mono",children:[
-          e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-pulse"}),
-          "Bank Coordinates Pre-verified: HDFC Bank A/c 50200117182677"
-        ]})
+      e.jsxs("div",{className:"p-3 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center gap-2 text-xs",children:[
+        e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-pulse"}),
+        e.jsx("span",{className:"text-slate-300 font-mono",children:"Bank Coordinates Pre-verified: HDFC Bank A/c 50200117182677 | IFSC HDFC0004480 | Ghatkesar Branch"})
       ]})
     ]}),
-
-    /* 4-Column Organized Dossier Grid */
     e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",children:[
-      /* Card 1: Company Legal KYC */
-      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 backdrop-blur-xs rounded-2xl shadow-md space-y-3 p-4",children:[
+      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 rounded-2xl shadow-md space-y-3 p-4",children:[
         e.jsxs("div",{className:"flex items-center justify-between border-b border-slate-800 pb-2.5",children:[
-          e.jsxs("div",{className:"flex items-center gap-2",children:[
-            e.jsx("span",{className:"p-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-sm"},"📑"),
-            e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"1. Company KYC & IDs"})
-          ]}),
+          e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"p-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-sm"},"📑"),e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"1. Company KYC & IDs"})]},),
           e.jsx(K,{className:"bg-blue-500/10 text-blue-400 border-blue-500/30 text-[9px]",children:"4 Verified"})
         ]}),
         e.jsxs("div",{className:"space-y-2 text-xs",children:[
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"GST Certificate"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:t.company_gstin||"36DPXPR9171A1Z8"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"GST Certificate"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:a.company_gstin||"36DPXPR9171A1Z8"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/gst_certificate_jaibhavanicargo.pdf","_blank"),className:"h-7 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"PAN Card"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"DPXPR9171A"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"PAN Card"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"DPXPR9171A"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/pan_card_jaibhavanicargo.pdf","_blank"),className:"h-7 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"MSME / Udyam"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"UDYAM-TS-02-0056912"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"MSME / Udyam"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"UDYAM-TS-02-0056912"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/msme_certificate_jaibhavanicargo.pdf","_blank"),className:"h-7 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"Labour License"}),
-              e.jsx("span",{className:"font-mono text-white text-[11px] font-bold line-clamp-1",children:"R/10243/2026"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"Labour License"}),e.jsx("span",{className:"font-mono text-white text-[11px] font-bold",children:"R/10243/2026"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/labour_license_jaibhavanicargo.pdf","_blank"),className:"h-7 px-2 text-[10px] text-blue-400 hover:bg-blue-500/10",children:"View"})
           ]})
         ]})
       ]}),
-
-      /* Card 2: Banking Coordinates & Letters */
-      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 backdrop-blur-xs rounded-2xl shadow-md space-y-3 p-4",children:[
+      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 rounded-2xl shadow-md space-y-3 p-4",children:[
         e.jsxs("div",{className:"flex items-center justify-between border-b border-slate-800 pb-2.5",children:[
-          e.jsxs("div",{className:"flex items-center gap-2",children:[
-            e.jsx("span",{className:"p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm"},"🏦"),
-            e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"2. Banking & Cheques"})
-          ]}),
+          e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm"},"🏦"),e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"2. Banking & Cheques"})]},),
           e.jsx(K,{className:"bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[9px]",children:"Current A/c"})
         ]}),
         e.jsxs("div",{className:"space-y-2 text-xs",children:[
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1",children:[
-            e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"HDFC Bank Primary Coordinates"}),
-            e.jsxs("div",{className:"font-mono text-emerald-400 font-bold text-xs",children:["A/c: ",t.account_number||"50200117182677"]}),
-            e.jsxs("div",{className:"font-mono text-slate-300 text-[11px]",children:["IFSC: ",t.ifsc_code||"HDFC0004480"]}),
-            e.jsx("div",{className:"text-slate-400 text-[10px]",children:t.branch_name||"Ghatkesar Branch"})
+            e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"HDFC Bank Primary Coordinates"}),
+            e.jsxs("div",{className:"font-mono text-emerald-400 font-bold text-xs",children:["A/c: ",a.account_number||"50200117182677"]}),
+            e.jsxs("div",{className:"font-mono text-slate-300 text-[11px]",children:["IFSC: ",a.ifsc_code||"HDFC0004480"]}),
+            e.jsx("div",{className:"text-slate-400 text-[10px]",children:a.branch_name||"Ghatkesar Branch"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"HDFC Bank Verification Letter"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Official Confirmation"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"HDFC Bank Letter"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Official Confirmation"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/hdfc_bank_verification_letter.pdf","_blank"),className:"h-7 px-2 text-[10px] text-emerald-400 hover:bg-emerald-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"Cancelled Cheque Leaf"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Chq No: 000214"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"Cancelled Cheque"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Chq No: 000214"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/hdfc_cancelled_cheque.pdf","_blank"),className:"h-7 px-2 text-[10px] text-emerald-400 hover:bg-emerald-500/10",children:"View"})
           ]})
         ]})
       ]}),
-
-      /* Card 3: Fleet Vehicle RCs */
-      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 backdrop-blur-xs rounded-2xl shadow-md space-y-3 p-4",children:[
+      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 rounded-2xl shadow-md space-y-3 p-4",children:[
         e.jsxs("div",{className:"flex items-center justify-between border-b border-slate-800 pb-2.5",children:[
-          e.jsxs("div",{className:"flex items-center gap-2",children:[
-            e.jsx("span",{className:"p-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-sm"},"🚛"),
-            e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"3. Commercial Vehicle RCs"})
-          ]}),
-          e.jsxs(K,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]",children:[(A||[]).length," Fleet Trucks"]})
+          e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"p-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-sm"},"🚛"),e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"3. Commercial Vehicle RCs"})]},),
+          e.jsx(K,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-[9px]",children:"Batch PDF"})
         ]}),
         e.jsxs("div",{className:"space-y-2 text-xs",children:[
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"All Fleet RCs Compilation"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"50+ Trucks PDF"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"All Fleet RCs Compilation"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"50+ Trucks PDF"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/all_50_truck_rcs_batch.pdf","_blank"),className:"h-7 px-2 text-[10px] text-amber-400 hover:bg-amber-500/10",children:"View"})
           ]}),
-          (A||[]).slice(0, 3).map(tk=>e.jsxs("div",{key:tk.id,className:"p-2 rounded-xl bg-slate-950/50 border border-slate-800/60 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"font-mono text-slate-200 text-xs font-bold",children:tk.truck_number}),
-              e.jsx("span",{className:"text-[10px] text-slate-500 block truncate max-w-[120px]",children:tk.truck_name||"Commercial Vehicle"})
-            ]}),
-            tk.rc_file_url ? e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open(tk.rc_file_url,"_blank"),className:"h-6 px-1.5 text-[9px] text-amber-400 hover:bg-amber-500/10",children:"RC Doc"}) : e.jsx("span",{className:"text-[9px] text-slate-500",children:"Pending"})
-          ]}))
+          e.jsx("div",{className:"p-2.5 rounded-xl bg-slate-950/50 border border-slate-700/40 text-slate-400 text-[11px] text-center",children:"Use 'Manage Fleet RCs' button above to attach individual truck RCs"})
         ]})
       ]}),
-
-      /* Card 4: Director KYC & Tax Audits */
-      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 backdrop-blur-xs rounded-2xl shadow-md space-y-3 p-4",children:[
+      e.jsxs(T,{className:"border-slate-800 bg-slate-900/60 rounded-2xl shadow-md space-y-3 p-4",children:[
         e.jsxs("div",{className:"flex items-center justify-between border-b border-slate-800 pb-2.5",children:[
-          e.jsxs("div",{className:"flex items-center gap-2",children:[
-            e.jsx("span",{className:"p-1.5 rounded-lg bg-purple-500/10 text-purple-400 text-sm"},"👤"),
-            e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"4. Director KYC & Tax"})
-          ]}),
+          e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"p-1.5 rounded-lg bg-purple-500/10 text-purple-400 text-sm"},"👤"),e.jsx("h3",{className:"font-bold text-xs text-white uppercase tracking-wider",children:"4. Director KYC & Tax"})]},),
           e.jsx(K,{className:"bg-purple-500/10 text-purple-400 border-purple-500/30 text-[9px]",children:"Authenticated"})
         ]}),
         e.jsxs("div",{className:"space-y-2 text-xs",children:[
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"Director Heavy Transport DL"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"TS-07-2008-004312"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"Director Heavy DL"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"TS-07-2008-004312"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/director_heavy_transport_dl.pdf","_blank"),className:"h-7 px-2 text-[10px] text-purple-400 hover:bg-purple-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"Director Aadhaar Identity"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"7890 XXXX 4321"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"Director Aadhaar"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"7890 XXXX 4321"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/director_aadhaar_card.pdf","_blank"),className:"h-7 px-2 text-[10px] text-purple-400 hover:bg-purple-500/10",children:"View"})
           ]}),
           e.jsxs("div",{className:"p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between",children:[
-            e.jsxs("div",{children:[
-              e.jsx("span",{className:"text-slate-400 text-[10px] block font-medium",children:"Passport Size Photograph"}),
-              e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Director Profile"})
-            ]}),
+            e.jsxs("div",{children:[e.jsx("span",{className:"text-slate-400 text-[10px] block",children:"Passport Photo"}),e.jsx("span",{className:"font-mono text-white text-xs font-bold",children:"Director Profile"})]}),
             e.jsx(n,{size:"sm",variant:"ghost",onClick:()=>window.open("https://www.jaibhavanicargo.com/assets/docs/director_passport_photo.png","_blank"),className:"h-7 px-2 text-[10px] text-purple-400 hover:bg-purple-500/10",children:"View"})
           ]})
         ]})
@@ -763,34 +625,24 @@ activeVaultSpace==="financiers" ? (
     ]})
   ]})
 ) : activeVaultSpace==="contracts" ? (
-  /* ══ SPACE 2: AGREEMENTS, CONTRACTS & LEGAL REPOSITORY ══ */
   e.jsxs("div",{className:"space-y-6 animate-in fade-in duration-300",children:[
-    /* Agreements Header Action Bar */
     e.jsxs("div",{className:"p-5 bg-card rounded-3xl border border-border shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4",children:[
       e.jsxs("div",{className:"flex items-center gap-3",children:[
         e.jsx("div",{className:"p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xl font-bold",children:"📜"}),
         e.jsxs("div",{children:[
           e.jsxs("h3",{className:"text-lg font-bold text-foreground flex items-center gap-2",children:[
             "Agreements, Contracts & Legal Repository",
-            e.jsxs(K,{className:"bg-purple-500/15 text-purple-400 border-purple-500/30 text-xs font-mono",children:[
-              (i||[]).filter(isAgreementDoc).length,
-              " Saved"
-            ]})
+            e.jsxs(K,{className:"bg-purple-500/15 text-purple-400 border-purple-500/30 text-xs font-mono",children:[(i||[]).filter(isAgreementDoc).length," Saved"]})
           ]}),
           e.jsx("p",{className:"text-xs text-muted-foreground",children:"Manage client freight agreements, warehouse leases, transporter contracts, SLAs, and corporate resolutions."})
         ]})
       ]}),
-      e.jsx(n,{
+      e.jsxs(n,{
         onClick:()=>handleOpenUploadAgreement(),
         className:"h-10 px-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/25 flex items-center gap-2 cursor-pointer transition-all shrink-0",
-        children:[
-          e.jsx("span",{className:"text-base"},"➕"),
-          "Upload Agreement / Contract"
-        ]
+        children:[e.jsx("span",{className:"text-base"},"➕"),"Upload Agreement / Contract"]
       })
     ]}),
-
-    /* Category Filter & Search Bar */
     e.jsxs("div",{className:"flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card/60 p-3 rounded-2xl border border-border/70",children:[
       e.jsxs("div",{className:"flex flex-wrap items-center gap-1.5",children:[
         ["All","Client Freight Agreement / SLA","Vendor & Transporter Agreement","Office / Yard Lease Deed","Partnership & Corporate Resolution","Insurance Policy & Coverage Deed","Non-Disclosure Agreement (NDA) / MoU"].map(cat=>e.jsx(n,{
@@ -798,7 +650,7 @@ activeVaultSpace==="financiers" ? (
           size:"sm",
           variant:contractCategoryFilter===cat?"default":"outline",
           onClick:()=>setContractCategoryFilter(cat),
-          className:`rounded-xl text-[11px] h-8 transition-all ${contractCategoryFilter===cat?"bg-purple-600 hover:bg-purple-500 text-white":"text-muted-foreground hover:text-foreground"}`,
+          className:"rounded-xl text-[11px] h-8 transition-all " + (contractCategoryFilter===cat?"bg-purple-600 hover:bg-purple-500 text-white":"text-muted-foreground hover:text-foreground"),
           children:cat==="All"?"All Legal Contracts":cat.split(" / ")[0]
         }))
       ]}),
@@ -806,65 +658,42 @@ activeVaultSpace==="financiers" ? (
         type:"text",
         placeholder:"Search agreements by title or party...",
         value:contractSearchQuery,
-        onChange:e=>setContractSearchQuery(e.target.value),
+        onChange:ev=>setContractSearchQuery(ev.target.value),
         className:"h-8 text-xs w-full sm:w-64 bg-background rounded-xl border border-border"
       })
     ]}),
-
-    /* Agreements Grid */
     (()=>{
-      const agreementDocs = (i||[]).filter(isAgreementDoc).filter(doc=>{
-        if (contractCategoryFilter !== "All") {
-          const matchCat = (doc.sub_category === contractCategoryFilter) || (doc.category === contractCategoryFilter);
-          if (!matchCat) return false;
-        }
+      const agreementDocs=(i||[]).filter(isAgreementDoc).filter(doc=>{
+        if (contractCategoryFilter!=="All" && doc.sub_category!==contractCategoryFilter && doc.category!==contractCategoryFilter) return false;
         if (contractSearchQuery.trim()) {
-          const q = contractSearchQuery.toLowerCase();
-          const title = (doc.title||"").toLowerCase();
-          const party = (doc.counterparty_name||doc.counterparty||"").toLowerCase();
-          const notes = (doc.notes||"").toLowerCase();
-          if (!title.includes(q) && !party.includes(q) && !notes.includes(q)) return false;
+          const q=contractSearchQuery.toLowerCase();
+          if (!(doc.title||"").toLowerCase().includes(q) && !(doc.counterparty_name||"").toLowerCase().includes(q) && !(doc.notes||"").toLowerCase().includes(q)) return false;
         }
         return true;
       });
-
-      if (agreementDocs.length === 0) {
+      if (agreementDocs.length===0) {
         return e.jsxs("div",{className:"p-12 text-center bg-card/40 rounded-3xl border border-dashed border-border/80 space-y-3",children:[
           e.jsx("div",{className:"text-4xl text-purple-400",children:"📜"}),
           e.jsx("h4",{className:"font-bold text-base text-foreground",children:"No Agreements or Contracts Found"}),
-          e.jsx("p",{className:"text-xs text-muted-foreground max-w-md mx-auto",children:"Store company lease deeds, client freight agreements, transporter NDAs, and corporate resolutions in this dedicated vault space."}),
+          e.jsx("p",{className:"text-xs text-muted-foreground max-w-md mx-auto",children:"Store client freight agreements, yard lease deeds, transporter NDAs, and corporate resolutions here."}),
           e.jsx(n,{onClick:()=>handleOpenUploadAgreement(),className:"bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl mt-2",children:"Upload First Agreement"})
         ]});
       }
-
       return e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",children:agreementDocs.map(doc=>{
-        const isExpiringSoon = doc.expiry_date && (new Date(doc.expiry_date) - new Date() < 30 * 24 * 3600 * 1000) && (new Date(doc.expiry_date) > new Date());
-        const isExpired = doc.expiry_date && (new Date(doc.expiry_date) <= new Date());
+        const isExpiringSoon=doc.expiry_date&&(new Date(doc.expiry_date)-new Date()<30*24*3600*1000)&&(new Date(doc.expiry_date)>new Date());
+        const isExpired=doc.expiry_date&&(new Date(doc.expiry_date)<=new Date());
         return e.jsxs(T,{key:doc.id,className:"bg-card/70 border-border/80 hover:border-purple-500/50 rounded-2xl p-4 shadow-sm space-y-3 transition-all flex flex-col justify-between",children:[
           e.jsxs("div",{className:"space-y-2",children:[
             e.jsxs("div",{className:"flex items-center justify-between gap-2",children:[
               e.jsx(K,{variant:"outline",className:"bg-purple-500/10 text-purple-400 border-purple-500/20 text-[10px] font-mono",children:doc.sub_category||"Legal Contract"}),
-              isExpired ? e.jsx(K,{className:"bg-red-500/15 text-red-400 border-red-500/30 text-[9px] font-bold",children:"🔴 Expired"}) : isExpiringSoon ? e.jsx(K,{className:"bg-amber-500/15 text-amber-400 border-amber-500/30 text-[9px] font-bold animate-pulse",children:"🟠 Expiring in <30d"}) : doc.expiry_date ? e.jsx(K,{className:"bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-bold",children:"🟢 Active & Valid"}) : e.jsx(K,{variant:"outline",className:"text-[9px] text-muted-foreground",children:"Ongoing / No Expiry"})
+              isExpired?e.jsx(K,{className:"bg-red-500/15 text-red-400 border-red-500/30 text-[9px] font-bold",children:"🔴 Expired"}):isExpiringSoon?e.jsx(K,{className:"bg-amber-500/15 text-amber-400 border-amber-500/30 text-[9px] font-bold animate-pulse",children:"🟠 Expiring <30d"}):doc.expiry_date?e.jsx(K,{className:"bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-bold",children:"🟢 Active"}):e.jsx(K,{variant:"outline",className:"text-[9px] text-muted-foreground",children:"No Expiry"})
             ]}),
             e.jsx("h4",{className:"font-bold text-sm text-foreground line-clamp-1",children:doc.title}),
-            doc.counterparty_name && e.jsxs("p",{className:"text-xs font-semibold text-primary flex items-center gap-1",children:[
-              "🤝 Party: ",
-              doc.counterparty_name
-            ]}),
-            doc.contract_value && e.jsxs("p",{className:"text-xs font-mono font-bold text-emerald-400",children:[
-              "💰 Value: ",
-              doc.contract_value
-            ]}),
-            doc.notes && e.jsxs("p",{className:"text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg line-clamp-2 italic",children:[
-              '"',doc.notes,'"'
-            ]})
+            doc.counterparty_name&&e.jsxs("p",{className:"text-xs font-semibold text-primary",children:["🤝 ",doc.counterparty_name]}),
+            doc.contract_value&&e.jsxs("p",{className:"text-xs font-mono font-bold text-emerald-400",children:["💰 ",doc.contract_value]}),
+            doc.notes&&e.jsxs("p",{className:"text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg line-clamp-2 italic",children:['"',doc.notes,'"']})
           ]}),
-
-          e.jsxs("div",{className:"space-y-2 pt-2 border-t border-border/50 text-xs",children:[
-            e.jsxs("div",{className:"flex items-center justify-between text-[11px] text-muted-foreground",children:[
-              doc.expiry_date ? e.jsxs("span",{children:["Renewal Due: ",Fe(new Date(doc.expiry_date),"dd MMM yyyy")]}) : e.jsx("span",{children:"No expiry date"}),
-              e.jsx("span",{className:"font-mono text-[10px]",children:doc.file_size||"Document"})
-            ]}),
+          e.jsxs("div",{className:"space-y-2 pt-2 border-t border-border/50",children:[
             e.jsxs("div",{className:"grid grid-cols-4 gap-1.5 pt-1",children:[
               e.jsx(n,{size:"sm",variant:"outline",onClick:()=>{de(doc);setPreviewSide("front")},className:"h-7 text-[10px] font-bold text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10",children:"👁️ View"}),
               e.jsx(n,{size:"sm",variant:"outline",onClick:()=>ye(doc),className:"h-7 text-[10px] font-bold text-blue-400 border-blue-500/30 hover:bg-blue-500/10",children:"⬇️ Download"}),
@@ -877,7 +706,6 @@ activeVaultSpace==="financiers" ? (
     })()
   ]})
 ) : (
-  /* ══ SPACE 3: ALL CORPORATE RECORDS & ORIGINAL VAULT GRID ══ */
   e.jsxs("div",{className:"space-y-4 sm:space-y-6",children:[e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-5 gap-3.5",children:[e.jsx(T,{className:"bg-card/40 border-border/80",children:e.jsxs(L,{className:"p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:"Total Vault Files"}),e.jsx("h3",{className:"text-2xl font-bold font-mono text-foreground",children:Z.total})]}),e.jsx(te,{className:"w-7 h-7 text-primary/70"})]})}),e.jsx(T,{className:"bg-card/40 border-border/80",children:e.jsxs(L,{className:"p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:"ITR Returns"}),e.jsx("h3",{className:"text-2xl font-bold font-mono text-emerald-400",children:Z.itr})]}),e.jsx(rs,{className:"w-7 h-7 text-emerald-400/70"})]})}),e.jsx(T,{className:"bg-card/40 border-border/80",children:e.jsxs(L,{className:"p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:"GST Returns"}),e.jsx("h3",{className:"text-2xl font-bold font-mono text-cyan-400",children:Z.gst})]}),e.jsx(Re,{className:"w-7 h-7 text-cyan-400/70"})]})}),e.jsx(T,{className:"bg-card/40 border-border/80",children:e.jsxs(L,{className:"p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:"Certificates & PAN"}),e.jsx("h3",{className:"text-2xl font-bold font-mono text-purple-400",children:Z.reg})]}),e.jsx(W,{className:"w-7 h-7 text-purple-400/70"})]})}),e.jsx(T,{className:"bg-card/40 border-border/80 col-span-2 md:col-span-1",children:e.jsxs(L,{className:"p-4 flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:"Audited & Bank Docs"}),e.jsx("h3",{className:"text-2xl font-bold font-mono text-amber-400",children:Z.fin})]}),e.jsx(Ie,{className:"w-7 h-7 text-amber-400/70"})]})})]}),e.jsxs(T,{className:"bg-card/60 border-border/80",children:[e.jsx(Oe,{className:"pb-3 border-b border-border/60",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsxs(cs,{className:"text-base font-bold text-foreground flex items-center gap-2",children:[e.jsx(W,{className:"w-4 h-4 text-primary"}),a.company_name," - Tax & Banking Profile"]}),e.jsx(ds,{className:"text-xs",children:"Official business identifiers ready for instant loan & client compliance."})]}),e.jsx(n,{variant:"ghost",size:"sm",className:"h-8 text-xs text-muted-foreground hover:text-foreground",onClick:()=>{y({...a}),O(!0)},children:"Edit Identifiers ✏️"})]})}),e.jsxs(L,{className:"pt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"GSTIN Number"}),e.jsx("p",{className:"font-mono font-bold text-foreground text-sm flex items-center gap-1",children:a.company_gstin||"Not Provided"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"PAN Number"}),e.jsx("p",{className:"font-mono font-bold text-foreground text-sm",children:a.pan_number||"ABCDE1234F (Sample)"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"TAN / CIN Number"}),e.jsx("p",{className:"font-mono font-bold text-foreground text-sm",children:a.tan_number||a.cin_number||"Not Provided"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-muted-foreground",children:"MSME / Udyam Reg"}),e.jsx("p",{className:"font-mono font-bold text-foreground text-sm",children:a.udyam_number||a.msme_number||"Not Provided"})]}),e.jsxs("div",{className:"space-y-1 md:col-span-2",children:[e.jsx("span",{className:"text-muted-foreground",children:"Registered Address"}),e.jsx("p",{className:"font-medium text-foreground truncate",children:a.company_address||"Plot no 3, Patel nagar, Ghatkesar"})]}),e.jsxs("div",{className:"space-y-1 md:col-span-2",children:[e.jsx("span",{className:"text-muted-foreground",children:"Primary Bank Account"}),e.jsxs("p",{className:"font-mono font-semibold text-foreground truncate",children:[a.bank_name," - A/C: ",a.account_number," (IFSC: ",a.ifsc_code,")"]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-4",children:[e.jsx("div",{onClick:()=>X("Tax Returns (ITR)","ITR-V (Acknowledgement)"),className:"p-4 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition-all duration-200 group",children:e.jsxs("div",{className:"flex items-start justify-between",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-emerald-400 px-2 py-0.5 bg-emerald-500/10 rounded-full",children:"⚡ Quick Action"}),e.jsx("h4",{className:"font-bold text-foreground text-sm group-hover:text-emerald-400 transition-colors",children:"Upload ITR Return"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Upload ITR-V, Computation Sheet, or Form 3CD Audit Report."})]}),e.jsx(ns,{className:"w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform"})]})}),e.jsx("div",{onClick:()=>X("Tax Returns (GST)","GSTR-3B Summary Return"),className:"p-4 bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent border border-cyan-500/20 hover:border-cyan-500/40 rounded-2xl cursor-pointer transition-all duration-200 group",children:e.jsxs("div",{className:"flex items-start justify-between",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-cyan-400 px-2 py-0.5 bg-cyan-500/10 rounded-full",children:"⚡ Quick Action"}),e.jsx("h4",{className:"font-bold text-foreground text-sm group-hover:text-cyan-400 transition-colors",children:"Upload GST Return"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Upload Monthly GSTR-1, GSTR-3B, or Annual GSTR-9 filing."})]}),e.jsx(Re,{className:"w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform"})]})}),e.jsx("div",{onClick:()=>X("Registration & Identity","GST Registration Certificate"),className:"p-4 bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20 hover:border-purple-500/40 rounded-2xl cursor-pointer transition-all duration-200 group",children:e.jsxs("div",{className:"flex items-start justify-between",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx("span",{className:"text-[10px] font-bold uppercase tracking-wider text-purple-400 px-2 py-0.5 bg-purple-500/10 rounded-full",children:"⚡ Quick Action"}),e.jsx("h4",{className:"font-bold text-foreground text-sm group-hover:text-purple-400 transition-colors",children:"Upload Registration Certificate"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Upload GST Cert, PAN, COI, MSME / Udyam, or Trade License."})]}),e.jsx(W,{className:"w-6 h-6 text-purple-400 group-hover:scale-110 transition-transform"})]})})]}),e.jsxs("div",{className:"flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-card/40 p-4 rounded-xl border border-border",children:[e.jsxs("div",{className:"relative flex-1",children:[e.jsx(os,{className:"w-4 h-4 absolute left-3 top-3 text-muted-foreground"}),e.jsx(N,{type:"text",placeholder:"Search by document title, category, or period...",value:v,onChange:s=>Ne(s.target.value),className:"pl-9 bg-background/80 h-10 text-xs"})]}),e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"w-44",children:e.jsxs(Q,{value:S,onValueChange:ce,children:[e.jsx(ee,{className:"bg-background/80 h-10 text-xs",children:e.jsx(se,{placeholder:"Category..."})}),e.jsx(ae,{children:Ee.map(s=>e.jsx(J,{value:s,className:"text-xs",children:s},s))})]})}),e.jsx("div",{className:"w-36",children:e.jsxs(Q,{value:A,onValueChange:q,children:[e.jsx(ee,{className:"bg-background/80 h-10 text-xs",children:e.jsx(se,{placeholder:"Financial Year..."})}),e.jsxs(ae,{children:[e.jsx(J,{value:"All",className:"text-xs",children:"All FYs"}),Ue.filter(s=>s!=="N/A").map(s=>e.jsx(J,{value:s,className:"text-xs",children:s},s))]})]})})]})]}),Se.length===0?e.jsx(T,{className:"bg-card/40 border-dashed border-2 border-border p-12 text-center",children:e.jsxs("div",{className:"max-w-md mx-auto space-y-4",children:[e.jsx("div",{className:"w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto",children:e.jsx(te,{className:"w-6 h-6"})}),e.jsxs("div",{className:"space-y-1",children:[e.jsx("h3",{className:"text-lg font-bold text-foreground",children:"No documents found"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:v||S!=="All"?"No vault documents match your current filter query.":"Start uploading your company registration certificates, ITR returns, and GST filings."})]}),e.jsxs(n,{size:"sm",onClick:()=>X(),children:[e.jsx(we,{className:"w-4 h-4 mr-2"}),"Upload First Document"]})]})}):e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",children:Se.map(s=>{const t=s.category==="Tax Returns (ITR)",r=s.category==="Tax Returns (GST)",w=s.category==="Registration & Identity";return e.jsxs(T,{className:"bg-card/60 border-border/80 hover:border-primary/40 transition-all duration-200 group relative flex flex-col justify-between",children:[e.jsx(Oe,{className:"pb-3",children:e.jsxs("div",{className:"flex items-start justify-between gap-2",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-1.5 flex-wrap",children:[e.jsx(K,{variant:"outline",className:`text-[10px] font-semibold ${t?"bg-emerald-500/10 text-emerald-400 border-emerald-500/20":r?"bg-cyan-500/10 text-cyan-400 border-cyan-500/20":w?"bg-purple-500/10 text-purple-400 border-purple-500/20":"bg-amber-500/10 text-amber-400 border-amber-500/20"}`,children:s.category}),s.financial_year&&s.financial_year!=="N/A"&&e.jsx(K,{variant:"secondary",className:"text-[10px] font-mono",children:s.financial_year}),
 (s.back_file_url||s.has_back_side)&&e.jsx(K,{variant:"outline",className:"text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border-cyan-500/30",children:"🔄 Front + Back"}),
 (s.is_multi_file||(s.attached_files&&s.attached_files.length>0))&&e.jsx(K,{variant:"outline",className:"text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border-emerald-500/30",children:`🚛 ${s.attached_files?.length||s.rc_count||1} Trucks Attached`})]}),e.jsx("h3",{className:"font-bold text-foreground text-sm line-clamp-1 group-hover:text-primary transition-colors",children:s.title}),e.jsxs("p",{className:"text-[11px] text-muted-foreground font-medium",children:["Type: ",s.sub_category]})]}),e.jsx("div",{className:"flex items-center gap-1",children:e.jsx(n,{variant:"ghost",size:"icon",className:"h-8 w-8 text-destructive hover:bg-destructive/10",onClick:()=>qe(s.id,s.title),title:"Delete Document",children:e.jsx(is,{className:"w-3.5 h-3.5"})})})]})}),e.jsxs(L,{className:"pt-0 space-y-3",children:[s.notes&&e.jsxs("p",{className:"text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg line-clamp-2 italic",children:['"',s.notes,'"']}),e.jsxs("div",{className:"flex items-center justify-between text-[11px] text-muted-foreground pt-2 border-t border-border/50",children:[e.jsxs("span",{children:["Uploaded: ",s.created_at?Fe(new Date(s.created_at),"dd MMM yyyy"):"Recently"]}),e.jsx("span",{className:"font-mono",children:s.file_size||"File"})]}),e.jsxs("div",{className:"space-y-1.5 pt-2 border-t border-border/50",children:[
@@ -1153,118 +981,57 @@ batchRcOpen&&e.jsx(le,{open:batchRcOpen,onOpenChange:setBatchRcOpen,children:e.j
   ]})
 ]})})
 ,
-/* ── Upload / Edit Agreement & Contract Modal Dialog ── */
 isAgreementModalOpen && e.jsx(le,{open:isAgreementModalOpen,onOpenChange:setIsAgreementModalOpen,children:e.jsxs(re,{className:"max-w-lg w-[95vw] bg-card border border-border text-foreground p-5 rounded-3xl shadow-2xl space-y-4",children:[
   e.jsxs("div",{className:"flex items-center justify-between border-b border-border/60 pb-3",children:[
     e.jsxs("div",{className:"flex items-center gap-2",children:[
       e.jsx("div",{className:"p-2 bg-purple-500/10 text-purple-400 rounded-xl",children:"📜"}),
-      e.jsx("h3",{className:"font-bold text-base text-foreground",children:editingAgreement?"Edit Agreement / Contract":"Upload New Agreement / Contract"})
+      e.jsx("h3",{className:"font-bold text-base text-foreground",children:editingAgreement?"Edit Agreement":"Upload New Agreement"})
     ]}),
     e.jsx("button",{type:"button",onClick:()=>setIsAgreementModalOpen(false),className:"text-muted-foreground hover:text-foreground p-1 rounded-lg text-sm",children:"✕"})
   ]}),
   e.jsxs("form",{onSubmit:handleSaveAgreement,className:"space-y-3.5 text-xs",children:[
     e.jsxs("div",{className:"space-y-1",children:[
-      e.jsxs("label",{className:"block text-muted-foreground font-semibold",children:["Agreement / Contract Title: ",e.jsx("span",{className:"text-rose-500",children:"*"})]}),
-      e.jsx(N,{
-        type:"text",
-        placeholder:"e.g. Annual Freight Contract - ITC Limited, Plot 3 Yard Lease",
-        value:agreementForm.title,
-        onChange:e=>setAgreementForm({...agreementForm,title:e.target.value}),
-        className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:border-purple-500",
-        required:true
-      })
+      e.jsxs("label",{className:"block text-muted-foreground font-semibold",children:["Title: ",e.jsx("span",{className:"text-rose-500",children:"*"})]}),
+      e.jsx(N,{type:"text",placeholder:"e.g. Annual Freight Contract - ITC Limited",value:agreementForm.title,onChange:ev=>setAgreementForm({...agreementForm,title:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:border-purple-500",required:true})
     ]}),
     e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-3",children:[
       e.jsxs("div",{className:"space-y-1",children:[
-        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Contract Category:"}),
-        e.jsxs("select",{
-          value:agreementForm.agreement_type,
-          onChange:e=>setAgreementForm({...agreementForm,agreement_type:e.target.value}),
-          className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:border-purple-500",
-          children:[
-            e.jsx("option",{value:"Client Freight Agreement / SLA",children:"🏢 Client Freight Contract / SLA"}),
-            e.jsx("option",{value:"Vendor & Transporter Agreement",children:"🚛 Vendor & Transporter Agreement"}),
-            e.jsx("option",{value:"Office / Yard Lease Deed",children:"📍 Office / Yard Lease Deed"}),
-            e.jsx("option",{value:"Partnership & Corporate Resolution",children:"⚖️ Corporate Legal Resolution"}),
-            e.jsx("option",{value:"Insurance Policy & Coverage Deed",children:"🛡️ Insurance Policy"}),
-            e.jsx("option",{value:"Non-Disclosure Agreement (NDA) / MoU",children:"📄 NDA / MoU"}),
-            e.jsx("option",{value:"Other Legal Contract",children:"Other Legal Document"})
-          ]
-        })
+        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Category:"}),
+        e.jsxs("select",{value:agreementForm.agreement_type,onChange:ev=>setAgreementForm({...agreementForm,agreement_type:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-semibold focus:border-purple-500",children:[
+          e.jsx("option",{value:"Client Freight Agreement / SLA",children:"🏢 Client Freight Contract / SLA"}),
+          e.jsx("option",{value:"Vendor & Transporter Agreement",children:"🚛 Vendor & Transporter Agreement"}),
+          e.jsx("option",{value:"Office / Yard Lease Deed",children:"📍 Office / Yard Lease Deed"}),
+          e.jsx("option",{value:"Partnership & Corporate Resolution",children:"⚖️ Corporate Legal Resolution"}),
+          e.jsx("option",{value:"Insurance Policy & Coverage Deed",children:"🛡️ Insurance Policy"}),
+          e.jsx("option",{value:"Non-Disclosure Agreement (NDA) / MoU",children:"📄 NDA / MoU"}),
+          e.jsx("option",{value:"Other Legal Contract",children:"Other Legal Document"})
+        ]})
       ]}),
       e.jsxs("div",{className:"space-y-1",children:[
-        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Counterparty Name (Client / Landlord):"}),
-        e.jsx(N,{
-          type:"text",
-          placeholder:"e.g. ITC Ltd, Patel Properties, Tata Steel",
-          value:agreementForm.counterparty,
-          onChange:e=>setAgreementForm({...agreementForm,counterparty:e.target.value}),
-          className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"
-        })
+        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Counterparty:"}),
+        e.jsx(N,{type:"text",placeholder:"e.g. ITC Ltd, Patel Properties",value:agreementForm.counterparty,onChange:ev=>setAgreementForm({...agreementForm,counterparty:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"})
       ]})
     ]}),
     e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-3",children:[
-      e.jsxs("div",{className:"space-y-1",children:[
-        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Start / Effective Date:"}),
-        e.jsx("input",{
-          type:"date",
-          value:agreementForm.start_date,
-          onChange:e=>setAgreementForm({...agreementForm,start_date:e.target.value}),
-          className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"
-        })
-      ]}),
-      e.jsxs("div",{className:"space-y-1",children:[
-        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Expiry / Renewal Date:"}),
-        e.jsx("input",{
-          type:"date",
-          value:agreementForm.expiry_date,
-          onChange:e=>setAgreementForm({...agreementForm,expiry_date:e.target.value}),
-          className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"
-        })
-      ]}),
-      e.jsxs("div",{className:"space-y-1",children:[
-        e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Value / Rent (₹):"}),
-        e.jsx(N,{
-          type:"text",
-          placeholder:"e.g. ₹50,000 / month",
-          value:agreementForm.contract_value,
-          onChange:e=>setAgreementForm({...agreementForm,contract_value:e.target.value}),
-          className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-mono focus:border-purple-500"
-        })
-      ]})
+      e.jsxs("div",{className:"space-y-1",children:[e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Start Date:"}),e.jsx("input",{type:"date",value:agreementForm.start_date,onChange:ev=>setAgreementForm({...agreementForm,start_date:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"})]}),
+      e.jsxs("div",{className:"space-y-1",children:[e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Expiry Date:"}),e.jsx("input",{type:"date",value:agreementForm.expiry_date,onChange:ev=>setAgreementForm({...agreementForm,expiry_date:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground focus:border-purple-500"})]}),
+      e.jsxs("div",{className:"space-y-1",children:[e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Value / Rent:"}),e.jsx(N,{type:"text",placeholder:"e.g. ₹50,000/month",value:agreementForm.contract_value,onChange:ev=>setAgreementForm({...agreementForm,contract_value:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-mono focus:border-purple-500"})]})
     ]}),
     e.jsxs("div",{className:"space-y-1",children:[
-      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:editingAgreement?"Replace Contract File (Optional)":"Upload Contract File (PDF, DOC, Images):"}),
-      e.jsx(N,{
-        type:"file",
-        accept:".pdf,.doc,.docx,image/*",
-        onChange:e=>Ae(e.target.files[0]),
-        className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground cursor-pointer"
-      })
+      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:editingAgreement?"Replace File (Optional):":"Upload File (PDF, DOC, Images):"}),
+      e.jsx(N,{type:"file",accept:".pdf,.doc,.docx,image/*",onChange:ev=>Ae(ev.target.files[0]),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground cursor-pointer"})
     ]}),
     e.jsxs("div",{className:"space-y-1",children:[
-      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Or Provide Direct File URL (Optional):"}),
-      e.jsx(N,{
-        type:"url",
-        placeholder:"https://...",
-        value:agreementForm.file_url,
-        onChange:e=>setAgreementForm({...agreementForm,file_url:e.target.value}),
-        className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-mono"
-      })
+      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Or Direct File URL:"}),
+      e.jsx(N,{type:"url",placeholder:"https://...",value:agreementForm.file_url,onChange:ev=>setAgreementForm({...agreementForm,file_url:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl px-3 py-2 text-foreground font-mono"})
     ]}),
     e.jsxs("div",{className:"space-y-1",children:[
-      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Important Notes / Renewal Clauses:"}),
-      e.jsx("textarea",{
-        rows:2,
-        placeholder:"Detail contract terms, termination notice period, renewal conditions...",
-        value:agreementForm.notes,
-        onChange:e=>setAgreementForm({...agreementForm,notes:e.target.value}),
-        className:"w-full bg-background border border-border/80 rounded-xl p-3 text-foreground placeholder-muted-foreground focus:border-purple-500"
-      })
+      e.jsx("label",{className:"block text-muted-foreground font-semibold",children:"Notes / Renewal Clauses:"}),
+      e.jsx("textarea",{rows:2,placeholder:"Contract terms, renewal conditions...",value:agreementForm.notes,onChange:ev=>setAgreementForm({...agreementForm,notes:ev.target.value}),className:"w-full bg-background border border-border/80 rounded-xl p-3 text-foreground placeholder-muted-foreground focus:border-purple-500"})
     ]}),
     e.jsxs("div",{className:"flex justify-end gap-2 pt-3 border-t border-border/60",children:[
       e.jsx(n,{type:"button",variant:"outline",onClick:()=>setIsAgreementModalOpen(false),className:"rounded-xl text-xs",children:"Cancel"}),
-      e.jsx(n,{type:"submit",disabled:d,className:"rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-600/20",children:d?"Saving Agreement...":(editingAgreement?"Update Agreement":"Save Agreement")})
+      e.jsx(n,{type:"submit",disabled:d,className:"rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-600/20",children:d?"Saving...":(editingAgreement?"Update Agreement":"Save Agreement")})
     ]})
   ]})
 ]})})]})}export{fs as default};
