@@ -73,8 +73,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',             path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: BarChart3,       label: 'Analytics',             path: '/analytics',               roles: ['super_admin','admin','manager'] },
-        { icon: TrendingUp,      label: 'Trip Overview',         path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager'] },
-        { icon: PieChart,        label: 'Client Analysis',       path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
+                { icon: PieChart,        label: 'Client Analysis',       path: '/client-analysis',         roles: ['super_admin','admin','manager'] },
       ]
     },
     { title: 'Fleet & Operations', items: fleetOperationsItems },
