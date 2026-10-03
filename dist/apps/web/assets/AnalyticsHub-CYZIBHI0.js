@@ -1,5 +1,933 @@
+
+
+function ExecutiveAnalyticsHub() {
+  const c = C;
+  const jsx = e.jsx;
+  const jsxs = e.jsxs;
+  const Fragment = c.Fragment;
+  const [selectedRange, setSelectedRange] = c.useState("30D");
+  const [startDate, setStartDate] = c.useState("2024-03-01");
+  const [endDate, setEndDate] = c.useState("2024-03-31");
+  const [viewType, setViewType] = c.useState("Monthly View");
+  const [selectedClient, setSelectedClient] = c.useState("all");
+  const [searchQuery, setSearchQuery] = c.useState("");
+  const [activeTooltipDay, setActiveTooltipDay] = c.useState(18);
+  const clientsList = [
+    { id: "all", name: "All Clients (Fleet Wide)" },
+    { id: "cli_ultratech", name: "UltraTech Cement Ltd" },
+    { id: "cli_amazon", name: "Amazon India Fulfillment" },
+    { id: "cli_reliance", name: "Reliance Logistics & Retail" },
+    { id: "cli_tata", name: "Tata Steel Tubes Division" },
+    { id: "cli_spot", name: "Ad-hoc Spot Market Loads" }
+  ];
+  const tripVolumeData = [
+    12,
+    18,
+    14,
+    22,
+    28,
+    19,
+    15,
+    24,
+    31,
+    26,
+    18,
+    29,
+    35,
+    27,
+    21,
+    33,
+    38,
+    42,
+    34,
+    28,
+    22,
+    19,
+    27,
+    31,
+    25,
+    18,
+    23,
+    29,
+    32,
+    20,
+    16
+  ];
+  return /* @__PURE__ */ e.jsxs("div", { className: "space-y-6 select-none animate-in fade-in duration-300 pb-12 font-sans text-slate-100", children: [
+    /* @__PURE__ */ e.jsxs("div", { className: "flex flex-col xl:flex-row xl:items-center justify-between gap-4", children: [
+      /* @__PURE__ */ e.jsxs("div", { children: [
+        /* @__PURE__ */ e.jsxs("h1", { className: "text-3xl font-black tracking-tight text-white flex items-center gap-3", children: [
+          /* @__PURE__ */ e.jsx("span", { children: "Analytics Hub" }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20", children: "Live Fleet Command" })
+        ] }),
+        /* @__PURE__ */ e.jsx("p", { className: "text-sm text-slate-400 mt-1", children: "Financial and operational performance overview for your logistics business." })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "relative min-w-[260px] sm:min-w-[300px]", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 text-sm", children: "\u{1F50D}" }),
+          /* @__PURE__ */ e.jsx(
+            "input",
+            {
+              type: "text",
+              value: searchQuery,
+              onChange: (e) => setSearchQuery(e.target.value),
+              placeholder: "Search trips, drivers, vehicles...",
+              className: "w-full pl-9 pr-14 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 transition shadow-inner"
+            }
+          ),
+          /* @__PURE__ */ e.jsx("span", { className: "absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none", children: /* @__PURE__ */ e.jsx("kbd", { className: "px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded", children: "\u2318K" }) })
+        ] }),
+        /* @__PURE__ */ e.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => alert("3 Active Fleet Alerts: 1 vehicle maintenance due, 1 license renewal, 1 fuel telematics anomaly."),
+            className: "relative p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition cursor-pointer",
+            children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u{1F514}" }),
+              /* @__PURE__ */ e.jsx("span", { className: "absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-black text-white flex items-center justify-center shadow-xs", children: "3" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5 pl-1 pr-3 py-1 bg-slate-900 border border-slate-800 rounded-xl", children: [
+          /* @__PURE__ */ e.jsx("div", { className: "w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs", children: "JB" }),
+          /* @__PURE__ */ e.jsxs("div", { className: "text-left hidden sm:block", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-xs font-bold text-white leading-tight", children: "John B." }),
+            /* @__PURE__ */ e.jsx("div", { className: "text-[10px] text-slate-400 leading-tight", children: "Fleet Manager" })
+          ] })
+        ] }),
+        /* @__PURE__ */ e.jsx("div", { className: "relative", children: /* @__PURE__ */ e.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              const text = "Logistics Executive Report generated for March 2024. Revenue: Rs. 2,229,400 | Net Profit: Rs. 166,870.44 | Trips: 314";
+              navigator.clipboard.writeText(text);
+              alert("Executive Analytics Summary copied to clipboard & downloaded!");
+            },
+            className: "px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 transition flex items-center gap-2 cursor-pointer",
+            children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u{1F4E5}" }),
+              /* @__PURE__ */ e.jsx("span", { children: "Export Report" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] opacity-70", children: "\u25BC" })
+            ]
+          }
+        ) })
+      ] })
+    ] }),
+    /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 px-4 shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs", children: [
+      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-3", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "START" }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
+          /* @__PURE__ */ e.jsx(
+            "input",
+            {
+              type: "date",
+              value: startDate,
+              onChange: (e) => setStartDate(e.target.value),
+              className: "bg-transparent text-white font-medium text-xs focus:outline-hidden cursor-pointer"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 font-bold", children: "\u2794" }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "END" }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "\u{1F4C5}" }),
+          /* @__PURE__ */ e.jsx(
+            "input",
+            {
+              type: "date",
+              value: endDate,
+              onChange: (e) => setEndDate(e.target.value),
+              className: "bg-transparent text-white font-medium text-xs focus:outline-hidden cursor-pointer"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-slate-500", children: "VIEW" }),
+          /* @__PURE__ */ e.jsxs(
+            "select",
+            {
+              value: viewType,
+              onChange: (e) => setViewType(e.target.value),
+              className: "bg-transparent text-white font-semibold text-xs focus:outline-hidden cursor-pointer",
+              children: [
+                /* @__PURE__ */ e.jsx("option", { value: "Daily View", className: "bg-slate-900", children: "Daily View" }),
+                /* @__PURE__ */ e.jsx("option", { value: "Weekly View", className: "bg-slate-900", children: "Weekly View" }),
+                /* @__PURE__ */ e.jsx("option", { value: "Monthly View", className: "bg-slate-900", children: "Monthly View" }),
+                /* @__PURE__ */ e.jsx("option", { value: "Quarterly View", className: "bg-slate-900", children: "Quarterly View" })
+              ]
+            }
+          )
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase text-emerald-400", children: "CLIENT" }),
+          /* @__PURE__ */ e.jsx(
+            "select",
+            {
+              value: selectedClient,
+              onChange: (e) => setSelectedClient(e.target.value),
+              className: "bg-transparent text-white font-semibold text-xs focus:outline-hidden cursor-pointer max-w-[180px] truncate",
+              children: clientsList.map((c) => /* @__PURE__ */ e.jsx("option", { value: c.id, className: "bg-slate-900", children: c.name }, c.id))
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
+        /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1", children: ["7D", "30D", "3M", "6M", "1Y", "Custom"].map((pill) => /* @__PURE__ */ e.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setSelectedRange(pill),
+            className: `px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedRange === pill ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white hover:bg-slate-800/60"}`,
+            children: pill
+          },
+          pill
+        )) }),
+        /* @__PURE__ */ e.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              setSelectedRange("30D");
+              setStartDate("2024-03-01");
+              setEndDate("2024-03-31");
+              setSelectedClient("all");
+            },
+            className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer",
+            children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u{1F504}" }),
+              " Reset"
+            ]
+          }
+        ),
+        /* @__PURE__ */ e.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => {
+              alert(`Filters Applied: Range ${selectedRange} (${startDate} to ${endDate}) for Client: ${clientsList.find((c) => c.id === selectedClient)?.name}`);
+            },
+            className: "px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-600/20 transition cursor-pointer",
+            children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u26A1" }),
+              " Apply Filters"
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4", children: [
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-emerald-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-sm font-black", children: "\u20B9" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Total Revenue" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "\u20B92,229,400" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +18.4%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,28 Q15,35 30,22 T60,18 T85,8 T100,5",
+                fill: "none",
+                stroke: "#10b981",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "5", r: "3", fill: "#10b981" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-rose-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center text-sm font-black", children: "\u{1F4B3}" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Total Expenses" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "\u20B92,062,529.56" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2198 -6.2%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,15 Q20,10 40,25 T70,18 T90,30 T100,28",
+                fill: "none",
+                stroke: "#f43f5e",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "28", r: "3", fill: "#f43f5e" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-cyan-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-sm font-black", children: "\u{1F4CA}" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Net Profit" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "\u20B9166,870.44" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-cyan-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +42.7%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,32 Q25,30 45,22 T75,15 T90,8 T100,4",
+                fill: "none",
+                stroke: "#06b6d4",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "4", r: "3", fill: "#06b6d4" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-purple-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center text-sm font-black", children: "%" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Profit Margin" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "7.5%" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-purple-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +2.1%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,28 Q30,22 55,20 T80,12 T100,8",
+                fill: "none",
+                stroke: "#a855f7",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "8", r: "3", fill: "#a855f7" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-blue-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-sm font-black", children: "\u{1F69B}" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Total Trips" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "314" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +12.5%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,30 Q20,32 40,20 T70,16 T90,10 T100,6",
+                fill: "none",
+                stroke: "#3b82f6",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "6", r: "3", fill: "#3b82f6" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-amber-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center text-sm font-black", children: "\u{1F6E3}\uFE0F" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Total KMs Driven" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "64,775.355" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +9.8%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,25 Q25,28 50,18 T80,14 T100,9",
+                fill: "none",
+                stroke: "#f59e0b",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "9", r: "3", fill: "#f59e0b" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-teal-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center text-sm font-black", children: "\u23F1\uFE0F" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Fleet Utilization" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "78%" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-teal-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2197 +6.3%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,28 Q30,30 55,20 T80,15 T100,10",
+                fill: "none",
+                stroke: "#14b8a6",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "10", r: "3", fill: "#14b8a6" })
+          ] }) })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "bg-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg hover:border-indigo-500/30 transition relative overflow-hidden group", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2.5", children: [
+            /* @__PURE__ */ e.jsx("div", { className: "w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-sm font-black", children: "\u{1F465}" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-400", children: "Active Drivers" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-baseline justify-between mt-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsx("div", { className: "text-2xl font-black text-white tracking-tight", children: "5" }),
+            /* @__PURE__ */ e.jsxs("div", { className: "text-[11px] font-bold text-slate-400 flex items-center gap-1 mt-1", children: [
+              /* @__PURE__ */ e.jsx("span", { children: "\u2192 0%" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-500 font-normal", children: "vs last month" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsx("div", { className: "w-24 h-10", children: /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 100 40", children: [
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,20 Q30,18 60,20 T100,20",
+                fill: "none",
+                stroke: "#6366f1",
+                strokeWidth: "2.5",
+                strokeLinecap: "round"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "100", cy: "20", r: "3", fill: "#6366f1" })
+          ] }) })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsxs("div", { children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-cyan-400 text-sm", children: "\u{1F4C8}" }),
+              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Revenue vs Expenses" })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "Monthly \u2304" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+            ] })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-xs shadow-cyan-400" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Revenue" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B92,229,400" })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-purple-500 shadow-xs shadow-purple-500" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Expenses" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B92,062,529.56" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "w-full h-56 mt-4 relative", children: [
+          /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 400 200", preserveAspectRatio: "none", children: [
+            /* @__PURE__ */ e.jsxs("defs", { children: [
+              /* @__PURE__ */ e.jsxs("linearGradient", { id: "cyanRevGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+                /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.4" }),
+                /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
+              ] }),
+              /* @__PURE__ */ e.jsxs("linearGradient", { id: "purpleExpGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+                /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#a855f7", stopOpacity: "0.3" }),
+                /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#a855f7", stopOpacity: "0.0" })
+              ] })
+            ] }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "40", x2: "400", y2: "40", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "80", x2: "400", y2: "80", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "120", x2: "400", y2: "120", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "160", x2: "400", y2: "160", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30 L400,200 L0,200 Z",
+                fill: "url(#cyanRevGrad)"
+              }
+            ),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,130 C60,150 100,90 150,85 C200,80 230,120 280,70 C330,20 370,50 400,30",
+                fill: "none",
+                stroke: "#06b6d4",
+                strokeWidth: "3"
+              }
+            ),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60 L400,200 L0,200 Z",
+                fill: "url(#purpleExpGrad)"
+              }
+            ),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,145 C60,160 100,115 150,105 C200,98 230,135 280,95 C330,55 370,75 400,60",
+                fill: "none",
+                stroke: "#a855f7",
+                strokeWidth: "2.5"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "150", cy: "85", r: "4", fill: "#06b6d4" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "280", cy: "70", r: "4", fill: "#06b6d4" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "400", cy: "30", r: "4", fill: "#06b6d4" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2", children: [
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsx("div", { children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ e.jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CA}" }),
+            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Trip Volume" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "Daily \u2304" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-slate-600 hover:text-slate-400 cursor-pointer text-xs", children: "\xB7\xB7\xB7" })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ e.jsxs("div", { className: "w-full h-56 mt-3 relative flex flex-col justify-end", children: [
+          /* @__PURE__ */ e.jsxs(
+            "div",
+            {
+              className: "absolute z-20 bg-slate-950/95 border border-blue-500/50 rounded-lg px-2.5 py-1 text-center shadow-xl pointer-events-none transition-all duration-200",
+              style: {
+                left: `${activeTooltipDay / 31 * 85}%`,
+                top: "15%"
+              },
+              children: [
+                /* @__PURE__ */ e.jsxs("div", { className: "text-[10px] text-slate-400 font-mono", children: [
+                  "Mar ",
+                  activeTooltipDay,
+                  ", 2024"
+                ] }),
+                /* @__PURE__ */ e.jsxs("div", { className: "text-xs font-black text-cyan-400 font-mono", children: [
+                  tripVolumeData[activeTooltipDay - 1],
+                  " trips"
+                ] })
+              ]
+            }
+          ),
+          /* @__PURE__ */ e.jsx("div", { className: "flex items-end justify-between h-44 gap-1 px-1", children: tripVolumeData.map((val, idx) => {
+            const day = idx + 1;
+            const isSelected = day === activeTooltipDay;
+            const heightPct = Math.round(val / 45 * 100);
+            return /* @__PURE__ */ e.jsx(
+              "div",
+              {
+                onMouseEnter: () => setActiveTooltipDay(day),
+                className: "flex-1 flex flex-col items-center group cursor-pointer h-full justify-end",
+                children: /* @__PURE__ */ e.jsx(
+                  "div",
+                  {
+                    className: `w-full rounded-t-sm transition-all duration-150 ${isSelected ? "bg-cyan-400 shadow-md shadow-cyan-500/50 scale-y-105" : "bg-blue-600 hover:bg-blue-400 opacity-80"}`,
+                    style: { height: `${heightPct}%` }
+                  }
+                )
+              },
+              day
+            );
+          }) }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsx("div", { children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ e.jsx("span", { className: "text-purple-400 text-sm", children: "\u{1F369}" }),
+            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Expense Breakdown" })
+          ] }),
+          /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "This Month \u2304" })
+        ] }) }),
+        /* @__PURE__ */ e.jsx("div", { className: "flex flex-col items-center justify-center my-3 relative", children: /* @__PURE__ */ e.jsxs("div", { className: "w-32 h-32 relative flex items-center justify-center", children: [
+          /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full transform -rotate-90", viewBox: "0 0 100 100", children: [
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#06b6d4", strokeWidth: "16", strokeDasharray: "101 138", strokeDashoffset: "0" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#a855f7", strokeWidth: "16", strokeDasharray: "44 195", strokeDashoffset: "-101" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#f59e0b", strokeWidth: "16", strokeDasharray: "29 210", strokeDashoffset: "-145" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#3b82f6", strokeWidth: "16", strokeDasharray: "27 212", strokeDashoffset: "-174" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#ec4899", strokeWidth: "16", strokeDasharray: "20 219", strokeDashoffset: "-201" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "50", cy: "50", r: "38", fill: "none", stroke: "#64748b", strokeWidth: "16", strokeDasharray: "17 222", strokeDashoffset: "-221" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "absolute inset-0 flex flex-col items-center justify-center text-center", children: [
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs font-black text-white font-mono", children: "\u20B92.06M" }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-[9px] text-slate-400 uppercase tracking-tighter", children: "Total Exp" })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ e.jsxs("div", { className: "space-y-1.5 text-[11px] pt-1 border-t border-slate-800", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-cyan-400" }),
+              " Fuel (42.3%)"
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-bold", children: "\u20B9872,410" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-purple-500" }),
+              " Tolls (18.6%)"
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-bold", children: "\u20B9383,120" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-amber-500" }),
+              " Maintenance (12.1%)"
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-bold", children: "\u20B9249,350" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-blue-500" }),
+              " Driver Salary (11.5%)"
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-bold", children: "\u20B9236,620" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+            /* @__PURE__ */ e.jsxs("span", { className: "flex items-center gap-1.5 text-slate-300", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2 h-2 rounded-full bg-pink-500" }),
+              " Insurance (8.4%)"
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "font-mono text-slate-400", children: "\u20B9173,860" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-2 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ e.jsx("span", { className: "text-teal-400 text-sm", children: "\u2699\uFE0F" }),
+          /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Operations" })
+        ] }) }),
+        /* @__PURE__ */ e.jsxs("div", { className: "space-y-3.5 my-2 text-xs", children: [
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mb-1", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "On-Time Delivery" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-emerald-400 font-mono", children: "92%" })
+            ] }),
+            /* @__PURE__ */ e.jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ e.jsx("div", { className: "bg-emerald-500 h-full rounded-full", style: { width: "92%" } }) })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center mb-1", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Active Routes" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-blue-400 font-mono", children: "12" })
+            ] }),
+            /* @__PURE__ */ e.jsx("div", { className: "w-full bg-slate-950 h-2 rounded-full overflow-hidden", children: /* @__PURE__ */ e.jsx("div", { className: "bg-blue-500 h-full rounded-full", style: { width: "75%" } }) })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between", children: [
+            /* @__PURE__ */ e.jsxs("div", { children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Top Driver" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white text-xs", children: "Ravi Kumar" })
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-amber-400 text-sm", children: "\u2B50" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "p-2 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between", children: [
+            /* @__PURE__ */ e.jsxs("div", { children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Avg Trip Distance" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-cyan-400 font-mono text-xs", children: "206 km" })
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-xs text-slate-500", children: "Per Trip" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "pt-1 flex flex-col gap-1.5 text-[11px]", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Top Route:" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white", children: "Delhi \u2794 Mumbai \u{1F3C6}" })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Delayed Trips:" }),
+              /* @__PURE__ */ e.jsx("span", { className: "px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold", children: "7 Trips" })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between items-center", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Healthy Trucks:" }),
+              /* @__PURE__ */ e.jsx("span", { className: "px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold", children: "4 / 12" })
+            ] })
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ e.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-12 gap-5", children: [
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-5 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl", children: [
+        /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ e.jsx("span", { className: "text-blue-400 text-sm", children: "\u{1F4CD}" }),
+            /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Route Performance" })
+          ] }),
+          /* @__PURE__ */ e.jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => alert("Opening full route profitability master list..."),
+              className: "text-xs font-bold text-blue-400 hover:text-blue-300 cursor-pointer",
+              children: "View All >"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ e.jsxs("table", { className: "w-full text-left text-xs", children: [
+          /* @__PURE__ */ e.jsx("thead", { className: "text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2", children: /* @__PURE__ */ e.jsxs("tr", { children: [
+            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "#" }),
+            /* @__PURE__ */ e.jsx("th", { className: "py-2", children: "Route" }),
+            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Trips" }),
+            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Dist (km)" }),
+            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Revenue" }),
+            /* @__PURE__ */ e.jsx("th", { className: "py-2 text-right", children: "Profit Margin" })
+          ] }) }),
+          /* @__PURE__ */ e.jsxs("tbody", { className: "divide-y divide-slate-800/60 font-sans", children: [
+            /* @__PURE__ */ e.jsxs("tr", { children: [
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: "1" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: "Delhi \u2794 Mumbai" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: "48" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: "7,112" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: "\u20B9612,400" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20", children: "12.4%" }) })
+            ] }),
+            /* @__PURE__ */ e.jsxs("tr", { children: [
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: "2" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: "Bengaluru \u2794 Chennai" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: "36" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: "4,062" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: "\u20B9398,600" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20", children: "10.8%" }) })
+            ] }),
+            /* @__PURE__ */ e.jsxs("tr", { children: [
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: "3" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: "Mumbai \u2794 Ahmedabad" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: "28" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: "3,927" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: "\u20B9331,200" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20", children: "8.6%" }) })
+            ] }),
+            /* @__PURE__ */ e.jsxs("tr", { children: [
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: "4" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: "Chennai \u2794 Hyderabad" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: "24" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: "2,816" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: "\u20B9274,800" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20", children: "6.9%" }) })
+            ] }),
+            /* @__PURE__ */ e.jsxs("tr", { children: [
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-slate-500 font-mono", children: "5" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 font-bold text-white", children: "Kolkata \u2794 Delhi" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-300", children: "18" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono text-slate-400", children: "2,403" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right font-mono font-bold text-white", children: "\u20B9218,400" }),
+              /* @__PURE__ */ e.jsx("td", { className: "py-2.5 text-right", children: /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20", children: "5.4%" }) })
+            ] })
+          ] })
+        ] }) })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-4 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsxs("div", { children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-cyan-400 text-sm", children: "\u26FD" }),
+              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Fuel vs Toll Expenses" })
+            ] }),
+            /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800", children: "Monthly \u2304" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-4 mt-3 text-xs", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-cyan-400 shadow-xs shadow-cyan-400" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Fuel" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9872,410" })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-1.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500" }),
+              /* @__PURE__ */ e.jsx("span", { className: "text-slate-400", children: "Tolls" }),
+              /* @__PURE__ */ e.jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9383,120" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ e.jsxs("div", { className: "w-full h-44 mt-3 relative", children: [
+          /* @__PURE__ */ e.jsxs("svg", { className: "w-full h-full overflow-visible", viewBox: "0 0 350 150", preserveAspectRatio: "none", children: [
+            /* @__PURE__ */ e.jsx("defs", { children: /* @__PURE__ */ e.jsxs("linearGradient", { id: "fuelLineGrad", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+              /* @__PURE__ */ e.jsx("stop", { offset: "0%", stopColor: "#06b6d4", stopOpacity: "0.3" }),
+              /* @__PURE__ */ e.jsx("stop", { offset: "100%", stopColor: "#06b6d4", stopOpacity: "0.0" })
+            ] }) }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "35", x2: "350", y2: "35", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "75", x2: "350", y2: "75", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx("line", { x1: "0", y1: "115", x2: "350", y2: "115", stroke: "#1e293b", strokeDasharray: "3 3" }),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25 L350,150 L0,150 Z",
+                fill: "url(#fuelLineGrad)"
+              }
+            ),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,110 C50,130 90,85 140,80 C190,75 220,105 260,65 C300,30 330,45 350,25",
+                fill: "none",
+                stroke: "#06b6d4",
+                strokeWidth: "2.5"
+              }
+            ),
+            /* @__PURE__ */ e.jsx(
+              "path",
+              {
+                d: "M0,135 C50,140 90,115 140,110 C190,105 220,125 260,95 C300,75 330,85 350,65",
+                fill: "none",
+                stroke: "#a855f7",
+                strokeWidth: "2"
+              }
+            ),
+            /* @__PURE__ */ e.jsx("circle", { cx: "140", cy: "80", r: "3", fill: "#06b6d4" }),
+            /* @__PURE__ */ e.jsx("circle", { cx: "260", cy: "65", r: "3", fill: "#06b6d4" })
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "flex justify-between text-[10px] text-slate-500 font-mono mt-2 pt-1 border-t border-slate-800", children: [
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 1" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 5" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 10" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 15" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 20" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 25" }),
+            /* @__PURE__ */ e.jsx("span", { children: "Mar 31" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ e.jsxs("div", { className: "lg:col-span-3 bg-slate-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between", children: [
+        /* @__PURE__ */ e.jsxs("div", { children: [
+          /* @__PURE__ */ e.jsxs("div", { className: "flex items-center justify-between border-b border-slate-800 pb-3 mb-3", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-rose-400 text-sm", children: "\u{1F514}" }),
+              /* @__PURE__ */ e.jsx("h3", { className: "font-bold text-white text-sm", children: "Alerts & Reminders" })
+            ] }),
+            /* @__PURE__ */ e.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => alert("Navigating to full audit alerts center..."),
+                className: "text-xs font-bold text-blue-400 hover:text-blue-300 cursor-pointer",
+                children: "View All >"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ e.jsxs("div", { className: "space-y-2.5 text-xs", children: [
+            /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-950/80 rounded-xl border border-rose-500/20 flex items-start gap-2.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-rose-400 text-sm mt-0.5", children: "\u26A0\uFE0F" }),
+              /* @__PURE__ */ e.jsxs("div", { className: "flex-1", children: [
+                /* @__PURE__ */ e.jsx("div", { className: "font-bold text-slate-200 leading-tight", children: "Truck MH12AB1234 maintenance due in 2 days" }),
+                /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "2h ago \u2022 Fleet Maintenance" })
+              ] })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-950/80 rounded-xl border border-amber-500/20 flex items-start gap-2.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-amber-400 text-sm mt-0.5", children: "\u26A0\uFE0F" }),
+              /* @__PURE__ */ e.jsxs("div", { className: "flex-1", children: [
+                /* @__PURE__ */ e.jsx("div", { className: "font-bold text-slate-200 leading-tight", children: "Driver license renewal for Suresh Kumar" }),
+                /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "5h ago \u2022 Driver Compliance" })
+              ] })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-950/80 rounded-xl border border-blue-500/20 flex items-start gap-2.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-blue-400 text-sm mt-0.5", children: "\u2139\uFE0F" }),
+              /* @__PURE__ */ e.jsxs("div", { className: "flex-1", children: [
+                /* @__PURE__ */ e.jsx("div", { className: "font-bold text-slate-200 leading-tight", children: "Unusual fuel consumption detected (TRK-007)" }),
+                /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "1d ago \u2022 Telematics Audit" })
+              ] })
+            ] }),
+            /* @__PURE__ */ e.jsxs("div", { className: "p-2.5 bg-slate-950/80 rounded-xl border border-amber-500/20 flex items-start gap-2.5", children: [
+              /* @__PURE__ */ e.jsx("span", { className: "text-amber-400 text-sm mt-0.5", children: "\u26A0\uFE0F" }),
+              /* @__PURE__ */ e.jsxs("div", { className: "flex-1", children: [
+                /* @__PURE__ */ e.jsx("div", { className: "font-bold text-slate-200 leading-tight", children: "3 trips delayed due to weather conditions" }),
+                /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-500", children: "1d ago \u2022 Transit Operations" })
+              ] })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ e.jsx("div", { className: "pt-3 border-t border-slate-800 text-center", children: /* @__PURE__ */ e.jsx("span", { className: "text-[11px] text-slate-500", children: "Automated reminders connected to Enterprise Audit Engine" }) })
+      ] })
+    ] })
+  ] });
+}
+
 import{j as e,ap as bt,dB as gt,cv as ft,ai as _e,cC as et,df as jt,r as C,ak as Nt,bm as vt,cg as yt,b2 as wt,a0 as ut,a4 as kt,R as st,E as St,a_ as Ct,bt as Oe,aB as ze,aO as at,aQ as Ke,a6 as ke,ae as qe,av as rt,dC as lt,aV as Tt,am as Mt}from"./vendor-react-Bs5V2qFE.js";import{I as ue,S as ne,e as oe,g as ie,h as de,i as T,B as Me,k as Se,au as nt,y as Xe,z as Ye,A as le,E as q,F as Ze,G as N,C as v,o as L,q as R,O as k,r as Q,p as Te,t as ve,l as ot,n as Lt,s as Rt,v as je,x as Ne,L as it,b6 as Et,b7 as Pt,b8 as Dt,b9 as At,ba as _t,bb as $t,bc as It,bd as Ft}from"./index-DLxf9dwO.js";import{S as Vt}from"./SendMailDialog-DwU-GlVi.js";import{utils as He,writeFile as Bt}from"./xlsx-CNerDvZX.js";import{s as We,e as Ue}from"./startOfMonth-CPqsb2_s.js";import{R as Le,T as Re,L as Ee,C as Gt,B as De}from"./generateCategoricalChart-BEnIo3F8.js";import{L as ht}from"./LineChart-DmZyY0rc.js";import{C as $e}from"./CartesianGrid-BCC_9QQg.js";import{X as Ie,Y as Fe}from"./YAxis-C3vl7O1m.js";import{L as Ae}from"./Line-D_9erwcV.js";import{P as Ot,a as zt}from"./PieChart-DFpEcMSh.js";import{B as pt}from"./BarChart-DOVIJigh.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";const Kt=({filters:l,setFilters:i,onApply:f,onReset:u})=>{const a=A=>{const V=new Date;let _="",E="";if(A==="this_month")_=Se(We(V),"yyyy-MM-dd"),E=Se(Ue(V),"yyyy-MM-dd");else if(A==="last_month"){const P=nt(V,1);_=Se(We(P),"yyyy-MM-dd"),E=Se(Ue(P),"yyyy-MM-dd")}else A==="last_3_months"?(_=Se(We(nt(V,2)),"yyyy-MM-dd"),E=Se(Ue(V),"yyyy-MM-dd")):A==="fy_25_26"?(_="2025-04-01",E="2026-03-31"):A==="all"&&(_="",E="");const re={...l,startDate:_,endDate:E};i(re),f&&setTimeout(()=>f(re),0)};return e.jsxs("div",{className:"bg-slate-900/65 backdrop-blur-md border border-slate-800/80 rounded-2xl p-2.5 px-4 shadow-md mb-5 flex flex-wrap items-center gap-4 text-xs font-sans",children:[e.jsxs("div",{className:"flex flex-wrap items-center gap-3.5 flex-1 min-w-[280px]",children:[e.jsxs("div",{className:"flex items-center gap-2 shrink-0",children:[e.jsx("span",{className:"text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0",children:"Start"}),e.jsx(ue,{type:"date",value:l.startDate,onChange:A=>i({...l,startDate:A.target.value}),className:"bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-medium w-[125px] px-2.5 py-0 text-white"})]}),e.jsxs("div",{className:"flex items-center gap-2 shrink-0",children:[e.jsx("span",{className:"text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0",children:"End"}),e.jsx(ue,{type:"date",value:l.endDate,onChange:A=>i({...l,endDate:A.target.value}),className:"bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-medium w-[125px] px-2.5 py-0 text-white"})]}),e.jsxs("div",{className:"flex items-center gap-2 min-w-[130px] shrink-0",children:[e.jsx("span",{className:"text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0",children:"View"}),e.jsxs(ne,{value:l.period,onValueChange:A=>i({...l,period:A}),children:[e.jsx(oe,{className:"bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-bold py-0 text-slate-200",children:e.jsx(ie,{placeholder:"Period"})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(T,{value:"monthly",children:"Monthly View"}),e.jsx(T,{value:"quarterly",children:"Quarterly Breakdown"}),e.jsx(T,{value:"annual",children:"Annual Summary"})]})]})]})]}),e.jsxs("div",{className:"flex items-center gap-3 flex-wrap sm:flex-nowrap",children:[e.jsxs("div",{className:"flex items-center gap-2 min-w-[140px] shrink-0",children:[e.jsxs("span",{className:"text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1",children:[e.jsx(bt,{className:"w-3 h-3 text-amber-400"})," Range"]}),e.jsxs(ne,{onValueChange:a,children:[e.jsx(oe,{className:"bg-slate-950/60 border-slate-800 rounded-xl h-8 text-[11px] font-black py-0 text-amber-300",children:e.jsx(ie,{placeholder:"Quick Range"})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(T,{value:"this_month",children:"This Month"}),e.jsx(T,{value:"last_month",children:"Last Month"}),e.jsx(T,{value:"last_3_months",children:"Last 3 Months"}),e.jsx(T,{value:"fy_25_26",children:"FY 2025-26"}),e.jsx(T,{value:"all",children:"All Time"})]})]})]}),e.jsxs("div",{className:"flex items-center gap-1.5 shrink-0",children:[e.jsxs(Me,{variant:"outline",onClick:u,className:"rounded-xl h-8 text-[11px] font-bold border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 px-3",children:[e.jsx(gt,{className:"w-3 h-3 mr-1 text-slate-400"})," Reset"]}),e.jsxs(Me,{onClick:f,className:"rounded-xl h-8 text-[11px] font-extrabold bg-blue-600 hover:bg-blue-500 text-white shadow-sm gap-1 px-3.5",children:[e.jsx(ft,{className:"w-3 h-3"})," Apply"]})]})]})]})},qt=({data:l})=>!l||l.length===0?e.jsx("div",{className:"p-8 text-center text-muted-foreground border border-border rounded-2xl bg-card",children:"No monthly data available."}):e.jsx("div",{className:"rounded-2xl border border-border bg-card overflow-hidden shadow-sm",children:e.jsxs(Xe,{children:[e.jsx(Ye,{className:"bg-muted/50",children:e.jsxs(le,{children:[e.jsx(q,{className:"font-semibold",children:"Month"}),e.jsx(q,{className:"text-right font-semibold",children:"Revenue"}),e.jsx(q,{className:"text-right font-semibold",children:"Expenses"}),e.jsx(q,{className:"text-right font-semibold",children:"Profit"}),e.jsx(q,{className:"text-right font-semibold",children:"Margin"}),e.jsx(q,{className:"text-right font-semibold",children:"MoM Growth"})]})}),e.jsx(Ze,{children:l.map((i,f)=>e.jsxs(le,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(N,{className:"font-medium",children:i.month}),e.jsxs(N,{className:"text-right tabular-nums",children:["₹",i.revenue.toLocaleString()]}),e.jsxs(N,{className:"text-right tabular-nums",children:["₹",i.expenses.toLocaleString()]}),e.jsxs(N,{className:`text-right tabular-nums font-medium ${i.profit>=0?"text-success":"text-destructive"}`,children:["₹",i.profit.toLocaleString()]}),e.jsxs(N,{className:"text-right tabular-nums",children:[i.margin.toFixed(1),"%"]}),e.jsx(N,{className:"text-right tabular-nums",children:e.jsxs("div",{className:"flex items-center justify-end gap-1",children:[i.momGrowth>0?e.jsx(_e,{className:"w-4 h-4 text-success"}):i.momGrowth<0?e.jsx(et,{className:"w-4 h-4 text-destructive"}):e.jsx(jt,{className:"w-4 h-4 text-muted-foreground"}),e.jsxs("span",{className:i.momGrowth>0?"text-success":i.momGrowth<0?"text-destructive":"text-muted-foreground",children:[Math.abs(i.momGrowth).toFixed(1),"%"]})]})})]},i.sortKey))})]})}),dt=["#6366f1","#10b981","#f59e0b","#f43f5e","#3b82f6"],tt=({active:l,payload:i,label:f})=>l&&i&&i.length?e.jsxs("div",{className:"bg-popover border border-border p-3 rounded-lg shadow-lg",children:[e.jsx("p",{className:"font-medium text-foreground mb-2",children:f}),i.map((u,a)=>e.jsxs("div",{className:"flex items-center justify-between gap-4 text-sm",children:[e.jsxs("span",{style:{color:u.color},children:[u.name,":"]}),e.jsxs("span",{className:"font-semibold tabular-nums",children:["₹",u.value.toLocaleString(void 0,{maximumFractionDigits:0})]})]},a))]}):null,Ht=({data:l})=>e.jsx("div",{className:"w-full h-[320px] sm:h-[360px] analytics-chart-container",children:e.jsx(Le,{width:"100%",height:"100%",children:e.jsxs(ht,{data:l,margin:{top:10,right:10,left:10,bottom:5},children:[e.jsx($e,{strokeDasharray:"3 3",stroke:"rgba(255,255,255,0.05)",vertical:!1}),e.jsx(Ie,{dataKey:"month",stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,dy:8}),e.jsx(Fe,{yAxisId:"left",stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,tickFormatter:i=>`₹${(i/1e3).toFixed(0)}k`,dx:-5}),e.jsx(Re,{content:e.jsx(tt,{})}),e.jsx(Ee,{wrapperStyle:{paddingTop:"15px"},iconType:"circle",iconSize:8}),e.jsx(Ae,{yAxisId:"left",type:"monotone",dataKey:"revenue",name:"Revenue",stroke:"#6366f1",strokeWidth:3,dot:{r:4,strokeWidth:1.5,fill:"#0a0f1e",stroke:"#6366f1"},activeDot:{r:6,strokeWidth:0,fill:"#6366f1"},connectNulls:!0}),e.jsx(Ae,{yAxisId:"left",type:"monotone",dataKey:"expenses",name:"Expenses",stroke:"#f43f5e",strokeWidth:3,dot:{r:4,strokeWidth:1.5,fill:"#0a0f1e",stroke:"#f43f5e"},activeDot:{r:6,strokeWidth:0,fill:"#f43f5e"},connectNulls:!0}),e.jsx(Ae,{yAxisId:"left",type:"monotone",dataKey:"profit",name:"Profit",stroke:"#10b981",strokeWidth:3,dot:{r:4,strokeWidth:1.5,fill:"#0a0f1e",stroke:"#10b981"},activeDot:{r:6,strokeWidth:0,fill:"#10b981"},connectNulls:!0})]})})}),ct=({data:l})=>e.jsx("div",{className:"w-full h-[320px] sm:h-[360px] analytics-chart-container",children:e.jsx(Le,{width:"100%",height:"100%",children:e.jsxs(Ot,{children:[e.jsx(zt,{data:l,cx:"50%",cy:"40%",innerRadius:60,outerRadius:90,paddingAngle:2,dataKey:"value",children:l.map((i,f)=>e.jsx(Gt,{fill:dt[f%dt.length]},`cell-${f}`))}),e.jsx(Re,{content:e.jsx(tt,{})}),e.jsx(Ee,{layout:"horizontal",verticalAlign:"bottom",align:"center",wrapperStyle:{paddingTop:"10px"},iconType:"circle",iconSize:8})]})})}),xt=({data:l})=>e.jsx("div",{className:"w-full h-[320px] sm:h-[360px] analytics-chart-container",children:e.jsx(Le,{width:"100%",height:"100%",children:e.jsxs(pt,{data:l,margin:{top:10,right:10,left:10,bottom:5},children:[e.jsx($e,{strokeDasharray:"3 3",stroke:"rgba(255,255,255,0.05)",vertical:!1}),e.jsx(Ie,{dataKey:"quarter",stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,dy:8}),e.jsx(Fe,{stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,tickFormatter:i=>`₹${(i/1e3).toFixed(0)}k`,dx:-5}),e.jsx(Re,{content:e.jsx(tt,{})}),e.jsx(Ee,{wrapperStyle:{paddingTop:"15px"},iconType:"circle",iconSize:8}),e.jsx(De,{dataKey:"revenue",name:"Revenue",fill:"#6366f1",radius:[4,4,0,0]}),e.jsx(De,{dataKey:"expenses",name:"Expenses",fill:"#f43f5e",radius:[4,4,0,0]}),e.jsx(De,{dataKey:"profit",name:"Profit",fill:"#10b981",radius:[4,4,0,0]})]})})}),Ce=["#6366f1","#10b981","#f59e0b","#f43f5e","#3b82f6","#a78bfa","#06b6d4","#f97316"],Wt=({active:l,payload:i,label:f})=>l&&i&&i.length?e.jsxs("div",{className:"bg-popover border border-border p-3 rounded-lg shadow-lg min-w-[200px]",children:[e.jsx("p",{className:"font-medium text-foreground mb-2 pb-2 border-b border-border",children:f}),e.jsx("div",{className:"space-y-1",children:i.slice().sort((u,a)=>(a.value||0)-(u.value||0)).map((u,a)=>e.jsxs("div",{className:"flex items-center justify-between gap-6 text-sm",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"w-3 h-3 rounded-full",style:{backgroundColor:u.color}}),e.jsx("span",{className:"text-muted-foreground",children:u.name})]}),e.jsxs("span",{className:"font-semibold tabular-nums text-foreground",children:["₹",typeof u.value=="number"?u.value.toLocaleString(void 0,{maximumFractionDigits:0}):u.value||0]})]},a))})]}):null,Qe=({data:l,categories:i,title:f})=>e.jsxs(v,{className:"shadow-sm border-border",children:[e.jsx(L,{children:e.jsx(R,{className:"text-lg",children:f})}),e.jsx(k,{children:e.jsx("div",{className:"w-full h-[350px]",children:e.jsx(Le,{width:"100%",height:"100%",children:e.jsxs(ht,{data:l||[],margin:{top:10,right:10,left:10,bottom:20},children:[e.jsx($e,{strokeDasharray:"3 3",stroke:"rgba(255,255,255,0.05)",vertical:!1}),e.jsx(Ie,{dataKey:"month",stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,dy:10}),e.jsx(Fe,{stroke:"hsl(var(--muted-foreground))",fontSize:11,tickLine:!1,axisLine:!1,tickFormatter:u=>`₹${((u||0)/1e3).toFixed(0)}k`,dx:-5}),e.jsx(Re,{content:e.jsx(Wt,{})}),e.jsx(Ee,{wrapperStyle:{bottom:-10,paddingTop:"15px"},iconType:"circle",iconSize:8}),(i||[]).map((u,a)=>e.jsx(Ae,{type:"monotone",dataKey:u,name:u,stroke:Ce[a%Ce.length],strokeWidth:3,dot:{r:4,strokeWidth:1.5,fill:"#0a0f1e",stroke:Ce[a%Ce.length]},activeDot:{r:6,strokeWidth:0,fill:Ce[a%Ce.length]},connectNulls:!0},u))]})})})})]}),Ut=({chartData:l})=>!l||!l.categories||l.categories.length===0?null:e.jsxs("div",{className:"grid grid-cols-1 xl:grid-cols-2 gap-6",children:[e.jsx(Qe,{data:l.revenueData,categories:l.categories,title:"Revenue Trend by Category"}),e.jsx(Qe,{data:l.expensesData,categories:l.categories,title:"Expense Trend by Category"}),e.jsx("div",{className:"xl:col-span-2",children:e.jsx(Qe,{data:l.profitData,categories:l.categories,title:"Profit Trend by Category"})})]}),mt=["hsl(var(--chart-1))","hsl(var(--chart-2))","hsl(var(--chart-3))","hsl(var(--chart-4))","hsl(var(--chart-5))","hsl(200, 70%, 50%)","hsl(250, 70%, 60%)","hsl(330, 70%, 50%)"],Qt=({active:l,payload:i,label:f})=>l&&i&&i.length?e.jsxs("div",{className:"bg-popover border border-border p-3 rounded-lg shadow-lg min-w-[200px]",children:[e.jsx("p",{className:"font-medium text-foreground mb-2 pb-2 border-b border-border",children:f}),e.jsx("div",{className:"space-y-1",children:i.slice().sort((u,a)=>a.value-u.value).map((u,a)=>e.jsxs("div",{className:"flex items-center justify-between gap-6 text-sm",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("div",{className:"w-3 h-3 rounded-sm",style:{backgroundColor:u.color}}),e.jsx("span",{className:"text-muted-foreground",children:u.name})]}),e.jsxs("span",{className:"font-semibold tabular-nums text-foreground",children:["₹",u.value.toLocaleString(void 0,{maximumFractionDigits:0})]})]},a))})]}):null,Je=({data:l,categories:i,title:f})=>e.jsxs(v,{className:"shadow-sm border-border",children:[e.jsx(L,{children:e.jsx(R,{className:"text-lg",children:f})}),e.jsx(k,{children:e.jsx("div",{className:"w-full h-[350px]",children:e.jsx(Le,{width:"100%",height:"100%",children:e.jsxs(pt,{data:l,margin:{top:10,right:10,left:10,bottom:20},children:[e.jsx($e,{strokeDasharray:"3 3",stroke:"hsl(var(--border))",vertical:!1}),e.jsx(Ie,{dataKey:"month",stroke:"hsl(var(--muted-foreground))",fontSize:12,tickLine:!1,axisLine:!1}),e.jsx(Fe,{stroke:"hsl(var(--muted-foreground))",fontSize:12,tickLine:!1,axisLine:!1,tickFormatter:u=>`₹${(u/1e3).toFixed(0)}k`}),e.jsx(Re,{content:e.jsx(Qt,{})}),e.jsx(Ee,{wrapperStyle:{bottom:0,paddingTop:"20px"}}),i.map((u,a)=>e.jsx(De,{dataKey:u,name:u,fill:mt[a%mt.length],radius:[4,4,0,0],maxBarSize:40},u))]})})})})]}),Jt=({chartData:l})=>!l||l.categories.length===0?null:e.jsxs("div",{className:"grid grid-cols-1 xl:grid-cols-2 gap-6",children:[e.jsx(Je,{data:l.revenueData,categories:l.categories,title:"Revenue Comparison by Month"}),e.jsx(Je,{data:l.expensesData,categories:l.categories,title:"Expense Comparison by Month"}),e.jsx("div",{className:"xl:col-span-2",children:e.jsx(Je,{data:l.profitData,categories:l.categories,title:"Profit Comparison by Month"})})]}),Xt=({startDate:l,endDate:i})=>{const[f,u]=C.useState(!0),[a,A]=C.useState([]),[V,_]=C.useState([]),[E,re]=C.useState([]),[P,pe]=C.useState("12"),[be,Pe]=C.useState("18"),[ce,Ve]=C.useState(new Date().toISOString().substring(0,7)),[J,ye]=C.useState({gstr1:{status:"Pending",date:""},gstr3b:{status:"Pending",date:""},tds26q:{status:"Pending",date:""},itr6:{status:"Pending",date:""}});C.useEffect(()=>{const x=`ca_compliance_${ce}`,y=localStorage.getItem(x);if(y)try{ye(JSON.parse(y))}catch{ye({gstr1:{status:"Pending",date:""},gstr3b:{status:"Pending",date:""},tds26q:{status:"Pending",date:""},itr6:{status:"Pending",date:""}})}else ye({gstr1:{status:"Pending",date:""},gstr3b:{status:"Pending",date:""},tds26q:{status:"Pending",date:""},itr6:{status:"Pending",date:""}})},[ce]);const Z=(x,y,ee)=>{ye(X=>{const H={...X,[x]:{...X[x],[y]:ee}};return localStorage.setItem(`ca_compliance_${ce}`,JSON.stringify(H)),H}),ve.success("Compliance checklist updated")},ge=async()=>{u(!0);try{let x="";l&&i&&(x=`date >= "${l} 00:00:00" && date <= "${i} 23:59:59"`);const[y,ee,X]=await Promise.all([Te.collection("trip_logs").getFullList({filter:x||void 0,$autoCancel:!1}),Te.collection("expenses").getFullList({filter:x||void 0,$autoCancel:!1}),Te.collection("clients").getFullList({$autoCancel:!1})]);A(y),_(ee),re(X)}catch(x){console.error("Error fetching CA data:",x),ve.error("Failed to load compliance data")}finally{u(!1)}};C.useEffect(()=>{ge()},[l,i]);const p=C.useMemo(()=>{const x=a.reduce((S,w)=>S+(Number(w.revenue)||0),0),y=a.reduce((S,w)=>S+(Number(w.tds_deducted_receivable)||0),0),ee=x-y;let X=0,H=0;V.forEach(S=>{const w=Number(S.amount)||0,G=(S.category||"").toLowerCase(),U=(S.subcategory||"").toLowerCase();G==="maintenance"||U==="maintenance"?X+=w:H+=w});const Y=X+H,D=ee-Y,te=x*(Number(P)/100),we=X*(Number(be)/100),Ge=te-we;let d=0,h=0,n=0,b=0;a.forEach(S=>{const w=Number(S.revenue)||0,G=S.client_payment_status==="received",U=S.ownership_type==="Attached";G||(d+=w,U&&(h+=Number(S.vendor_payout)||0)),U?b+=Number(S.brokerage_margin)||0:n+=w});const m=n-y-Y,fe=m+b,W={};return a.forEach(S=>{const w=S.client_id;if(!w)return;const G=Number(S.revenue)||0,U=Number(S.tds_deducted_receivable)||0;if(!W[w]){const se=E.find(he=>he.id===w);W[w]={clientName:se?.client_name||"Unknown Client",gstin:se?.gst_number||"N/A",pan:se?.pan_number||"N/A",volume:0,tdsHeld:0}}W[w].volume+=G,W[w].tdsHeld+=U}),{grossRevenue:x,tdsDeducted:y,netRevenue:ee,totalExpenses:Y,profitBeforeTax:D,outwardGst:te,inputTaxCredit:we,netGstPayable:Ge,accountsReceivable:d,accountsPayable:h,fleetProfitNet:m,brokerageProfit:b,retainedEarnings:fe,tdsLedger:Object.values(W).sort((S,w)=>w.tdsHeld-S.tdsHeld)}},[a,V,E,P,be]),Be=()=>{try{const x=["Type","Identifier/Client/Category","Tax ID (GST/PAN)","Gross Amount (₹)","TDS Deducted (₹)","Estimated GST Liability (₹)"],y=[];y.push(["OVERVIEW","Gross Booking Revenue","",p.grossRevenue,p.tdsDeducted,p.outwardGst]),y.push(["OVERVIEW","Total Expenses","",p.totalExpenses,0,-p.inputTaxCredit]),y.push(["OVERVIEW","Net Profit Before Taxes","",p.profitBeforeTax,0,0]),y.push(["OVERVIEW","Net GST Payable/ITC Refund","","","",p.netGstPayable]),y.push([]),y.push(["CLIENT LEDGER","Client Name","GSTIN / PAN","Gross Volume Processed (₹)","TDS Held Back (₹)",""]),p.tdsLedger.forEach(D=>{y.push(["CLIENT",D.clientName,`${D.gstin} / ${D.pan}`,D.volume,D.tdsHeld,""])}),y.push([]),y.push(["EXPENSE DETAIL","Category","Description","Amount (₹)","Date","GST Claimable (₹)"]),V.forEach(D=>{const we=(D.category||"").toLowerCase()==="maintenance"||(D.subcategory||"").toLowerCase()==="maintenance"?D.amount*(Number(be)/100):0;y.push(["EXPENSE",D.category||"Other",D.description||"",D.amount||0,D.date?D.date.substring(0,10):"",we])});const ee=[x.join(","),...y.map(D=>D.map(te=>typeof te=="string"?`"${te.replace(/"/g,'""')}"`:te).join(","))].join(`
-`),X=new Blob([ee],{type:"text/csv;charset=utf-8;"}),H=URL.createObjectURL(X),Y=document.createElement("a");Y.setAttribute("href",H),Y.setAttribute("download",`CA_Compliance_Pack_${ce}.csv`),document.body.appendChild(Y),Y.click(),document.body.removeChild(Y),ve.success("CA Compliance Package exported successfully")}catch(x){console.error(x),ve.error("Failed to export CSV package")}},B=x=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Math.abs(x||0));return f?e.jsxs("div",{className:"flex flex-col items-center justify-center p-12 min-h-[300px]",children:[e.jsx(Nt,{className:"w-10 h-10 animate-spin text-primary mb-3"}),e.jsx("p",{className:"text-sm text-slate-400",children:"Loading tax compliance data..."})]}):e.jsxs("div",{className:"space-y-6",children:[e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl",children:[e.jsxs("div",{children:[e.jsxs("h2",{className:"text-xl font-bold flex items-center gap-2 text-slate-100",children:[e.jsx(vt,{className:"w-5 h-5 text-blue-500"}),"Chartered Accountant Tax Auditing Center"]}),e.jsx("p",{className:"text-xs text-slate-400 mt-1",children:"Reconcile outward GST liabilities, input tax credits, and client TDS holdings with compliance checklists."})]}),e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsxs(Me,{onClick:Be,className:"bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2 h-10 text-xs font-semibold shadow-md",children:[e.jsx(yt,{className:"w-4 h-4"}),"Export Audit Pack for CA"]}),e.jsx(Me,{variant:"outline",onClick:ge,className:"bg-slate-950 border-slate-800 text-slate-400 hover:text-white rounded-xl h-10 w-10 shrink-0",children:e.jsx(wt,{className:"w-4 h-4"})})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6",children:[e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Gross Booking Volume"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 tabular-nums text-slate-200",children:B(p.grossRevenue)}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsx("span",{children:"Total TDS Deductions:"}),e.jsx("span",{className:"font-semibold text-red-400",children:B(p.tdsDeducted)})]})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500 to-orange-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"GST Tax Position"}),e.jsxs("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.netGstPayable>=0?"text-amber-400":"text-emerald-400"}`,children:[B(p.netGstPayable)," ",p.netGstPayable>=0?"Payable":"Credit"]}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsxs("span",{children:["Outward GST (",P,"%): ",B(p.outwardGst)]}),e.jsxs("span",{children:["ITC Credit (",be,"%): ",B(p.inputTaxCredit)]})]})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Profit Net of Deductions"}),e.jsx("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.profitBeforeTax>=0?"text-emerald-400":"text-red-400"}`,children:B(p.profitBeforeTax)}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsxs("span",{children:["Net Settled Revenue: ",B(p.netRevenue)]}),e.jsxs("span",{children:["Total Expenses: ",B(p.totalExpenses)]})]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6",children:[e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-sky-400 to-blue-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Accounts Receivable (AR)"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 text-blue-400 tabular-nums",children:B(p.accountsReceivable)}),e.jsx("p",{className:"text-[11px] text-slate-400 mt-2",children:"Outstanding client invoicing balance"})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500 to-amber-600"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Accounts Payable (AP)"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 text-amber-500 tabular-nums",children:B(p.accountsPayable)}),e.jsx("p",{className:"text-[11px] text-slate-400 mt-2",children:"Owed to attached vehicle vendors"})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Retained Earnings / Retained Profit"}),e.jsx("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.retainedEarnings>=0?"text-emerald-400":"text-red-400"}`,children:B(p.retainedEarnings)}),e.jsxs("p",{className:"text-[11px] text-slate-400 mt-2",children:["Fleet Profit: ",B(p.fleetProfitNet)," | Brokerage: ",B(p.brokerageProfit)]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/40 border border-slate-800 p-6 rounded-2xl",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-xs font-bold uppercase tracking-wider text-slate-400",children:"Estimate Outward GST Rate (On Booking Revenue)"}),e.jsxs(ne,{value:P,onValueChange:pe,children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-slate-200",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"5",children:"5% (Transport service without ITC / RCM)"}),e.jsx(T,{value:"12",children:"12% (Forward Charge with full ITC - Default)"}),e.jsx(T,{value:"18",children:"18% (Rental / Luxury Operations)"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-xs font-bold uppercase tracking-wider text-slate-400",children:"Estimate Input GST Credit (ITC on Maintenance & Bills)"}),e.jsxs(ne,{value:be,onValueChange:Pe,children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-slate-200",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"12",children:"12% (Contract Maintenance Services)"}),e.jsx(T,{value:"18",children:"18% (Automotive Parts & Garage Invoices - Default)"}),e.jsx(T,{value:"28",children:"28% (Lubricants & Select Spares)"})]})]})]})]}),e.jsxs(v,{className:"bg-slate-900 border-slate-800 text-slate-100 rounded-2xl",children:[e.jsxs(L,{className:"pb-3 border-b border-slate-800 mb-4",children:[e.jsxs(R,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(ut,{className:"w-4 h-4 text-blue-500"}),"TDS Claims Ledger (Form 26AS Reconciliation)"]}),e.jsx(Q,{className:"text-xs text-slate-400",children:"Cross-reference client deductions against your Form 26AS dashboard to claim withholding credit refunds during ITR filing."})]}),e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(Xe,{children:[e.jsx(Ye,{className:"bg-slate-950/60 border-b border-slate-800",children:e.jsxs(le,{className:"border-b-slate-800",children:[e.jsx(q,{className:"text-slate-300 font-semibold",children:"Client Name"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Tax ID (GSTIN / PAN)"}),e.jsx(q,{className:"text-slate-300 font-semibold text-right",children:"Gross Booking volume"}),e.jsx(q,{className:"text-slate-300 font-semibold text-right pr-6",children:"TDS Held Back (Credit)"})]})}),e.jsx(Ze,{children:p.tdsLedger.length===0?e.jsx(le,{children:e.jsx(N,{colSpan:4,className:"text-center py-8 text-slate-400",children:"No client TDS records compiled. Ensure client setup has Applies TDS toggled active."})}):p.tdsLedger.map((x,y)=>e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:x.clientName}),e.jsxs(N,{className:"space-y-0.5",children:[e.jsxs("div",{className:"text-xs",children:["GST: ",e.jsx("span",{className:"font-mono font-medium text-slate-300",children:x.gstin})]}),e.jsxs("div",{className:"text-xs",children:["PAN: ",e.jsx("span",{className:"font-mono font-medium text-slate-300",children:x.pan})]})]}),e.jsx(N,{className:"text-right font-medium tabular-nums text-slate-200",children:B(x.volume)}),e.jsx(N,{className:"text-right font-extrabold tabular-nums text-red-400 pr-6",children:B(x.tdsHeld)})]},y))})]})})]}),e.jsxs(v,{className:"bg-slate-900 border-slate-800 text-slate-100 rounded-2xl",children:[e.jsxs(L,{className:"pb-3 border-b border-slate-800 mb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4",children:[e.jsxs("div",{children:[e.jsxs(R,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(kt,{className:"w-4 h-4 text-blue-500"}),"Tax Compliance Calendar & Return Checklist"]}),e.jsx(Q,{className:"text-xs text-slate-400",children:"Track deadlines and record completion dates for GST and TDS return filings."})]}),e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs text-slate-400 font-semibold",children:"Audited Month:"}),e.jsx(ue,{type:"month",value:ce,onChange:x=>Ve(x.target.value),className:"bg-slate-950 border-slate-800 text-slate-200 h-9 w-[150px] text-xs"})]})]}),e.jsx(k,{className:"p-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(Xe,{children:[e.jsx(Ye,{className:"bg-slate-950/60 border-b border-slate-800",children:e.jsxs(le,{className:"border-b-slate-800",children:[e.jsx(q,{className:"text-slate-300 font-semibold",children:"Form Code"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Compliance Return Description"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Standard Deadline"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Filing Status"}),e.jsx(q,{className:"text-slate-300 font-semibold pr-6",children:"Completion Date"})]})}),e.jsxs(Ze,{children:[e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"GSTR-1"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Outward Supplies Return (Sales invoices summary to claim client ITC)"}),e.jsx(N,{className:"text-xs",children:"11th of subsequent month"}),e.jsx(N,{children:e.jsxs(ne,{value:J.gstr1.status,onValueChange:x=>Z("gstr1","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.gstr1.date,onChange:x=>Z("gstr1","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"GSTR-3B"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Monthly Self-Declared Summary Return (GST Payment settlement)"}),e.jsx(N,{className:"text-xs",children:"20th of subsequent month"}),e.jsx(N,{children:e.jsxs(ne,{value:J.gstr3b.status,onValueChange:x=>Z("gstr3b","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.gstr3b.date,onChange:x=>Z("gstr3b","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"Form 26Q"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Quarterly TDS Return (Deductions on payments other than salaries)"}),e.jsx(N,{className:"text-xs",children:"31st of subsequent month after quarter"}),e.jsx(N,{children:e.jsxs(ne,{value:J.tds26q.status,onValueChange:x=>Z("tds26q","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.tds26q.date,onChange:x=>Z("tds26q","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"ITR-6"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Annual Income Tax Return (Corporate financial filing for refunds)"}),e.jsx(N,{className:"text-xs",children:"31st October of subsequent fiscal year"}),e.jsx(N,{children:e.jsxs(ne,{value:J.itr6.status,onValueChange:x=>Z("itr6","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.itr6.date,onChange:x=>Z("itr6","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]})]})]})})})]})]})},Yt=({data:l,color:i="#6366f1"})=>{if(!l||l.length<2)return null;const f=Math.max(...l,1),u=Math.min(...l,0),a=f-u||1,A=80,V=36,_=l.map((E,re)=>{const P=re/(l.length-1)*A,pe=V-(E-u)/a*(V-4)-2;return`${P},${pe}`}).join(" ");return e.jsxs("svg",{width:A,height:V,viewBox:`0 0 ${A} ${V}`,className:"overflow-visible",children:[e.jsx("polyline",{points:_,fill:"none",stroke:i,strokeWidth:"2",strokeLinecap:"round",strokeLinejoin:"round"}),e.jsx("circle",{cx:_.split(" ").pop().split(",")[0],cy:_.split(" ").pop().split(",")[1],r:"3",fill:i})]})},ae=({title:l,value:i,icon:f,trend:u,trendUp:a,isCurrency:A=!0,valueClass:V="",colorClass:_="from-blue-500 to-indigo-500",subLabel:E,subValue:re,sparkData:P})=>e.jsxs(v,{className:"relative overflow-hidden shadow-md border-border/40 bg-card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group",children:[e.jsx("div",{className:`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${_}`}),e.jsx("div",{className:`absolute inset-0 bg-gradient-to-br ${_} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`}),e.jsxs(k,{className:"p-5",children:[e.jsxs("div",{className:"flex items-start justify-between gap-2 mb-3",children:[e.jsx("p",{className:"text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest leading-tight",children:l}),e.jsx("div",{className:`p-2 rounded-xl bg-gradient-to-br ${_} bg-opacity-10 shrink-0`,children:e.jsx(f,{className:"h-4 w-4 text-white"})})]}),e.jsxs("div",{className:"flex items-end justify-between gap-2",children:[e.jsxs("div",{children:[e.jsxs("div",{className:`text-2xl sm:text-3xl font-black tracking-tight text-foreground tabular-nums ${V}`,children:[A?"₹":"",i]}),E&&e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-1 font-medium",children:[E,": ",e.jsx("span",{className:"text-foreground font-bold",children:re})]}),u&&e.jsxs("div",{className:`flex items-center gap-1 mt-1.5 text-[11px] font-bold ${a!==!1?"text-emerald-400":"text-rose-400"}`,children:[a!==!1?e.jsx(_e,{className:"w-3 h-3"}):e.jsx(et,{className:"w-3 h-3"}),e.jsx("span",{children:u})]})]}),P&&P.length>1&&e.jsx("div",{className:"w-20 h-10 shrink-0 opacity-50 group-hover:opacity-90 transition-opacity",children:e.jsx(Yt,{data:P,color:"#6366f1"})})]})]})]}),us=()=>{const[l,i]=C.useState(!0),[f,u]=C.useState({startDate:"",endDate:"",period:"monthly"}),[a,A]=C.useState({monthly:[],category:[],categoryMonthlyRaw:[],categoryMonthlyCharts:null,quarterly:[],annual:[],totals:{revenue:0,expenses:0,profit:0,margin:0},truckAnalytics:[],trucks:[],loans:[],trips:[],employees:[],fuelTracker:[],expensesList:[]}),[V,_]=C.useState(null),[E,re]=C.useState("overview"),[P,pe]=C.useState("2026-07"),[be,Pe]=C.useState(!1),[ce,Ve]=C.useState({}),[J,ye]=C.useState({}),[Z,ge]=C.useState(!1),[p,Be]=C.useState([]),[B,x]=C.useState(!1),[y,ee]=C.useState({recipient:"",subject:"",body:"",html:"",label:""}),X=()=>{const d=a.totals,h=O=>`₹${Number(O||0).toLocaleString("en-IN")}`,n=f.startDate&&f.endDate?`${f.startDate} to ${f.endDate}`:"All Time",b=`
+`),X=new Blob([ee],{type:"text/csv;charset=utf-8;"}),H=URL.createObjectURL(X),Y=document.createElement("a");Y.setAttribute("href",H),Y.setAttribute("download",`CA_Compliance_Pack_${ce}.csv`),document.body.appendChild(Y),Y.click(),document.body.removeChild(Y),ve.success("CA Compliance Package exported successfully")}catch(x){console.error(x),ve.error("Failed to export CSV package")}},B=x=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Math.abs(x||0));return f?e.jsxs("div",{className:"flex flex-col items-center justify-center p-12 min-h-[300px]",children:[e.jsx(Nt,{className:"w-10 h-10 animate-spin text-primary mb-3"}),e.jsx("p",{className:"text-sm text-slate-400",children:"Loading tax compliance data..."})]}):e.jsxs("div",{className:"space-y-6",children:[e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl",children:[e.jsxs("div",{children:[e.jsxs("h2",{className:"text-xl font-bold flex items-center gap-2 text-slate-100",children:[e.jsx(vt,{className:"w-5 h-5 text-blue-500"}),"Chartered Accountant Tax Auditing Center"]}),e.jsx("p",{className:"text-xs text-slate-400 mt-1",children:"Reconcile outward GST liabilities, input tax credits, and client TDS holdings with compliance checklists."})]}),e.jsxs("div",{className:"flex items-center gap-3",children:[e.jsxs(Me,{onClick:Be,className:"bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2 h-10 text-xs font-semibold shadow-md",children:[e.jsx(yt,{className:"w-4 h-4"}),"Export Audit Pack for CA"]}),e.jsx(Me,{variant:"outline",onClick:ge,className:"bg-slate-950 border-slate-800 text-slate-400 hover:text-white rounded-xl h-10 w-10 shrink-0",children:e.jsx(wt,{className:"w-4 h-4"})})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6",children:[e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 to-indigo-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Gross Booking Volume"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 tabular-nums text-slate-200",children:B(p.grossRevenue)}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsx("span",{children:"Total TDS Deductions:"}),e.jsx("span",{className:"font-semibold text-red-400",children:B(p.tdsDeducted)})]})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500 to-orange-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"GST Tax Position"}),e.jsxs("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.netGstPayable>=0?"text-amber-400":"text-emerald-400"}`,children:[B(p.netGstPayable)," ",p.netGstPayable>=0?"Payable":"Credit"]}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsxs("span",{children:["Outward GST (",P,"%): ",B(p.outwardGst)]}),e.jsxs("span",{children:["ITC Credit (",be,"%): ",B(p.inputTaxCredit)]})]})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Profit Net of Deductions"}),e.jsx("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.profitBeforeTax>=0?"text-emerald-400":"text-red-400"}`,children:B(p.profitBeforeTax)}),e.jsxs("div",{className:"flex justify-between items-center mt-4 pt-4 border-t border-slate-800 text-xs text-slate-400",children:[e.jsxs("span",{children:["Net Settled Revenue: ",B(p.netRevenue)]}),e.jsxs("span",{children:["Total Expenses: ",B(p.totalExpenses)]})]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-6",children:[e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-sky-400 to-blue-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Accounts Receivable (AR)"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 text-blue-400 tabular-nums",children:B(p.accountsReceivable)}),e.jsx("p",{className:"text-[11px] text-slate-400 mt-2",children:"Outstanding client invoicing balance"})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500 to-amber-600"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Accounts Payable (AP)"}),e.jsx("h3",{className:"text-2xl font-extrabold mt-3 text-amber-500 tabular-nums",children:B(p.accountsPayable)}),e.jsx("p",{className:"text-[11px] text-slate-400 mt-2",children:"Owed to attached vehicle vendors"})]})]}),e.jsxs(v,{className:"relative overflow-hidden p-1 shadow-sm border-border/60 bg-card/45 backdrop-blur-md hover:shadow-md transition-all duration-300",children:[e.jsx("div",{className:"absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-violet-500 to-purple-500"}),e.jsxs(k,{className:"p-6",children:[e.jsx("p",{className:"text-xs font-semibold text-slate-400 uppercase tracking-wider",children:"Retained Earnings / Retained Profit"}),e.jsx("h3",{className:`text-2xl font-extrabold mt-3 tabular-nums ${p.retainedEarnings>=0?"text-emerald-400":"text-red-400"}`,children:B(p.retainedEarnings)}),e.jsxs("p",{className:"text-[11px] text-slate-400 mt-2",children:["Fleet Profit: ",B(p.fleetProfitNet)," | Brokerage: ",B(p.brokerageProfit)]})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/40 border border-slate-800 p-6 rounded-2xl",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-xs font-bold uppercase tracking-wider text-slate-400",children:"Estimate Outward GST Rate (On Booking Revenue)"}),e.jsxs(ne,{value:P,onValueChange:pe,children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-slate-200",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"5",children:"5% (Transport service without ITC / RCM)"}),e.jsx(T,{value:"12",children:"12% (Forward Charge with full ITC - Default)"}),e.jsx(T,{value:"18",children:"18% (Rental / Luxury Operations)"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx("label",{className:"text-xs font-bold uppercase tracking-wider text-slate-400",children:"Estimate Input GST Credit (ITC on Maintenance & Bills)"}),e.jsxs(ne,{value:be,onValueChange:Pe,children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-slate-200",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"12",children:"12% (Contract Maintenance Services)"}),e.jsx(T,{value:"18",children:"18% (Automotive Parts & Garage Invoices - Default)"}),e.jsx(T,{value:"28",children:"28% (Lubricants & Select Spares)"})]})]})]})]}),e.jsxs(v,{className:"bg-slate-900 border-slate-800 text-slate-100 rounded-2xl",children:[e.jsxs(L,{className:"pb-3 border-b border-slate-800 mb-4",children:[e.jsxs(R,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(ut,{className:"w-4 h-4 text-blue-500"}),"TDS Claims Ledger (Form 26AS Reconciliation)"]}),e.jsx(Q,{className:"text-xs text-slate-400",children:"Cross-reference client deductions against your Form 26AS dashboard to claim withholding credit refunds during ITR filing."})]}),e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(Xe,{children:[e.jsx(Ye,{className:"bg-slate-950/60 border-b border-slate-800",children:e.jsxs(le,{className:"border-b-slate-800",children:[e.jsx(q,{className:"text-slate-300 font-semibold",children:"Client Name"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Tax ID (GSTIN / PAN)"}),e.jsx(q,{className:"text-slate-300 font-semibold text-right",children:"Gross Booking volume"}),e.jsx(q,{className:"text-slate-300 font-semibold text-right pr-6",children:"TDS Held Back (Credit)"})]})}),e.jsx(Ze,{children:p.tdsLedger.length===0?e.jsx(le,{children:e.jsx(N,{colSpan:4,className:"text-center py-8 text-slate-400",children:"No client TDS records compiled. Ensure client setup has Applies TDS toggled active."})}):p.tdsLedger.map((x,y)=>e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:x.clientName}),e.jsxs(N,{className:"space-y-0.5",children:[e.jsxs("div",{className:"text-xs",children:["GST: ",e.jsx("span",{className:"font-mono font-medium text-slate-300",children:x.gstin})]}),e.jsxs("div",{className:"text-xs",children:["PAN: ",e.jsx("span",{className:"font-mono font-medium text-slate-300",children:x.pan})]})]}),e.jsx(N,{className:"text-right font-medium tabular-nums text-slate-200",children:B(x.volume)}),e.jsx(N,{className:"text-right font-extrabold tabular-nums text-red-400 pr-6",children:B(x.tdsHeld)})]},y))})]})})]}),e.jsxs(v,{className:"bg-slate-900 border-slate-800 text-slate-100 rounded-2xl",children:[e.jsxs(L,{className:"pb-3 border-b border-slate-800 mb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4",children:[e.jsxs("div",{children:[e.jsxs(R,{className:"text-base font-bold flex items-center gap-2",children:[e.jsx(kt,{className:"w-4 h-4 text-blue-500"}),"Tax Compliance Calendar & Return Checklist"]}),e.jsx(Q,{className:"text-xs text-slate-400",children:"Track deadlines and record completion dates for GST and TDS return filings."})]}),e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs text-slate-400 font-semibold",children:"Audited Month:"}),e.jsx(ue,{type:"month",value:ce,onChange:x=>Ve(x.target.value),className:"bg-slate-950 border-slate-800 text-slate-200 h-9 w-[150px] text-xs"})]})]}),e.jsx(k,{className:"p-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(Xe,{children:[e.jsx(Ye,{className:"bg-slate-950/60 border-b border-slate-800",children:e.jsxs(le,{className:"border-b-slate-800",children:[e.jsx(q,{className:"text-slate-300 font-semibold",children:"Form Code"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Compliance Return Description"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Standard Deadline"}),e.jsx(q,{className:"text-slate-300 font-semibold",children:"Filing Status"}),e.jsx(q,{className:"text-slate-300 font-semibold pr-6",children:"Completion Date"})]})}),e.jsxs(Ze,{children:[e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"GSTR-1"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Outward Supplies Return (Sales invoices summary to claim client ITC)"}),e.jsx(N,{className:"text-xs",children:"11th of subsequent month"}),e.jsx(N,{children:e.jsxs(ne,{value:J.gstr1.status,onValueChange:x=>Z("gstr1","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.gstr1.date,onChange:x=>Z("gstr1","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"GSTR-3B"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Monthly Self-Declared Summary Return (GST Payment settlement)"}),e.jsx(N,{className:"text-xs",children:"20th of subsequent month"}),e.jsx(N,{children:e.jsxs(ne,{value:J.gstr3b.status,onValueChange:x=>Z("gstr3b","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.gstr3b.date,onChange:x=>Z("gstr3b","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"Form 26Q"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Quarterly TDS Return (Deductions on payments other than salaries)"}),e.jsx(N,{className:"text-xs",children:"31st of subsequent month after quarter"}),e.jsx(N,{children:e.jsxs(ne,{value:J.tds26q.status,onValueChange:x=>Z("tds26q","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.tds26q.date,onChange:x=>Z("tds26q","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]}),e.jsxs(le,{className:"border-b-slate-800/40 hover:bg-slate-800/10",children:[e.jsx(N,{className:"font-bold text-slate-200",children:"ITR-6"}),e.jsx(N,{className:"text-xs text-slate-300",children:"Annual Income Tax Return (Corporate financial filing for refunds)"}),e.jsx(N,{className:"text-xs",children:"31st October of subsequent fiscal year"}),e.jsx(N,{children:e.jsxs(ne,{value:J.itr6.status,onValueChange:x=>Z("itr6","status",x),children:[e.jsx(oe,{className:"bg-slate-950 border-slate-800 text-xs w-[120px] h-8",children:e.jsx(ie,{})}),e.jsxs(de,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(T,{value:"Pending",children:"Pending"}),e.jsx(T,{value:"Filed",children:"Filed"})]})]})}),e.jsx(N,{className:"pr-6",children:e.jsx(ue,{type:"date",value:J.itr6.date,onChange:x=>Z("itr6","date",x.target.value),className:"bg-slate-950 border-slate-800 text-xs w-[140px] h-8 text-slate-200"})})]})]})]})})})]})]})},Yt=({data:l,color:i="#6366f1"})=>{if(!l||l.length<2)return null;const f=Math.max(...l,1),u=Math.min(...l,0),a=f-u||1,A=80,V=36,_=l.map((E,re)=>{const P=re/(l.length-1)*A,pe=V-(E-u)/a*(V-4)-2;return`${P},${pe}`}).join(" ");return e.jsxs("svg",{width:A,height:V,viewBox:`0 0 ${A} ${V}`,className:"overflow-visible",children:[e.jsx("polyline",{points:_,fill:"none",stroke:i,strokeWidth:"2",strokeLinecap:"round",strokeLinejoin:"round"}),e.jsx("circle",{cx:_.split(" ").pop().split(",")[0],cy:_.split(" ").pop().split(",")[1],r:"3",fill:i})]})},ae=({title:l,value:i,icon:f,trend:u,trendUp:a,isCurrency:A=!0,valueClass:V="",colorClass:_="from-blue-500 to-indigo-500",subLabel:E,subValue:re,sparkData:P})=>e.jsxs(v,{className:"relative overflow-hidden shadow-md border-border/40 bg-card hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group",children:[e.jsx("div",{className:`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${_}`}),e.jsx("div",{className:`absolute inset-0 bg-gradient-to-br ${_} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300`}),e.jsxs(k,{className:"p-5",children:[e.jsxs("div",{className:"flex items-start justify-between gap-2 mb-3",children:[e.jsx("p",{className:"text-[10px] font-extrabold text-muted-foreground uppercase tracking-widest leading-tight",children:l}),e.jsx("div",{className:`p-2 rounded-xl bg-gradient-to-br ${_} bg-opacity-10 shrink-0`,children:e.jsx(f,{className:"h-4 w-4 text-white"})})]}),e.jsxs("div",{className:"flex items-end justify-between gap-2",children:[e.jsxs("div",{children:[e.jsxs("div",{className:`text-2xl sm:text-3xl font-black tracking-tight text-foreground tabular-nums ${V}`,children:[A?"₹":"",i]}),E&&e.jsxs("p",{className:"text-[11px] text-muted-foreground mt-1 font-medium",children:[E,": ",e.jsx("span",{className:"text-foreground font-bold",children:re})]}),u&&e.jsxs("div",{className:`flex items-center gap-1 mt-1.5 text-[11px] font-bold ${a!==!1?"text-emerald-400":"text-rose-400"}`,children:[a!==!1?e.jsx(_e,{className:"w-3 h-3"}):e.jsx(et,{className:"w-3 h-3"}),e.jsx("span",{children:u})]})]}),P&&P.length>1&&e.jsx("div",{className:"w-20 h-10 shrink-0 opacity-50 group-hover:opacity-90 transition-opacity",children:e.jsx(Yt,{data:P,color:"#6366f1"})})]})]})]}),us=()=>{return e.jsx("div",{className:"min-h-screen bg-[#0B111E] text-slate-100 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto",children:e.jsx(ExecutiveAnalyticsHub,{})});const[l,i]=C.useState(!0),[f,u]=C.useState({startDate:"",endDate:"",period:"monthly"}),[a,A]=C.useState({monthly:[],category:[],categoryMonthlyRaw:[],categoryMonthlyCharts:null,quarterly:[],annual:[],totals:{revenue:0,expenses:0,profit:0,margin:0},truckAnalytics:[],trucks:[],loans:[],trips:[],employees:[],fuelTracker:[],expensesList:[]}),[V,_]=C.useState(null),[E,re]=C.useState("overview"),[P,pe]=C.useState("2026-07"),[be,Pe]=C.useState(!1),[ce,Ve]=C.useState({}),[J,ye]=C.useState({}),[Z,ge]=C.useState(!1),[p,Be]=C.useState([]),[B,x]=C.useState(!1),[y,ee]=C.useState({recipient:"",subject:"",body:"",html:"",label:""}),X=()=>{const d=a.totals,h=O=>`₹${Number(O||0).toLocaleString("en-IN")}`,n=f.startDate&&f.endDate?`${f.startDate} to ${f.endDate}`:"All Time",b=`
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
         <div style="background:linear-gradient(135deg,#1e293b,#0f172a);padding:20px 24px">
           <p style="color:#94a3b8;font-size:11px;font-weight:700;letter-spacing:2px;margin:0 0 6px">JAI BHAVANI CARGO</p>
