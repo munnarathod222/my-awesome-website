@@ -114,16 +114,22 @@ function LorryReceiptsPodHubPage() {
   };
   const isTripPodRequired = (trip) => {
     const cl = getClientForTrip(trip);
-    if (clientRequiresPod(cl)) return true;
-    if (trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === "true") return true;
-    if (trip.pod_file || trip.pod_link || trip.pod_status === "Verified" || trip.pod_status === "Uploaded") return true;
-    return false;
+    if (cl) {
+      return clientRequiresPod(cl);
+    }
+    return trip.requires_pod === true || trip.requires_pod === 1 || trip.requires_pod === "true";
   };
   const getPodStatus = (trip) => {
+    const cl = getClientForTrip(trip);
+    if (cl && !clientRequiresPod(cl)) {
+      return "Not Required";
+    }
+    if (!isTripPodRequired(trip)) {
+      return "Not Required";
+    }
     if (trip.pod_status === "Verified") return "Verified";
     if (trip.pod_file || trip.pod_link || trip.pod_status === "Uploaded") return "Uploaded";
-    if (isTripPodRequired(trip)) return "Pending";
-    return "Not Required";
+    return "Pending";
   };
   const formatTripDate = (dateStr) => {
     if (!dateStr) return "Today";
