@@ -1,0 +1,95 @@
+[
+  {
+    "driver_id": "DRV_RAMESH_01",
+    "driver_name": "Ramesh Rathod",
+    "experience_years": 8,
+    "total_km_driven": 48200,
+    "trucks_driven_count": 4,
+    "overall_mileage_kmpl": 3.96,
+    "peer_group_avg_kmpl": 3.90,
+    "driver_fuel_efficiency_score": 98.2,
+    "maintenance_abuse_cost_per_km": 0.28,
+    "peer_avg_maint_per_km": 0.65,
+    "brand_breakdown": {
+      "Tata Motors": { "trips": 32, "avg_mileage": 4.18, "rating": "Optimal", "maint_per_km": 0.22 },
+      "Ashok Leyland": { "trips": 16, "avg_mileage": 3.52, "rating": "Underperforming on 9-Speed", "maint_per_km": 0.38 },
+      "Eicher": { "trips": 10, "avg_mileage": 4.35, "rating": "Optimal", "maint_per_km": 0.25 }
+    },
+    "classification": "BRAND_MISMATCH_SENSITIVE",
+    "verdict_summary": "Driver excels on Tata & Eicher synchronised 6-speed gearboxes. Struggles with Ashok Leyland 9-speed synchromesh. Recommend locking driver to Tata/Eicher fleet."
+  },
+  {
+    "driver_id": "DRV_VIKRAM_02",
+    "driver_name": "Vikram Singh",
+    "experience_years": 4,
+    "total_km_driven": 31400,
+    "trucks_driven_count": 3,
+    "overall_mileage_kmpl": 2.95,
+    "peer_group_avg_kmpl": 4.02,
+    "driver_fuel_efficiency_score": 73.4,
+    "maintenance_abuse_cost_per_km": 1.48,
+    "peer_avg_maint_per_km": 0.65,
+    "brand_breakdown": {
+      "Tata Motors": { "trips": 18, "avg_mileage": 3.00, "rating": "Severe Deficit (-26%)", "maint_per_km": 1.62 },
+      "Eicher": { "trips": 12, "avg_mileage": 2.89, "rating": "Severe Deficit (-33%)", "maint_per_km": 1.35 },
+      "Ashok Leyland": { "trips": 6, "avg_mileage": 2.92, "rating": "Severe Deficit (-28%)", "maint_per_km": 1.45 }
+    },
+    "classification": "DRIVER_FAULT_DEFICIT",
+    "verdict_summary": "Underperforms across ALL 3 truck brands. High harsh-braking frequency and repeated clutch overheating regardless of vehicle. High probability of aggressive driving and AC idling."
+  },
+  {
+    "driver_id": "DRV_SURESH_03",
+    "driver_name": "Suresh Yadav (Master Driver)",
+    "experience_years": 14,
+    "total_km_driven": 92000,
+    "trucks_driven_count": 6,
+    "overall_mileage_kmpl": 4.28,
+    "peer_group_avg_kmpl": 3.90,
+    "driver_fuel_efficiency_score": 109.7,
+    "maintenance_abuse_cost_per_km": 0.18,
+    "peer_avg_maint_per_km": 0.65,
+    "brand_breakdown": {
+      "Tata Motors": { "trips": 45, "avg_mileage": 4.30, "rating": "Top Tier (Master)", "maint_per_km": 0.15 },
+      "Ashok Leyland": { "trips": 30, "avg_mileage": 4.22, "rating": "Top Tier (Master)", "maint_per_km": 0.20 },
+      "Eicher": { "trips": 18, "avg_mileage": 4.60, "rating": "Top Tier (Master)", "maint_per_km": 0.18 }
+    },
+    "classification": "OPTIMAL_MASTER_BENCHMARK",
+    "verdict_summary": "Benchmark driver. Used as fleet gold standard to test suspected mechanical vehicle issues."
+  },
+  {
+    "driver_id": "DRV_MAHESH_04",
+    "driver_name": "Mahesh Sharma",
+    "experience_years": 6,
+    "total_km_driven": 41200,
+    "trucks_driven_count": 2,
+    "overall_mileage_kmpl": 4.15,
+    "peer_group_avg_kmpl": 4.00,
+    "driver_fuel_efficiency_score": 103.8,
+    "maintenance_abuse_cost_per_km": 0.35,
+    "peer_avg_maint_per_km": 0.65,
+    "brand_breakdown": {
+      "Eicher": { "trips": 24, "avg_mileage": 4.55, "rating": "Optimal", "maint_per_km": 0.30 },
+      "Tata Motors": { "trips": 16, "avg_mileage": 4.08, "rating": "Normal", "maint_per_km": 0.40 }
+    },
+    "classification": "OPTIMAL_NORMAL",
+    "verdict_summary": "Consistently adheres to corridor eco-speed. Zero clutch issues."
+  },
+  {
+    "driver_id": "DRV_RAJESH_05",
+    "driver_name": "Rajesh Patil",
+    "experience_years": 9,
+    "total_km_driven": 56000,
+    "trucks_driven_count": 3,
+    "overall_mileage_kmpl": 4.11,
+    "peer_group_avg_kmpl": 3.95,
+    "driver_fuel_efficiency_score": 104.0,
+    "maintenance_abuse_cost_per_km": 0.32,
+    "peer_avg_maint_per_km": 0.65,
+    "brand_breakdown": {
+      "Tata Motors": { "trips": 30, "avg_mileage": 4.12, "rating": "Optimal", "maint_per_km": 0.30 },
+      "Ashok Leyland": { "trips": 18, "avg_mileage": 4.05, "rating": "Optimal", "maint_per_km": 0.35 }
+    },
+    "classification": "OPTIMAL_NORMAL",
+    "verdict_summary": "Reliable heavy highway driver. Successfully proved Signa 2823 is mechanically healthy after Vikram swap."
+  }
+]

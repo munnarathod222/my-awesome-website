@@ -1,0 +1,138 @@
+[
+  {
+    "id": "rot_exp_101",
+    "experiment_code": "EXP-2637-DIAG",
+    "status": "COMPLETED",
+    "date_initiated": "2026-09-28",
+    "date_concluded": "2026-10-02",
+    "title": "TG 12 U 2637 vs Ramesh Rathod Mileage Deficit",
+    "trigger_reason": "Low mileage on TG 12 U 2637 (3.13 km/l vs 4.10 fleet benchmark). Decouple driver vs vehicle mechanical efficiency.",
+    "driver_id": "DRV_RAMESH_01",
+    "driver_name": "Ramesh Rathod",
+    "original_truck_id": "TRK_TG12U2637",
+    "original_truck_no": "TG 12 U 2637",
+    "swap_truck_id": "TRK_TS07UE1234",
+    "swap_truck_no": "TS 07 UE 1234 (Tata Benchmark)",
+    "control_driver_id": "DRV_SURESH_03",
+    "control_driver_name": "Suresh Yadav (Master Driver)",
+    "test_duration_trips": 3,
+    "metrics_before": {
+      "driver_mileage_kmpl": 3.13,
+      "truck_avg_kmpl": 3.15,
+      "maint_cost_per_km": 1.45
+    },
+    "metrics_after_swap": {
+      "driver_on_benchmark_truck_kmpl": 4.25,
+      "control_driver_on_suspect_truck_kmpl": 3.45,
+      "driver_efficiency_delta_pct": 35.78,
+      "truck_performance_delta_pct": -15.85
+    },
+    "confirmed_attribution": "TRUCK_MECHANICAL_FAULT",
+    "attribution_badge": "Truck Defect Confirmed",
+    "attribution_color": "blue",
+    "verdict": "Driver Ramesh delivered exceptional 4.25 km/l when rotated to TS 07 UE 1234. However, Master Driver Suresh Yadav only managed 3.45 km/l on TG 12 U 2637. Defect is 100% mechanical (Turbo Hose Leak & Air Filter Clogging), not driver driving style.",
+    "resolution_action": "TG 12 U 2637 admitted to Hyderabad workshop for turbo pressure test and manifold gasket renewal. Ramesh exonerated from fuel penalty."
+  },
+  {
+    "id": "rot_exp_102",
+    "experiment_code": "EXP-VIKRAM-HABIT",
+    "status": "COMPLETED",
+    "date_initiated": "2026-09-24",
+    "date_concluded": "2026-09-29",
+    "title": "Vikram Singh High Maintenance & Fuel Burn Across Trucks",
+    "trigger_reason": "Vikram reported frequent brake shoe wear and low mileage (3.08 km/l) on TG 12 U 2637 and MH 12 AB 1234.",
+    "driver_id": "DRV_VIKRAM_02",
+    "driver_name": "Vikram Singh",
+    "original_truck_id": "TRK_MH12AB1234",
+    "original_truck_no": "MH 12 AB 1234",
+    "swap_truck_id": "TRK_AP29TA5678",
+    "swap_truck_no": "AP 29 TA 5678 (BharatBenz 2823R)",
+    "control_driver_id": "DRV_RAJESH_05",
+    "control_driver_name": "Rajesh Patil",
+    "test_duration_trips": 4,
+    "metrics_before": {
+      "driver_mileage_kmpl": 3.32,
+      "truck_avg_kmpl": 3.75,
+      "maint_cost_per_km": 1.40
+    },
+    "metrics_after_swap": {
+      "driver_on_benchmark_truck_kmpl": 3.41,
+      "control_driver_on_suspect_truck_kmpl": 3.88,
+      "driver_efficiency_delta_pct": -12.56,
+      "truck_performance_delta_pct": 3.46
+    },
+    "confirmed_attribution": "DRIVER_FAULT",
+    "attribution_badge": "Driver Behavior Fault",
+    "attribution_color": "red",
+    "verdict": "When Rajesh Patil drove MH 12 AB 1234, mileage rose to 3.88 km/l and maintenance stayed at ₹0.52/km. But when Vikram Singh drove the pristine AP 29 TA 5678, mileage plummeted to 3.41 km/l with 18 harsh braking events and clutch slip.",
+    "resolution_action": "Vikram Singh placed on Eco-Driving Retraining & Throttle Telematics Alert. Assigned lighter cargo routes until certification."
+  },
+  {
+    "id": "rot_exp_103",
+    "experiment_code": "EXP-RAMESH-LEYLAND",
+    "status": "COMPLETED",
+    "date_initiated": "2026-09-18",
+    "date_concluded": "2026-09-23",
+    "title": "Ramesh Rathod Transmission Affinity Diagnosis (Tata vs Ashok Leyland)",
+    "trigger_reason": "Investigate why Ramesh Rathod performs above average on Tata (4.18 km/l) and Eicher (4.35 km/l) but struggles on Ashok Leyland 9-speed manual.",
+    "driver_id": "DRV_RAMESH_01",
+    "driver_name": "Ramesh Rathod",
+    "original_truck_id": "TRK_KA01AL3344",
+    "original_truck_no": "KA 01 AL 3344 (Ashok Leyland 2820)",
+    "swap_truck_id": "TRK_TS07UE1234",
+    "swap_truck_no": "TS 07 UE 1234 (Tata Signa)",
+    "control_driver_id": "DRV_MAHESH_04",
+    "control_driver_name": "Mahesh Sharma",
+    "test_duration_trips": 3,
+    "metrics_before": {
+      "driver_mileage_kmpl": 3.52,
+      "truck_avg_kmpl": 4.02,
+      "maint_cost_per_km": 0.38
+    },
+    "metrics_after_swap": {
+      "driver_on_benchmark_truck_kmpl": 4.22,
+      "control_driver_on_suspect_truck_kmpl": 4.08,
+      "driver_efficiency_delta_pct": 19.88,
+      "truck_performance_delta_pct": 1.49
+    },
+    "confirmed_attribution": "BRAND_POWERTRAIN_MISMATCH",
+    "attribution_badge": "Brand Powertrain Mismatch",
+    "attribution_color": "amber",
+    "verdict": "Neither driver nor truck is broken. KA 01 AL 3344 delivers 4.08 km/l with Mahesh, while Ramesh delivers 4.22 km/l with Tata. Ramesh is unfamiliar with Leyland crawler gear shift points causing unnecessary RPM revving.",
+    "resolution_action": "System permanent fleet rule: Ramesh Rathod mapped exclusively to Tata & Eicher fleet. Ashok Leyland assigned to Mahesh Sharma and Suresh Yadav."
+  },
+  {
+    "id": "rot_exp_104",
+    "experiment_code": "EXP-ACTIVE-TEST",
+    "status": "ACTIVE_TESTING",
+    "date_initiated": "2026-10-02",
+    "date_concluded": null,
+    "title": "Live Test: Suresh Yadav Validation on TS 08 UB 9012 vs TG 12 U 2637 Overhaul",
+    "trigger_reason": "Post-maintenance verification of TG 12 U 2637 turbo overhaul alongside benchmark baseline check.",
+    "driver_id": "DRV_SURESH_03",
+    "driver_name": "Suresh Yadav (Master Driver)",
+    "original_truck_id": "TRK_TG12U2637",
+    "original_truck_no": "TG 12 U 2637 (Post-Service)",
+    "swap_truck_id": "TRK_TS08UB9012",
+    "swap_truck_no": "TS 08 UB 9012",
+    "control_driver_id": "DRV_RAMESH_01",
+    "control_driver_name": "Ramesh Rathod",
+    "test_duration_trips": 2,
+    "metrics_before": {
+      "driver_mileage_kmpl": 4.30,
+      "truck_avg_kmpl": 3.22,
+      "maint_cost_per_km": 1.45
+    },
+    "metrics_after_swap": {
+      "driver_on_benchmark_truck_kmpl": 4.12,
+      "control_driver_on_suspect_truck_kmpl": null,
+      "driver_efficiency_delta_pct": null,
+      "truck_performance_delta_pct": null
+    },
+    "confirmed_attribution": "IN_PROGRESS",
+    "attribution_badge": "Testing In Progress (Trip 1/2)",
+    "attribution_color": "purple",
+    "verdict": "Test underway: Suresh Yadav completed Trip 1 on freshly overhauled TG 12 U 2637 recording preliminary 4.12 km/l (up from 3.13 km/l pre-repair). Trip 2 scheduled return from Bangalore tonight.",
+    "resolution_action": "Awaiting final return trip fuel receipt and sensor dump."
+  }
+]

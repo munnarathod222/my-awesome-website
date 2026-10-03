@@ -24,6 +24,7 @@ import * as orgService from './services/orgService.js';
 import * as employeeBankService from './services/employeeBankService.js';
 import * as businessCalendarService from './services/businessCalendarService.js';
 import * as routeCorridorService from './services/routeCorridorService.js';
+import * as attributionEngineService from './services/attributionEngineService.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -425,6 +426,76 @@ corridorRouter.delete('/:id', (req, res) => {
 
 app.use('/api/corridors', corridorRouter);
 app.use('/hcgi/api/corridors', corridorRouter);
+
+// ── Dual-Entity Attribution & Rotation Diagnostic Engine Router ─────
+const attributionRouter = express.Router();
+
+attributionRouter.get('/matrix', (req, res) => {
+  try {
+    const matrix = attributionEngineService.getAttributionMatrix();
+    return res.json({ success: true, ...matrix });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.get('/drivers', (req, res) => {
+  try {
+    const drivers = attributionEngineService.getDriverBaselines(req.query.driverId);
+    return res.json({ success: true, count: Array.isArray(drivers) ? drivers.length : 1, data: drivers });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.get('/trucks', (req, res) => {
+  try {
+    const trucks = attributionEngineService.getTruckBaselines(req.query.truckId);
+    return res.json({ success: true, count: Array.isArray(trucks) ? trucks.length : 1, data: trucks });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.get('/swaps', (req, res) => {
+  try {
+    const swaps = attributionEngineService.getSwapExperiments(req.query.status);
+    return res.json({ success: true, count: swaps.length, data: swaps });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.post('/swaps', (req, res) => {
+  try {
+    const swap = attributionEngineService.initiateSwap(req.body);
+    return res.status(201).json({ success: true, data: swap });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.post('/swaps/evaluate', (req, res) => {
+  try {
+    const { swapId, testMetrics } = req.body;
+    const evaluated = attributionEngineService.evaluateSwap(swapId, testMetrics);
+    return res.json({ success: true, data: evaluated });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+attributionRouter.get('/recommend', (req, res) => {
+  try {
+    const rec = attributionEngineService.recommendSwap(req.query.truckNumber, req.query.driverName);
+    return res.json({ success: true, data: rec });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.use('/api/attribution', attributionRouter);
+app.use('/hcgi/api/attribution', attributionRouter);
 
 
 // ── Enterprise Productivity, Workflow & Reminder Engine Router ──────
