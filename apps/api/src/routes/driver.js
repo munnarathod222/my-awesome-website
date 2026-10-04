@@ -2456,6 +2456,15 @@ router.post('/apply', uploadRecruitmentDocs, async (req, res) => {
       aadhaar_back: data.aadhaar_back || '',
       photo_file: data.photo_file || '',
       pan_file: data.pan_file || '',
+      test_drive_ready: data.test_drive_ready || 'Yes - Ready for Practical Driving Test',
+      test_drive_vehicle_pref: data.test_drive_vehicle_pref || '32ft Multi-Axle Container (MXL)',
+      test_drive_preferred_date: data.test_drive_preferred_date || 'Immediate',
+      test_drive_yard: data.test_drive_yard || 'Hyderabad Hub (Ghatkesar Yard)',
+      test_drive_transmission: data.test_drive_transmission || 'Manual Transmission',
+      test_drive_status: data.test_drive_status || 'Pending Assessment',
+      test_drive_score: data.test_drive_score || '',
+      test_drive_result: data.test_drive_result || '',
+      test_drive_notes: data.test_drive_notes || '',
       status: 'Applied',
       applied_date: appliedDate,
       created: appliedDate,
@@ -2538,22 +2547,22 @@ router.post('/apply', uploadRecruitmentDocs, async (req, res) => {
 
 /**
  * PATCH /api/driver/applications/:id
- * Updates application status or notes.
+ * Updates application status, notes, or test drive assessment details.
  */
 router.patch('/applications/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes } = req.body || {};
+    const updates = req.body || {};
 
     const diskStore = getStoredApplications();
-    const updatedStore = diskStore.map(r => r.id === id ? { ...r, status, notes } : r);
+    const updatedStore = diskStore.map(r => r.id === id ? { ...r, ...updates } : r);
     saveStoredApplications(updatedStore);
 
     try {
-      await pb.collection('driver_applications').update(id, { status, notes }, { $autoCancel: false });
+      await pb.collection('driver_applications').update(id, updates, { $autoCancel: false });
     } catch (e) {}
 
-    return res.json({ success: true, message: 'Updated application status' });
+    return res.json({ success: true, message: 'Updated application details', application: updatedStore.find(r => r.id === id) });
   } catch (err) {
     logger.error(`Error updating driver application ${req.params.id}:`, err);
     return res.status(500).json({ success: false, error: 'Failed to update application' });
