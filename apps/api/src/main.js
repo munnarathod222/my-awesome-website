@@ -1007,13 +1007,14 @@ const initPermanentSequences = async (dbFilePath) => {
 
 const initDatabaseIndexes = async (dbFilePath) => {
   try {
+    employeeCodeService.ensureSchema();
+    employeeCodeService.syncCountersFromExisting();
+    driverAuthService.ensureDriverAuthSchema();
+
     if (!dbFilePath || !fs.existsSync(dbFilePath)) return;
     try {
       const { DatabaseSync } = await import('node:sqlite');
       const db = new DatabaseSync(dbFilePath);
-      employeeCodeService.ensureSchema(db);
-      employeeCodeService.syncCountersFromExisting(db);
-      driverAuthService.ensureDriverAuthSchema(db);
 
       // Ensure PocketBase collection schema exposes employee_code and employee_number
       try {
