@@ -13,6 +13,9 @@ import multer from 'multer';
 import routes from './routes/index.js';
 import whatsappRouter from './routes/whatsapp.js';
 import driverRouter, { deleteEmployeeRecord } from './routes/driver.js';
+import mobileAuthRouter from './routes/mobileAuth.js';
+import * as employeeCodeService from './services/employeeCodeService.js';
+import * as driverAuthService from './services/driverAuthService.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
@@ -1005,11 +1008,47 @@ const initPermanentSequences = async (dbFilePath) => {
 const initDatabaseIndexes = async (dbFilePath) => {
   try {
     if (!dbFilePath || !fs.existsSync(dbFilePath)) return;
+    try {
+      const { DatabaseSync } = await import('node:sqlite');
+      const db = new DatabaseSync(dbFilePath);
+      employeeCodeService.ensureSchema(db);
+      employeeCodeService.syncCountersFromExisting(db);
+      driverAuthService.ensureDriverAuthSchema(db);
+
+      // Ensure PocketBase collection schema exposes employee_code and employee_number
+      try {
+        const row = db.prepare("SELECT fields FROM _collections WHERE name='employees'").get();
+        if (row && row.fields) {
+          const fields = JSON.parse(row.fields);
+          let changed = false;
+          if (!fields.some(f => f.name === 'employee_code')) {
+            fields.push({ name: 'employee_code', type: 'text', required: false, presentable: false, unique: false, system: false, options: { min: null, max: null, pattern: '' } });
+            changed = true;
+          }
+          if (!fields.some(f => f.name === 'employee_number')) {
+            fields.push({ name: 'employee_number', type: 'number', required: false, presentable: false, unique: false, system: false, options: { min: null, max: null, noDecimal: true } });
+            changed = true;
+          }
+          if (changed) {
+            db.prepare("UPDATE _collections SET fields = ? WHERE name='employees'").run(JSON.stringify(fields));
+            logger.info("✅ PocketBase _collections schema updated with employee_code and employee_number!");
+          }
+        }
+      } catch (colErr) {
+        logger.warn(`Notice updating _collections schema: ${colErr.message}`);
+      }
+
+      db.close();
+    } catch (_) {}
+
     const { execSync } = await import('node:child_process');
     const queries = [
       "CREATE INDEX IF NOT EXISTS idx_trucks_seq ON trucks(truck_sequence);",
       "CREATE INDEX IF NOT EXISTS idx_trucks_num ON trucks(truck_number);",
       "CREATE INDEX IF NOT EXISTS idx_employees_num ON employees(employee_number);",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_code_unique ON employees(employee_code) WHERE employee_code != '' AND employee_code IS NOT NULL;",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_accounts_emp_id ON driver_app_accounts(employee_id);",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_accounts_emp_code ON driver_app_accounts(employee_code);",
       "CREATE INDEX IF NOT EXISTS idx_trip_logs_truck ON trip_logs(truck_id, start_date);",
       "CREATE INDEX IF NOT EXISTS idx_expenses_trip ON expenses(trip_id, date);",
       "CREATE INDEX IF NOT EXISTS idx_attendance_emp ON attendance(staff_member, date);"
@@ -1019,7 +1058,7 @@ const initDatabaseIndexes = async (dbFilePath) => {
         execSync(`sqlite3 "${dbFilePath}" "${q}"`, { stdio: 'pipe' });
       } catch (_) {}
     }
-    logger.info('⚡ Performance database indexes initialized successfully!');
+    logger.info('⚡ Performance database indexes & driver auth schemas initialized successfully!');
   } catch (err) {
     logger.warn(`Index initialization notice: ${err.message}`);
   }
@@ -5626,6 +5665,15 @@ app.use(['/api', '/hcgi/api'], (req, res, next) => {
 const apiRouter = routes();
 app.use('/hcgi/api', apiRouter);
 app.use('/api', apiRouter);
+
+// Native Android Mobile Driver Authentication API (Versioned)
+app.use('/api/mobile/v1/auth', mobileAuthRouter);
+app.use('/hcgi/api/mobile/v1/auth', mobileAuthRouter);
+
+// Office Driver App Access endpoints
+app.use('/api/office/driver-access', driverRouter);
+app.use('/hcgi/api/office/driver-access', driverRouter);
+
 app.use('/api/driver', driverRouter);
 app.use('/hcgi/api/driver', driverRouter);
 app.use('/api/trucks', driverRouter);

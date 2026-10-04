@@ -2,6 +2,8 @@ import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 import * as employeeBankService from '../services/employeeBankService.js';
+import * as employeeCodeService from '../services/employeeCodeService.js';
+import * as driverAuthService from '../services/driverAuthService.js';
 
 // ─── Security: sanitise strings used in PocketBase filter expressions ─────────
 // Strips characters that could break out of a filter string literal.
@@ -204,31 +206,20 @@ router.post('/create-employee', async (req, res) => {
     if (!payload.employee_type) payload.employee_type = 'driver';
     if (!payload.active_status) payload.active_status = 'active';
 
-    // Auto-compute permanent sequential employee_number and canonical employee_code
-    let empNum = Number(payload.employee_number) || 0;
-    let empCode = (payload.employee_code || '').trim().toUpperCase();
-    const isDriver = payload.employee_type === 'driver';
+    // Concurrency-safe atomic allocation of permanent employee code on server
+    let empCode = '';
+    let empNum = 0;
+    const isDriver = (payload.employee_type || 'driver').toLowerCase().includes('driver');
 
     try {
-      const allEmps = await pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []);
-      if (empNum <= 0) {
-        const nums = allEmps.map(e => Number(e.employee_number) || 0).filter(n => n > 0);
-        empNum = nums.length > 0 ? Math.max(...nums) + 1 : (allEmps.length + 1);
-      }
-      if (!empCode || !/^[DE]\d{3,}$/.test(empCode)) {
-        const catCodes = allEmps
-          .filter(e => (e.employee_type === 'driver') === isDriver)
-          .map(e => {
-            const m = String(e.employee_code || e.employee_number || '').match(/\d+/);
-            return m ? parseInt(m[0], 10) : 0;
-          })
-          .filter(n => n > 0);
-        const nextCatSeq = catCodes.length > 0 ? Math.max(...catCodes) + 1 : 1;
-        empCode = `${isDriver ? 'D' : 'E'}${String(nextCatSeq).padStart(3, '0')}`;
-      }
-    } catch (e) {
-      empNum = empNum > 0 ? empNum : 1;
-      empCode = empCode || (isDriver ? 'D001' : 'E001');
+      const db = employeeCodeService.getDatabase();
+      empCode = employeeCodeService.allocateNextCode(db, isDriver ? 'driver' : 'staff');
+      const numMatch = empCode.match(/\d+/);
+      empNum = numMatch ? parseInt(numMatch[0], 10) : 1;
+    } catch (allocErr) {
+      logger.warn(`Notice: Fallback code allocation: ${allocErr.message}`);
+      empCode = isDriver ? 'D001' : 'E001';
+      empNum = 1;
     }
 
     payload.employee_number = empNum;
@@ -284,6 +275,7 @@ router.post('/create-employee', async (req, res) => {
 /**
  * POST /api/driver/update-employee/:id
  * Update an existing employee record via superuser PocketBase client.
+ * Note: employee_code and employee_number are excluded from allowedFields to prevent user tampering.
  */
 router.post('/update-employee/:id', async (req, res) => {
   try {
@@ -295,7 +287,7 @@ router.post('/update-employee/:id', async (req, res) => {
       'address', 'joining_date', 'license_number', 'aadhaar_number', 'pan_card',
       'salary_amount', 'salary_billing_cycle', 'active_status', 'assigned_truck',
       'assigned_routes', 'education', 'payroll_cycle_start_day', 'payroll_cycle_end_day',
-      'salary_disbursement_day', 'employee_number', 'employee_code'
+      'salary_disbursement_day'
     ];
     for (const key of allowedFields) {
       if (data[key] !== undefined && data[key] !== null) {
@@ -331,6 +323,55 @@ router.post('/update-employee/:id', async (req, res) => {
     return res.status(400).json({ success: false, error: err?.data?.message || err.message, details: err?.data?.data });
   }
 });
+
+// ─── Office-Managed Driver App Access Endpoints ──────────────────────────────
+router.post('/office/driver-access/create', async (req, res) => {
+  try {
+    const { employeeId, temporaryPassword } = req.body || {};
+    const createdBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
+    const db = driverAuthService.getDb();
+    const result = driverAuthService.createDriverAccount(db, { employeeId, temporaryPassword, createdBy });
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/office/driver-access/reset-password', async (req, res) => {
+  try {
+    const { employeeId, temporaryPassword } = req.body || {};
+    const resetBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
+    const db = driverAuthService.getDb();
+    const result = driverAuthService.resetDriverPassword(db, { employeeId, temporaryPassword, resetBy });
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/office/driver-access/toggle-status', async (req, res) => {
+  try {
+    const { employeeId, status } = req.body || {};
+    const updatedBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
+    const db = driverAuthService.getDb();
+    const result = driverAuthService.setAccountStatus(db, { employeeId, status, updatedBy });
+    return res.status(200).json(result);
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/office/driver-access/status/:employeeId', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const db = driverAuthService.getDb();
+    const status = driverAuthService.getAccountStatus(db, employeeId);
+    return res.status(200).json({ success: true, ...status });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 
 /**
  * GET /api/driver/employee-bank-details
