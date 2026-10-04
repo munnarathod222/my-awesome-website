@@ -21,7 +21,17 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const verification = driverAuthService.verifyJwt(token);
+    let verification;
+    try {
+      verification = driverAuthService.verifyJwt(token);
+    } catch (cfgErr) {
+      logger.error(`Driver JWT verification configuration error: ${cfgErr.message}`);
+      return res.status(500).json({
+        success: false,
+        code: 'CONFIG_ERROR',
+        error: 'Server authentication configuration error'
+      });
+    }
 
     if (!verification.valid) {
       return res.status(401).json({
@@ -32,6 +42,15 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
     }
 
     const payload = verification.payload;
+
+    // Enforce distinct token types: protected routes require an access token
+    if (payload.type !== 'access') {
+      return res.status(401).json({
+        success: false,
+        code: 'TOKEN_TYPE_INVALID',
+        error: 'Invalid token type: Protected routes require an access token'
+      });
+    }
 
     try {
       const acc = driverAuthService.findAccountByEmployeeId(payload.sub);

@@ -3,6 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 
+// Set synthetic test JWT secret
+process.env.JWT_SECRET = 'synthetic_test_driver_auth_secret_key_32chars_2026';
+
 // Path for synthetic test DB
 const TEST_DB_PATH = path.resolve(__dirname, '../scratch/test_synthetic_driver_auth.db');
 if (fs.existsSync(TEST_DB_PATH)) {
@@ -26,6 +29,8 @@ async function runTests() {
       employee_code TEXT DEFAULT '',
       contact TEXT DEFAULT '',
       assigned_truck TEXT DEFAULT NULL,
+      supervisor_id TEXT DEFAULT NULL,
+      position TEXT DEFAULT NULL,
       created TEXT NOT NULL
     );
 
@@ -33,9 +38,13 @@ async function runTests() {
       id TEXT PRIMARY KEY,
       truck_number TEXT NOT NULL UNIQUE,
       truck_code TEXT DEFAULT '',
+      truck_name TEXT DEFAULT '',
+      truck_size TEXT DEFAULT '',
+      truck_axle TEXT DEFAULT '',
       model TEXT DEFAULT '',
-      capacity TEXT DEFAULT '',
-      status TEXT DEFAULT 'Active'
+      payload_capacity TEXT DEFAULT '',
+      status TEXT DEFAULT 'active',
+      manager_id TEXT DEFAULT NULL
     );
 
     CREATE TABLE trip_logs (
@@ -49,9 +58,9 @@ async function runTests() {
 
   // Insert synthetic trucks and historical trips
   db.exec(`
-    INSERT INTO trucks (id, truck_number, truck_code, model) VALUES 
-      ('trk_1', 'MH12AB1234', 'TRK-001', 'Tata Prima 4028.S'),
-      ('trk_2', 'MH14CD5678', 'TRK-002', 'Ashok Leyland 3118');
+    INSERT INTO trucks (id, truck_number, truck_code, truck_name, truck_size, truck_axle, model, status, manager_id) VALUES 
+      ('trk_1', 'MH12AB1234', 'TRK-001', 'Tata Prima', '40 FT', '3-Axle', 'Tata Prima 4028.S', 'active', 'synth_staff_1'),
+      ('trk_2', 'MH14CD5678', 'TRK-002', 'Ashok Leyland', '32 FT', 'SXL', 'Ashok Leyland 3118', 'active', NULL);
 
     INSERT INTO trip_logs (id, truck_id, driver_id, start_date) VALUES 
       ('trip_1', 'trk_1', 'synth_drv_1', '2026-05-01 10:00:00'),
@@ -60,11 +69,11 @@ async function runTests() {
 
   // Insert synthetic employees (Drivers, Staff, Archived/Terminated, Missing code)
   db.exec(`
-    INSERT INTO employees (id, name, employee_type, active_status, employee_code, employee_number, created) VALUES
-      ('synth_drv_1', 'Synthetic Alpha Driver', 'driver', 'active', '', 0, '2026-01-01 10:00:00'),
-      ('synth_staff_1', 'Synthetic Office Manager', 'manager', 'active', '', 0, '2026-01-02 11:00:00'),
-      ('synth_drv_archived', 'Synthetic Terminated Driver', 'driver', 'terminated', '', 0, '2026-01-03 12:00:00'),
-      ('synth_drv_2', 'Synthetic Beta Driver', 'driver', 'active', '', 0, '2026-01-04 13:00:00');
+    INSERT INTO employees (id, name, employee_type, active_status, employee_code, employee_number, contact, assigned_truck, supervisor_id, created) VALUES
+      ('synth_drv_1', 'Synthetic Alpha Driver', 'driver', 'active', '', 0, '+919876543210', 'trk_1', 'synth_staff_1', '2026-01-01 10:00:00'),
+      ('synth_staff_1', 'Synthetic Office Manager', 'manager', 'active', '', 0, '+919123456780', '', '', '2026-01-02 11:00:00'),
+      ('synth_drv_archived', 'Synthetic Terminated Driver', 'driver', 'terminated', '', 0, '', '', '', '2026-01-03 12:00:00'),
+      ('synth_drv_2', 'Synthetic Beta Driver', 'driver', 'active', '', 0, '+919988776655', '', '', '2026-01-04 13:00:00');
   `);
 
   console.log('✓ Synthetic test fixture initialized.');
@@ -194,12 +203,19 @@ async function runTests() {
   assert(loginRes.success);
   assert.strictEqual(loginRes.mustChangePassword, true, 'mustChangePassword must be true on first login');
   assert(loginRes.accessToken, 'Access token must be returned');
+  assert(loginRes.refreshToken, 'Refresh token must be returned');
 
-  // Verify token
-  const verified = driverAuthService.verifyJwt(loginRes.accessToken);
-  assert(verified.valid);
-  assert.strictEqual(verified.payload.mustChange, true);
-  console.log('✓ Login with temporary password succeeds and flags mustChangePassword=true.');
+  // Verify access token
+  const verifiedAccess = driverAuthService.verifyJwt(loginRes.accessToken);
+  assert(verifiedAccess.valid);
+  assert.strictEqual(verifiedAccess.payload.type, 'access', 'Access token must have type: access');
+  assert.strictEqual(verifiedAccess.payload.mustChange, true);
+
+  // Verify refresh token
+  const verifiedRefresh = driverAuthService.verifyJwt(loginRes.refreshToken);
+  assert(verifiedRefresh.valid);
+  assert.strictEqual(verifiedRefresh.payload.type, 'refresh', 'Refresh token must have type: refresh');
+  console.log('✓ Login with temporary password succeeds, generates distinct access & refresh tokens, and flags mustChangePassword=true.');
 
   // TEST 8: Password Change on First Login
   console.log('\n--- TEST 8: Password Change Flow ---');
@@ -241,7 +257,6 @@ async function runTests() {
 
   // TEST 9: Rate Limiting & Account Lockout
   console.log('\n--- TEST 9: Rate Limiting & Account Lockout ---');
-  // Trigger 5 consecutive failed logins
   for (let i = 0; i < 5; i++) {
     try {
       driverAuthService.authenticateLogin(db, { employeeCode: 'D001', password: 'BadPassword_' + i });
@@ -260,7 +275,6 @@ async function runTests() {
 
   // TEST 10: Office Password Reset & Session Revocation
   console.log('\n--- TEST 10: Office Password Reset & Session Revocation ---');
-  // Reset password by office
   const resetRes = driverAuthService.resetDriverPassword(db, {
     employeeId: 'synth_drv_1',
     temporaryPassword: 'ResetTempPass2026#'
@@ -303,10 +317,11 @@ async function runTests() {
 
   // TEST 12: Role Changes & Code Retention
   console.log('\n--- TEST 12: Role Changes & Code Retention ---');
-  // If driver synth_drv_1 is promoted to manager, their code D001 must remain unchanged!
   db.prepare("UPDATE employees SET employee_type = 'manager' WHERE id = 'synth_drv_1'").run();
   const empAfterRoleChange = db.prepare('SELECT id, employee_code, employee_type FROM employees WHERE id = ?').get('synth_drv_1');
   assert.strictEqual(empAfterRoleChange.employee_code, 'D001', 'Original D001 code must be retained even after promotion to manager');
+  // Revert back to driver for subsequent tests
+  db.prepare("UPDATE employees SET employee_type = 'driver' WHERE id = 'synth_drv_1'").run();
   console.log('✓ Code is permanently retained across role changes.');
 
   // TEST 13: Preservation of Existing Relationships & Historical Data
@@ -317,13 +332,172 @@ async function runTests() {
   assert.strictEqual(trucksCount, 2, 'Truck records must be intact');
   console.log('✓ Historical data and foreign key relationships 100% preserved.');
 
+  // TEST 14: JWT Secret Configuration & Fail-Closed Guarantee
+  console.log('\n--- TEST 14: JWT Secret Configuration & Fail-Closed Guarantee ---');
+  const savedJwtSecret = process.env.JWT_SECRET;
+  const savedDriverSecret = process.env.DRIVER_AUTH_SECRET;
+  const savedEncKey = process.env.ENCRYPTION_KEY;
+  const savedSupKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  delete process.env.JWT_SECRET;
+  delete process.env.DRIVER_AUTH_SECRET;
+  delete process.env.ENCRYPTION_KEY;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  let failClosedCaught = false;
+  try {
+    driverAuthService.signJwt({ sub: 'test_sub' });
+  } catch (err) {
+    failClosedCaught = true;
+    assert.strictEqual(err.code, 'CONFIG_ERROR', 'Must fail with CONFIG_ERROR when secrets are missing');
+    assert.strictEqual(err.status, 500, 'Must have status 500');
+  }
+  assert(failClosedCaught, 'Must fail closed when JWT secret is not configured');
+
+  // Verify too short secret (<16 chars) is also rejected
+  process.env.JWT_SECRET = 'short_key';
+  let shortKeyRejected = false;
+  try {
+    driverAuthService.signJwt({ sub: 'test_sub' });
+  } catch (err) {
+    shortKeyRejected = true;
+    assert.strictEqual(err.code, 'CONFIG_ERROR');
+  }
+  assert(shortKeyRejected, 'Secret under 16 characters must be rejected');
+
+  // Restore secure secret
+  process.env.JWT_SECRET = savedJwtSecret;
+  if (savedDriverSecret) process.env.DRIVER_AUTH_SECRET = savedDriverSecret;
+  if (savedEncKey) process.env.ENCRYPTION_KEY = savedEncKey;
+  if (savedSupKey) process.env.SUPABASE_SERVICE_ROLE_KEY = savedSupKey;
+  console.log('✓ Server fails closed with status 500 CONFIG_ERROR if secret is missing or insufficiently long.');
+
+  // TEST 15: Distinct Token Types & Rejection of Type Mismatches
+  console.log('\n--- TEST 15: Distinct Token Types & Rejection of Type Mismatches ---');
+  // First change password so account is normal
+  driverAuthService.changeDriverPassword(db, {
+    employeeId: 'synth_drv_1',
+    currentPassword: 'ResetTempPass2026#',
+    newPassword: 'FinalSecurePassword2026!'
+  });
+  const normalLogin = driverAuthService.authenticateLogin(db, {
+    employeeCode: 'D001',
+    password: 'FinalSecurePassword2026!'
+  });
+
+  assert.strictEqual(normalLogin.mustChangePassword, false);
+  const accToken = normalLogin.accessToken;
+  const refToken = normalLogin.refreshToken;
+
+  const accVer = driverAuthService.verifyJwt(accToken);
+  const refVer = driverAuthService.verifyJwt(refToken);
+  assert.strictEqual(accVer.payload.type, 'access', 'Access token payload must have type: access');
+  assert.strictEqual(refVer.payload.type, 'refresh', 'Refresh token payload must have type: refresh');
+
+  // Attempt to use access token on /refresh route -> Must be rejected with 401 TOKEN_TYPE_INVALID
+  let accRejectedOnRefresh = false;
+  try {
+    driverAuthService.refreshSessionToken(db, { refreshToken: accToken });
+  } catch (err) {
+    accRejectedOnRefresh = true;
+    assert.strictEqual(err.status, 401);
+    assert.strictEqual(err.code, 'TOKEN_TYPE_INVALID');
+  }
+  assert(accRejectedOnRefresh, 'Passing access token to refreshSessionToken must be rejected');
+
+  // Refresh with actual refresh token -> Must succeed and return new access token
+  const refreshResult = driverAuthService.refreshSessionToken(db, { refreshToken: refToken });
+  assert(refreshResult.success);
+  assert(refreshResult.accessToken);
+  const newAccVer = driverAuthService.verifyJwt(refreshResult.accessToken);
+  assert.strictEqual(newAccVer.payload.type, 'access', 'New token must have type: access');
+  console.log('✓ Distinct token types enforced; access tokens rejected on /refresh endpoint.');
+
+  // TEST 16: First-Login Password Change Gating on Token Refresh
+  console.log('\n--- TEST 16: First-Login Password Change Gating on Token Refresh ---');
+  // Reset password to trigger first-login temporary password status
+  driverAuthService.resetDriverPassword(db, {
+    employeeId: 'synth_drv_1',
+    temporaryPassword: 'TempGatedPass2026!'
+  });
+  const tempLogin = driverAuthService.authenticateLogin(db, {
+    employeeCode: 'D001',
+    password: 'TempGatedPass2026!'
+  });
+  assert.strictEqual(tempLogin.mustChangePassword, true);
+
+  // Driver with temporary password attempts to refresh session token before changing password
+  let refreshGated = false;
+  try {
+    driverAuthService.refreshSessionToken(db, { refreshToken: tempLogin.refreshToken });
+  } catch (err) {
+    refreshGated = true;
+    assert.strictEqual(err.status, 403);
+    assert.strictEqual(err.code, 'PASSWORD_CHANGE_REQUIRED');
+  }
+  assert(refreshGated, 'Token refresh must be rejected with 403 PASSWORD_CHANGE_REQUIRED until temporary password is changed');
+  console.log('✓ First-login restrictions strictly enforced: Refresh rejected until temporary password is changed.');
+
+  // TEST 17: Accurate Driver Profile Mapping & Missing Assignment Null Safety
+  console.log('\n--- TEST 17: Accurate Driver Profile Mapping & Missing Assignment Null Safety ---');
+  // Change password to complete setup
+  driverAuthService.changeDriverPassword(db, {
+    employeeId: 'synth_drv_1',
+    currentPassword: 'TempGatedPass2026!',
+    newPassword: 'PermanentPassword2026#'
+  });
+
+  // Profile of synth_drv_1 (assigned to trk_1, supervisor is synth_staff_1)
+  const profile1 = driverAuthService.getDriverProfile(db, 'synth_drv_1');
+  assert.strictEqual(profile1.id, 'synth_drv_1');
+  assert.strictEqual(profile1.name, 'Synthetic Alpha Driver', 'Must return actual driver name');
+  assert.strictEqual(profile1.employeeCode, 'D001', 'Must return permanent code D001');
+  assert.strictEqual(profile1.role, 'driver');
+  assert.strictEqual(profile1.status, 'active');
+  assert.notStrictEqual(profile1.name, 'Commercial Fleet Driver', 'Must NOT return placeholder name');
+  assert(profile1.assignedTruck, 'Truck must be resolved');
+  assert.strictEqual(profile1.assignedTruck.truckNumber, 'MH12AB1234');
+  assert.strictEqual(profile1.assignedTruck.truckCode, 'TRK-001');
+  assert(profile1.assignedSupervisor, 'Supervisor must be resolved');
+  assert.strictEqual(profile1.assignedSupervisor.name, 'Synthetic Office Manager');
+  assert.strictEqual(profile1.assignedSupervisor.code, 'E001');
+
+  // Profile of synth_drv_2 (no truck assigned, no supervisor assigned)
+  const profile2 = driverAuthService.getDriverProfile(db, 'synth_drv_2');
+  assert.strictEqual(profile2.id, 'synth_drv_2');
+  assert.strictEqual(profile2.name, 'Synthetic Beta Driver');
+  assert.strictEqual(profile2.employeeCode, 'D003');
+  assert.strictEqual(profile2.assignedTruck, null, 'Genuinely missing truck must return null');
+  assert.strictEqual(profile2.assignedSupervisor, null, 'Genuinely missing supervisor must return null');
+  console.log('✓ Driver profile returns actual employee data, assigned truck, supervisor, and null for missing assignments.');
+
+  // TEST 18: Real Production Employee Baseline Mapping Verification
+  console.log('\n--- TEST 18: Production Baseline Registry Mapping ---');
+  // Chandrakant Shivaji Gaikwad (2ioikacogombftp) -> code D005, truck TG12U2637, supervisor Vinod Kumar Rathod (E001)
+  const realChandrakant = driverAuthService.getDriverProfile(null, '2ioikacogombftp');
+  assert.strictEqual(realChandrakant.employeeCode, 'D005');
+  assert.strictEqual(realChandrakant.name, 'Chandrakant Shivaji Gaikwad');
+  assert(realChandrakant.assignedTruck, 'Chandrakant must have truck TG12U2637');
+  assert.strictEqual(realChandrakant.assignedTruck.truckNumber, 'TG12U2637');
+  assert.strictEqual(realChandrakant.assignedTruck.truckCode, 'TRK-001');
+  assert(realChandrakant.assignedSupervisor, 'Chandrakant must have supervisor Vinod Kumar Rathod');
+  assert.strictEqual(realChandrakant.assignedSupervisor.name, 'Vinod Kumar Rathod');
+  assert.strictEqual(realChandrakant.assignedSupervisor.code, 'E001');
+
+  // Suresh Edlai (45vqjfmlhx576rb) -> code D003, no truck assigned -> assignedTruck must be null
+  const realSuresh = driverAuthService.getDriverProfile(null, '45vqjfmlhx576rb');
+  assert.strictEqual(realSuresh.employeeCode, 'D003');
+  assert.strictEqual(realSuresh.name, 'Suresh Edlai');
+  assert.strictEqual(realSuresh.assignedTruck, null, 'Suresh has no truck assigned, must return null');
+  console.log('✓ Production baseline records correctly map Chandrakant to TG12U2637 & Vinod Kumar, and Suresh to null truck.');
+
   db.close();
   // Clean up synthetic test DB
   if (fs.existsSync(TEST_DB_PATH)) {
     fs.unlinkSync(TEST_DB_PATH);
   }
 
-  console.log('\n🎉 ALL 13 SYNTHETIC TESTS PASSED CLEANLY!\n');
+  console.log('\n🎉 ALL 18 SYNTHETIC TESTS PASSED CLEANLY!\n');
 }
 
 runTests().catch(err => {

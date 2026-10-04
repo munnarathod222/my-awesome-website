@@ -880,13 +880,23 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ success: false, code: 'UNAUTHORIZED', error: 'Bearer token required' }));
         }
         const token = authHeader.split(' ')[1];
-        const verified = driverAuthService.verifyJwt(token);
+        let verified;
+        try {
+          verified = driverAuthService.verifyJwt(token);
+        } catch (cfgErr) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, code: 'CONFIG_ERROR', error: 'Server authentication configuration error' }));
+        }
         if (!verified.valid) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, code: 'TOKEN_INVALID', error: verified.error }));
         }
 
         const payload = verified.payload;
+        if (payload.type !== 'access') {
+          res.writeHead(401, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, code: 'TOKEN_TYPE_INVALID', error: 'Invalid token type: Protected routes require an access token' }));
+        }
         const acc = driverAuthService.findAccountByEmployeeId(payload.sub);
         if (!acc || acc.account_status !== 'active') {
           res.writeHead(403, { 'Content-Type': 'application/json' });
@@ -934,7 +944,11 @@ const server = http.createServer((req, res) => {
       } catch (err) {
         const status = err.status || 400;
         res.writeHead(status, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ success: false, error: err.message }));
+        return res.end(JSON.stringify({
+          success: false,
+          code: err.code || (status === 429 ? 'ACCOUNT_LOCKED' : (status === 403 ? 'ACCOUNT_DISABLED' : 'ERROR')),
+          error: err.message
+        }));
       }
     });
     return;

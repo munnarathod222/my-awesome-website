@@ -1,0 +1,68 @@
+{
+  "2ioikacogombftp": {
+    "id": "2ioikacogombftp",
+    "name": "Chandrakant Shivaji Gaikwad",
+    "employee_code": "D005",
+    "employee_type": "driver",
+    "active_status": "active",
+    "contact": "+918669516510",
+    "license_number": "MH2420080013623",
+    "assigned_truck": "gw8rd1l65z797i4",
+    "supervisor_id": "bpuppzyfbttdf1i"
+  },
+  "45vqjfmlhx576rb": {
+    "id": "45vqjfmlhx576rb",
+    "name": "Suresh Edlai",
+    "employee_code": "D003",
+    "employee_type": "driver",
+    "active_status": "leave",
+    "contact": "8669516510",
+    "license_number": "",
+    "assigned_truck": "",
+    "supervisor_id": "bpuppzyfbttdf1i"
+  },
+  "lmn4lcwur3c4197": {
+    "id": "lmn4lcwur3c4197",
+    "name": "Sangameshwar Patane",
+    "employee_code": "D004",
+    "employee_type": "driver",
+    "active_status": "leave",
+    "contact": "8669516510",
+    "license_number": "",
+    "assigned_truck": "",
+    "supervisor_id": "bpuppzyfbttdf1i"
+  },
+  "frvbvbblz5b6z01": {
+    "id": "frvbvbblz5b6z01",
+    "name": "Balbheem",
+    "employee_code": "D002",
+    "employee_type": "driver",
+    "active_status": "terminated",
+    "contact": "",
+    "license_number": "",
+    "assigned_truck": "",
+    "supervisor_id": "bpuppzyfbttdf1i"
+  },
+  "k7jaz5lqellbxtb": {
+    "id": "k7jaz5lqellbxtb",
+    "name": "Dayanand surwase",
+    "employee_code": "D001",
+    "employee_type": "driver",
+    "active_status": "terminated",
+    "contact": "",
+    "license_number": "",
+    "assigned_truck": "",
+    "supervisor_id": "bpuppzyfbttdf1i"
+  },
+  "bpuppzyfbttdf1i": {
+    "id": "bpuppzyfbttdf1i",
+    "name": "Vinod Kumar Rathod",
+    "employee_code": "E001",
+    "employee_type": "manager",
+    "active_status": "active",
+    "contact": "6281618046",
+    "license_number": "",
+    "assigned_truck": "",
+    "supervisor_id": ""
+  }
+}

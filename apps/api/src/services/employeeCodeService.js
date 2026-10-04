@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -7,10 +8,14 @@ const __dirname = path.dirname(__filename);
 
 // Find persistent data directory
 function getDataDir() {
+  if (process.env.DATA_DIR && fs.existsSync(process.env.DATA_DIR)) {
+    return process.env.DATA_DIR;
+  }
   const candidates = [
     path.resolve(process.cwd(), 'data'),
     path.resolve(__dirname, '../../../../data'),
     path.resolve(__dirname, '../../../data'),
+    '/var/data',
     '/data'
   ];
   for (const c of candidates) {
@@ -61,9 +66,16 @@ function loadCounters() {
 function saveCounters() {
   try {
     fs.mkdirSync(path.dirname(COUNTERS_FILE), { recursive: true });
-    fs.writeFileSync(COUNTERS_FILE, JSON.stringify(countersCache, null, 2), 'utf8');
+    const tmp = `${COUNTERS_FILE}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+    fs.writeFileSync(tmp, JSON.stringify(countersCache, null, 2), 'utf8');
+    try {
+      fs.renameSync(tmp, COUNTERS_FILE);
+    } catch (_) {
+      if (fs.existsSync(COUNTERS_FILE)) fs.unlinkSync(COUNTERS_FILE);
+      fs.renameSync(tmp, COUNTERS_FILE);
+    }
   } catch (err) {
-    console.error('[EmployeeCodeService] Failed to save counters:', err.message);
+    console.error('[EmployeeCodeService] Failed to save counters atomically:', err.message);
   }
 }
 
@@ -84,9 +96,16 @@ function loadCodes() {
 function saveCodes() {
   try {
     fs.mkdirSync(path.dirname(EMPLOYEE_CODES_FILE), { recursive: true });
-    fs.writeFileSync(EMPLOYEE_CODES_FILE, JSON.stringify(codesCache, null, 2), 'utf8');
+    const tmp = `${EMPLOYEE_CODES_FILE}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+    fs.writeFileSync(tmp, JSON.stringify(codesCache, null, 2), 'utf8');
+    try {
+      fs.renameSync(tmp, EMPLOYEE_CODES_FILE);
+    } catch (_) {
+      if (fs.existsSync(EMPLOYEE_CODES_FILE)) fs.unlinkSync(EMPLOYEE_CODES_FILE);
+      fs.renameSync(tmp, EMPLOYEE_CODES_FILE);
+    }
   } catch (err) {
-    console.error('[EmployeeCodeService] Failed to save employee codes:', err.message);
+    console.error('[EmployeeCodeService] Failed to save employee codes atomically:', err.message);
   }
 }
 
@@ -94,16 +113,31 @@ function saveCodes() {
  * Ensure storage schema and baseline counters are initialized.
  * 100% additive, zero external native module dependencies.
  */
-export function ensureSchema() {
+export function ensureSchema(dbOrNull = null) {
   loadCounters();
   loadCodes();
+
+  if (dbOrNull && typeof dbOrNull.exec === 'function') {
+    try {
+      dbOrNull.exec(`
+        CREATE TABLE IF NOT EXISTS system_counters (
+          counter_name TEXT PRIMARY KEY,
+          current_val INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_employees_code ON employees(employee_code) WHERE employee_code IS NOT NULL AND employee_code != '';
+      `);
+      const c = dbOrNull.prepare("SELECT count(*) as count FROM system_counters").get();
+      if (!c || c.count === 0) {
+        dbOrNull.prepare("INSERT OR IGNORE INTO system_counters (counter_name, current_val) VALUES ('driver_code', 0), ('staff_code', 0)").run();
+      }
+    } catch (_) {}
+  }
 }
 
 /**
  * Sync counters from existing employee records so that numbers never roll backward.
  */
 export function syncCountersFromExisting(customEmployees = null) {
-  ensureSchema();
   const counters = loadCounters();
   const codes = loadCodes();
 
@@ -133,21 +167,35 @@ export function syncCountersFromExisting(customEmployees = null) {
 /**
  * Concurrency-safe atomic allocation of the next permanent employee code.
  * Never reuses a code under any circumstances.
- * @param {'driver'|'staff'} type
+ * @param {object|string} dbOrType
+ * @param {string|null} maybeType
  * @returns {string} e.g. "D006", "E002", "D1000"
  */
 export function allocateNextCode(dbOrType = 'driver', maybeType = null) {
-  ensureSchema();
-  // Support both (db, type) and (type) calling signatures
-  const type = typeof dbOrType === 'string' ? dbOrType : (maybeType || 'driver');
+  const isDb = dbOrType && typeof dbOrType.prepare === 'function';
+  const type = isDb ? (maybeType || 'driver') : (typeof dbOrType === 'string' ? dbOrType : 'driver');
   const isDriver = String(type).toLowerCase().includes('driver');
   const counterKey = isDriver ? 'driver_code' : 'staff_code';
   const prefix = isDriver ? 'D' : 'E';
 
-  const counters = loadCounters();
-  counters[counterKey] = (Number(counters[counterKey]) || 0) + 1;
-  const nextVal = counters[counterKey];
-  saveCounters();
+  ensureSchema(isDb ? dbOrType : null);
+
+  let nextVal;
+  if (isDb) {
+    try {
+      dbOrType.prepare("INSERT OR IGNORE INTO system_counters (counter_name, current_val) VALUES (?, 0)").run(counterKey);
+      dbOrType.prepare("UPDATE system_counters SET current_val = current_val + 1 WHERE counter_name = ?").run(counterKey);
+      const row = dbOrType.prepare("SELECT current_val FROM system_counters WHERE counter_name = ?").get(counterKey);
+      nextVal = row ? row.current_val : 1;
+    } catch (_) {}
+  }
+
+  if (!nextVal) {
+    const counters = loadCounters();
+    counters[counterKey] = (Number(counters[counterKey]) || 0) + 1;
+    nextVal = counters[counterKey];
+    saveCounters();
+  }
 
   const formattedNum = nextVal < 1000 ? String(nextVal).padStart(3, '0') : String(nextVal);
   return `${prefix}${formattedNum}`;
@@ -171,18 +219,38 @@ export function setCodeForEmployee(employeeId, code) {
 }
 
 /**
- * Preview codes for employees list
+ * Preview codes for employees list or SQLite DB
  */
-export function previewBackfill(employeesList = []) {
+export function previewBackfill(dbOrList = []) {
   ensureSchema();
-  const codes = loadCodes();
-  const counters = loadCounters();
+  const isDb = dbOrList && typeof dbOrList.prepare === 'function';
+  let employeesList = [];
+  if (isDb) {
+    try {
+      employeesList = dbOrList.prepare('SELECT id, name, employee_type, active_status, employee_code, created FROM employees ORDER BY created ASC, id ASC').all();
+    } catch (_) {}
+  } else if (Array.isArray(dbOrList)) {
+    employeesList = dbOrList;
+  }
 
-  let nextD = counters.driver_code + 1;
-  let nextE = counters.staff_code + 1;
+  const codes = loadCodes();
+  let nextD = 1;
+  let nextE = 1;
+  if (isDb) {
+    try {
+      const dRow = dbOrList.prepare("SELECT current_val FROM system_counters WHERE counter_name = 'driver_code'").get();
+      if (dRow && dRow.current_val > 0) nextD = dRow.current_val + 1;
+      const eRow = dbOrList.prepare("SELECT current_val FROM system_counters WHERE counter_name = 'staff_code'").get();
+      if (eRow && eRow.current_val > 0) nextE = eRow.current_val + 1;
+    } catch (_) {}
+  } else {
+    const counters = loadCounters();
+    nextD = (counters.driver_code || 0) + 1;
+    nextE = (counters.staff_code || 0) + 1;
+  }
 
   const preview = employeesList.map(e => {
-    let currentCode = (e.employee_code || codes[e.id] || '').trim().toUpperCase();
+    let currentCode = (e.employee_code || (isDb ? null : codes[e.id]) || '').trim().toUpperCase();
     const hasValid = /^[DE]\d{3,}$/.test(currentCode);
 
     const typeStr = (e.employee_type || '').toLowerCase().trim();
@@ -218,6 +286,49 @@ export function previewBackfill(employeesList = []) {
     preview,
     nextDriverCounter: nextD,
     nextStaffCounter: nextE
+  };
+}
+
+/**
+ * Apply permanent employee code backfill idempotently
+ */
+export function applyBackfill(dbOrList = []) {
+  const p = previewBackfill(dbOrList);
+  const isDb = dbOrList && typeof dbOrList.prepare === 'function';
+  const codes = loadCodes();
+  let updatedCount = 0;
+
+  for (const item of p.preview) {
+    if (item.status === 'NEW_ASSIGNMENT') {
+      if (isDb) {
+        try {
+          dbOrList.prepare('UPDATE employees SET employee_code = ? WHERE id = ?').run(item.proposed_code, item.id);
+        } catch (_) {}
+      } else {
+        codes[item.id] = item.proposed_code;
+      }
+      updatedCount++;
+    }
+  }
+
+  if (!isDb) {
+    saveCodes();
+    const counters = loadCounters();
+    if (p.nextDriverCounter - 1 > counters.driver_code) counters.driver_code = p.nextDriverCounter - 1;
+    if (p.nextStaffCounter - 1 > counters.staff_code) counters.staff_code = p.nextStaffCounter - 1;
+    saveCounters();
+  } else {
+    try {
+      dbOrList.prepare("UPDATE system_counters SET current_val = ? WHERE counter_name = 'driver_code'").run(p.nextDriverCounter - 1);
+      dbOrList.prepare("UPDATE system_counters SET current_val = ? WHERE counter_name = 'staff_code'").run(p.nextStaffCounter - 1);
+    } catch (_) {}
+  }
+
+  return {
+    success: true,
+    totalEmployees: p.totalEmployees,
+    updatedCount,
+    details: p.preview
   };
 }
 
