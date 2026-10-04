@@ -30,6 +30,9 @@ htmlFiles.forEach(file => {
 
 // 2. Files to deploy
 const filesToDeploy = [
+  'data/system_counters.json',
+  'data/employee_codes.json',
+  'data/driver_app_accounts.json',
   'apps/api/src/services/employeeCodeService.js',
   'apps/api/src/services/driverAuthService.js',
   'apps/api/src/routes/mobileAuth.js',
