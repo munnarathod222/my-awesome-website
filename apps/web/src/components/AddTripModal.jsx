@@ -352,7 +352,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     <SelectContent>
                       {clients.map(c => (
                         <SelectItem key={c.id} value={c.id} className="text-xs">
-                          {c.client_name || c.company_name} {c.company_name ? `(${c.company_name})` : ''}
+                          {c.client_name || c.company_name} {c.company_name && c.company_name !== c.client_name ? `(${c.company_name})` : ''} {c.client_type?.includes('Broker') ? ' [🤝 Broker]' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -77,6 +77,7 @@ export default function TransportCrmNewCustomerModal({ isOpen, onClose, onSaved 
                 <SelectTrigger className="rounded-xl h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Manufacturing & Industrial">Manufacturing & Industrial</SelectItem>
+                  <SelectItem value="Freight Brokerage / Commission Agent">Freight Brokerage / Commission Agent</SelectItem>
                   <SelectItem value="Chemicals & Polymers">Chemicals & Polymers</SelectItem>
                   <SelectItem value="Metals & Mining">Metals & Mining</SelectItem>
                   <SelectItem value="FMCG & Cold Chain">FMCG & Cold Chain</SelectItem>
