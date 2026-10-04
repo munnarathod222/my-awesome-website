@@ -5670,6 +5670,8 @@ app.use('/api', apiRouter);
 // Native Android Mobile Driver Authentication API (Versioned)
 app.use('/api/mobile/v1/auth', mobileAuthRouter);
 app.use('/hcgi/api/mobile/v1/auth', mobileAuthRouter);
+app.use('/api/mobile/v1', mobileAuthRouter);
+app.use('/hcgi/api/mobile/v1', mobileAuthRouter);
 
 // Office Driver App Access endpoints
 app.use('/api/office/driver-access', driverRouter);

@@ -34,12 +34,7 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
     const payload = verification.payload;
 
     try {
-      const db = driverAuthService.getDb();
-      const acc = db.prepare(`
-        SELECT id, employee_id, employee_code, password_version, account_status, must_change_password
-        FROM driver_app_accounts
-        WHERE employee_id = ?
-      `).get(payload.sub);
+      const acc = driverAuthService.findAccountByEmployeeId(payload.sub);
 
       if (!acc) {
         return res.status(401).json({
@@ -92,16 +87,15 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
 };
 
 /**
- * POST /api/mobile/v1/auth/login
+ * POST /login and /auth/login
  * Driver login with permanent employeeCode (e.g. D001) and password
  */
-router.post('/login', (req, res) => {
+router.post(['/login', '/auth/login'], (req, res) => {
   const { employeeCode, password } = req.body || {};
   const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
 
   try {
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.authenticateLogin(db, { employeeCode, password, ip });
+    const result = driverAuthService.authenticateLogin(null, { employeeCode, password, ip });
     return res.status(200).json(result);
   } catch (err) {
     const statusCode = err.status || 400;
@@ -114,15 +108,14 @@ router.post('/login', (req, res) => {
 });
 
 /**
- * POST /api/mobile/v1/auth/change-password
+ * POST /change-password and /auth/change-password
  * First login password change or regular password update
  */
-router.post('/change-password', requireDriverAuth({ allowMustChange: true }), (req, res) => {
+router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ allowMustChange: true }), (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
 
   try {
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.changeDriverPassword(db, {
+    const result = driverAuthService.changeDriverPassword(null, {
       employeeId: req.driverAuth.employeeId,
       currentPassword,
       newPassword
@@ -138,15 +131,14 @@ router.post('/change-password', requireDriverAuth({ allowMustChange: true }), (r
 });
 
 /**
- * POST /api/mobile/v1/auth/refresh
+ * POST /refresh and /auth/refresh
  * Refresh session access token using valid refresh token
  */
-router.post('/refresh', (req, res) => {
+router.post(['/refresh', '/auth/refresh'], (req, res) => {
   const { refreshToken } = req.body || {};
 
   try {
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.refreshSessionToken(db, { refreshToken });
+    const result = driverAuthService.refreshSessionToken(null, { refreshToken });
     return res.status(200).json(result);
   } catch (err) {
     const statusCode = err.status || 400;
@@ -159,13 +151,12 @@ router.post('/refresh', (req, res) => {
 });
 
 /**
- * POST /api/mobile/v1/auth/logout
+ * POST /logout and /auth/logout
  * Revoke driver session across all active devices
  */
-router.post('/logout', requireDriverAuth({ allowMustChange: true }), (req, res) => {
+router.post(['/logout', '/auth/logout'], requireDriverAuth({ allowMustChange: true }), (req, res) => {
   try {
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.logoutDriver(db, { employeeId: req.driverAuth.employeeId });
+    const result = driverAuthService.logoutDriver(null, { employeeId: req.driverAuth.employeeId });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(500).json({
@@ -176,13 +167,12 @@ router.post('/logout', requireDriverAuth({ allowMustChange: true }), (req, res) 
 });
 
 /**
- * GET /api/mobile/v1/me
+ * GET /me and /auth/me
  * Authenticated driver profile, assigned truck, and supervisor details
  */
-router.get('/me', requireDriverAuth({ allowMustChange: false }), (req, res) => {
+router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), (req, res) => {
   try {
-    const db = driverAuthService.getDb();
-    const profile = driverAuthService.getDriverProfile(db, req.driverAuth.employeeId);
+    const profile = driverAuthService.getDriverProfile(null, req.driverAuth.employeeId);
     return res.status(200).json({
       success: true,
       driver: profile
