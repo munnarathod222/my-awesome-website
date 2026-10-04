@@ -1039,7 +1039,44 @@ const initDatabaseIndexes = async (dbFilePath) => {
         logger.warn(`Notice updating _collections schema: ${colErr.message}`);
       }
 
+      // Ensure PocketBase clients collection schema allows Broker in client_type
+      try {
+        const clientRow = db.prepare("SELECT fields FROM _collections WHERE name='clients'").get();
+        if (clientRow && clientRow.fields) {
+          const fields = JSON.parse(clientRow.fields);
+          const ctField = fields.find(f => f.name === 'client_type');
+          if (ctField && Array.isArray(ctField.values) && !ctField.values.includes('Broker')) {
+            const required = ['Broker', '3PL Broker', 'Direct Client', 'E-Commerce', 'Pharma', 'FMCG', 'Retail', 'Company', 'Individual', 'Distributor', 'Retailer'];
+            for (const req of required) {
+              if (!ctField.values.includes(req)) ctField.values.push(req);
+            }
+            db.prepare("UPDATE _collections SET fields = ? WHERE name='clients'").run(JSON.stringify(fields));
+            logger.info("✅ PocketBase _collections schema updated with Broker in clients.client_type!");
+          }
+        }
+      } catch (clientColErr) {
+        logger.warn(`Notice updating clients client_type schema: ${clientColErr.message}`);
+      }
+
       db.close();
+    } catch (_) {}
+
+    try {
+      const { execSync } = await import('node:child_process');
+      const jsonStr = execSync(`sqlite3 "${dbFilePath}" "SELECT fields FROM _collections WHERE name='clients';"`, { encoding: 'utf8' }).trim();
+      if (jsonStr) {
+        const fields = JSON.parse(jsonStr);
+        const ctField = fields.find(f => f.name === 'client_type');
+        if (ctField && Array.isArray(ctField.values) && !ctField.values.includes('Broker')) {
+          const required = ['Broker', '3PL Broker', 'Direct Client', 'E-Commerce', 'Pharma', 'FMCG', 'Retail', 'Company', 'Individual', 'Distributor', 'Retailer'];
+          for (const req of required) {
+            if (!ctField.values.includes(req)) ctField.values.push(req);
+          }
+          const escaped = JSON.stringify(fields).replace(/'/g, "''");
+          execSync(`sqlite3 "${dbFilePath}" "UPDATE _collections SET fields='${escaped}' WHERE name='clients'; PRAGMA wal_checkpoint(TRUNCATE);"`, { stdio: 'pipe' });
+          logger.info("✅ Ensured PocketBase clients collection includes Broker in client_type via sqlite3 CLI!");
+        }
+      }
     } catch (_) {}
 
     const { execSync } = await import('node:child_process');
