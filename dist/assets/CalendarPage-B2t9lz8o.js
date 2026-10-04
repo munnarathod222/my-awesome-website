@@ -210,25 +210,124 @@ function buildBusinessCalendarEvents(trucks, truckDocs, jobCards, employees, cli
     }
   });
 
-  const unpaidTrips = (tripLogs || []).filter(t => t.client_payment_status !== 'received' && Number(t.revenue || 0) > 0);
-  unpaidTrips.slice(0, 15).forEach(t => {
-    const baseDate = t.date ? new Date(t.date) : new Date();
-    const dueDate = new Date(baseDate.getTime() + 32 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    events.push({
-      id: 'inv_due_' + t.id,
-      category: 'invoice_due',
-      categoryLabel: 'Invoice Due',
-      icon: '🧾',
-      title: 'Invoice Due: ' + (t.route || 'Freight Invoice') + ' - ₹' + Number(t.revenue || 0).toLocaleString('en-IN'),
-      date: dueDate,
-      amount: Number(t.revenue || 0),
-      partyName: 'AMAZON TRANSPORTATION SERVICES',
-      truckNumber: t.truck_number || 'TG12U2637',
-      status: 'Upcoming',
-      description: 'Freight invoice settlement due for Trip #' + (t.trip_id || t.id.slice(0, 8)) + ' (' + t.route + ').',
-      priority: 'high'
-    });
+  const clientMap = new Map((clients || []).map(c => [c.id, c]));
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const todayStr = toYMD(new Date());
+
+  const pendingDeliveredTrips = (tripLogs || []).filter(t => {
+    const isDelivered = t.trip_status === 'Delivered' || t.trip_status === 'Completed';
+    const payStatus = (t.client_payment_status || t.payment_status || '').toLowerCase().trim();
+    const isPaid = payStatus === 'received' || payStatus === 'paid';
+    const rev = Number(t.revenue || t.amount || 0);
+    return isDelivered && !isPaid && rev > 0;
   });
+
+  const byClient = {};
+  pendingDeliveredTrips.forEach(t => {
+    const cid = t.client_id || 'default_amazon';
+    if (!byClient[cid]) byClient[cid] = [];
+    byClient[cid].push(t);
+  });
+
+  for (const [cid, trips] of Object.entries(byClient)) {
+    const client = clientMap.get(cid) || (clients || []).find(c => (c.client_name || c.company_name || '').toLowerCase().includes('amazon')) || {
+      company_name: 'AMAZON TRANSPORTATION SERVICES',
+      client_name: 'Amazon',
+      billing_type: 'Contract',
+      payment_terms: '32',
+      isTdsApplicable: 1,
+      tdsRate: 1
+    };
+
+    const clientName = client.client_name || client.company_name || 'Amazon';
+    const isContract = (client.billing_type || 'Contract').toLowerCase() === 'contract';
+    const terms = parseInt(client.payment_terms || '30', 10) || 30;
+    const tdsPct = client.isTdsApplicable ? (client.tdsRate || 1) : 0;
+
+    if (isContract) {
+      const cycleGroups = {};
+      trips.forEach(t => {
+        const d = new Date(t.date || t.created);
+        if (isNaN(d.getTime())) return;
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const day = d.getDate();
+        const half = day <= 15 ? 1 : 2;
+        const key = y + '_' + String(m).padStart(2, '0') + '_H' + half;
+        if (!cycleGroups[key]) {
+          cycleGroups[key] = { year: y, month: m, half, trips: [], totalGross: 0 };
+        }
+        cycleGroups[key].trips.push(t);
+        cycleGroups[key].totalGross += Number(t.revenue || 0);
+      });
+
+      for (const [cycleKey, grp] of Object.entries(cycleGroups)) {
+        const cycleEndDate = grp.half === 1
+          ? new Date(grp.year, grp.month - 1, 15)
+          : new Date(grp.year, grp.month, 0);
+
+        const dueDate = new Date(cycleEndDate.getTime() + terms * 24 * 60 * 60 * 1000);
+        const dueYMD = toYMD(dueDate);
+        const mName = monthNames[grp.month - 1];
+        const cycleLabel = grp.half === 1 ? mName + ' 01–15' : mName + ' 16–' + cycleEndDate.getDate();
+        const netAmount = Math.round(grp.totalGross * (1 - tdsPct / 100));
+        const isOverdue = dueYMD < todayStr;
+
+        events.push({
+          id: 'inv_due_' + cid + '_' + cycleKey,
+          category: 'invoice_due',
+          categoryLabel: 'Invoice Due',
+          icon: '🧾',
+          title: 'Invoice Due: ' + clientName + ' (' + cycleLabel + ') - ₹' + grp.totalGross.toLocaleString('en-IN'),
+          date: dueYMD,
+          amount: grp.totalGross,
+          partyName: client.company_name || clientName,
+          truckNumber: 'TG12U2637',
+          status: isOverdue ? 'Overdue' : 'Upcoming',
+          description: 'B2B freight invoice due for ' + grp.trips.length + ' delivered trips during ' + cycleLabel + '.',
+          priority: isOverdue ? 'urgent' : 'high'
+        });
+
+        events.push({
+          id: 'exp_pay_' + cid + '_' + cycleKey,
+          category: 'expected_payment',
+          categoryLabel: 'Expected Payment',
+          icon: '💰',
+          title: 'Expected Payment: ' + clientName + ' - ₹' + netAmount.toLocaleString('en-IN'),
+          date: dueYMD,
+          amount: netAmount,
+          partyName: client.company_name || clientName,
+          truckNumber: 'TG12U2637',
+          status: isOverdue ? 'Overdue' : 'Expected',
+          description: 'Consolidated B2B contract freight settlement for ' + grp.trips.length + ' delivered trips (' + cycleLabel + '). Gross: ₹' + grp.totalGross.toLocaleString('en-IN') + ', Net: ₹' + netAmount.toLocaleString('en-IN') + ' (after ' + tdsPct + '% TDS). Credit terms: ' + terms + ' days.',
+          priority: isOverdue ? 'urgent' : 'high'
+        });
+      }
+    } else {
+      trips.forEach(t => {
+        const baseDate = t.date ? new Date(t.date) : new Date();
+        const spotDue = new Date(baseDate.getTime() + (terms || 7) * 24 * 60 * 60 * 1000);
+        const dueYMD = toYMD(spotDue);
+        const rev = Number(t.revenue || 0);
+        const isOverdue = dueYMD < todayStr;
+
+        events.push({
+          id: 'exp_pay_spot_' + t.id,
+          category: 'expected_payment',
+          categoryLabel: 'Expected Payment',
+          icon: '💰',
+          title: 'Expected Payment: ' + clientName + ' - ₹' + rev.toLocaleString('en-IN'),
+          date: dueYMD,
+          amount: rev,
+          partyName: client.company_name || clientName,
+          truckNumber: t.truck_number || 'TG12U2637',
+          status: isOverdue ? 'Overdue' : 'Expected',
+          description: 'Spot shipment payment for route ' + (t.route || 'Transit') + ' (Trip #' + (t.trip_id || t.id.slice(0, 8)) + ').',
+          priority: isOverdue ? 'urgent' : 'high'
+        });
+      });
+    }
+  }
 
   (dueDates || []).forEach(dd => {
     if (dd.due_date) {
@@ -344,31 +443,13 @@ function buildBusinessCalendarEvents(trucks, truckDocs, jobCards, employees, cli
     });
   }
 
-  const deliveredTrips = (tripLogs || []).filter(t => t.trip_status === 'Delivered' && Number(t.revenue || 0) > 0);
-  deliveredTrips.slice(0, 20).forEach(t => {
-    const tripDate = t.date ? new Date(t.date) : new Date();
-    const payDate = new Date(tripDate.getTime() + 32 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    events.push({
-      id: 'exp_pay_' + t.id,
-      category: 'expected_payment',
-      categoryLabel: 'Expected Payment',
-      icon: '💰',
-      title: 'Expected Payment: Amazon - ₹' + Number(t.revenue || 0).toLocaleString('en-IN'),
-      date: payDate,
-      amount: Number(t.revenue || 0),
-      partyName: 'AMAZON TRANSPORTATION SERVICES',
-      truckNumber: t.truck_number || 'TG12U2637',
-      status: t.client_payment_status === 'received' ? 'Received' : 'Expected',
-      description: 'Expected B2B contract freight remittance for route ' + t.route + ' (' + t.kms + ' km). 32 days net credit cycle.',
-      priority: 'high'
-    });
-  });
+// Stream 9 unified with consolidated cycles
 
   events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   return events;
 }
 
-import{r as n,j as e,bs as Fs,ap as Os,ag as ee,a4 as se,a6 as w,a$ as te,aw as re,ba as ss,g as ts,at as rs,cy as as,dw as Is,cv as ns,aV as ke,aA as $s,b2 as ls,bl as Es,n as Bs,aU as zs,bG as qs,be as Qs,az as Vs,af as Us}from"./vendor-react-Bs5V2qFE.js";import{ar as ge,b2 as Ps,aR as Se,u as Ys,b3 as Hs,p as S,aq as Ws,ax as Gs,t as Y,k as f,B as c,X as p,C as _,S as H,e as W,g as G,h as J,i as X,I,O as we,w as ae,D as xe,a as me,b as ue,c as pe,d as he,j as be,L as $,b1 as Js,au as Xs}from"./index-DLxf9dwO.js";import{A as Ks,R as Zs}from"./ReminderDetailsModal-pkSDYcqN.js";import{s as et,e as st}from"./startOfMonth-CPqsb2_s.js";import{e as ds}from"./eachDayOfInterval-B703Z6PC.js";import{i as D}from"./isToday-CDNUloTc.js";import{i as os}from"./isSameMonth-BI6tq28A.js";import{i as Ce}from"./isSameDay-tDnVa-xb.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";import"./PaymentRecordModal-D0eRHf14.js";import"./alert-DkiyHHbs.js";function tt(y,i){const h=Ps(),u=h.weekStartsOn??h.locale?.options?.weekStartsOn??0,N=ge(y,i?.in),b=N.getDay(),A=(b<u?-7:0)+6-(b-u);return N.setDate(N.getDate()+A),N.setHours(23,59,59,999),N}function rt(y,i){const h=ge(y,i?.in),u=h.getFullYear(),N=h.getMonth(),b=Se(h,0);return b.setFullYear(u,N+1,0),b.setHours(0,0,0,0),b.getDate()}function at(y,i,h){const u=ge(y,h?.in),N=u.getFullYear(),b=u.getDate(),A=Se(y,0);A.setFullYear(N,i,15),A.setHours(0,0,0,0);const T=rt(A);return u.setMonth(i,Math.min(b,T)),u}function nt(y,i,h){const u=ge(y,h?.in);return isNaN(+u)?Se(y,NaN):(u.setFullYear(i),u)}function ft(){const{currentUser:y}=Ys(),[bizEvents,setBizEvents]=n.useState([]),[activeCategory,setActiveCategory]=n.useState("all"),[i,h]=n.useState(new Date),[u,N]=n.useState("events"),[b,A]=n.useState([]),[T,is]=n.useState([]),[E,cs]=n.useState([]),[B,xs]=n.useState([]),[_e,ms]=n.useState([]),[De,us]=n.useState([]),[Te,ps]=n.useState([]),[Me,Le]=n.useState(!0),[fe,Re]=n.useState("grid"),[ne,hs]=n.useState(""),[z,bs]=n.useState(!0),[q,gs]=n.useState(!0),[Q,fs]=n.useState(!0),[je,Ae]=n.useState("matrix"),[Ne,js]=n.useState(""),[K,Fe]=n.useState("all"),[x,Ns]=n.useState(null),[vs,le]=n.useState(!1),[o,ys]=n.useState(null),[ks,de]=n.useState(!1),[ws,oe]=n.useState(!1),[Oe,Ie]=n.useState(null),[$e,Cs]=n.useState(new Date),[Ss,Z]=n.useState(!1),[_s,ie]=n.useState(!1),[ve,Ee]=n.useState(!1),[g,M]=n.useState({date:"",truck_number:"",driver_name:"",route:"",cycle:"",revenue:"",trip_status:"Upcoming"}),L=n.useMemo(()=>et(i),[i]),V=n.useMemo(()=>st(L),[L]),Be=n.useMemo(()=>Hs(L),[L]),ze=n.useMemo(()=>tt(V),[V]),qe=n.useMemo(()=>ds({start:Be,end:ze}),[Be,ze]),ce=n.useMemo(()=>ds({start:L,end:V}),[L,V]),U=n.useCallback(async()=>{Le(!0);try{const s=L.toISOString().split("T")[0],t=V.toISOString().split("T")[0],r=await S.collection("trip_logs").getFullList({filter:`date >= "${s} 00:00:00" && date <= "${t} 23:59:59"`,sort:"date",$autoCancel:!1}).catch(()=>[]),a=await S.collection("reminders").getFullList({filter:`reminder_date >= "${s} 00:00:00" && reminder_date <= "${t} 23:59:59"`,expand:"truck_id",$autoCancel:!1}).catch(()=>[]);let m=[];try{m=(await S.collection("payment_due_dates").getFullList({filter:`due_date >= "${s}" && due_date <= "${t}"`,expand:"card_id",$autoCancel:!1})).filter(k=>(k.full_payment_amount||0)>0).map(k=>({id:k.id,title:`CC Statement Due: ${k.expand?.card_id?.card_name||"Credit Card"}`,amount:k.full_payment_amount||k.minimum_amount_due||0,date:Ws(k.due_date),type:"Credit Card Dues",status:k.status||"Unpaid",cardId:k.card_id}))}catch(R){console.warn("Could not load card due dates:",R.message)}const d=await S.collection("trucks").getFullList({sort:"truck_number",$autoCancel:!1}).catch(()=>[]),C=Gs(d),l=await S.collection("maintenance_problems").getFullList({$autoCancel:!1}).catch(()=>[]),O=await S.collection("maintenance_schedules").getFullList({$autoCancel:!1}).catch(()=>[]),j=await S.collection("maintenance_logs").getFullList({$autoCancel:!1}).catch(()=>[]);A(r),is(a),cs(m),xs(C),ms(l),us(O),ps(j);
+import{r as n,j as e,bs as Fs,ap as Os,ag as ee,a4 as se,a6 as w,a$ as te,aw as re,ba as ss,g as ts,at as rs,cy as as,dw as Is,cv as ns,aV as ke,aA as $s,b2 as ls,bl as Es,n as Bs,aU as zs,bG as qs,be as Qs,az as Vs,af as Us}from"./vendor-react-Bs5V2qFE.js";import{ar as ge,b2 as Ps,aR as Se,u as Ys,b3 as Hs,p as S,aq as Ws,ax as Gs,t as Y,k as f,B as c,X as p,C as _,S as H,e as W,g as G,h as J,i as X,I,O as we,w as ae,D as xe,a as me,b as ue,c as pe,d as he,j as be,L as $,b1 as Js,au as Xs}from"./index-DLxf9dwO.js";import{A as Ks,R as Zs}from"./ReminderDetailsModal-pkSDYcqN.js";import{s as et,e as st}from"./startOfMonth-CPqsb2_s.js";import{e as ds}from"./eachDayOfInterval-B703Z6PC.js";import{i as D}from"./isToday-CDNUloTc.js";import{i as os}from"./isSameMonth-BI6tq28A.js";import{i as Ce}from"./isSameDay-tDnVa-xb.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";import"./PaymentRecordModal-D0eRHf14.js";import"./alert-DkiyHHbs.js";function tt(y,i){const h=Ps(),u=h.weekStartsOn??h.locale?.options?.weekStartsOn??0,N=ge(y,i?.in),b=N.getDay(),A=(b<u?-7:0)+6-(b-u);return N.setDate(N.getDate()+A),N.setHours(23,59,59,999),N}function rt(y,i){const h=ge(y,i?.in),u=h.getFullYear(),N=h.getMonth(),b=Se(h,0);return b.setFullYear(u,N+1,0),b.setHours(0,0,0,0),b.getDate()}function at(y,i,h){const u=ge(y,h?.in),N=u.getFullYear(),b=u.getDate(),A=Se(y,0);A.setFullYear(N,i,15),A.setHours(0,0,0,0);const T=rt(A);return u.setMonth(i,Math.min(b,T)),u}function nt(y,i,h){const u=ge(y,h?.in);return isNaN(+u)?Se(y,NaN):(u.setFullYear(i),u)}function ft(){const{currentUser:y}=Ys(),[bizEvents,setBizEvents]=n.useState([]),[activeCategory,setActiveCategory]=n.useState("all"),[i,h]=n.useState(new Date),[u,N]=n.useState("events"),[b,A]=n.useState([]),[T,is]=n.useState([]),[E,cs]=n.useState([]),[B,xs]=n.useState([]),[_e,ms]=n.useState([]),[De,us]=n.useState([]),[Te,ps]=n.useState([]),[Me,Le]=n.useState(!0),[fe,Re]=n.useState("grid"),[ne,hs]=n.useState(""),[z,bs]=n.useState(!0),[q,gs]=n.useState(!0),[Q,fs]=n.useState(!0),[je,Ae]=n.useState("matrix"),[Ne,js]=n.useState(""),[K,Fe]=n.useState("all"),[x,Ns]=n.useState(null),[vs,le]=n.useState(!1),[o,ys]=n.useState(null),[ks,de]=n.useState(!1),[ws,oe]=n.useState(!1),[Oe,Ie]=n.useState(null),[$e,Cs]=n.useState(new Date),[Ss,Z]=n.useState(!1),[_s,ie]=n.useState(!1),[ve,Ee]=n.useState(!1),[g,M]=n.useState({date:"",truck_number:"",driver_name:"",route:"",cycle:"",revenue:"",trip_status:"Upcoming"}),L=n.useMemo(()=>et(i),[i]),V=n.useMemo(()=>st(L),[L]),Be=n.useMemo(()=>Hs(L),[L]),ze=n.useMemo(()=>tt(V),[V]),qe=n.useMemo(()=>ds({start:Be,end:ze}),[Be,ze]),ce=n.useMemo(()=>ds({start:L,end:V}),[L,V]),U=n.useCallback(async()=>{Le(!0);try{const s=f(L,"yyyy-MM-dd"),t=f(V,"yyyy-MM-dd"),r=await S.collection("trip_logs").getFullList({filter:`date >= "${s} 00:00:00" && date <= "${t} 23:59:59"`,sort:"date",$autoCancel:!1}).catch(()=>[]),a=await S.collection("reminders").getFullList({filter:`reminder_date >= "${s} 00:00:00" && reminder_date <= "${t} 23:59:59"`,expand:"truck_id",$autoCancel:!1}).catch(()=>[]);let m=[];try{m=(await S.collection("payment_due_dates").getFullList({filter:`due_date >= "${s}" && due_date <= "${t}"`,expand:"card_id",$autoCancel:!1})).filter(k=>(k.full_payment_amount||0)>0).map(k=>({id:k.id,title:`CC Statement Due: ${k.expand?.card_id?.card_name||"Credit Card"}`,amount:k.full_payment_amount||k.minimum_amount_due||0,date:Ws(k.due_date),type:"Credit Card Dues",status:k.status||"Unpaid",cardId:k.card_id}))}catch(R){console.warn("Could not load card due dates:",R.message)}const d=await S.collection("trucks").getFullList({sort:"truck_number",$autoCancel:!1}).catch(()=>[]),C=Gs(d),l=await S.collection("maintenance_problems").getFullList({$autoCancel:!1}).catch(()=>[]),O=await S.collection("maintenance_schedules").getFullList({$autoCancel:!1}).catch(()=>[]),j=await S.collection("maintenance_logs").getFullList({$autoCancel:!1}).catch(()=>[]);A(r),is(a),cs(m),xs(C),ms(l),us(O),ps(j);
 try{
   const[bDocs,bJobs,bEmps,bClients,bLoans,bEmis]=await Promise.all([
     S.collection("truck_documents").getFullList({$autoCancel:!1}).catch(()=>[]),
@@ -383,7 +464,7 @@ try{
   fetch("/api/business-calendar/events").then(res=>res.ok?res.json():null).then(d=>{if(d&&d.events&&d.events.length>0)setBizEvents(d.events);}).catch(()=>{});
 }catch(e){console.warn("Local calendar build warning:",e)}}catch(s){console.error("Failed to fetch calendar data:",s),Y.error("Could not load calendar events")}finally{Le(!1)}},[L,V]);n.useEffect(()=>{U()},[U]);const Qe=s=>{
     const t=ne.toLowerCase().trim(),r=z?b.filter(d=>!d.date||!Ce(new Date(d.date.replace(" ","T")),s)?!1:t?(d.route||"").toLowerCase().includes(t)||(d.truck_number||"").toLowerCase().includes(t)||(d.driver_name||"").toLowerCase().includes(t):!0):[],a=q?T.filter(d=>!d.reminder_date||!Ce(new Date(d.reminder_date),s)?!1:t?(d.title||"").toLowerCase().includes(t)||(d.description||"").toLowerCase().includes(t):!0):[],m=Q?E.filter(d=>!d.date||!Ce(d.date,s)?!1:t?(d.title||"").toLowerCase().includes(t):!0):[];
-    const dayStr=(s instanceof Date?s.toISOString().split("T")[0]:String(s).substring(0,10));
+    const dayStr=(s instanceof Date?f(s,"yyyy-MM-dd"):String(s).substring(0,10));
     const matchingBiz=(bizEvents||[]).filter(ev=>ev.date===dayStr&&(activeCategory==="all"||ev.category===activeCategory)&&(!t||(ev.title||"").toLowerCase().includes(t)||(ev.description||"").toLowerCase().includes(t)||(ev.truckNumber||"").toLowerCase().includes(t)));
     const truckService=matchingBiz.filter(ev=>ev.category==="truck_service");
     const insuranceRenewal=matchingBiz.filter(ev=>ev.category==="insurance_renewal");
