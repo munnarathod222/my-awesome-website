@@ -1,1 +1,17 @@
-{}
+{
+  "drv_acc_1791137175958_ff6932aa": {
+    "id": "drv_acc_1791137175958_ff6932aa",
+    "employee_id": "drv_test_1",
+    "employee_code": "D006",
+    "password_hash": "scrypt$0ff3ce40b2d80b81697c26d61929ff0b$fbd3d672c80ecaaf82d2df6efb1f81c442dc5c3c6a994aba8d881330b2dac3a441afc8c83d348944088082a2301da5d9c390a6ef0efe3fe900d007e571fe556d",
+    "account_status": "active",
+    "must_change_password": true,
+    "password_version": 1,
+    "failed_login_attempts": 0,
+    "locked_until": null,
+    "last_login_at": null,
+    "last_login_ip": null,
+    "created_at": "2026-10-04T18:06:15.958Z",
+    "updated_at": "2026-10-04T18:06:15.959Z"
+  }
+}

@@ -329,8 +329,7 @@ router.post('/office/driver-access/create', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const createdBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.createDriverAccount(db, { employeeId, temporaryPassword, createdBy });
+    const result = driverAuthService.createDriverAccount(null, { employeeId, temporaryPassword, createdBy });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
@@ -341,8 +340,7 @@ router.post('/office/driver-access/reset-password', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const resetBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.resetDriverPassword(db, { employeeId, temporaryPassword, resetBy });
+    const result = driverAuthService.resetDriverPassword(null, { employeeId, temporaryPassword, resetBy });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
@@ -353,8 +351,7 @@ router.post('/office/driver-access/toggle-status', async (req, res) => {
   try {
     const { employeeId, status } = req.body || {};
     const updatedBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const db = driverAuthService.getDb();
-    const result = driverAuthService.setAccountStatus(db, { employeeId, status, updatedBy });
+    const result = driverAuthService.setAccountStatus(null, { employeeId, status, updatedBy });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
@@ -364,9 +361,9 @@ router.post('/office/driver-access/toggle-status', async (req, res) => {
 router.get('/office/driver-access/status/:employeeId', async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const db = driverAuthService.getDb();
-    const status = driverAuthService.getAccountStatus(db, employeeId);
+    const status = driverAuthService.getAccountStatus(null, employeeId);
     return res.status(200).json({ success: true, ...status });
+
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
   }

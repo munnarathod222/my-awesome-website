@@ -845,7 +845,7 @@ const server = http.createServer((req, res) => {
   }
 
   // ── Native Android Mobile Driver Authentication API (Versioned) ──
-  if (reqPath.startsWith('/api/mobile/v1/auth') || reqPath.startsWith('/hcgi/api/mobile/v1/auth')) {
+  if (reqPath.startsWith('/api/mobile/v1') || reqPath.startsWith('/hcgi/api/mobile/v1')) {
     const cleanAuthPath = reqPath.replace('/hcgi', '');
     let body = '';
     req.on('data', c => body += c);
@@ -854,12 +854,10 @@ const server = http.createServer((req, res) => {
       try { if (body) parsed = JSON.parse(body); } catch (_) {}
 
       try {
-        const db = driverAuthService.getDb();
-
-        // 1. POST /api/mobile/v1/auth/login
-        if (cleanAuthPath === '/api/mobile/v1/auth/login' && req.method === 'POST') {
+        // 1. POST /api/mobile/v1/auth/login or /api/mobile/v1/login
+        if ((cleanAuthPath === '/api/mobile/v1/auth/login' || cleanAuthPath === '/api/mobile/v1/login') && req.method === 'POST') {
           const ip = req.socket.remoteAddress || '127.0.0.1';
-          const result = driverAuthService.authenticateLogin(db, {
+          const result = driverAuthService.authenticateLogin(null, {
             employeeCode: parsed.employeeCode,
             password: parsed.password,
             ip
@@ -868,9 +866,9 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify(result));
         }
 
-        // 2. POST /api/mobile/v1/auth/refresh
-        if (cleanAuthPath === '/api/mobile/v1/auth/refresh' && req.method === 'POST') {
-          const result = driverAuthService.refreshSessionToken(db, { refreshToken: parsed.refreshToken });
+        // 2. POST /api/mobile/v1/auth/refresh or /api/mobile/v1/refresh
+        if ((cleanAuthPath === '/api/mobile/v1/auth/refresh' || cleanAuthPath === '/api/mobile/v1/refresh') && req.method === 'POST') {
+          const result = driverAuthService.refreshSessionToken(null, { refreshToken: parsed.refreshToken });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify(result));
         }
@@ -889,7 +887,7 @@ const server = http.createServer((req, res) => {
         }
 
         const payload = verified.payload;
-        const acc = db.prepare('SELECT id, employee_id, employee_code, password_version, account_status, must_change_password FROM driver_app_accounts WHERE employee_id = ?').get(payload.sub);
+        const acc = driverAuthService.findAccountByEmployeeId(payload.sub);
         if (!acc || acc.account_status !== 'active') {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, code: 'ACCOUNT_DISABLED', error: 'Driver account is inactive' }));
@@ -899,9 +897,9 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ success: false, code: 'SESSION_REVOKED', error: 'Session revoked. Please log in again.' }));
         }
 
-        // 3. POST /api/mobile/v1/auth/change-password
-        if (cleanAuthPath === '/api/mobile/v1/auth/change-password' && req.method === 'POST') {
-          const result = driverAuthService.changeDriverPassword(db, {
+        // 3. POST /api/mobile/v1/auth/change-password or /api/mobile/v1/change-password
+        if ((cleanAuthPath === '/api/mobile/v1/auth/change-password' || cleanAuthPath === '/api/mobile/v1/change-password') && req.method === 'POST') {
+          const result = driverAuthService.changeDriverPassword(null, {
             employeeId: acc.employee_id,
             currentPassword: parsed.currentPassword,
             newPassword: parsed.newPassword
@@ -910,9 +908,9 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify(result));
         }
 
-        // 4. POST /api/mobile/v1/auth/logout
-        if (cleanAuthPath === '/api/mobile/v1/auth/logout' && req.method === 'POST') {
-          const result = driverAuthService.logoutDriver(db, { employeeId: acc.employee_id });
+        // 4. POST /api/mobile/v1/auth/logout or /api/mobile/v1/logout
+        if ((cleanAuthPath === '/api/mobile/v1/auth/logout' || cleanAuthPath === '/api/mobile/v1/logout') && req.method === 'POST') {
+          const result = driverAuthService.logoutDriver(null, { employeeId: acc.employee_id });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify(result));
         }
@@ -923,12 +921,13 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ success: false, code: 'PASSWORD_CHANGE_REQUIRED', error: 'Temporary password detected. You must change your password before continuing.' }));
         }
 
-        // 5. GET /api/mobile/v1/me
-        if (cleanAuthPath === '/api/mobile/v1/me' && req.method === 'GET') {
-          const profile = driverAuthService.getDriverProfile(db, acc.employee_id);
+        // 5. GET /api/mobile/v1/me or /api/mobile/v1/auth/me
+        if ((cleanAuthPath === '/api/mobile/v1/me' || cleanAuthPath === '/api/mobile/v1/auth/me') && req.method === 'GET') {
+          const profile = driverAuthService.getDriverProfile(null, acc.employee_id);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, driver: profile }));
         }
+
 
         res.writeHead(404, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: false, error: 'Endpoint not found' }));
@@ -951,11 +950,10 @@ const server = http.createServer((req, res) => {
       try { if (body) parsed = JSON.parse(body); } catch (_) {}
 
       try {
-        const db = driverAuthService.getDb();
         const actor = req.headers['x-actor-id'] || 'Office Administrator';
 
         if (cleanOfficePath === '/api/office/driver-access/create' && req.method === 'POST') {
-          const result = driverAuthService.createDriverAccount(db, {
+          const result = driverAuthService.createDriverAccount(null, {
             employeeId: parsed.employeeId,
             temporaryPassword: parsed.temporaryPassword,
             createdBy: actor
@@ -965,7 +963,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (cleanOfficePath === '/api/office/driver-access/reset-password' && req.method === 'POST') {
-          const result = driverAuthService.resetDriverPassword(db, {
+          const result = driverAuthService.resetDriverPassword(null, {
             employeeId: parsed.employeeId,
             temporaryPassword: parsed.temporaryPassword,
             resetBy: actor
@@ -975,7 +973,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (cleanOfficePath === '/api/office/driver-access/toggle-status' && req.method === 'POST') {
-          const result = driverAuthService.setAccountStatus(db, {
+          const result = driverAuthService.setAccountStatus(null, {
             employeeId: parsed.employeeId,
             status: parsed.status,
             updatedBy: actor
@@ -986,10 +984,11 @@ const server = http.createServer((req, res) => {
 
         if (cleanOfficePath.startsWith('/api/office/driver-access/status/') && req.method === 'GET') {
           const empId = cleanOfficePath.split('/status/')[1];
-          const status = driverAuthService.getAccountStatus(db, empId);
+          const status = driverAuthService.getAccountStatus(null, empId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, ...status }));
         }
+
 
         res.writeHead(404, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: false, error: 'Endpoint not found' }));
