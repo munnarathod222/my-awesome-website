@@ -10,6 +10,7 @@ import * as routeCorridorService from './apps/api/src/services/routeCorridorServ
 import * as attributionEngineService from './apps/api/src/services/attributionEngineService.js';
 import * as employeeCodeService from './apps/api/src/services/employeeCodeService.js';
 import * as driverAuthService from './apps/api/src/services/driverAuthService.js';
+import * as truckAnalyticsService from './apps/api/src/services/truckAnalyticsService.js';
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -841,6 +842,44 @@ const server = http.createServer((req, res) => {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: false, error: err.message }));
       }
+    }
+  }
+
+  // ── Enterprise Log-Driven Truck Manager Analytics API ───────────
+  if (reqPath.startsWith('/api/truck-manager')) {
+    const cleanPath = reqPath.replace('/hcgi', '');
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+    // GET /api/truck-manager/analytics
+    if (cleanPath === '/api/truck-manager/analytics' && req.method === 'GET') {
+      try {
+        const period = urlObj.searchParams.get('period') || 'all';
+        const truckId = urlObj.searchParams.get('truckId') || null;
+        const analytics = truckAnalyticsService.calculateFleetAnalytics({ period, truckId });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(analytics));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    }
+
+    // POST /api/truck-manager/classify-idle
+    if (cleanPath === '/api/truck-manager/classify-idle' && req.method === 'POST') {
+      let b = '';
+      req.on('data', c => b += c);
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(b);
+          const result = truckAnalyticsService.classifyIdleInterval(payload);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify(result));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
     }
   }
 
