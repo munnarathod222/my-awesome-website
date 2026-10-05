@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Truck, Plus, Edit, Trash2, Settings, Image as ImageIcon, ChevronLeft, ChevronRight, 
-  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2, UploadCloud, Building2, AlertTriangle
+  X, User, UserPlus, UserX, UserCheck, MoreVertical, Wrench, Share2, Landmark, Wallet, Calculator, Download, Camera, Eye, Maximize2, UploadCloud, Building2, AlertTriangle, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,7 @@ import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.
 import FamilyOwnerSettlementModal from '@/components/FamilyOwnerSettlementModal.jsx';
 import TruckContributionRanking from '@/components/TruckContributionRanking.jsx';
 import TruckAccidentsView from '@/components/TruckAccidentsView.jsx';
+import { computeLogDrivenFleetAnalytics } from '@/lib/truckAnalyticsEngine.js';
 
 export const parseImageList = (raw) => {
   if (!raw) return [];
@@ -58,7 +59,12 @@ export default function TruckManagerPage() {
   const [documents, setDocuments] = useState([]);
   const [loanProfiles, setLoanProfiles] = useState([]);
   const [accidents, setAccidents] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [fuelLogs, setFuelLogs] = useState([]);
+  const [maintenanceProblems, setMaintenanceProblems] = useState([]);
   const [selectedAccidentTruckId, setSelectedAccidentTruckId] = useState('all');
+  const [selectedDossierTruckId, setSelectedDossierTruckId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
@@ -99,7 +105,7 @@ export default function TruckManagerPage() {
   const fetchTrucks = async () => {
     try {
       setLoading(true);
-      const [trucksRes, empsRes, loanProfilesRes, docsRes, accidentsRes] = await Promise.all([
+      const [trucksRes, empsRes, loanProfilesRes, docsRes, accidentsRes, tripsRes, expensesRes, fuelRes, maintRes] = await Promise.all([
         pb.collection('trucks').getFullList({
           sort: '-created',
           expand: 'manager_id',
@@ -120,6 +126,22 @@ export default function TruckManagerPage() {
           expand: 'employee_id,truck_id',
           sort: '-accident_date',
           $autoCancel: false
+        }).catch(() => []),
+        pb.collection('trip_logs').getFullList({
+          sort: '-created',
+          $autoCancel: false
+        }).catch(() => []),
+        pb.collection('expenses').getFullList({
+          sort: '-bill_date',
+          $autoCancel: false
+        }).catch(() => []),
+        pb.collection('fuel_tracker').getFullList({
+          sort: '-date',
+          $autoCancel: false
+        }).catch(() => []),
+        pb.collection('maintenance_problems').getFullList({
+          sort: '-date_reported',
+          $autoCancel: false
         }).catch(() => [])
       ]);
       
@@ -133,6 +155,10 @@ export default function TruckManagerPage() {
       setDocuments(docsRes || []);
       setLoanProfiles(loanProfilesRes);
       setAccidents(accidentsRes || []);
+      setTrips(tripsRes || []);
+      setExpenses(expensesRes || []);
+      setFuelLogs(fuelRes || []);
+      setMaintenanceProblems(maintRes || []);
     } catch (err) {
       console.error(err);
       toast.error('Failed to load fleet data');
@@ -143,7 +169,53 @@ export default function TruckManagerPage() {
 
   useEffect(() => {
     fetchTrucks();
+
+    // Supabase / PocketBase real-time reactive subscriptions
+    try {
+      pb.collection('trip_logs').subscribe('*', () => fetchTrucks()).catch(() => {});
+      pb.collection('expenses').subscribe('*', () => fetchTrucks()).catch(() => {});
+      pb.collection('fuel_tracker').subscribe('*', () => fetchTrucks()).catch(() => {});
+      pb.collection('maintenance_problems').subscribe('*', () => fetchTrucks()).catch(() => {});
+      pb.collection('trucks').subscribe('*', () => fetchTrucks()).catch(() => {});
+
+      return () => {
+        try {
+          pb.collection('trip_logs').unsubscribe('*').catch(() => {});
+          pb.collection('expenses').unsubscribe('*').catch(() => {});
+          pb.collection('fuel_tracker').unsubscribe('*').catch(() => {});
+          pb.collection('maintenance_problems').unsubscribe('*').catch(() => {});
+          pb.collection('trucks').unsubscribe('*').catch(() => {});
+        } catch (e) {}
+      };
+    } catch (e) {}
   }, []);
+
+  // Compute 100% Log-Driven Fleet Analytics
+  const fleetAnalytics = React.useMemo(() => {
+    return computeLogDrivenFleetAnalytics({
+      trucks,
+      trips,
+      expenses,
+      fuelLogs,
+      maintenanceProblems,
+      accidents,
+      loanProfiles,
+      documents,
+      period: 'all'
+    });
+  }, [trucks, trips, expenses, fuelLogs, maintenanceProblems, accidents, loanProfiles, documents]);
+
+  // Quick lookup map by truck ID or registration
+  const analyticsByTruck = React.useMemo(() => {
+    const map = new Map();
+    (fleetAnalytics.trucks || []).forEach(t => {
+      map.set(t.id, t);
+      if (t.truck_number) {
+        map.set(t.truck_number.replace(/\s/g, '').toUpperCase(), t);
+      }
+    });
+    return map;
+  }, [fleetAnalytics]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this truck? This will also delete all associated tyres.')) {
@@ -266,10 +338,13 @@ export default function TruckManagerPage() {
             <Button
               variant={viewMode === 'contribution' ? 'secondary' : 'ghost'}
               size="sm"
-              className={`h-7 px-2.5 text-xs font-semibold rounded-lg ${viewMode === 'contribution' ? 'shadow-xs text-amber-500 font-bold bg-amber-500/10' : 'text-muted-foreground'}`}
+              className={`h-7 px-2.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 ${viewMode === 'contribution' ? 'shadow-xs text-amber-500 font-bold bg-amber-500/10' : 'text-muted-foreground'}`}
               onClick={() => setViewMode('contribution')}
             >
-              💰 Contribution Ranking
+              💰 Log-Driven Analytics
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                ⚡ Auto
+              </span>
             </Button>
             <Button
               variant={viewMode === 'accidents' ? 'secondary' : 'ghost'}
@@ -314,7 +389,7 @@ export default function TruckManagerPage() {
       </div>
 
       {loading ? (
-        <div className="bg-card rounded-2xl border border-border/50 shadow-xs p-12 flex justify-center"><LoadingSpinner text="Loading trucks..." /></div>
+        <div className="bg-card rounded-2xl border border-border/50 shadow-xs p-12 flex justify-center"><LoadingSpinner text="Loading trucks & operational logs..." /></div>
       ) : trucks.length === 0 ? (
         <div className="bg-card rounded-2xl border border-border/50 shadow-xs p-12 text-center text-muted-foreground">
           <Truck className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -331,7 +406,17 @@ export default function TruckManagerPage() {
           onBackToFleet={() => setViewMode('compact')}
         />
       ) : viewMode === 'contribution' ? (
-        <TruckContributionRanking trucks={trucks} drivers={drivers} onBackToFleet={() => setViewMode('compact')} />
+        <TruckContributionRanking 
+          trucks={trucks} 
+          drivers={drivers} 
+          onBackToFleet={() => setViewMode('compact')} 
+          externalTrips={trips}
+          externalExpenses={expenses}
+          externalFuelLogs={fuelLogs}
+          externalMaintenanceProblems={maintenanceProblems}
+          externalDocuments={documents}
+          externalLoanProfiles={loanProfiles}
+        />
       ) : viewMode === 'compact' ? (
         /* ULTRA-COMPACT LIST ROW TILES (Height ~72px) */
         <div className="space-y-2.5">
@@ -426,6 +511,36 @@ export default function TruckManagerPage() {
                           >
                             ⚠️ {trkAccs.length} {trkAccs.length === 1 ? 'Accident' : 'Accidents'}{dmg > 0 ? ` (₹${dmg.toLocaleString('en-IN')})` : ''}
                           </Badge>
+                        );
+                      })()}
+
+                      {/* ⚡ Real-Time Log-Driven Analytics Badges */}
+                      {(() => {
+                        const trkAnalytics = analyticsByTruck.get(truck.id) || analyticsByTruck.get((truck.truck_number || '').replace(/\s/g, '').toUpperCase());
+                        if (!trkAnalytics) return null;
+                        return (
+                          <>
+                            <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary px-1.5 py-0 rounded text-[10px] font-bold font-mono">
+                              🚚 {trkAnalytics.km_travelled?.toLocaleString() || 0} KM
+                            </Badge>
+                            <Badge variant="outline" className="border-border px-1.5 py-0 rounded text-[10px] font-medium">
+                              📦 {trkAnalytics.trips_completed || 0} Trips
+                            </Badge>
+                            <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0 rounded text-[10px] font-bold font-mono">
+                              💰 ₹{(trkAnalytics.revenue || 0).toLocaleString('en-IN')}{trkAnalytics.revenue_per_km ? ` (₹${trkAnalytics.revenue_per_km}/km)` : ''}
+                            </Badge>
+                            <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0 rounded text-[10px] font-bold">
+                              ⚡ {trkAnalytics.utilization_pct || 0}% Util
+                            </Badge>
+                            <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-1.5 py-0 rounded text-[10px] font-bold font-mono">
+                              🛡️ Rel: {trkAnalytics.reliability_score || 100}/100
+                            </Badge>
+                            {trkAnalytics.detected_idle_hours > 0 && (
+                              <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0 rounded text-[10px] font-bold font-mono" title={`Fixed idle cost burn: ₹${trkAnalytics.total_idle_cost?.toLocaleString('en-IN')}`}>
+                                ⏳ {trkAnalytics.detected_idle_hours}h Idle (₹{trkAnalytics.total_idle_cost?.toLocaleString('en-IN')})
+                              </Badge>
+                            )}
+                          </>
                         );
                       })()}
                     </div>
@@ -539,6 +654,17 @@ export default function TruckManagerPage() {
                       🤝 Settlement
                     </Button>
                   )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 px-2 text-[11px] font-bold rounded-lg border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                    onClick={() => {
+                      setViewMode('contribution');
+                    }}
+                    title="Inspect Log-Driven Vehicle Dossier"
+                  >
+                    📈 Dossier
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -694,6 +820,30 @@ export default function TruckManagerPage() {
                       </Badge>
                     );
                   })()}
+
+                  {/* ⚡ Real-Time Log-Driven Analytics Badges for Grid */}
+                  {(() => {
+                    const trkAnalytics = analyticsByTruck.get(truck.id) || analyticsByTruck.get((truck.truck_number || '').replace(/\s/g, '').toUpperCase());
+                    if (!trkAnalytics) return null;
+                    return (
+                      <>
+                        <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary px-1.5 py-0 rounded text-[9px] font-bold font-mono">
+                          🚚 {trkAnalytics.km_travelled?.toLocaleString() || 0} KM
+                        </Badge>
+                        <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0 rounded text-[9px] font-bold font-mono">
+                          💰 ₹{(trkAnalytics.revenue || 0).toLocaleString('en-IN')}
+                        </Badge>
+                        <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-1.5 py-0 rounded text-[9px] font-bold font-mono">
+                          🛡️ Rel: {trkAnalytics.reliability_score || 100}/100
+                        </Badge>
+                        {trkAnalytics.detected_idle_hours > 0 && (
+                          <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0 rounded text-[9px] font-bold font-mono">
+                            ⏳ {trkAnalytics.detected_idle_hours}h Idle
+                          </Badge>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Actions bottom bar with Driver Assignment */}
@@ -786,6 +936,15 @@ export default function TruckManagerPage() {
                         🤝
                       </Button>
                     )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="w-6 h-6 rounded hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                      onClick={() => setViewMode('contribution')}
+                      title="Log-Driven Analytics Dossier"
+                    >
+                      <BarChart3 className="w-3 h-3" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-primary" onClick={() => navigate(`/tyres/${truck.id}`)} title="Tyres">
                       <Settings className="w-3 h-3" />
                     </Button>
