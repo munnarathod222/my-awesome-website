@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mountMobileDriverData } from '../src/routes/mobileDriverData.js';
 
 function harness(pb = {}) {
+  pb.collections ??= { getOne: async () => ({ fields: [{name:'submitted_by_employee_id',type:'text'}, {name:'date'}] }) };
   const routes = [];
   const router = { get: (path, ...handlers) => routes.push({ path, handlers }) };
   const requireAuth = options => {
@@ -64,7 +65,7 @@ test('invalid pagination returns 400', async () => {
   const r = await harness().call('/data/:section', { driverAuth: { employeeId: 'a' }, params: { section: 'expenses' }, query: { page: '-1' } });
   assert.equal(r.statusCode, 400);
 });
-test('download cannot redirect the server to external storage', async () => {
+test('download rejects a record without trusted storage identifiers', async () => {
   const pb = { baseURL: 'http://127.0.0.1:8090', collection: () => ({ getOne: async () => ({ employee_id: 'a', file: 'a.pdf' }) }),
     files: { getToken: async () => 'private-token', getURL: () => 'https://external.invalid/api/files/a' } };
   const r = await harness(pb).call('/data/:section/:id/files/:index', { driverAuth: { employeeId: 'a' },
