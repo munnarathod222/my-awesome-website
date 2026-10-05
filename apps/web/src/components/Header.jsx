@@ -348,6 +348,7 @@ export default function Header() {
     if (!isAuthenticated) return;
 
     const fetchUnreadCount = async () => {
+      if (document.hidden) return; // Save bandwidth when tab is in background
       try {
         const res = await apiServerClient.fetch('/zoho/unread-count');
         if (res.ok) {
@@ -362,8 +363,15 @@ export default function Header() {
     };
 
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
-    return () => clearInterval(interval);
+    const handleVis = () => {
+      if (!document.hidden) fetchUnreadCount();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+    const interval = setInterval(fetchUnreadCount, 90000); // Poll every 90s when active
+    return () => {
+      document.removeEventListener('visibilitychange', handleVis);
+      clearInterval(interval);
+    };
   }, [isAuthenticated]);
 
   const userRole = (currentUser?.role || 'user').toLowerCase();

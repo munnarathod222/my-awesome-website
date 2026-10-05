@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import zlib from 'zlib';
 import * as auditService from './apps/api/src/services/auditService.js';
 import * as productivityService from './apps/api/src/services/productivityService.js';
 import * as orgService from './apps/api/src/services/orgService.js';
@@ -1086,20 +1087,91 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  const contentType = mimeTypes[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('500 Internal Server Error');
-    } else {
+  const fileExt = path.extname(filePath).toLowerCase();
+  const contentType = mimeTypes[fileExt] || 'application/octet-stream';
+
+  fs.stat(filePath, (err, stats) => {
+    if (err || !stats.isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      return res.end('404 Not Found');
+    }
+
+    // Determine optimal Cache-Control policy
+    let cacheControl = 'public, max-age=86400, stale-while-revalidate=3600';
+    if (fileExt === '.html' || filePath.endsWith('index.html')) {
+      cacheControl = 'public, max-age=0, must-revalidate';
+    } else if (filePath.includes('/assets/docs/') || filePath.includes('\\assets\\docs\\')) {
+      cacheControl = 'public, max-age=2592000, stale-while-revalidate=86400';
+    } else if (/\.(js|css|woff2?|ttf|eot)$/i.test(filePath)) {
+      cacheControl = 'public, max-age=31536000, immutable';
+    } else if (/\.(png|jpe?g|webp|gif|svg|ico)$/i.test(filePath)) {
+      cacheControl = 'public, max-age=2592000, stale-while-revalidate=86400';
+    }
+
+    const etag = `W/"${stats.size.toString(16)}-${stats.mtime.getTime().toString(16)}"`;
+    if (req.headers['if-none-match'] === etag) {
+      res.writeHead(304, {
+        'ETag': etag,
+        'Cache-Control': cacheControl,
+        'Last-Modified': stats.mtime.toUTCString()
+      });
+      return res.end();
+    }
+
+    if (req.method === 'HEAD') {
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        'Content-Length': stats.size,
+        'Cache-Control': cacheControl,
+        'ETag': etag,
+        'Last-Modified': stats.mtime.toUTCString()
       });
-      res.end(content);
+      return res.end();
     }
+
+    fs.readFile(filePath, (readErr, content) => {
+      if (readErr) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        return res.end('500 Internal Server Error');
+      }
+
+      const acceptEncoding = req.headers['accept-encoding'] || '';
+      const isCompressible = /\.(html|js|css|json|svg|txt)$/i.test(filePath) && content.length > 1024;
+
+      if (isCompressible && acceptEncoding.includes('gzip')) {
+        zlib.gzip(content, (gzipErr, compressed) => {
+          if (gzipErr) {
+            res.writeHead(200, {
+              'Content-Type': contentType,
+              'Content-Length': content.length,
+              'Cache-Control': cacheControl,
+              'ETag': etag,
+              'Last-Modified': stats.mtime.toUTCString()
+            });
+            return res.end(content);
+          }
+          res.writeHead(200, {
+            'Content-Type': contentType,
+            'Content-Encoding': 'gzip',
+            'Content-Length': compressed.length,
+            'Cache-Control': cacheControl,
+            'ETag': etag,
+            'Last-Modified': stats.mtime.toUTCString(),
+            'Vary': 'Accept-Encoding'
+          });
+          res.end(compressed);
+        });
+      } else {
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Content-Length': content.length,
+          'Cache-Control': cacheControl,
+          'ETag': etag,
+          'Last-Modified': stats.mtime.toUTCString()
+        });
+        res.end(content);
+      }
+    });
   });
 });
 
