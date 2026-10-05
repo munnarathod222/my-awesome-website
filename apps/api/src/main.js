@@ -5747,33 +5747,12 @@ for (const p of possibleWebDirs) {
 }
 
 if (staticPath) {
-  logger.info(`📂 Serving static client assets from: ${staticPath}`);
-  app.use(express.static(staticPath, {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true,
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html') || filePath.endsWith('index.html')) {
-        // HTML entrypoint must always be fresh
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-      } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
-        // Vite bundle chunks -> Revalidate with server (ETag) so updates load immediately without cache lock
-        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
-      } else if (/\.(png|jpe?g|webp|gif|svg|ico|woff2?|ttf|eot)$/i.test(filePath)) {
-        // Static Images, Icons & Web Fonts -> 7 Days Cache with Stale Revalidate
-        res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
-      }
-    }
-  }));
-
-  // Dedicated handler for Company Vault & static documents
+  // Dedicated handler for Company Vault & static documents (mounted before express.static)
   app.get('/assets/docs/:filename', (req, res, next) => {
     const filename = path.basename(req.params.filename);
     const candidates = [
-      path.resolve(process.cwd(), 'public/assets/docs', filename),
       path.resolve(process.cwd(), 'dist/assets/docs', filename),
+      path.resolve(process.cwd(), 'public/assets/docs', filename),
       path.resolve(process.cwd(), 'apps/web/dist/assets/docs', filename),
       path.resolve(__dirname, '../../public/assets/docs', filename),
       path.resolve(__dirname, '../../dist/assets/docs', filename),
@@ -5792,21 +5771,44 @@ if (staticPath) {
         } else if (ext === '.png') {
           res.setHeader('Content-Type', 'image/png');
         }
-        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         return res.sendFile(c);
       }
     }
     return next();
   });
 
+  logger.info(`📂 Serving static client assets from: ${staticPath}`);
+  app.use(express.static(staticPath, {
+    maxAge: '365d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html') || filePath.endsWith('index.html')) {
+        // HTML entrypoint -> Revalidate with ETag to ensure latest version is detected immediately with 304 if unchanged
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+      } else if (filePath.includes('/assets/docs/') || filePath.includes('\\assets\\docs\\')) {
+        // Company Vault documents & verified certificates -> 30-day cache
+        res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+      } else if (/\.(js|css|woff2?|ttf|eot)$/i.test(filePath)) {
+        // Vite bundle chunks (content-hashed) -> 1 Year Immutable Cache (Cached by Cloudflare Edge & Browser)
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(png|jpe?g|webp|gif|svg|ico)$/i.test(filePath)) {
+        // Static Images, Icons & Media -> 30-day cache with stale revalidate
+        res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
+      }
+    }
+  }));
+
   app.get(/.*/, (req, res, next) => {
     // If it's an API route or PocketBase route, pass to next handlers
     if (req.path.startsWith('/hcgi/') || req.path.startsWith('/api/')) {
       return next();
     }
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     res.sendFile(path.join(staticPath, 'index.html'));
   });
 }
