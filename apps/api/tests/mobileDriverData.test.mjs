@@ -7,7 +7,7 @@ function fixture(overrides = {}) {
   const rows = { employees: { id: 'driver1', assigned_truck: 'truck1' }, trucks: { id: 'truck1', truck_number: 'TG-01' },
     employee_documents: { id: 'doc1', employee_id: 'driver1', file: 'license.pdf', salary: 999 } };
   const pb = { filter: (s, args) => { calls.push({ s, args }); return s; },
-    collections: { getOne: async name => name === 'employees' ? { id: 'employees-col' } : { fields: [] } },
+    collections: { getOne: async name => name === 'employees' ? { id: 'employees-col' } : name === 'expenses' ? { fields: [{name:'submitted_by_employee_id',type:'text'}, {name:'date'}] } : { fields: [] } },
     collection: name => ({ getOne: async () => rows[name], getList: async () => ({
       page: 1, totalPages: 1, totalItems: 1, items: [rows[name]],
     }) }), ...overrides };
