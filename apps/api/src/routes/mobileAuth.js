@@ -1,3 +1,5 @@
+import pb from '../utils/pocketbaseClient.js';
+import { mountMobileDriverData } from './mobileDriverData.js';
 import express from 'express';
 import * as driverAuthService from '../services/driverAuthService.js';
 import logger from '../utils/logger.js';
@@ -203,5 +205,7 @@ router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), (
     });
   }
 });
+
+mountMobileDriverData(router, requireDriverAuth, pb);
 
 export default router;
