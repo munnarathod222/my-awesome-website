@@ -46,6 +46,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     advance_paid_to_driver: '',
     client_payment_status: 'pending',
     trip_status: 'Upcoming',
+    driver_employee_id: '',
+    driver_employee_code: '',
     driver_name: '',
     truck_number: '',
     vendor_payout: '',
@@ -153,6 +155,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       advance_paid_to_driver: '',
       client_payment_status: 'pending',
       trip_status: 'Upcoming',
+      driver_employee_id: '',
+      driver_employee_code: '',
       driver_name: '',
       truck_number: '',
       vendor_payout: '',
@@ -285,6 +289,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         toll_deduction: tollDed,
         client_payment_status: formData.client_payment_status,
         trip_status: formData.trip_status,
+        driver_employee_id: formData.driver_employee_id || null,
+        driver_employee_code: formData.driver_employee_code || null,
         driver_name: formData.driver_name,
         truck_number: formData.truck_number,
         created_by: currentUser?.id,
@@ -447,15 +453,37 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Driver <span className="text-destructive">*</span></Label>
-                  <Select value={formData.driver_name} onValueChange={v => setFormData({...formData, driver_name: v})} disabled={dataLoading}>
+                  <Select 
+                    value={formData.driver_employee_code || (formData.driver_name?.startsWith('Temporary Driver') ? 'TEMPORARY' : '')} 
+                    onValueChange={v => {
+                      if (v === 'TEMPORARY') {
+                        setFormData(prev => ({ ...prev, driver_employee_code: '', driver_employee_id: '', driver_name: 'Temporary Driver' }));
+                      } else {
+                        const emp = employees.find(e => (e.employee_code && e.employee_code === v) || e.id === v);
+                        if (emp) {
+                          setFormData(prev => ({
+                            ...prev,
+                            driver_employee_code: emp.employee_code || '',
+                            driver_employee_id: emp.id,
+                            driver_name: emp.name
+                          }));
+                        }
+                      }
+                    }} 
+                    disabled={dataLoading}
+                  >
                     <SelectTrigger className="bg-background h-9 text-xs">
-                      <SelectValue placeholder="Select driver" />
+                      <SelectValue placeholder="Select driver by permanent code" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400 text-xs">
-                        ⚡ Temporary Driver
+                      <SelectItem value="TEMPORARY" className="font-semibold text-amber-600 dark:text-amber-400 text-xs">
+                        ⚡ Temporary Driver (No mobile access)
                       </SelectItem>
-                      {employees.map(e => <SelectItem key={e.id} value={e.name} className="text-xs">{e.name}</SelectItem>)}
+                      {employees.map(e => (
+                        <SelectItem key={e.id} value={e.employee_code || e.id} className="text-xs">
+                          {e.employee_code ? `${e.employee_code} — ${e.name}` : `${e.name} (Code not assigned)`}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {formData.driver_name?.startsWith('Temporary Driver') && (
@@ -473,11 +501,16 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     value={formData.truck_number} 
                     onValueChange={v => {
                       const selectedTruck = trucks.find(t => t.truck_number === v);
-                      const pairedDriver = employees.find(e => e.assigned_truck === selectedTruck?.id);
+                      // Preselect ONLY explicit employee relation with permanent code; never infer from names
+                      const pairedDriver = employees.find(e => e.assigned_truck === selectedTruck?.id && e.employee_code && /^[DE]\d{3,}$/.test(e.employee_code));
                       setFormData(prev => ({
                         ...prev,
                         truck_number: v,
-                        driver_name: pairedDriver ? pairedDriver.name : prev.driver_name
+                        ...(pairedDriver ? {
+                          driver_employee_code: pairedDriver.employee_code,
+                          driver_employee_id: pairedDriver.id,
+                          driver_name: pairedDriver.name
+                        } : {})
                       }));
                     }} 
                     disabled={dataLoading}

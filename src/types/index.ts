@@ -145,6 +145,8 @@ export interface TripLog {
   truck_id: string;
   truck_number: string;
   driver_id: string;
+  driver_employee_id?: string;
+  driver_employee_code?: string;
   driver_name: string;
   client_id: string;
   client_name: string;

@@ -319,7 +319,7 @@ const ExpensesPage = () => {
       pb.collection('expenses').unsubscribe('*').catch(() => {});
       pb.collection('advances').unsubscribe('*').catch(() => {});
     };
-  }, [currentUser?.id, filters.sortBy]);
+  }, [currentUser?.id, filters.sortBy, refreshTrigger]);
 
   const handleManualRefresh = () => {
     setIsRefreshing(true);
@@ -1483,7 +1483,7 @@ const ExpensesPage = () => {
         <ExpenseModal 
           isOpen={isExpenseModalOpen} 
           onClose={() => setIsExpenseModalOpen(false)} 
-          onSuccess={() => setRefreshTrigger(p => p + 1)}
+          onSuccess={() => { setRefreshTrigger(p => p + 1); fetchData(); }}
           expense={editingExpense}
           trucks={trucks}
         />

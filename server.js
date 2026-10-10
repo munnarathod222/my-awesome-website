@@ -12,6 +12,11 @@ import * as attributionEngineService from './apps/api/src/services/attributionEn
 import * as employeeCodeService from './apps/api/src/services/employeeCodeService.js';
 import * as driverAuthService from './apps/api/src/services/driverAuthService.js';
 import * as truckAnalyticsService from './apps/api/src/services/truckAnalyticsService.js';
+import pb from './apps/api/src/utils/pocketbaseClient.js';
+import { createMobileDriverData, MobileDataError, pageNumber } from './apps/api/src/services/mobileDriverData.js';
+import { downloadMobileDocument } from './apps/api/src/services/mobileDocumentDownload.js';
+
+const mobileDriverData = createMobileDriverData(pb);
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -889,7 +894,7 @@ const server = http.createServer((req, res) => {
     const cleanAuthPath = reqPath.replace('/hcgi', '');
     let body = '';
     req.on('data', c => body += c);
-    req.on('end', () => {
+    req.on('end', async () => {
       let parsed = {};
       try { if (body) parsed = JSON.parse(body); } catch (_) {}
 
@@ -978,16 +983,71 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ success: true, driver: profile }));
         }
 
+        // 6. GET /api/mobile/v1/data/capabilities
+        if (cleanAuthPath === '/api/mobile/v1/data/capabilities' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify({
+            success: true,
+            apiVersion: 1,
+            mode: 'read-only',
+            sections: ['trips', 'expenses', 'attendance', 'my-documents', 'truck-documents', 'truck', 'performance'],
+            tripActions: false,
+            expenseSubmission: false,
+            attendanceCheckIn: false,
+            pushNotifications: false
+          }));
+        }
+
+        // 7. GET /api/mobile/v1/data/truck
+        if (cleanAuthPath === '/api/mobile/v1/data/truck' && req.method === 'GET') {
+          const truck = await mobileDriverData.truck(acc.employee_id);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify({ success: true, truck }));
+        }
+
+        // 8. GET /api/mobile/v1/data/performance
+        if (cleanAuthPath === '/api/mobile/v1/data/performance' && req.method === 'GET') {
+          const perf = await mobileDriverData.performance(acc.employee_id, acc.employee_code);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify({ success: true, performance: perf }));
+        }
+
+        // 9. File downloads: GET /api/mobile/v1/data/:section/:id/files/:index
+        const fileMatch = cleanAuthPath.match(/^\/api\/mobile\/v1\/data\/([^\/]+)\/([^\/]+)\/files\/(\d+)$/);
+        if (fileMatch && req.method === 'GET') {
+          const [, section, recId, index] = fileMatch;
+          const { row, name } = await mobileDriverData.file(section, recId, index, acc.employee_id);
+          const { bytes, type } = await downloadMobileDocument(row, name);
+          res.writeHead(200, {
+            'Content-Type': type,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Disposition': 'attachment',
+            'Cache-Control': 'private, no-store'
+          });
+          return res.end(bytes);
+        }
+
+        // 10. List sections: GET /api/mobile/v1/data/:section
+        const sectionMatch = cleanAuthPath.match(/^\/api\/mobile\/v1\/data\/([^\/\?]+)/);
+        if (sectionMatch && req.method === 'GET') {
+          const section = sectionMatch[1];
+          const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+          const page = pageNumber(urlObj.searchParams.get('page') || undefined);
+          const listRes = await mobileDriverData.list(section, acc.employee_id, page, acc.employee_code);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify({ success: true, ...listRes }));
+        }
 
         res.writeHead(404, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: false, error: 'Endpoint not found' }));
       } catch (err) {
-        const status = err.status || 400;
-        res.writeHead(status, { 'Content-Type': 'application/json' });
+        const known = err instanceof MobileDataError;
+        const status = known ? err.status : (err.status || 500);
+        res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
         return res.end(JSON.stringify({
           success: false,
-          code: err.code || (status === 429 ? 'ACCOUNT_LOCKED' : (status === 403 ? 'ACCOUNT_DISABLED' : 'ERROR')),
-          error: err.message
+          code: known ? err.code : (err.code || (status === 429 ? 'ACCOUNT_LOCKED' : (status === 403 ? 'ACCOUNT_DISABLED' : 'ERROR'))),
+          error: known ? err.message : (err.message || 'Website data is temporarily unavailable. Please retry.')
         }));
       }
     });
@@ -1048,6 +1108,130 @@ const server = http.createServer((req, res) => {
         return res.end(JSON.stringify({ success: false, error: 'Endpoint not found' }));
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // ── Office Trips Driver Code Reconciliation Endpoints ─────────────
+  if (reqPath.startsWith('/api/office/trips') || reqPath.startsWith('/hcgi/api/office/trips')) {
+    const cleanTripsPath = reqPath.replace('/hcgi', '');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed = {};
+      try { if (body) parsed = JSON.parse(body); } catch (_) {}
+
+      try {
+        const actor = req.headers['x-actor-id'] || 'Office Administrator';
+
+        // 1. POST /api/office/trips/assign-driver-code
+        if (cleanTripsPath === '/api/office/trips/assign-driver-code' && req.method === 'POST') {
+          const tripIds = parsed.tripIds || parsed.trip_ids;
+          const employeeCode = parsed.employeeCode || parsed.driver_code || parsed.driver_employee_code;
+          const employeeId = parsed.employeeId || parsed.driver_employee_id || parsed.driverEmployeeId;
+          const user = parsed.user || parsed.assigned_by;
+          if (!Array.isArray(tripIds) || tripIds.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, error: 'tripIds must be a non-empty array of trip IDs.' }));
+          }
+
+          const assignment = employeeCodeService.resolveDriverAssignment({
+            driverCode: employeeCode,
+            driverEmployeeId: employeeId
+          });
+
+          let empName = '';
+          try {
+            const emp = await pb.collection('employees').getOne(assignment.driver_employee_id, { $autoCancel: false });
+            empName = emp.name || '';
+          } catch (_) {}
+
+          const results = [];
+          for (const tid of tripIds) {
+            const trip = await pb.collection('trip_logs').getOne(tid, { $autoCancel: false });
+            const oldCode = trip.driver_employee_code || null;
+            const oldId = trip.driver_employee_id || null;
+            const oldDriverName = trip.driver_name || null;
+
+            await pb.collection('trip_logs').update(trip.id, {
+              driver_employee_id: assignment.driver_employee_id,
+              driver_employee_code: assignment.driver_employee_code,
+              driver_name: empName || trip.driver_name
+            }, { $autoCancel: false });
+
+            // Record in audit service
+            try {
+              auditService.recordAuditEvent({
+                event_type: 'TRIP_DRIVER_ASSIGNMENT',
+                category: 'OPERATIONS',
+                actor: user || actor,
+                action: 'ASSIGN_DRIVER_CODE',
+                target_id: trip.trip_id || trip.id,
+                details: {
+                  trip_id: trip.trip_id || trip.id,
+                  record_id: trip.id,
+                  old_driver_code: oldCode,
+                  new_driver_code: assignment.driver_employee_code,
+                  old_driver_employee_id: oldId,
+                  new_driver_employee_id: assignment.driver_employee_id,
+                  driver_name: empName,
+                  previous_driver_name: oldDriverName
+                },
+                metadata: {
+                  timestamp: new Date().toISOString()
+                }
+              });
+            } catch (_) {}
+
+            results.push({
+              id: trip.id,
+              trip_id: trip.trip_id,
+              old_driver_code: oldCode,
+              new_driver_code: assignment.driver_employee_code
+            });
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: true,
+            message: `Successfully assigned permanent code ${assignment.driver_employee_code} to ${results.length} trip(s).`,
+            employeeCode: assignment.driver_employee_code,
+            employeeId: assignment.driver_employee_id,
+            driver_name: empName,
+            updatedTrips: results
+          }));
+        }
+
+        // 2. GET /api/office/trips/unassigned-driver-code
+        if (cleanTripsPath === '/api/office/trips/unassigned-driver-code' && req.method === 'GET') {
+          const list = await pb.collection('trip_logs').getFullList({
+            filter: 'driver_employee_code = "" || driver_employee_code = null',
+            sort: '-date,-created',
+            $autoCancel: false
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({
+            success: true,
+            totalUnassigned: list.length,
+            trips: list.map(t => ({
+              id: t.id,
+              trip_id: t.trip_id,
+              date: t.date,
+              route: t.route,
+              truck_number: t.truck_number,
+              driver_name: t.driver_name,
+              revenue: t.revenue,
+              trip_status: t.trip_status
+            }))
+          }));
+        }
+
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ success: false, error: 'Endpoint not found' }));
+      } catch (err) {
+        res.writeHead(err.status || 400, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({ success: false, error: err.message }));
       }
     });
