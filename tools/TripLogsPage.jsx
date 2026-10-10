@@ -129,6 +129,11 @@ const TripLogsPage = () => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
+  const [selectedReconcileIds, setSelectedReconcileIds] = useState([]);
+  const [reconcileDriverCode, setReconcileDriverCode] = useState('');
+  const [isConfirmingReconcile, setIsConfirmingReconcile] = useState(false);
+  const [reconcileSubmitting, setReconcileSubmitting] = useState(false);
 
   // Status Change Modals
   const [statusChangeTrip, setStatusChangeTrip] = useState(null);
@@ -347,6 +352,9 @@ const TripLogsPage = () => {
         setPaymentRequestTrip(statusChangeTrip);
       }
 
+      if (tripStatusFilter !== 'all' && tripStatusFilter !== newTripStatus) {
+        setTripStatusFilter('all');
+      }
       fetchData();
     } catch (err) {
       console.error('Update err:', err);
@@ -590,6 +598,22 @@ const TripLogsPage = () => {
     }
   };
 
+  const updateTripDriver = async (tripId, employee) => {
+    try {
+      const payload = {
+        driver_employee_id: employee ? employee.id : null,
+        driver_employee_code: employee ? (employee.employee_code || null) : null,
+        driver_name: employee ? employee.name : 'Temporary Driver'
+      };
+      await pb.collection('trip_logs').update(tripId, payload, { $autoCancel: false });
+      toast.success(`Assigned ${employee?.employee_code || 'Temporary Driver'} to trip successfully`);
+      fetchData();
+    } catch (err) {
+      console.error('Failed to update driver assignment:', err);
+      toast.error('Failed to update driver assignment');
+    }
+  };
+
   if (dataLoading) {
 
 
@@ -631,6 +655,25 @@ const TripLogsPage = () => {
               <p className="text-xs text-muted-foreground mt-0.5">Manage fleet shipments, driver assignments, and monitor payment progress.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Button 
+                onClick={() => {
+                  setSelectedReconcileIds([]);
+                  setReconcileDriverCode('');
+                  setIsConfirmingReconcile(false);
+                  setIsReconcileModalOpen(true);
+                }} 
+                variant="outline" 
+                size="sm" 
+                className="bg-card h-8 rounded-lg text-xs hover:border-amber-500/50 text-amber-500 font-semibold"
+              >
+                <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> 
+                Reconcile Driver Codes
+                {tripLogs.filter(t => !t.driver_employee_code).length > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {tripLogs.filter(t => !t.driver_employee_code).length}
+                  </Badge>
+                )}
+              </Button>
               <Button onClick={() => setIsBulkModalOpen(true)} variant="outline" size="sm" className="bg-card h-8 rounded-lg text-xs hover:border-primary/50">
                 <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Bulk Upload
               </Button>
@@ -869,31 +912,48 @@ const TripLogsPage = () => {
                                 </Select>
 
                                 <Select
-                                  value={log.driver_name || log.driver || ''}
-                                  onValueChange={async (newDriver) => {
-                                    if (!newDriver || newDriver === (log.driver_name || log.driver)) return;
-                                    await updateTripField(log.id, 'driver_name', newDriver);
+                                  value={log.driver_employee_code || (log.driver_name === 'Temporary Driver' ? 'Temporary Driver' : '')}
+                                  onValueChange={async (selectedCode) => {
+                                    if (!selectedCode) return;
+                                    if (selectedCode === 'Temporary Driver') {
+                                      await updateTripDriver(log.id, null);
+                                    } else {
+                                      const emp = employees.find(e => e.employee_code === selectedCode);
+                                      if (emp) {
+                                        await updateTripDriver(log.id, emp);
+                                      }
+                                    }
                                   }}
                                 >
                                   <SelectTrigger className="h-6 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 text-xs text-muted-foreground font-medium focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors -mt-1">
                                     <SelectValue placeholder="Select Driver">
-                                      {log.driver_name || log.driver || 'Select Driver'}
+                                      {log.driver_employee_code ? (
+                                        <span className="font-medium text-foreground">
+                                          <span className="font-mono text-sky-400 font-bold mr-1">{log.driver_employee_code}</span>
+                                          <span>— {log.driver_name || 'Driver'}</span>
+                                        </span>
+                                      ) : log.driver_name === 'Temporary Driver' ? (
+                                        <span className="text-amber-500 font-medium">⚡ Temporary Driver</span>
+                                      ) : log.driver_name ? (
+                                        <span className="text-amber-500 font-semibold" title="Permanent driver code not assigned. Mobile driver app will not see this trip.">
+                                          ⚠️ Code not assigned ({log.driver_name})
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground">Select Driver</span>
+                                      )}
                                     </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
-                                      ⚡ Temporary Driver
+                                      ⚡ Temporary Driver (No app access)
                                     </SelectItem>
-                                    {(log.driver_name || log.driver) && 
-                                     (log.driver_name || log.driver) !== 'Temporary Driver' &&
-                                     !employees.some(e => e.name === (log.driver_name || log.driver)) && (
-                                      <SelectItem value={log.driver_name || log.driver}>
-                                        {log.driver_name || log.driver}
-                                      </SelectItem>
-                                    )}
                                     {filterActiveDrivers(employees, log.driver_name || log.driver).map(e => (
-                                      <SelectItem key={e.id} value={e.name}>
-                                        {e.name}
+                                      <SelectItem key={e.id} value={e.employee_code || e.id}>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-mono font-bold text-sky-400">{e.employee_code || 'NO-CODE'}</span>
+                                          <span>—</span>
+                                          <span>{e.name}</span>
+                                        </div>
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -1071,6 +1131,9 @@ const TripLogsPage = () => {
                                     toast.success(`Trip status updated to ${newStatus} & FASTag balance adjusted`);
                                     if (newStatus === 'Delivered' && !isDispatcher) {
                                       setPaymentRequestTrip(log);
+                                    }
+                                    if (tripStatusFilter !== 'all' && tripStatusFilter !== newStatus) {
+                                      setTripStatusFilter('all');
                                     }
                                     fetchData();
                                   } catch (err) {
@@ -1593,6 +1656,228 @@ const TripLogsPage = () => {
               {isUpdatingBulk ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : 'Confirm & Save'}
             </Button>
           </DialogFooter>
+      </Dialog>
+
+      {/* Office Reconciliation Modal for Unassigned Driver Codes */}
+      <Dialog open={isReconcileModalOpen} onOpenChange={setIsReconcileModalOpen}>
+        <DialogContent className="sm:max-w-3xl rounded-2xl max-h-[85vh] flex flex-col p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-heading text-xl">
+              <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              Driver Code Reconciliation (Office)
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground mt-1">
+              Select legacy trips without permanent driver codes, review, and assign an explicit permanent code. Original historical names, dates, and financials remain unchanged.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!isConfirmingReconcile ? (
+            <div className="flex-1 flex flex-col gap-4 overflow-hidden mt-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-muted/40 p-3 rounded-xl border border-border/50">
+                <div className="w-full sm:w-72">
+                  <label className="text-xs font-semibold text-foreground mb-1 block">
+                    Target Permanent Driver Code
+                  </label>
+                  <Select value={reconcileDriverCode} onValueChange={setReconcileDriverCode}>
+                    <SelectTrigger className="h-9 text-xs bg-background">
+                      <SelectValue placeholder="Select permanent driver code" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterActiveDrivers(employees).map(emp => (
+                        <SelectItem key={emp.id} value={emp.employee_code || emp.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sky-400">{emp.employee_code || 'NO-CODE'}</span>
+                            <span>—</span>
+                            <span>{emp.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <span className="text-xs text-muted-foreground">
+                    Selected: <span className="font-bold text-foreground">{selectedReconcileIds.length}</span> trips
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      const unassigned = tripLogs.filter(t => !t.driver_employee_code);
+                      if (selectedReconcileIds.length === unassigned.length) {
+                        setSelectedReconcileIds([]);
+                      } else {
+                        setSelectedReconcileIds(unassigned.map(t => t.id));
+                      }
+                    }}
+                  >
+                    {selectedReconcileIds.length === tripLogs.filter(t => !t.driver_employee_code).length && tripLogs.filter(t => !t.driver_employee_code).length > 0 ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto border border-border/50 rounded-xl">
+                <Table>
+                  <TableHeader className="bg-muted/30 sticky top-0">
+                    <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox 
+                          checked={selectedReconcileIds.length > 0 && selectedReconcileIds.length === tripLogs.filter(t => !t.driver_employee_code).length}
+                          onCheckedChange={(checked) => {
+                            const unassigned = tripLogs.filter(t => !t.driver_employee_code);
+                            setSelectedReconcileIds(checked ? unassigned.map(t => t.id) : []);
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead className="text-xs">Trip ID</TableHead>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-xs">Route</TableHead>
+                      <TableHead className="text-xs">Truck</TableHead>
+                      <TableHead className="text-xs">Current Saved Name</TableHead>
+                      <TableHead className="text-xs">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tripLogs.filter(t => !t.driver_employee_code).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                          🎉 All trips have permanent driver codes assigned!
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      tripLogs.filter(t => !t.driver_employee_code).map(trip => {
+                        const isSelected = selectedReconcileIds.includes(trip.id);
+                        return (
+                          <TableRow key={trip.id} className={isSelected ? 'bg-primary/5' : ''}>
+                            <TableCell className="w-10">
+                              <Checkbox 
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedReconcileIds(prev => [...prev, trip.id]);
+                                  } else {
+                                    setSelectedReconcileIds(prev => prev.filter(id => id !== trip.id));
+                                  }
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs font-mono font-bold">{trip.trip_id || trip.id.substring(0, 8)}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{trip.date ? trip.date.split(' ')[0] : '—'}</TableCell>
+                            <TableCell className="text-xs">{trip.route || '—'}</TableCell>
+                            <TableCell className="text-xs font-mono">{trip.truck_number || '—'}</TableCell>
+                            <TableCell className="text-xs">
+                              <span className="text-amber-500 font-medium bg-amber-500/10 px-1.5 py-0.5 rounded text-[11px]">
+                                {trip.driver_name || 'No driver name'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-[10px]">
+                                {trip.trip_status || 'Upcoming'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <DialogFooter className="mt-2">
+                <Button variant="outline" size="sm" onClick={() => setIsReconcileModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm" 
+                  disabled={selectedReconcileIds.length === 0 || !reconcileDriverCode}
+                  onClick={() => setIsConfirmingReconcile(true)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                >
+                  Review Assignment ({selectedReconcileIds.length})
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col gap-4 mt-3">
+              <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+                <h4 className="text-sm font-bold text-amber-500 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" /> Please Confirm Permanent Driver Assignment
+                </h4>
+                <p className="text-xs text-foreground">
+                  You are assigning permanent code <span className="font-mono font-bold text-sky-400 bg-background px-1.5 py-0.5 rounded border border-border">{reconcileDriverCode}</span> ({employees.find(e => e.employee_code === reconcileDriverCode)?.name || 'Driver'}) to <span className="font-bold">{selectedReconcileIds.length}</span> selected trip(s).
+                </p>
+                <div className="text-[11px] text-muted-foreground space-y-1 bg-background/50 p-2.5 rounded-lg border border-border/50">
+                  <p>✓ All financial amounts, advances, FASTag deductions, and dates remain untouched.</p>
+                  <p>✓ Historical driver display name is preserved for record integrity.</p>
+                  <p>✓ Mobile driver app will immediately reflect access for code {reconcileDriverCode}.</p>
+                  <p>✓ Assignment action is recorded in the office audit trail.</p>
+                </div>
+              </div>
+
+              <div className="flex-1 max-h-48 overflow-y-auto border border-border/50 rounded-xl p-3 bg-muted/20">
+                <p className="text-[11px] font-semibold text-muted-foreground mb-2">Affected Trip Records:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedReconcileIds.map(id => {
+                    const t = tripLogs.find(x => x.id === id);
+                    return (
+                      <span key={id} className="text-[11px] font-mono bg-background border border-border px-2 py-0.5 rounded text-foreground">
+                        {t?.trip_id || id}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <DialogFooter className="mt-2">
+                <Button variant="outline" size="sm" disabled={reconcileSubmitting} onClick={() => setIsConfirmingReconcile(false)}>
+                  Back
+                </Button>
+                <Button 
+                  size="sm" 
+                  disabled={reconcileSubmitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                  onClick={async () => {
+                    setReconcileSubmitting(true);
+                    try {
+                      const emp = employees.find(e => e.employee_code === reconcileDriverCode);
+                      const res = await fetch('/api/office/trips/assign-driver-code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          tripIds: selectedReconcileIds,
+                          employeeCode: reconcileDriverCode,
+                          employeeId: emp?.id,
+                          user: 'Office Admin'
+                        })
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        toast.success(`Successfully assigned permanent code ${reconcileDriverCode} to ${selectedReconcileIds.length} trip(s)`);
+                        setIsReconcileModalOpen(false);
+                        setIsConfirmingReconcile(false);
+                        setSelectedReconcileIds([]);
+                        setReconcileDriverCode('');
+                        fetchData();
+                      } else {
+                        toast.error(data.error || 'Failed to reconcile trips');
+                      }
+                    } catch (err) {
+                      console.error('Reconciliation error:', err);
+                      toast.error('Network error during reconciliation');
+                    } finally {
+                      setReconcileSubmitting(false);
+                    }
+                  }}
+                >
+                  {reconcileSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Confirm & Assign Code
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

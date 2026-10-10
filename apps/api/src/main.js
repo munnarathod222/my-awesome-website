@@ -1112,20 +1112,27 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
   try {
     if (!fs.existsSync(dbFilePath)) return false;
 
-    // 🛡️ Ensure WAL file is fully checkpointed and consolidated into data.db
+    if (fs.existsSync(tempPath)) {
+      try { fs.unlinkSync(tempPath); } catch (_) {}
+    }
+
+    // 🛡️ Ensure WAL transactions are fully captured via SQLite VACUUM INTO snapshot
+    let snapshotSuccess = false;
     try {
       const { DatabaseSync } = await import('node:sqlite');
       const _cDb = new DatabaseSync(dbFilePath);
-      _cDb.exec('PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;');
+      try { _cDb.exec('PRAGMA wal_checkpoint(PASSIVE);'); } catch (_) {}
+      const normTemp = tempPath.replace(/\\/g, '/').replace(/'/g, "''");
+      _cDb.exec(`VACUUM INTO '${normTemp}'`);
       _cDb.close();
-    } catch (_wErr) {
-      try {
-        const { execSync } = await import('node:child_process');
-        execSync(`sqlite3 "${dbFilePath}" "PRAGMA wal_checkpoint(TRUNCATE); PRAGMA integrity_check;"`, { stdio: 'pipe' });
-      } catch (_) {}
+      snapshotSuccess = true;
+    } catch (_vErr) {
+      logger.warn(`VACUUM INTO snapshot notice: ${_vErr.message}, falling back to file copy`);
     }
 
-    fs.copyFileSync(dbFilePath, tempPath);
+    if (!snapshotSuccess || !fs.existsSync(tempPath)) {
+      fs.copyFileSync(dbFilePath, tempPath);
+    }
     const fileBuffer = fs.readFileSync(tempPath);
 
     // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 1: File size minimum (500 KB)
@@ -2343,6 +2350,20 @@ const runPocketBase = async () => {
       }
     });
 
+    // 1.5 Add driver_employee_id and driver_employee_code to trip_logs table and create indexes
+    if (!cols.includes('driver_employee_id')) {
+      logger.info("Migrating: Adding column 'driver_employee_id' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN driver_employee_id TEXT DEFAULT ''").run();
+    }
+    if (!cols.includes('driver_employee_code')) {
+      logger.info("Migrating: Adding column 'driver_employee_code' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN driver_employee_code TEXT DEFAULT ''").run();
+    }
+    try {
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_code ON trip_logs(driver_employee_code)").run();
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_emp_id ON trip_logs(driver_employee_id)").run();
+    } catch (_) {}
+
     // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
     const allColDefs = db.prepare('SELECT id, name FROM _collections').all();
     for (const cDef of allColDefs) {
@@ -2396,6 +2417,49 @@ const runPocketBase = async () => {
           recordUpdated = true;
         }
       });
+
+      const empRecord = db.prepare("SELECT * FROM _collections WHERE name='employees'").get();
+      const empCollectionId = empRecord ? empRecord.id : 'pbc_9297853740';
+
+      const hasDriverEmpId = fields.some(f => f.name === 'driver_employee_id');
+      if (!hasDriverEmpId) {
+        logger.info("Migrating: Appending 'driver_employee_id' relation field to PocketBase 'trip_logs' schema...");
+        fields.push({
+          cascadeDelete: false,
+          collectionId: empCollectionId,
+          help: "Single relation to permanent employee record",
+          hidden: false,
+          id: "rel_driver_emp_id",
+          maxSelect: 1,
+          minSelect: 0,
+          name: "driver_employee_id",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "relation"
+        });
+        recordUpdated = true;
+      }
+
+      const hasDriverEmpCode = fields.some(f => f.name === 'driver_employee_code');
+      if (!hasDriverEmpCode) {
+        logger.info("Migrating: Appending 'driver_employee_code' text field to PocketBase 'trip_logs' schema...");
+        fields.push({
+          autogeneratePattern: "",
+          help: "Permanent employee code snapshot (e.g. D004)",
+          hidden: false,
+          id: "text_driver_emp_code",
+          max: 20,
+          min: 0,
+          name: "driver_employee_code",
+          pattern: "",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "text"
+        });
+        recordUpdated = true;
+      }
 
       if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);

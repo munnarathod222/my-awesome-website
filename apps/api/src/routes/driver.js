@@ -369,6 +369,155 @@ router.get('/office/driver-access/status/:employeeId', async (req, res) => {
   }
 });
 
+function recordDispatchNotificationEvent(event) {
+  try {
+    const dataDir = path.resolve(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    const filePath = path.join(dataDir, 'dispatch_notification_events.json');
+    let events = [];
+    if (fs.existsSync(filePath)) {
+      try { events = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch (_) {}
+    }
+    events.unshift(event);
+    if (events.length > 1000) events.length = 1000;
+    fs.writeFileSync(filePath, JSON.stringify(events, null, 2), 'utf8');
+  } catch (_) {}
+}
+
+/**
+ * POST /api/driver/office/trips/assign-driver-code
+ * Office endpoint to explicitly assign a permanent driver code to selected trips
+ */
+router.post('/office/trips/assign-driver-code', async (req, res) => {
+  try {
+    const tripIds = req.body?.tripIds || req.body?.trip_ids;
+    const employeeCode = req.body?.employeeCode || req.body?.driver_code || req.body?.driver_employee_code;
+    const employeeId = req.body?.employeeId || req.body?.driver_employee_id || req.body?.driverEmployeeId;
+    const user = req.body?.user || req.body?.assigned_by;
+    if (!Array.isArray(tripIds) || tripIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'tripIds must be a non-empty array of trip IDs.' });
+    }
+
+    // Resolve driver assignment strictly using permanent code
+    const assignment = employeeCodeService.resolveDriverAssignment({
+      driverCode: employeeCode,
+      driverEmployeeId: employeeId
+    });
+
+    let empName = '';
+    try {
+      const emp = await pb.collection('employees').getOne(assignment.driver_employee_id, { $autoCancel: false });
+      empName = emp.name || '';
+    } catch (_) {}
+
+    const results = [];
+    for (const tid of tripIds) {
+      const trip = await pb.collection('trip_logs').getOne(tid, { $autoCancel: false });
+      const oldCode = trip.driver_employee_code || null;
+      const oldId = trip.driver_employee_id || null;
+      const oldDriverName = trip.driver_name || null;
+
+      // Update assignment fields without touching financial or date fields
+      await pb.collection('trip_logs').update(trip.id, {
+        driver_employee_id: assignment.driver_employee_id,
+        driver_employee_code: assignment.driver_employee_code,
+        driver_name: empName || trip.driver_name
+      }, { $autoCancel: false });
+
+      // Audit trail record
+      try {
+        const auditService = await import('../services/auditService.js');
+        auditService.recordAuditEvent({
+          event_type: 'TRIP_DRIVER_ASSIGNMENT',
+          category: 'OPERATIONS',
+          actor: user || 'Office Dispatcher',
+          action: 'ASSIGN_DRIVER_CODE',
+          target_id: trip.trip_id || trip.id,
+          details: {
+            trip_id: trip.trip_id || trip.id,
+            record_id: trip.id,
+            old_driver_code: oldCode,
+            new_driver_code: assignment.driver_employee_code,
+            old_driver_employee_id: oldId,
+            new_driver_employee_id: assignment.driver_employee_id,
+            driver_name: empName,
+            previous_driver_name: oldDriverName
+          },
+          metadata: {
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (errAudit) {
+        logger.warn(`Failed to write audit event for trip ${trip.id}: ${errAudit.message}`);
+      }
+
+      // Record dispatch notification event for offline reconciliation and future push notification durability
+      recordDispatchNotificationEvent({
+        event_type: 'TRIP_ASSIGNED',
+        trip_id: trip.trip_id || trip.id,
+        record_id: trip.id,
+        driver_employee_code: assignment.driver_employee_code,
+        driver_employee_id: assignment.driver_employee_id,
+        timestamp: new Date().toISOString(),
+        revision: Date.now()
+      });
+
+      results.push({
+        id: trip.id,
+        trip_id: trip.trip_id,
+        old_driver_code: oldCode,
+        new_driver_code: assignment.driver_employee_code
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully assigned permanent code ${assignment.driver_employee_code} to ${results.length} trip(s).`,
+      employeeCode: assignment.driver_employee_code,
+      employeeId: assignment.driver_employee_id,
+      driver_name: empName,
+      updatedTrips: results
+    });
+  } catch (err) {
+    logger.error(`Driver code assignment failed: ${err.message}`);
+    return res.status(err.status || 400).json({
+      success: false,
+      code: err.code || 'ASSIGNMENT_FAILED',
+      error: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/driver/office/trips/unassigned-driver-code
+ * Office endpoint to list trips without a permanent driver code
+ */
+router.get('/office/trips/unassigned-driver-code', async (req, res) => {
+  try {
+    const list = await pb.collection('trip_logs').getFullList({
+      filter: 'driver_employee_code = "" || driver_employee_code = null',
+      sort: '-date,-created',
+      $autoCancel: false
+    });
+    return res.status(200).json({
+      success: true,
+      totalUnassigned: list.length,
+      trips: list.map(t => ({
+        id: t.id,
+        trip_id: t.trip_id,
+        date: t.date,
+        route: t.route,
+        truck_number: t.truck_number,
+        driver_name: t.driver_name,
+        revenue: t.revenue,
+        trip_status: t.trip_status
+      }))
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 /**
  * GET /api/driver/employee-bank-details
@@ -584,9 +733,32 @@ router.post('/create-expense', async (req, res) => {
     };
     if (data.truck_id && data.truck_id !== 'none') payload.truck_id = data.truck_id;
     if (data.credit_card_id && data.credit_card_id !== 'none') payload.credit_card_id = data.credit_card_id;
-    if (data.employee_id && data.employee_id !== 'none') payload.employee_id = data.employee_id;
+    const targetEmpId = (data.employee_id && data.employee_id !== 'none' && String(data.employee_id).trim() !== '') ? String(data.employee_id).trim() : '';
+    if (targetEmpId) payload.employee_id = targetEmpId;
 
-    const record = await pb.collection('expenses').create(payload, { $autoCancel: false });
+    let record;
+    try {
+      record = await pb.collection('expenses').create(payload, { $autoCancel: false });
+    } catch (pbErr) {
+      if (payload.employee_id) {
+        // Retry without employee_id if PocketBase schema rejects the field
+        const copy = { ...payload };
+        delete copy.employee_id;
+        record = await pb.collection('expenses').create(copy, { $autoCancel: false });
+        try {
+          const { DatabaseSync } = await import('node:sqlite');
+          const dbPath = global.dbFilePath;
+          if (dbPath) {
+            const db = new DatabaseSync(dbPath);
+            try { db.prepare("UPDATE expenses SET employee_id = ? WHERE id = ?").run(targetEmpId, record.id); } catch (_) {}
+            db.close();
+          }
+        } catch (_) {}
+      } else {
+        throw pbErr;
+      }
+    }
+
     logger.info(`Expense created via API: ${record.id} (${record.amount})`);
     if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
     return res.json({ success: true, record });
@@ -616,9 +788,31 @@ router.post('/update-expense/:id', async (req, res) => {
     
     payload.truck_id = (data.truck_id && data.truck_id !== 'none') ? data.truck_id : '';
     payload.credit_card_id = (data.credit_card_id && data.credit_card_id !== 'none') ? data.credit_card_id : '';
-    payload.employee_id = (data.employee_id && data.employee_id !== 'none') ? data.employee_id : '';
+    const targetEmpId = (data.employee_id && data.employee_id !== 'none' && String(data.employee_id).trim() !== '') ? String(data.employee_id).trim() : '';
+    if (targetEmpId) payload.employee_id = targetEmpId;
 
-    const record = await pb.collection('expenses').update(id, payload, { $autoCancel: false });
+    let record;
+    try {
+      record = await pb.collection('expenses').update(id, payload, { $autoCancel: false });
+    } catch (pbErr) {
+      if (payload.employee_id) {
+        const copy = { ...payload };
+        delete copy.employee_id;
+        record = await pb.collection('expenses').update(id, copy, { $autoCancel: false });
+        try {
+          const { DatabaseSync } = await import('node:sqlite');
+          const dbPath = global.dbFilePath;
+          if (dbPath) {
+            const db = new DatabaseSync(dbPath);
+            try { db.prepare("UPDATE expenses SET employee_id = ? WHERE id = ?").run(targetEmpId, id); } catch (_) {}
+            db.close();
+          }
+        } catch (_) {}
+      } else {
+        throw pbErr;
+      }
+    }
+
     logger.info(`Expense updated via API: ${record.id}`);
     if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
     return res.json({ success: true, record });
@@ -1628,6 +1822,8 @@ router.post('/trips', resolveDriver, async (req, res) => {
     const payload = {
       date: date ? `${date} 12:00:00.000Z` : new Date().toISOString(),
       driver_name: driver.name,
+      driver_employee_id: driver.id,
+      driver_employee_code: driver.employee_code || employeeCodeService.getCodeForEmployee(driver.id) || null,
       truck_number: finalTruckNumber,
       route,
       kms: Number(kms),
@@ -3367,6 +3563,8 @@ router.post('/convert-quote-to-trip', async (req, res) => {
       trip_id: nextTripId,
       date: quote.expected_dispatch_date ? `${quote.expected_dispatch_date} 12:00:00.000Z` : new Date().toISOString(),
       driver_name: 'Unassigned',
+      driver_employee_id: null,
+      driver_employee_code: null,
       truck_number: quote.truck_size || quote.container_type || '32 FT SXL',
       route: routeStr,
       kms: Number(quote.distance_km || quote.zone_distance_multiplier) || 500,

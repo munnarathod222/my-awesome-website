@@ -62,6 +62,8 @@ export const TripLogsPage: React.FC = () => {
       truck_id: 'truck-001',
       truck_number: newTruckNumber,
       driver_id: 'emp-001',
+      driver_employee_id: 'emp-001',
+      driver_employee_code: 'D001',
       driver_name: newDriverName,
       client_id: 'cli-001',
       client_name: newClientName,

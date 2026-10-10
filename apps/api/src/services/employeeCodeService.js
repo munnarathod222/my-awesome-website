@@ -219,6 +219,105 @@ export function setCodeForEmployee(employeeId, code) {
 }
 
 /**
+ * Look up employee ID by canonical permanent code (e.g. 'D004').
+ */
+export function getEmployeeIdByCode(code) {
+  if (!code || typeof code !== 'string') return null;
+  const canonical = code.trim().toUpperCase();
+  const codes = loadCodes();
+  for (const [id, c] of Object.entries(codes)) {
+    if (c === canonical) return id;
+  }
+  return null;
+}
+
+/**
+ * Validate permanent code format
+ */
+export function isValidEmployeeCode(code) {
+  return typeof code === 'string' && /^[DE]\d{3,}$/.test(code.trim().toUpperCase());
+}
+
+/**
+ * Resolve driver assignment:
+ * Validates that driverCode resolves to an eligible employee,
+ * validates consistency with driverEmployeeId,
+ * rejects duplicate, missing, invalid, or inconsistent pairs.
+ * Never accepts a display name as an identifier.
+ */
+export function resolveDriverAssignment({ driverCode, driverEmployeeId }, employeesList = null) {
+  if (!driverCode && !driverEmployeeId) {
+    const err = new Error('Driver assignment requires permanent employee code and employee ID.');
+    err.status = 400;
+    err.code = 'ASSIGNMENT_REQUIRED';
+    throw err;
+  }
+
+  const canonicalCode = driverCode ? String(driverCode).trim().toUpperCase() : null;
+  if (canonicalCode && !isValidEmployeeCode(canonicalCode)) {
+    const err = new Error(`Invalid employee code format: '${canonicalCode}'. Expected format like D004.`);
+    err.status = 400;
+    err.code = 'INVALID_DRIVER_CODE';
+    throw err;
+  }
+
+  let resolvedId = driverEmployeeId ? String(driverEmployeeId).trim() : null;
+  let codeFromId = null;
+  let idFromCode = null;
+
+  if (Array.isArray(employeesList)) {
+    if (resolvedId) {
+      const emp = employeesList.find(e => e.id === resolvedId);
+      if (emp?.employee_code) codeFromId = emp.employee_code.trim().toUpperCase();
+    }
+    if (canonicalCode) {
+      const emp = employeesList.find(e => (e.employee_code || '').trim().toUpperCase() === canonicalCode);
+      if (emp) idFromCode = emp.id;
+    }
+  }
+
+  if (!codeFromId && resolvedId) codeFromId = getCodeForEmployee(resolvedId);
+  if (!idFromCode && canonicalCode) idFromCode = getEmployeeIdByCode(canonicalCode);
+
+  // If both provided, assert consistency
+  if (canonicalCode && resolvedId) {
+    if (codeFromId && codeFromId !== canonicalCode) {
+      const err = new Error(`Inconsistent driver assignment: employee ID '${resolvedId}' has code '${codeFromId}', but code '${canonicalCode}' was provided.`);
+      err.status = 400;
+      err.code = 'INCONSISTENT_ASSIGNMENT';
+      throw err;
+    }
+    if (idFromCode && idFromCode !== resolvedId) {
+      const err = new Error(`Inconsistent driver assignment: code '${canonicalCode}' belongs to employee '${idFromCode}', but employee ID '${resolvedId}' was provided.`);
+      err.status = 400;
+      err.code = 'INCONSISTENT_ASSIGNMENT';
+      throw err;
+    }
+  }
+
+  const finalCode = canonicalCode || codeFromId;
+  const finalId = resolvedId || idFromCode;
+
+  if (!finalCode || !isValidEmployeeCode(finalCode)) {
+    const err = new Error(`Permanent employee code could not be resolved or is invalid.`);
+    err.status = 400;
+    err.code = 'INVALID_DRIVER_CODE';
+    throw err;
+  }
+  if (!finalId) {
+    const err = new Error(`Employee record could not be resolved for code '${finalCode}'.`);
+    err.status = 404;
+    err.code = 'EMPLOYEE_NOT_FOUND';
+    throw err;
+  }
+
+  return {
+    driver_employee_id: finalId,
+    driver_employee_code: finalCode
+  };
+}
+
+/**
  * Preview codes for employees list or SQLite DB
  */
 export function previewBackfill(dbOrList = []) {
