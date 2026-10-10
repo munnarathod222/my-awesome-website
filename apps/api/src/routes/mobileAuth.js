@@ -74,7 +74,7 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
       }
 
       // Check session revocation via password_version
-      if (acc.password_version !== payload.pver) {
+      if (!driverAuthService.sessionMatchesAccount(acc, payload)) {
         return res.status(401).json({
           success: false,
           code: 'SESSION_REVOKED',

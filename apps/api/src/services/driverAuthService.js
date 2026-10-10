@@ -159,6 +159,14 @@ export async function saveAccountRecord(dbOrNull, acc) {
  * Require a securely configured server secret and fail closed if missing or insecure.
  * Never exposes secret or falls back to an insecure hardcoded constant.
  */
+// Durable accounts require an account-instance claim: legacy or recreated-account
+// tokens must not regain access when password version numbers happen to match.
+export function sessionMatchesAccount(acc, payload) {
+  return acc.password_version === payload.pver &&
+    (!usesPersistentDriverAccounts() ||
+      (typeof acc.id === 'string' && acc.id.length > 0 && payload.aid === acc.id));
+}
+
 export function getJwtSecret() {
   const secret = process.env.JWT_SECRET || process.env.DRIVER_AUTH_SECRET || process.env.ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret || typeof secret !== 'string' || secret.trim().length < 16) {
@@ -674,6 +682,7 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
+    aid: acc.id,
     pver: acc.password_version || 1,
     mustChange,
     iat: nowSec,
@@ -686,6 +695,7 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
     code: acc.employee_code,
     role: 'driver',
     type: 'refresh',
+    aid: acc.id,
     pver: acc.password_version || 1,
     mustChange,
     iat: nowSec,
@@ -753,6 +763,7 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
+    aid: acc.id,
     pver: nextVer,
     mustChange: false,
     iat: nowSec,
@@ -765,6 +776,7 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
     code: acc.employee_code,
     role: 'driver',
     type: 'refresh',
+    aid: acc.id,
     pver: nextVer,
     mustChange: false,
     iat: nowSec,
@@ -829,7 +841,7 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
     throw err;
   }
 
-  if (acc.password_version !== payload.pver) {
+  if (!sessionMatchesAccount(acc, payload)) {
     const err = new Error('Session has been revoked due to password change or administrative action');
     err.status = 401;
     err.code = 'SESSION_REVOKED';
@@ -850,6 +862,7 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
+    aid: acc.id,
     pver: acc.password_version,
     mustChange: false,
     iat: nowSec,

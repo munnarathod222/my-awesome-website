@@ -102,3 +102,21 @@ test('disabled accounts and revoked refresh tokens remain rejected', async t => 
   await assert.rejects(s.authenticateLogin(null,{employeeCode:'D999',password:'Chosen-Pass-987'}),{status:403});
   await assert.rejects(s.refreshSessionToken(null,{refreshToken:session.refreshToken}),{code:'ACCOUNT_DISABLED'});
 });
+
+test('legacy sessions and previous account instances cannot regain access after recreation', async t => {
+  const {service:s,remote}=await fixture(t);
+  const old=await s.changeDriverPassword(null,{employeeId:'syntheticdriver',currentPassword:'Temp-Only-123',newPassword:'Chosen-Pass-987'});
+  const legacy=s.verifyJwt(old.refreshToken).payload;
+  delete legacy.aid;
+  await assert.rejects(s.refreshSessionToken(null,{refreshToken:s.signJwt(legacy)}),{code:'SESSION_REVOKED'});
+  remote.rows.clear(); // Simulate an explicitly authorized fresh-account cutover.
+  await s.createDriverAccount(null,{employeeId:'syntheticdriver',temporaryPassword:'Fresh-Temp-123'});
+  const fresh=await s.changeDriverPassword(null,{employeeId:'syntheticdriver',currentPassword:'Fresh-Temp-123',newPassword:'Fresh-Chosen-987'});
+  const acc=await s.findAccountByEmployeeId('syntheticdriver');
+  assert.equal(acc.password_version,s.verifyJwt(old.accessToken).payload.pver);
+  assert.equal(s.sessionMatchesAccount(acc,s.verifyJwt(old.accessToken).payload),false);
+  assert.equal(s.sessionMatchesAccount(acc,{...s.verifyJwt(fresh.accessToken).payload,aid:undefined}),false);
+  assert.equal(s.sessionMatchesAccount(acc,s.verifyJwt(fresh.accessToken).payload),true);
+  await assert.rejects(s.refreshSessionToken(null,{refreshToken:old.refreshToken}),{code:'SESSION_REVOKED'});
+  await s.refreshSessionToken(null,{refreshToken:fresh.refreshToken});
+});

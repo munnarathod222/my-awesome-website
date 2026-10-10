@@ -4,13 +4,25 @@
 
 The old server writes account password hashes into data/driver_app_accounts.json, which is tracked in the repository. Render can replace that local file with the deployed snapshot. Database backups do not cover that JSON file. Save failures were swallowed. These are confirmed code defects; the exact sequence of the reported live failures has not been observed in server logs.
 
-The fix adds a separate Supabase table for driver credentials. It never updates employee records, trip logs, expenses, cashbook data or document files. No Android reinstall is needed. Existing token formats/password hashes are preserved. Notifications remain unrelated and disabled.
+The fix adds a separate Supabase table for driver credentials. It never updates employee records, trip logs, expenses, cashbook data or document files. No Android reinstall is needed. Password hashes are preserved when imported. Existing sessions are intentionally revoked at cutover; durable tokens include the account-instance ID. Notifications remain unrelated and disabled.
 
 Supabase mode reads authoritative records on every request, acknowledges password changes only after database confirmation, and uses a revision check so an older concurrent login cannot overwrite a newer password. There is no fallback to local JSON when Supabase is unavailable. Login verifies exactly the same password bytes used by password creation.
 
 The mode is opt-in so simply deploying this code before setup does not lock everyone out. Local mode is transitional/development only and DOES NOT solve Render redeploy persistence.
 
-## Activation — ordered to preserve current passwords
+## Approved alternative: fresh driver accounts without Render Shell
+
+The owner approved creating fresh driver passwords once because Render Free has no Shell access. The SQL table was created successfully according to the owner's report. This path does not require importing the old credential file.
+
+1. Confirm the Render environment has SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for the project where the SQL ran. Enter secrets only in Render. Keep the existing signing secret unchanged.
+2. Merge this tested fix, set DRIVER_AUTH_STORE=supabase, and deploy the merged revision. Schedule the cutover when drivers can sign in again. Do not delete any existing Supabase accounts or import the tracked JSON snapshot.
+3. In the website employee directory, open Driver App Access for each existing driver. Create app access if no durable account exists. Keep the same employee and permanent code. Share its newly generated temporary password privately.
+4. Sign in on the phone and choose a permanent password once. Sign out and sign in twice using that chosen password. Verify again after the next controlled Render restart/deploy.
+5. If any account already exists in Supabase, do not recreate or overwrite it. Use its current password or the normal authorized office reset action if needed.
+
+All legacy sessions are rejected in durable mode because they lack the account-instance claim. Recreated accounts have new IDs, so prior tokens cannot regain access even if password versions match. No SQL change beyond the supplied table creation is needed. No Android reinstall is needed for this server fix. Live activation still needs verification.
+
+## Optional alternative — preserve current passwords with Shell access
 
 1. In the website's Supabase SQL Editor, run `ops/driver-auth-persistence.sql`. It creates only `public.jbc_driver_accounts`, with RLS enabled and no client access. The Android app must never receive the service-role key. If a table with this name already exists, review its schema/permissions before proceeding.
 2. Confirm Render already has the correct `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` for this Supabase project. A public/anon key is insufficient. Enter keys directly in Render; do not send them in chat or commit them. Keep the existing JWT secret unchanged.
