@@ -558,6 +558,100 @@ function ExecutiveAnalyticsHub() {
     }
   });
   c.useEffect(() => {
+    let isMounted = true;
+    const fetchLiveData = async () => {
+      try {
+        const pbClient = typeof Te !== "undefined" && Te && typeof Te.collection === "function" ? Te : typeof $ !== "undefined" && $ && typeof $.collection === "function" ? $ : typeof window !== "undefined" && window.PocketBaseClient ? window.PocketBaseClient : null;
+        if (pbClient) {
+          const [rawTrips, rawExpenses, rawTrucks, rawEmployees, rawClients] = await Promise.all([
+            pbClient.collection("trip_logs").getFullList({ sort: "-created", ["$autoCancel"]: false }).catch(() => []),
+            pbClient.collection("expenses").getFullList({ sort: "-created", ["$autoCancel"]: false }).catch(() => []),
+            pbClient.collection("trucks").getFullList({ ["$autoCancel"]: false }).catch(() => []),
+            pbClient.collection("employees").getFullList({ ["$autoCancel"]: false }).catch(() => []),
+            pbClient.collection("clients").getFullList({ ["$autoCancel"]: false }).catch(() => [])
+          ]);
+          if (isMounted) {
+            if (Array.isArray(rawTrips) && rawTrips.length > 0) {
+              const mappedTrips = rawTrips.map((t) => ({
+                id: t.id,
+                trip_number: t.trip_number || t.trip_id || "TRIP-" + t.id.slice(0, 5),
+                truck_id: t.truck_id || "",
+                truck_number: t.truck_number || "",
+                driver_id: t.driver_employee_id || t.driver_id || "",
+                driver_employee_code: t.driver_employee_code || "",
+                driver_name: t.driver_name || "",
+                client_id: t.client_id || "",
+                client_name: t.client_name || "",
+                route_id: t.route_id || "",
+                route_name: t.route || t.route_name || "",
+                origin: t.origin || (t.route ? t.route.split(" to ")[0] : "Origin"),
+                destination: t.destination || (t.route ? t.route.split(" to ")[1] : "Destination"),
+                start_date: t.date || t.start_date || t.created || "",
+                end_date: t.end_date || t.date || "",
+                distance_kms: Number(t.kms || t.distance_kms) || 0,
+                revenue: Number(t.revenue || t.freight_amount) || 0,
+                fuel_cost: Number(t.fuel_cost || t.fuel_expense) || 0,
+                toll_cost: Number(t.toll_cost || t.toll_expense || t.fastag_expense) || 0,
+                driver_allowance: Number(t.driver_allowance || t.driver_expense || t.advance_paid_to_driver) || 0,
+                total_expenses: Number(t.total_expenses || t.trip_expenses) || (Number(t.fuel_cost) || 0) + (Number(t.toll_cost) || 0) + (Number(t.driver_allowance) || 0),
+                net_profit: Number(t.net_profit || t.profit) || Number(t.revenue || 0) - Number(t.total_expenses || 0),
+                status: t.status || t.trip_status || "Completed",
+                clientPaymentStatus: t.clientPaymentStatus || t.client_payment_status || "Paid",
+                invoice_number: t.invoice_number || t.lr_number || ""
+              }));
+              setTrips(mappedTrips);
+              try {
+                localStorage.setItem("jc_trips", JSON.stringify(mappedTrips));
+              } catch (e) {
+              }
+            }
+            if (Array.isArray(rawExpenses) && rawExpenses.length > 0) {
+              const mappedExpenses = rawExpenses.map((e) => ({
+                id: e.id,
+                expense_number: e.expense_number || "EXP-" + e.id.slice(0, 5),
+                category: e.category || "Operations",
+                subcategory: e.subcategory || "",
+                amount: Number(e.amount) || 0,
+                bill_date: e.bill_date || e.date || e.created || "",
+                truck_number: e.truck_number || e.vehicle_number || "",
+                notes: e.notes || e.description || "",
+                gst_input_credit_eligible: e.gst_input_credit_eligible || "No",
+                total_gst: Number(e.total_gst || e.gst_amount) || 0
+              }));
+              setExpenses(mappedExpenses);
+              try {
+                localStorage.setItem("jc_expenses", JSON.stringify(mappedExpenses));
+              } catch (e) {
+              }
+            }
+            if (Array.isArray(rawTrucks) && rawTrucks.length > 0) {
+              setTrucks(rawTrucks);
+              try {
+                localStorage.setItem("jc_trucks", JSON.stringify(rawTrucks));
+              } catch (e) {
+              }
+            }
+            if (Array.isArray(rawEmployees) && rawEmployees.length > 0) {
+              setEmployees(rawEmployees);
+              try {
+                localStorage.setItem("jc_employees", JSON.stringify(rawEmployees));
+              } catch (e) {
+              }
+            }
+            if (Array.isArray(rawClients) && rawClients.length > 0) {
+              setClients(rawClients);
+              try {
+                localStorage.setItem("jc_clients", JSON.stringify(rawClients));
+              } catch (e) {
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[AnalyticsHub] Live database fetch fallback to cache:", err);
+      }
+    };
+    fetchLiveData();
     const handleUpdate = () => {
       try {
         const tr = localStorage.getItem("jc_trips");
@@ -577,6 +671,7 @@ function ExecutiveAnalyticsHub() {
     window.addEventListener("storage", handleUpdate);
     window.addEventListener("jc-store-update", handleUpdate);
     return () => {
+      isMounted = false;
       window.removeEventListener("storage", handleUpdate);
       window.removeEventListener("jc-store-update", handleUpdate);
     };
@@ -783,7 +878,7 @@ function ExecutiveAnalyticsHub() {
       const d = t.start_date ? new Date(t.start_date).getDate() : 1;
       if (d >= 1 && d <= 31) days[d - 1] += 1;
     });
-    return days.map((val, idx) => val > 0 ? val : idx % 3 === 0 ? 1 : 0);
+    return days.map((val) => val);
   }, [trips]);
   const sampleTripsManifest = c.useMemo(() => {
     return trips.map((t) => ({
@@ -799,13 +894,36 @@ function ExecutiveAnalyticsHub() {
     }));
   }, [trips]);
   const currentMetrics = c.useMemo(() => {
-    let filteredTrips = trips;
+    const parseItemDate = (d) => {
+      if (!d) return "";
+      if (typeof d === "string") return d.split(/[T ]/)[0];
+      try {
+        return new Date(d).toISOString().split("T")[0];
+      } catch (e) {
+        return "";
+      }
+    };
+    let clientFilteredTrips = trips;
     if (selectedClient !== "all") {
-      filteredTrips = trips.filter((t) => t.client_id === selectedClient || t.client_name && t.client_name.toLowerCase().includes(selectedClient.replace("cli_", "")));
+      clientFilteredTrips = trips.filter((t) => t.client_id === selectedClient || t.client_name && t.client_name.toLowerCase().includes(selectedClient.replace("cli_", "")));
+    }
+    let filteredTrips = clientFilteredTrips;
+    if (startDate && endDate) {
+      filteredTrips = clientFilteredTrips.filter((t) => {
+        const d = parseItemDate(t.start_date || t.date || t.created);
+        return !d || d >= startDate && d <= endDate;
+      });
+    }
+    let filteredExpenses = expenses;
+    if (startDate && endDate) {
+      filteredExpenses = expenses.filter((e) => {
+        const d = parseItemDate(e.bill_date || e.date || e.created);
+        return !d || d >= startDate && d <= endDate;
+      });
     }
     const deliveredTrips = filteredTrips.filter((t) => t.status === "Completed" || t.status === "Delivered");
     const rev = deliveredTrips.reduce((a, b) => a + Number(b.revenue || 0), 0);
-    const exp = selectedClient === "all" ? expenses.reduce((a, b) => a + Number(b.amount || 0), 0) : filteredTrips.reduce((a, b) => a + Number(b.total_expenses || 0), 0);
+    const exp = selectedClient === "all" ? filteredExpenses.reduce((a, b) => a + Number(b.amount || 0), 0) : filteredTrips.reduce((a, b) => a + Number(b.total_expenses || 0), 0);
     const profit = rev - exp;
     const margin = rev > 0 ? (profit / rev * 100).toFixed(1) + "%" : "0.0%";
     const totalDistance = filteredTrips.reduce((a, b) => a + Number(b.distance_kms || 0), 0);
@@ -817,10 +935,10 @@ function ExecutiveAnalyticsHub() {
       margin,
       trips: filteredTrips.length,
       kms: totalDistance.toFixed(3),
-      utilization: "100%",
+      utilization: filteredTrips.length > 0 ? "100%" : "0%",
       drivers: activeDrivers || employees.length
     };
-  }, [trips, expenses, employees, selectedClient, selectedRange]);
+  }, [trips, expenses, employees, selectedClient, selectedRange, startDate, endDate]);
   const expenseBreakdown = c.useMemo(() => {
     let fuel = 0, maint = 0, driver = 0, toll = 0, ops = 0, admin = 0;
     expenses.forEach((e) => {
@@ -1137,8 +1255,8 @@ function ExecutiveAnalyticsHub() {
             type: "button",
             onClick: () => {
               setSelectedRange("30D");
-              setStartDate("2024-03-01");
-              setEndDate("2024-03-31");
+              setStartDate("2026-08-01");
+              setEndDate("2026-09-30");
               setSelectedClient("all");
             },
             className: "px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer",
@@ -1928,7 +2046,7 @@ function ExecutiveAnalyticsHub() {
               children: [
                 /* @__PURE__ */ _jsxs("div", { children: [
                   /* @__PURE__ */ _jsx("span", { className: "text-[10px] text-slate-500 block uppercase", children: "Top Driver" }),
-                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white text-xs", children: "Ravi Kumar" })
+                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white text-xs", children: fleetDrivers[0]?.name || "Vinod Kumar Rathod" })
                 ] }),
                 /* @__PURE__ */ _jsx("span", { className: "text-amber-400 text-sm", children: "\u2B50" })
               ]
@@ -1958,7 +2076,10 @@ function ExecutiveAnalyticsHub() {
                 className: "flex justify-between items-center cursor-pointer p-1 rounded hover:bg-slate-800/60 transition",
                 children: [
                   /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Top Route:" }),
-                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white", children: "Delhi \u2794 Mumbai \u{1F3C6}" })
+                  /* @__PURE__ */ _jsxs("span", { className: "font-bold text-white", children: [
+                    allRoutesData[0]?.route || "Hyderabad \u2794 Warangal",
+                    " \u{1F3C6}"
+                  ] })
                 ]
               }
             ),
@@ -2122,7 +2243,10 @@ function ExecutiveAnalyticsHub() {
                 children: [
                   /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-xs bg-cyan-400 shadow-xs shadow-cyan-400" }),
                   /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Fuel" }),
-                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9872,410" })
+                  /* @__PURE__ */ _jsxs("span", { className: "font-bold text-white font-mono", children: [
+                    "\u20B9",
+                    expenseBreakdown.fuel.toLocaleString("en-IN")
+                  ] })
                 ]
               }
             ),
@@ -2140,7 +2264,10 @@ function ExecutiveAnalyticsHub() {
                 children: [
                   /* @__PURE__ */ _jsx("span", { className: "w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500" }),
                   /* @__PURE__ */ _jsx("span", { className: "text-slate-400", children: "Tolls" }),
-                  /* @__PURE__ */ _jsx("span", { className: "font-bold text-white font-mono", children: "\u20B9383,120" })
+                  /* @__PURE__ */ _jsxs("span", { className: "font-bold text-white font-mono", children: [
+                    "\u20B9",
+                    expenseBreakdown.toll.toLocaleString("en-IN")
+                  ] })
                 ]
               }
             )
