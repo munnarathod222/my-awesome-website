@@ -329,10 +329,10 @@ router.post('/office/driver-access/create', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const createdBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = driverAuthService.createDriverAccount(null, { employeeId, temporaryPassword, createdBy });
+    const result = await driverAuthService.createDriverAccount(null, { employeeId, temporaryPassword, createdBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
   }
 });
 
@@ -340,10 +340,10 @@ router.post('/office/driver-access/reset-password', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const resetBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = driverAuthService.resetDriverPassword(null, { employeeId, temporaryPassword, resetBy });
+    const result = await driverAuthService.resetDriverPassword(null, { employeeId, temporaryPassword, resetBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
   }
 });
 
@@ -351,21 +351,21 @@ router.post('/office/driver-access/toggle-status', async (req, res) => {
   try {
     const { employeeId, status } = req.body || {};
     const updatedBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = driverAuthService.setAccountStatus(null, { employeeId, status, updatedBy });
+    const result = await driverAuthService.setAccountStatus(null, { employeeId, status, updatedBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
   }
 });
 
 router.get('/office/driver-access/status/:employeeId', async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const status = driverAuthService.getAccountStatus(null, employeeId);
+    const status = await driverAuthService.getAccountStatus(null, employeeId);
     return res.status(200).json({ success: true, ...status });
 
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
   }
 });
 
@@ -4915,6 +4915,3 @@ router.post('/breakdown-sos', async (req, res) => {
 });
 
 export default router;
-
-
-

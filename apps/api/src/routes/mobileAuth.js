@@ -12,7 +12,7 @@ const router = express.Router();
  * account active status, and first-login password change gating.
  */
 export const requireDriverAuth = (options = { allowMustChange: false }) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
@@ -55,7 +55,7 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
     }
 
     try {
-      const acc = driverAuthService.findAccountByEmployeeId(payload.sub);
+      const acc = await driverAuthService.findAccountByEmployeeId(payload.sub);
 
       if (!acc) {
         return res.status(401).json({
@@ -111,18 +111,18 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
  * POST /login and /auth/login
  * Driver login with permanent employeeCode (e.g. D001) and password
  */
-router.post(['/login', '/auth/login'], (req, res) => {
+router.post(['/login', '/auth/login'], async (req, res) => {
   const { employeeCode, password } = req.body || {};
   const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
 
   try {
-    const result = driverAuthService.authenticateLogin(null, { employeeCode, password, ip });
+    const result = await driverAuthService.authenticateLogin(null, { employeeCode, password, ip });
     return res.status(200).json(result);
   } catch (err) {
     const statusCode = err.status || 400;
     return res.status(statusCode).json({
       success: false,
-      code: statusCode === 429 ? 'ACCOUNT_LOCKED' : (statusCode === 403 ? 'ACCOUNT_DISABLED' : 'INVALID_CREDENTIALS'),
+      code: err.code || (statusCode >= 500 ? 'AUTH_STORAGE_UNAVAILABLE' : statusCode === 429 ? 'ACCOUNT_LOCKED' : (statusCode === 403 ? 'ACCOUNT_DISABLED' : 'INVALID_CREDENTIALS')),
       error: err.message
     });
   }
@@ -132,20 +132,20 @@ router.post(['/login', '/auth/login'], (req, res) => {
  * POST /change-password and /auth/change-password
  * First login password change or regular password update
  */
-router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ allowMustChange: true }), (req, res) => {
+router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ allowMustChange: true }), async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
 
   try {
-    const result = driverAuthService.changeDriverPassword(null, {
+    const result = await driverAuthService.changeDriverPassword(null, {
       employeeId: req.driverAuth.employeeId,
       currentPassword,
       newPassword
     });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(400).json({
+    return res.status(err.status || 400).json({
       success: false,
-      code: 'PASSWORD_CHANGE_FAILED',
+      code: err.code || 'PASSWORD_CHANGE_FAILED',
       error: err.message
     });
   }
@@ -155,17 +155,17 @@ router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ a
  * POST /refresh and /auth/refresh
  * Refresh session access token using valid refresh token
  */
-router.post(['/refresh', '/auth/refresh'], (req, res) => {
+router.post(['/refresh', '/auth/refresh'], async (req, res) => {
   const { refreshToken } = req.body || {};
 
   try {
-    const result = driverAuthService.refreshSessionToken(null, { refreshToken });
+    const result = await driverAuthService.refreshSessionToken(null, { refreshToken });
     return res.status(200).json(result);
   } catch (err) {
     const statusCode = err.status || 400;
     return res.status(statusCode).json({
       success: false,
-      code: 'REFRESH_FAILED',
+      code: err.code || 'REFRESH_FAILED',
       error: err.message
     });
   }
@@ -175,9 +175,9 @@ router.post(['/refresh', '/auth/refresh'], (req, res) => {
  * POST /logout and /auth/logout
  * Revoke driver session across all active devices
  */
-router.post(['/logout', '/auth/logout'], requireDriverAuth({ allowMustChange: true }), (req, res) => {
+router.post(['/logout', '/auth/logout'], requireDriverAuth({ allowMustChange: true }), async (req, res) => {
   try {
-    const result = driverAuthService.logoutDriver(null, { employeeId: req.driverAuth.employeeId });
+    const result = await driverAuthService.logoutDriver(null, { employeeId: req.driverAuth.employeeId });
     return res.status(200).json(result);
   } catch (err) {
     return res.status(500).json({
@@ -191,15 +191,16 @@ router.post(['/logout', '/auth/logout'], requireDriverAuth({ allowMustChange: tr
  * GET /me and /auth/me
  * Authenticated driver profile, assigned truck, and supervisor details
  */
-router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), (req, res) => {
+router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), async (req, res) => {
   try {
-    const profile = driverAuthService.getDriverProfile(null, req.driverAuth.employeeId);
+    const profile = await driverAuthService.getDriverProfile(null, req.driverAuth.employeeId);
     return res.status(200).json({
       success: true,
       driver: profile
     });
   } catch (err) {
-    return res.status(404).json({
+    return res.status(err.status || 404).json({
+      code: err.code,
       success: false,
       error: err.message
     });
