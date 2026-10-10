@@ -305,13 +305,20 @@ function us(t,i=[],o=[],h=new Date){
   const startStr=B(a.cycleStart,"yyyy-MM-dd");
   const endStr=B(a.cycleEnd,"yyyy-MM-dd");
 
+  const getNormDate=(val)=>{
+    if(!val)return"";
+    if(typeof val==="string")return val.split(/[T ]/)[0];
+    try{return new Date(val).toISOString().split("T")[0];}catch(e){return"";}
+  };
+
   const empAtt=(i||[]).filter(w=>{
-    const id=w.staff_member||w.employee_id||w.employee;
-    return id===t.id;
+    const id=typeof w.staff_member==="object"?w.staff_member?.id:(w.staff_member||w.employee_id||w.employee||w.user_id);
+    const code=w.employee_code||w.employee_number||w.staff_code||(typeof w.staff_member==="object"?w.staff_member?.employee_code:null);
+    return id===t.id||(t.employee_code&&(id===t.employee_code||code===t.employee_code))||(t.employee_number&&(id===t.employee_number||code===t.employee_number));
   });
 
   const inCycle=empAtt.filter(w=>{
-    const d=(w.date||"").split(" ")[0];
+    const d=getNormDate(w.date);
     return d>=startStr&&d<=endStr;
   });
 
@@ -321,20 +328,40 @@ function us(t,i=[],o=[],h=new Date){
   const calDays=new Date(endY,endM+1,0).getDate();
   const calEndStr=`${endY}-${String(endM+1).padStart(2,"0")}-${String(calDays).padStart(2,"0")}`;
   const inCal=empAtt.filter(w=>{
-    const d=(w.date||"").split(" ")[0];
+    const d=getNormDate(w.date);
     return d>=calStartStr&&d<=calEndStr;
   });
 
-  const matched=inCycle.length>=inCal.length?inCycle:inCal;
+  const curRef=new Date(h);
+  const curY=curRef.getFullYear();
+  const curM=curRef.getMonth();
+  const curStartStr=`${curY}-${String(curM+1).padStart(2,"0")}-01`;
+  const curDays=new Date(curY,curM+1,0).getDate();
+  const curEndStr=`${curY}-${String(curM+1).padStart(2,"0")}-${String(curDays).padStart(2,"0")}`;
+  const inCurMonth=empAtt.filter(w=>{
+    const d=getNormDate(w.date);
+    return d>=curStartStr&&d<=curEndStr;
+  });
+
+  let matched=inCycle;
+  if(inCal.length>matched.length)matched=inCal;
+  if(inCurMonth.length>matched.length)matched=inCurMonth;
+
+  const dateMap=new Map();
+  matched.forEach(w=>{
+    const d=getNormDate(w.date);
+    if(d&&!dateMap.has(d))dateMap.set(d,w);
+  });
+  const uniqueRecords=Array.from(dateMap.values());
 
   let presentDays=0;
   let halfDays=0;
-  matched.forEach(w=>{
+  uniqueRecords.forEach(w=>{
     const st=(w.status||"").toLowerCase().trim();
-    if(st==="present"||st==="work from home"||st==="p")presentDays+=1;
+    if(st==="present"||st==="work from home"||st==="p"||st==="on trip"||st==="ontrip"||st==="available"||st==="duty")presentDays+=1;
     else if(st==="half day"||st==="half-day"||st==="hd")halfDays+=1;
-    else if(st==="leave"||st==="paid leave"||st==="holiday"||st==="off")presentDays+=1;
-    else if(st==="absent"){}
+    else if(st==="leave"||st==="paid leave"||st==="holiday"||st==="off"||st==="weekly off"||st==="weekly-off"||st==="wo")presentDays+=1;
+    else if(st==="absent"||st==="a"){}
     else presentDays+=1;
   });
 
@@ -350,14 +377,18 @@ function us(t,i=[],o=[],h=new Date){
     }
   }
 
-  const pendingAdvList=(o||[]).filter(w=>{const id=w.employee_id||w.staff_member;return id===t.id&&w.status==="Pending";});const advances=pendingAdvList.reduce((w,y)=>w+(Number(y.remaining_balance??y.amount)||0),0);
+  const pendingAdvList=(o||[]).filter(w=>{
+    const id=typeof w.staff_member==="object"?w.staff_member?.id:(w.employee_id||w.staff_member);
+    return (id===t.id||(t.employee_code&&id===t.employee_code))&&w.status==="Pending";
+  });
+  const advances=pendingAdvList.reduce((w,y)=>w+(Number(y.remaining_balance??y.amount)||0),0);
 
   const net=Math.max(0,gross-advances);
 
   return {
     employeeId:t.id,
     employeeName:t.name,
-    empCode:t.employee_number||t.emp_number||"EMP-001",
+    empCode:t.employee_number||t.emp_number||t.employee_code||"EMP-001",
     role:t.employee_type||t.role||"Staff",
     joiningDate:t.joining_date||"N/A",
     cycleInfo:a,
@@ -367,7 +398,8 @@ function us(t,i=[],o=[],h=new Date){
     totalWorkingDays:totalDays,
     activeDays:a.activeDays,
     grossSalary:gross,
-    totalAdvances:advances,pendingAdvances:pendingAdvList,
+    totalAdvances:advances,
+    pendingAdvances:pendingAdvList,
     taxDeductions:0,
     netPayout:net,
     payDate:a.formattedPayDate,
