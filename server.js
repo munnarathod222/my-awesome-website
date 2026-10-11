@@ -1160,6 +1160,7 @@ const server = http.createServer((req, res) => {
               driver_employee_code: assignment.driver_employee_code,
               driver_name: empName || trip.driver_name
             }, { $autoCancel: false });
+            if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
 
             // Record in audit service
             try {

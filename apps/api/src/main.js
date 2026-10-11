@@ -864,6 +864,24 @@ const downloadDatabaseFromSupabase = async (dbFilePath, options = {}) => {
         snapshots.push(d.toISOString().slice(0, 10));
       }
       for (const dStr of snapshots) {
+        // First try .db.gz (compressed daily snapshot)
+        try {
+          const gzFallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${dStr}.db.gz`, {
+            method: 'GET',
+            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+          });
+          if (gzFallbackRes.ok) {
+            const gzSnapshotBuf = Buffer.from(await gzFallbackRes.arrayBuffer());
+            if (gzSnapshotBuf.byteLength > 20000) {
+              const { gunzipSync } = await import('node:zlib');
+              buffer = gunzipSync(gzSnapshotBuf);
+              logger.info(`✅ Successfully loaded and unpacked compressed historical snapshot from ${dStr}.gz (${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB SQLite)!`);
+              break;
+            }
+          }
+        } catch (gzErr) {}
+
+        // Fallback to uncompressed .db snapshot
         const fallbackRes = await fetch(`${supabaseUrl}/storage/v1/object/authenticated/backups/history/data_${dStr}.db`, {
           method: 'GET',
           headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
@@ -1778,9 +1796,9 @@ let _isCloudSyncing = false;
 let _hasUnsyncedChanges = false;
 
 let _lastSyncTimestamp = 0;
-const MIN_SYNC_COOLDOWN_MS = 25 * 1000; // 25s cooldown between syncs to batch multi-record entry
+const MIN_SYNC_COOLDOWN_MS = 3 * 1000; // 3s cooldown between syncs for rapid persistence
 
-const triggerDebouncedCloudSync = (delayMs = 6000) => {
+const triggerDebouncedCloudSync = (delayMs = 2000) => {
   if (global.isShuttingDown || global.isRestoringBackup) return;
   _hasUnsyncedChanges = true;
   if (_cloudSyncDebounceTimer) clearTimeout(_cloudSyncDebounceTimer);
@@ -4615,8 +4633,8 @@ app.use('/hcgi/platform', async (req, res) => {
         proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
       const pathname = parsedUrl.pathname;
       if (!pathname.includes('/auth-with-') && !pathname.includes('/auth-refresh') && !pathname.includes('/api/health') && !pathname.includes('/api/audit')) {
-        logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling debounced cloud backup in 3s...`);
-        triggerDebouncedCloudSync(3000);
+        logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling fast cloud backup in 1s...`);
+        triggerDebouncedCloudSync(1000);
 
         try {
           const pathSegments = pathname.split('/').filter(Boolean);

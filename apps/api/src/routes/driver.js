@@ -329,10 +329,10 @@ router.post('/office/driver-access/create', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const createdBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = await driverAuthService.createDriverAccount(null, { employeeId, temporaryPassword, createdBy });
+    const result = driverAuthService.createDriverAccount(null, { employeeId, temporaryPassword, createdBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
@@ -340,10 +340,10 @@ router.post('/office/driver-access/reset-password', async (req, res) => {
   try {
     const { employeeId, temporaryPassword } = req.body || {};
     const resetBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = await driverAuthService.resetDriverPassword(null, { employeeId, temporaryPassword, resetBy });
+    const result = driverAuthService.resetDriverPassword(null, { employeeId, temporaryPassword, resetBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
@@ -351,21 +351,21 @@ router.post('/office/driver-access/toggle-status', async (req, res) => {
   try {
     const { employeeId, status } = req.body || {};
     const updatedBy = req.headers['x-actor-id'] || req.headers['x-actor-name'] || 'Office Administrator';
-    const result = await driverAuthService.setAccountStatus(null, { employeeId, status, updatedBy });
+    const result = driverAuthService.setAccountStatus(null, { employeeId, status, updatedBy });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
 router.get('/office/driver-access/status/:employeeId', async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const status = await driverAuthService.getAccountStatus(null, employeeId);
+    const status = driverAuthService.getAccountStatus(null, employeeId);
     return res.status(200).json({ success: true, ...status });
 
   } catch (err) {
-    return res.status(err.status || 400).json({ success: false, code: err.code, error: err.message });
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
@@ -1547,6 +1547,7 @@ router.post('/trips/:id/status', resolveDriver, async (req, res) => {
 
     const updatedTrip = await pb.collection('trip_logs').update(id, updatePayload, { $autoCancel: false });
     logger.info(`Driver ${driver.name} transitioned Trip ${trip.trip_id || id} to state: ${status}`);
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
 
     return res.status(200).json({
       success: true,
@@ -1610,6 +1611,7 @@ router.post('/trips/:id/pod', resolveDriver, uploadDocFiles.array('pod_photos', 
       pod_uploaded: true,
       pod_uploaded_at: nowISO
     }, { $autoCancel: false }).catch(() => {});
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
 
     return res.status(200).json({
       success: true,
@@ -1651,6 +1653,7 @@ router.post('/trips/:id/signature', resolveDriver, async (req, res) => {
 
     const updatedTrip = await pb.collection('trip_logs').update(id, signaturePayload, { $autoCancel: false });
     logger.info(`Receiver signature captured for Trip ${trip.trip_id || id} by ${receiver_name}`);
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
 
     return res.status(200).json({
       success: true,
@@ -1836,6 +1839,7 @@ router.post('/trips', resolveDriver, async (req, res) => {
     };
 
     const newTrip = await pb.collection('trip_logs').create(payload, { $autoCancel: false });
+    if (global.triggerDebouncedCloudSync) global.triggerDebouncedCloudSync(1000);
     return res.status(201).json({
       success: true,
       message: 'Trip log successfully registered.',
@@ -4915,3 +4919,6 @@ router.post('/breakdown-sos', async (req, res) => {
 });
 
 export default router;
+
+
+
