@@ -878,86 +878,118 @@ const TripLogsPage = () => {
                             </TableCell>
                             <TableCell className="py-2">
                               <div className="flex flex-col gap-1 min-w-[140px]">
-                                <Select
-                                  value={log.truck_number || ''}
-                                  onValueChange={async (newTruck) => {
-                                    if (!newTruck || newTruck === log.truck_number) return;
-                                    const conflicting = tripLogs.find(otherLog => 
-                                      otherLog.id !== log.id &&
-                                      otherLog.truck_number === newTruck &&
-                                      otherLog.trip_status !== 'Cancelled' &&
-                                      (otherLog?.date || '').split(' ')[0] === (log?.date || '').split(' ')[0]
-                                    );
-                                    if (conflicting) {
-                                      const proceed = window.confirm(`Warning: Truck ${newTruck} is already assigned to ${conflicting.trip_id || 'another trip'} on this date. Assign anyway?`);
-                                      if (!proceed) return;
-                                    }
-                                    await updateTripField(log.id, 'truck_number', newTruck);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-7 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 font-bold text-sm text-foreground focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors">
-                                    <SelectValue placeholder="Select Truck" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {trucks.map(t => {
-                                      const dateStr = log.date ? (log?.date || '').split(' ')[0] : '';
-                                      const isConflicted = bookedTrucksPerDate[dateStr]?.has(t.truck_number) && t.truck_number !== log.truck_number;
-                                      return (
-                                        <SelectItem key={t.id} value={t.truck_number}>
-                                          <span>{t.truck_number} {isConflicted ? '(Booked today)' : ''}</span>
-                                        </SelectItem>
-                                      );
-                                    })}
-                                  </SelectContent>
-                                </Select>
+                                {(() => {
+                                  const curTruck = (log.truck_number || '').trim();
+                                  const curTruckNorm = curTruck.replace(/\s+/g, '').toUpperCase();
+                                  const matchedTruck = trucks.find(t => (t.truck_number || '').replace(/\s+/g, '').toUpperCase() === curTruckNorm);
+                                  const selTruck = matchedTruck ? matchedTruck.truck_number : curTruck;
 
-                                <Select
-                                  value={log.driver_employee_code || (log.driver_name === 'Temporary Driver' ? 'Temporary Driver' : '')}
-                                  onValueChange={async (selectedCode) => {
-                                    if (!selectedCode) return;
-                                    if (selectedCode === 'Temporary Driver') {
-                                      await updateTripDriver(log.id, null);
-                                    } else {
-                                      const emp = employees.find(e => e.employee_code === selectedCode);
-                                      if (emp) {
-                                        await updateTripDriver(log.id, emp);
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="h-6 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 text-xs text-muted-foreground font-medium focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors -mt-1">
-                                    <SelectValue placeholder="Select Driver">
-                                      {log.driver_employee_code ? (
-                                        <span className="font-medium text-foreground">
-                                          <span className="font-mono text-sky-400 font-bold mr-1">{log.driver_employee_code}</span>
-                                          <span>— {log.driver_name || 'Driver'}</span>
-                                        </span>
-                                      ) : log.driver_name === 'Temporary Driver' ? (
-                                        <span className="text-amber-500 font-medium">⚡ Temporary Driver</span>
-                                      ) : log.driver_name ? (
-                                        <span className="text-amber-500 font-semibold" title="Permanent driver code not assigned. Mobile driver app will not see this trip.">
-                                          ⚠️ Code not assigned ({log.driver_name})
-                                        </span>
-                                      ) : (
-                                        <span className="text-muted-foreground">Select Driver</span>
-                                      )}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
-                                      ⚡ Temporary Driver (No app access)
-                                    </SelectItem>
-                                    {filterActiveDrivers(employees, log.driver_name || log.driver).map(e => (
-                                      <SelectItem key={e.id} value={e.employee_code || e.id}>
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="font-mono font-bold text-sky-400">{e.employee_code || 'NO-CODE'}</span>
-                                          <span>—</span>
-                                          <span>{e.name}</span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                  return (
+                                    <Select
+                                      value={selTruck || ''}
+                                      onValueChange={async (newTruck) => {
+                                        if (!newTruck || newTruck === log.truck_number) return;
+                                        const conflicting = tripLogs.find(otherLog => 
+                                          otherLog.id !== log.id &&
+                                          (otherLog.truck_number || '').replace(/\s+/g, '').toUpperCase() === newTruck.replace(/\s+/g, '').toUpperCase() &&
+                                          otherLog.trip_status !== 'Cancelled' &&
+                                          (otherLog?.date || '').split(' ')[0] === (log?.date || '').split(' ')[0]
+                                        );
+                                        if (conflicting) {
+                                          const proceed = window.confirm(`Warning: Truck ${newTruck} is already assigned to ${conflicting.trip_id || 'another trip'} on this date. Assign anyway?`);
+                                          if (!proceed) return;
+                                        }
+                                        await updateTripField(log.id, 'truck_number', newTruck);
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-7 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 font-bold text-sm text-foreground focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors">
+                                        <SelectValue placeholder="Select Truck">
+                                          {selTruck || 'Select Truck'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {trucks.map(t => {
+                                          const dateStr = log.date ? (log?.date || '').split(' ')[0] : '';
+                                          const isConflicted = bookedTrucksPerDate[dateStr]?.has(t.truck_number) && t.truck_number !== selTruck;
+                                          return (
+                                            <SelectItem key={t.id} value={t.truck_number}>
+                                              <span>{t.truck_number} {isConflicted ? '(Booked today)' : ''}</span>
+                                            </SelectItem>
+                                          );
+                                        })}
+                                        {selTruck && !trucks.some(t => t.truck_number === selTruck) && (
+                                          <SelectItem key="custom-truck" value={selTruck}>
+                                            <span>{selTruck}</span>
+                                          </SelectItem>
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  );
+                                })()}
+
+                                {(() => {
+                                  const curDriver = (log.driver_name || log.driver || '').trim();
+                                  const isTemp = curDriver === 'Temporary Driver' || curDriver.startsWith('Temporary Driver');
+                                  const matchedEmp = isTemp ? null : employees.find(e => 
+                                    (log.driver_employee_id && e.id === log.driver_employee_id) ||
+                                    (log.driver_employee_code && e.employee_code && e.employee_code === log.driver_employee_code) ||
+                                    (curDriver && e.name && e.name.trim().toLowerCase() === curDriver.toLowerCase())
+                                  );
+                                  const selDriverVal = isTemp ? 'Temporary Driver' : (matchedEmp ? matchedEmp.id : curDriver);
+                                  const driverLabel = isTemp 
+                                    ? (curDriver !== 'Temporary Driver' ? curDriver : '⚡ Temporary Driver')
+                                    : (matchedEmp 
+                                      ? (matchedEmp.employee_code ? `${matchedEmp.employee_code} — ${matchedEmp.name}` : matchedEmp.name) 
+                                      : curDriver);
+
+                                  return (
+                                    <Select
+                                      value={selDriverVal || ''}
+                                      onValueChange={async (selectedVal) => {
+                                        if (!selectedVal) return;
+                                        if (selectedVal === 'Temporary Driver') {
+                                          await updateTripDriver(log.id, null);
+                                        } else {
+                                          const emp = employees.find(e => e.id === selectedVal || e.employee_code === selectedVal || e.name === selectedVal);
+                                          if (emp) {
+                                            await updateTripDriver(log.id, emp);
+                                          } else {
+                                            await updateTripDriver(log.id, { id: null, employee_code: null, name: selectedVal });
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-6 border-none bg-transparent hover:bg-muted/80 px-2 py-0.5 text-xs text-muted-foreground font-medium focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-1 w-full justify-start gap-1 rounded-md transition-colors -mt-1">
+                                        <SelectValue placeholder="Select Driver">
+                                          {driverLabel || 'Select Driver'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Temporary Driver" className="font-semibold text-amber-600 dark:text-amber-400">
+                                          ⚡ Temporary Driver (No app access)
+                                        </SelectItem>
+                                        {filterActiveDrivers(employees, curDriver).map(e => (
+                                          <SelectItem key={e.id} value={e.id}>
+                                            <div className="flex items-center gap-1.5">
+                                              {e.employee_code ? (
+                                                <>
+                                                  <span className="font-mono font-bold text-sky-400">{e.employee_code}</span>
+                                                  <span>—</span>
+                                                </>
+                                              ) : null}
+                                              <span>{e.name}</span>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                        {curDriver && !isTemp && !matchedEmp && (
+                                          <SelectItem key="custom-driver" value={curDriver}>
+                                            <span>{curDriver}</span>
+                                          </SelectItem>
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  );
+                                })()}
                               </div>
                             </TableCell>
                             <TableCell className="py-2">
