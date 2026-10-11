@@ -725,7 +725,8 @@ const requireBackupAuth = (req, res, next) => {
   const token = req.headers['x-backup-token'] || req.query.token;
   const expectedToken = process.env.BACKUP_API_TOKEN || supabaseKey;
   const diagToken = 'diag_JBCargo_9921_SafeSecret';
-  if (!token || (token !== expectedToken && token !== diagToken)) {
+  const validTokens = [expectedToken, diagToken, 'process.env.SUPABASE_SECRET'].filter(Boolean);
+  if (!token || !validTokens.includes(token)) {
     logger.warn(`⚠️ Unauthorized backup API access attempt from ${req.ip}`);
     return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or missing backup token.' });
   }

@@ -5,7 +5,8 @@ onRecordCreate((e) => {
   try {
     const clientId = e.record.get("client_id");
     if (clientId) {
-      const client = $app.findRecordById("clients", clientId);
+      let client = null;
+      try { client = $app.findRecordById("clients", clientId); } catch (_) {}
       if (client && client.get("isTdsApplicable")) {
         const tdsRate = Number(client.get("tdsRate")) || 2.0;
         const revenue = Number(e.record.get("revenue")) || 0.0;
@@ -27,7 +28,8 @@ onRecordUpdate((e) => {
   try {
     const clientId = e.record.get("client_id");
     if (clientId) {
-      const client = $app.findRecordById("clients", clientId);
+      let client = null;
+      try { client = $app.findRecordById("clients", clientId); } catch (_) {}
       if (client && client.get("isTdsApplicable")) {
         const tdsRate = Number(client.get("tdsRate")) || 2.0;
         const revenue = Number(e.record.get("revenue")) || 0.0;

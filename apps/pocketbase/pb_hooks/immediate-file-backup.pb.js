@@ -116,14 +116,21 @@ function handleRecordFiles(record) {
     console.log(`❌ [FileBackup] Error processing record files: ${err}`);
   }
 }
+globalThis.handleRecordFiles = handleRecordFiles;
 
 FILE_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
-    handleRecordFiles(e.record);
+    try {
+      handleRecordFiles(e.record);
+    } catch (_) {}
+    e.next();
   }, collectionName);
 
   onRecordAfterUpdateSuccess((e) => {
-    handleRecordFiles(e.record);
+    try {
+      handleRecordFiles(e.record);
+    } catch (_) {}
+    e.next();
   }, collectionName);
 });
 

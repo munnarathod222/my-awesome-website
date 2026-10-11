@@ -87,7 +87,7 @@ function deductFastagForTrip(record, eventType) {
 // Trigger on record update when trip_status transitions to "Delivered" or "Completed"
 onRecordUpdate((e) => {
   try {
-    const oldRecord = e.record.originalCopy();
+    const oldRecord = typeof e.record.original === 'function' ? e.record.original() : null;
     const oldStatus = oldRecord ? oldRecord.getString("trip_status") : "";
     const newStatus = e.record.getString("trip_status");
 

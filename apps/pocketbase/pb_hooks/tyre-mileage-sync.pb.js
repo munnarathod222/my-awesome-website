@@ -14,7 +14,8 @@ onRecordAfterCreateSuccess((e) => {
           truck = $app.findFirstRecordByFilter("trucks", "truck_number = {:truckNumber}", { truckNumber });
         } catch (err) {
           console.log("[tyre-mileage-sync] Truck not found for number:", truckNumber);
-          e.next();
+        }
+        if (!truck) {
           return;
         }
 
@@ -45,8 +46,8 @@ onRecordAfterCreateSuccess((e) => {
 onRecordUpdate((e) => {
   try {
     const newTrip = e.record;
-    const oldTrip = $app.findRecordById("trip_logs", newTrip.id);
-    const oldStatus = oldTrip.getString("trip_status");
+    const oldTrip = typeof e.record.original === 'function' ? e.record.original() : null;
+    const oldStatus = oldTrip ? oldTrip.getString("trip_status") : "";
     const newStatus = newTrip.getString("trip_status");
 
     if (oldStatus !== "Delivered" && newStatus === "Delivered") {
@@ -58,7 +59,8 @@ onRecordUpdate((e) => {
           truck = $app.findFirstRecordByFilter("trucks", "truck_number = {:truckNumber}", { truckNumber });
         } catch (err) {
           console.log("[tyre-mileage-sync] Truck not found for number:", truckNumber);
-          e.next();
+        }
+        if (!truck) {
           return;
         }
 

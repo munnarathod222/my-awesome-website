@@ -31,7 +31,7 @@ routerAdd("POST", "/api/custom-delete/:collection/:id", (c) => {
         if (collectionName === 'trip_logs') {
           filterStr += ` || trip_id = "${targetId}"`;
         } else if (collectionName === 'employees') {
-          filterStr += ` || employee_number = "${targetId}" || contact = "${targetId}"`;
+          filterStr += ` || contact = "${targetId}" || name = "${targetId}"`;
         }
 
         const foundRecords = $app.findRecordsByFilter(collectionName, filterStr, "-created", 50, 0);

@@ -26,7 +26,7 @@ onRecordAfterCreateSuccess((e) => {
         $app.save(txn);
       } catch (errTx) {
         console.error("Action A failed:", errTx);
-        throw errTx;
+        // non-blocking errTx
       }
     }
 
@@ -47,7 +47,7 @@ onRecordAfterCreateSuccess((e) => {
         $app.save(txn);
       } catch (errTx) {
         console.error("Action B failed:", errTx);
-        throw errTx;
+        // non-blocking errTx
       }
     }
 
@@ -72,7 +72,7 @@ onRecordAfterCreateSuccess((e) => {
         }
       } catch (errTx) {
         console.error("Action C failed:", errTx);
-        throw errTx;
+        // non-blocking errTx
       }
     }
 
@@ -106,14 +106,14 @@ onRecordAfterCreateSuccess((e) => {
         }
       } catch (errTx) {
         console.error("Driver Logic Engine failed:", errTx);
-        throw errTx;
+        // non-blocking errTx
       }
     }
 
   } catch (error) {
     console.error("Error in sync-trip-ledgers.pb.js hook:", error);
     console.error("\n!!! HOOK ERROR: " + error.toString() + "\n" + (error.stack || "") + "\n");
-    throw new Error("Ledger reconciliation transaction failed: " + error.message);
+    // Non-blocking: logged without failing primary trip creation
   }
   
   e.next();

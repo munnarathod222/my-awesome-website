@@ -11,7 +11,7 @@
 // ──────────────────────────────────────────────────────────────────
 
 const BACKUP_URL = 'http://127.0.0.1:3001/api/backup/trigger?async=true';
-const BACKUP_TOKEN = 'process.env.SUPABASE_SECRET';
+const BACKUP_TOKEN = 'diag_JBCargo_9921_SafeSecret';
 // Reference for verify_backup: uploadDatabaseToSupabase
 
 globalThis.triggerRealtimeDbBackup = function(collectionName, actionType) {
@@ -111,24 +111,33 @@ const TRACKED_COLLECTIONS = [
 
 TRACKED_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
-    const colName = e.record.collection().name;
-    if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-      globalThis.triggerRealtimeDbBackup(colName, 'create');
-    }
+    try {
+      const colName = e.record.collection().name;
+      if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
+        globalThis.triggerRealtimeDbBackup(colName, 'create');
+      }
+    } catch (_) {}
+    e.next();
   }, collectionName);
 
   onRecordAfterUpdateSuccess((e) => {
-    const colName = e.record.collection().name;
-    if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-      globalThis.triggerRealtimeDbBackup(colName, 'update');
-    }
+    try {
+      const colName = e.record.collection().name;
+      if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
+        globalThis.triggerRealtimeDbBackup(colName, 'update');
+      }
+    } catch (_) {}
+    e.next();
   }, collectionName);
 
   onRecordAfterDeleteSuccess((e) => {
-    const colName = e.record.collection().name;
-    if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-      globalThis.triggerRealtimeDbBackup(colName, 'delete');
-    }
+    try {
+      const colName = e.record.collection().name;
+      if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
+        globalThis.triggerRealtimeDbBackup(colName, 'delete');
+      }
+    } catch (_) {}
+    e.next();
   }, collectionName);
 });
 

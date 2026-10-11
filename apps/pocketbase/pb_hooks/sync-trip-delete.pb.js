@@ -6,7 +6,7 @@ onRecordDelete((e) => {
   
   // 1. Delete related cashbook transactions
   try {
-    const cashbookRecords = $app.findRecordsByFilter("cashbook", "reference_id ~ {:tripId}", "-created", 100, 0, { tripId });
+    const cashbookRecords = $app.findRecordsByFilter("cashbook", "reference_id ~ {:tripId}", "", 100, 0, { tripId });
     for (const record of cashbookRecords) {
       try {
         $app.delete(record);
@@ -21,7 +21,7 @@ onRecordDelete((e) => {
 
   // 2. Delete related driver ledger entries
   try {
-    const ledgerRecords = $app.findRecordsByFilter("driver_ledger", "trip_id = {:tripId}", "-created", 100, 0, { tripId });
+    const ledgerRecords = $app.findRecordsByFilter("driver_ledger", "trip_id = {:tripId}", "", 100, 0, { tripId });
     for (const record of ledgerRecords) {
       try {
         $app.delete(record);
@@ -67,7 +67,7 @@ onRecordDelete((e) => {
 
   // 4. Delete related delivery proofs (PODs)
   try {
-    const podRecords = $app.findRecordsByFilter("delivery_proofs", "trip_id = {:tripId}", "-created", 100, 0, { tripId });
+    const podRecords = $app.findRecordsByFilter("delivery_proofs", "trip_id = {:tripId}", "", 100, 0, { tripId });
     for (const record of podRecords) {
       try {
         $app.delete(record);
@@ -82,7 +82,7 @@ onRecordDelete((e) => {
 
   // 5. Delete or clean up related payment requests
   try {
-    const payRecords = $app.findRecordsByFilter("payment_requests", "trip_id = {:tripId}", "-created", 100, 0, { tripId });
+    const payRecords = $app.findRecordsByFilter("payment_requests", "trip_id = {:tripId}", "", 100, 0, { tripId });
     for (const record of payRecords) {
       try {
         $app.delete(record);
