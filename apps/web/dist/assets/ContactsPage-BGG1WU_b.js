@@ -1,7 +1,1104 @@
-import{r as h,j as e,ak as me,ad as ee,a0 as qe,ao as ae,a_ as Ne,ae as se,as as _e,aq as we,bU as fe,cc as He,aE as ze,cD as Ye,a2 as Ke,a1 as Be,ax as De,av as Je,dg as Ze,aU as Qe,b2 as Xe,cx as ea,ap as Ee,al as ye,a7 as de,dM as je,dN as aa,by as sa,dO as Te,cH as ve,cV as ta,bD as ra,dP as na,au as Le,a6 as Ce,cU as la,de as Me,dy as $e,bs as oa,aY as ia,ag as ca,cf as da,at as ma,aM as Ae,dQ as Oe}from"./vendor-react-Bs5V2qFE.js";import{u as We,D as le,a as oe,b as he,c as pe,L as g,S as Y,e as K,g as J,h as Z,i as n,I as k,T as ke,j as ue,B as P,p as W,t as S,w as ne,a3 as ha,a4 as pa,a5 as ua,a8 as G,a7 as Fe,aj as xa,af as ga,d as ba,C as fa,o as ya,O as ja,y as va,z as Ca,A as ce,E as X,F as Na,G as q}from"./index-DLxf9dwO.js";import{f as ge,o as Ie}from"./locationUtils-CJF9iFYv.js";import{B as _a}from"./BusinessCardExtractor-DcUocfvj.js";import{T as wa}from"./TransportCrmWhatsAppShareModal-BPe-K7FN.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";function ka({isOpen:r,onClose:p,contact:t,onSuccess:b}){const{currentUser:u}=We(),[C,j]=h.useState(!1),[N,c]=h.useState("Client"),[y,x]=h.useState(""),[s,d]=h.useState({contact_type:"Client",company_name:"",phone_number:"",physical_address:"",gstin:"",email:"",notes:"",google_maps_url:"",truck_brand:""}),[extraPhones,setExtraPhones]=h.useState([]),[I,i]=h.useState([]),[m,M]=h.useState([]);h.useEffect(()=>{if(r){(async()=>{try{const[F,T]=await Promise.all([W.collection("clients").getFullList({sort:"client_name",$autoCancel:!1}).catch(()=>[]),W.collection("contacts").getFullList({filter:'warehouse_name != ""',$autoCancel:!1}).catch(()=>[])]);M(F||[]);const E=Array.from(new Set((T||[]).map($=>$.warehouse_name).filter(Boolean)));i(E)}catch(F){console.error("Error loading dropdown options:",F)}})();const a=t?.contact_type||"Client";let _="Client",f="";if(a==="Truck Owner"||a==="Transporter"?(_="TruckOwner",f=a):a==="Warehouse"?(_="Warehouse",f="Warehouse"):a==="Corporate"?(_="Client",f="Corporate"):a==="Driver"||a==="Employee"||a==="Supervisor"||a==="Manager"?(_="Employee",f=a):a==="Mechanic"||a==="Showroom"||a==="Spare Parts"||a==="Electrician"||a==="Puncture Shop"||a==="Bodywork / Welding"||a==="Crane / Tow Truck"||a==="Hydraulics"||a==="Plastics"||a==="Washing Centre"||a==="RTO Agent"?(_="Maintenance",f=a):a==="Banking"||a==="Loan Agent"?(_="Finance",f=a):a==="Vendor"?_="Vendor":a==="Other"&&(_="Other",f="Other"),c(_),x(f),t){let F=t.google_maps_url||t.google_map_link||t.location_url||"";if(!F&&t.notes){const z=t.notes.match(/\[Location:\s*(https?:\/\/[^\]]+)\]/i)||t.notes.match(/(https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps)[^\s]+)/i);z&&(F=z[1])}let T=t.bank_name||"",E=t.branch_name||"",$=t.ifsc_code||"",H=t.account_type||"",R=t.agent_company||"",re=t.loan_type||"";if(t.notes){const z=t.notes.match(/\[Finance:\s*([^\]]+)\]/i);z&&z[1].split("|").map(D=>D.trim()).forEach(D=>{D.startsWith("Bank:")&&(T=T||D.replace("Bank:","").trim()),D.startsWith("Branch:")&&(E=E||D.replace("Branch:","").trim()),D.startsWith("IFSC:")&&($=$||D.replace("IFSC:","").trim()),D.startsWith("Account:")&&(H=H||D.replace("Account:","").trim()),D.startsWith("Agency:")&&(R=R||D.replace("Agency:","").trim()),D.startsWith("Loan Type:")&&(re=re||D.replace("Loan Type:","").trim())})}const ie=(t.notes||"").replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi,"").replace(/\[Finance:\s*[^\]]+\]/gi,"").trim();d({contact_type:a,company_name:t.company_name||"",phone_number:((t.phone_number||"").split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean)[0]||""),physical_address:t.physical_address||"",gstin:t.gstin||"",email:t.email||"",notes:ie,google_maps_url:F,truck_brand:t.truck_brand||"",warehouse_name:t.warehouse_name||"",designation:t.designation||"",client_name:t.client_name||"",bank_name:T,branch_name:E,ifsc_code:$,account_type:H,loan_type:re,agent_company:R}),setExtraPhones((t.phone_number||"").split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean).slice(1))}else d({contact_type:"Client",company_name:"",phone_number:"",physical_address:"",gstin:"",email:"",notes:"",google_maps_url:"",truck_brand:"",warehouse_name:"",designation:"",client_name:"",bank_name:"",branch_name:"",ifsc_code:"",account_type:"",loan_type:"",agent_company:""}),setExtraPhones([])}},[r,t]);const O=o=>{c(o),o==="TruckOwner"?(x("Truck Owner"),d(a=>({...a,contact_type:"Truck Owner"}))):o==="Client"?(x("Corporate"),d(a=>({...a,contact_type:"Client"}))):o==="Warehouse"?(x("Warehouse"),d(a=>({...a,contact_type:"Warehouse"}))):o==="Vendor"?(x(""),d(a=>({...a,contact_type:"Vendor"}))):o==="Employee"?(x("Driver"),d(a=>({...a,contact_type:"Driver"}))):o==="Maintenance"?(x("Mechanic"),d(a=>({...a,contact_type:"Mechanic"}))):o==="Finance"?(x("Banking"),d(a=>({...a,contact_type:"Banking"}))):o==="Other"?(x("Other"),d(a=>({...a,contact_type:"Other"}))):(x(o),d(a=>({...a,contact_type:o})))},L=o=>{x(o),d(a=>({...a,contact_type:o}))},v=()=>s.company_name.trim()?(s.phone_number.trim()||extraPhones.some(p=>p.trim()))?s.physical_address.trim()?s.contact_type==="Banking"&&!s.bank_name?.trim()?"Bank Name is required":s.contact_type==="Loan Agent"&&!s.agent_company?.trim()?"Agent / DSA Company is required":s.gstin.trim()&&!/^[0-9A-Z]{15}$/.test(s.gstin.toUpperCase())?"GSTIN must be 15 alphanumeric characters":s.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email)?"Invalid email format":null:"Physical address is required":"Phone number is required":"Company / Contact name is required",w=async()=>{try{let o=`phone_number="${s.phone_number}"`;s.gstin.trim()&&(o=`(phone_number="${s.phone_number}" || gstin="${s.gstin.toUpperCase()}")`);const a=await W.collection("contacts").getFirstListItem(o,{$autoCancel:!1});if(a&&(!t||a.id!==t.id)){if(a.phone_number===s.phone_number)return"A contact with this phone number already exists.";if(s.gstin.trim()&&a.gstin===s.gstin.toUpperCase())return"A contact with this GSTIN already exists."}return null}catch(o){return o.status===404||console.error("Duplicate check error:",o),null}},B=async o=>{o.preventDefault();const a=v();if(a){S.error(a);return}j(!0);const _=await w();if(_){S.error(_),j(!1);return}try{const f=s.google_maps_url?s.google_maps_url.trim():"";let F=[];s.contact_type==="Banking"?(s.bank_name&&F.push(`Bank: ${s.bank_name}`),s.branch_name&&F.push(`Branch: ${s.branch_name}`),s.ifsc_code&&F.push(`IFSC: ${s.ifsc_code}`),s.account_type&&F.push(`Account: ${s.account_type}`)):s.contact_type==="Loan Agent"&&(s.agent_company&&F.push(`Agency: ${s.agent_company}`),s.loan_type&&F.push(`Loan Type: ${s.loan_type}`));let T=(s.notes||"").replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi,"").replace(/\[Finance:\s*[^\]]+\]/gi,"").trim();if(F.length>0){const H=`[Finance: ${F.join(" | ")}]`;T=T?`${T}
-${H}`:H}f&&(T=T?`${T}
-[Location: ${f}]`:`[Location: ${f}]`);let E=s.designation||"";s.contact_type==="Banking"&&!E?E=[s.bank_name,s.account_type].filter(Boolean).join(" - ")||"Bank Contact":s.contact_type==="Loan Agent"&&!E&&(E=[s.agent_company,s.loan_type].filter(Boolean).join(" - ")||"Loan Agent");const $={contact_type:s.contact_type||"Banking",company_name:s.company_name?s.company_name.trim():"",phone_number:[s.phone_number,...extraPhones].flatMap(p=>(p||"").split(/[,;\/\n]+/)).map(p=>p.trim()).filter(Boolean).join(", "),physical_address:s.physical_address?s.physical_address.trim():"",gstin:s.gstin?s.gstin.trim().toUpperCase():"",email:s.email?s.email.trim():"",notes:T,google_maps_url:f,google_map_link:f,location_url:f,truck_brand:s.truck_brand||"",warehouse_name:s.warehouse_name||"",designation:E,client_name:s.client_name||"",created_by:u?.id||""};t?(await W.collection("contacts").update(t.id,$,{$autoCancel:!1}),S.success("Contact updated successfully")):(await W.collection("contacts").create($,{$autoCancel:!1}),S.success("Contact created successfully")),b(),p()}catch(f){console.error("Failed to save contact:",f),S.error(f.message||"Failed to save contact")}finally{j(!1)}};return e.jsx(le,{open:r,onOpenChange:o=>!o&&p(),children:e.jsxs(oe,{className:"w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-card text-card-foreground p-4 sm:p-6",children:[e.jsx(he,{children:e.jsx(pe,{children:t?"Edit Contact":"Add New Contact"})}),e.jsxs("form",{onSubmit:B,className:"space-y-4 py-4",children:[e.jsxs("div",{className:"grid grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1",children:[e.jsx(g,{children:"Category *"}),e.jsxs(Y,{value:N,onValueChange:O,children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select category"})}),e.jsxs(Z,{className:"max-h-[300px]",children:[e.jsx(n,{value:"Tyre Shop",children:"🔘 Tyre Shop"}),e.jsx(n,{value:"Puncher Shop",children:"🔘 Puncher / Puncture Shop"}),e.jsx(n,{value:"Truck Broker",children:"🤝 Truck Broker"}),e.jsx(n,{value:"Electrician",children:"⚡ Electrician"}),e.jsx(n,{value:"Washing Centre",children:"🚿 Washing Centre"}),e.jsx(n,{value:"Mechanic",children:"🔧 Mechanic"}),e.jsx(n,{value:"Welding / Body Work",children:"🔨 Welding / Body Work"}),e.jsx(n,{value:"RTO Agent",children:"🏛️ RTO Agent"}),e.jsx(n,{value:"FASTag",children:"🏷️ FASTag Services"}),e.jsx(n,{value:"Truck Sales Executive (Showroom)",children:"🏢 Truck Sales Exec (Showroom)"}),e.jsx(n,{value:"Truck Fabricator",children:"🛠️ Truck Fabricator"}),e.jsx(n,{value:"Key Maker",children:"🔑 Key Maker / Locksmith"}),e.jsx(n,{value:"Parking",children:"🅿️ Truck Parking / Yard"}),e.jsx(n,{value:"Fuel Station",children:"⛽ Fuel Station / Petrol Pump"}),e.jsx(n,{value:"TruckOwner",children:"🚛 Truck Owners & Transporters"}),e.jsx(n,{value:"Client",children:"🏢 Client Corporate Contact"}),e.jsx(n,{value:"Warehouse",children:"🏬 Warehouse Contact"}),e.jsx(n,{value:"Employee",children:"👤 Drivers & Staff"}),e.jsx(n,{value:"Maintenance",children:"🛠️ Maintenance & Spare Parts"}),e.jsx(n,{value:"Finance",children:"💰 Banking & Loan Agents"}),e.jsx(n,{value:"Vendor",children:"📦 Vendor"}),e.jsx(n,{value:"Other",children:"��� Other"})]})]})]}),N==="Warehouse"&&e.jsxs(e.Fragment,{children:[e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Warehouse Name *"}),e.jsx(k,{value:s.warehouse_name,onChange:o=>d(a=>({...a,warehouse_name:o.target.value})),placeholder:"e.g. Bhiwandi Hub - WH1",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Designation / Role"}),e.jsx(k,{value:s.designation,onChange:o=>d(a=>({...a,designation:o.target.value})),placeholder:"e.g. Warehouse Manager / Dispatch Supervisor",className:"bg-background"})]})]}),N==="Client"&&e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Corporate Designation"}),e.jsx(k,{value:s.designation,onChange:o=>d(a=>({...a,designation:o.target.value})),placeholder:"e.g. Logistics Director / Key Account Manager",className:"bg-background"})]}),(N==="TruckOwner"||N==="Employee"||N==="Maintenance"||N==="Finance"||N==="Other")&&e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Sub-Category *"}),e.jsxs(Y,{value:y,onValueChange:L,children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select sub-category"})}),e.jsx(Z,{children:N==="TruckOwner"?e.jsxs(e.Fragment,{children:[e.jsx(n,{value:"Truck Owner",children:"Truck Owner (Fleet / Vehicle Owner)"}),e.jsx(n,{value:"Transporter",children:"Transporter (Subcontractor / Agency)"})]}):N==="Employee"?e.jsxs(e.Fragment,{children:[e.jsx(n,{value:"Driver",children:"Driver"}),e.jsx(n,{value:"Supervisor",children:"Supervisor"}),e.jsx(n,{value:"Manager",children:"Manager"}),e.jsx(n,{value:"Employee",children:"Employee / Staff"}),e.jsx(n,{value:"Other",children:"Other"})]}):N==="Maintenance"?e.jsxs(e.Fragment,{children:[e.jsx(n,{value:"Mechanic",children:"Mechanic"}),e.jsx(n,{value:"Electrician",children:"Electrician"}),e.jsx(n,{value:"Puncture Shop",children:"Puncture / Puncher Shop"}),e.jsx(n,{value:"Showroom",children:"Showroom / Service Centre"}),e.jsx(n,{value:"Spare Parts",children:"Spare Parts Shop"}),e.jsx(n,{value:"Bodywork / Welding",children:"Bodywork / Welding"}),e.jsx(n,{value:"Crane / Tow Truck",children:"Crane / Tow Truck / Recovery"}),e.jsx(n,{value:"Hydraulics",children:"Hydraulics & Plastics"}),e.jsx(n,{value:"Washing Centre",children:"Washing Centre / Water Wash"}),e.jsx(n,{value:"RTO Agent",children:"RTO Agent / Compliance"}),e.jsx(n,{value:"Other",children:"Other"})]}):N==="Finance"?e.jsxs(e.Fragment,{children:[e.jsx(n,{value:"Banking",children:"Bank Employee / Contact"}),e.jsx(n,{value:"Loan Agent",children:"Loan Agent / DSA"})]}):e.jsx(n,{value:"Other",children:"Other"})})]})]}),s.contact_type==="Banking"&&e.jsxs(e.Fragment,{children:[e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Bank Name *"}),e.jsx(k,{value:s.bank_name,onChange:o=>d(a=>({...a,bank_name:o.target.value})),placeholder:"e.g. State Bank of India",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Branch Name"}),e.jsx(k,{value:s.branch_name,onChange:o=>d(a=>({...a,branch_name:o.target.value})),placeholder:"e.g. Bhiwandi Main Branch",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"IFSC Code"}),e.jsx(k,{value:s.ifsc_code,onChange:o=>d(a=>({...a,ifsc_code:o.target.value.toUpperCase()})),placeholder:"e.g. SBIN0001234",className:"bg-background uppercase",maxLength:11})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Account / Service Type"}),e.jsxs(Y,{value:s.account_type||"",onValueChange:o=>d(a=>({...a,account_type:o})),children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select type"})}),e.jsxs(Z,{children:[e.jsx(n,{value:"Current Account",children:"Current Account"}),e.jsx(n,{value:"Savings Account",children:"Savings Account"}),e.jsx(n,{value:"CC / OD Account",children:"CC / OD Account"}),e.jsx(n,{value:"Trade Finance",children:"Trade Finance"}),e.jsx(n,{value:"Vehicle Finance",children:"Vehicle Finance"}),e.jsx(n,{value:"Other",children:"Other"})]})]})]})]}),s.contact_type==="Loan Agent"&&e.jsxs(e.Fragment,{children:[e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Agent / DSA Company"}),e.jsx(k,{value:s.agent_company,onChange:o=>d(a=>({...a,agent_company:o.target.value})),placeholder:"e.g. Bajaj Finserv DSA",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Loan Type"}),e.jsxs(Y,{value:s.loan_type||"",onValueChange:o=>d(a=>({...a,loan_type:o})),children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select loan type"})}),e.jsxs(Z,{children:[e.jsx(n,{value:"Vehicle / Truck Loan",children:"Vehicle / Truck Loan"}),e.jsx(n,{value:"Business Loan",children:"Business Loan"}),e.jsx(n,{value:"Working Capital",children:"Working Capital"}),e.jsx(n,{value:"Equipment Finance",children:"Equipment Finance"}),e.jsx(n,{value:"Personal Loan",children:"Personal Loan"}),e.jsx(n,{value:"Overdraft / CC",children:"Overdraft / CC"}),e.jsx(n,{value:"Other",children:"Other"})]})]})]})]}),s.contact_type==="Mechanic"&&e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1 animate-in fade-in duration-200",children:[e.jsx(g,{children:"Truck Brand *"}),e.jsxs(Y,{value:s.truck_brand||"Common",onValueChange:o=>d(a=>({...a,truck_brand:o})),children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select brand"})}),e.jsxs(Z,{children:[e.jsx(n,{value:"Ashok Leyland",children:"Ashok Leyland"}),e.jsx(n,{value:"Tata",children:"Tata"}),e.jsx(n,{value:"Eicher",children:"Eicher"}),e.jsx(n,{value:"Bharat Benz",children:"Bharat Benz"}),e.jsx(n,{value:"Mahindra",children:"Mahindra"}),e.jsx(n,{value:"Common",children:"Common (All Brands)"}),e.jsx(n,{value:"Other",children:"Other"})]})]})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1",children:[e.jsx(g,{children:"GSTIN (Optional)"}),e.jsx(k,{value:s.gstin,onChange:o=>d(a=>({...a,gstin:o.target.value.toUpperCase()})),placeholder:"15 chars alphanumeric",className:"bg-background uppercase",maxLength:15})]}),e.jsxs("div",{className:"space-y-2 col-span-2",children:[e.jsx(g,{children:"Company / Full Name *"}),e.jsx(k,{value:s.company_name,onChange:o=>d(a=>({...a,company_name:o.target.value})),placeholder:"Enter name",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-3 col-span-2 bg-muted/20 p-3.5 rounded-xl border border-border/50",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(g,{className:"font-bold text-xs text-foreground flex items-center gap-1.5",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-500"})," Contact Phone Numbers *",e.jsx("span",{className:"text-[10px] text-muted-foreground font-normal ml-1",children:"(Add multiple mobile, WhatsApp or office numbers)"})]}),e.jsxs("button",{type:"button",onClick:()=>setExtraPhones(a=>[...a,""]),className:"text-[11px] font-bold text-primary hover:text-primary/80 flex items-center gap-1 hover:underline cursor-pointer",children:[e.jsx("span",{className:"text-xs font-black",children:"+"})," Add Another Number"]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-[10px] font-bold text-muted-foreground w-16 shrink-0",children:"Primary:"}),e.jsx(k,{value:s.phone_number,onChange:o=>d(a=>({...a,phone_number:o.target.value})),placeholder:"e.g. 98497 35080 (or paste comma-separated numbers)",className:"bg-background flex-1 font-mono text-xs font-semibold",required:!0})]}),extraPhones.map((ph,idx)=>e.jsxs("div",{key:idx,className:"flex items-center gap-2 animate-in fade-in duration-150",children:[e.jsxs("span",{className:"text-[10px] font-bold text-muted-foreground w-16 shrink-0",children:[`Alt #${idx+2}:`]}),e.jsx(k,{value:ph,onChange:o=>{const val=o.target.value;setExtraPhones(a=>{const n=[...a];n[idx]=val;return n})},placeholder:"Alternate Phone / WhatsApp / Office...",className:"bg-background flex-1 font-mono text-xs font-semibold"}),e.jsx("button",{type:"button",onClick:()=>setExtraPhones(a=>a.filter((_,i)=>i!==idx)),className:"p-1.5 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-colors text-xs font-bold shrink-0",title:"Remove number",children:"✕"})]}))]}),e.jsx("p",{className:"text-[10px] text-muted-foreground",children:"💡 Add secondary mobile numbers, WhatsApp lines, or landlines. All numbers will be saved and directly callable."})]}),e.jsxs("div",{className:"space-y-2 col-span-2 sm:col-span-1",children:[e.jsx(g,{children:"Email Address"}),e.jsx(k,{type:"email",value:s.email,onChange:o=>d(a=>({...a,email:o.target.value})),placeholder:"Optional",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2",children:[e.jsx(g,{children:"Physical Address *"}),e.jsx(ke,{value:s.physical_address,onChange:o=>d(a=>({...a,physical_address:o.target.value})),placeholder:"Full address",className:"bg-background resize-none h-20"})]}),e.jsxs("div",{className:"space-y-2 col-span-2",children:[e.jsx(g,{children:"Google Maps Location (URL)"}),e.jsx(k,{value:s.google_maps_url,onChange:o=>d(a=>({...a,google_maps_url:o.target.value})),placeholder:"Paste Google Maps link (e.g. https://maps.app.goo.gl/...)",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 col-span-2",children:[e.jsx(g,{children:"Notes"}),e.jsx(k,{value:s.notes,onChange:o=>d(a=>({...a,notes:o.target.value})),placeholder:"Optional notes",className:"bg-background"})]})]}),e.jsxs(ue,{className:"pt-4",children:[e.jsx(P,{type:"button",variant:"outline",onClick:p,disabled:C,children:"Cancel"}),e.jsxs(P,{type:"submit",disabled:C,children:[C&&e.jsx(me,{className:"w-4 h-4 mr-2 animate-spin"}),t?"Update Contact":"Save Contact"]})]})]})]})})}function te(r){if(!r)return"";const p=[r.company_name,r.physical_address,r.warehouse_name,r.designation].filter(Boolean).join(", "),t=[r.google_maps_url,r.google_map_link,r.maps_url,r.location_url,r.map_url,r.google_map,r.maps_link,r.location,r.link,r.url];for(const b of t)if(b&&typeof b=="string"&&b.trim()){const u=ge(b,p);if(u)return u}for(const b of Object.keys(r)){const u=r[b];if(typeof u=="string"&&u.trim()&&(u.includes("maps")||u.includes("goo.gl"))){const C=u.match(/(https?:\/\/[^\s\]\)>"']+|maps\.app\.goo\.gl[^\s\]\)>"']+|goo\.gl\/maps[^\s\]\)>"']+|google\.com\/maps[^\s\]\)>"']+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s\]\)>"']+)/i);if(C){const j=C[1].replace(/[\]\)\}>\s.,;'"]+$/,"").trim();return ge(j,p)}}}return p?ge("",p):""}function Re(r){if(!r)return"";let p=te(r);if(!p&&(r.physical_address||r.company_name)){const u=[r.company_name,r.physical_address].filter(Boolean).join(", ");p=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u)}`}const t=r.notes?r.notes.replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi,"").replace(/Location:\s*https?:\/\/[^\s\n]+/gi,"").trim():"";return[`📍 *${r.company_name||"Contact Info"}* (${r.contact_type||"Contact"})`,"",r.phone_number?`📞 *Phone:* ${r.phone_number}`:null,r.email?`✉️ *Email:* ${r.email}`:null,r.gstin?`📄 *GSTIN:* ${r.gstin}`:null,r.truck_brand?`🔧 *Brands Serviced:* ${r.truck_brand}`:null,"",r.physical_address&&!r.physical_address.startsWith("http")?`🏢 *Address:* ${r.physical_address}`:null,p?`🗺️ *Location:* ${p}`:null,"",t&&!t.startsWith("http")?`📝 *Notes:* ${t}`:null,"","Shared via Jai Bhavani Cargo"].filter(u=>u!==null).join(`
-`)}async function Ue(r){if(!r)return;const p=Re(r);if(navigator.share)try{await navigator.share({title:r.company_name||"Contact Info",text:p});return}catch(b){if(b.name!=="AbortError")console.warn("Web Share API failed, falling back to WhatsApp:",b);else return}const t=encodeURIComponent(p);window.open(`https://wa.me/?text=${t}`,"_blank")}async function Ve(r){if(!r)return;const p=Re(r);try{await navigator.clipboard.writeText(p),S.success("Contact details copied to clipboard!")}catch(t){console.error("Failed to copy contact details:",t),S.error("Failed to copy contact details.")}}function Sa({isOpen:r,onClose:p,contact:t}){if(!t)return null;const b=()=>{Ve(t)},u=()=>{Ue(t)},C=te(t),j=c=>{c?.preventDefault(),C&&Ie(C)},N=c=>{switch(c){case"Client":return"bg-primary/10 text-primary border-primary/20";case"Driver":return"bg-success/10 text-success border-success/20";case"Vendor":return"bg-warning/10 text-warning border-warning/20";default:return"bg-muted text-muted-foreground"}};return e.jsx(le,{open:r,onOpenChange:p,children:e.jsx(oe,{className:"sm:max-w-[450px] p-0 overflow-hidden bg-transparent border-none shadow-none",children:e.jsxs("div",{className:"business-card",children:[e.jsxs("div",{className:"business-card-header relative",children:[e.jsx("div",{className:"absolute top-0 right-0 p-4 opacity-10 pointer-events-none",children:e.jsx(ee,{className:"w-24 h-24"})}),e.jsxs("div",{className:"relative z-10",children:[e.jsx(ne,{variant:"outline",className:`mb-3 ${N(t.contact_type)}`,children:t.contact_type}),e.jsx("h2",{className:"text-2xl font-bold text-foreground tracking-tight",children:t.company_name}),t.gstin&&e.jsxs("p",{className:"text-sm text-muted-foreground mt-1 flex items-center gap-1.5",children:[e.jsx(qe,{className:"w-3.5 h-3.5"})," GSTIN: ",e.jsx("span",{className:"font-mono",children:t.gstin})]})]})]}),e.jsx("div",{className:"business-card-body",children:e.jsxs("div",{className:"space-y-4",children:[e.jsxs("div",{className:"flex items-start gap-3",children:[e.jsx("div",{className:"p-2 bg-muted rounded-lg text-muted-foreground shrink-0",children:e.jsx(ae,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-medium text-muted-foreground uppercase tracking-wider",children:"Contact Phone Numbers"}),e.jsx("div",{className:"flex flex-col gap-1.5 mt-1",children:(t.phone_number?t.phone_number.split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean):[]).length>0?(t.phone_number.split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean).map((ph,idx)=>e.jsxs("div",{key:idx,className:"flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/40 gap-2",children:[e.jsxs("a",{href:`tel:${ph.replace(/\D/g,"")}`,className:"text-xs font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1.5",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-500"}),ph,idx===0&&e.jsx("span",{className:"text-[10px] text-muted-foreground font-normal ml-1",children:"(Primary)"})]}),e.jsxs("div",{className:"flex items-center gap-1",children:[e.jsx("a",{href:`tel:${ph.replace(/\D/g,"")}`,className:"px-2 py-0.5 text-[10px] font-bold rounded bg-primary/10 text-primary hover:bg-primary/20",children:"Call"}),e.jsx("a",{href:`https://wa.me/${ph.replace(/\D/g,"").startsWith("91")?ph.replace(/\D/g,""):"91"+ph.replace(/\D/g,"")}`,target:"_blank",rel:"noopener noreferrer",className:"px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25",children:"WhatsApp"})]})]}))):e.jsx("span",{className:"text-sm text-muted-foreground",children:"N/A"})})]})]}),t.email&&e.jsxs("div",{className:"flex items-start gap-3",children:[e.jsx("div",{className:"p-2 bg-muted rounded-lg text-muted-foreground shrink-0",children:e.jsx(Ne,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-medium text-muted-foreground uppercase tracking-wider",children:"Email Address"}),e.jsx("a",{href:`mailto:${t.email}`,className:"text-sm font-medium text-foreground hover:text-primary transition-colors",children:t.email})]})]}),e.jsxs("div",{className:"flex items-start gap-3",children:[e.jsx("div",{className:"p-2 bg-muted rounded-lg text-muted-foreground shrink-0",children:e.jsx(se,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-medium text-muted-foreground uppercase tracking-wider",children:"Physical Address"}),e.jsx("p",{className:"text-sm text-foreground leading-relaxed",children:t.physical_address||"No address specified"}),C&&e.jsxs("button",{type:"button",onClick:j,className:"inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 text-xs font-bold text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 rounded-lg border border-rose-500/20 transition-all cursor-pointer",children:[e.jsx(se,{className:"w-4 h-4 text-rose-500 fill-rose-500/20"}),"Open Google Maps GPS Navigation"]})]})]}),t.truck_brand&&e.jsxs("div",{className:"flex items-start gap-3",children:[e.jsx("div",{className:"p-2 bg-muted rounded-lg text-muted-foreground shrink-0",children:e.jsx(_e,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("p",{className:"text-xs font-medium text-muted-foreground uppercase tracking-wider",children:"Truck Brands Serviced"}),e.jsx("p",{className:"text-sm text-foreground font-semibold",children:t.truck_brand})]})]}),t.notes&&e.jsxs("div",{className:"pt-4 border-t border-border/50",children:[e.jsx("p",{className:"text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1",children:"Notes"}),e.jsxs("p",{className:"text-sm text-foreground/80 italic",children:['"',t.notes,'"']})]})]})}),e.jsxs("div",{className:"bg-muted/10 p-4 border-t border-border/50 flex gap-2",children:[e.jsxs(P,{variant:"outline",className:"flex-1 bg-background",onClick:b,children:[e.jsx(we,{className:"w-4 h-4 mr-2"})," Copy Details"]}),e.jsxs(P,{className:"flex-1 shadow-sm",onClick:u,children:[e.jsx(fe,{className:"w-4 h-4 mr-2"})," Share Contact & Location"]})]})]})})})}function Ta({contact:r,onView:p,onEdit:t,onDelete:b,onSendApi:u}){const C=()=>{Ve(r)},j=()=>{Ue(r)},N=y=>{y?.preventDefault(),y?.stopPropagation();const x=te(r);x?Ie(x):S.error("No Google Maps link available for this contact")},c=te(r);return e.jsxs(ha,{children:[e.jsx(pa,{asChild:!0,children:e.jsxs(P,{variant:"ghost",className:"h-8 w-8 p-0",children:[e.jsx("span",{className:"sr-only",children:"Open menu"}),e.jsx(He,{className:"h-4 w-4"})]})}),e.jsxs(ua,{align:"end",className:"w-52 bg-card border-border shadow-xl z-50",children:[u&&e.jsxs(G,{onClick:()=>u(r),className:"cursor-pointer font-bold text-emerald-500 bg-emerald-500/10",children:[e.jsx(fe,{className:"mr-2 h-4 w-4 text-emerald-500"})," 1-Click Send via API"]}),e.jsxs(G,{onClick:()=>p(r),className:"cursor-pointer",children:[e.jsx(ze,{className:"mr-2 h-4 w-4 text-primary"})," View Card"]}),e.jsxs(G,{onClick:()=>window.location.href=`tel:${r.phone_number}`,className:"cursor-pointer",children:[e.jsx(ae,{className:"mr-2 h-4 w-4 text-emerald-500"})," Call ",r.phone_number?`(${r.phone_number})`:""]}),!!c&&e.jsxs(G,{onClick:N,className:"cursor-pointer text-rose-600 dark:text-rose-400 font-semibold",children:[e.jsx(se,{className:"mr-2 h-4 w-4 text-rose-500"})," Open Maps Navigation"]}),r.email&&e.jsxs(G,{onClick:()=>window.open(`mailto:${r.email}`),className:"cursor-pointer",children:[e.jsx(Ne,{className:"mr-2 h-4 w-4 text-blue-400"})," Email"]}),e.jsx(Fe,{}),e.jsxs(G,{onClick:j,className:"cursor-pointer font-bold text-primary",children:[e.jsx(fe,{className:"mr-2 h-4 w-4 text-primary"})," Share Contact & Map"]}),e.jsxs(G,{onClick:C,className:"cursor-pointer",children:[e.jsx(we,{className:"mr-2 h-4 w-4"})," Copy Details"]}),e.jsx(Fe,{}),e.jsxs(G,{onClick:()=>t(r),className:"cursor-pointer",children:[e.jsx(Ye,{className:"mr-2 h-4 w-4"})," Edit"]}),e.jsxs(G,{onClick:()=>b(r),className:"text-destructive focus:text-destructive cursor-pointer",children:[e.jsx(Ke,{className:"mr-2 h-4 w-4"})," Delete"]})]})]})}function Aa({isOpen:r,onClose:p}){const[t,b]=h.useState(!1),[u,C]=h.useState("All"),[j,N]=h.useState({company_name:!0,contact_type:!0,phone_number:!0,email:!0,gstin:!0,physical_address:!0,notes:!1,created:!1}),c=x=>{N(s=>({...s,[x]:!s[x]}))},y=async()=>{const x=Object.keys(j).filter(s=>j[s]);if(x.length===0){S.error("Please select at least one field to export");return}b(!0);try{let s="";u!=="All"&&(s=`contact_type="${u}"`);const d=await W.collection("contacts").getFullList({filter:s,sort:"-created",$autoCancel:!1});if(d.length===0){S.info("No contacts found for the selected criteria"),b(!1);return}const I=d.map(v=>{const w={};return x.forEach(B=>{w[B]=v[B]||""}),w}),i=ga.unparse(I),m=new Blob([i],{type:"text/csv;charset=utf-8;"}),M=document.createElement("url"),O=URL.createObjectURL(m),L=document.createElement("a");L.href=O,L.download=`contacts_export_${u.toLowerCase()}_${new Date().toISOString().split("T")[0]}.csv`,document.body.appendChild(L),L.click(),document.body.removeChild(L),URL.revokeObjectURL(O),S.success(`Successfully exported ${d.length} contacts`),p()}catch(s){console.error("Export failed:",s),S.error("Failed to export contacts")}finally{b(!1)}};return e.jsx(le,{open:r,onOpenChange:x=>!x&&p(),children:e.jsxs(oe,{className:"sm:max-w-[400px] bg-card text-card-foreground",children:[e.jsx(he,{children:e.jsx(pe,{children:"Export Contacts"})}),e.jsxs("div",{className:"space-y-6 py-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(g,{children:"Export Category"}),e.jsxs(Y,{value:u,onValueChange:C,children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select category"})}),e.jsxs(Z,{children:[e.jsx(n,{value:"All",children:"All Contacts"}),e.jsx(n,{value:"Client",children:"Clients Only"}),e.jsx(n,{value:"Driver",children:"Drivers Only"}),e.jsx(n,{value:"Vendor",children:"Vendors Only"})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsx(g,{children:"Fields to Include"}),e.jsx("div",{className:"grid grid-cols-2 gap-3 bg-muted/20 p-4 rounded-lg border border-border",children:Object.entries(j).map(([x,s])=>e.jsxs("div",{className:"flex items-center space-x-2",children:[e.jsx(xa,{id:`field-${x}`,checked:s,onCheckedChange:()=>c(x)}),e.jsx("label",{htmlFor:`field-${x}`,className:"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize",children:x.replace("_"," ")})]},x))})]})]}),e.jsxs(ue,{children:[e.jsx(P,{variant:"outline",onClick:p,disabled:t,children:"Cancel"}),e.jsxs(P,{onClick:y,disabled:t,children:[t?e.jsx(me,{className:"w-4 h-4 mr-2 animate-spin"}):e.jsx(Be,{className:"w-4 h-4 mr-2"}),"Download CSV"]})]})]})})}const Pe=["Client","Corporate","Vendor","Driver","Employee","Mechanic","Electrician","Puncture Shop","Showroom","Spare Parts","Bodywork / Welding","Crane / Tow Truck","Hydraulics","Plastics","Washing Centre","RTO Agent","Banking","Loan Agent","Warehouse","Other"];function Oa({isOpen:r,onClose:p,onSuccess:t}){const{currentUser:b}=We(),[u,C]=h.useState("upload"),[j,N]=h.useState(!1),[c,y]=h.useState({company_name:"",contact_person:"",designation:"",contact_type:"Client",phone_number:"",alternate_phone:"",email:"",website:"",gstin:"",physical_address:"",notes:"",card_file:null,preview_url:""}),x=(i,m,M)=>{y({company_name:i.company_name||i.contact_person||"",contact_person:i.contact_person||"",designation:i.designation||"",contact_type:Pe.includes(i.contact_type)?i.contact_type:"Client",phone_number:i.phone_number||"",alternate_phone:i.alternate_phone||"",email:i.email||"",website:i.website||"",gstin:i.gstin||"",physical_address:i.physical_address||"",notes:i.notes||"",card_file:m,preview_url:M||""}),C("form"),S.success("Visiting card extracted accurately! Please review & save.")},s=i=>{S.error(i),C("upload")},d=()=>{C("upload"),y({company_name:"",contact_person:"",designation:"",contact_type:"Client",phone_number:"",alternate_phone:"",email:"",website:"",gstin:"",physical_address:"",notes:"",card_file:null,preview_url:""})},I=async i=>{if(i.preventDefault(),!c.company_name.trim()&&!c.contact_person.trim()){S.error("Company Name or Contact Person is required");return}N(!0);try{let m="";if(c.card_file)try{const O=new FormData;O.append("file",c.card_file),O.append("truck_id","VISITING_CARD"),O.append("document_type","Other"),O.append("document_name",`Visiting Card - ${c.company_name||c.contact_person}`),O.append("notes",`Visiting card image for ${c.company_name}`);const L=await W.collection("truck_documents").create(O,{$autoCancel:!1});m=W.files.getURL(L,L.file)}catch(O){console.warn("Card image upload warning:",O)}const M={contact_type:c.contact_type,company_name:c.company_name.trim(),contact_person:c.contact_person.trim(),designation:c.designation.trim(),phone_number:c.phone_number.trim(),alternate_phone:c.alternate_phone.trim(),email:c.email.trim(),website:c.website.trim(),gstin:c.gstin.trim(),physical_address:c.physical_address.trim(),notes:c.notes.trim(),card_image_url:m||c.preview_url||"",created_by:b?.id||""};await W.collection("contacts").create(M,{$autoCancel:!1}),S.success(`Contact "${M.company_name||M.contact_person}" saved from Visiting Card!`),t&&t(),d(),p()}catch(m){console.error("Save failed:",m),S.error(m.message||"Failed to save contact")}finally{N(!1)}};return e.jsx(le,{open:r,onOpenChange:i=>{!i&&!j&&(d(),p())},children:e.jsxs(oe,{className:"max-w-2xl bg-card border-border shadow-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto font-sans",children:[e.jsx(he,{className:"pb-3 border-b border-border/40",children:e.jsxs(pe,{className:"text-xl font-extrabold flex items-center gap-2",children:[e.jsx(De,{className:"w-5 h-5 text-primary"}),u==="upload"?"Scan Visiting / Business Card":"Extracted Contact Details"]})}),u==="upload"?e.jsx("div",{className:"py-4",children:e.jsx(_a,{onExtractionComplete:x,onError:s})}):e.jsxs("form",{onSubmit:I,className:"space-y-4 pt-3",children:[c.preview_url&&e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 rounded-xl border border-border/50",children:[e.jsx("div",{className:"w-24 h-16 rounded-lg overflow-hidden border border-border bg-black/40 flex-shrink-0",children:e.jsx("img",{src:c.preview_url,alt:"Card preview",className:"w-full h-full object-cover"})}),e.jsxs("div",{children:[e.jsx(ne,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold mb-1",children:"✨ AI Extraction Verified"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Review and edit any field before saving into your Contacts database."})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ee,{className:"w-3.5 h-3.5 text-primary"})," Company / Firm Name *"]}),e.jsx(k,{value:c.company_name,onChange:i=>y(m=>({...m,company_name:i.target.value})),placeholder:"e.g. Jai Bhavani Logistics Pvt Ltd",className:"bg-background font-bold text-sm",required:!0})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Contact Category"}),e.jsxs(Y,{value:c.contact_type,onValueChange:i=>y(m=>({...m,contact_type:i})),children:[e.jsx(K,{className:"bg-background font-semibold text-xs",children:e.jsx(J,{})}),e.jsx(Z,{children:Pe.map(i=>e.jsx(n,{value:i,children:i},i))})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Je,{className:"w-3.5 h-3.5 text-primary"})," Contact Person Name"]}),e.jsx(k,{value:c.contact_person,onChange:i=>y(m=>({...m,contact_person:i.target.value})),placeholder:"e.g. Rajesh Sharma",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Designation / Title"}),e.jsx(k,{value:c.designation,onChange:i=>y(m=>({...m,designation:i.target.value})),placeholder:"e.g. Managing Director / Partner",className:"bg-background"})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-400"})," Primary Mobile / Phone *"]}),e.jsx(k,{value:c.phone_number,onChange:i=>y(m=>({...m,phone_number:i.target.value})),placeholder:"+91 98765 43210",className:"bg-background font-mono font-bold",required:!0})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-blue-400"})," Alternate / WhatsApp No."]}),e.jsx(k,{value:c.alternate_phone,onChange:i=>y(m=>({...m,alternate_phone:i.target.value})),placeholder:"Secondary mobile or WhatsApp...",className:"bg-background font-mono"})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Ne,{className:"w-3.5 h-3.5 text-amber-400"})," Email Address"]}),e.jsx(k,{value:c.email,onChange:i=>y(m=>({...m,email:i.target.value})),placeholder:"info@company.com",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Ze,{className:"w-3.5 h-3.5 text-cyan-400"})," Website URL"]}),e.jsx(k,{value:c.website,onChange:i=>y(m=>({...m,website:i.target.value})),placeholder:"www.company.com",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Qe,{className:"w-3.5 h-3.5 text-purple-400"})," GSTIN No."]}),e.jsx(k,{value:c.gstin,onChange:i=>y(m=>({...m,gstin:i.target.value})),placeholder:"36AAAAA0000A1Z5",className:"bg-background font-mono text-xs uppercase"})]})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-rose-400"})," Office / Factory Address"]}),e.jsx(k,{value:c.physical_address,onChange:i=>y(m=>({...m,physical_address:i.target.value})),placeholder:"Street address, landmark, city, state, pincode...",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Notes & Extra Card Information"}),e.jsx(ke,{value:c.notes,onChange:i=>y(m=>({...m,notes:i.target.value})),placeholder:"Services offered, branch locations, bank details listed on card...",className:"bg-background min-h-[60px] text-xs"})]}),e.jsxs(ue,{className:"pt-3 border-t border-border/40 gap-2",children:[e.jsxs(P,{type:"button",variant:"outline",onClick:d,className:"rounded-xl text-xs",children:[e.jsx(Xe,{className:"w-3.5 h-3.5 mr-1"})," Rescan Card"]}),e.jsxs(P,{type:"submit",disabled:j,className:"rounded-xl shadow-md font-bold text-xs",children:[j?e.jsx(me,{className:"w-4 h-4 animate-spin mr-1.5"}):e.jsx(ea,{className:"w-4 h-4 mr-1.5"}),"Save to Contacts"]})]})]})]})})}function Fa({isOpen:r,onClose:p,contact:t}){const[b,u]=h.useState("custom"),[C,j]=h.useState(""),[N,c]=h.useState(""),[y,x]=h.useState(""),[s,d]=h.useState(!1),[I,i]=h.useState([]);if(h.useEffect(()=>{r&&((async()=>{try{const w=await W.collection("users").getFullList({sort:"name",$autoCancel:!1});w&&w.length>0?i(w):i([{id:"u1",name:"Duty Dispatcher",phone:"7794072244"},{id:"u2",name:"Fleet Supervisor",phone:"9848012345"},{id:"u3",name:"Nagpur Yard Manager",phone:"9848054321"}])}catch{i([{id:"u1",name:"Duty Dispatcher",phone:"7794072244"},{id:"u2",name:"Fleet Supervisor",phone:"9848012345"}])}})(),x(""),j(""),c(""))},[r,t]),!t)return null;const m=te(t),M=()=>{const v=t.company_name||"Emergency Contact",w=t.phone_number||"",B=t.contact_type||"Directory Contact",o=t.physical_address||"",a=t.truck_brand?`
+import{r as h,j as e,ak as me,ad as ee,a0 as qe,ao as ae,a_ as Ne,ae as se,as as _e,aq as we,bU as fe,cc as He,aE as ze,cD as Ye,a2 as Ke,a1 as Be,ax as De,av as Je,dg as Ze,aU as Qe,b2 as Xe,cx as ea,ap as Ee,al as ye,a7 as de,dM as je,dN as aa,by as sa,dO as Te,cH as ve,cV as ta,bD as ra,dP as na,au as Le,a6 as Ce,cU as la,de as Me,dy as $e,bs as oa,aY as ia,ag as ca,cf as da,at as ma,aM as Ae,dQ as Oe}from"./vendor-react-Bs5V2qFE.js";import{u as We,D as le,a as oe,b as he,c as pe,L as g,S as Y,e as K,g as J,h as Z,i as n,I as k,T as ke,j as ue,B as P,p as W,t as S,w as ne,a3 as ha,a4 as pa,a5 as ua,a8 as G,a7 as Fe,aj as xa,af as ga,d as ba,C as fa,o as ya,O as ja,y as va,z as Ca,A as ce,E as X,F as Na,G as q}from"./index-DLxf9dwO.js";import{f as ge,o as Ie}from"./locationUtils-CJF9iFYv.js";import{B as _a}from"./BusinessCardExtractor-DcUocfvj.js";import{T as wa}from"./TransportCrmWhatsAppShareModal-BPe-K7FN.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";
+
+// Master Architecture for Jai Bhavani Cargo Transport CRM & Fleet Service Directory
+
+const TRUCK_BRANDS_MASTER = [
+  "Ashok Leyland",
+  "Tata Motors",
+  "BharatBenz",
+  "Eicher",
+  "Mahindra",
+  "Volvo",
+  "Isuzu",
+  "SML Isuzu",
+  "MAN",
+  "Universal / All Brands"
+];
+
+const MAIN_GROUPS_CONFIG = [
+  {
+    id: "fleet_repairs",
+    title: "1. Fleet Repairs & Services",
+    iconKey: "wrench",
+    description: "Workshops, mobile repair vans, towing, electricals, bodybuilding and specialized mechanics",
+    categories: [
+      {
+        id: "mechanic",
+        name: "Mechanic / Workshop",
+        subcategories: [
+          "Engine Overhaul & Head Gasket",
+          "Transmission / Gearbox & Clutch",
+          "Brake Systems & Air Lines",
+          "Differential & Crown Wheel",
+          "General Mechanical Repair"
+        ],
+        specialisations: [
+          "Engine Diagnostic & Overhaul",
+          "Clutch Plate & Pressure Plate",
+          "Brake Booster & Drums",
+          "Differential Crown Pinion",
+          "Propeller Shaft & Universal Joint"
+        ]
+      },
+      {
+        id: "electrician",
+        name: "Auto Electrician",
+        subcategories: [
+          "Starter Motor & Alternator",
+          "Wiring Harness Repair",
+          "Battery Sales & Charging",
+          "Lighting & Beacon Systems",
+          "ECU / Sensor Diagnostics"
+        ],
+        specialisations: [
+          "24V Heavy Alternator Overhaul",
+          "Self Starter Bendix Drive",
+          "Chassis Wiring Rewiring",
+          "Battery Jump Start"
+        ]
+      },
+      {
+        id: "bodywork_welding",
+        name: "Bodywork & Welding",
+        subcategories: [
+          "Cabin Tinkering & Painting",
+          "Chassis Straightening & Reinforcement",
+          "Container / Trailer Body Repair",
+          "Arc, Gas & Argon Welding"
+        ],
+        specialisations: [
+          "Trailer Flooring Sheet",
+          "Cabin Denting & Repaint",
+          "Cross Member Welding"
+        ]
+      },
+      {
+        id: "hydraulics_steering",
+        name: "Hydraulics & Steering",
+        subcategories: [
+          "Power Steering Pump & Box",
+          "Turbocharger Repair",
+          "Air Brake Valve & Compressors",
+          "Hydraulic Tipper Jack / Hoses"
+        ],
+        specialisations: [
+          "Rane / ZF Steering Box",
+          "Turbo Core Balancing",
+          "Unloader Valve & Foot Valve"
+        ]
+      },
+      {
+        id: "spring_suspension",
+        name: "Springs & Suspension",
+        subcategories: [
+          "Leaf Spring Retensioning & Recambering",
+          "Bogie Suspension Bushing",
+          "Shock Absorber Replacement"
+        ],
+        specialisations: [
+          "Heavy Kamaani Patti Replacement",
+          "Bell Crank Pin & Bush",
+          "Main Leaf Spring Replacement"
+        ]
+      },
+      {
+        id: "crane_towing",
+        name: "Crane & Recovery Towing",
+        subcategories: [
+          "Heavy Duty Underlift Towing",
+          "Hydraulic Highway Crane (20T - 50T)",
+          "Off-road / Ditch Recovery"
+        ],
+        specialisations: [
+          "Accident Inverted Truck Recovery",
+          "Highway Breakdown Towing to Yard"
+        ]
+      },
+      {
+        id: "key_maker",
+        name: "Key Maker / Locksmith",
+        subcategories: [
+          "Cabin Door & Ignition Lock",
+          "Computerized Chip Key Cutting",
+          "Emergency Lockout Service"
+        ],
+        specialisations: [
+          "Ignition Switch Lock Barrel",
+          "Container Padlock Cutting / Duplicate"
+        ]
+      },
+      {
+        id: "washing_greasing",
+        name: "Washing & Greasing",
+        subcategories: [
+          "Commercial Truck Water Wash",
+          "Under-chassis High Pressure Wash",
+          "Chassis Greasing & Lubrication"
+        ],
+        specialisations: [
+          "Air Pressure Grease Gun Service",
+          "Cabin Interior Vacuum & Wash"
+        ]
+      }
+    ]
+  },
+  {
+    id: "corporate_warehouses",
+    title: "2. Corporate & Warehouses",
+    iconKey: "building",
+    description: "Industrial clients, shippers, key account logistics, 3PLs and warehouse distribution points",
+    categories: [
+      {
+        id: "corporate_client",
+        name: "Corporate Client / Consignor",
+        subcategories: [
+          "Industrial Shipper / Manufacturer",
+          "Key Account Logistics Client",
+          "FMCG / Retail Distribution Account",
+          "Steel, Cement & Raw Material Shipper"
+        ],
+        specialisations: [
+          "Dedicated Contract Fleet",
+          "Ad-hoc Spot Vehicle Hiring",
+          "Monthly Billing Account"
+        ]
+      },
+      {
+        id: "warehouse_hub",
+        name: "Warehouse & Mother Hub",
+        subcategories: [
+          "Regional Distribution Centre (RDC)",
+          "Mother Hub / Fulfilment Centre",
+          "Cold Storage / Temperature Controlled Hub",
+          "Container Freight Station (CFS)"
+        ],
+        specialisations: [
+          "Loading / Unloading Bay Coordination",
+          "Cross-docking & Transshipment",
+          "Gate Inward / Security Dispatch"
+        ]
+      }
+    ]
+  },
+  {
+    id: "finance_insurance",
+    title: "3. Finance & Insurance",
+    iconKey: "bank",
+    description: "Commercial vehicle lenders, DSA agents, insurance brokers, surveyors and trade finance",
+    categories: [
+      {
+        id: "banking_vehicle_loan",
+        name: "Banking & Vehicle Loans",
+        subcategories: [
+          "Commercial Vehicle (CV) Financier",
+          "Direct Selling Agent (DSA)",
+          "Working Capital / CC / OD Bank Desk",
+          "Used Truck Refinance"
+        ],
+        specialisations: [
+          "Chassis Loan Disbursement",
+          "NOC & Hypothecation Removal",
+          "Fleet Refinancing"
+        ]
+      },
+      {
+        id: "insurance_surveyor",
+        name: "Insurance & Claims",
+        subcategories: [
+          "Commercial Vehicle Insurance Broker",
+          "Accident Claims Surveyor",
+          "Transit / Marine Cargo Insurance"
+        ],
+        specialisations: [
+          "Cashless Workshop Tie-up",
+          "Spot Survey Coordination",
+          "Total Loss / Salvage Settlement"
+        ]
+      }
+    ]
+  },
+  {
+    id: "tyres_fuel_fastag",
+    title: "4. Tyres, Fuel & FASTag",
+    iconKey: "disc",
+    description: "Tyre dealers, puncture shops, highway fuel stations and toll FASTag providers",
+    categories: [
+      {
+        id: "puncture_shop",
+        name: "Puncture & Tube Repair",
+        subcategories: [
+          "Tubeless Radial Truck Puncture",
+          "Tube & Flap Hot Vulcanizing",
+          "Air Inflation & Nitrogen Station",
+          "Highway Mobile Puncture Assistance"
+        ],
+        specialisations: [
+          "Side Cut Radial Patching",
+          "Heavy Valve Pin & O-Ring Replacement"
+        ]
+      },
+      {
+        id: "tyre_dealership",
+        name: "Tyre Dealer & Retreading",
+        subcategories: [
+          "New Fleet Tyres (Apollo, MRF, JK, CEAT)",
+          "Cold Process Tyre Retreading / Resoling",
+          "Wheel Alignment & Balancing",
+          "Scrap Tyre Disposal & Buyback"
+        ],
+        specialisations: [
+          "295/90 R20 & 295/80 R22.5 Supply",
+          "Retread Warranty Support"
+        ]
+      },
+      {
+        id: "fuel_station",
+        name: "Fuel Station / Diesel Partner",
+        subcategories: [
+          "Highway Fuel Retail Outlet (IOCL, BPCL, HPCL)",
+          "Fleet Fuel Card Partner Pump",
+          "DEF / AdBlue Bulk Dispenser"
+        ],
+        specialisations: [
+          "Credit Diesel Billing for Fleet",
+          "Clean DEF Dispensing"
+        ]
+      },
+      {
+        id: "fastag_toll",
+        name: "FASTag Services",
+        subcategories: [
+          "Commercial Vehicle FASTag Issuance",
+          "Fleet Wallet Top-up & Recharge",
+          "Blacklisted Tag Resolution & KYC"
+        ],
+        specialisations: [
+          "Same-day Tag Barcode Activation",
+          "NPCI / IHMCL Dispute Support"
+        ]
+      }
+    ]
+  },
+  {
+    id: "transport_network",
+    title: "5. Transport Network",
+    iconKey: "truck",
+    description: "Freight brokers, attached fleet owners, market load transporters and commission agents",
+    categories: [
+      {
+        id: "truck_broker",
+        name: "Freight Broker / Commission Agent",
+        subcategories: [
+          "Highway Freight Booking Broker",
+          "Return Load Provider",
+          "Container Load Broker"
+        ],
+        specialisations: [
+          "Hyderabad - Bhiwandi Route Specialist",
+          "Hyderabad - Bangalore Route Specialist",
+          "Full Truck Load (FTL) Placement"
+        ]
+      },
+      {
+        id: "attached_transporter",
+        name: "Truck Owner & Transporter",
+        subcategories: [
+          "Market Attached Vehicle Owner",
+          "Subcontractor Fleet Transporter",
+          "Specialized Container Transporter"
+        ],
+        specialisations: [
+          "32ft Multi-axle Container",
+          "20ft / 24ft Open Body Trucks",
+          "Trailer 40ft High Bed"
+        ]
+      }
+    ]
+  },
+  {
+    id: "drivers_staff",
+    title: "6. Drivers & Staff",
+    iconKey: "users",
+    description: "Company drivers, fleet supervisors, route dispatchers, yard managers and operations staff",
+    categories: [
+      {
+        id: "commercial_driver",
+        name: "Heavy Commercial Driver",
+        subcategories: [
+          "Long-haul Heavy Vehicle Driver",
+          "Container Truck Driver",
+          "Spare / Relief Driver",
+          "Local Shuttle / Shunting Driver"
+        ],
+        specialisations: [
+          "Valid HMV / Heavy Commercial License",
+          "Hazardous / Liquid Cargo Endorsement",
+          "GPS Smartphone Proficient"
+        ]
+      },
+      {
+        id: "operations_staff",
+        name: "Field Operations & Supervisor",
+        subcategories: [
+          "Fleet Route Supervisor",
+          "Yard & Parking Manager",
+          "POD & Document Collection Executive",
+          "Dispatch Coordinator"
+        ],
+        specialisations: [
+          "Night Shift Dispatch Supervision",
+          "Driver Cash Advance & Toll Handover"
+        ]
+      }
+    ]
+  },
+  {
+    id: "parts_accessories",
+    title: "7. Parts & Accessories",
+    iconKey: "package",
+    description: "OEM and aftermarket truck spares, lubricants, chassis dealers and fabricators",
+    categories: [
+      {
+        id: "spare_parts_shop",
+        name: "Commercial Spare Parts Shop",
+        subcategories: [
+          "Engine & Gearbox Spares",
+          "Air Brake Valves & Pipes",
+          "Electrical Lights, Horns & Sensors",
+          "Engine Oil & Coolant Distributors"
+        ],
+        specialisations: [
+          "OEM Genuine Spares Supply",
+          "Castrol / Gulf 15W40 CI-4 Diesel Engine Oil",
+          "Fast Moving Filters (Air/Oil/Fuel)"
+        ]
+      },
+      {
+        id: "truck_showroom",
+        name: "Truck Showroom & Sales Executive",
+        subcategories: [
+          "Authorized Commercial Vehicle Dealership",
+          "Showroom Fleet Sales Key Account Manager",
+          "New Chassis Quota & Delivery Coordinator"
+        ],
+        specialisations: [
+          "Ashok Leyland 4220 / 4825 Heavy Chassis",
+          "Tata Signa / Prima Fleet Order",
+          "BharatBenz Heavy Commercial Dealership"
+        ]
+      },
+      {
+        id: "truck_resale",
+        name: "Used Truck Resale & Exchange",
+        subcategories: [
+          "Pre-owned Fleet Valuation & Purchase",
+          "Vehicle Exchange Broker",
+          "Scrap Commercial Vehicle Buyer"
+        ],
+        specialisations: [
+          "RTO NOC & Hypothecation Clearance",
+          "Condition Inspection & Fair Valuation"
+        ]
+      }
+    ]
+  },
+  {
+    id: "infrastructure_support",
+    title: "8. Infrastructure & Support",
+    iconKey: "landmark",
+    description: "Secure truck yards, RTO compliance agents, GPS telematics and legal authorities",
+    categories: [
+      {
+        id: "truck_parking_yard",
+        name: "Truck Parking & Highway Yard",
+        subcategories: [
+          "Highway Gated Truck Parking Yard",
+          "Overnight Driver Rest Area & Canteen",
+          "Fleet Depot & Holding Yard"
+        ],
+        specialisations: [
+          "24/7 Security & CCTV Monitored",
+          "Driver Restrooms & Water Facilities"
+        ]
+      },
+      {
+        id: "rto_compliance",
+        name: "RTO & Legal Compliance Agent",
+        subcategories: [
+          "Vehicle Fitness (FC) Renewal Liaison",
+          "National Permit (NP) & State Taxes",
+          "Ownership Transfer & NOC Clearances",
+          "Road Tax & Green Tax Payments"
+        ],
+        specialisations: [
+          "Telangana / Uppal / Medchal RTO Clearance",
+          "Maharashtra / Bhiwandi Permit Endorsement",
+          "Karnataka Border Entry Tax Clearances"
+        ]
+      },
+      {
+        id: "gps_telematics",
+        name: "GPS Telematics & AIS-140",
+        subcategories: [
+          "AIS-140 Certified GPS Tracker Vendor",
+          "Fuel Level Ultrasonic Sensor Installer",
+          "Dashcam / Fatigue Sensor Systems"
+        ],
+        specialisations: [
+          "Emergency Panic Button Wiring",
+          "Fleet Calibration & API Integration"
+        ]
+      }
+    ]
+  }
+];
+
+const CORPORATE_DESIGNATIONS = [
+  "Procurement Manager",
+  "Logistics Manager",
+  "Transport Manager",
+  "Supply Chain Head",
+  "Warehouse Manager",
+  "Warehouse Supervisor",
+  "Dispatch Executive",
+  "Accounts Payable",
+  "Vendor Onboarding Manager",
+  "Key Account Manager",
+  "Operations Executive",
+  "Director / Partner"
+];
+
+
+
+
+
+
+
+function ka({ isOpen, onClose, contact, onSuccess, imports }) {
+  const { e, h, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Input, Textarea, Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, toast, pb, currentUser, Loader2 } = imports;
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
+  const [companyName, setCompanyName] = useState("");
+  const [organisationName, setOrganisationName] = useState("");
+  const [primaryPhone, setPrimaryPhone] = useState("");
+  const [alternatePhone, setAlternatePhone] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [gstin, setGstin] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [physicalAddress, setPhysicalAddress] = useState("");
+  const [city, setCity] = useState("Hyderabad");
+  const [area, setArea] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
+  const [mainGroup, setMainGroup] = useState("Fleet Repairs & Services");
+  const [primaryCategory, setPrimaryCategory] = useState("Mechanic");
+  const [secondaryCategories, setSecondaryCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [customSubcategory, setCustomSubcategory] = useState("");
+  const [truckBrands, setTruckBrands] = useState(["Universal / All Brands"]);
+  const [customBrand, setCustomBrand] = useState("");
+  const [workshopType, setWorkshopType] = useState("independent");
+  const [serviceSpecialisations, setServiceSpecialisations] = useState([]);
+  const [customSpecialisation, setCustomSpecialisation] = useState("");
+  const [emergencyAvailable, setEmergencyAvailable] = useState(false);
+  const [roadsideService, setRoadsideService] = useState(false);
+  const [isPreferred, setIsPreferred] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState("verified");
+  const [workingHours, setWorkingHours] = useState("8:00 AM - 9:00 PM");
+  const [internalNotes, setInternalNotes] = useState("");
+  useEffect(() => {
+    if (!isOpen) return;
+    if (contact) {
+      setCompanyName(contact.company_name || "");
+      setOrganisationName(contact.organisation_name || "");
+      const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+      setPrimaryPhone(phoneList[0] || "");
+      setAlternatePhone(contact.alternate_phone || phoneList[1] || "");
+      setWhatsappPhone(contact.whatsapp_number || "");
+      setEmail(contact.email || "");
+      setGstin(contact.gstin || "");
+      setDesignation(contact.designation || "");
+      setPhysicalAddress(contact.physical_address || "");
+      setCity(contact.city || "Hyderabad");
+      setArea(contact.area || "");
+      setGoogleMapsUrl(contact.google_maps_url || contact.google_map_link || "");
+      setMainGroup(contact.main_group || "Fleet Repairs & Services");
+      setPrimaryCategory(contact.primary_category || contact.contact_type || "Mechanic");
+      setSecondaryCategories(safeParseArray(contact.secondary_categories));
+      setSubcategories(safeParseArray(contact.subcategories));
+      const brands = safeParseArray(contact.truck_brands);
+      setTruckBrands(brands.length > 0 ? brands : contact.truck_brand ? [contact.truck_brand] : ["Universal / All Brands"]);
+      setWorkshopType(contact.workshop_type || "independent");
+      setServiceSpecialisations(safeParseArray(contact.service_specialisations));
+      setEmergencyAvailable(Boolean(contact.emergency_available));
+      setRoadsideService(Boolean(contact.roadside_service));
+      setIsPreferred(Boolean(contact.is_preferred));
+      setVerificationStatus(contact.verification_status || "verified");
+      setWorkingHours(contact.working_hours || "8:00 AM - 9:00 PM");
+      const cleanNotes = (contact.notes || "").replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, "").replace(/\[Finance:\s*[^\]]+\]/gi, "").trim();
+      setInternalNotes(cleanNotes);
+    } else {
+      setCompanyName("");
+      setOrganisationName("");
+      setPrimaryPhone("");
+      setAlternatePhone("");
+      setWhatsappPhone("");
+      setEmail("");
+      setGstin("");
+      setDesignation("");
+      setPhysicalAddress("");
+      setCity("Hyderabad");
+      setArea("");
+      setGoogleMapsUrl("");
+      setMainGroup("Fleet Repairs & Services");
+      setPrimaryCategory("Mechanic");
+      setSecondaryCategories([]);
+      setSubcategories(["Engine Overhaul & Head Gasket", "General Mechanical Repair"]);
+      setTruckBrands(["Universal / All Brands"]);
+      setWorkshopType("independent");
+      setServiceSpecialisations(["Engine Diagnostic & Overhaul"]);
+      setEmergencyAvailable(true);
+      setRoadsideService(true);
+      setIsPreferred(false);
+      setVerificationStatus("verified");
+      setWorkingHours("8:00 AM - 9:00 PM");
+      setInternalNotes("");
+    }
+  }, [isOpen, contact]);
+  const currentGroupObj = MAIN_GROUPS_CONFIG.find((g) => g.title === mainGroup) || MAIN_GROUPS_CONFIG[0];
+  const availableCategories = currentGroupObj.categories || [];
+  const currentCategoryObj = availableCategories.find((c) => c.name === primaryCategory) || availableCategories[0];
+  const availableSubcategories = currentCategoryObj?.subcategories || [];
+  const availableSpecialisations = currentCategoryObj?.specialisations || [];
+  const toggleBrand = (brand) => {
+    if (brand === "Universal / All Brands") {
+      setTruckBrands(["Universal / All Brands"]);
+      return;
+    }
+    let updated = truckBrands.filter((b) => b !== "Universal / All Brands");
+    if (updated.includes(brand)) {
+      updated = updated.filter((b) => b !== brand);
+      if (updated.length === 0) updated = ["Universal / All Brands"];
+    } else {
+      updated.push(brand);
+    }
+    setTruckBrands(updated);
+  };
+  const toggleSubcategory = (sub) => {
+    if (subcategories.includes(sub)) {
+      setSubcategories(subcategories.filter((s) => s !== sub));
+    } else {
+      setSubcategories([...subcategories, sub]);
+    }
+  };
+  const toggleSpecialisation = (spec) => {
+    if (serviceSpecialisations.includes(spec)) {
+      setServiceSpecialisations(serviceSpecialisations.filter((s) => s !== spec));
+    } else {
+      setServiceSpecialisations([...serviceSpecialisations, spec]);
+    }
+  };
+  const handleSubmit = async (e2) => {
+    e2.preventDefault();
+    if (!companyName.trim()) {
+      toast.error("Company / Contact Name is required");
+      return;
+    }
+    if (!primaryPhone.trim()) {
+      toast.error("Primary phone number is required");
+      return;
+    }
+    if (!physicalAddress.trim()) {
+      toast.error("Physical address or area location is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const allPhones = [primaryPhone, alternatePhone].map((p) => p.trim()).filter(Boolean).join(", ");
+      const payload = {
+        company_name: companyName.trim(),
+        organisation_name: organisationName.trim() || companyName.trim(),
+        phone_number: allPhones,
+        alternate_phone: alternatePhone.trim(),
+        whatsapp_number: whatsappPhone.trim() || primaryPhone.trim(),
+        email: email.trim(),
+        gstin: gstin.trim().toUpperCase(),
+        designation: designation.trim(),
+        physical_address: physicalAddress.trim(),
+        city: city.trim(),
+        area: area.trim(),
+        google_maps_url: googleMapsUrl.trim(),
+        google_map_link: googleMapsUrl.trim(),
+        location_url: googleMapsUrl.trim(),
+        // Category Architecture
+        main_group: mainGroup,
+        primary_category: primaryCategory,
+        contact_type: primaryCategory,
+        // preserves backward compatibility for existing views
+        secondary_categories: JSON.stringify(secondaryCategories),
+        subcategories: JSON.stringify(subcategories),
+        // Multi-Brand Support
+        truck_brands: JSON.stringify(truckBrands),
+        truck_brand: truckBrands.join(", "),
+        // preserves backward compatibility for older cards
+        workshop_type: workshopType,
+        // Service Intelligence
+        service_specialisations: JSON.stringify(serviceSpecialisations),
+        emergency_available: emergencyAvailable ? 1 : 0,
+        roadside_service: roadsideService ? 1 : 0,
+        is_preferred: isPreferred ? 1 : 0,
+        verification_status: verificationStatus,
+        working_hours: workingHours.trim(),
+        notes: internalNotes.trim(),
+        created_by: currentUser?.id || ""
+      };
+      if (contact && contact.id) {
+        await pb.collection("contacts").update(contact.id, payload, { $autoCancel: false });
+        toast.success(`Contact "${companyName}" updated successfully!`);
+      } else {
+        await pb.collection("contacts").create(payload, { $autoCancel: false });
+        toast.success(`Contact "${companyName}" created successfully!`);
+      }
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Failed to save contact:", err);
+      toast.error(err.message || "Failed to save contact record");
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /* @__PURE__ */ e.jsx(Dialog, { open: isOpen, onOpenChange: (open) => !open && onClose() }, /* @__PURE__ */ e.jsx(DialogContent, { className: "w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-4 sm:p-6 rounded-2xl shadow-2xl" }, /* @__PURE__ */ e.jsx(DialogHeader, { className: "border-b border-slate-800 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(DialogTitle, { className: "text-xl font-black text-white flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-primary text-2xl" }, "\u{1F4C7}"), contact ? `Edit CRM Contact: ${contact.company_name}` : "New Transport CRM & Service Contact"), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold" }, "Production CRM v2.0")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setActiveTab("general"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "general" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F464}"),
+    " Standard & Location"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setActiveTab("category"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "category" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4C2}"),
+    " Group & Subcategories"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setActiveTab("service"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "service" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F527}"),
+    " Multi-Brand & Intelligence"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setActiveTab("corporate"),
+      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "corporate" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"),
+    " Corporate & Settings"
+  ))), /* @__PURE__ */ e.jsx("form", { onSubmit: handleSubmit, className: "space-y-4 py-3" }, activeTab === "general" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Company / Shop / Contact Name *"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: companyName,
+      onChange: (e2) => setCompanyName(e2.target.value),
+      placeholder: "e.g. Sri Rama Auto Electricals / Royal Transport",
+      className: "bg-slate-950 border-slate-800 text-white font-bold text-sm",
+      required: true
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Designation / Role in Transport"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: designation,
+      onChange: (e2) => setDesignation(e2.target.value),
+      placeholder: "e.g. Master Mechanic / Logistics Head / Owner",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-emerald-400 flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"), " Phone Numbers & WhatsApp Lines"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Preserves multiple numbers without comma clobbering")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Primary Mobile *"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: primaryPhone,
+      onChange: (e2) => setPrimaryPhone(e2.target.value),
+      placeholder: "e.g. 9849735080",
+      className: "bg-slate-900 border-slate-800 text-emerald-400 font-mono font-bold text-xs",
+      required: true
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Alternate / Office"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: alternatePhone,
+      onChange: (e2) => setAlternatePhone(e2.target.value),
+      placeholder: "e.g. 9000250452",
+      className: "bg-slate-900 border-slate-800 text-slate-300 font-mono text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "WhatsApp Dedicated"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: whatsappPhone,
+      onChange: (e2) => setWhatsappPhone(e2.target.value),
+      placeholder: "e.g. 9849735080",
+      className: "bg-slate-900 border-slate-800 text-teal-400 font-mono text-xs"
+    }
+  )))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Physical Address / Workshop Location *"), /* @__PURE__ */ e.jsx(
+    Textarea,
+    {
+      value: physicalAddress,
+      onChange: (e2) => setPhysicalAddress(e2.target.value),
+      placeholder: "Shop No, Landmark, Highway KM marker, Auto Nagar...",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[60px]",
+      required: true
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "City Hub"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: city,
+      onChange: (e2) => setCity(e2.target.value),
+      placeholder: "e.g. Hyderabad / Bhiwandi / Bengaluru",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Area / Transport Cluster"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: area,
+      onChange: (e2) => setArea(e2.target.value),
+      placeholder: "e.g. Ghatkesar / Autonagar / Peddamberpet",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  )))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-rose-400 flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"), " Google Maps GPS Navigation Link"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: googleMapsUrl,
+      onChange: (e2) => setGoogleMapsUrl(e2.target.value),
+      placeholder: "https://maps.app.goo.gl/... (Enables 1-click driver GPS routing)",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+    }
+  ))), activeTab === "category" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Main Group (8 Master Groups) *"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: mainGroup,
+      onChange: (e2) => {
+        const newGroup = e2.target.value;
+        setMainGroup(newGroup);
+        const gObj = MAIN_GROUPS_CONFIG.find((g) => g.title === newGroup);
+        if (gObj && gObj.categories.length > 0) {
+          setPrimaryCategory(gObj.categories[0].name);
+          setSubcategories(gObj.categories[0].subcategories.slice(0, 2));
+        }
+      },
+      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+    },
+    MAIN_GROUPS_CONFIG.map((g) => /* @__PURE__ */ e.jsx("option", { key: g.id, value: g.title }, g.code, " \u2014 ", g.title))
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Primary Category *"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: primaryCategory,
+      onChange: (e2) => {
+        const newCat = e2.target.value;
+        setPrimaryCategory(newCat);
+        const cObj = availableCategories.find((c) => c.name === newCat);
+        if (cObj) {
+          setSubcategories(cObj.subcategories.slice(0, 2));
+        }
+      },
+      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+    },
+    availableCategories.map((c) => /* @__PURE__ */ e.jsx("option", { key: c.id, value: c.name }, c.name))
+  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Subcategories (Multi-Select Supported)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-primary font-bold" }, subcategories.length, " Selected")), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSubcategories.map((sub) => {
+    const isSelected = subcategories.includes(sub);
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: sub,
+        type: "button",
+        onClick: () => toggleSubcategory(sub),
+        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-primary/20 border-primary text-primary font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
+      },
+      isSelected ? "\u2713 " : "+ ",
+      " ",
+      sub
+    );
+  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: customSubcategory,
+      onChange: (e2) => setCustomSubcategory(e2.target.value),
+      placeholder: "Add custom subcategory tag...",
+      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+    }
+  ), /* @__PURE__ */ e.jsx(
+    Button,
+    {
+      type: "button",
+      size: "sm",
+      variant: "outline",
+      className: "h-8 text-xs border-slate-700",
+      onClick: () => {
+        if (customSubcategory.trim() && !subcategories.includes(customSubcategory.trim())) {
+          setSubcategories([...subcategories, customSubcategory.trim()]);
+          setCustomSubcategory("");
+        }
+      }
+    },
+    "Add Subcategory"
+  )))), activeTab === "service" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-amber-400 flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F69B}"), " Centrally Managed Truck Brands (Multi-Select)"), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-slate-400" }, "Select all manufacturer brands this workshop or technician supports")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Centre Type:"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: workshopType,
+      onChange: (e2) => setWorkshopType(e2.target.value),
+      className: "h-7 rounded bg-slate-900 border border-slate-800 text-[11px] text-amber-300 font-bold px-2"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "independent" }, "Independent Workshop"),
+    /* @__PURE__ */ e.jsx("option", { value: "authorised" }, "Authorised OEM Centre"),
+    /* @__PURE__ */ e.jsx("option", { value: "roadside" }, "Roadside Mobile Van")
+  ))), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, TRUCK_BRANDS_MASTER.map((brand) => {
+    const isSelected = truckBrands.includes(brand);
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: brand,
+        type: "button",
+        onClick: () => toggleBrand(brand),
+        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
+      },
+      isSelected ? "\u2713 " : "+ ",
+      " ",
+      brand
+    );
+  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: customBrand,
+      onChange: (e2) => setCustomBrand(e2.target.value),
+      placeholder: "Add custom truck brand (e.g. Scania, Force)...",
+      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+    }
+  ), /* @__PURE__ */ e.jsx(
+    Button,
+    {
+      type: "button",
+      size: "sm",
+      variant: "outline",
+      className: "h-8 text-xs border-slate-700",
+      onClick: () => {
+        if (customBrand.trim() && !truckBrands.includes(customBrand.trim())) {
+          setTruckBrands([...truckBrands.filter((b) => b !== "Universal / All Brands"), customBrand.trim()]);
+          setCustomBrand("");
+        }
+      }
+    },
+    "Add Brand"
+  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Service Specialisations (Repair Expertise)"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSpecialisations.map((spec) => {
+    const isSelected = serviceSpecialisations.includes(spec);
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: spec,
+        type: "button",
+        onClick: () => toggleSpecialisation(spec),
+        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
+      },
+      isSelected ? "\u2713 " : "+ ",
+      " ",
+      spec
+    );
+  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: customSpecialisation,
+      onChange: (e2) => setCustomSpecialisation(e2.target.value),
+      placeholder: "Add custom specialisation...",
+      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+    }
+  ), /* @__PURE__ */ e.jsx(
+    Button,
+    {
+      type: "button",
+      size: "sm",
+      variant: "outline",
+      className: "h-8 text-xs border-slate-700",
+      onClick: () => {
+        if (customSpecialisation.trim() && !serviceSpecialisations.includes(customSpecialisation.trim())) {
+          setServiceSpecialisations([...serviceSpecialisations, customSpecialisation.trim()]);
+          setCustomSpecialisation("");
+        }
+      }
+    },
+    "Add Specialisation"
+  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "checkbox",
+      checked: emergencyAvailable,
+      onChange: (e2) => setEmergencyAvailable(e2.target.checked),
+      className: "rounded text-primary focus:ring-0"
+    }
+  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6A8} 24/7 Emergency"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Available for night breakdown"))), /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "checkbox",
+      checked: roadsideService,
+      onChange: (e2) => setRoadsideService(e2.target.checked),
+      className: "rounded text-primary focus:ring-0"
+    }
+  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6E0}\uFE0F Roadside / On-site"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Dispatches mechanic to truck"))), /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "checkbox",
+      checked: isPreferred,
+      onChange: (e2) => setIsPreferred(e2.target.checked),
+      className: "rounded text-primary focus:ring-0"
+    }
+  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-amber-300 block" }, "\u2B50 Preferred Vendor"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "High priority dispatch status"))))), activeTab === "corporate" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Parent Corporate / Organisation"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: organisationName,
+      onChange: (e2) => setOrganisationName(e2.target.value),
+      placeholder: "e.g. Tata Steel / Flipkart / Reliance Hub",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "GSTIN Tax Registration"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: gstin,
+      onChange: (e2) => setGstin(e2.target.value.toUpperCase()),
+      placeholder: "15-character GSTIN (Optional)",
+      maxLength: 15,
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono uppercase"
+    }
+  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Email Address"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      type: "email",
+      value: email,
+      onChange: (e2) => setEmail(e2.target.value),
+      placeholder: "contact@company.com",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Working Hours"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: workingHours,
+      onChange: (e2) => setWorkingHours(e2.target.value),
+      placeholder: "e.g. 24 Hours / 9:00 AM - 8:00 PM",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+    }
+  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Verification Status"), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: verificationStatus,
+      onChange: (e2) => setVerificationStatus(e2.target.value),
+      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "verified" }, "Verified Contact"),
+    /* @__PURE__ */ e.jsx("option", { value: "pending" }, "Verification Pending"),
+    /* @__PURE__ */ e.jsx("option", { value: "unverified" }, "Unverified / Raw Contact")
+  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Internal Fleet Notes & Past History"), /* @__PURE__ */ e.jsx(
+    Textarea,
+    {
+      value: internalNotes,
+      onChange: (e2) => setInternalNotes(e2.target.value),
+      placeholder: "Rates negotiated, reliable for night repairs, past experience with Hyderabad fleet...",
+      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[70px]"
+    }
+  ))), /* @__PURE__ */ e.jsx(DialogFooter, { className: "pt-3 border-t border-slate-800 flex items-center justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-slate-400" }, "* Required fields: Company Name, Primary Phone, Physical Address"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(Button, { type: "button", variant: "outline", onClick: onClose, disabled: saving, className: "border-slate-700 text-slate-300 text-xs" }, "Cancel"), /* @__PURE__ */ e.jsx(Button, { type: "submit", disabled: saving, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5 shadow-md" }, saving && /* @__PURE__ */ e.jsx(Loader2, { className: "w-4 h-4 animate-spin mr-1" }), contact ? "Update CRM Contact" : "Save CRM Contact"))))));
+}
+
+
+function te(r){if(!r)return"";const p=[r.company_name,r.physical_address,r.warehouse_name,r.designation].filter(Boolean).join(", "),t=[r.google_maps_url,r.google_map_link,r.maps_url,r.location_url,r.map_url,r.google_map,r.maps_link,r.location,r.link,r.url];for(const b of t)if(b&&typeof b=="string"&&b.trim()){const u=ge(b,p);if(u)return u}for(const b of Object.keys(r)){const u=r[b];if(typeof u=="string"&&u.trim()&&(u.includes("maps")||u.includes("goo.gl"))){const C=u.match(/(https?:\/\/[^\s\]\)>"']+|maps\.app\.goo\.gl[^\s\]\)>"']+|goo\.gl\/maps[^\s\]\)>"']+|google\.com\/maps[^\s\]\)>"']+|[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\/[^\s\]\)>"']+)/i);if(C){const j=C[1].replace(/[\]\)\}>\s.,;'"]+$/,"").trim();return ge(j,p)}}}return p?ge("",p):""}function Re(r){if(!r)return"";let p=te(r);if(!p&&(r.physical_address||r.company_name)){const u=[r.company_name,r.physical_address].filter(Boolean).join(", ");p=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(u)}`}const t=r.notes?r.notes.replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi,"").replace(/Location:\s*https?:\/\/[^\s\n]+/gi,"").trim():"";return[`📍 *${r.company_name||"Contact Info"}* (${r.contact_type||"Contact"})`,"",r.phone_number?`📞 *Phone:* ${r.phone_number}`:null,r.email?`✉️ *Email:* ${r.email}`:null,r.gstin?`📄 *GSTIN:* ${r.gstin}`:null,r.truck_brand?`🔧 *Brands Serviced:* ${r.truck_brand}`:null,"",r.physical_address&&!r.physical_address.startsWith("http")?`🏢 *Address:* ${r.physical_address}`:null,p?`🗺️ *Location:* ${p}`:null,"",t&&!t.startsWith("http")?`📝 *Notes:* ${t}`:null,"","Shared via Jai Bhavani Cargo"].filter(u=>u!==null).join(`
+`)}async function Ue(r){if(!r)return;const p=Re(r);if(navigator.share)try{await navigator.share({title:r.company_name||"Contact Info",text:p});return}catch(b){if(b.name!=="AbortError")console.warn("Web Share API failed, falling back to WhatsApp:",b);else return}const t=encodeURIComponent(p);window.open(`https://wa.me/?text=${t}`,"_blank")}async function Ve(r){if(!r)return;const p=Re(r);try{await navigator.clipboard.writeText(p),S.success("Contact details copied to clipboard!")}catch(t){console.error("Failed to copy contact details:",t),S.error("Failed to copy contact details.")}}
+
+
+
+function Sa({ isOpen, onClose, contact, onEdit, imports }) {
+  const { e, h, Dialog, DialogContent, DialogHeader, DialogTitle, Button, Badge, Phone, Mail, MapPin, Wrench, Building, Copy, Share2, Check, ExternalLink, ShieldCheck, Star } = imports;
+  if (!contact) return null;
+  const brands = safeParseArray(contact.truck_brands);
+  const subcats = safeParseArray(contact.subcategories);
+  const specs = safeParseArray(contact.service_specialisations);
+  const phoneNumbers = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+  const mapsUrl = contact.google_maps_url || contact.google_map_link || contact.location_url || "";
+  const copyDetails = async () => {
+    const summary = [
+      `\u{1F4CD} *${contact.company_name}* (${contact.main_group || contact.contact_type || "Transport Directory"})`,
+      contact.organisation_name && contact.organisation_name !== contact.company_name ? `\u{1F3E2} Organisation: ${contact.organisation_name}` : null,
+      contact.designation ? `\u{1F464} Designation: ${contact.designation}` : null,
+      phoneNumbers.length > 0 ? `\u{1F4DE} Phone(s): ${phoneNumbers.join(", ")}` : null,
+      contact.email ? `\u2709\uFE0F Email: ${contact.email}` : null,
+      contact.gstin ? `\u{1F4C4} GSTIN: ${contact.gstin}` : null,
+      brands.length > 0 ? `\u{1F69B} Supported Brands: ${brands.join(", ")}` : null,
+      subcats.length > 0 ? `\u{1F4C2} Services: ${subcats.join(", ")}` : null,
+      contact.physical_address ? `\u{1F3E2} Address: ${contact.physical_address}` : null,
+      mapsUrl ? `\u{1F5FA}\uFE0F Maps: ${mapsUrl}` : null,
+      contact.notes ? `\u{1F4DD} Notes: ${contact.notes}` : null,
+      `
+Shared via Jai Bhavani Cargo Fleet CRM`
+    ].filter(Boolean).join("\n");
+    try {
+      await navigator.clipboard.writeText(summary);
+      imports.toast.success("Full Contact Dossier copied to clipboard!");
+    } catch {
+      imports.toast.error("Failed to copy contact details");
+    }
+  };
+  const shareWhatsApp = () => {
+    const summary = [
+      `\u{1F4C7} *${contact.company_name}*`,
+      contact.main_group ? `\u{1F4C2} Group: ${contact.main_group}` : null,
+      contact.primary_category ? `\u{1F527} Role: ${contact.primary_category}` : null,
+      phoneNumbers.length > 0 ? `\u{1F4DE} Call: ${phoneNumbers[0]}` : null,
+      contact.physical_address ? `\u{1F4CD} Address: ${contact.physical_address}` : null,
+      mapsUrl ? `\u{1F5FA}\uFE0F Google Maps: ${mapsUrl}` : null,
+      `_Jai Bhavani Cargo CRM_`
+    ].filter(Boolean).join("\n");
+    window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, "_blank");
+  };
+  return /* @__PURE__ */ e.jsx(Dialog, { open: isOpen, onOpenChange: onClose }, /* @__PURE__ */ e.jsx(DialogContent, { className: "w-[96vw] max-w-2xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl" }, /* @__PURE__ */ e.jsx(DialogHeader, { className: "border-b border-slate-800 pb-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap mb-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-black bg-primary/20 text-primary border border-primary/30" }, contact.main_group || "Fleet Services"), /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700" }, contact.primary_category || contact.contact_type), contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1" }, "\u2B50 Preferred") : null, contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1" }, "\u{1F6A8} 24/7 Night Service") : null), /* @__PURE__ */ e.jsx(DialogTitle, { className: "text-2xl font-black text-white tracking-tight" }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"), " Entity: ", contact.organisation_name)), contact.verification_status === "verified" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0" }, "\u2713 Verified"))), /* @__PURE__ */ e.jsx("div", { className: "space-y-5 py-3" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "Direct Contact Lines"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" }, phoneNumbers.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 gap-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ e.jsx("span", { className: "text-emerald-400 text-sm" }, "\u{1F4DE}"), /* @__PURE__ */ e.jsx("div", { className: "min-w-0" }, /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-sm text-white block truncate" }, ph), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400 block" }, idx === 0 ? "Primary Number" : `Alternate #${idx + 1}`))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ e.jsx(
+    "a",
+    {
+      href: `tel:${ph.replace(/\D/g, "")}`,
+      className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+    },
+    "Call"
+  ), /* @__PURE__ */ e.jsx(
+    "a",
+    {
+      href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+    },
+    "WhatsApp"
+  )))))), brands.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-amber-400 block" }, "\u{1F69B} Supported Truck Brands & Workshop Type"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.workshop_type && /* @__PURE__ */ e.jsx("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 capitalize" }, contact.workshop_type, " Centre"))), (subcats.length > 0 || specs.length > 0) && /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, subcats.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "\u{1F4C2} Subcategories & Capabilities"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, subcats.map((s) => /* @__PURE__ */ e.jsx("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800" }, "\u2022 ", s)))), specs.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-emerald-400 block" }, "\u{1F527} Repair Specialisations"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, specs.map((s) => /* @__PURE__ */ e.jsx("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" }, "\u2713 ", s))))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-rose-400 block" }, "\u{1F4CD} Workshop Address & Regional Hub"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-200 leading-relaxed" }, contact.physical_address || "No physical address provided."), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3 pt-1 text-xs text-slate-400" }, contact.city && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "City:"), " ", contact.city), contact.area && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "Area:"), " ", contact.area), contact.working_hours && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "Hours:"), " ", contact.working_hours)), mapsUrl && /* @__PURE__ */ e.jsx(
+    "a",
+    {
+      href: mapsUrl,
+      target: "_blank",
+      rel: "noopener noreferrer",
+      className: "inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"),
+    " Open Google Maps GPS Navigation"
+  )), (contact.gstin || contact.email || contact.designation) && /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs" }, contact.gstin && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "GSTIN"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-semibold" }, contact.gstin)), contact.email && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "Email"), /* @__PURE__ */ e.jsx("a", { href: `mailto:${contact.email}`, className: "text-primary hover:underline truncate block" }, contact.email)), contact.designation && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "Designation"), /* @__PURE__ */ e.jsx("span", { className: "text-slate-200 font-medium" }, contact.designation))), contact.notes && /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 block" }, "Internal Fleet Notes"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-300 italic whitespace-pre-wrap" }, '"', contact.notes, '"'))), /* @__PURE__ */ e.jsx("div", { className: "pt-4 border-t border-slate-800 flex items-center justify-between gap-2" }, /* @__PURE__ */ e.jsx(Button, { variant: "outline", onClick: copyDetails, className: "border-slate-700 bg-slate-800 text-slate-200 text-xs font-bold gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4CB}"), " Copy Dossier"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(Button, { onClick: shareWhatsApp, className: "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"), " WhatsApp"), /* @__PURE__ */ e.jsx(Button, { onClick: () => {
+    onClose();
+    onEdit(contact);
+  }, className: "bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u270F\uFE0F"), " Edit Record")))));
+}
+
+
+function Ta({contact:r,onView:p,onEdit:t,onDelete:b,onSendApi:u}){const C=()=>{Ve(r)},j=()=>{Ue(r)},N=y=>{y?.preventDefault(),y?.stopPropagation();const x=te(r);x?Ie(x):S.error("No Google Maps link available for this contact")},c=te(r);return e.jsxs(ha,{children:[e.jsx(pa,{asChild:!0,children:e.jsxs(P,{variant:"ghost",className:"h-8 w-8 p-0",children:[e.jsx("span",{className:"sr-only",children:"Open menu"}),e.jsx(He,{className:"h-4 w-4"})]})}),e.jsxs(ua,{align:"end",className:"w-52 bg-card border-border shadow-xl z-50",children:[u&&e.jsxs(G,{onClick:()=>u(r),className:"cursor-pointer font-bold text-emerald-500 bg-emerald-500/10",children:[e.jsx(fe,{className:"mr-2 h-4 w-4 text-emerald-500"})," 1-Click Send via API"]}),e.jsxs(G,{onClick:()=>p(r),className:"cursor-pointer",children:[e.jsx(ze,{className:"mr-2 h-4 w-4 text-primary"})," View Card"]}),e.jsxs(G,{onClick:()=>window.location.href=`tel:${r.phone_number}`,className:"cursor-pointer",children:[e.jsx(ae,{className:"mr-2 h-4 w-4 text-emerald-500"})," Call ",r.phone_number?`(${r.phone_number})`:""]}),!!c&&e.jsxs(G,{onClick:N,className:"cursor-pointer text-rose-600 dark:text-rose-400 font-semibold",children:[e.jsx(se,{className:"mr-2 h-4 w-4 text-rose-500"})," Open Maps Navigation"]}),r.email&&e.jsxs(G,{onClick:()=>window.open(`mailto:${r.email}`),className:"cursor-pointer",children:[e.jsx(Ne,{className:"mr-2 h-4 w-4 text-blue-400"})," Email"]}),e.jsx(Fe,{}),e.jsxs(G,{onClick:j,className:"cursor-pointer font-bold text-primary",children:[e.jsx(fe,{className:"mr-2 h-4 w-4 text-primary"})," Share Contact & Map"]}),e.jsxs(G,{onClick:C,className:"cursor-pointer",children:[e.jsx(we,{className:"mr-2 h-4 w-4"})," Copy Details"]}),e.jsx(Fe,{}),e.jsxs(G,{onClick:()=>t(r),className:"cursor-pointer",children:[e.jsx(Ye,{className:"mr-2 h-4 w-4"})," Edit"]}),e.jsxs(G,{onClick:()=>b(r),className:"text-destructive focus:text-destructive cursor-pointer",children:[e.jsx(Ke,{className:"mr-2 h-4 w-4"})," Delete"]})]})]})}
+
+function Aa({isOpen:r,onClose:p}){const[t,b]=h.useState(!1),[u,C]=h.useState("All"),[j,N]=h.useState({company_name:!0,contact_type:!0,phone_number:!0,email:!0,gstin:!0,physical_address:!0,notes:!1,created:!1}),c=x=>{N(s=>({...s,[x]:!s[x]}))},y=async()=>{const x=Object.keys(j).filter(s=>j[s]);if(x.length===0){S.error("Please select at least one field to export");return}b(!0);try{let s="";u!=="All"&&(s=`contact_type="${u}"`);const d=await W.collection("contacts").getFullList({filter:s,sort:"-created",$autoCancel:!1});if(d.length===0){S.info("No contacts found for the selected criteria"),b(!1);return}const I=d.map(v=>{const w={};return x.forEach(B=>{w[B]=v[B]||""}),w}),i=ga.unparse(I),m=new Blob([i],{type:"text/csv;charset=utf-8;"}),M=document.createElement("url"),O=URL.createObjectURL(m),L=document.createElement("a");L.href=O,L.download=`contacts_export_${u.toLowerCase()}_${new Date().toISOString().split("T")[0]}.csv`,document.body.appendChild(L),L.click(),document.body.removeChild(L),URL.revokeObjectURL(O),S.success(`Successfully exported ${d.length} contacts`),p()}catch(s){console.error("Export failed:",s),S.error("Failed to export contacts")}finally{b(!1)}};return e.jsx(le,{open:r,onOpenChange:x=>!x&&p(),children:e.jsxs(oe,{className:"sm:max-w-[400px] bg-card text-card-foreground",children:[e.jsx(he,{children:e.jsx(pe,{children:"Export Contacts"})}),e.jsxs("div",{className:"space-y-6 py-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(g,{children:"Export Category"}),e.jsxs(Y,{value:u,onValueChange:C,children:[e.jsx(K,{className:"bg-background",children:e.jsx(J,{placeholder:"Select category"})}),e.jsxs(Z,{children:[e.jsx(n,{value:"All",children:"All Contacts"}),e.jsx(n,{value:"Client",children:"Clients Only"}),e.jsx(n,{value:"Driver",children:"Drivers Only"}),e.jsx(n,{value:"Vendor",children:"Vendors Only"})]})]})]}),e.jsxs("div",{className:"space-y-3",children:[e.jsx(g,{children:"Fields to Include"}),e.jsx("div",{className:"grid grid-cols-2 gap-3 bg-muted/20 p-4 rounded-lg border border-border",children:Object.entries(j).map(([x,s])=>e.jsxs("div",{className:"flex items-center space-x-2",children:[e.jsx(xa,{id:`field-${x}`,checked:s,onCheckedChange:()=>c(x)}),e.jsx("label",{htmlFor:`field-${x}`,className:"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize",children:x.replace("_"," ")})]},x))})]})]}),e.jsxs(ue,{children:[e.jsx(P,{variant:"outline",onClick:p,disabled:t,children:"Cancel"}),e.jsxs(P,{onClick:y,disabled:t,children:[t?e.jsx(me,{className:"w-4 h-4 mr-2 animate-spin"}):e.jsx(Be,{className:"w-4 h-4 mr-2"}),"Download CSV"]})]})]})})}
+
+const Pe=["Client","Corporate","Vendor","Driver","Employee","Mechanic","Electrician","Puncture Shop","Showroom","Spare Parts","Bodywork / Welding","Crane / Tow Truck","Hydraulics","Plastics","Washing Centre","RTO Agent","Banking","Loan Agent","Warehouse","Other"];function Oa({isOpen:r,onClose:p,onSuccess:t}){const{currentUser:b}=We(),[u,C]=h.useState("upload"),[j,N]=h.useState(!1),[c,y]=h.useState({company_name:"",contact_person:"",designation:"",contact_type:"Client",phone_number:"",alternate_phone:"",email:"",website:"",gstin:"",physical_address:"",notes:"",card_file:null,preview_url:""}),x=(i,m,M)=>{y({company_name:i.company_name||i.contact_person||"",contact_person:i.contact_person||"",designation:i.designation||"",contact_type:Pe.includes(i.contact_type)?i.contact_type:"Client",phone_number:i.phone_number||"",alternate_phone:i.alternate_phone||"",email:i.email||"",website:i.website||"",gstin:i.gstin||"",physical_address:i.physical_address||"",notes:i.notes||"",card_file:m,preview_url:M||""}),C("form"),S.success("Visiting card extracted accurately! Please review & save.")},s=i=>{S.error(i),C("upload")},d=()=>{C("upload"),y({company_name:"",contact_person:"",designation:"",contact_type:"Client",phone_number:"",alternate_phone:"",email:"",website:"",gstin:"",physical_address:"",notes:"",card_file:null,preview_url:""})},I=async i=>{if(i.preventDefault(),!c.company_name.trim()&&!c.contact_person.trim()){S.error("Company Name or Contact Person is required");return}N(!0);try{let m="";if(c.card_file)try{const O=new FormData;O.append("file",c.card_file),O.append("truck_id","VISITING_CARD"),O.append("document_type","Other"),O.append("document_name",`Visiting Card - ${c.company_name||c.contact_person}`),O.append("notes",`Visiting card image for ${c.company_name}`);const L=await W.collection("truck_documents").create(O,{$autoCancel:!1});m=W.files.getURL(L,L.file)}catch(O){console.warn("Card image upload warning:",O)}const M={contact_type:c.contact_type,company_name:c.company_name.trim(),contact_person:c.contact_person.trim(),designation:c.designation.trim(),phone_number:c.phone_number.trim(),alternate_phone:c.alternate_phone.trim(),email:c.email.trim(),website:c.website.trim(),gstin:c.gstin.trim(),physical_address:c.physical_address.trim(),notes:c.notes.trim(),card_image_url:m||c.preview_url||"",created_by:b?.id||""};await W.collection("contacts").create(M,{$autoCancel:!1}),S.success(`Contact "${M.company_name||M.contact_person}" saved from Visiting Card!`),t&&t(),d(),p()}catch(m){console.error("Save failed:",m),S.error(m.message||"Failed to save contact")}finally{N(!1)}};return e.jsx(le,{open:r,onOpenChange:i=>{!i&&!j&&(d(),p())},children:e.jsxs(oe,{className:"max-w-2xl bg-card border-border shadow-2xl rounded-2xl p-6 max-h-[90vh] overflow-y-auto font-sans",children:[e.jsx(he,{className:"pb-3 border-b border-border/40",children:e.jsxs(pe,{className:"text-xl font-extrabold flex items-center gap-2",children:[e.jsx(De,{className:"w-5 h-5 text-primary"}),u==="upload"?"Scan Visiting / Business Card":"Extracted Contact Details"]})}),u==="upload"?e.jsx("div",{className:"py-4",children:e.jsx(_a,{onExtractionComplete:x,onError:s})}):e.jsxs("form",{onSubmit:I,className:"space-y-4 pt-3",children:[c.preview_url&&e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 rounded-xl border border-border/50",children:[e.jsx("div",{className:"w-24 h-16 rounded-lg overflow-hidden border border-border bg-black/40 flex-shrink-0",children:e.jsx("img",{src:c.preview_url,alt:"Card preview",className:"w-full h-full object-cover"})}),e.jsxs("div",{children:[e.jsx(ne,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold mb-1",children:"✨ AI Extraction Verified"}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Review and edit any field before saving into your Contacts database."})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ee,{className:"w-3.5 h-3.5 text-primary"})," Company / Firm Name *"]}),e.jsx(k,{value:c.company_name,onChange:i=>y(m=>({...m,company_name:i.target.value})),placeholder:"e.g. Jai Bhavani Logistics Pvt Ltd",className:"bg-background font-bold text-sm",required:!0})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Contact Category"}),e.jsxs(Y,{value:c.contact_type,onValueChange:i=>y(m=>({...m,contact_type:i})),children:[e.jsx(K,{className:"bg-background font-semibold text-xs",children:e.jsx(J,{})}),e.jsx(Z,{children:Pe.map(i=>e.jsx(n,{value:i,children:i},i))})]})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Je,{className:"w-3.5 h-3.5 text-primary"})," Contact Person Name"]}),e.jsx(k,{value:c.contact_person,onChange:i=>y(m=>({...m,contact_person:i.target.value})),placeholder:"e.g. Rajesh Sharma",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Designation / Title"}),e.jsx(k,{value:c.designation,onChange:i=>y(m=>({...m,designation:i.target.value})),placeholder:"e.g. Managing Director / Partner",className:"bg-background"})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-400"})," Primary Mobile / Phone *"]}),e.jsx(k,{value:c.phone_number,onChange:i=>y(m=>({...m,phone_number:i.target.value})),placeholder:"+91 98765 43210",className:"bg-background font-mono font-bold",required:!0})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-blue-400"})," Alternate / WhatsApp No."]}),e.jsx(k,{value:c.alternate_phone,onChange:i=>y(m=>({...m,alternate_phone:i.target.value})),placeholder:"Secondary mobile or WhatsApp...",className:"bg-background font-mono"})]})]}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Ne,{className:"w-3.5 h-3.5 text-amber-400"})," Email Address"]}),e.jsx(k,{value:c.email,onChange:i=>y(m=>({...m,email:i.target.value})),placeholder:"info@company.com",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Ze,{className:"w-3.5 h-3.5 text-cyan-400"})," Website URL"]}),e.jsx(k,{value:c.website,onChange:i=>y(m=>({...m,website:i.target.value})),placeholder:"www.company.com",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(Qe,{className:"w-3.5 h-3.5 text-purple-400"})," GSTIN No."]}),e.jsx(k,{value:c.gstin,onChange:i=>y(m=>({...m,gstin:i.target.value})),placeholder:"36AAAAA0000A1Z5",className:"bg-background font-mono text-xs uppercase"})]})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs(g,{className:"font-semibold text-xs text-foreground flex items-center gap-1",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-rose-400"})," Office / Factory Address"]}),e.jsx(k,{value:c.physical_address,onChange:i=>y(m=>({...m,physical_address:i.target.value})),placeholder:"Street address, landmark, city, state, pincode...",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"font-semibold text-xs text-foreground",children:"Notes & Extra Card Information"}),e.jsx(ke,{value:c.notes,onChange:i=>y(m=>({...m,notes:i.target.value})),placeholder:"Services offered, branch locations, bank details listed on card...",className:"bg-background min-h-[60px] text-xs"})]}),e.jsxs(ue,{className:"pt-3 border-t border-border/40 gap-2",children:[e.jsxs(P,{type:"button",variant:"outline",onClick:d,className:"rounded-xl text-xs",children:[e.jsx(Xe,{className:"w-3.5 h-3.5 mr-1"})," Rescan Card"]}),e.jsxs(P,{type:"submit",disabled:j,className:"rounded-xl shadow-md font-bold text-xs",children:[j?e.jsx(me,{className:"w-4 h-4 animate-spin mr-1.5"}):e.jsx(ea,{className:"w-4 h-4 mr-1.5"}),"Save to Contacts"]})]})]})]})})}
+
+function Fa({isOpen:r,onClose:p,contact:t}){const[b,u]=h.useState("custom"),[C,j]=h.useState(""),[N,c]=h.useState(""),[y,x]=h.useState(""),[s,d]=h.useState(!1),[I,i]=h.useState([]);if(h.useEffect(()=>{r&&((async()=>{try{const w=await W.collection("users").getFullList({sort:"name",$autoCancel:!1});w&&w.length>0?i(w):i([{id:"u1",name:"Duty Dispatcher",phone:"7794072244"},{id:"u2",name:"Fleet Supervisor",phone:"9848012345"},{id:"u3",name:"Nagpur Yard Manager",phone:"9848054321"}])}catch{i([{id:"u1",name:"Duty Dispatcher",phone:"7794072244"},{id:"u2",name:"Fleet Supervisor",phone:"9848012345"}])}})(),x(""),j(""),c(""))},[r,t]),!t)return null;const m=te(t),M=()=>{const v=t.company_name||"Emergency Contact",w=t.phone_number||"",B=t.contact_type||"Directory Contact",o=t.physical_address||"",a=t.truck_brand?`
 🔧 *Brands:* ${t.truck_brand}`:"",_=y?`
 
 📝 *Dispatch Note:* ${y}`:"";return`📇 *JAI BHAVANI CARGO - CONTACT CARD*
@@ -12,8 +1109,674 @@ ${H}`:H}f&&(T=T?`${T}
 📍 *Address:* ${o||"Available on request"}${m?`
 🗺️ *Google Maps:* ${m}`:""}${_}
 
-_Sent via Jai Bhavani Cargo Dispatch Desk_`},O=async()=>{d(!0);const v=M();let w=C.replace(/\D/g,"");w.length===10&&(w=`91${w}`);try{const B={contact:t,recipientPhone:w,recipientName:N||"Staff Member",customNote:y,channel:"whatsapp"};let o=!1,a="";try{const _=await window.fetch("/hcgi/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}if(!o)try{const _=await window.fetch("/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}a||(a=w?`https://api.whatsapp.com/send?phone=${w}&text=${encodeURIComponent(v)}`:`https://api.whatsapp.com/send?text=${encodeURIComponent(v)}`),window.open(a,"_blank"),S.success(`Contact card for "${t.company_name}" sent via WhatsApp API!`),p()}catch(B){console.error(B),S.error("Failed to send contact via API")}finally{d(!1)}},L=()=>{navigator.clipboard.writeText(M()),S.success("Contact card copied to clipboard!")};return e.jsx(le,{open:r,onOpenChange:p,children:e.jsxs(oe,{className:"sm:max-w-[500px] bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl",children:[e.jsxs(he,{className:"pb-3 border-b border-slate-800",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(pe,{className:"text-lg font-bold text-white flex items-center gap-2",children:[e.jsx(Ee,{className:"w-5 h-5 text-emerald-400"}),"1-Click Send Contact via API"]}),e.jsx(ne,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold",children:"API Instant"})]}),e.jsx(ba,{className:"text-xs text-slate-400 mt-1",children:"Dispatch contact details, phone number & Google Maps location directly to drivers or fleet managers with 1 click."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"font-bold text-sm text-white",children:t.company_name}),e.jsx(ne,{variant:"outline",className:"text-[11px] font-semibold bg-primary/10 text-primary border-primary/30",children:t.contact_type})]}),e.jsxs("div",{className:"text-xs text-slate-300 flex items-center gap-2",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-400"}),e.jsx("span",{className:"font-mono font-bold text-emerald-400",children:t.phone_number||"N/A"})]}),t.physical_address&&e.jsxs("div",{className:"text-xs text-slate-400 truncate flex items-center gap-1.5",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-rose-400 shrink-0"}),e.jsx("span",{className:"truncate",children:t.physical_address})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Select Recipient Staff / Driver"}),e.jsxs(Y,{value:b,onValueChange:v=>{if(u(v),v!=="custom"){const w=I.find(B=>B.id===v);w&&(j(w.phone||""),c(w.name||""))}else j(""),c("")},children:[e.jsx(K,{className:"bg-slate-950 border-slate-800 text-xs text-slate-200",children:e.jsx(J,{placeholder:"Choose recipient"})}),e.jsxs(Z,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(n,{value:"custom",children:"✏️ Enter Custom Phone Number"}),I.map(v=>e.jsxs(n,{value:v.id,children:["👤 ",v.name," ",v.phone?`(${v.phone})`:""]},v.id))]})]})]}),b==="custom"&&e.jsxs("div",{className:"space-y-1.5 animate-in fade-in duration-200",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Recipient WhatsApp Phone Number *"}),e.jsx(k,{value:C,onChange:v=>j(v.target.value),placeholder:"e.g. 9848012345 (10-digit mobile number)",className:"bg-slate-950 border-slate-800 text-xs font-mono font-bold text-emerald-400"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Optional Dispatch Note (Added to message)"}),e.jsx(ke,{value:y,onChange:v=>x(v.target.value),placeholder:"e.g. Truck MH12-AB-1234 breakdown, reach this mechanic immediately...",className:"bg-slate-950 border-slate-800 text-xs min-h-[60px] text-slate-200"})]})]}),e.jsxs(ue,{className:"pt-2 border-t border-slate-800 flex items-center justify-between gap-2",children:[e.jsxs(P,{type:"button",variant:"outline",size:"sm",onClick:L,className:"border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold text-xs",children:[e.jsx(we,{className:"w-3.5 h-3.5 mr-1"})," Copy Card"]}),e.jsxs(P,{type:"button",onClick:O,disabled:s,className:"bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl shadow-lg shadow-emerald-900/30",children:[s?e.jsx(me,{className:"w-4 h-4 mr-1 animate-spin"}):e.jsx(ye,{className:"w-4 h-4 mr-1"}),"1-Click Send via API"]})]})]})})}const be=[{id:"all",label:"All Contacts",icon:de,types:null},{id:"tyre_shop",label:"Tyre Shop",icon:je,types:["Tyre Shop"]},{id:"puncher_shop",label:"Puncher Shop",icon:je,types:["Puncher Shop","Puncture Shop"]},{id:"truck_broker",label:"Truck Broker",icon:aa,types:["Truck Broker","Broker"]},{id:"electrician",label:"Electrician",icon:sa,types:["Electrician"]},{id:"washing_centre",label:"Washing Centre",icon:Ee,types:["Washing Centre"]},{id:"mechanic",label:"Mechanic",icon:_e,types:["Mechanic"]},{id:"welding_bodywork",label:"Welding / Body Work",icon:Te,types:["Welding / Body Work","Bodywork / Welding"]},{id:"rto_agent",label:"RTO Agent",icon:ve,types:["RTO Agent"]},{id:"fastag",label:"FASTag",icon:ta,types:["FASTag","FASTag Agent"]},{id:"truck_sales",label:"Truck Sales Exec (Showroom)",icon:ee,types:["Truck Sales Executive (Showroom)","Showroom Sales Executive","Showroom"]},{id:"truck_fabricator",label:"Truck Fabricator",icon:Te,types:["Truck Fabricator","Fabricator"]},{id:"key_maker",label:"Key Maker",icon:ra,types:["Key Maker","Locksmith"]},{id:"parking",label:"Parking",icon:na,types:["Parking","Truck Parking / Yard"]},{id:"fuel_station",label:"Fuel Station",icon:Le,types:["Fuel Station","Petrol Pump"]},{id:"truck_owner",label:"Truck Owner & Transporter",icon:Ce,types:["Truck Owner","Transporter"]},{id:"client",label:"Corporate Client",icon:ee,types:["Client","Corporate"]},{id:"warehouse",label:"Warehouse",icon:ve,types:["Warehouse"]},{id:"driver_staff",label:"Drivers & Staff",icon:de,types:["Driver","Employee","Supervisor","Manager"]},{id:"crane_towing",label:"Crane / Towing",icon:Ce,types:["Crane / Tow Truck"]},{id:"spare_parts",label:"Spare Parts",icon:la,types:["Spare Parts"]},{id:"banking_finance",label:"Banking & Finance",icon:Me,types:["Banking","Loan Agent"]},{id:"other",label:"Other Vendors",icon:$e,types:["Vendor","Other"]}],Pa=[{key:"All",label:"All Contacts",icon:de,types:null},{key:"Tyres",label:"Tyres & Puncher",icon:je,types:["Tyre Shop","Puncher Shop","Puncture Shop"]},{key:"Maintenance",label:"Workshop & Mechanics",icon:_e,types:["Mechanic","Electrician","Welding / Body Work","Bodywork / Welding","Truck Fabricator","Key Maker","Spare Parts","Hydraulics","Crane / Tow Truck"]},{key:"Brokers",label:"Brokers & Transporters",icon:Ce,types:["Truck Broker","Broker","Truck Owner","Transporter"]},{key:"Highway",label:"Fuel, Parking & Washing",icon:Le,types:["Fuel Station","Petrol Pump","Parking","Truck Parking / Yard","Washing Centre"]},{key:"RTO_FASTag",label:"RTO & FASTag",icon:ve,types:["RTO Agent","FASTag","FASTag Agent"]},{key:"Showroom",label:"Showroom & Sales",icon:ee,types:["Truck Sales Executive (Showroom)","Showroom Sales Executive","Showroom","Truck Fabricator"]},{key:"Client",label:"Corporate Clients",icon:ee,types:["Client","Corporate","Warehouse"]},{key:"Employee",label:"Drivers & Staff",icon:de,types:["Driver","Employee","Supervisor","Manager"]},{key:"Finance",label:"Finance & Banking",icon:Me,types:["Banking","Loan Agent"]},{key:"Other",label:"Other Contacts & Vendors",icon:$e,types:["Other","Vendor"]}],Ba={"Tyre Shop":"bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold","Puncher Shop":"bg-orange-500/15 text-orange-400 border-orange-500/30 font-bold","Puncture Shop":"bg-orange-500/15 text-orange-400 border-orange-500/30 font-bold","Truck Broker":"bg-indigo-500/15 text-indigo-400 border-indigo-500/30 font-bold",Broker:"bg-indigo-500/15 text-indigo-400 border-indigo-500/30 font-bold",Electrician:"bg-yellow-500/15 text-yellow-400 border-yellow-500/30 font-bold","Washing Centre":"bg-cyan-500/15 text-cyan-400 border-cyan-500/30 font-bold",Mechanic:"bg-red-500/15 text-red-400 border-red-500/30 font-bold","Welding / Body Work":"bg-rose-500/15 text-rose-400 border-rose-500/30 font-bold","Bodywork / Welding":"bg-rose-500/15 text-rose-400 border-rose-500/30 font-bold","RTO Agent":"bg-emerald-500/15 text-emerald-400 border-emerald-500/30 font-bold",FASTag:"bg-teal-500/15 text-teal-400 border-teal-500/30 font-bold","FASTag Agent":"bg-teal-500/15 text-teal-400 border-teal-500/30 font-bold","Truck Sales Executive (Showroom)":"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold","Showroom Sales Executive":"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold",Showroom:"bg-violet-500/15 text-violet-400 border-violet-500/30 font-bold","Truck Fabricator":"bg-amber-600/15 text-amber-300 border-amber-600/30 font-bold",Fabricator:"bg-amber-600/15 text-amber-300 border-amber-600/30 font-bold","Key Maker":"bg-lime-500/15 text-lime-400 border-lime-500/30 font-bold",Locksmith:"bg-lime-500/15 text-lime-400 border-lime-500/30 font-bold",Parking:"bg-blue-500/15 text-blue-400 border-blue-500/30 font-bold","Truck Parking / Yard":"bg-blue-500/15 text-blue-400 border-blue-500/30 font-bold","Fuel Station":"bg-green-500/15 text-green-400 border-green-500/30 font-bold","Petrol Pump":"bg-green-500/15 text-green-400 border-green-500/30 font-bold","Truck Owner":"bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold",Transporter:"bg-indigo-500/10 text-indigo-400 border-indigo-500/30 font-bold",Client:"bg-primary/10 text-primary border-primary/25",Corporate:"bg-primary/10 text-primary border-primary/25",Warehouse:"bg-amber-500/10 text-amber-400 border-amber-500/25",Driver:"bg-emerald-500/10 text-emerald-500 border-emerald-500/25",Employee:"bg-teal-500/10 text-teal-400 border-teal-500/25","Spare Parts":"bg-orange-500/10 text-orange-400 border-orange-500/25","Crane / Tow Truck":"bg-blue-500/10 text-blue-400 border-blue-500/25",Banking:"bg-green-500/10 text-green-400 border-green-500/25","Loan Agent":"bg-lime-500/10 text-lime-400 border-lime-500/25",Vendor:"bg-indigo-500/10 text-indigo-400 border-indigo-500/25",Other:"bg-slate-500/10 text-slate-300 border-slate-500/25"},Da=r=>e.jsx(ne,{variant:"outline",className:`rounded-lg font-bold shadow-sm ${Ba[r]||"border-border/50 bg-muted/40 text-foreground"}`,children:r||"Unknown"});function Ea({active:r,onClick:p,icon:t,label:b,count:u,accent:C}){return e.jsxs("button",{onClick:p,className:`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 whitespace-nowrap
-        ${r?"bg-primary text-primary-foreground shadow-md scale-105":"text-muted-foreground hover:text-foreground hover:bg-muted/60 bg-background border border-border/50"}`,children:[e.jsx(t,{className:`w-3.5 h-3.5 ${r?"":C||"text-muted-foreground"}`}),b,u!==void 0&&e.jsx("span",{className:`text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5 ${r?"bg-white/20 text-white":"bg-muted text-muted-foreground"}`,children:u})]})}function Va(){const[currentView,setCurrentView]=h.useState("contacts"),[isSosOpen,setIsSosOpen]=h.useState(!1);const[r,p]=h.useState([]),[t,b]=h.useState(!0),[u,C]=h.useState(""),[j,N]=h.useState("All"),[c,y]=h.useState("all"),[x,s]=h.useState(!1),[d,I]=h.useState(!1),[i,m]=h.useState(!1),[M,O]=h.useState(!1),[L,v]=h.useState(!1),[w,B]=h.useState(!1),[o,a]=h.useState(null),[_,f]=h.useState(null),F=l=>{a(l),B(!0)},[T,E]=h.useState([]),$=async()=>{b(!0);try{const l=await W.collection("contacts").getFullList({sort:"-created",$autoCancel:!1});p(l||[])}catch(l){console.error("Failed to fetch contacts:",l),S.error("Failed to load contacts")}finally{b(!1)}};h.useEffect(()=>{$()},[]);const H=h.useMemo(()=>{const l={};return be.forEach(A=>{A.id==="all"?l[A.id]=r.length:l[A.id]=r.filter(Q=>{const U=Q.contact_type||"";return A.types&&A.types.some(V=>V.toLowerCase()===U.toLowerCase())}).length}),l},[r]),R=h.useMemo(()=>r.filter(l=>{const A=u.toLowerCase();if(!(!A||l.company_name?.toLowerCase().includes(A)||l.phone_number?.toLowerCase().includes(A)||l.physical_address?.toLowerCase().includes(A)||l.contact_type?.toLowerCase().includes(A)||l.gstin?.toLowerCase().includes(A)||l.truck_brand?.toLowerCase().includes(A)))return!1;if(c!=="all"){const U=be.find(V=>V.id===c);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}if(j!=="All"){const U=Pa.find(V=>V.key===j);if(U&&U.types){const V=(l.contact_type||"").toLowerCase();return U.types.some(xe=>xe.toLowerCase()===V)}}return!0}),[r,u,c,j]),re=()=>{f(null),s(!0)},ie=l=>{f(l),s(!0)},z=l=>{f(l),I(!0)},Se=async l=>{if(window.confirm(`Delete contact "${l.company_name}"?`))try{await W.collection("contacts").delete(l.id,{$autoCancel:!1}),S.success("Contact deleted"),$()}catch{S.error("Failed to delete contact")}},D=l=>{E(A=>A.includes(l)?A.filter(Q=>Q!==l):[...A,l])},Ge=()=>{T.length===R.length&&R.length>0?E([]):E(R.map(l=>l.id))};return e.jsxs("div",{className:"max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0",children:[e.jsx(oa,{children:e.jsx("title",{children:"Contacts Directory | Jai Bhavani Cargo"})}),e.jsxs("div",{className:"flex flex-col md:flex-row md:items-center justify-between gap-4",children:[e.jsxs("div",{children:[e.jsxs("h1",{className:"text-lg sm:text-3xl font-bold tracking-tight mb-0.5 sm:mb-1 flex items-center gap-2",children:[e.jsx(ia,{className:"w-8 h-8 text-primary"})," Contacts Directory"]}),e.jsx("p",{className:"text-muted-foreground text-sm",children:"Categorized directory of tyre shops, mechanics, electricians, truck brokers, RTO agents, FASTag, showrooms, fabricators, parking & fuel stations."})]}),e.jsxs("div",{className:"flex items-center gap-2.5 flex-wrap",children:[e.jsxs(P,{variant:"outline",onClick:()=>setIsSosOpen(!0),className:"rounded-xl border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-black text-xs gap-1.5 shadow-sm animate-pulse",children:[e.jsx("span",{children:"🚨"})," NEED HELP (SOS)"]}),e.jsxs("div",{className:"flex items-center bg-muted/60 p-1 rounded-xl border border-border/60 text-xs font-bold",children:[e.jsx("button",{type:"button",onClick:()=>setCurrentView("contacts"),className:"px-3 py-1.5 rounded-lg transition-all "+(currentView==="contacts"?"bg-background text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:"📇 All Contacts"}),e.jsxs("button",{type:"button",onClick:()=>setCurrentView("regional_breakdown"),className:"px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 "+(currentView==="regional_breakdown"?"bg-background text-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:["🗺️ Regional Network Hub",e.jsx("span",{className:"px-1.5 py-0.2 rounded-full text-[10px] font-black bg-primary/20 text-primary",children:"3 Hubs"})]})]}),e.jsxs(P,{variant:"outline",onClick:()=>O(!0),className:"rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm",children:[e.jsx(De,{className:"w-4 h-4"})," Scan Visiting Card"]}),e.jsxs(P,{variant:"outline",onClick:()=>m(!0),className:"rounded-xl text-xs font-bold gap-1.5",children:[e.jsx(Be,{className:"w-4 h-4"})," Export Contacts"]}),e.jsxs(P,{onClick:re,className:"rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground shrink-0 order-first sm:order-last",children:[e.jsx(ca,{className:"w-4 h-4"})," Add New Contact"]})]})]}),currentView==="regional_breakdown"?h.createElement(RegionalNetworkHubView,{contacts:r,onRefreshContacts:$,onOpenSos:()=>setIsSosOpen(!0)}):h.createElement(h.Fragment,null,e.jsxs("div",{className:"bg-card/70 border border-border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-3",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(da,{className:"w-4 h-4 text-primary"}),e.jsx("h3",{className:"text-xs font-bold uppercase tracking-wider text-muted-foreground",children:"Directory Categories"})]}),e.jsxs("span",{className:"text-xs text-muted-foreground",children:["Showing ",R.length," of ",r.length]})]}),e.jsx("div",{className:"flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin",children:be.map(l=>e.jsx(Ea,{active:c===l.id,onClick:()=>{y(l.id),N("All")},icon:l.icon,label:l.label,count:H[l.id]},l.id))})]}),e.jsxs(fa,{className:"border-border shadow-sm overflow-hidden",children:[e.jsx(ya,{className:"bg-muted/30 border-b border-border p-4",children:e.jsxs("div",{className:"flex flex-col sm:flex-row gap-3 items-center justify-between",children:[e.jsxs("div",{className:"relative w-full sm:w-80",children:[e.jsx(ma,{className:"absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"}),e.jsx(k,{placeholder:"Search by name, phone, city, GSTIN...",value:u,onChange:l=>C(l.target.value),className:"pl-9 bg-background rounded-xl text-xs h-9"})]}),T.length>0&&e.jsxs("div",{className:"flex items-center gap-2 text-xs",children:[e.jsxs("span",{className:"font-bold text-primary",children:[T.length," Selected"]}),e.jsxs(P,{size:"sm",variant:"outline",onClick:()=>v(!0),className:"h-8 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 font-bold gap-1",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share Selected on WhatsApp"]})]})]})}),e.jsxs(ja,{className:"p-0",children:[e.jsx("div",{className:"hidden md:block overflow-x-auto",children:e.jsxs(va,{children:[e.jsx(Ca,{className:"bg-muted/10",children:e.jsxs(ce,{children:[e.jsx(X,{className:"w-[40px] text-center",children:e.jsx("button",{onClick:Ge,className:"flex items-center justify-center",children:T.length>0&&T.length===R.length?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsx(X,{className:"min-w-[200px]",children:"Contact / Company"}),e.jsx(X,{className:"min-w-[150px]",children:"Category"}),e.jsx(X,{className:"min-w-[150px]",children:"Phone & Contact"}),e.jsx(X,{className:"min-w-[200px]",children:"Address & Location"}),e.jsx(X,{className:"min-w-[120px]",children:"GSTIN"}),e.jsx(X,{className:"text-right w-[140px]",children:"Actions"})]})}),e.jsx(Na,{children:t?e.jsx(ce,{children:e.jsx(q,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"Loading contacts directory..."})}):R.length===0?e.jsx(ce,{children:e.jsxs(q,{colSpan:7,className:"text-center py-16 text-muted-foreground",children:[e.jsx("p",{className:"font-semibold",children:"No contacts found in this category."}),e.jsx("p",{className:"text-xs mt-1",children:'Click "Add New Contact" or "Scan Visiting Card" to create one.'})]})}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs(ce,{className:`hover:bg-muted/40 transition-colors ${A?"bg-primary/5":""}`,children:[e.jsx(q,{className:"text-center",children:e.jsx("button",{onClick:()=>D(l.id),children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})})}),e.jsxs(q,{children:[e.jsx("div",{className:"font-bold text-foreground",children:l.company_name}),l.truck_brand&&e.jsxs("div",{className:"text-[11px] text-amber-400 font-semibold mt-0.5",children:["🔧 Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[220px] mt-0.5",children:l.notes})]}),e.jsx(q,{children:Da(l.contact_type)}),e.jsxs(q,{children:[e.jsx("div",{className:"flex flex-col gap-1",children:(l.phone_number?l.phone_number.split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean):[]).length>0?(l.phone_number.split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean).map((ph,idx)=>e.jsxs("div",{key:idx,className:"flex items-center gap-1.5",children:[e.jsxs("a",{href:`tel:${ph.replace(/\D/g,"")}`,className:"font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1",title:`Call ${ph}`,children:[e.jsx(ae,{className:"w-3 h-3 text-primary shrink-0"})," ",ph]}),e.jsx("a",{href:`https://wa.me/${ph.replace(/\D/g,"").startsWith("91")?ph.replace(/\D/g,""):"91"+ph.replace(/\D/g,"")}`,target:"_blank",rel:"noopener noreferrer",className:"text-[9px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded",title:"WhatsApp",children:"WA"})]}))):e.jsx("span",{className:"text-muted-foreground text-[11px]",children:"No phone"})}),l.email&&e.jsx("div",{className:"text-[11px] text-muted-foreground truncate max-w-[150px] mt-0.5",children:l.email})]}),e.jsxs(q,{children:[e.jsx("div",{className:"text-xs text-foreground truncate max-w-[250px]",children:l.physical_address||"-"}),Q&&e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 mt-0.5",children:[e.jsx(se,{className:"w-3 h-3"})," View on Google Maps"]})]}),e.jsx(q,{className:"font-mono text-xs text-muted-foreground",children:l.gstin||"URD"}),e.jsx(q,{className:"text-right",children:e.jsxs("div",{className:"flex items-center justify-end gap-1.5",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",title:"1-Click Send Contact Card via WhatsApp API",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Send API"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})})]},l.id)})})]})}),e.jsx("div",{className:"block md:hidden divide-y divide-border/40",children:t?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"Loading contacts..."}):R.length===0?e.jsx("div",{className:"text-center py-8 text-sm text-muted-foreground",children:"No contacts found."}):R.map(l=>{const A=T.includes(l.id),Q=te(l);return e.jsxs("div",{key:l.id,className:"p-3 space-y-2.5 transition-colors "+(A?"bg-primary/5 border-l-2 border-primary":"hover:bg-muted/5"),children:[e.jsxs("div",{className:"flex items-start justify-between gap-2",children:[e.jsxs("div",{className:"flex items-center gap-2 min-w-0 flex-1",children:[e.jsx("button",{onClick:()=>D(l.id),className:"p-1 rounded-md shrink-0",children:A?e.jsx(Ae,{className:"w-4 h-4 text-primary"}):e.jsx(Oe,{className:"w-4 h-4 text-muted-foreground"})}),e.jsxs("div",{className:"min-w-0 flex-1",children:[e.jsx("h3",{className:"font-bold text-sm text-foreground truncate",children:l.company_name}),l.truck_brand&&e.jsxs("span",{className:"text-[10px] text-amber-400 font-semibold block truncate",children:["Brand: ",l.truck_brand]}),l.notes&&!l.notes.startsWith("http")&&e.jsx("p",{className:"text-[10px] text-muted-foreground truncate",children:l.notes})]})]}),e.jsx("div",{className:"shrink-0",children:Da(l.contact_type)})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/20",children:[l.phone_number?e.jsx("div",{className:"flex flex-col gap-1",children:l.phone_number.split(/[,;\/\n]+/).map(p=>p.trim()).filter(Boolean).map((ph,idx)=>e.jsxs("div",{key:idx,className:"flex items-center gap-1.5",children:[e.jsxs("a",{href:`tel:${ph.replace(/\D/g,"")}`,className:"font-bold text-primary flex items-center gap-1 hover:underline text-xs",children:[e.jsx(ae,{className:"w-3.5 h-3.5"})," ",ph]}),e.jsx("a",{href:`https://wa.me/${ph.replace(/\D/g,"").startsWith("91")?ph.replace(/\D/g,""):"91"+ph.replace(/\D/g,"")}`,target:"_blank",rel:"noopener noreferrer",className:"text-[9px] font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 px-1 py-0.5 rounded",children:"WA"})]}))}):e.jsx("span",{className:"text-muted-foreground text-[11px]",children:"No phone"}),l.physical_address?(Q?e.jsxs("a",{href:Q,target:"_blank",rel:"noopener noreferrer",className:"text-[11px] font-bold text-emerald-400 flex items-center gap-1 hover:underline truncate max-w-[140px]",children:[e.jsx(se,{className:"w-3 h-3 shrink-0"})," Map Location"]}):e.jsx("span",{className:"text-[10px] text-muted-foreground truncate max-w-[130px]",children:l.physical_address})):null]}),e.jsxs("div",{className:"flex items-center justify-between gap-1.5 pt-1 border-t border-border/10",children:[e.jsxs(P,{size:"sm",onClick:()=>F(l),className:"h-8 flex-1 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm flex items-center justify-center",children:[e.jsx(ye,{className:"w-3.5 h-3.5"})," Share / WhatsApp"]}),l.phone_number&&e.jsxs("a",{href:"tel:"+(l.phone_number.split(/[,;\/\n]+/)[0]?.replace(/\D/g,"")||""),className:"h-8 px-2.5 text-xs font-bold rounded-lg bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 flex items-center gap-1",children:[e.jsx(ae,{className:"w-3 h-3"})," Call"]}),e.jsx(P,{size:"sm",variant:"outline",onClick:()=>z(l),className:"h-8 px-2 text-xs font-bold rounded-lg",children:"View"}),e.jsx(Ta,{contact:l,onEdit:()=>ie(l),onDelete:()=>Se(l),onViewDetails:()=>z(l),onSendApi:()=>F(l)})]})]})})})]})]})),e.jsx(ka,{isOpen:x,onClose:()=>s(!1),contact:_,onSuccess:()=>{s(!1),$()}}),e.jsx(Sa,{isOpen:d,onClose:()=>I(!1),contact:_,onEdit:l=>{I(!1),ie(l)}}),e.jsx(Aa,{isOpen:i,onClose:()=>m(!1),contacts:r}),e.jsx(Oa,{isOpen:M,onClose:()=>O(!1),onSuccess:()=>{O(!1),$()}}),e.jsx(Fa,{isOpen:w,onClose:()=>B(!1),contact:o}),e.jsx(wa,{isOpen:L,onClose:()=>v(!1),contacts:r.filter(l=>T.includes(l.id))}),e.jsxs("button",{type:"button",onClick:re,className:"fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform",children:[e.jsx(ca,{className:"w-4 h-4"})," Add Contact"]}),h.createElement(EmergencySosModal,{isOpen:isSosOpen,onClose:()=>setIsSosOpen(!1),regions:[{id:"reg_hyd",name:"HYDERABAD"},{id:"reg_kurnool",name:"KURNOOL"},{id:"reg_atp",name:"ANANTAPUR"}]})]})}function RegionalNetworkHubView({ contacts, onRefreshContacts, onOpenSos }) {
+_Sent via Jai Bhavani Cargo Dispatch Desk_`},O=async()=>{d(!0);const v=M();let w=C.replace(/\D/g,"");w.length===10&&(w=`91${w}`);try{const B={contact:t,recipientPhone:w,recipientName:N||"Staff Member",customNote:y,channel:"whatsapp"};let o=!1,a="";try{const _=await window.fetch("/hcgi/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}if(!o)try{const _=await window.fetch("/api/driver/send-contact-api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(B)}),f=await _.json().catch(()=>({}));_.ok&&f.success&&(o=!0,a=f.directWhatsappUrl)}catch{}a||(a=w?`https://api.whatsapp.com/send?phone=${w}&text=${encodeURIComponent(v)}`:`https://api.whatsapp.com/send?text=${encodeURIComponent(v)}`),window.open(a,"_blank"),S.success(`Contact card for "${t.company_name}" sent via WhatsApp API!`),p()}catch(B){console.error(B),S.error("Failed to send contact via API")}finally{d(!1)}},L=()=>{navigator.clipboard.writeText(M()),S.success("Contact card copied to clipboard!")};return e.jsx(le,{open:r,onOpenChange:p,children:e.jsxs(oe,{className:"sm:max-w-[500px] bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl",children:[e.jsxs(he,{className:"pb-3 border-b border-slate-800",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs(pe,{className:"text-lg font-bold text-white flex items-center gap-2",children:[e.jsx(Ee,{className:"w-5 h-5 text-emerald-400"}),"1-Click Send Contact via API"]}),e.jsx(ne,{variant:"outline",className:"text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold",children:"API Instant"})]}),e.jsx(ba,{className:"text-xs text-slate-400 mt-1",children:"Dispatch contact details, phone number & Google Maps location directly to drivers or fleet managers with 1 click."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"font-bold text-sm text-white",children:t.company_name}),e.jsx(ne,{variant:"outline",className:"text-[11px] font-semibold bg-primary/10 text-primary border-primary/30",children:t.contact_type})]}),e.jsxs("div",{className:"text-xs text-slate-300 flex items-center gap-2",children:[e.jsx(ae,{className:"w-3.5 h-3.5 text-emerald-400"}),e.jsx("span",{className:"font-mono font-bold text-emerald-400",children:t.phone_number||"N/A"})]}),t.physical_address&&e.jsxs("div",{className:"text-xs text-slate-400 truncate flex items-center gap-1.5",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-rose-400 shrink-0"}),e.jsx("span",{className:"truncate",children:t.physical_address})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Select Recipient Staff / Driver"}),e.jsxs(Y,{value:b,onValueChange:v=>{if(u(v),v!=="custom"){const w=I.find(B=>B.id===v);w&&(j(w.phone||""),c(w.name||""))}else j(""),c("")},children:[e.jsx(K,{className:"bg-slate-950 border-slate-800 text-xs text-slate-200",children:e.jsx(J,{placeholder:"Choose recipient"})}),e.jsxs(Z,{className:"bg-slate-900 border-slate-800 text-slate-200",children:[e.jsx(n,{value:"custom",children:"✏️ Enter Custom Phone Number"}),I.map(v=>e.jsxs(n,{value:v.id,children:["👤 ",v.name," ",v.phone?`(${v.phone})`:""]},v.id))]})]})]}),b==="custom"&&e.jsxs("div",{className:"space-y-1.5 animate-in fade-in duration-200",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Recipient WhatsApp Phone Number *"}),e.jsx(k,{value:C,onChange:v=>j(v.target.value),placeholder:"e.g. 9848012345 (10-digit mobile number)",className:"bg-slate-950 border-slate-800 text-xs font-mono font-bold text-emerald-400"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx(g,{className:"text-xs font-bold text-slate-300",children:"Optional Dispatch Note (Added to message)"}),e.jsx(ke,{value:y,onChange:v=>x(v.target.value),placeholder:"e.g. Truck MH12-AB-1234 breakdown, reach this mechanic immediately...",className:"bg-slate-950 border-slate-800 text-xs min-h-[60px] text-slate-200"})]})]}),e.jsxs(ue,{className:"pt-2 border-t border-slate-800 flex items-center justify-between gap-2",children:[e.jsxs(P,{type:"button",variant:"outline",size:"sm",onClick:L,className:"border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 font-bold text-xs",children:[e.jsx(we,{className:"w-3.5 h-3.5 mr-1"})," Copy Card"]}),e.jsxs(P,{type:"button",onClick:O,disabled:s,className:"bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 rounded-xl shadow-lg shadow-emerald-900/30",children:[s?e.jsx(me,{className:"w-4 h-4 mr-1 animate-spin"}):e.jsx(ye,{className:"w-4 h-4 mr-1"}),"1-Click Send via API"]})]})]})})}
+
+
+
+function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onOpenScan, onOpenSos, onOpenApiSend, onOpenMultiShare }) {
+  const { e, h, pb, toast, Table, TableHeader, TableBody, TableHead, TableRow, TableCell, Input, Button, Badge } = imports;
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedBrand, setSelectedBrand] = useState("all");
+  const [selectedCity, setSelectedCity] = useState("all");
+  const [filterEmergencyOnly, setFilterEmergencyOnly] = useState(false);
+  const [filterPreferredOnly, setFilterPreferredOnly] = useState(false);
+  const [viewMode, setViewMode] = useState("table");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkAction, setBulkAction] = useState("");
+  const [bulkParam, setBulkParam] = useState("");
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const records = await pb.collection("contacts").getFullList({ sort: "-created", $autoCancel: false });
+      setContacts(records || []);
+    } catch (err) {
+      console.error("Failed to load contacts:", err);
+      toast.error("Failed to load contacts directory");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+  const groupCounts = useMemo(() => {
+    const counts = { all: contacts.length };
+    MAIN_GROUPS_CONFIG.forEach((g) => {
+      counts[g.title] = contacts.filter((c) => (c.main_group || "") === g.title).length;
+    });
+    return counts;
+  }, [contacts]);
+  const cityOptions = useMemo(() => {
+    const set = /* @__PURE__ */ new Set();
+    contacts.forEach((c) => {
+      if (c.city) set.add(c.city);
+    });
+    return ["all", ...Array.from(set)];
+  }, [contacts]);
+  const filteredContacts = useMemo(() => {
+    return contacts.filter((contact) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = (contact.company_name || "").toLowerCase().includes(q);
+        const matchesOrg = (contact.organisation_name || "").toLowerCase().includes(q);
+        const matchesPhone = (contact.phone_number || "").toLowerCase().includes(q);
+        const matchesAddr = (contact.physical_address || "").toLowerCase().includes(q);
+        const matchesNotes = (contact.notes || "").toLowerCase().includes(q);
+        const matchesGstin = (contact.gstin || "").toLowerCase().includes(q);
+        const matchesCategory = (contact.primary_category || contact.contact_type || "").toLowerCase().includes(q);
+        const matchesBrands = (contact.truck_brands || contact.truck_brand || "").toLowerCase().includes(q);
+        if (!matchesName && !matchesOrg && !matchesPhone && !matchesAddr && !matchesNotes && !matchesGstin && !matchesCategory && !matchesBrands) {
+          return false;
+        }
+      }
+      if (selectedGroup !== "all") {
+        if ((contact.main_group || "") !== selectedGroup) return false;
+      }
+      if (selectedCategory !== "all") {
+        const primary = contact.primary_category || contact.contact_type || "";
+        const secondaries = safeParseArray(contact.secondary_categories);
+        if (primary !== selectedCategory && !secondaries.includes(selectedCategory)) {
+          return false;
+        }
+      }
+      if (selectedBrand !== "all") {
+        const brands = safeParseArray(contact.truck_brands);
+        const legacyBrand = contact.truck_brand || "";
+        const hasBrand = brands.includes(selectedBrand) || brands.includes("Universal / All Brands") || legacyBrand.includes(selectedBrand) || legacyBrand.toLowerCase().includes("common");
+        if (!hasBrand) return false;
+      }
+      if (selectedCity !== "all") {
+        if ((contact.city || "") !== selectedCity) return false;
+      }
+      if (filterEmergencyOnly && !contact.emergency_available) return false;
+      if (filterPreferredOnly && !contact.is_preferred) return false;
+      return true;
+    });
+  }, [contacts, searchQuery, selectedGroup, selectedCategory, selectedBrand, selectedCity, filterEmergencyOnly, filterPreferredOnly]);
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredContacts.length && filteredContacts.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredContacts.map((c) => c.id));
+    }
+  };
+  const handleExecuteBulk = async () => {
+    if (selectedIds.length === 0) {
+      toast.error("Select at least one contact for bulk action");
+      return;
+    }
+    if (!bulkAction) {
+      toast.error("Choose a bulk action first");
+      return;
+    }
+    try {
+      if (bulkAction === "assign_brand" && bulkParam) {
+        for (const id of selectedIds) {
+          const c = contacts.find((x) => x.id === id);
+          if (c) {
+            const currentBrands = safeParseArray(c.truck_brands);
+            const updated = Array.from(/* @__PURE__ */ new Set([...currentBrands, bulkParam]));
+            await pb.collection("contacts").update(id, {
+              truck_brands: JSON.stringify(updated),
+              truck_brand: updated.join(", ")
+            }, { $autoCancel: false });
+          }
+        }
+        toast.success(`Brand "${bulkParam}" assigned to ${selectedIds.length} contacts!`);
+      } else if (bulkAction === "set_preferred") {
+        for (const id of selectedIds) {
+          await pb.collection("contacts").update(id, { is_preferred: 1 }, { $autoCancel: false });
+        }
+        toast.success(`Marked ${selectedIds.length} contacts as Preferred Vendor!`);
+      } else if (bulkAction === "set_emergency") {
+        for (const id of selectedIds) {
+          await pb.collection("contacts").update(id, { emergency_available: 1 }, { $autoCancel: false });
+        }
+        toast.success(`Marked ${selectedIds.length} contacts for 24/7 Emergency support!`);
+      }
+      setSelectedIds([]);
+      setBulkAction("");
+      setBulkParam("");
+      fetchContacts();
+    } catch (err) {
+      console.error("Bulk update error:", err);
+      toast.error("Bulk action failed");
+    }
+  };
+  const handleDeleteContact = async (contact) => {
+    if (window.confirm(`Delete contact "${contact.company_name}"? This action cannot be undone.`)) {
+      try {
+        await pb.collection("contacts").delete(contact.id, { $autoCancel: false });
+        toast.success("Contact deleted successfully");
+        fetchContacts();
+      } catch {
+        toast.error("Failed to delete contact");
+      }
+    }
+  };
+  return /* @__PURE__ */ e.jsx("div", { className: "space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2" }, MAIN_GROUPS_CONFIG.map((g) => {
+    const isActive = selectedGroup === g.title;
+    const count = groupCounts[g.title] || 0;
+    return /* @__PURE__ */ e.jsx(
+      "button",
+      {
+        key: g.id,
+        type: "button",
+        onClick: () => {
+          setSelectedGroup(isActive ? "all" : g.title);
+          setSelectedCategory("all");
+        },
+        className: `p-2.5 rounded-xl border text-left transition-all ${isActive ? "bg-primary/15 border-primary shadow-sm scale-[1.02]" : "bg-card/70 border-border/60 hover:bg-muted/40"}`
+      },
+      /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase text-muted-foreground" }, g.code), /* @__PURE__ */ e.jsx("span", { className: `text-xs font-black px-1.5 py-0.2 rounded-full ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}` }, count)),
+      /* @__PURE__ */ e.jsx("p", { className: "text-xs font-bold text-foreground truncate leading-tight" }, g.title.replace(/^[0-9.]+\s*/, ""))
+    );
+  })), /* @__PURE__ */ e.jsx("div", { className: "bg-card/80 border border-border p-3.5 rounded-2xl shadow-sm space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between" }, /* @__PURE__ */ e.jsx("div", { className: "relative flex-1 max-w-lg" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-muted-foreground text-xs" }, "\u{1F50D}"), /* @__PURE__ */ e.jsx(
+    Input,
+    {
+      value: searchQuery,
+      onChange: (e2) => setSearchQuery(e2.target.value),
+      placeholder: "Search by name, phone, city, brand, GSTIN, notes...",
+      className: "pl-8 bg-background text-xs h-9 rounded-xl font-medium"
+    }
+  ), searchQuery && /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSearchQuery(""),
+      className: "absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground"
+    },
+    "\u2715"
+  )), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap text-xs" }, /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: selectedBrand,
+      onChange: (e2) => setSelectedBrand(e2.target.value),
+      className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "all" }, "\u{1F69B} All Truck Brands"),
+    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ e.jsx("option", { key: b, value: b }, b))
+  ), /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: selectedCity,
+      onChange: (e2) => setSelectedCity(e2.target.value),
+      className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "all" }, "\u{1F4CD} All Cities"),
+    cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ e.jsx("option", { key: c, value: c }, c))
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setFilterEmergencyOnly(!filterEmergencyOnly),
+      className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterEmergencyOnly ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F6A8}"),
+    " 24/7 Night"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setFilterPreferredOnly(!filterPreferredOnly),
+      className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterPreferredOnly ? "bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u2B50"),
+    " Preferred"
+  ), /* @__PURE__ */ e.jsx("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border" }, /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setViewMode("table"),
+      className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+      title: "Table View"
+    },
+    "\u{1F4CB} Table"
+  ), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setViewMode("grid"),
+      className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+      title: "Grid Card View"
+    },
+    "\u{1F5C2}\uFE0F Cards"
+  )))), selectedIds.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "font-extrabold text-primary" }, selectedIds.length, " Contact", selectedIds.length > 1 ? "s" : "", " Selected"), /* @__PURE__ */ e.jsx(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSelectedIds([]),
+      className: "text-[11px] underline text-muted-foreground hover:text-foreground ml-1"
+    },
+    "Clear"
+  )), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: bulkAction,
+      onChange: (e2) => setBulkAction(e2.target.value),
+      className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "" }, "Choose Bulk Action..."),
+    /* @__PURE__ */ e.jsx("option", { value: "assign_brand" }, "Assign Truck Brand"),
+    /* @__PURE__ */ e.jsx("option", { value: "set_preferred" }, "Mark as Preferred Vendor"),
+    /* @__PURE__ */ e.jsx("option", { value: "set_emergency" }, "Enable 24/7 Emergency")
+  ), bulkAction === "assign_brand" && /* @__PURE__ */ e.jsx(
+    "select",
+    {
+      value: bulkParam,
+      onChange: (e2) => setBulkParam(e2.target.value),
+      className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold text-amber-300"
+    },
+    /* @__PURE__ */ e.jsx("option", { value: "" }, "Select Brand..."),
+    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ e.jsx("option", { key: b, value: b }, b))
+  ), /* @__PURE__ */ e.jsx(
+    Button,
+    {
+      size: "sm",
+      onClick: handleExecuteBulk,
+      className: "h-8 text-xs font-bold bg-primary text-primary-foreground"
+    },
+    "Apply Bulk Update"
+  ), /* @__PURE__ */ e.jsx(
+    Button,
+    {
+      size: "sm",
+      variant: "outline",
+      onClick: () => onOpenMultiShare(contacts.filter((c) => selectedIds.includes(c.id))),
+      className: "h-8 text-xs font-bold border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1"
+    },
+    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    " WhatsApp Selected"
+  )))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx("span", null, "Showing ", /* @__PURE__ */ e.jsx("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ e.jsx("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ e.jsx("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto" }, /* @__PURE__ */ e.jsx(Table, null, /* @__PURE__ */ e.jsx(TableHeader, { className: "bg-muted/30" }, /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableHead, { className: "w-[40px] text-center" }, /* @__PURE__ */ e.jsx(
+    "input",
+    {
+      type: "checkbox",
+      checked: selectedIds.length === filteredContacts.length && filteredContacts.length > 0,
+      onChange: toggleSelectAll,
+      className: "rounded text-primary focus:ring-0 cursor-pointer"
+    }
+  )), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ e.jsx(TableHead, { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ e.jsx(TableBody, null, loading ? /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableCell, { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableCell, { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ e.jsx("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ e.jsx("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
+    const isSelected = selectedIds.includes(contact.id);
+    const brands = safeParseArray(contact.truck_brands);
+    const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+    const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
+    return /* @__PURE__ */ e.jsx(
+      TableRow,
+      {
+        key: contact.id,
+        className: `hover:bg-muted/40 transition-colors ${isSelected ? "bg-primary/5" : ""}`
+      },
+      /* @__PURE__ */ e.jsx(TableCell, { className: "text-center" }, /* @__PURE__ */ e.jsx(
+        "input",
+        {
+          type: "checkbox",
+          checked: isSelected,
+          onChange: () => toggleSelect(contact.id),
+          className: "rounded text-primary focus:ring-0 cursor-pointer"
+        }
+      )),
+      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ e.jsx("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
+      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
+      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx(
+        "a",
+        {
+          href: `tel:${ph.replace(/\D/g, "")}`,
+          className: "text-xs font-bold text-foreground hover:text-primary transition-colors font-mono"
+        },
+        ph
+      ), /* @__PURE__ */ e.jsx(
+        "a",
+        {
+          href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          className: "px-1 py-0.2 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+          title: "WhatsApp"
+        },
+        "WA"
+      ))))),
+      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
+      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ e.jsx(
+        "a",
+        {
+          href: mapsUrl,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          className: "text-[10px] font-bold text-emerald-400 hover:underline flex items-center gap-0.5"
+        },
+        /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"),
+        " Maps"
+      ))),
+      /* @__PURE__ */ e.jsx(TableCell, { className: "text-right" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ e.jsx(
+        Button,
+        {
+          size: "sm",
+          onClick: () => onOpenApiSend(contact),
+          className: "h-8 px-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",
+          title: "1-Click Dispatch Contact Card via WhatsApp API"
+        },
+        /* @__PURE__ */ e.jsx("span", null, "\u26A1"),
+        " API"
+      ), /* @__PURE__ */ e.jsx(
+        Button,
+        {
+          size: "sm",
+          variant: "outline",
+          onClick: () => onOpenDetail(contact),
+          className: "h-8 px-2 text-xs font-bold rounded-lg border-border"
+        },
+        "View"
+      ), /* @__PURE__ */ e.jsx(
+        Button,
+        {
+          size: "sm",
+          variant: "ghost",
+          onClick: () => onOpenEdit(contact),
+          className: "h-8 px-2 text-xs font-bold rounded-lg hover:bg-muted",
+          title: "Edit Contact"
+        },
+        "\u270F\uFE0F"
+      )))
+    );
+  }))))) : (
+    /* GRID CARD VIEW */
+    /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" }, filteredContacts.map((contact) => {
+      const isSelected = selectedIds.includes(contact.id);
+      const brands = safeParseArray(contact.truck_brands);
+      const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+      const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
+      return /* @__PURE__ */ e.jsx(
+        "div",
+        {
+          key: contact.id,
+          className: `p-4 rounded-2xl border transition-all space-y-3 bg-card/80 ${isSelected ? "border-primary ring-1 ring-primary shadow-md" : "border-border/80 hover:border-border"}`
+        },
+        /* @__PURE__ */ e.jsx("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-start gap-2.5 min-w-0" }, /* @__PURE__ */ e.jsx(
+          "input",
+          {
+            type: "checkbox",
+            checked: isSelected,
+            onChange: () => toggleSelect(contact.id),
+            className: "mt-1 rounded text-primary focus:ring-0 cursor-pointer"
+          }
+        ), /* @__PURE__ */ e.jsx("div", { className: "min-w-0" }, /* @__PURE__ */ e.jsx(
+          "h4",
+          {
+            className: "font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary",
+            onClick: () => onOpenDetail(contact)
+          },
+          contact.company_name
+        ), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground truncate font-medium" }, contact.organisation_name))), /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-muted text-foreground border border-border/80 shrink-0" }, contact.primary_category || contact.contact_type)),
+        /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md" }, "\u{1F6A8} 24/7 Night") : null, contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md" }, "\u2B50 Preferred") : null),
+        /* @__PURE__ */ e.jsx("div", { className: "p-2.5 rounded-xl bg-muted/30 border border-border/40 space-y-1.5 text-xs" }, phoneList.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("a", { href: `tel:${ph.replace(/\D/g, "")}`, className: "font-mono font-bold text-foreground hover:text-primary flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"), " ", ph), /* @__PURE__ */ e.jsx(
+          "a",
+          {
+            href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+          },
+          "WhatsApp"
+        )))),
+        /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40" }, /* @__PURE__ */ e.jsx("span", { className: "truncate max-w-[180px]" }, contact.physical_address || "Address on file"), mapsUrl && /* @__PURE__ */ e.jsx("a", { href: mapsUrl, target: "_blank", rel: "noopener noreferrer", className: "font-bold text-rose-400 hover:underline shrink-0" }, "\u{1F5FA}\uFE0F Map")),
+        /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 pt-1" }, /* @__PURE__ */ e.jsx(
+          Button,
+          {
+            size: "sm",
+            onClick: () => onOpenApiSend(contact),
+            className: "flex-1 h-8 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white gap-1"
+          },
+          /* @__PURE__ */ e.jsx("span", null, "\u26A1"),
+          " Send API"
+        ), /* @__PURE__ */ e.jsx(
+          Button,
+          {
+            size: "sm",
+            variant: "outline",
+            onClick: () => onOpenDetail(contact),
+            className: "h-8 px-3 text-xs font-bold rounded-xl border-border"
+          },
+          "View"
+        ), /* @__PURE__ */ e.jsx(
+          Button,
+          {
+            size: "sm",
+            variant: "ghost",
+            onClick: () => onOpenEdit(contact),
+            className: "h-8 px-2 text-xs font-bold rounded-xl hover:bg-muted"
+          },
+          "\u270F\uFE0F"
+        ))
+      );
+    }))
+  ));
+}
+
+
+
+function Va() {
+  const [currentView, setCurrentView] = h.useState("contacts");
+  const [isSosOpen, setIsSosOpen] = h.useState(false);
+  
+  // Modals state
+  const [isEditOpen, setIsEditOpen] = h.useState(false);
+  const [isDetailOpen, setIsDetailOpen] = h.useState(false);
+  const [isExportOpen, setIsExportOpen] = h.useState(false);
+  const [isScanOpen, setIsScanOpen] = h.useState(false);
+  const [isApiSendOpen, setIsApiSendOpen] = h.useState(false);
+  const [isMultiShareOpen, setIsMultiShareOpen] = h.useState(false);
+
+  const [activeContact, setActiveContact] = h.useState(null);
+  const [selectedContactsForShare, setSelectedContactsForShare] = h.useState([]);
+  const [contactsList, setContactsList] = h.useState([]);
+  const { currentUser } = We();
+
+  const refreshContacts = async () => {
+    try {
+      const records = await W.collection("contacts").getFullList({ sort: "-created", $autoCancel: false });
+      setContactsList(records || []);
+    } catch (err) {
+      console.error("Failed to refresh contacts:", err);
+    }
+  };
+
+  h.useEffect(() => {
+    refreshContacts();
+  }, []);
+
+  const handleOpenEdit = (contact) => {
+    setActiveContact(contact || null);
+    setIsEditOpen(true);
+  };
+
+  const handleOpenDetail = (contact) => {
+    setActiveContact(contact);
+    setIsDetailOpen(true);
+  };
+
+  const handleOpenApiSend = (contact) => {
+    setActiveContact(contact);
+    setIsApiSendOpen(true);
+  };
+
+  const handleOpenMultiShare = (contacts) => {
+    setSelectedContactsForShare(contacts);
+    setIsMultiShareOpen(true);
+  };
+
+  // Bundled UI and Library imports object to pass down to CRM sub-components
+  const importsBundle = {
+    e, h, W, pb: W, S, toast: S, We, currentUser,
+    Table: va, TableHeader: Ca, TableBody: Na, TableHead: ce, TableRow: X, TableCell: q,
+    Dialog: le, DialogContent: oe, DialogHeader: he, DialogTitle: pe, DialogFooter: ue,
+    Button: P, Input: k, Textarea: ke, Label: g, Badge: ne,
+    Select: Y, SelectTrigger: K, SelectValue: J, SelectContent: Z, SelectItem: n,
+    DropdownMenu: ha, DropdownMenuTrigger: pa, DropdownMenuContent: ua, DropdownMenuItem: G, DropdownMenuSeparator: Fe,
+    Loader2: me, Phone: ae, Mail: Ne, MapPin: se, Wrench: _e, Copy: we, Share2: fe,
+    Building: ee, Check: ea, Send: Ee, Users: de, Disc: je, Truck: Ce, Package: la, Landmark: Me
+  };
+
+  return e.jsxs("div", {
+    className: "max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0 font-sans",
+    children: [
+      e.jsx(oa, { children: e.jsx("title", { children: "Transport CRM & Fleet Directory | Jai Bhavani Cargo" }) }),
+      
+      /* Header & Main Switcher */
+      e.jsxs("div", {
+        className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4",
+        children: [
+          e.jsxs("div", {
+            children: [
+              e.jsxs("div", {
+                className: "flex items-center gap-2 mb-1",
+                children: [
+                  e.jsx(ia, { className: "w-8 h-8 text-primary" }),
+                  e.jsx("h1", { className: "text-xl sm:text-3xl font-extrabold tracking-tight text-foreground", children: "Transport CRM & Fleet Directory" }),
+                  e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30", children: "8 Groups" })
+                ]
+              }),
+              e.jsx("p", {
+                className: "text-muted-foreground text-xs sm:text-sm",
+                children: "Centralized multi-brand directory covering fleet repairs, workshops, brokers, FASTag, diesel partners & corporate shippers."
+              })
+            ]
+          }),
+
+          /* Action Bar */
+          e.jsxs("div", {
+            className: "flex items-center gap-2.5 flex-wrap",
+            children: [
+              /* SOS Help Button */
+              e.jsxs(P, {
+                variant: "outline",
+                onClick: () => setIsSosOpen(true),
+                className: "rounded-xl border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-black text-xs gap-1.5 shadow-sm animate-pulse",
+                children: [e.jsx("span", { children: "🚨" }), " NEED HELP (SOS)"]
+              }),
+
+              /* View Toggle: All Directory vs Regional Breakdown Hub */
+              e.jsxs("div", {
+                className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border/60 text-xs font-bold",
+                children: [
+                  e.jsx("button", {
+                    type: "button",
+                    onClick: () => setCurrentView("contacts"),
+                    className: "px-3 py-1.5 rounded-lg transition-all " + (currentView === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"),
+                    children: "📇 CRM Directory"
+                  }),
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: () => setCurrentView("regional_breakdown"),
+                    className: "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (currentView === "regional_breakdown" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"),
+                    children: [
+                      "🗺️ Regional Hub",
+                      e.jsx("span", { className: "px-1.5 py-0.2 rounded-full text-[10px] font-black bg-primary/20 text-primary", children: "3 Hubs" })
+                    ]
+                  })
+                ]
+              }),
+
+              /* Scan Visiting Card */
+              e.jsxs(P, {
+                variant: "outline",
+                onClick: () => setIsScanOpen(true),
+                className: "rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm",
+                children: [e.jsx(De, { className: "w-4 h-4" }), " Scan Visiting Card"]
+              }),
+
+              /* Export Contacts */
+              e.jsxs(P, {
+                variant: "outline",
+                onClick: () => setIsExportOpen(true),
+                className: "rounded-xl text-xs font-bold gap-1.5",
+                children: [e.jsx(Be, { className: "w-4 h-4" }), " Export CSV"]
+              }),
+
+              /* Add New Contact */
+              e.jsxs(P, {
+                onClick: () => handleOpenEdit(null),
+                className: "rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground shrink-0 order-first sm:order-last",
+                children: [e.jsx(ca, { className: "w-4 h-4" }), " Add CRM Contact"]
+              })
+            ]
+          })
+        ]
+      }),
+
+      /* Main View Body */
+      currentView === "regional_breakdown"
+        ? h.createElement(RegionalNetworkHubView, {
+            contacts: contactsList,
+            onRefreshContacts: refreshContacts,
+            onOpenSos: () => setIsSosOpen(true)
+          })
+        : h.createElement(CrmDirectoryMain, {
+            imports: importsBundle,
+            onOpenEdit: handleOpenEdit,
+            onOpenDetail: handleOpenDetail,
+            onOpenExport: () => setIsExportOpen(true),
+            onOpenScan: () => setIsScanOpen(true),
+            onOpenSos: () => setIsSosOpen(true),
+            onOpenApiSend: handleOpenApiSend,
+            onOpenMultiShare: handleOpenMultiShare
+          }),
+
+      /* Redesigned Modals */
+      h.createElement(ka, {
+        isOpen: isEditOpen,
+        onClose: () => setIsEditOpen(false),
+        contact: activeContact,
+        onSuccess: () => {
+          setIsEditOpen(false);
+          refreshContacts();
+        },
+        imports: importsBundle
+      }),
+
+      h.createElement(Sa, {
+        isOpen: isDetailOpen,
+        onClose: () => setIsDetailOpen(false),
+        contact: activeContact,
+        onEdit: (c) => {
+          setIsDetailOpen(false);
+          handleOpenEdit(c);
+        },
+        imports: importsBundle
+      }),
+
+      /* Preserved Support Modals */
+      e.jsx(Aa, { isOpen: isExportOpen, onClose: () => setIsExportOpen(false), contacts: contactsList }),
+      e.jsx(Oa, { isOpen: isScanOpen, onClose: () => setIsScanOpen(false), onSuccess: () => { setIsScanOpen(false); refreshContacts(); } }),
+      e.jsx(Fa, { isOpen: isApiSendOpen, onClose: () => setIsApiSendOpen(false), contact: activeContact }),
+      e.jsx(wa, { isOpen: isMultiShareOpen, onClose: () => setIsMultiShareOpen(false), contacts: selectedContactsForShare }),
+      
+      /* Emergency SOS */
+      h.createElement(EmergencySosModal, {
+        isOpen: isSosOpen,
+        onClose: () => setIsSosOpen(false),
+        regions: [{ id: "reg_hyd", name: "HYDERABAD" }, { id: "reg_kurnool", name: "KURNOOL" }, { id: "reg_atp", name: "ANANTAPUR" }]
+      }),
+
+      /* Floating Mobile Add Contact Button */
+      e.jsxs("button", {
+        type: "button",
+        onClick: () => handleOpenEdit(null),
+        className: "fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform",
+        children: [e.jsx(ca, { className: "w-4 h-4" }), " Add Contact"]
+      })
+    ]
+  });
+}
+
+
+function RegionalNetworkHubView({ contacts, onRefreshContacts, onOpenSos }) {
   const [regions, setRegions] = h.useState([]);
   const [loading, setLoading] = h.useState(true);
   const [selectedRegionId, setSelectedRegionId] = h.useState("reg_hyd");
@@ -404,4 +2167,6 @@ function EmergencySosModal({ isOpen, onClose, regions }) {
   )))));
 }
 
-export{be as CATEGORY_FILTERS,Pa as MAIN_GROUPS,Va as default};
+
+
+export{MAIN_GROUPS_CONFIG as CATEGORY_FILTERS,MAIN_GROUPS_CONFIG as MAIN_GROUPS,Va as default};
