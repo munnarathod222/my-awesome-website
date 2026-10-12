@@ -16,6 +16,21 @@ const TRUCK_BRANDS_MASTER = [
 ];
 
 const { useState, useEffect, useMemo, useRef, useCallback } = h;
+
+function safeParseArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    if (typeof val === 'string' && val.includes(',')) {
+      return val.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [String(val).trim()].filter(Boolean);
+  }
+}
+
 const MAIN_GROUPS_CONFIG = [
   {
     id: "fleet_repairs",
