@@ -1164,7 +1164,11 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
   const groupCounts = useMemo(() => {
     const counts = { all: contacts.length };
     MAIN_GROUPS_CONFIG.forEach((g) => {
-      counts[g.title] = contacts.filter((c) => (c.main_group || "") === g.title).length;
+      const cleanTitle = g.title.replace(/^[0-9.]+\s*/, "").toLowerCase();
+      counts[g.title] = contacts.filter((c) => {
+        const mg = (c.main_group || "").toLowerCase();
+        return mg === g.title.toLowerCase() || mg === cleanTitle || mg.includes(cleanTitle) || cleanTitle.includes(mg);
+      }).length;
     });
     return counts;
   }, [contacts]);
@@ -1192,7 +1196,10 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         }
       }
       if (selectedGroup !== "all") {
-        if ((contact.main_group || "") !== selectedGroup) return false;
+        const cleanSel = selectedGroup.replace(/^[0-9.]+\s*/, "").toLowerCase();
+        const mg = (contact.main_group || "").toLowerCase();
+        const matchesGrp = mg === selectedGroup.toLowerCase() || mg === cleanSel || mg.includes(cleanSel) || cleanSel.includes(mg);
+        if (!matchesGrp) return false;
       }
       if (selectedCategory !== "all") {
         const primary = contact.primary_category || contact.contact_type || "";
@@ -1412,7 +1419,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
     },
     /* @__PURE__ */ h.createElement("span", null, "\u{1F4AC}"),
     " WhatsApp Selected"
-  )))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement("span", null, "Showing ", /* @__PURE__ */ h.createElement("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ h.createElement("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ h.createElement("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ h.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ h.createElement(Table, null, /* @__PURE__ */ h.createElement(TableHeader, { className: "bg-muted/30" }, /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableHead, { className: "w-[40px] text-center" }, /* @__PURE__ */ h.createElement(
+  )))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement("span", null, "Showing ", /* @__PURE__ */ h.createElement("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ h.createElement("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ h.createElement("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ h.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ h.createElement("table", { className: "w-full caption-bottom text-sm border-collapse" }, /* @__PURE__ */ h.createElement("thead", { className: "bg-muted/30 border-b border-border/80" }, /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("th", { className: "w-[40px] text-center" }, /* @__PURE__ */ h.createElement(
     "input",
     {
       type: "checkbox",
@@ -1420,18 +1427,18 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       onChange: toggleSelectAll,
       className: "rounded text-primary focus:ring-0 cursor-pointer"
     }
-  )), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ h.createElement(TableHead, { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ h.createElement(TableBody, null, loading ? /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableCell, { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableCell, { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ h.createElement("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ h.createElement("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
+  )), /* @__PURE__ */ h.createElement("th", { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ h.createElement("th", { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ h.createElement("tbody", { className: "divide-y divide-border/40" }, loading ? /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("td", { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("td", { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ h.createElement("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ h.createElement("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
     const isSelected = selectedIds.includes(contact.id);
     const brands = safeParseArray(contact.truck_brands);
     const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
     const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
     return /* @__PURE__ */ h.createElement(
-      TableRow,
+      "tr",
       {
         key: contact.id,
         className: `hover:bg-muted/40 transition-colors ${isSelected ? "bg-primary/5" : ""}`
       },
-      /* @__PURE__ */ h.createElement(TableCell, { className: "text-center" }, /* @__PURE__ */ h.createElement(
+      /* @__PURE__ */ h.createElement("td", { className: "text-center" }, /* @__PURE__ */ h.createElement(
         "input",
         {
           type: "checkbox",
@@ -1440,9 +1447,9 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           className: "rounded text-primary focus:ring-0 cursor-pointer"
         }
       )),
-      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ h.createElement("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
-      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
-      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement(
+      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ h.createElement("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
+      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
+      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement(
         "a",
         {
           href: `tel:${ph.replace(/\D/g, "")}`,
@@ -1460,8 +1467,8 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         },
         "WA"
       ))))),
-      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
-      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ h.createElement(
+      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
+      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ h.createElement(
         "a",
         {
           href: mapsUrl,
@@ -1472,7 +1479,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"),
         " Maps"
       ))),
-      /* @__PURE__ */ h.createElement(TableCell, { className: "text-right" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ h.createElement(
+      /* @__PURE__ */ h.createElement("td", { className: "text-right" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ h.createElement(
         Button,
         {
           size: "sm",
