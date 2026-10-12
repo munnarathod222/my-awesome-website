@@ -1,6 +1,6 @@
 /// <reference path="../pb_data/types.d.ts" />
 
-function deductFastagForTrip(record, eventType) {
+globalThis.deductFastagForTrip = function(record, eventType) {
   try {
     const tripId = record.getString("trip_id") || record.id;
     const truckNo = record.getString("truck_number");
@@ -95,7 +95,7 @@ onRecordUpdate((e) => {
     const wasDeliveredOrCompleted = oldStatus === "Delivered" || oldStatus === "Completed";
 
     if (!wasDeliveredOrCompleted && isDeliveredOrCompleted) {
-      deductFastagForTrip(e.record, `status transition from '${oldStatus}' to '${newStatus}'`);
+      globalThis.deductFastagForTrip(e.record, `status transition from '${oldStatus}' to '${newStatus}'`);
     }
   } catch (err) {
     console.error("Error in sync-trip-fastag-deduction update hook:", err);
@@ -108,7 +108,7 @@ onRecordAfterCreateSuccess((e) => {
   try {
     const status = e.record.getString("trip_status");
     if (status === "Delivered" || status === "Completed") {
-      deductFastagForTrip(e.record, `created as '${status}'`);
+      globalThis.deductFastagForTrip(e.record, `created as '${status}'`);
     }
   } catch (err) {
     console.error("Error in sync-trip-fastag-deduction create hook:", err);
