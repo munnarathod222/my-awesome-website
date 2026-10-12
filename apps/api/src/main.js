@@ -733,14 +733,16 @@ const requireBackupAuth = (req, res, next) => {
   next();
 };
 
-let _lastHistoryBackupDate = '';
+let _lastHistoryBackupTime = 0;
 
 // Helper to save a daily timestamped snapshot of the database in Supabase (compressed ~296 KB)
 const uploadDailyHistoryBackup = async (compressedBuffer) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    if (_lastHistoryBackupDate === todayStr) {
-      return; // Already backed up today
+    const now = Date.now();
+    // Update daily snapshot at most once every 10 minutes
+    if (now - _lastHistoryBackupTime < 10 * 60 * 1000) {
+      return;
     }
 
     const remotePath = `history/data_${todayStr}.db.gz`;
@@ -759,7 +761,7 @@ const uploadDailyHistoryBackup = async (compressedBuffer) => {
 
     if (uploadRes.ok) {
       logger.info(`✅ Daily history backup saved: ${remotePath}`);
-      _lastHistoryBackupDate = todayStr;
+      _lastHistoryBackupTime = now;
       
       try {
         await pruneOldSupabaseBackups();
@@ -832,7 +834,9 @@ const downloadDatabaseFromSupabase = async (dbFilePath, options = {}) => {
         if (gzBuf.byteLength > 20000) {
           const { gunzipSync } = await import('node:zlib');
           buffer = gunzipSync(gzBuf);
-          logger.info(`✅ Downloaded and unpacked data.db.gz (${(gzBuf.byteLength / 1024).toFixed(1)} KB compressed -> ${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB SQLite)!`);
+          const { createHash } = await import('node:crypto');
+          global._lastUploadedDbHash = createHash('sha256').update(gzBuf).digest('hex');
+          logger.info(`✅ Downloaded and unpacked data.db.gz (${(gzBuf.byteLength / 1024).toFixed(1)} KB compressed -> ${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB SQLite)! Hash: ${global._lastUploadedDbHash.slice(0, 8)}`);
         }
       }
     } catch (gzErr) {
@@ -1135,18 +1139,41 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
       try { fs.unlinkSync(tempPath); } catch (_) {}
     }
 
-    // 🛡️ Ensure WAL transactions are fully captured via SQLite VACUUM INTO snapshot
+    // 🛡️ Ensure WAL transactions are fully captured via SQLite CLI or VACUUM INTO snapshot
     let snapshotSuccess = false;
+    const normDb = dbFilePath.replace(/\\/g, '/');
+    const normTemp = tempPath.replace(/\\/g, '/').replace(/'/g, "''");
+
+    // 1. Primary Method: Use sqlite3 CLI (pre-installed on Render Linux)
     try {
-      const { DatabaseSync } = await import('node:sqlite');
-      const _cDb = new DatabaseSync(dbFilePath);
-      try { _cDb.exec('PRAGMA wal_checkpoint(PASSIVE);'); } catch (_) {}
-      const normTemp = tempPath.replace(/\\/g, '/').replace(/'/g, "''");
-      _cDb.exec(`VACUUM INTO '${normTemp}'`);
-      _cDb.close();
-      snapshotSuccess = true;
-    } catch (_vErr) {
-      logger.warn(`VACUUM INTO snapshot notice: ${_vErr.message}, falling back to file copy`);
+      const { execSync } = await import('node:child_process');
+      // Force TRUNCATE checkpoint so WAL is completely drained into data.db
+      execSync(`sqlite3 "${normDb}" "PRAGMA wal_checkpoint(TRUNCATE);"`, { stdio: 'pipe' });
+      // Create clean atomic snapshot using VACUUM INTO
+      execSync(`sqlite3 "${normDb}" "VACUUM INTO '${normTemp}';"`, { stdio: 'pipe' });
+      if (fs.existsSync(tempPath) && fs.statSync(tempPath).size > 500000) {
+        snapshotSuccess = true;
+        logger.info(`✅ sqlite3 CLI successfully checkpointed WAL and created clean snapshot (${fs.statSync(tempPath).size} bytes)`);
+      }
+    } catch (_cliErr) {
+      logger.warn(`sqlite3 CLI snapshot notice: ${_cliErr.message}, trying node:sqlite fallback`);
+    }
+
+    // 2. Secondary Fallback: Use DatabaseSync if available
+    if (!snapshotSuccess) {
+      try {
+        const { DatabaseSync } = await import('node:sqlite');
+        const _cDb = new DatabaseSync(dbFilePath);
+        try { _cDb.exec('PRAGMA wal_checkpoint(TRUNCATE);'); } catch (_) {}
+        _cDb.exec(`VACUUM INTO '${normTemp}'`);
+        _cDb.close();
+        if (fs.existsSync(tempPath) && fs.statSync(tempPath).size > 500000) {
+          snapshotSuccess = true;
+          logger.info(`✅ node:sqlite successfully created clean snapshot (${fs.statSync(tempPath).size} bytes)`);
+        }
+      } catch (_vErr) {
+        logger.warn(`DatabaseSync notice: ${_vErr.message}, falling back to file copy`);
+      }
     }
 
     if (!snapshotSuccess || !fs.existsSync(tempPath)) {
@@ -1161,24 +1188,34 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
       return false;
     }
 
-    // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 2: Record count integrity check
+    // 🛡️ STRICT ANTI-WIPEOUT SAFETY GUARD 2: Record count integrity check via sqlite3 CLI
     let checkPassed = true;
-    let testDb;
     try {
-      const { DatabaseSync } = await import('node:sqlite');
-      testDb = new DatabaseSync(tempPath);
-      const tripCount = testDb.prepare("SELECT COUNT(*) as c FROM trip_logs").get()?.c || 0;
-      const expenseCount = testDb.prepare("SELECT COUNT(*) as c FROM expenses").get()?.c || 0;
-      
+      const { execSync } = await import('node:child_process');
+      const normTempForCheck = tempPath.replace(/\\/g, '/');
+      const countsRaw = execSync(`sqlite3 "${normTempForCheck}" "SELECT (SELECT COUNT(*) FROM trip_logs), (SELECT COUNT(*) FROM expenses);"`, { stdio: 'pipe', encoding: 'utf8' }).trim();
+      const [tripCount, expenseCount] = countsRaw.split('|').map(Number);
       if (tripCount < 10 || expenseCount < 10) {
         logger.error(`🛑 CRITICAL ANTI-WIPEOUT GUARD: Local DB has missing records (trips: ${tripCount}, expenses: ${expenseCount}). ABORTING UPLOAD TO PRESERVE CLOUD BACKUP!`);
         checkPassed = false;
+      } else {
+        logger.info(`🛡️ Integrity guard passed: ${tripCount} trips, ${expenseCount} expenses.`);
       }
-    } catch (dbCheckErr) {
-      logger.warn(`⚠️ Database integrity check skipped: node:sqlite not supported in this Node version (${dbCheckErr.message}). Proceeding with backup...`);
-      checkPassed = true; // Skip safety check since node:sqlite is not available
-    } finally {
-      if (testDb) { try { testDb.close(); } catch (e) {} }
+    } catch (cliCountErr) {
+      // Fallback to node:sqlite if available
+      try {
+        const { DatabaseSync } = await import('node:sqlite');
+        const testDb = new DatabaseSync(tempPath);
+        const tripCount = testDb.prepare("SELECT COUNT(*) as c FROM trip_logs").get()?.c || 0;
+        const expenseCount = testDb.prepare("SELECT COUNT(*) as c FROM expenses").get()?.c || 0;
+        testDb.close();
+        if (tripCount < 10 || expenseCount < 10) {
+          logger.error(`🛑 CRITICAL ANTI-WIPEOUT GUARD: Local DB has missing records (trips: ${tripCount}, expenses: ${expenseCount}). ABORTING UPLOAD TO PRESERVE CLOUD BACKUP!`);
+          checkPassed = false;
+        }
+      } catch (dbCheckErr) {
+        checkPassed = true;
+      }
     }
 
     if (!checkPassed) {
@@ -1192,6 +1229,15 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
     const { gzipSync } = await import('node:zlib');
     const compressedBuffer = gzipSync(fileBuffer, { level: 9 });
     logger.info(`📦 GZIP: compressed ${fileBuffer.byteLength} bytes to ${compressedBuffer.byteLength} bytes (${(compressedBuffer.byteLength / 1024).toFixed(1)} KB, 87% savings) for minimal outbound traffic.`);
+
+    // 🛡️ ZERO-WASTE BANDWIDTH GUARD: Compare SHA-256 hash of compressed payload
+    const { createHash } = await import('node:crypto');
+    const currentHash = createHash('sha256').update(compressedBuffer).digest('hex');
+    if (global._lastUploadedDbHash === currentHash) {
+      global.lastBackupError = null;
+      logger.info(`⚡ [Zero-Bandwidth] Database hash unchanged (${currentHash.slice(0, 8)}). Skipping redundant cloud upload.`);
+      return true;
+    }
 
     let uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/data.db.gz`, {
       method: 'POST',
@@ -1218,6 +1264,7 @@ const uploadDatabaseToSupabase = async (dbFilePath) => {
 
     if (uploadRes.ok) {
       global.lastBackupError = null;
+      global._lastUploadedDbHash = currentHash;
       logger.info(`✅ Ultra-low bandwidth backup (${(compressedBuffer.byteLength / 1024).toFixed(1)} KB) synced to Supabase Storage!`);
       try {
         await uploadDailyHistoryBackup(compressedBuffer);
@@ -1797,9 +1844,9 @@ let _isCloudSyncing = false;
 let _hasUnsyncedChanges = false;
 
 let _lastSyncTimestamp = 0;
-const MIN_SYNC_COOLDOWN_MS = 3 * 1000; // 3s cooldown between syncs for rapid persistence
+const MIN_SYNC_COOLDOWN_MS = 10 * 1000; // 10s cooldown to batch high-frequency operations & protect bandwidth
 
-const triggerDebouncedCloudSync = (delayMs = 2000) => {
+const triggerDebouncedCloudSync = (delayMs = 4000) => {
   if (global.isShuttingDown || global.isRestoringBackup) return;
   _hasUnsyncedChanges = true;
   if (_cloudSyncDebounceTimer) clearTimeout(_cloudSyncDebounceTimer);
@@ -1812,7 +1859,7 @@ const triggerDebouncedCloudSync = (delayMs = 2000) => {
     const elapsed = now - _lastSyncTimestamp;
     if (elapsed < MIN_SYNC_COOLDOWN_MS) {
       _cloudSyncDebounceTimer = setTimeout(() => {
-        triggerDebouncedCloudSync(1000);
+        triggerDebouncedCloudSync(2000);
       }, MIN_SYNC_COOLDOWN_MS - elapsed);
       return;
     }
@@ -4634,8 +4681,8 @@ app.use('/hcgi/platform', async (req, res) => {
         proxyRes.statusCode >= 200 && proxyRes.statusCode < 300) {
       const pathname = parsedUrl.pathname;
       if (!pathname.includes('/auth-with-') && !pathname.includes('/auth-refresh') && !pathname.includes('/api/health') && !pathname.includes('/api/audit')) {
-        logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling fast cloud backup in 1s...`);
-        triggerDebouncedCloudSync(1000);
+        logger.info(`📝 PocketBase mutation detected (${req.method} ${pathname}) -> scheduling debounced cloud backup in 4s...`);
+        triggerDebouncedCloudSync(4000);
 
         try {
           const pathSegments = pathname.split('/').filter(Boolean);

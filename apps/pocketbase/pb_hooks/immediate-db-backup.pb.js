@@ -10,15 +10,15 @@
 // saved to Supabase in real-time, preventing data loss on redeploys.
 // ──────────────────────────────────────────────────────────────────
 
-const BACKUP_URL = 'http://127.0.0.1:3001/api/backup/trigger?async=true';
 const BACKUP_TOKEN = 'diag_JBCargo_9921_SafeSecret';
-// Reference for verify_backup: uploadDatabaseToSupabase
 
 globalThis.triggerRealtimeDbBackup = function(collectionName, actionType) {
   try {
+    const port = $os.getenv('PORT') || '10000';
+    const url = 'http://127.0.0.1:' + port + '/api/backup/trigger?async=true';
     const res = $http.send({
       method: 'POST',
-      url: BACKUP_URL,
+      url: url,
       headers: {
         'x-backup-token': BACKUP_TOKEN
       }
@@ -27,7 +27,7 @@ globalThis.triggerRealtimeDbBackup = function(collectionName, actionType) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       console.log(`⚡ [DBBackup] Triggered real-time backup after ${actionType} on ${collectionName}`);
     } else {
-      console.log(`❌ [DBBackup] Failed to trigger backup: HTTP ${res.statusCode}`);
+      console.log(`❌ [DBBackup] Failed to trigger backup: HTTP ${res.statusCode} (URL: ${url})`);
     }
   } catch (err) {
     console.log(`❌ [DBBackup] Error calling backup API: ${err}`);
@@ -112,9 +112,8 @@ const TRACKED_COLLECTIONS = [
 TRACKED_COLLECTIONS.forEach(collectionName => {
   onRecordAfterCreateSuccess((e) => {
     try {
-      const colName = e.record.collection().name;
       if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-        globalThis.triggerRealtimeDbBackup(colName, 'create');
+        globalThis.triggerRealtimeDbBackup(collectionName, 'create');
       }
     } catch (_) {}
     e.next();
@@ -122,19 +121,17 @@ TRACKED_COLLECTIONS.forEach(collectionName => {
 
   onRecordAfterUpdateSuccess((e) => {
     try {
-      const colName = e.record.collection().name;
       if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-        globalThis.triggerRealtimeDbBackup(colName, 'update');
+        globalThis.triggerRealtimeDbBackup(collectionName, 'update');
       }
     } catch (_) {}
     e.next();
   }, collectionName);
 
-  onRecordAfterDeleteSuccess((e) => {
+  onRecordDelete((e) => {
     try {
-      const colName = e.record.collection().name;
       if (typeof globalThis.triggerRealtimeDbBackup === 'function') {
-        globalThis.triggerRealtimeDbBackup(colName, 'delete');
+        globalThis.triggerRealtimeDbBackup(collectionName, 'delete');
       }
     } catch (_) {}
     e.next();
