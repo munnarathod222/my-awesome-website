@@ -471,6 +471,7 @@ const CORPORATE_DESIGNATIONS = [
 
 
 const { useState, useEffect, useMemo, useRef, useCallback } = h;
+const { jsx, jsxs, Fragment } = e;
 
 function safeParseArray(val) {
   if (!val) return [];
