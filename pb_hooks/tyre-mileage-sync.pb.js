@@ -11,7 +11,14 @@ onRecordAfterCreateSuccess((e) => {
       if (truckNumber && kms > 0) {
         let truck;
         try {
-          truck = $app.findFirstRecordByFilter("trucks", "truck_number = {:truckNumber}", { truckNumber });
+          const cleanTargetNo = (truckNumber || '').replace(/\s+/g, '').toUpperCase();
+        try {
+          const allTrucks = $app.findAllRecords('trucks');
+          for (const t of allTrucks) {
+            const num = (t.getString('truck_number') || '').replace(/\s+/g, '').toUpperCase();
+            if (num === cleanTargetNo || t.id === truckNumber) { truck = t; break; }
+          }
+        } catch (_) {}
         } catch (err) {
           console.log("[tyre-mileage-sync] Truck not found for number:", truckNumber);
         }
@@ -43,7 +50,7 @@ onRecordAfterCreateSuccess((e) => {
 }, "trip_logs");
 
 // Trigger when a trip log status transitions to "Delivered"
-onRecordUpdate((e) => {
+onRecordAfterUpdateSuccess((e) => {
   try {
     const newTrip = e.record;
     const oldTrip = typeof e.record.original === 'function' ? e.record.original() : null;
@@ -56,7 +63,14 @@ onRecordUpdate((e) => {
       if (truckNumber && kms > 0) {
         let truck;
         try {
-          truck = $app.findFirstRecordByFilter("trucks", "truck_number = {:truckNumber}", { truckNumber });
+          const cleanTargetNo = (truckNumber || '').replace(/\s+/g, '').toUpperCase();
+        try {
+          const allTrucks = $app.findAllRecords('trucks');
+          for (const t of allTrucks) {
+            const num = (t.getString('truck_number') || '').replace(/\s+/g, '').toUpperCase();
+            if (num === cleanTargetNo || t.id === truckNumber) { truck = t; break; }
+          }
+        } catch (_) {}
         } catch (err) {
           console.log("[tyre-mileage-sync] Truck not found for number:", truckNumber);
         }
