@@ -486,6 +486,105 @@ function safeParseArray(val) {
   }
 }
 
+function extractGoogleMapsUrl(contact) {
+  if (!contact) return '';
+  const directFields = [
+    contact.google_maps_url,
+    contact.google_map_link,
+    contact.maps_url,
+    contact.location_url,
+    contact.map_link,
+    contact.map_url
+  ];
+  for (const f of directFields) {
+    if (f && typeof f === 'string' && f.trim() && (f.includes('maps') || f.includes('goo.gl'))) {
+      const m = f.match(/https?:\/\/[^\s"'<>\]]+/i);
+      if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+    }
+  }
+  if (contact.notes && typeof contact.notes === 'string') {
+    const m = contact.notes.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps|maps\.google\.com)\/[^\s"'<>\]]+/i);
+    if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+  }
+  if (contact.physical_address && typeof contact.physical_address === 'string' && (contact.physical_address.includes('goo.gl') || contact.physical_address.includes('maps'))) {
+    const m = contact.physical_address.match(/https?:\/\/[^\s"'<>\]]+/i);
+    if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+  }
+  for (const k of Object.keys(contact)) {
+    const val = contact[k];
+    if (typeof val === 'string' && (val.includes('maps.app.goo.gl') || val.includes('goo.gl/maps'))) {
+      const m = val.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)[^\s"'<>\]]+/i);
+      if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+    }
+  }
+  return '';
+}
+
+function cleanPhysicalAddress(contact) {
+  let addr = contact.physical_address || '';
+  if (addr.startsWith('http://') || addr.startsWith('https://')) {
+    addr = '';
+  }
+  if (!addr && contact.notes) {
+    const cleanNotes = contact.notes.replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi, '').trim();
+    if (cleanNotes && cleanNotes.length < 80 && !cleanNotes.includes('\n')) {
+      addr = cleanNotes;
+    }
+  }
+  return addr.replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi, '').trim() || '-';
+}
+
+function getContactMainGroup(contact) {
+  if (!contact) return "1. Fleet Repairs & Services";
+  const mgRaw = (contact.main_group || '').trim();
+  const mgLower = mgRaw.toLowerCase();
+
+  if (mgLower.startsWith('1') || mgLower.includes('fleet repairs') || mgLower.includes('workshop')) return "1. Fleet Repairs & Services";
+  if (mgLower.startsWith('2') || mgLower.includes('corporate') || mgLower.includes('warehouse')) return "2. Corporate & Warehouses";
+  if (mgLower.startsWith('3') || mgLower.includes('finance') || mgLower.includes('insurance')) return "3. Finance & Insurance";
+  if (mgLower.startsWith('4') || mgLower.includes('tyre') || mgLower.includes('fuel') || mgLower.includes('fastag')) return "4. Tyres, Fuel & FASTag";
+  if (mgLower.startsWith('5') || mgLower.includes('transport network') || mgLower.includes('broker') || mgLower.includes('transporter')) return "5. Transport Network";
+  if (mgLower.startsWith('6') || mgLower.includes('drivers') || mgLower.includes('driver') || mgLower.includes('staff')) return "6. Drivers & Staff";
+  if (mgLower.startsWith('7') || mgLower.includes('parts') || mgLower.includes('spare') || mgLower.includes('accessories')) return "7. Parts & Accessories";
+  if (mgLower.startsWith('8') || mgLower.includes('infrastructure') || mgLower.includes('support') || mgLower.includes('rto')) return "8. Infrastructure & Support";
+
+  const type = ((contact.primary_category || '') + ' ' + (contact.contact_type || '') + ' ' + (contact.company_name || '') + ' ' + (contact.notes || '')).toLowerCase();
+
+  if (type.includes('puncture') || type.includes('puncher') || type.includes('tyre') || type.includes('tire') || type.includes('fuel') || type.includes('diesel') || type.includes('petrol') || type.includes('fastag') || type.includes('hpcl') || type.includes('bpcl') || type.includes('iocl')) {
+    return "4. Tyres, Fuel & FASTag";
+  }
+
+  if (type.includes('mechanic') || type.includes('garage') || type.includes('electrician') || type.includes('bodywork') || type.includes('welding') || type.includes('hydraulics') || type.includes('spring') || type.includes('towing') || type.includes('crane') || type.includes('washing') || type.includes('service centre') || type.includes('repairs') || type.includes('key maker') || type.includes('plastics')) {
+    return "1. Fleet Repairs & Services";
+  }
+
+  if (type.includes('spare') || type.includes('parts') || type.includes('accessories') || type.includes('bearing') || type.includes('filter') || type.includes('showroom')) {
+    return "7. Parts & Accessories";
+  }
+
+  if (type.includes('rto') || type.includes('parking') || type.includes('gps') || type.includes('weighbridge') || type.includes('dhaba') || type.includes('hotel') || type.includes('rest stop')) {
+    return "8. Infrastructure & Support";
+  }
+
+  if (type.includes('warehouse') || type.includes('client') || type.includes('corporate') || type.includes('shipper') || type.includes('consignor') || type.includes('consignee') || type.includes('factory')) {
+    return "2. Corporate & Warehouses";
+  }
+
+  if (type.includes('transporter') || type.includes('broker') || type.includes('truck broker') || type.includes('truck owner') || type.includes('fleet owner') || type.includes('lorry supplier')) {
+    return "5. Transport Network";
+  }
+
+  if (type.includes('finance') || type.includes('bank') || type.includes('loan') || type.includes('insurance') || type.includes('claims') || type.includes('surveyor')) {
+    return "3. Finance & Insurance";
+  }
+
+  if (type.includes('driver') || type.includes('staff') || type.includes('employee') || type.includes('supervisor') || type.includes('manager') || type.includes('mechanic helper') || type.includes('pilot')) {
+    return "6. Drivers & Staff";
+  }
+
+  return "1. Fleet Repairs & Services";
+}
+
 
 
 
@@ -1034,6 +1133,9 @@ function te(r){if(!r)return"";const p=[r.company_name,r.physical_address,r.wareh
 
 
 
+
+
+
 function Sa({ isOpen, onClose, contact, onEdit, imports }) {
   const { e, h, Dialog, DialogContent, DialogHeader, DialogTitle, Button, Badge, Phone, Mail, MapPin, Wrench, Building, Copy, Share2, Check, ExternalLink, ShieldCheck, Star } = imports;
   if (!contact) return null;
@@ -1041,7 +1143,8 @@ function Sa({ isOpen, onClose, contact, onEdit, imports }) {
   const subcats = safeParseArray(contact.subcategories);
   const specs = safeParseArray(contact.service_specialisations);
   const phoneNumbers = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
-  const mapsUrl = contact.google_maps_url || contact.google_map_link || contact.location_url || "";
+  const mapsUrl = extractGoogleMapsUrl(contact);
+  const displayAddr = cleanPhysicalAddress(contact);
   const copyDetails = async () => {
     const summary = [
       `\u{1F4CD} *${contact.company_name}* (${contact.main_group || contact.contact_type || "Transport Directory"})`,
@@ -1077,36 +1180,160 @@ Shared via Jai Bhavani Cargo Fleet CRM`
     ].filter(Boolean).join("\n");
     window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, "_blank");
   };
-  return /* @__PURE__ */ h.createElement(Dialog, { open: isOpen, onOpenChange: onClose }, /* @__PURE__ */ h.createElement(DialogContent, { className: "w-[96vw] max-w-2xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl" }, /* @__PURE__ */ h.createElement(DialogHeader, { className: "border-b border-slate-800 pb-4" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap mb-2" }, /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-black bg-primary/20 text-primary border border-primary/30" }, contact.main_group || "Fleet Services"), /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700" }, contact.primary_category || contact.contact_type), contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1" }, "\u2B50 Preferred") : null, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1" }, "\u{1F6A8} 24/7 Night Service") : null), /* @__PURE__ */ h.createElement(DialogTitle, { className: "text-2xl font-black text-white tracking-tight" }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " Entity: ", contact.organisation_name)), contact.verification_status === "verified" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0" }, "\u2713 Verified"))), /* @__PURE__ */ h.createElement("div", { className: "space-y-5 py-3" }, /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "Direct Contact Lines"), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" }, phoneNumbers.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 gap-2" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ h.createElement("span", { className: "text-emerald-400 text-sm" }, "\u{1F4DE}"), /* @__PURE__ */ h.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ h.createElement("span", { className: "font-mono font-bold text-sm text-white block truncate" }, ph), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400 block" }, idx === 0 ? "Primary Number" : `Alternate #${idx + 1}`))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ h.createElement(
-    "a",
-    {
-      href: `tel:${ph.replace(/\D/g, "")}`,
-      className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-    },
-    "Call"
-  ), /* @__PURE__ */ h.createElement(
-    "a",
-    {
-      href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
-      target: "_blank",
-      rel: "noopener noreferrer",
-      className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
-    },
-    "WhatsApp"
-  )))))), brands.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-amber-400 block" }, "\u{1F69B} Supported Truck Brands & Workshop Type"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.workshop_type && /* @__PURE__ */ h.createElement("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 capitalize" }, contact.workshop_type, " Centre"))), (subcats.length > 0 || specs.length > 0) && /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, subcats.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "\u{1F4C2} Subcategories & Capabilities"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, subcats.map((s) => /* @__PURE__ */ h.createElement("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800" }, "\u2022 ", s)))), specs.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-emerald-400 block" }, "\u{1F527} Repair Specialisations"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, specs.map((s) => /* @__PURE__ */ h.createElement("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" }, "\u2713 ", s))))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-rose-400 block" }, "\u{1F4CD} Workshop Address & Regional Hub"), /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-200 leading-relaxed" }, contact.physical_address || "No physical address provided."), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-3 pt-1 text-xs text-slate-400" }, contact.city && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "City:"), " ", contact.city), contact.area && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "Area:"), " ", contact.area), contact.working_hours && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "Hours:"), " ", contact.working_hours)), mapsUrl && /* @__PURE__ */ h.createElement(
-    "a",
-    {
-      href: mapsUrl,
-      target: "_blank",
-      rel: "noopener noreferrer",
-      className: "inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"),
-    " Open Google Maps GPS Navigation"
-  )), (contact.gstin || contact.email || contact.designation) && /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs" }, contact.gstin && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "GSTIN"), /* @__PURE__ */ h.createElement("span", { className: "font-mono text-white font-semibold" }, contact.gstin)), contact.email && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "Email"), /* @__PURE__ */ h.createElement("a", { href: `mailto:${contact.email}`, className: "text-primary hover:underline truncate block" }, contact.email)), contact.designation && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "Designation"), /* @__PURE__ */ h.createElement("span", { className: "text-slate-200 font-medium" }, contact.designation))), contact.notes && /* @__PURE__ */ h.createElement("div", { className: "p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 block" }, "Internal Fleet Notes"), /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-300 italic whitespace-pre-wrap" }, '"', contact.notes, '"'))), /* @__PURE__ */ h.createElement("div", { className: "pt-4 border-t border-slate-800 flex items-center justify-between gap-2" }, /* @__PURE__ */ h.createElement(Button, { variant: "outline", onClick: copyDetails, className: "border-slate-700 bg-slate-800 text-slate-200 text-xs font-bold gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4CB}"), " Copy Dossier"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement(Button, { onClick: shareWhatsApp, className: "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4AC}"), " WhatsApp"), /* @__PURE__ */ h.createElement(Button, { onClick: () => {
-    onClose();
-    onEdit(contact);
-  }, className: "bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u270F\uFE0F"), " Edit Record")))));
+  return /* @__PURE__ */ jsx(Dialog, { open: isOpen, onOpenChange: onClose, children: /* @__PURE__ */ jsxs(DialogContent, { className: "w-[96vw] max-w-2xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl", children: [
+    /* @__PURE__ */ jsx(DialogHeader, { className: "border-b border-slate-800 pb-4", children: /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between gap-3", children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap mb-2", children: [
+          /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-black bg-primary/20 text-primary border border-primary/30", children: contact.main_group || "Fleet Services" }),
+          /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700", children: contact.primary_category || contact.contact_type }),
+          contact.is_preferred ? /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1", children: "\u2B50 Preferred" }) : null,
+          contact.emergency_available ? /* @__PURE__ */ jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1", children: "\u{1F6A8} 24/7 Night Service" }) : null
+        ] }),
+        /* @__PURE__ */ jsx(DialogTitle, { className: "text-2xl font-black text-white tracking-tight", children: contact.company_name }),
+        contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ jsxs("p", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold", children: [
+          /* @__PURE__ */ jsx("span", { children: "\u{1F3E2}" }),
+          " Entity: ",
+          contact.organisation_name
+        ] })
+      ] }),
+      contact.verification_status === "verified" && /* @__PURE__ */ jsx("span", { className: "px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0", children: "\u2713 Verified" })
+    ] }) }),
+    /* @__PURE__ */ jsxs("div", { className: "space-y-5 py-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block", children: "Direct Contact Lines" }),
+        /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5", children: phoneNumbers.map((ph, idx) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 gap-2", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [
+            /* @__PURE__ */ jsx("span", { className: "text-emerald-400 text-sm", children: "\u{1F4DE}" }),
+            /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+              /* @__PURE__ */ jsx("span", { className: "font-mono font-bold text-sm text-white block truncate", children: ph }),
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400 block", children: idx === 0 ? "Primary Number" : `Alternate #${idx + 1}` })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 shrink-0", children: [
+            /* @__PURE__ */ jsx(
+              "a",
+              {
+                href: `tel:${ph.replace(/\D/g, "")}`,
+                className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors",
+                children: "Call"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "a",
+              {
+                href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors",
+                children: "WhatsApp"
+              }
+            )
+          ] })
+        ] }, idx)) })
+      ] }),
+      brands.length > 0 && /* @__PURE__ */ jsxs("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-amber-400 block", children: "\u{1F69B} Supported Truck Brands & Workshop Type" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap gap-2 pt-1", children: [
+          brands.map((b) => /* @__PURE__ */ jsx("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30", children: b }, b)),
+          contact.workshop_type && /* @__PURE__ */ jsxs("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 capitalize", children: [
+            contact.workshop_type,
+            " Centre"
+          ] })
+        ] })
+      ] }),
+      (subcats.length > 0 || specs.length > 0) && /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+        subcats.length > 0 && /* @__PURE__ */ jsxs("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block", children: "\u{1F4C2} Subcategories & Capabilities" }),
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5 pt-1", children: subcats.map((s) => /* @__PURE__ */ jsxs("span", { className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800", children: [
+            "\u2022 ",
+            s
+          ] }, s)) })
+        ] }),
+        specs.length > 0 && /* @__PURE__ */ jsxs("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-emerald-400 block", children: "\u{1F527} Repair Specialisations" }),
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1.5 pt-1", children: specs.map((s) => /* @__PURE__ */ jsxs("span", { className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20", children: [
+            "\u2713 ",
+            s
+          ] }, s)) })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-rose-400 block", children: "\u{1F4CD} Workshop Address & Regional Hub" }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs text-slate-200 leading-relaxed font-medium", children: displayAddr }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 pt-1 text-xs text-slate-400", children: [
+          contact.city && /* @__PURE__ */ jsxs("span", { children: [
+            /* @__PURE__ */ jsx("strong", { children: "City:" }),
+            " ",
+            contact.city
+          ] }),
+          contact.area && /* @__PURE__ */ jsxs("span", { children: [
+            /* @__PURE__ */ jsx("strong", { children: "Area:" }),
+            " ",
+            contact.area
+          ] }),
+          contact.working_hours && /* @__PURE__ */ jsxs("span", { children: [
+            /* @__PURE__ */ jsx("strong", { children: "Hours:" }),
+            " ",
+            contact.working_hours
+          ] })
+        ] }),
+        mapsUrl && /* @__PURE__ */ jsxs(
+          "a",
+          {
+            href: mapsUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-all cursor-pointer",
+            children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F5FA}\uFE0F" }),
+              " Open Google Maps GPS Navigation"
+            ]
+          }
+        )
+      ] }),
+      (contact.gstin || contact.email || contact.designation) && /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs", children: [
+        contact.gstin && /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-bold block", children: "GSTIN" }),
+          /* @__PURE__ */ jsx("span", { className: "font-mono text-white font-semibold", children: contact.gstin })
+        ] }),
+        contact.email && /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-bold block", children: "Email" }),
+          /* @__PURE__ */ jsx("a", { href: `mailto:${contact.email}`, className: "text-primary hover:underline truncate block", children: contact.email })
+        ] }),
+        contact.designation && /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx("span", { className: "text-slate-400 font-bold block", children: "Designation" }),
+          /* @__PURE__ */ jsx("span", { className: "text-slate-200 font-medium", children: contact.designation })
+        ] })
+      ] }),
+      contact.notes && /* @__PURE__ */ jsxs("div", { className: "p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1", children: [
+        /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 block", children: "Internal Fleet Notes" }),
+        /* @__PURE__ */ jsxs("p", { className: "text-xs text-slate-300 italic whitespace-pre-wrap", children: [
+          '"',
+          contact.notes,
+          '"'
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "pt-4 border-t border-slate-800 flex items-center justify-between gap-2", children: [
+      /* @__PURE__ */ jsxs(Button, { variant: "outline", onClick: copyDetails, className: "border-slate-700 bg-slate-800 text-slate-200 text-xs font-bold gap-1.5", children: [
+        /* @__PURE__ */ jsx("span", { children: "\u{1F4CB}" }),
+        " Copy Dossier"
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxs(Button, { onClick: shareWhatsApp, className: "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md", children: [
+          /* @__PURE__ */ jsx("span", { children: "\u{1F4AC}" }),
+          " WhatsApp"
+        ] }),
+        /* @__PURE__ */ jsxs(Button, { onClick: () => {
+          onClose();
+          onEdit(contact);
+        }, className: "bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5", children: [
+          /* @__PURE__ */ jsx("span", { children: "\u270F\uFE0F" }),
+          " Edit Record"
+        ] })
+      ] })
+    ] })
+  ] }) });
 }
 
 
@@ -1131,12 +1358,16 @@ _Sent via Jai Bhavani Cargo Dispatch Desk_`},O=async()=>{d(!0);const v=M();let w
 
 
 
+
+
+
+
 function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onOpenScan, onOpenSos, onOpenApiSend, onOpenMultiShare }) {
-  const { e, h, pb, toast, Table, TableHeader, TableBody, TableHead, TableRow, TableCell, Input, Button, Badge } = imports;
+  const { e, h, pb, toast, Input, Button, Badge } = imports;
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [selectedCity, setSelectedCity] = useState("all");
@@ -1164,11 +1395,18 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
   const groupCounts = useMemo(() => {
     const counts = { all: contacts.length };
     MAIN_GROUPS_CONFIG.forEach((g) => {
-      const cleanTitle = g.title.replace(/^[0-9.]+\s*/, "").toLowerCase();
-      counts[g.title] = contacts.filter((c) => {
-        const mg = (c.main_group || "").toLowerCase();
-        return mg === g.title.toLowerCase() || mg === cleanTitle || mg.includes(cleanTitle) || cleanTitle.includes(mg);
-      }).length;
+      counts[g.title] = 0;
+    });
+    contacts.forEach((c) => {
+      const gTitle = getContactMainGroup(c);
+      if (counts[gTitle] !== void 0) {
+        counts[gTitle] = (counts[gTitle] || 0) + 1;
+      } else {
+        const match = MAIN_GROUPS_CONFIG.find((g) => g.title.startsWith(gTitle.substring(0, 2)));
+        if (match) {
+          counts[match.title] = (counts[match.title] || 0) + 1;
+        }
+      }
     });
     return counts;
   }, [contacts]);
@@ -1196,10 +1434,10 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         }
       }
       if (selectedGroup !== "all") {
-        const cleanSel = selectedGroup.replace(/^[0-9.]+\s*/, "").toLowerCase();
-        const mg = (contact.main_group || "").toLowerCase();
-        const matchesGrp = mg === selectedGroup.toLowerCase() || mg === cleanSel || mg.includes(cleanSel) || cleanSel.includes(mg);
-        if (!matchesGrp) return false;
+        const assignedGrp = getContactMainGroup(contact);
+        if (assignedGrp !== selectedGroup) {
+          return false;
+        }
       }
       if (selectedCategory !== "all") {
         const primary = contact.primary_category || contact.contact_type || "";
@@ -1225,46 +1463,39 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
   const toggleSelect = (id) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredContacts.length && filteredContacts.length > 0) {
+  const selectAllFiltered = () => {
+    if (selectedIds.length === filteredContacts.length) {
       setSelectedIds([]);
     } else {
       setSelectedIds(filteredContacts.map((c) => c.id));
     }
   };
   const handleExecuteBulk = async () => {
-    if (selectedIds.length === 0) {
-      toast.error("Select at least one contact for bulk action");
-      return;
-    }
-    if (!bulkAction) {
-      toast.error("Choose a bulk action first");
-      return;
-    }
+    if (!bulkAction || selectedIds.length === 0) return;
     try {
       if (bulkAction === "assign_brand" && bulkParam) {
         for (const id of selectedIds) {
           const c = contacts.find((x) => x.id === id);
-          if (c) {
-            const currentBrands = safeParseArray(c.truck_brands);
-            const updated = Array.from(/* @__PURE__ */ new Set([...currentBrands, bulkParam]));
+          const currentBrands = safeParseArray(c?.truck_brands);
+          if (!currentBrands.includes(bulkParam)) {
+            const updated = [...currentBrands, bulkParam];
             await pb.collection("contacts").update(id, {
               truck_brands: JSON.stringify(updated),
               truck_brand: updated.join(", ")
             }, { $autoCancel: false });
           }
         }
-        toast.success(`Brand "${bulkParam}" assigned to ${selectedIds.length} contacts!`);
+        toast.success(`Brand "${bulkParam}" assigned to ${selectedIds.length} contacts`);
       } else if (bulkAction === "set_preferred") {
         for (const id of selectedIds) {
           await pb.collection("contacts").update(id, { is_preferred: 1 }, { $autoCancel: false });
         }
-        toast.success(`Marked ${selectedIds.length} contacts as Preferred Vendor!`);
+        toast.success(`Marked ${selectedIds.length} contacts as Preferred`);
       } else if (bulkAction === "set_emergency") {
         for (const id of selectedIds) {
           await pb.collection("contacts").update(id, { emergency_available: 1 }, { $autoCancel: false });
         }
-        toast.success(`Marked ${selectedIds.length} contacts for 24/7 Emergency support!`);
+        toast.success(`Enabled 24/7 Emergency for ${selectedIds.length} contacts`);
       }
       setSelectedIds([]);
       setBulkAction("");
@@ -1272,7 +1503,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       fetchContacts();
     } catch (err) {
       console.error("Bulk update error:", err);
-      toast.error("Bulk action failed");
+      toast.error("Failed to complete bulk update");
     }
   };
   const handleDeleteContact = async (contact) => {
@@ -1286,302 +1517,486 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       }
     }
   };
-  return /* @__PURE__ */ h.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2" }, MAIN_GROUPS_CONFIG.map((g) => {
-    const isActive = selectedGroup === g.title;
-    const count = groupCounts[g.title] || 0;
-    return /* @__PURE__ */ h.createElement(
-      "button",
-      {
-        key: g.id,
-        type: "button",
-        onClick: () => {
-          setSelectedGroup(isActive ? "all" : g.title);
-          setSelectedCategory("all");
-        },
-        className: `p-2.5 rounded-xl border text-left transition-all ${isActive ? "bg-primary/15 border-primary shadow-sm scale-[1.02]" : "bg-card/70 border-border/60 hover:bg-muted/40"}`
-      },
-      /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black uppercase text-muted-foreground" }, g.code), /* @__PURE__ */ h.createElement("span", { className: `text-xs font-black px-1.5 py-0.2 rounded-full ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}` }, count)),
-      /* @__PURE__ */ h.createElement("p", { className: "text-xs font-bold text-foreground truncate leading-tight" }, g.title.replace(/^[0-9.]+\s*/, ""))
-    );
-  })), /* @__PURE__ */ h.createElement("div", { className: "bg-card/80 border border-border p-3.5 rounded-2xl shadow-sm space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between" }, /* @__PURE__ */ h.createElement("div", { className: "relative flex-1 max-w-lg" }, /* @__PURE__ */ h.createElement("span", { className: "absolute left-3 top-2.5 text-muted-foreground text-xs" }, "\u{1F50D}"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: searchQuery,
-      onChange: (e2) => setSearchQuery(e2.target.value),
-      placeholder: "Search by name, phone, city, brand, GSTIN, notes...",
-      className: "pl-8 bg-background text-xs h-9 rounded-xl font-medium"
-    }
-  ), searchQuery && /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setSearchQuery(""),
-      className: "absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground"
-    },
-    "\u2715"
-  )), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap text-xs" }, /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: selectedBrand,
-      onChange: (e2) => setSelectedBrand(e2.target.value),
-      className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "all" }, "\u{1F69B} All Truck Brands"),
-    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ h.createElement("option", { key: b, value: b }, b))
-  ), /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: selectedCity,
-      onChange: (e2) => setSelectedCity(e2.target.value),
-      className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "all" }, "\u{1F4CD} All Cities"),
-    cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ h.createElement("option", { key: c, value: c }, c))
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setFilterEmergencyOnly(!filterEmergencyOnly),
-      className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterEmergencyOnly ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F6A8}"),
-    " 24/7 Night"
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setFilterPreferredOnly(!filterPreferredOnly),
-      className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterPreferredOnly ? "bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u2B50"),
-    " Preferred"
-  ), /* @__PURE__ */ h.createElement("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border" }, /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setViewMode("table"),
-      className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
-      title: "Table View"
-    },
-    "\u{1F4CB} Table"
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setViewMode("grid"),
-      className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
-      title: "Grid Card View"
-    },
-    "\u{1F5C2}\uFE0F Cards"
-  )))), selectedIds.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "font-extrabold text-primary" }, selectedIds.length, " Contact", selectedIds.length > 1 ? "s" : "", " Selected"), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setSelectedIds([]),
-      className: "text-[11px] underline text-muted-foreground hover:text-foreground ml-1"
-    },
-    "Clear"
-  )), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: bulkAction,
-      onChange: (e2) => setBulkAction(e2.target.value),
-      className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "" }, "Choose Bulk Action..."),
-    /* @__PURE__ */ h.createElement("option", { value: "assign_brand" }, "Assign Truck Brand"),
-    /* @__PURE__ */ h.createElement("option", { value: "set_preferred" }, "Mark as Preferred Vendor"),
-    /* @__PURE__ */ h.createElement("option", { value: "set_emergency" }, "Enable 24/7 Emergency")
-  ), bulkAction === "assign_brand" && /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: bulkParam,
-      onChange: (e2) => setBulkParam(e2.target.value),
-      className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold text-amber-300"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "" }, "Select Brand..."),
-    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ h.createElement("option", { key: b, value: b }, b))
-  ), /* @__PURE__ */ h.createElement(
-    Button,
-    {
-      size: "sm",
-      onClick: handleExecuteBulk,
-      className: "h-8 text-xs font-bold bg-primary text-primary-foreground"
-    },
-    "Apply Bulk Update"
-  ), /* @__PURE__ */ h.createElement(
-    Button,
-    {
-      size: "sm",
-      variant: "outline",
-      onClick: () => onOpenMultiShare(contacts.filter((c) => selectedIds.includes(c.id))),
-      className: "h-8 text-xs font-bold border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1"
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F4AC}"),
-    " WhatsApp Selected"
-  )))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement("span", null, "Showing ", /* @__PURE__ */ h.createElement("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ h.createElement("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ h.createElement("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ h.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ h.createElement("table", { className: "w-full caption-bottom text-sm border-collapse" }, /* @__PURE__ */ h.createElement("thead", { className: "bg-muted/30 border-b border-border/80" }, /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("th", { className: "w-[40px] text-center" }, /* @__PURE__ */ h.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: selectedIds.length === filteredContacts.length && filteredContacts.length > 0,
-      onChange: toggleSelectAll,
-      className: "rounded text-primary focus:ring-0 cursor-pointer"
-    }
-  )), /* @__PURE__ */ h.createElement("th", { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ h.createElement("th", { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ h.createElement("th", { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ h.createElement("tbody", { className: "divide-y divide-border/40" }, loading ? /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("td", { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ h.createElement("tr", null, /* @__PURE__ */ h.createElement("td", { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ h.createElement("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ h.createElement("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
-    const isSelected = selectedIds.includes(contact.id);
-    const brands = safeParseArray(contact.truck_brands);
-    const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
-    const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
-    return /* @__PURE__ */ h.createElement(
-      "tr",
-      {
-        key: contact.id,
-        className: `hover:bg-muted/40 transition-colors ${isSelected ? "bg-primary/5" : ""}`
-      },
-      /* @__PURE__ */ h.createElement("td", { className: "text-center" }, /* @__PURE__ */ h.createElement(
-        "input",
+  return /* @__PURE__ */ jsxs("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2", children: MAIN_GROUPS_CONFIG.map((g) => {
+      const isActive = selectedGroup === g.title;
+      const count = groupCounts[g.title] || 0;
+      return /* @__PURE__ */ jsxs(
+        "button",
         {
-          type: "checkbox",
-          checked: isSelected,
-          onChange: () => toggleSelect(contact.id),
-          className: "rounded text-primary focus:ring-0 cursor-pointer"
-        }
-      )),
-      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ h.createElement("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
-      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
-      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement(
-        "a",
-        {
-          href: `tel:${ph.replace(/\D/g, "")}`,
-          className: "text-xs font-bold text-foreground hover:text-primary transition-colors font-mono"
+          type: "button",
+          onClick: () => {
+            setSelectedGroup(isActive ? "all" : g.title);
+            setSelectedCategory("all");
+          },
+          className: `p-2.5 rounded-xl border text-left transition-all ${isActive ? "bg-primary/15 border-primary shadow-sm scale-[1.02]" : "bg-card/70 border-border/60 hover:bg-muted/40"}`,
+          children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between mb-1", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black uppercase text-muted-foreground", children: g.code }),
+              /* @__PURE__ */ jsx("span", { className: `text-xs font-black px-1.5 py-0.2 rounded-full ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`, children: count })
+            ] }),
+            /* @__PURE__ */ jsx("p", { className: "text-xs font-bold text-foreground truncate leading-tight", children: g.title.replace(/^[0-9.]+\s*/, "") })
+          ]
         },
-        ph
-      ), /* @__PURE__ */ h.createElement(
-        "a",
-        {
-          href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
-          target: "_blank",
-          rel: "noopener noreferrer",
-          className: "px-1 py-0.2 rounded text-[9px] font-extrabold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
-          title: "WhatsApp"
-        },
-        "WA"
-      ))))),
-      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
-      /* @__PURE__ */ h.createElement("td", null, /* @__PURE__ */ h.createElement("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ h.createElement(
-        "a",
-        {
-          href: mapsUrl,
-          target: "_blank",
-          rel: "noopener noreferrer",
-          className: "text-[10px] font-bold text-emerald-400 hover:underline flex items-center gap-0.5"
-        },
-        /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"),
-        " Maps"
-      ))),
-      /* @__PURE__ */ h.createElement("td", { className: "text-right" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ h.createElement(
-        Button,
-        {
-          size: "sm",
-          onClick: () => onOpenApiSend(contact),
-          className: "h-8 px-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",
-          title: "1-Click Dispatch Contact Card via WhatsApp API"
-        },
-        /* @__PURE__ */ h.createElement("span", null, "\u26A1"),
-        " API"
-      ), /* @__PURE__ */ h.createElement(
-        Button,
-        {
-          size: "sm",
-          variant: "outline",
-          onClick: () => onOpenDetail(contact),
-          className: "h-8 px-2 text-xs font-bold rounded-lg border-border"
-        },
-        "View"
-      ), /* @__PURE__ */ h.createElement(
-        Button,
-        {
-          size: "sm",
-          variant: "ghost",
-          onClick: () => onOpenEdit(contact),
-          className: "h-8 px-2 text-xs font-bold rounded-lg hover:bg-muted",
-          title: "Edit Contact"
-        },
-        "\u270F\uFE0F"
-      )))
-    );
-  }))))) : (
-    /* GRID CARD VIEW */
-    /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" }, filteredContacts.map((contact) => {
-      const isSelected = selectedIds.includes(contact.id);
-      const brands = safeParseArray(contact.truck_brands);
-      const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
-      const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
-      return /* @__PURE__ */ h.createElement(
-        "div",
-        {
-          key: contact.id,
-          className: `p-4 rounded-2xl border transition-all space-y-3 bg-card/80 ${isSelected ? "border-primary ring-1 ring-primary shadow-md" : "border-border/80 hover:border-border"}`
-        },
-        /* @__PURE__ */ h.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-start gap-2.5 min-w-0" }, /* @__PURE__ */ h.createElement(
+        g.id
+      );
+    }) }),
+    /* @__PURE__ */ jsxs("div", { className: "bg-card/80 border border-border p-3.5 rounded-2xl shadow-sm space-y-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between", children: [
+        /* @__PURE__ */ jsxs("div", { className: "relative flex-1 max-w-lg", children: [
+          /* @__PURE__ */ jsx("span", { className: "absolute left-3 top-2.5 text-muted-foreground text-xs", children: "\u{1F50D}" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              value: searchQuery,
+              onChange: (e2) => setSearchQuery(e2.target.value),
+              placeholder: "Search by name, phone, city, brand, GSTIN, notes...",
+              className: "pl-8 bg-background text-xs h-9 rounded-xl font-medium"
+            }
+          ),
+          searchQuery && /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setSearchQuery(""),
+              className: "absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground",
+              children: "\u2715"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap text-xs", children: [
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: selectedBrand,
+              onChange: (e2) => setSelectedBrand(e2.target.value),
+              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "all", children: "\u{1F69B} All Truck Brands" }),
+                TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ jsx("option", { value: b, children: b }, b))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: selectedCity,
+              onChange: (e2) => setSelectedCity(e2.target.value),
+              className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "all", children: "\u{1F4CD} All Cities" }),
+                cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ jsx("option", { value: c, children: c }, c))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setFilterEmergencyOnly(!filterEmergencyOnly),
+              className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterEmergencyOnly ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`,
+              children: [
+                /* @__PURE__ */ jsx("span", { children: "\u{1F6A8}" }),
+                " 24/7 Night"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              onClick: () => setFilterPreferredOnly(!filterPreferredOnly),
+              className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterPreferredOnly ? "bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`,
+              children: [
+                /* @__PURE__ */ jsx("span", { children: "\u2B50" }),
+                " Preferred"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setViewMode("table"),
+                className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "table" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+                title: "Table View",
+                children: "\u{1F4CB} Table"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setViewMode("grid"),
+                className: `p-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`,
+                title: "Grid Card View",
+                children: "\u{1F5C2}\uFE0F Cards"
+              }
+            )
+          ] })
+        ] })
+      ] }),
+      selectedIds.length > 0 && /* @__PURE__ */ jsxs("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs", children: [
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxs("span", { className: "font-extrabold text-primary", children: [
+            selectedIds.length,
+            " Contact",
+            selectedIds.length > 1 ? "s" : "",
+            " Selected"
+          ] }),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              onClick: () => setSelectedIds([]),
+              className: "text-[11px] underline text-muted-foreground hover:text-foreground ml-1",
+              children: "Clear"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap", children: [
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: bulkAction,
+              onChange: (e2) => setBulkAction(e2.target.value),
+              className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "", children: "Choose Bulk Action..." }),
+                /* @__PURE__ */ jsx("option", { value: "assign_brand", children: "Assign Truck Brand" }),
+                /* @__PURE__ */ jsx("option", { value: "set_preferred", children: "Mark as Preferred Vendor" }),
+                /* @__PURE__ */ jsx("option", { value: "set_emergency", children: "Enable 24/7 Emergency" })
+              ]
+            }
+          ),
+          bulkAction === "assign_brand" && /* @__PURE__ */ jsxs(
+            "select",
+            {
+              value: bulkParam,
+              onChange: (e2) => setBulkParam(e2.target.value),
+              className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold text-amber-300",
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "", children: "Select Brand..." }),
+                TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ jsx("option", { value: b, children: b }, b))
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            Button,
+            {
+              size: "sm",
+              onClick: handleExecuteBulk,
+              className: "h-8 text-xs font-bold bg-primary text-primary-foreground",
+              children: "Apply Bulk Update"
+            }
+          ),
+          /* @__PURE__ */ jsxs(
+            Button,
+            {
+              size: "sm",
+              variant: "outline",
+              onClick: () => onOpenMultiShare(contacts.filter((c) => selectedIds.includes(c.id))),
+              className: "h-8 text-xs font-bold border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1",
+              children: [
+                /* @__PURE__ */ jsx("span", { children: "\u{1F4AC}" }),
+                " WhatsApp Selected"
+              ]
+            }
+          )
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 flex-wrap", children: [
+      /* @__PURE__ */ jsxs("span", { children: [
+        "Showing ",
+        /* @__PURE__ */ jsx("strong", { className: "text-foreground", children: filteredContacts.length }),
+        " of",
+        " ",
+        /* @__PURE__ */ jsx("strong", { children: contacts.length }),
+        " records"
+      ] }),
+      selectedGroup !== "all" && /* @__PURE__ */ jsxs("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1", children: [
+        "Group: ",
+        selectedGroup,
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground", children: "\u2715" })
+      ] }),
+      selectedBrand !== "all" && /* @__PURE__ */ jsxs("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1", children: [
+        "Brand: ",
+        selectedBrand,
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground", children: "\u2715" })
+      ] }),
+      selectedCity !== "all" && /* @__PURE__ */ jsxs("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1", children: [
+        "City: ",
+        selectedCity,
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground", children: "\u2715" })
+      ] })
+    ] }) }),
+    viewMode === "table" ? /* @__PURE__ */ jsx("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm", children: /* @__PURE__ */ jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxs("table", { className: "w-full caption-bottom text-sm border-collapse", children: [
+      /* @__PURE__ */ jsx("thead", { className: "bg-muted/30 border-b border-border/80", children: /* @__PURE__ */ jsxs("tr", { children: [
+        /* @__PURE__ */ jsx("th", { className: "w-[40px] text-center p-3", children: /* @__PURE__ */ jsx(
           "input",
           {
             type: "checkbox",
-            checked: isSelected,
-            onChange: () => toggleSelect(contact.id),
-            className: "mt-1 rounded text-primary focus:ring-0 cursor-pointer"
+            checked: filteredContacts.length > 0 && selectedIds.length === filteredContacts.length,
+            onChange: selectAllFiltered,
+            className: "rounded text-primary focus:ring-0 cursor-pointer"
           }
-        ), /* @__PURE__ */ h.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ h.createElement(
-          "h4",
+        ) }),
+        /* @__PURE__ */ jsx("th", { className: "text-left min-w-[200px] p-3", children: "Company & Contact" }),
+        /* @__PURE__ */ jsx("th", { className: "min-w-[130px] p-3 text-left", children: "Category & Group" }),
+        /* @__PURE__ */ jsx("th", { className: "min-w-[160px] p-3 text-left", children: "Phone & WhatsApp" }),
+        /* @__PURE__ */ jsx("th", { className: "min-w-[140px] p-3 text-left", children: "Brands & Status" }),
+        /* @__PURE__ */ jsx("th", { className: "min-w-[190px] p-3 text-left", children: "Location & GPS" }),
+        /* @__PURE__ */ jsx("th", { className: "text-right w-[140px] p-3", children: "Actions" })
+      ] }) }),
+      /* @__PURE__ */ jsx("tbody", { className: "divide-y divide-border/40", children: loading ? /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsx("td", { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm", children: "Loading Transport CRM directory..." }) }) : filteredContacts.length === 0 ? /* @__PURE__ */ jsx("tr", { children: /* @__PURE__ */ jsxs("td", { colSpan: 7, className: "text-center py-16 text-muted-foreground", children: [
+        /* @__PURE__ */ jsx("p", { className: "font-bold text-sm", children: "No contacts found matching the active filters." }),
+        /* @__PURE__ */ jsx("p", { className: "text-xs mt-1", children: "Try resetting your brand, city or group selection." })
+      ] }) }) : filteredContacts.map((contact) => {
+        const isSelected = selectedIds.includes(contact.id);
+        const brands = safeParseArray(contact.truck_brands);
+        const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+        const mapsUrl = extractGoogleMapsUrl(contact);
+        const displayAddr = cleanPhysicalAddress(contact);
+        const assignedGroup = getContactMainGroup(contact);
+        return /* @__PURE__ */ jsxs(
+          "tr",
           {
-            className: "font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary",
-            onClick: () => onOpenDetail(contact)
+            className: `hover:bg-muted/40 transition-colors ${isSelected ? "bg-primary/5" : ""}`,
+            children: [
+              /* @__PURE__ */ jsx("td", { className: "text-center p-3", children: /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: isSelected,
+                  onChange: () => toggleSelect(contact.id),
+                  className: "rounded text-primary focus:ring-0 cursor-pointer"
+                }
+              ) }),
+              /* @__PURE__ */ jsxs("td", { className: "p-3", children: [
+                /* @__PURE__ */ jsx("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact), children: contact.company_name }),
+                contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ jsxs("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5", children: [
+                  /* @__PURE__ */ jsx("span", { children: "\u{1F3E2}" }),
+                  " ",
+                  contact.organisation_name
+                ] }),
+                contact.designation && /* @__PURE__ */ jsx("div", { className: "text-[11px] text-primary/80 font-medium", children: contact.designation }),
+                contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ jsx("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic", children: contact.notes.replace(/\[?Location:\s*https?:\/\/[^\]\s\n]+\]?/gi, "").trim() })
+              ] }),
+              /* @__PURE__ */ jsxs("td", { className: "p-3", children: [
+                /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1", children: contact.primary_category || contact.contact_type || "Unclassified" }),
+                /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground font-medium block truncate max-w-[150px]", children: assignedGroup })
+              ] }),
+              /* @__PURE__ */ jsx("td", { className: "p-3", children: /* @__PURE__ */ jsx("div", { className: "flex flex-col gap-1", children: phoneList.map((ph, idx) => /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5", children: [
+                /* @__PURE__ */ jsx(
+                  "a",
+                  {
+                    href: `tel:${ph.replace(/\D/g, "")}`,
+                    className: "text-xs font-bold text-foreground hover:text-primary transition-colors font-mono",
+                    children: ph
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  "a",
+                  {
+                    href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    className: "px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+                    title: "WhatsApp",
+                    children: "WA"
+                  }
+                )
+              ] }, idx)) }) }),
+              /* @__PURE__ */ jsxs("td", { className: "p-3", children: [
+                /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-1", children: brands.map((b) => /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30", children: b }, b)) }),
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 mt-1", children: [
+                  contact.emergency_available ? /* @__PURE__ */ jsx("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help", children: "\u{1F6A8} 24/7" }) : null,
+                  contact.is_preferred ? /* @__PURE__ */ jsx("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor", children: "\u2B50 Top" }) : null,
+                  contact.roadside_service ? /* @__PURE__ */ jsx("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service", children: "\u{1F6E0}\uFE0F Road" }) : null
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxs("td", { className: "p-3", children: [
+                /* @__PURE__ */ jsx("div", { className: "text-xs text-foreground truncate max-w-[210px] font-medium", title: displayAddr, children: displayAddr }),
+                /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mt-1", children: [
+                  contact.city && /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground font-semibold px-1 py-0.2 bg-muted rounded", children: contact.city }),
+                  mapsUrl ? /* @__PURE__ */ jsxs(
+                    "a",
+                    {
+                      href: mapsUrl,
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors shadow-sm",
+                      title: "Open Google Maps Navigation",
+                      children: [
+                        /* @__PURE__ */ jsx("span", { children: "\u{1F5FA}\uFE0F" }),
+                        " View Map"
+                      ]
+                    }
+                  ) : /* @__PURE__ */ jsx("span", { className: "text-[10px] text-muted-foreground/60 italic", children: "No GPS link" })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsx("td", { className: "text-right p-3", children: /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-end gap-1.5", children: [
+                /* @__PURE__ */ jsxs(
+                  Button,
+                  {
+                    size: "sm",
+                    onClick: () => onOpenApiSend(contact),
+                    className: "h-8 px-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",
+                    title: "1-Click Dispatch Contact Card via WhatsApp API",
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: "\u26A1" }),
+                      " API"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    size: "sm",
+                    variant: "outline",
+                    onClick: () => onOpenDetail(contact),
+                    className: "h-8 px-2 text-xs font-bold rounded-lg border-border",
+                    children: "View"
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    size: "sm",
+                    variant: "ghost",
+                    onClick: () => onOpenEdit(contact),
+                    className: "h-8 px-2 text-xs font-bold rounded-lg hover:bg-muted",
+                    title: "Edit Contact",
+                    children: "\u270F\uFE0F"
+                  }
+                )
+              ] }) })
+            ]
           },
-          contact.company_name
-        ), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("p", { className: "text-[11px] text-muted-foreground truncate font-medium" }, contact.organisation_name))), /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-muted text-foreground border border-border/80 shrink-0" }, contact.primary_category || contact.contact_type)),
-        /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md" }, "\u{1F6A8} 24/7 Night") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md" }, "\u2B50 Preferred") : null),
-        /* @__PURE__ */ h.createElement("div", { className: "p-2.5 rounded-xl bg-muted/30 border border-border/40 space-y-1.5 text-xs" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement("a", { href: `tel:${ph.replace(/\D/g, "")}`, className: "font-mono font-bold text-foreground hover:text-primary flex items-center gap-1" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4DE}"), " ", ph), /* @__PURE__ */ h.createElement(
-          "a",
+          contact.id
+        );
+      }) })
+    ] }) }) }) : (
+      /* GRID CARD VIEW */
+      /* @__PURE__ */ jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5", children: filteredContacts.map((contact) => {
+        const isSelected = selectedIds.includes(contact.id);
+        const brands = safeParseArray(contact.truck_brands);
+        const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
+        const mapsUrl = extractGoogleMapsUrl(contact);
+        const displayAddr = cleanPhysicalAddress(contact);
+        const assignedGroup = getContactMainGroup(contact);
+        return /* @__PURE__ */ jsxs(
+          "div",
           {
-            href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            className: "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25"
+            className: `p-4 rounded-2xl border transition-all space-y-3 bg-card/80 ${isSelected ? "border-primary ring-1 ring-primary shadow-md" : "border-border/80 hover:border-border"}`,
+            children: [
+              /* @__PURE__ */ jsxs("div", { className: "flex items-start justify-between gap-2", children: [
+                /* @__PURE__ */ jsxs("div", { className: "flex items-start gap-2.5 min-w-0", children: [
+                  /* @__PURE__ */ jsx(
+                    "input",
+                    {
+                      type: "checkbox",
+                      checked: isSelected,
+                      onChange: () => toggleSelect(contact.id),
+                      className: "mt-1 rounded text-primary focus:ring-0 cursor-pointer"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxs("div", { className: "min-w-0", children: [
+                    /* @__PURE__ */ jsx(
+                      "h4",
+                      {
+                        className: "font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary",
+                        onClick: () => onOpenDetail(contact),
+                        children: contact.company_name
+                      }
+                    ),
+                    contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ jsx("p", { className: "text-[11px] text-muted-foreground truncate font-medium", children: contact.organisation_name }),
+                    /* @__PURE__ */ jsx("p", { className: "text-[10px] text-muted-foreground/80 font-medium", children: assignedGroup })
+                  ] })
+                ] }),
+                /* @__PURE__ */ jsx("span", { className: "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-muted text-foreground border border-border/80 shrink-0", children: contact.primary_category || contact.contact_type })
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "flex flex-wrap gap-1.5 pt-1", children: [
+                brands.map((b) => /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30", children: b }, b)),
+                contact.emergency_available ? /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md", children: "\u{1F6A8} 24/7 Night" }) : null,
+                contact.is_preferred ? /* @__PURE__ */ jsx("span", { className: "text-[10px] font-black text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md", children: "\u2B50 Preferred" }) : null
+              ] }),
+              /* @__PURE__ */ jsx("div", { className: "p-2.5 rounded-xl bg-muted/30 border border-border/40 space-y-1.5 text-xs", children: phoneList.map((ph, idx) => /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsxs("a", { href: `tel:${ph.replace(/\D/g, "")}`, className: "font-mono font-bold text-foreground hover:text-primary flex items-center gap-1", children: [
+                  /* @__PURE__ */ jsx("span", { children: "\u{1F4DE}" }),
+                  " ",
+                  ph
+                ] }),
+                /* @__PURE__ */ jsx(
+                  "a",
+                  {
+                    href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    className: "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+                    children: "WhatsApp"
+                  }
+                )
+              ] }, idx)) }),
+              /* @__PURE__ */ jsxs("div", { className: "text-xs text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40", children: [
+                /* @__PURE__ */ jsx("span", { className: "truncate max-w-[180px] font-medium", title: displayAddr, children: displayAddr }),
+                mapsUrl ? /* @__PURE__ */ jsxs(
+                  "a",
+                  {
+                    href: mapsUrl,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    className: "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 shrink-0",
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: "\u{1F5FA}\uFE0F" }),
+                      " View Map"
+                    ]
+                  }
+                ) : null
+              ] }),
+              /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-1.5 pt-1", children: [
+                /* @__PURE__ */ jsxs(
+                  Button,
+                  {
+                    size: "sm",
+                    onClick: () => onOpenApiSend(contact),
+                    className: "flex-1 h-8 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white gap-1",
+                    children: [
+                      /* @__PURE__ */ jsx("span", { children: "\u26A1" }),
+                      " 1-Click API"
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    size: "sm",
+                    variant: "outline",
+                    onClick: () => onOpenDetail(contact),
+                    className: "h-8 px-2.5 text-xs font-bold rounded-xl",
+                    children: "View"
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    size: "sm",
+                    variant: "ghost",
+                    onClick: () => onOpenEdit(contact),
+                    className: "h-8 px-2 text-xs font-bold rounded-xl",
+                    children: "\u270F\uFE0F"
+                  }
+                )
+              ] })
+            ]
           },
-          "WhatsApp"
-        )))),
-        /* @__PURE__ */ h.createElement("div", { className: "text-xs text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40" }, /* @__PURE__ */ h.createElement("span", { className: "truncate max-w-[180px]" }, contact.physical_address || "Address on file"), mapsUrl && /* @__PURE__ */ h.createElement("a", { href: mapsUrl, target: "_blank", rel: "noopener noreferrer", className: "font-bold text-rose-400 hover:underline shrink-0" }, "\u{1F5FA}\uFE0F Map")),
-        /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 pt-1" }, /* @__PURE__ */ h.createElement(
-          Button,
-          {
-            size: "sm",
-            onClick: () => onOpenApiSend(contact),
-            className: "flex-1 h-8 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white gap-1"
-          },
-          /* @__PURE__ */ h.createElement("span", null, "\u26A1"),
-          " Send API"
-        ), /* @__PURE__ */ h.createElement(
-          Button,
-          {
-            size: "sm",
-            variant: "outline",
-            onClick: () => onOpenDetail(contact),
-            className: "h-8 px-3 text-xs font-bold rounded-xl border-border"
-          },
-          "View"
-        ), /* @__PURE__ */ h.createElement(
-          Button,
-          {
-            size: "sm",
-            variant: "ghost",
-            onClick: () => onOpenEdit(contact),
-            className: "h-8 px-2 text-xs font-bold rounded-xl hover:bg-muted"
-          },
-          "\u270F\uFE0F"
-        ))
-      );
-    }))
-  ));
+          contact.id
+        );
+      }) })
+    )
+  ] });
 }
 
 
