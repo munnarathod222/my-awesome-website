@@ -15,22 +15,6 @@ const TRUCK_BRANDS_MASTER = [
   "Universal / All Brands"
 ];
 
-const { useState, useEffect, useMemo, useRef, useCallback } = h;
-
-function safeParseArray(val) {
-  if (!val) return [];
-  if (Array.isArray(val)) return val;
-  try {
-    const parsed = JSON.parse(val);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    if (typeof val === 'string' && val.includes(',')) {
-      return val.split(',').map(s => s.trim()).filter(Boolean);
-    }
-    return [String(val).trim()].filter(Boolean);
-  }
-}
-
 const MAIN_GROUPS_CONFIG = [
   {
     id: "fleet_repairs",
@@ -486,6 +470,24 @@ const CORPORATE_DESIGNATIONS = [
 
 
 
+const { useState, useEffect, useMemo, useRef, useCallback } = h;
+
+function safeParseArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    if (typeof val === 'string' && val.includes(',')) {
+      return val.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return [String(val).trim()].filter(Boolean);
+  }
+}
+
+
+
 
 
 
@@ -684,43 +686,43 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       setSaving(false);
     }
   };
-  return /* @__PURE__ */ e.jsx(Dialog, { open: isOpen, onOpenChange: (open) => !open && onClose() }, /* @__PURE__ */ e.jsx(DialogContent, { className: "w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-4 sm:p-6 rounded-2xl shadow-2xl" }, /* @__PURE__ */ e.jsx(DialogHeader, { className: "border-b border-slate-800 pb-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(DialogTitle, { className: "text-xl font-black text-white flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-primary text-2xl" }, "\u{1F4C7}"), contact ? `Edit CRM Contact: ${contact.company_name}` : "New Transport CRM & Service Contact"), /* @__PURE__ */ e.jsx("span", { className: "text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold" }, "Production CRM v2.0")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none" }, /* @__PURE__ */ e.jsx(
+  return /* @__PURE__ */ h.createElement(Dialog, { open: isOpen, onOpenChange: (open) => !open && onClose() }, /* @__PURE__ */ h.createElement(DialogContent, { className: "w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-4 sm:p-6 rounded-2xl shadow-2xl" }, /* @__PURE__ */ h.createElement(DialogHeader, { className: "border-b border-slate-800 pb-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(DialogTitle, { className: "text-xl font-black text-white flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-primary text-2xl" }, "\u{1F4C7}"), contact ? `Edit CRM Contact: ${contact.company_name}` : "New Transport CRM & Service Contact"), /* @__PURE__ */ h.createElement("span", { className: "text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold" }, "Production CRM v2.0")), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none" }, /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setActiveTab("general"),
       className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "general" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F464}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F464}"),
     " Standard & Location"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setActiveTab("category"),
       className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "category" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F4C2}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F4C2}"),
     " Group & Subcategories"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setActiveTab("service"),
       className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "service" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F527}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F527}"),
     " Multi-Brand & Intelligence"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setActiveTab("corporate"),
       className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "corporate" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"),
     " Corporate & Settings"
-  ))), /* @__PURE__ */ e.jsx("form", { onSubmit: handleSubmit, className: "space-y-4 py-3" }, activeTab === "general" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Company / Shop / Contact Name *"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ h.createElement("form", { onSubmit: handleSubmit, className: "space-y-4 py-3" }, activeTab === "general" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Company / Shop / Contact Name *"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: companyName,
@@ -729,7 +731,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       className: "bg-slate-950 border-slate-800 text-white font-bold text-sm",
       required: true
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Designation / Role in Transport"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Designation / Role in Transport"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: designation,
@@ -737,7 +739,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. Master Mechanic / Logistics Head / Owner",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-emerald-400 flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"), " Phone Numbers & WhatsApp Lines"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Preserves multiple numbers without comma clobbering")), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Primary Mobile *"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-emerald-400 flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4DE}"), " Phone Numbers & WhatsApp Lines"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Preserves multiple numbers without comma clobbering")), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Primary Mobile *"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: primaryPhone,
@@ -746,7 +748,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       className: "bg-slate-900 border-slate-800 text-emerald-400 font-mono font-bold text-xs",
       required: true
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Alternate / Office"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Alternate / Office"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: alternatePhone,
@@ -754,7 +756,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. 9000250452",
       className: "bg-slate-900 border-slate-800 text-slate-300 font-mono text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "WhatsApp Dedicated"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "WhatsApp Dedicated"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: whatsappPhone,
@@ -762,7 +764,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. 9849735080",
       className: "bg-slate-900 border-slate-800 text-teal-400 font-mono text-xs"
     }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "sm:col-span-2 space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Physical Address / Workshop Location *"), /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "sm:col-span-2 space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Physical Address / Workshop Location *"), /* @__PURE__ */ h.createElement(
     Textarea,
     {
       value: physicalAddress,
@@ -771,7 +773,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[60px]",
       required: true
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "City Hub"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "City Hub"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: city,
@@ -779,7 +781,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. Hyderabad / Bhiwandi / Bengaluru",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Area / Transport Cluster"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Area / Transport Cluster"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: area,
@@ -787,7 +789,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. Ghatkesar / Autonagar / Peddamberpet",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  )))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-rose-400 flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"), " Google Maps GPS Navigation Link"), /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-rose-400 flex items-center gap-1" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"), " Google Maps GPS Navigation Link"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: googleMapsUrl,
@@ -795,7 +797,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "https://maps.app.goo.gl/... (Enables 1-click driver GPS routing)",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
     }
-  ))), activeTab === "category" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Main Group (8 Master Groups) *"), /* @__PURE__ */ e.jsx(
+  ))), activeTab === "category" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Main Group (8 Master Groups) *"), /* @__PURE__ */ h.createElement(
     "select",
     {
       value: mainGroup,
@@ -810,8 +812,8 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       },
       className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
     },
-    MAIN_GROUPS_CONFIG.map((g) => /* @__PURE__ */ e.jsx("option", { key: g.id, value: g.title }, g.code, " \u2014 ", g.title))
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Primary Category *"), /* @__PURE__ */ e.jsx(
+    MAIN_GROUPS_CONFIG.map((g) => /* @__PURE__ */ h.createElement("option", { key: g.id, value: g.title }, g.code, " \u2014 ", g.title))
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Primary Category *"), /* @__PURE__ */ h.createElement(
     "select",
     {
       value: primaryCategory,
@@ -825,10 +827,10 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       },
       className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
     },
-    availableCategories.map((c) => /* @__PURE__ */ e.jsx("option", { key: c.id, value: c.name }, c.name))
-  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Subcategories (Multi-Select Supported)"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-primary font-bold" }, subcategories.length, " Selected")), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSubcategories.map((sub) => {
+    availableCategories.map((c) => /* @__PURE__ */ h.createElement("option", { key: c.id, value: c.name }, c.name))
+  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Subcategories (Multi-Select Supported)"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-primary font-bold" }, subcategories.length, " Selected")), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSubcategories.map((sub) => {
     const isSelected = subcategories.includes(sub);
-    return /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ h.createElement(
       "button",
       {
         key: sub,
@@ -840,7 +842,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       " ",
       sub
     );
-  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
     Input,
     {
       value: customSubcategory,
@@ -848,7 +850,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "Add custom subcategory tag...",
       className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     Button,
     {
       type: "button",
@@ -863,19 +865,19 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       }
     },
     "Add Subcategory"
-  )))), activeTab === "service" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-amber-400 flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F69B}"), " Centrally Managed Truck Brands (Multi-Select)"), /* @__PURE__ */ e.jsx("p", { className: "text-[10px] text-slate-400" }, "Select all manufacturer brands this workshop or technician supports")), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold text-slate-400" }, "Centre Type:"), /* @__PURE__ */ e.jsx(
+  )))), activeTab === "service" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-amber-400 flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F69B}"), " Centrally Managed Truck Brands (Multi-Select)"), /* @__PURE__ */ h.createElement("p", { className: "text-[10px] text-slate-400" }, "Select all manufacturer brands this workshop or technician supports")), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Centre Type:"), /* @__PURE__ */ h.createElement(
     "select",
     {
       value: workshopType,
       onChange: (e2) => setWorkshopType(e2.target.value),
       className: "h-7 rounded bg-slate-900 border border-slate-800 text-[11px] text-amber-300 font-bold px-2"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "independent" }, "Independent Workshop"),
-    /* @__PURE__ */ e.jsx("option", { value: "authorised" }, "Authorised OEM Centre"),
-    /* @__PURE__ */ e.jsx("option", { value: "roadside" }, "Roadside Mobile Van")
-  ))), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, TRUCK_BRANDS_MASTER.map((brand) => {
+    /* @__PURE__ */ h.createElement("option", { value: "independent" }, "Independent Workshop"),
+    /* @__PURE__ */ h.createElement("option", { value: "authorised" }, "Authorised OEM Centre"),
+    /* @__PURE__ */ h.createElement("option", { value: "roadside" }, "Roadside Mobile Van")
+  ))), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, TRUCK_BRANDS_MASTER.map((brand) => {
     const isSelected = truckBrands.includes(brand);
-    return /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ h.createElement(
       "button",
       {
         key: brand,
@@ -887,7 +889,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       " ",
       brand
     );
-  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
     Input,
     {
       value: customBrand,
@@ -895,7 +897,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "Add custom truck brand (e.g. Scania, Force)...",
       className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     Button,
     {
       type: "button",
@@ -910,9 +912,9 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       }
     },
     "Add Brand"
-  ))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Service Specialisations (Repair Expertise)"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSpecialisations.map((spec) => {
+  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Service Specialisations (Repair Expertise)"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSpecialisations.map((spec) => {
     const isSelected = serviceSpecialisations.includes(spec);
-    return /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ h.createElement(
       "button",
       {
         key: spec,
@@ -924,7 +926,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       " ",
       spec
     );
-  })), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ e.jsx(
+  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
     Input,
     {
       value: customSpecialisation,
@@ -932,7 +934,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "Add custom specialisation...",
       className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
     }
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     Button,
     {
       type: "button",
@@ -947,7 +949,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       }
     },
     "Add Specialisation"
-  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
     "input",
     {
       type: "checkbox",
@@ -955,7 +957,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       onChange: (e2) => setEmergencyAvailable(e2.target.checked),
       className: "rounded text-primary focus:ring-0"
     }
-  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6A8} 24/7 Emergency"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Available for night breakdown"))), /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6A8} 24/7 Emergency"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Available for night breakdown"))), /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
     "input",
     {
       type: "checkbox",
@@ -963,7 +965,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       onChange: (e2) => setRoadsideService(e2.target.checked),
       className: "rounded text-primary focus:ring-0"
     }
-  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6E0}\uFE0F Roadside / On-site"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "Dispatches mechanic to truck"))), /* @__PURE__ */ e.jsx("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6E0}\uFE0F Roadside / On-site"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Dispatches mechanic to truck"))), /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
     "input",
     {
       type: "checkbox",
@@ -971,7 +973,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       onChange: (e2) => setIsPreferred(e2.target.checked),
       className: "rounded text-primary focus:ring-0"
     }
-  ), /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold text-amber-300 block" }, "\u2B50 Preferred Vendor"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400" }, "High priority dispatch status"))))), activeTab === "corporate" && /* @__PURE__ */ e.jsx("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Parent Corporate / Organisation"), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-amber-300 block" }, "\u2B50 Preferred Vendor"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "High priority dispatch status"))))), activeTab === "corporate" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Parent Corporate / Organisation"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: organisationName,
@@ -979,7 +981,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. Tata Steel / Flipkart / Reliance Hub",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "GSTIN Tax Registration"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "GSTIN Tax Registration"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: gstin,
@@ -988,7 +990,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       maxLength: 15,
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono uppercase"
     }
-  ))), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Email Address"), /* @__PURE__ */ e.jsx(
+  ))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Email Address"), /* @__PURE__ */ h.createElement(
     Input,
     {
       type: "email",
@@ -997,7 +999,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "contact@company.com",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Working Hours"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Working Hours"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: workingHours,
@@ -1005,17 +1007,17 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "e.g. 24 Hours / 9:00 AM - 8:00 PM",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
     }
-  )), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Verification Status"), /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Verification Status"), /* @__PURE__ */ h.createElement(
     "select",
     {
       value: verificationStatus,
       onChange: (e2) => setVerificationStatus(e2.target.value),
       className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "verified" }, "Verified Contact"),
-    /* @__PURE__ */ e.jsx("option", { value: "pending" }, "Verification Pending"),
-    /* @__PURE__ */ e.jsx("option", { value: "unverified" }, "Unverified / Raw Contact")
-  ))), /* @__PURE__ */ e.jsx("div", { className: "space-y-1.5" }, /* @__PURE__ */ e.jsx(Label, { className: "text-xs font-bold text-slate-300" }, "Internal Fleet Notes & Past History"), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ h.createElement("option", { value: "verified" }, "Verified Contact"),
+    /* @__PURE__ */ h.createElement("option", { value: "pending" }, "Verification Pending"),
+    /* @__PURE__ */ h.createElement("option", { value: "unverified" }, "Unverified / Raw Contact")
+  ))), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Internal Fleet Notes & Past History"), /* @__PURE__ */ h.createElement(
     Textarea,
     {
       value: internalNotes,
@@ -1023,7 +1025,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       placeholder: "Rates negotiated, reliable for night repairs, past experience with Hyderabad fleet...",
       className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[70px]"
     }
-  ))), /* @__PURE__ */ e.jsx(DialogFooter, { className: "pt-3 border-t border-slate-800 flex items-center justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-slate-400" }, "* Required fields: Company Name, Primary Phone, Physical Address"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(Button, { type: "button", variant: "outline", onClick: onClose, disabled: saving, className: "border-slate-700 text-slate-300 text-xs" }, "Cancel"), /* @__PURE__ */ e.jsx(Button, { type: "submit", disabled: saving, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5 shadow-md" }, saving && /* @__PURE__ */ e.jsx(Loader2, { className: "w-4 h-4 animate-spin mr-1" }), contact ? "Update CRM Contact" : "Save CRM Contact"))))));
+  ))), /* @__PURE__ */ h.createElement(DialogFooter, { className: "pt-3 border-t border-slate-800 flex items-center justify-between gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-slate-400" }, "* Required fields: Company Name, Primary Phone, Physical Address"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement(Button, { type: "button", variant: "outline", onClick: onClose, disabled: saving, className: "border-slate-700 text-slate-300 text-xs" }, "Cancel"), /* @__PURE__ */ h.createElement(Button, { type: "submit", disabled: saving, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5 shadow-md" }, saving && /* @__PURE__ */ h.createElement(Loader2, { className: "w-4 h-4 animate-spin mr-1" }), contact ? "Update CRM Contact" : "Save CRM Contact"))))));
 }
 
 
@@ -1075,14 +1077,14 @@ Shared via Jai Bhavani Cargo Fleet CRM`
     ].filter(Boolean).join("\n");
     window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, "_blank");
   };
-  return /* @__PURE__ */ e.jsx(Dialog, { open: isOpen, onOpenChange: onClose }, /* @__PURE__ */ e.jsx(DialogContent, { className: "w-[96vw] max-w-2xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl" }, /* @__PURE__ */ e.jsx(DialogHeader, { className: "border-b border-slate-800 pb-4" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap mb-2" }, /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-black bg-primary/20 text-primary border border-primary/30" }, contact.main_group || "Fleet Services"), /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700" }, contact.primary_category || contact.contact_type), contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1" }, "\u2B50 Preferred") : null, contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1" }, "\u{1F6A8} 24/7 Night Service") : null), /* @__PURE__ */ e.jsx(DialogTitle, { className: "text-2xl font-black text-white tracking-tight" }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"), " Entity: ", contact.organisation_name)), contact.verification_status === "verified" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0" }, "\u2713 Verified"))), /* @__PURE__ */ e.jsx("div", { className: "space-y-5 py-3" }, /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "Direct Contact Lines"), /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" }, phoneNumbers.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 gap-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ e.jsx("span", { className: "text-emerald-400 text-sm" }, "\u{1F4DE}"), /* @__PURE__ */ e.jsx("div", { className: "min-w-0" }, /* @__PURE__ */ e.jsx("span", { className: "font-mono font-bold text-sm text-white block truncate" }, ph), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-slate-400 block" }, idx === 0 ? "Primary Number" : `Alternate #${idx + 1}`))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ e.jsx(
+  return /* @__PURE__ */ h.createElement(Dialog, { open: isOpen, onOpenChange: onClose }, /* @__PURE__ */ h.createElement(DialogContent, { className: "w-[96vw] max-w-2xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-6 rounded-3xl shadow-2xl" }, /* @__PURE__ */ h.createElement(DialogHeader, { className: "border-b border-slate-800 pb-4" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap mb-2" }, /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-black bg-primary/20 text-primary border border-primary/30" }, contact.main_group || "Fleet Services"), /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700" }, contact.primary_category || contact.contact_type), contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1" }, "\u2B50 Preferred") : null, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1" }, "\u{1F6A8} 24/7 Night Service") : null), /* @__PURE__ */ h.createElement(DialogTitle, { className: "text-2xl font-black text-white tracking-tight" }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-400 mt-1 flex items-center gap-1 font-semibold" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " Entity: ", contact.organisation_name)), contact.verification_status === "verified" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0" }, "\u2713 Verified"))), /* @__PURE__ */ h.createElement("div", { className: "space-y-5 py-3" }, /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "Direct Contact Lines"), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" }, phoneNumbers.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 gap-2" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 min-w-0" }, /* @__PURE__ */ h.createElement("span", { className: "text-emerald-400 text-sm" }, "\u{1F4DE}"), /* @__PURE__ */ h.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ h.createElement("span", { className: "font-mono font-bold text-sm text-white block truncate" }, ph), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400 block" }, idx === 0 ? "Primary Number" : `Alternate #${idx + 1}`))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 shrink-0" }, /* @__PURE__ */ h.createElement(
     "a",
     {
       href: `tel:${ph.replace(/\D/g, "")}`,
       className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
     },
     "Call"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "a",
     {
       href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
@@ -1091,7 +1093,7 @@ Shared via Jai Bhavani Cargo Fleet CRM`
       className: "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
     },
     "WhatsApp"
-  )))))), brands.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-amber-400 block" }, "\u{1F69B} Supported Truck Brands & Workshop Type"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-2 pt-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.workshop_type && /* @__PURE__ */ e.jsx("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 capitalize" }, contact.workshop_type, " Centre"))), (subcats.length > 0 || specs.length > 0) && /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, subcats.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "\u{1F4C2} Subcategories & Capabilities"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, subcats.map((s) => /* @__PURE__ */ e.jsx("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800" }, "\u2022 ", s)))), specs.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-emerald-400 block" }, "\u{1F527} Repair Specialisations"), /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, specs.map((s) => /* @__PURE__ */ e.jsx("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" }, "\u2713 ", s))))), /* @__PURE__ */ e.jsx("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ e.jsx("span", { className: "text-xs font-bold uppercase tracking-wider text-rose-400 block" }, "\u{1F4CD} Workshop Address & Regional Hub"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-200 leading-relaxed" }, contact.physical_address || "No physical address provided."), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-3 pt-1 text-xs text-slate-400" }, contact.city && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "City:"), " ", contact.city), contact.area && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "Area:"), " ", contact.area), contact.working_hours && /* @__PURE__ */ e.jsx("span", null, /* @__PURE__ */ e.jsx("strong", null, "Hours:"), " ", contact.working_hours)), mapsUrl && /* @__PURE__ */ e.jsx(
+  )))))), brands.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-amber-400 block" }, "\u{1F69B} Supported Truck Brands & Workshop Type"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "px-3 py-1 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.workshop_type && /* @__PURE__ */ h.createElement("span", { className: "px-3 py-1 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700 capitalize" }, contact.workshop_type, " Centre"))), (subcats.length > 0 || specs.length > 0) && /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, subcats.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-slate-400 block" }, "\u{1F4C2} Subcategories & Capabilities"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, subcats.map((s) => /* @__PURE__ */ h.createElement("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-800" }, "\u2022 ", s)))), specs.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-emerald-400 block" }, "\u{1F527} Repair Specialisations"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, specs.map((s) => /* @__PURE__ */ h.createElement("span", { key: s, className: "px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" }, "\u2713 ", s))))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold uppercase tracking-wider text-rose-400 block" }, "\u{1F4CD} Workshop Address & Regional Hub"), /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-200 leading-relaxed" }, contact.physical_address || "No physical address provided."), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-3 pt-1 text-xs text-slate-400" }, contact.city && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "City:"), " ", contact.city), contact.area && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "Area:"), " ", contact.area), contact.working_hours && /* @__PURE__ */ h.createElement("span", null, /* @__PURE__ */ h.createElement("strong", null, "Hours:"), " ", contact.working_hours)), mapsUrl && /* @__PURE__ */ h.createElement(
     "a",
     {
       href: mapsUrl,
@@ -1099,12 +1101,12 @@ Shared via Jai Bhavani Cargo Fleet CRM`
       rel: "noopener noreferrer",
       className: "inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-all cursor-pointer"
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"),
     " Open Google Maps GPS Navigation"
-  )), (contact.gstin || contact.email || contact.designation) && /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs" }, contact.gstin && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "GSTIN"), /* @__PURE__ */ e.jsx("span", { className: "font-mono text-white font-semibold" }, contact.gstin)), contact.email && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "Email"), /* @__PURE__ */ e.jsx("a", { href: `mailto:${contact.email}`, className: "text-primary hover:underline truncate block" }, contact.email)), contact.designation && /* @__PURE__ */ e.jsx("div", null, /* @__PURE__ */ e.jsx("span", { className: "text-slate-400 font-bold block" }, "Designation"), /* @__PURE__ */ e.jsx("span", { className: "text-slate-200 font-medium" }, contact.designation))), contact.notes && /* @__PURE__ */ e.jsx("div", { className: "p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 block" }, "Internal Fleet Notes"), /* @__PURE__ */ e.jsx("p", { className: "text-xs text-slate-300 italic whitespace-pre-wrap" }, '"', contact.notes, '"'))), /* @__PURE__ */ e.jsx("div", { className: "pt-4 border-t border-slate-800 flex items-center justify-between gap-2" }, /* @__PURE__ */ e.jsx(Button, { variant: "outline", onClick: copyDetails, className: "border-slate-700 bg-slate-800 text-slate-200 text-xs font-bold gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4CB}"), " Copy Dossier"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx(Button, { onClick: shareWhatsApp, className: "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"), " WhatsApp"), /* @__PURE__ */ e.jsx(Button, { onClick: () => {
+  )), (contact.gstin || contact.email || contact.designation) && /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-950 border border-slate-800 text-xs" }, contact.gstin && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "GSTIN"), /* @__PURE__ */ h.createElement("span", { className: "font-mono text-white font-semibold" }, contact.gstin)), contact.email && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "Email"), /* @__PURE__ */ h.createElement("a", { href: `mailto:${contact.email}`, className: "text-primary hover:underline truncate block" }, contact.email)), contact.designation && /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-slate-400 font-bold block" }, "Designation"), /* @__PURE__ */ h.createElement("span", { className: "text-slate-200 font-medium" }, contact.designation))), contact.notes && /* @__PURE__ */ h.createElement("div", { className: "p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold uppercase tracking-wider text-slate-400 block" }, "Internal Fleet Notes"), /* @__PURE__ */ h.createElement("p", { className: "text-xs text-slate-300 italic whitespace-pre-wrap" }, '"', contact.notes, '"'))), /* @__PURE__ */ h.createElement("div", { className: "pt-4 border-t border-slate-800 flex items-center justify-between gap-2" }, /* @__PURE__ */ h.createElement(Button, { variant: "outline", onClick: copyDetails, className: "border-slate-700 bg-slate-800 text-slate-200 text-xs font-bold gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4CB}"), " Copy Dossier"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement(Button, { onClick: shareWhatsApp, className: "bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5 shadow-md" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4AC}"), " WhatsApp"), /* @__PURE__ */ h.createElement(Button, { onClick: () => {
     onClose();
     onEdit(contact);
-  }, className: "bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5" }, /* @__PURE__ */ e.jsx("span", null, "\u270F\uFE0F"), " Edit Record")))));
+  }, className: "bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u270F\uFE0F"), " Edit Record")))));
 }
 
 
@@ -1277,10 +1279,10 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       }
     }
   };
-  return /* @__PURE__ */ e.jsx("div", { className: "space-y-4" }, /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2" }, MAIN_GROUPS_CONFIG.map((g) => {
+  return /* @__PURE__ */ h.createElement("div", { className: "space-y-4" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2" }, MAIN_GROUPS_CONFIG.map((g) => {
     const isActive = selectedGroup === g.title;
     const count = groupCounts[g.title] || 0;
-    return /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ h.createElement(
       "button",
       {
         key: g.id,
@@ -1291,10 +1293,10 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         },
         className: `p-2.5 rounded-xl border text-left transition-all ${isActive ? "bg-primary/15 border-primary shadow-sm scale-[1.02]" : "bg-card/70 border-border/60 hover:bg-muted/40"}`
       },
-      /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black uppercase text-muted-foreground" }, g.code), /* @__PURE__ */ e.jsx("span", { className: `text-xs font-black px-1.5 py-0.2 rounded-full ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}` }, count)),
-      /* @__PURE__ */ e.jsx("p", { className: "text-xs font-bold text-foreground truncate leading-tight" }, g.title.replace(/^[0-9.]+\s*/, ""))
+      /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between mb-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black uppercase text-muted-foreground" }, g.code), /* @__PURE__ */ h.createElement("span", { className: `text-xs font-black px-1.5 py-0.2 rounded-full ${isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}` }, count)),
+      /* @__PURE__ */ h.createElement("p", { className: "text-xs font-bold text-foreground truncate leading-tight" }, g.title.replace(/^[0-9.]+\s*/, ""))
     );
-  })), /* @__PURE__ */ e.jsx("div", { className: "bg-card/80 border border-border p-3.5 rounded-2xl shadow-sm space-y-3" }, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between" }, /* @__PURE__ */ e.jsx("div", { className: "relative flex-1 max-w-lg" }, /* @__PURE__ */ e.jsx("span", { className: "absolute left-3 top-2.5 text-muted-foreground text-xs" }, "\u{1F50D}"), /* @__PURE__ */ e.jsx(
+  })), /* @__PURE__ */ h.createElement("div", { className: "bg-card/80 border border-border p-3.5 rounded-2xl shadow-sm space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between" }, /* @__PURE__ */ h.createElement("div", { className: "relative flex-1 max-w-lg" }, /* @__PURE__ */ h.createElement("span", { className: "absolute left-3 top-2.5 text-muted-foreground text-xs" }, "\u{1F50D}"), /* @__PURE__ */ h.createElement(
     Input,
     {
       value: searchQuery,
@@ -1302,7 +1304,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       placeholder: "Search by name, phone, city, brand, GSTIN, notes...",
       className: "pl-8 bg-background text-xs h-9 rounded-xl font-medium"
     }
-  ), searchQuery && /* @__PURE__ */ e.jsx(
+  ), searchQuery && /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
@@ -1310,43 +1312,43 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       className: "absolute right-2.5 top-2.5 text-xs text-muted-foreground hover:text-foreground"
     },
     "\u2715"
-  )), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap text-xs" }, /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap text-xs" }, /* @__PURE__ */ h.createElement(
     "select",
     {
       value: selectedBrand,
       onChange: (e2) => setSelectedBrand(e2.target.value),
       className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "all" }, "\u{1F69B} All Truck Brands"),
-    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ e.jsx("option", { key: b, value: b }, b))
-  ), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ h.createElement("option", { value: "all" }, "\u{1F69B} All Truck Brands"),
+    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ h.createElement("option", { key: b, value: b }, b))
+  ), /* @__PURE__ */ h.createElement(
     "select",
     {
       value: selectedCity,
       onChange: (e2) => setSelectedCity(e2.target.value),
       className: "h-9 rounded-xl bg-background border border-border text-xs px-2.5 font-bold text-foreground focus:outline-none"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "all" }, "\u{1F4CD} All Cities"),
-    cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ e.jsx("option", { key: c, value: c }, c))
-  ), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ h.createElement("option", { value: "all" }, "\u{1F4CD} All Cities"),
+    cityOptions.filter((c) => c !== "all").map((c) => /* @__PURE__ */ h.createElement("option", { key: c, value: c }, c))
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setFilterEmergencyOnly(!filterEmergencyOnly),
       className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterEmergencyOnly ? "bg-rose-500/20 border-rose-500/60 text-rose-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F6A8}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F6A8}"),
     " 24/7 Night"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
       onClick: () => setFilterPreferredOnly(!filterPreferredOnly),
       className: `h-9 px-3 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 ${filterPreferredOnly ? "bg-amber-500/20 border-amber-500/60 text-amber-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"}`
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u2B50"),
+    /* @__PURE__ */ h.createElement("span", null, "\u2B50"),
     " Preferred"
-  ), /* @__PURE__ */ e.jsx("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border" }, /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border" }, /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
@@ -1355,7 +1357,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       title: "Table View"
     },
     "\u{1F4CB} Table"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
@@ -1364,7 +1366,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       title: "Grid Card View"
     },
     "\u{1F5C2}\uFE0F Cards"
-  )))), selectedIds.length > 0 && /* @__PURE__ */ e.jsx("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ e.jsx("span", { className: "font-extrabold text-primary" }, selectedIds.length, " Contact", selectedIds.length > 1 ? "s" : "", " Selected"), /* @__PURE__ */ e.jsx(
+  )))), selectedIds.length > 0 && /* @__PURE__ */ h.createElement("div", { className: "flex flex-col sm:flex-row items-center justify-between gap-3 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-xs" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "font-extrabold text-primary" }, selectedIds.length, " Contact", selectedIds.length > 1 ? "s" : "", " Selected"), /* @__PURE__ */ h.createElement(
     "button",
     {
       type: "button",
@@ -1372,27 +1374,27 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       className: "text-[11px] underline text-muted-foreground hover:text-foreground ml-1"
     },
     "Clear"
-  )), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx(
+  )), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement(
     "select",
     {
       value: bulkAction,
       onChange: (e2) => setBulkAction(e2.target.value),
       className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "" }, "Choose Bulk Action..."),
-    /* @__PURE__ */ e.jsx("option", { value: "assign_brand" }, "Assign Truck Brand"),
-    /* @__PURE__ */ e.jsx("option", { value: "set_preferred" }, "Mark as Preferred Vendor"),
-    /* @__PURE__ */ e.jsx("option", { value: "set_emergency" }, "Enable 24/7 Emergency")
-  ), bulkAction === "assign_brand" && /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ h.createElement("option", { value: "" }, "Choose Bulk Action..."),
+    /* @__PURE__ */ h.createElement("option", { value: "assign_brand" }, "Assign Truck Brand"),
+    /* @__PURE__ */ h.createElement("option", { value: "set_preferred" }, "Mark as Preferred Vendor"),
+    /* @__PURE__ */ h.createElement("option", { value: "set_emergency" }, "Enable 24/7 Emergency")
+  ), bulkAction === "assign_brand" && /* @__PURE__ */ h.createElement(
     "select",
     {
       value: bulkParam,
       onChange: (e2) => setBulkParam(e2.target.value),
       className: "h-8 rounded-lg bg-background border border-border text-xs px-2 font-bold text-amber-300"
     },
-    /* @__PURE__ */ e.jsx("option", { value: "" }, "Select Brand..."),
-    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ e.jsx("option", { key: b, value: b }, b))
-  ), /* @__PURE__ */ e.jsx(
+    /* @__PURE__ */ h.createElement("option", { value: "" }, "Select Brand..."),
+    TRUCK_BRANDS_MASTER.map((b) => /* @__PURE__ */ h.createElement("option", { key: b, value: b }, b))
+  ), /* @__PURE__ */ h.createElement(
     Button,
     {
       size: "sm",
@@ -1400,7 +1402,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       className: "h-8 text-xs font-bold bg-primary text-primary-foreground"
     },
     "Apply Bulk Update"
-  ), /* @__PURE__ */ e.jsx(
+  ), /* @__PURE__ */ h.createElement(
     Button,
     {
       size: "sm",
@@ -1408,9 +1410,9 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       onClick: () => onOpenMultiShare(contacts.filter((c) => selectedIds.includes(c.id))),
       className: "h-8 text-xs font-bold border-emerald-500/40 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1"
     },
-    /* @__PURE__ */ e.jsx("span", null, "\u{1F4AC}"),
+    /* @__PURE__ */ h.createElement("span", null, "\u{1F4AC}"),
     " WhatsApp Selected"
-  )))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ e.jsx("span", null, "Showing ", /* @__PURE__ */ e.jsx("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ e.jsx("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ e.jsx("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ e.jsx("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ e.jsx("div", { className: "overflow-x-auto" }, /* @__PURE__ */ e.jsx(Table, null, /* @__PURE__ */ e.jsx(TableHeader, { className: "bg-muted/30" }, /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableHead, { className: "w-[40px] text-center" }, /* @__PURE__ */ e.jsx(
+  )))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between text-xs text-muted-foreground px-1" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ h.createElement("span", null, "Showing ", /* @__PURE__ */ h.createElement("strong", { className: "text-foreground" }, filteredContacts.length), " of", " ", /* @__PURE__ */ h.createElement("strong", null, contacts.length), " records"), selectedGroup !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold flex items-center gap-1" }, "Group: ", selectedGroup, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedGroup("all"), className: "hover:text-foreground" }, "\u2715")), selectedBrand !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-semibold flex items-center gap-1" }, "Brand: ", selectedBrand, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedBrand("all"), className: "hover:text-foreground" }, "\u2715")), selectedCity !== "all" && /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20 font-semibold flex items-center gap-1" }, "City: ", selectedCity, /* @__PURE__ */ h.createElement("button", { type: "button", onClick: () => setSelectedCity("all"), className: "hover:text-foreground" }, "\u2715")))), viewMode === "table" ? /* @__PURE__ */ h.createElement("div", { className: "rounded-2xl border border-border bg-card/60 overflow-hidden shadow-sm" }, /* @__PURE__ */ h.createElement("div", { className: "overflow-x-auto" }, /* @__PURE__ */ h.createElement(Table, null, /* @__PURE__ */ h.createElement(TableHeader, { className: "bg-muted/30" }, /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableHead, { className: "w-[40px] text-center" }, /* @__PURE__ */ h.createElement(
     "input",
     {
       type: "checkbox",
@@ -1418,18 +1420,18 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
       onChange: toggleSelectAll,
       className: "rounded text-primary focus:ring-0 cursor-pointer"
     }
-  )), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ e.jsx(TableHead, { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ e.jsx(TableHead, { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ e.jsx(TableBody, null, loading ? /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableCell, { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ e.jsx(TableRow, null, /* @__PURE__ */ e.jsx(TableCell, { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ e.jsx("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ e.jsx("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
+  )), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[200px]" }, "Contact & Organisation"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[150px]" }, "Main Group & Category"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[140px]" }, "Phone & WhatsApp"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[140px]" }, "Brands & Capability"), /* @__PURE__ */ h.createElement(TableHead, { className: "min-w-[180px]" }, "Location & GPS"), /* @__PURE__ */ h.createElement(TableHead, { className: "text-right w-[140px]" }, "Actions"))), /* @__PURE__ */ h.createElement(TableBody, null, loading ? /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableCell, { colSpan: 7, className: "text-center py-12 text-muted-foreground text-sm" }, "Loading Transport CRM directory...")) : filteredContacts.length === 0 ? /* @__PURE__ */ h.createElement(TableRow, null, /* @__PURE__ */ h.createElement(TableCell, { colSpan: 7, className: "text-center py-16 text-muted-foreground" }, /* @__PURE__ */ h.createElement("p", { className: "font-bold text-sm" }, "No contacts found matching the active filters."), /* @__PURE__ */ h.createElement("p", { className: "text-xs mt-1" }, "Try resetting your brand, city or category selection."))) : filteredContacts.map((contact) => {
     const isSelected = selectedIds.includes(contact.id);
     const brands = safeParseArray(contact.truck_brands);
     const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
     const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
-    return /* @__PURE__ */ e.jsx(
+    return /* @__PURE__ */ h.createElement(
       TableRow,
       {
         key: contact.id,
         className: `hover:bg-muted/40 transition-colors ${isSelected ? "bg-primary/5" : ""}`
       },
-      /* @__PURE__ */ e.jsx(TableCell, { className: "text-center" }, /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ h.createElement(TableCell, { className: "text-center" }, /* @__PURE__ */ h.createElement(
         "input",
         {
           type: "checkbox",
@@ -1438,16 +1440,16 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           className: "rounded text-primary focus:ring-0 cursor-pointer"
         }
       )),
-      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ e.jsx("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ e.jsx("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
-      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
-      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "font-bold text-sm text-foreground hover:text-primary cursor-pointer", onClick: () => onOpenDetail(contact) }, contact.company_name), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-muted-foreground font-semibold flex items-center gap-1 mt-0.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"), " ", contact.organisation_name), contact.designation && /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-primary/80 font-medium" }, contact.designation), contact.notes && !contact.notes.startsWith("http") && /* @__PURE__ */ h.createElement("div", { className: "text-[10px] text-muted-foreground truncate max-w-[200px] mt-0.5 italic" }, contact.notes)),
+      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-md text-[11px] font-bold bg-muted text-foreground border border-border block w-fit mb-1" }, contact.primary_category || contact.contact_type || "Unclassified"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground block truncate max-w-[140px]" }, contact.main_group || "General")),
+      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-col gap-1" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement(
         "a",
         {
           href: `tel:${ph.replace(/\D/g, "")}`,
           className: "text-xs font-bold text-foreground hover:text-primary transition-colors font-mono"
         },
         ph
-      ), /* @__PURE__ */ e.jsx(
+      ), /* @__PURE__ */ h.createElement(
         "a",
         {
           href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
@@ -1458,8 +1460,8 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
         },
         "WA"
       ))))),
-      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ e.jsx("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
-      /* @__PURE__ */ e.jsx(TableCell, null, /* @__PURE__ */ e.jsx("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ e.jsx("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b))), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 mt-1" }, contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded", title: "24/7 Breakdown Help" }, "\u{1F6A8} 24/7") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-black text-amber-300 bg-amber-500/10 px-1 py-0.2 rounded", title: "Preferred Vendor" }, "\u2B50 Top") : null, contact.roadside_service ? /* @__PURE__ */ h.createElement("span", { className: "text-[9px] font-bold text-slate-400 bg-slate-800 px-1 py-0.2 rounded", title: "Roadside Mobile Service" }, "\u{1F6E0}\uFE0F Road") : null)),
+      /* @__PURE__ */ h.createElement(TableCell, null, /* @__PURE__ */ h.createElement("div", { className: "text-xs text-foreground truncate max-w-[200px]" }, contact.physical_address || "-"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-0.5" }, contact.city && /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-muted-foreground font-semibold" }, contact.city), mapsUrl && /* @__PURE__ */ h.createElement(
         "a",
         {
           href: mapsUrl,
@@ -1467,10 +1469,10 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           rel: "noopener noreferrer",
           className: "text-[10px] font-bold text-emerald-400 hover:underline flex items-center gap-0.5"
         },
-        /* @__PURE__ */ e.jsx("span", null, "\u{1F5FA}\uFE0F"),
+        /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"),
         " Maps"
       ))),
-      /* @__PURE__ */ e.jsx(TableCell, { className: "text-right" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ e.jsx(
+      /* @__PURE__ */ h.createElement(TableCell, { className: "text-right" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-end gap-1.5" }, /* @__PURE__ */ h.createElement(
         Button,
         {
           size: "sm",
@@ -1478,9 +1480,9 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           className: "h-8 px-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white gap-1 shadow-sm",
           title: "1-Click Dispatch Contact Card via WhatsApp API"
         },
-        /* @__PURE__ */ e.jsx("span", null, "\u26A1"),
+        /* @__PURE__ */ h.createElement("span", null, "\u26A1"),
         " API"
-      ), /* @__PURE__ */ e.jsx(
+      ), /* @__PURE__ */ h.createElement(
         Button,
         {
           size: "sm",
@@ -1489,7 +1491,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           className: "h-8 px-2 text-xs font-bold rounded-lg border-border"
         },
         "View"
-      ), /* @__PURE__ */ e.jsx(
+      ), /* @__PURE__ */ h.createElement(
         Button,
         {
           size: "sm",
@@ -1503,18 +1505,18 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
     );
   }))))) : (
     /* GRID CARD VIEW */
-    /* @__PURE__ */ e.jsx("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" }, filteredContacts.map((contact) => {
+    /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" }, filteredContacts.map((contact) => {
       const isSelected = selectedIds.includes(contact.id);
       const brands = safeParseArray(contact.truck_brands);
       const phoneList = (contact.phone_number || "").split(/[,;\/\n]+/).map((p) => p.trim()).filter(Boolean);
       const mapsUrl = contact.google_maps_url || contact.google_map_link || "";
-      return /* @__PURE__ */ e.jsx(
+      return /* @__PURE__ */ h.createElement(
         "div",
         {
           key: contact.id,
           className: `p-4 rounded-2xl border transition-all space-y-3 bg-card/80 ${isSelected ? "border-primary ring-1 ring-primary shadow-md" : "border-border/80 hover:border-border"}`
         },
-        /* @__PURE__ */ e.jsx("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ e.jsx("div", { className: "flex items-start gap-2.5 min-w-0" }, /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ h.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-start gap-2.5 min-w-0" }, /* @__PURE__ */ h.createElement(
           "input",
           {
             type: "checkbox",
@@ -1522,16 +1524,16 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
             onChange: () => toggleSelect(contact.id),
             className: "mt-1 rounded text-primary focus:ring-0 cursor-pointer"
           }
-        ), /* @__PURE__ */ e.jsx("div", { className: "min-w-0" }, /* @__PURE__ */ e.jsx(
+        ), /* @__PURE__ */ h.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ h.createElement(
           "h4",
           {
             className: "font-bold text-sm text-foreground truncate cursor-pointer hover:text-primary",
             onClick: () => onOpenDetail(contact)
           },
           contact.company_name
-        ), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ e.jsx("p", { className: "text-[11px] text-muted-foreground truncate font-medium" }, contact.organisation_name))), /* @__PURE__ */ e.jsx("span", { className: "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-muted text-foreground border border-border/80 shrink-0" }, contact.primary_category || contact.contact_type)),
-        /* @__PURE__ */ e.jsx("div", { className: "flex flex-wrap gap-1.5 pt-1" }, brands.map((b) => /* @__PURE__ */ e.jsx("span", { key: b, className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.emergency_available ? /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md" }, "\u{1F6A8} 24/7 Night") : null, contact.is_preferred ? /* @__PURE__ */ e.jsx("span", { className: "text-[10px] font-black text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md" }, "\u2B50 Preferred") : null),
-        /* @__PURE__ */ e.jsx("div", { className: "p-2.5 rounded-xl bg-muted/30 border border-border/40 space-y-1.5 text-xs" }, phoneList.map((ph, idx) => /* @__PURE__ */ e.jsx("div", { key: idx, className: "flex items-center justify-between" }, /* @__PURE__ */ e.jsx("a", { href: `tel:${ph.replace(/\D/g, "")}`, className: "font-mono font-bold text-foreground hover:text-primary flex items-center gap-1" }, /* @__PURE__ */ e.jsx("span", null, "\u{1F4DE}"), " ", ph), /* @__PURE__ */ e.jsx(
+        ), contact.organisation_name && contact.organisation_name !== contact.company_name && /* @__PURE__ */ h.createElement("p", { className: "text-[11px] text-muted-foreground truncate font-medium" }, contact.organisation_name))), /* @__PURE__ */ h.createElement("span", { className: "px-2 py-0.5 rounded-lg text-[10px] font-bold bg-muted text-foreground border border-border/80 shrink-0" }, contact.primary_category || contact.contact_type)),
+        /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-1.5 pt-1" }, brands.map((b) => /* @__PURE__ */ h.createElement("span", { key: b, className: "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30" }, b)), contact.emergency_available ? /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md" }, "\u{1F6A8} 24/7 Night") : null, contact.is_preferred ? /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-black text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-md" }, "\u2B50 Preferred") : null),
+        /* @__PURE__ */ h.createElement("div", { className: "p-2.5 rounded-xl bg-muted/30 border border-border/40 space-y-1.5 text-xs" }, phoneList.map((ph, idx) => /* @__PURE__ */ h.createElement("div", { key: idx, className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement("a", { href: `tel:${ph.replace(/\D/g, "")}`, className: "font-mono font-bold text-foreground hover:text-primary flex items-center gap-1" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4DE}"), " ", ph), /* @__PURE__ */ h.createElement(
           "a",
           {
             href: `https://wa.me/${ph.replace(/\D/g, "").startsWith("91") ? ph.replace(/\D/g, "") : "91" + ph.replace(/\D/g, "")}`,
@@ -1541,17 +1543,17 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
           },
           "WhatsApp"
         )))),
-        /* @__PURE__ */ e.jsx("div", { className: "text-xs text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40" }, /* @__PURE__ */ e.jsx("span", { className: "truncate max-w-[180px]" }, contact.physical_address || "Address on file"), mapsUrl && /* @__PURE__ */ e.jsx("a", { href: mapsUrl, target: "_blank", rel: "noopener noreferrer", className: "font-bold text-rose-400 hover:underline shrink-0" }, "\u{1F5FA}\uFE0F Map")),
-        /* @__PURE__ */ e.jsx("div", { className: "flex items-center gap-1.5 pt-1" }, /* @__PURE__ */ e.jsx(
+        /* @__PURE__ */ h.createElement("div", { className: "text-xs text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40" }, /* @__PURE__ */ h.createElement("span", { className: "truncate max-w-[180px]" }, contact.physical_address || "Address on file"), mapsUrl && /* @__PURE__ */ h.createElement("a", { href: mapsUrl, target: "_blank", rel: "noopener noreferrer", className: "font-bold text-rose-400 hover:underline shrink-0" }, "\u{1F5FA}\uFE0F Map")),
+        /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-1.5 pt-1" }, /* @__PURE__ */ h.createElement(
           Button,
           {
             size: "sm",
             onClick: () => onOpenApiSend(contact),
             className: "flex-1 h-8 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white gap-1"
           },
-          /* @__PURE__ */ e.jsx("span", null, "\u26A1"),
+          /* @__PURE__ */ h.createElement("span", null, "\u26A1"),
           " Send API"
-        ), /* @__PURE__ */ e.jsx(
+        ), /* @__PURE__ */ h.createElement(
           Button,
           {
             size: "sm",
@@ -1560,7 +1562,7 @@ function CrmDirectoryMain({ imports, onOpenEdit, onOpenDetail, onOpenExport, onO
             className: "h-8 px-3 text-xs font-bold rounded-xl border-border"
           },
           "View"
-        ), /* @__PURE__ */ e.jsx(
+        ), /* @__PURE__ */ h.createElement(
           Button,
           {
             size: "sm",
@@ -1639,156 +1641,123 @@ function Va() {
     Building: ee, Check: ea, Send: Ee, Users: de, Disc: je, Truck: Ce, Package: la, Landmark: Me
   };
 
-  return e.jsxs("div", {
-    className: "max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0 font-sans",
-    children: [
-      e.jsx(oa, { children: e.jsx("title", { children: "Transport CRM & Fleet Directory | Jai Bhavani Cargo" }) }),
-      
-      /* Header & Main Switcher */
-      e.jsxs("div", {
-        className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4",
-        children: [
-          e.jsxs("div", {
-            children: [
-              e.jsxs("div", {
-                className: "flex items-center gap-2 mb-1",
-                children: [
-                  e.jsx(ia, { className: "w-8 h-8 text-primary" }),
-                  e.jsx("h1", { className: "text-xl sm:text-3xl font-extrabold tracking-tight text-foreground", children: "Transport CRM & Fleet Directory" }),
-                  e.jsx("span", { className: "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30", children: "8 Groups" })
-                ]
-              }),
-              e.jsx("p", {
-                className: "text-muted-foreground text-xs sm:text-sm",
-                children: "Centralized multi-brand directory covering fleet repairs, workshops, brokers, FASTag, diesel partners & corporate shippers."
-              })
-            ]
-          }),
+  return h.createElement("div", {
+    className: "max-w-7xl mx-auto p-2.5 sm:p-6 pb-24 sm:pb-8 space-y-3 sm:space-y-6 animate-in fade-in duration-300 overflow-x-hidden min-w-0 font-sans"
+  },
+    h.createElement(oa, null, h.createElement("title", null, "Transport CRM & Fleet Directory | Jai Bhavani Cargo")),
+    
+    /* Top Header & Navigation */
+    h.createElement("div", {
+      className: "flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4"
+    },
+      h.createElement("div", null,
+        h.createElement("div", { className: "flex items-center gap-2 mb-1" },
+          h.createElement(ia, { className: "w-8 h-8 text-primary" }),
+          h.createElement("h1", { className: "text-xl sm:text-3xl font-extrabold tracking-tight text-foreground" }, "Transport CRM & Fleet Directory"),
+          h.createElement("span", { className: "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" }, "8 Groups")
+        ),
+        h.createElement("p", { className: "text-muted-foreground text-xs sm:text-sm" },
+          "Centralized multi-brand directory covering fleet repairs, workshops, brokers, FASTag, diesel partners & corporate shippers."
+        )
+      ),
 
-          /* Action Bar */
-          e.jsxs("div", {
-            className: "flex items-center gap-2.5 flex-wrap",
-            children: [
-              /* SOS Help Button */
-              e.jsxs(P, {
-                variant: "outline",
-                onClick: () => setIsSosOpen(true),
-                className: "rounded-xl border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-black text-xs gap-1.5 shadow-sm animate-pulse",
-                children: [e.jsx("span", { children: "🚨" }), " NEED HELP (SOS)"]
-              }),
+      h.createElement("div", { className: "flex items-center gap-2.5 flex-wrap" },
+        h.createElement(P, {
+          variant: "outline",
+          onClick: () => setIsSosOpen(true),
+          className: "rounded-xl border-rose-500/40 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 font-black text-xs gap-1.5 shadow-sm animate-pulse"
+        }, h.createElement("span", null, "🚨"), " NEED HELP (SOS)"),
 
-              /* View Toggle: All Directory vs Regional Breakdown Hub */
-              e.jsxs("div", {
-                className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border/60 text-xs font-bold",
-                children: [
-                  e.jsx("button", {
-                    type: "button",
-                    onClick: () => setCurrentView("contacts"),
-                    className: "px-3 py-1.5 rounded-lg transition-all " + (currentView === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"),
-                    children: "📇 CRM Directory"
-                  }),
-                  e.jsxs("button", {
-                    type: "button",
-                    onClick: () => setCurrentView("regional_breakdown"),
-                    className: "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (currentView === "regional_breakdown" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"),
-                    children: [
-                      "🗺️ Regional Hub",
-                      e.jsx("span", { className: "px-1.5 py-0.2 rounded-full text-[10px] font-black bg-primary/20 text-primary", children: "3 Hubs" })
-                    ]
-                  })
-                ]
-              }),
+        h.createElement("div", { className: "flex items-center bg-muted/60 p-1 rounded-xl border border-border/60 text-xs font-bold" },
+          h.createElement("button", {
+            type: "button",
+            onClick: () => setCurrentView("contacts"),
+            className: "px-3 py-1.5 rounded-lg transition-all " + (currentView === "contacts" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")
+          }, "📇 CRM Directory"),
+          h.createElement("button", {
+            type: "button",
+            onClick: () => setCurrentView("regional_breakdown"),
+            className: "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 " + (currentView === "regional_breakdown" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")
+          }, "🗺️ Regional Hub", h.createElement("span", { className: "px-1.5 py-0.2 rounded-full text-[10px] font-black bg-primary/20 text-primary" }, "3 Hubs"))
+        ),
 
-              /* Scan Visiting Card */
-              e.jsxs(P, {
-                variant: "outline",
-                onClick: () => setIsScanOpen(true),
-                className: "rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm",
-                children: [e.jsx(De, { className: "w-4 h-4" }), " Scan Visiting Card"]
-              }),
+        h.createElement(P, {
+          variant: "outline",
+          onClick: () => setIsScanOpen(true),
+          className: "rounded-xl border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 font-bold text-xs gap-1.5 shadow-sm"
+        }, h.createElement(De, { className: "w-4 h-4" }), " Scan Visiting Card"),
 
-              /* Export Contacts */
-              e.jsxs(P, {
-                variant: "outline",
-                onClick: () => setIsExportOpen(true),
-                className: "rounded-xl text-xs font-bold gap-1.5",
-                children: [e.jsx(Be, { className: "w-4 h-4" }), " Export CSV"]
-              }),
+        h.createElement(P, {
+          variant: "outline",
+          onClick: () => setIsExportOpen(true),
+          className: "rounded-xl text-xs font-bold gap-1.5"
+        }, h.createElement(Be, { className: "w-4 h-4" }), " Export CSV"),
 
-              /* Add New Contact */
-              e.jsxs(P, {
-                onClick: () => handleOpenEdit(null),
-                className: "rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground shrink-0 order-first sm:order-last",
-                children: [e.jsx(ca, { className: "w-4 h-4" }), " Add CRM Contact"]
-              })
-            ]
-          })
-        ]
-      }),
+        h.createElement(P, {
+          onClick: () => handleOpenEdit(null),
+          className: "rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20 bg-primary text-primary-foreground shrink-0 order-first sm:order-last"
+        }, h.createElement(ca, { className: "w-4 h-4" }), " Add CRM Contact")
+      )
+    ),
 
-      /* Main View Body */
-      currentView === "regional_breakdown"
-        ? h.createElement(RegionalNetworkHubView, {
-            contacts: contactsList,
-            onRefreshContacts: refreshContacts,
-            onOpenSos: () => setIsSosOpen(true)
-          })
-        : h.createElement(CrmDirectoryMain, {
-            imports: importsBundle,
-            onOpenEdit: handleOpenEdit,
-            onOpenDetail: handleOpenDetail,
-            onOpenExport: () => setIsExportOpen(true),
-            onOpenScan: () => setIsScanOpen(true),
-            onOpenSos: () => setIsSosOpen(true),
-            onOpenApiSend: handleOpenApiSend,
-            onOpenMultiShare: handleOpenMultiShare
-          }),
+    /* Main Directory Content */
+    currentView === "regional_breakdown"
+      ? h.createElement(RegionalNetworkHubView, {
+          contacts: contactsList,
+          onRefreshContacts: refreshContacts,
+          onOpenSos: () => setIsSosOpen(true)
+        })
+      : h.createElement(CrmDirectoryMain, {
+          imports: importsBundle,
+          onOpenEdit: handleOpenEdit,
+          onOpenDetail: handleOpenDetail,
+          onOpenExport: () => setIsExportOpen(true),
+          onOpenScan: () => setIsScanOpen(true),
+          onOpenSos: () => setIsSosOpen(true),
+          onOpenApiSend: handleOpenApiSend,
+          onOpenMultiShare: handleOpenMultiShare
+        }),
 
-      /* Redesigned Modals */
-      h.createElement(ka, {
-        isOpen: isEditOpen,
-        onClose: () => setIsEditOpen(false),
-        contact: activeContact,
-        onSuccess: () => {
-          setIsEditOpen(false);
-          refreshContacts();
-        },
-        imports: importsBundle
-      }),
+    /* Modals */
+    h.createElement(ka, {
+      isOpen: isEditOpen,
+      onClose: () => setIsEditOpen(false),
+      contact: activeContact,
+      onSuccess: () => {
+        setIsEditOpen(false);
+        refreshContacts();
+      },
+      imports: importsBundle
+    }),
 
-      h.createElement(Sa, {
-        isOpen: isDetailOpen,
-        onClose: () => setIsDetailOpen(false),
-        contact: activeContact,
-        onEdit: (c) => {
-          setIsDetailOpen(false);
-          handleOpenEdit(c);
-        },
-        imports: importsBundle
-      }),
+    h.createElement(Sa, {
+      isOpen: isDetailOpen,
+      onClose: () => setIsDetailOpen(false),
+      contact: activeContact,
+      onEdit: (c) => {
+        setIsDetailOpen(false);
+        handleOpenEdit(c);
+      },
+      imports: importsBundle
+    }),
 
-      /* Preserved Support Modals */
-      e.jsx(Aa, { isOpen: isExportOpen, onClose: () => setIsExportOpen(false), contacts: contactsList }),
-      e.jsx(Oa, { isOpen: isScanOpen, onClose: () => setIsScanOpen(false), onSuccess: () => { setIsScanOpen(false); refreshContacts(); } }),
-      e.jsx(Fa, { isOpen: isApiSendOpen, onClose: () => setIsApiSendOpen(false), contact: activeContact }),
-      e.jsx(wa, { isOpen: isMultiShareOpen, onClose: () => setIsMultiShareOpen(false), contacts: selectedContactsForShare }),
-      
-      /* Emergency SOS */
-      h.createElement(EmergencySosModal, {
-        isOpen: isSosOpen,
-        onClose: () => setIsSosOpen(false),
-        regions: [{ id: "reg_hyd", name: "HYDERABAD" }, { id: "reg_kurnool", name: "KURNOOL" }, { id: "reg_atp", name: "ANANTAPUR" }]
-      }),
+    h.createElement(Aa, { isOpen: isExportOpen, onClose: () => setIsExportOpen(false), contacts: contactsList }),
+    h.createElement(Oa, { isOpen: isScanOpen, onClose: () => setIsScanOpen(false), onSuccess: () => { setIsScanOpen(false); refreshContacts(); } }),
+    h.createElement(Fa, { isOpen: isApiSendOpen, onClose: () => setIsApiSendOpen(false), contact: activeContact }),
+    h.createElement(wa, { isOpen: isMultiShareOpen, onClose: () => setIsMultiShareOpen(false), contacts: selectedContactsForShare }),
 
-      /* Floating Mobile Add Contact Button */
-      e.jsxs("button", {
-        type: "button",
-        onClick: () => handleOpenEdit(null),
-        className: "fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform",
-        children: [e.jsx(ca, { className: "w-4 h-4" }), " Add Contact"]
-      })
-    ]
-  });
+    h.createElement(EmergencySosModal, {
+      isOpen: isSosOpen,
+      onClose: () => setIsSosOpen(false),
+      regions: [{ id: "reg_hyd", name: "HYDERABAD" }, { id: "reg_kurnool", name: "KURNOOL" }, { id: "reg_atp", name: "ANANTAPUR" }]
+    }),
+
+    h.createElement("button", {
+      type: "button",
+      onClick: () => handleOpenEdit(null),
+      className: "fixed bottom-20 right-4 z-40 md:hidden flex items-center justify-center gap-1.5 px-4 py-3 bg-primary text-primary-foreground font-bold text-xs rounded-full shadow-2xl border-2 border-background active:scale-95 transition-transform"
+    }, h.createElement(ca, { className: "w-4 h-4" }), " Add Contact")
+  );
 }
 
 
