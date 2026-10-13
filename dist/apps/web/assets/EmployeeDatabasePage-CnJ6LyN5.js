@@ -8,12 +8,33 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
   const [copied, setCopied] = d.useState(false);
   const [errorMsg, setErrorMsg] = d.useState('');
 
+  const requestDriverAccess = async (subPath, options = {}) => {
+    const urls = [
+      '/api/driver/office/driver-access' + subPath,
+      '/api/office/driver-access' + subPath,
+      '/hcgi/api/driver/office/driver-access' + subPath,
+      '/hcgi/api/office/driver-access' + subPath
+    ];
+    let lastErr = null;
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, options);
+        if (res.ok) {
+          const data = await res.json();
+          return data;
+        }
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('Failed to communicate with driver access server');
+  };
+
   const fetchStatus = () => {
     if (!employee || !isOpen) return;
     setLoading(true);
     setErrorMsg('');
-    fetch('/api/driver/office/driver-access/status/' + employee.id)
-      .then(r => r.json())
+    requestDriverAccess('/status/' + employee.id)
       .then(data => {
         if (data && data.success) {
           setAccountStatus(data);
@@ -42,7 +63,7 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
   const handleCreate = () => {
     setActionLoading(true);
     setErrorMsg('');
-    fetch('/api/driver/office/driver-access/create', {
+    requestDriverAccess('/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -50,10 +71,10 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
         temporaryPassword: customPassword.trim() || undefined
       })
     })
-      .then(r => r.json())
       .then(res => {
         if (res.success) {
           setGeneratedPassAlert(res.temporaryPassword);
+          setCustomPassword('');
           fetchStatus();
         } else {
           setErrorMsg(res.error || 'Failed to create driver account');
@@ -67,15 +88,18 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
     if (!confirm('Are you sure you want to reset credentials for ' + employee.name + '? All existing mobile sessions will be revoked.')) return;
     setActionLoading(true);
     setErrorMsg('');
-    fetch('/api/driver/office/driver-access/reset-password', {
+    requestDriverAccess('/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId: employee.id })
+      body: JSON.stringify({
+        employeeId: employee.id,
+        temporaryPassword: customPassword.trim() || undefined
+      })
     })
-      .then(r => r.json())
       .then(res => {
         if (res.success) {
           setGeneratedPassAlert(res.temporaryPassword);
+          setCustomPassword('');
           fetchStatus();
         } else {
           setErrorMsg(res.error || 'Failed to reset password');
@@ -88,12 +112,11 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
   const handleToggle = (nextStatus) => {
     setActionLoading(true);
     setErrorMsg('');
-    fetch('/api/driver/office/driver-access/toggle-status', {
+    requestDriverAccess('/toggle-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ employeeId: employee.id, status: nextStatus })
     })
-      .then(r => r.json())
       .then(res => {
         if (res.success) {
           fetchStatus();
@@ -258,6 +281,19 @@ function DriverAppAccessModal({ isOpen, onClose, employee }) {
                   e.jsxs("div", {
                     className: "pt-2 flex flex-col gap-2.5",
                     children: [
+                      e.jsxs("div", {
+                        className: "space-y-1.5 pb-1",
+                        children: [
+                          e.jsx("label", { className: "block text-xs font-semibold text-slate-300", children: "New Custom Temporary Password (Optional)" }),
+                          e.jsx("input", {
+                            type: "text",
+                            value: customPassword,
+                            onChange: ev => setCustomPassword(ev.target.value),
+                            placeholder: "Leave empty to auto-generate password",
+                            className: "w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 font-mono"
+                          })
+                        ]
+                      }),
                       e.jsxs("button", {
                         onClick: handleReset,
                         disabled: actionLoading,

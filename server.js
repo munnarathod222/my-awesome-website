@@ -1055,8 +1055,15 @@ const server = http.createServer((req, res) => {
   }
 
   // ── Office Driver App Access Management Endpoints ─────────────────
-  if (reqPath.startsWith('/api/office/driver-access') || reqPath.startsWith('/hcgi/api/office/driver-access')) {
-    const cleanOfficePath = reqPath.replace('/hcgi', '');
+  if (
+    reqPath.startsWith('/api/office/driver-access') ||
+    reqPath.startsWith('/hcgi/api/office/driver-access') ||
+    reqPath.startsWith('/api/driver/office/driver-access') ||
+    reqPath.startsWith('/hcgi/api/driver/office/driver-access')
+  ) {
+    const cleanOfficePath = reqPath
+      .replace('/hcgi', '')
+      .replace('/api/driver/office/driver-access', '/api/office/driver-access');
     let body = '';
     req.on('data', c => body += c);
     req.on('end', () => {
@@ -1097,7 +1104,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (cleanOfficePath.startsWith('/api/office/driver-access/status/') && req.method === 'GET') {
-          const empId = cleanOfficePath.split('/status/')[1];
+          const empId = cleanOfficePath.split('/status/')[1].replace(/\/$/, '');
           const status = driverAuthService.getAccountStatus(null, empId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, ...status }));

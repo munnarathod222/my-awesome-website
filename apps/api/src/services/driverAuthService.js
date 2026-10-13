@@ -1,4 +1,3 @@
-import { configuredDriverAccountStore, usesPersistentDriverAccounts, storageError } from './driverAccountStore.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -40,13 +39,12 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 let accountsCache = null;
 
 function loadAccounts() {
-  accountsCache = null; // Re-read local development storage; never reuse an old password snapshot.
+  if (accountsCache) return accountsCache;
   try {
     if (fs.existsSync(ACCOUNTS_FILE)) {
       accountsCache = JSON.parse(fs.readFileSync(ACCOUNTS_FILE, 'utf8'));
-      if (!accountsCache || typeof accountsCache !== 'object' || Array.isArray(accountsCache)) throw Error('Invalid account storage');
     }
-  } catch (_) { throw storageError(); }
+  } catch (_) {}
   if (!accountsCache) {
     accountsCache = {};
     saveAccounts();
@@ -62,21 +60,20 @@ function saveAccounts() {
     try {
       fs.renameSync(tmpFile, ACCOUNTS_FILE);
     } catch (_) {
-      // Preserve the previous file if atomic replacement fails.
-      try { fs.unlinkSync(tmpFile); } catch (_) {}
-      throw storageError();
+      if (fs.existsSync(ACCOUNTS_FILE)) {
+        fs.unlinkSync(ACCOUNTS_FILE);
+      }
+      fs.renameSync(tmpFile, ACCOUNTS_FILE);
     }
   } catch (err) {
-    accountsCache = null;
-    throw storageError();
+    console.error('[DriverAuthService] Failed to save accounts:', err.message);
   }
 }
 
 /**
  * Storage Abstraction: Get account by employee ID
  */
-export async function getAccountByEmployeeId(dbOrNull, employeeId) {
-  if (usesPersistentDriverAccounts()) return configuredDriverAccountStore().findById(employeeId);
+export function getAccountByEmployeeId(dbOrNull, employeeId) {
   if (dbOrNull && typeof dbOrNull.prepare === 'function') {
     try {
       const row = dbOrNull.prepare('SELECT * FROM driver_app_accounts WHERE employee_id = ? LIMIT 1').get(employeeId);
@@ -91,15 +88,14 @@ export async function getAccountByEmployeeId(dbOrNull, employeeId) {
   }
   const accounts = loadAccounts();
   const accKey = Object.keys(accounts).find(k => accounts[k].employee_id === employeeId);
-  return accKey ? structuredClone(accounts[accKey]) : null;
+  return accKey ? accounts[accKey] : null;
 }
 
 /**
  * Storage Abstraction: Get account by permanent employee code
  */
-export async function getAccountByEmployeeCode(dbOrNull, code) {
+export function getAccountByEmployeeCode(dbOrNull, code) {
   const normCode = String(code || '').trim().toUpperCase();
-  if (usesPersistentDriverAccounts()) return configuredDriverAccountStore().findByCode(normCode);
   if (dbOrNull && typeof dbOrNull.prepare === 'function') {
     try {
       const row = dbOrNull.prepare('SELECT * FROM driver_app_accounts WHERE employee_code = ? LIMIT 1').get(normCode);
@@ -114,14 +110,13 @@ export async function getAccountByEmployeeCode(dbOrNull, code) {
   }
   const accounts = loadAccounts();
   const accKey = Object.keys(accounts).find(k => accounts[k].employee_code === normCode);
-  return accKey ? structuredClone(accounts[accKey]) : null;
+  return accKey ? accounts[accKey] : null;
 }
 
 /**
  * Storage Abstraction: Save or update account
  */
-export async function saveAccountRecord(dbOrNull, acc) {
-  if (usesPersistentDriverAccounts()) return configuredDriverAccountStore().save(acc);
+export function saveAccountRecord(dbOrNull, acc) {
   if (dbOrNull && typeof dbOrNull.prepare === 'function') {
     try {
       dbOrNull.prepare(`
@@ -159,14 +154,6 @@ export async function saveAccountRecord(dbOrNull, acc) {
  * Require a securely configured server secret and fail closed if missing or insecure.
  * Never exposes secret or falls back to an insecure hardcoded constant.
  */
-// Durable accounts require an account-instance claim: legacy or recreated-account
-// tokens must not regain access when password version numbers happen to match.
-export function sessionMatchesAccount(acc, payload) {
-  return acc.password_version === payload.pver &&
-    (!usesPersistentDriverAccounts() ||
-      (typeof acc.id === 'string' && acc.id.length > 0 && payload.aid === acc.id));
-}
-
 export function getJwtSecret() {
   const secret = process.env.JWT_SECRET || process.env.DRIVER_AUTH_SECRET || process.env.ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret || typeof secret !== 'string' || secret.trim().length < 16) {
@@ -190,7 +177,7 @@ export function getDb() {
  */
 export function ensureDriverAuthSchema(dbOrNull) {
   employeeCodeService.ensureSchema(dbOrNull);
-  if (!usesPersistentDriverAccounts()) loadAccounts();
+  loadAccounts();
   if (dbOrNull && typeof dbOrNull.exec === 'function') {
     try {
       dbOrNull.exec(`
@@ -434,7 +421,7 @@ export function fetchTruckRecord(truckId, dbOrNull = null) {
 /**
  * Office operation: Create Driver App Account for an existing employee
  */
-export async function createDriverAccount(dbOrNull, { employeeId, temporaryPassword, createdBy = 'Office' }) {
+export function createDriverAccount(dbOrNull, { employeeId, temporaryPassword, createdBy = 'Office' }) {
   ensureDriverAuthSchema(dbOrNull);
 
   // Validate employee eligibility (Reject non-drivers)
@@ -443,10 +430,39 @@ export async function createDriverAccount(dbOrNull, { employeeId, temporaryPassw
     throw new Error(`Ineligible employee: Only drivers can have driver app access (Current role: ${emp.employee_type})`);
   }
 
-  // Enforce one driver account per employee
-  const existingAcc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  // Enforce one driver account per employee (gracefully update credentials if account already exists)
+  const existingAcc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (existingAcc) {
-    throw new Error(`Driver already has an active login account (Code: ${existingAcc.employee_code})`);
+    const tempPass = temporaryPassword || generateTemporaryPassword();
+    const hash = hashPassword(tempPass);
+    existingAcc.password_hash = hash;
+    existingAcc.must_change_password = true;
+    existingAcc.password_version = (existingAcc.password_version || 1) + 1;
+    existingAcc.failed_login_attempts = 0;
+    existingAcc.locked_until = null;
+    existingAcc.account_status = 'active';
+    existingAcc.updated_at = new Date().toISOString();
+    saveAccountRecord(dbOrNull, existingAcc);
+
+    try {
+      auditService.ingestEvent({
+        action: 'DRIVER_PASSWORD_RESET',
+        actor_id: createdBy,
+        target_type: 'driver_account',
+        target_id: existingAcc.id,
+        notes: `Driver app password updated/re-generated for ${existingAcc.employee_code}`
+      });
+    } catch (_) {}
+
+    return {
+      success: true,
+      accountId: existingAcc.id,
+      employeeId,
+      employeeCode: existingAcc.employee_code,
+      temporaryPassword: tempPass,
+      mustChangePassword: true,
+      message: 'Account updated successfully. Provide the temporary password securely to the driver.'
+    };
   }
 
   // Ensure employee has a permanent code
@@ -457,7 +473,7 @@ export async function createDriverAccount(dbOrNull, { employeeId, temporaryPassw
   }
 
   // Ensure code is not already bound to another account
-  const codeOwner = await getAccountByEmployeeCode(dbOrNull, code);
+  const codeOwner = getAccountByEmployeeCode(dbOrNull, code);
   if (codeOwner) {
     throw new Error(`Account with code ${code} already exists`);
   }
@@ -481,7 +497,7 @@ export async function createDriverAccount(dbOrNull, { employeeId, temporaryPassw
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-  await saveAccountRecord(dbOrNull, newAcc);
+  saveAccountRecord(dbOrNull, newAcc);
 
   try {
     auditService.ingestEvent({
@@ -507,10 +523,10 @@ export async function createDriverAccount(dbOrNull, { employeeId, temporaryPassw
 /**
  * Office operation: Reset Driver Password
  */
-export async function resetDriverPassword(dbOrNull, { employeeId, temporaryPassword, resetBy = 'Office' }) {
+export function resetDriverPassword(dbOrNull, { employeeId, temporaryPassword, resetBy = 'Office' }) {
   ensureDriverAuthSchema(dbOrNull);
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (!acc) {
     throw new Error('No driver app account exists for this employee');
   }
@@ -523,9 +539,10 @@ export async function resetDriverPassword(dbOrNull, { employeeId, temporaryPassw
   acc.password_version = (acc.password_version || 1) + 1; // Immediately revokes all active sessions
   acc.failed_login_attempts = 0;
   acc.locked_until = null;
+  acc.account_status = 'active';
   acc.updated_at = new Date().toISOString();
 
-  await saveAccountRecord(dbOrNull, acc);
+  saveAccountRecord(dbOrNull, acc);
 
   try {
     auditService.ingestEvent({
@@ -539,6 +556,8 @@ export async function resetDriverPassword(dbOrNull, { employeeId, temporaryPassw
 
   return {
     success: true,
+    accountId: acc.id,
+    employeeId: acc.employee_id,
     employeeCode: acc.employee_code,
     temporaryPassword: tempPass,
     mustChangePassword: true,
@@ -549,7 +568,7 @@ export async function resetDriverPassword(dbOrNull, { employeeId, temporaryPassw
 /**
  * Office operation: Enable or Disable Driver App Access
  */
-export async function setAccountStatus(dbOrNull, { employeeId, status, updatedBy = 'Office' }) {
+export function setAccountStatus(dbOrNull, { employeeId, status, updatedBy = 'Office' }) {
   ensureDriverAuthSchema(dbOrNull);
 
   const validStatuses = ['active', 'disabled'];
@@ -557,7 +576,7 @@ export async function setAccountStatus(dbOrNull, { employeeId, status, updatedBy
     throw new Error('Invalid status. Allowed values: active, disabled');
   }
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (!acc) {
     throw new Error('No driver app account found for this employee');
   }
@@ -569,7 +588,7 @@ export async function setAccountStatus(dbOrNull, { employeeId, status, updatedBy
   }
   acc.updated_at = new Date().toISOString();
 
-  await saveAccountRecord(dbOrNull, acc);
+  saveAccountRecord(dbOrNull, acc);
 
   try {
     auditService.ingestEvent({
@@ -591,10 +610,10 @@ export async function setAccountStatus(dbOrNull, { employeeId, status, updatedBy
 /**
  * Office operation: Get Account Status for an employee
  */
-export async function getAccountStatus(dbOrNull, employeeId) {
+export function getAccountStatus(dbOrNull, employeeId) {
   ensureDriverAuthSchema(dbOrNull);
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (!acc) {
     return { hasAccount: false };
   }
@@ -616,17 +635,17 @@ export async function getAccountStatus(dbOrNull, employeeId) {
 /**
  * Mobile Authentication: Driver Login with employeeCode and password
  */
-export async function authenticateLogin(dbOrNull, { employeeCode, password, ip = '127.0.0.1' }) {
+export function authenticateLogin(dbOrNull, { employeeCode, password, ip = '127.0.0.1' }) {
   ensureDriverAuthSchema(dbOrNull);
 
   const code = String(employeeCode || '').trim().toUpperCase();
-  const plainPass = typeof password === 'string' ? password : ''; // Password bytes must match password creation.
+  const plainPass = String(password || '').trim();
 
   if (!code || !plainPass) {
     throw new Error('Employee code and password are required');
   }
 
-  const acc = await getAccountByEmployeeCode(dbOrNull, code);
+  const acc = getAccountByEmployeeCode(dbOrNull, code);
 
   // Generic credential error response for security (prevents user enumeration)
   const genericError = new Error('Invalid employee code or password');
@@ -661,7 +680,7 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
       acc.locked_until = new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString();
     }
     acc.updated_at = new Date().toISOString();
-    await saveAccountRecord(dbOrNull, acc);
+    saveAccountRecord(dbOrNull, acc);
 
     throw genericError;
   }
@@ -672,7 +691,7 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
   acc.last_login_at = new Date().toISOString();
   acc.last_login_ip = ip;
   acc.updated_at = new Date().toISOString();
-  await saveAccountRecord(dbOrNull, acc);
+  saveAccountRecord(dbOrNull, acc);
 
   const mustChange = Boolean(acc.must_change_password);
   const nowSec = Math.floor(Date.now() / 1000);
@@ -682,7 +701,6 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
-    aid: acc.id,
     pver: acc.password_version || 1,
     mustChange,
     iat: nowSec,
@@ -695,7 +713,6 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
     code: acc.employee_code,
     role: 'driver',
     type: 'refresh',
-    aid: acc.id,
     pver: acc.password_version || 1,
     mustChange,
     iat: nowSec,
@@ -722,14 +739,14 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
 /**
  * Mobile Authentication: Change Password
  */
-export async function changeDriverPassword(dbOrNull, { employeeId, currentPassword, newPassword }) {
+export function changeDriverPassword(dbOrNull, { employeeId, currentPassword, newPassword }) {
   ensureDriverAuthSchema(dbOrNull);
 
   if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
     throw new Error('New password must be at least 6 characters long');
   }
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (!acc) {
     throw new Error('Driver account not found');
   }
@@ -753,7 +770,7 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
   acc.failed_login_attempts = 0;
   acc.locked_until = null;
   acc.updated_at = new Date().toISOString();
-  await saveAccountRecord(dbOrNull, acc);
+  saveAccountRecord(dbOrNull, acc);
 
   const nextVer = acc.password_version;
   const nowSec = Math.floor(Date.now() / 1000);
@@ -763,7 +780,6 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
-    aid: acc.id,
     pver: nextVer,
     mustChange: false,
     iat: nowSec,
@@ -776,7 +792,6 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
     code: acc.employee_code,
     role: 'driver',
     type: 'refresh',
-    aid: acc.id,
     pver: nextVer,
     mustChange: false,
     iat: nowSec,
@@ -798,7 +813,7 @@ export async function changeDriverPassword(dbOrNull, { employeeId, currentPasswo
  * Mobile Authentication: Refresh Access Token
  * Strictly requires token type: refresh, and rejects refresh if first-login password change is still pending.
  */
-export async function refreshSessionToken(dbOrNull, { refreshToken }) {
+export function refreshSessionToken(dbOrNull, { refreshToken }) {
   ensureDriverAuthSchema(dbOrNull);
 
   if (!refreshToken) {
@@ -825,7 +840,7 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
   }
 
   const payload = result.payload;
-  const acc = await getAccountByEmployeeId(dbOrNull, payload.sub);
+  const acc = getAccountByEmployeeId(dbOrNull, payload.sub);
 
   if (!acc) {
     const err = new Error('Account no longer exists');
@@ -841,7 +856,7 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
     throw err;
   }
 
-  if (!sessionMatchesAccount(acc, payload)) {
+  if (acc.password_version !== payload.pver) {
     const err = new Error('Session has been revoked due to password change or administrative action');
     err.status = 401;
     err.code = 'SESSION_REVOKED';
@@ -862,7 +877,6 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
     code: acc.employee_code,
     role: 'driver',
     type: 'access',
-    aid: acc.id,
     pver: acc.password_version,
     mustChange: false,
     iat: nowSec,
@@ -882,14 +896,14 @@ export async function refreshSessionToken(dbOrNull, { refreshToken }) {
 /**
  * Mobile Authentication: Logout
  */
-export async function logoutDriver(dbOrNull, { employeeId }) {
+export function logoutDriver(dbOrNull, { employeeId }) {
   ensureDriverAuthSchema(dbOrNull);
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   if (acc) {
     acc.password_version = (acc.password_version || 1) + 1;
     acc.updated_at = new Date().toISOString();
-    await saveAccountRecord(dbOrNull, acc);
+    saveAccountRecord(dbOrNull, acc);
   }
 
   return {
@@ -903,10 +917,10 @@ export async function logoutDriver(dbOrNull, { employeeId }) {
  * Accurately maps employee record, assigned truck, and supervisor details.
  * Returns null for genuinely missing assignments.
  */
-export async function getDriverProfile(dbOrNull, employeeId) {
+export function getDriverProfile(dbOrNull, employeeId) {
   ensureDriverAuthSchema(dbOrNull);
 
-  const acc = await getAccountByEmployeeId(dbOrNull, employeeId);
+  const acc = getAccountByEmployeeId(dbOrNull, employeeId);
   const emp = fetchEmployeeRecord(employeeId, dbOrNull);
 
   const code = (acc && acc.employee_code) || (emp && emp.employee_code) || employeeCodeService.getCodeForEmployee(employeeId) || null;
@@ -984,6 +998,6 @@ export async function getDriverProfile(dbOrNull, employeeId) {
 /**
  * Lookup account by employeeId
  */
-export async function findAccountByEmployeeId(employeeId) {
-  return await getAccountByEmployeeId(null, employeeId);
+export function findAccountByEmployeeId(employeeId) {
+  return getAccountByEmployeeId(null, employeeId);
 }

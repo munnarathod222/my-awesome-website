@@ -18,15 +18,15 @@
     "id": "drv_acc_1791142856334_3dcc109e",
     "employee_id": "2ioikacogombftp",
     "employee_code": "D005",
-    "password_hash": "scrypt$43c5a16fe533bfe7708827b4659f7ad6$6f571ffe8cb42e43a2fb700d4e0f56bac6031cf5d51685a949c9a1aa7e1c855ff5d2eed4fbead3949f5f76a69b1e2036ba4ad5a136fd24479ea8b37d05dfd498",
+    "password_hash": "scrypt$042e6843f70bb52789d66d692a03c6b5$4ab8692a93f85129057b95993e5fba38f79e921a3ed16be5709ecb2a15507831a62a294be131db5c4515b3ac5051a11203bed47fc8b528f8b809238d2ed0cb86",
     "account_status": "active",
-    "must_change_password": false,
-    "password_version": 5,
+    "must_change_password": true,
+    "password_version": 7,
     "failed_login_attempts": 0,
     "locked_until": null,
-    "last_login_at": "2026-10-04T19:42:15.977Z",
-    "last_login_ip": "::ffff:127.0.0.1",
+    "last_login_at": "2026-10-13T15:36:26.947Z",
+    "last_login_ip": "127.0.0.1",
     "created_at": "2026-10-04T19:40:56.334Z",
-    "updated_at": "2026-10-04T19:42:16.192Z"
+    "updated_at": "2026-10-13T15:42:24.511Z"
   }
 }
