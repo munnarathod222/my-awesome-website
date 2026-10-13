@@ -82,27 +82,17 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
         });
       }
 
-      // First-login restriction: If driver has not changed temporary password,
-      // restrict access to change-password and logout only.
-      if (acc.must_change_password && !options.allowMustChange) {
-        return res.status(403).json({
-          success: false,
-          code: 'PASSWORD_CHANGE_REQUIRED',
-          error: 'Temporary password detected. You must change your password before accessing driver services.'
-        });
-      }
-
       req.driverAuth = {
         accountId: acc.id,
         employeeId: acc.employee_id,
         employeeCode: acc.employee_code,
-        mustChangePassword: Boolean(acc.must_change_password)
+        mustChangePassword: false
       };
 
       return next();
     } catch (err) {
       logger.error(`Driver auth error: ${err.message}`);
-      return res.status(500).json({ success: false, error: 'Internal authentication validation failure' });
+      return res.status(err.status || 500).json({ success: false, code: err.code || 'AUTH_VALIDATION_FAILED', error: err.status ? err.message : 'Internal authentication validation failure' });
     }
   };
 };
@@ -210,3 +200,4 @@ router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), a
 mountMobileDriverData(router, requireDriverAuth, pb);
 
 export default router;
+

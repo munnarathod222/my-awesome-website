@@ -47,7 +47,7 @@ async function fixture(t) {
 test('changed password survives repeated login, logout and a fresh server module', async t => {
   const { service: s, load } = await fixture(t);
   const first = await s.authenticateLogin(null, { employeeCode:'D999', password:'Temp-Only-123' });
-  assert.equal(first.mustChangePassword, true);
+  assert.equal(first.mustChangePassword, false);
   const changed = await s.changeDriverPassword(null, { employeeId:'syntheticdriver', currentPassword:'Temp-Only-123', newPassword:'Chosen-Pass-987' });
   await assert.rejects(s.refreshSessionToken(null, { refreshToken:first.refreshToken }), { code:'SESSION_REVOKED' });
   await s.refreshSessionToken(null, { refreshToken:changed.refreshToken });
@@ -119,4 +119,55 @@ test('legacy sessions and previous account instances cannot regain access after 
   assert.equal(s.sessionMatchesAccount(acc,s.verifyJwt(fresh.accessToken).payload),true);
   await assert.rejects(s.refreshSessionToken(null,{refreshToken:old.refreshToken}),{code:'SESSION_REVOKED'});
   await s.refreshSessionToken(null,{refreshToken:fresh.refreshToken});
+});
+
+
+test('office password works repeatedly without a compulsory password change', async t => {
+  const {service:s,load}=await fixture(t);
+  for(let i=0;i<2;i++){
+    const session=await s.authenticateLogin(null,{employeeCode:'D999',password:'Temp-Only-123'});
+    assert.equal(session.mustChangePassword,false);
+    await s.refreshSessionToken(null,{refreshToken:session.refreshToken});
+    await s.logoutDriver(null,{employeeId:'syntheticdriver'});
+  }
+  const restart=await load('office-password-restart');
+  assert.equal((await restart.authenticateLogin(null,{employeeCode:'D999',password:'Temp-Only-123'})).mustChangePassword,false);
+});
+test('existing first-login flag clears after verified login without changing password', async t => {
+  const {service:s,remote}=await fixture(t);
+  remote.rows.get('syntheticdriver').account.must_change_password=true;
+  const login=await s.authenticateLogin(null,{employeeCode:'D999',password:'Temp-Only-123'});
+  assert.equal(login.mustChangePassword,false);
+  assert.equal(remote.rows.get('syntheticdriver').account.must_change_password,false);
+  await s.refreshSessionToken(null,{refreshToken:login.refreshToken});
+});
+test('office reset issues directly usable password and revokes old sessions', async t => {
+  const {service:s}=await fixture(t);
+  const old=await s.authenticateLogin(null,{employeeCode:'D999',password:'Temp-Only-123'});
+  const reset=await s.resetDriverPassword(null,{employeeId:'syntheticdriver',temporaryPassword:'Reset-Only-789'});
+  assert.equal(reset.mustChangePassword,false);
+  await assert.rejects(s.refreshSessionToken(null,{refreshToken:old.refreshToken}),{code:'SESSION_REVOKED'});
+  assert.equal((await s.authenticateLogin(null,{employeeCode:'D999',password:'Reset-Only-789'})).mustChangePassword,false);
+});
+
+test('protected route accepts office-issued login and reports storage outage accurately', async t => {
+  const {service:s,remote,dir}=await fixture(t);
+  let source=await fs.readFile(new URL('../src/routes/mobileAuth.js',import.meta.url),'utf8');
+  source=source.replace("import pb from '../utils/pocketbaseClient.js';","const pb = {};");
+  source=source.replace("import { mountMobileDriverData } from './mobileDriverData.js';","const mountMobileDriverData = () => {};");
+  source=source.replace("import express from 'express';","const express = { Router: () => ({post(){},get(){}}) };");
+  source=source.replace("../services/driverAuthService.js","./driverAuthService.js");
+  source=source.replace("import logger from '../utils/logger.js';","const logger = {error(){}};");
+  await fs.writeFile(path.join(dir,'mobileAuth.js'),source);
+  const {requireDriverAuth}=await import(pathToFileURL(path.join(dir,'mobileAuth.js')).href);
+  const session=await s.authenticateLogin(null,{employeeCode:'D999',password:'Temp-Only-123'});
+  const req={headers:{authorization:'Bearer '+session.accessToken}};
+  let status,body,passed=false;
+  const res={status(value){status=value;return this;},json(value){body=value;return this;}};
+  await requireDriverAuth()(req,res,()=>{passed=true;});
+  assert.equal(passed,true);
+  assert.equal(req.driverAuth.mustChangePassword,false);
+  remote.fail(true);passed=false;
+  await requireDriverAuth()(req,res,()=>{passed=true;});
+  assert.equal(passed,false);assert.equal(status,503);assert.equal(body.code,'AUTH_STORAGE_UNAVAILABLE');
 });
