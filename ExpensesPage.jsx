@@ -179,7 +179,6 @@ const ExpensesPage = () => {
         ...exp,
         cardContext: exp.credit_card_id ? cardsMap[exp.credit_card_id] : null
       }));
-      setExpenses(mappedExpenses);
 
       let fetchedAdvances = [];
 
@@ -280,6 +279,40 @@ const ExpensesPage = () => {
       }
 
       const sortedAdvs = (fetchedAdvances || []).sort((a, b) => new Date(b.date || b.created) - new Date(a.date || a.created));
+
+      // 🛡️ Ensure any driver advances without an expense record are included in the Expenses Ledger
+      const existingExpIds = new Set(mappedExpenses.map(e => e.id));
+      const existingExpKeys = new Set(mappedExpenses.map(e => `${Number(e.amount || 0).toFixed(2)}_${String(e.date || '').slice(0, 10)}`));
+
+      sortedAdvs.forEach(adv => {
+        const advExpId = adv.expense_id;
+        const dStr = String(adv.date || adv.created || '').slice(0, 10);
+        const amt = Number(adv.amount || 0).toFixed(2);
+        const key = `${amt}_${dStr}`;
+        const isAlreadyInExpenses = (advExpId && existingExpIds.has(advExpId)) ||
+                                    existingExpIds.has(adv.id) ||
+                                    existingExpKeys.has(key);
+
+        if (!isAlreadyInExpenses) {
+          mappedExpenses.push({
+            id: advExpId || adv.id || `adv_${Date.now()}`,
+            advance_id: adv.id,
+            date: adv.date || adv.created || new Date().toISOString(),
+            category: 'Employee',
+            subcategory: 'Employee Advance',
+            description: `Driver Advance - ${adv.employee_name || 'Driver'}${adv.reason ? ` (${adv.reason})` : ''}`,
+            payment_method: 'Cash',
+            amount: Number(adv.amount) || 0,
+            status: 'Approved',
+            employee_id: adv.employee_id || '',
+            notes: adv.notes || adv.reason || 'Driver Advance'
+          });
+          existingExpKeys.add(key);
+        }
+      });
+
+      mappedExpenses.sort((a, b) => new Date(b.date || b.created || 0) - new Date(a.date || a.created || 0));
+      setExpenses(mappedExpenses);
       setAdvances(sortedAdvs);
 
     } catch (err) {
