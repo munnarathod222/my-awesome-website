@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   AlertTriangle, ShieldCheck, Plus, Calendar, DollarSign, User, Truck, 
   FileText, Camera, ChevronRight, X, Edit, Trash2, Search, Filter, 
@@ -21,7 +21,7 @@ export default function TruckAccidentsView({
   onBackToFleet
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [liabilityFilter, setLiabilityFilter] = useState('all'); // 'all', 'driver_fined', 'company_expense'
+  const [liabilityFilter, setLiabilityFilter] = useState('all'); // 'all', 'driver_paid_direct', 'driver_fined', 'company_expense'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccident, setEditingAccident] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +32,7 @@ export default function TruckAccidentsView({
   const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [formCost, setFormCost] = useState('');
   const [formDesc, setFormDesc] = useState('');
-  const [formFined, setFormFined] = useState(false);
+  const [formSettlement, setFormSettlement] = useState('driver_paid_direct'); // 'driver_paid_direct', 'driver_fined', 'company_expense'
   const [newPhotos, setNewPhotos] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const fileInputRef = useRef(null);
@@ -40,11 +40,42 @@ export default function TruckAccidentsView({
   // Fullscreen Photo Viewer State
   const [photoViewer, setPhotoViewer] = useState({ isOpen: false, record: null, activeIndex: 0 });
 
+  // Helpers to detect settlement responsibility
+  const getSettlement = (ac) => {
+    if (!ac) return 'company_expense';
+    const desc = (ac.description || '').toLowerCase();
+    if (
+      desc.includes('<!-- settlement:driver_paid_direct -->') ||
+      desc.includes('paid directly by driver') ||
+      desc.includes('damage paid by driver') ||
+      desc.includes('paid by driver') ||
+      ac.settlement_type === 'driver_paid_direct'
+    ) return 'driver_paid_direct';
+    if (
+      desc.includes('<!-- settlement:driver_fined -->') ||
+      desc.includes('fined to driver') ||
+      ac.fined_to_employee === true ||
+      ac.fined_to_employee === 'true' ||
+      ac.settlement_type === 'driver_fined'
+    ) return 'driver_fined';
+    return 'company_expense';
+  };
+
+  const cleanDesc = (d) => {
+    if (!d) return '';
+    return d
+      .replace(/<!-- SETTLEMENT:[\s\S]*?-->/gi, '')
+      .replace(/\[Paid Directly by Driver[^\]]*\]/gi, '')
+      .replace(/\[Fined to Driver[^\]]*\]/gi, '')
+      .replace(/\[Company Borne[^\]]*\]/gi, '')
+      .trim();
+  };
+
   // Keyboard navigation for photo viewer
-  React.useEffect(() => {
+  useEffect(() => {
     if (!photoViewer.isOpen || !photoViewer.record) return;
     const handleKeyDown = (e) => {
-      const imgs = Array.isArray(photoViewer.record?.image_urls) ? photoViewer.record.image_urls : [];
+      const imgs = Array.isArray(photoViewer.record?.image_urls) ? photoViewer.record.image_urls : (photoViewer.record?.image_urls ? [photoViewer.record.image_urls] : []);
       if (imgs.length <= 1) return;
       if (e.key === 'ArrowRight') {
         setPhotoViewer(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % imgs.length }));
@@ -70,7 +101,7 @@ export default function TruckAccidentsView({
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormCost('');
     setFormDesc('');
-    setFormFined(false);
+    setFormSettlement('driver_paid_direct');
     setNewPhotos([]);
     setPhotoPreviews([]);
     setIsModalOpen(true);
@@ -83,8 +114,8 @@ export default function TruckAccidentsView({
     setFormDriverId(accident.employee_id || '');
     setFormDate(accident.accident_date ? accident.accident_date.split('T')[0] : new Date().toISOString().split('T')[0]);
     setFormCost(accident.damage_cost || '');
-    setFormDesc(accident.description || '');
-    setFormFined(accident.fined_to_employee === true || accident.fined_to_employee === 'true');
+    setFormDesc(cleanDesc(accident.description));
+    setFormSettlement(getSettlement(accident));
     setNewPhotos([]);
     setPhotoPreviews([]);
     setIsModalOpen(true);
@@ -119,13 +150,25 @@ export default function TruckAccidentsView({
       const selectedTruck = trucks.find(t => t.id === formTruckId);
       const selectedDriver = drivers.find(d => d.id === formDriverId);
 
+      let settlementTag = '';
+      if (formSettlement === 'driver_paid_direct') {
+        settlementTag = '<!-- SETTLEMENT:driver_paid_direct -->\n[Paid Directly by Driver - Zero Company Liability] ';
+      } else if (formSettlement === 'driver_fined') {
+        settlementTag = '<!-- SETTLEMENT:driver_fined -->\n[Fined to Driver - Salary Deduction] ';
+      } else {
+        settlementTag = '<!-- SETTLEMENT:company_expense -->\n[Company Borne Expense] ';
+      }
+
+      const rawUserDesc = cleanDesc(formDesc);
+      const finalDesc = (settlementTag + rawUserDesc).trim();
+
       const formData = new FormData();
       formData.append('truck_id', formTruckId);
       formData.append('employee_id', formDriverId || '');
       formData.append('accident_date', isoDate);
       formData.append('damage_cost', costNum);
-      formData.append('description', formDesc.trim());
-      formData.append('fined_to_employee', formFined ? 'true' : 'false');
+      formData.append('description', finalDesc);
+      formData.append('fined_to_employee', formSettlement === 'driver_fined' ? 'true' : 'false');
 
       // Append images
       newPhotos.forEach(file => {
@@ -139,9 +182,9 @@ export default function TruckAccidentsView({
         await pb.collection('driver_accident_reports').create(formData, { $autoCancel: false });
         
         // If fined to driver, also log to cashbook/expenses/advances if available
-        if (formFined && formDriverId) {
+        if (formSettlement === 'driver_fined' && formDriverId) {
           try {
-            const desc = `Accident Fine: ${formDesc.slice(0, 40) || 'Vehicle damage'} (${selectedTruck?.truck_number || ''})`;
+            const desc = `Accident Fine: ${rawUserDesc ? rawUserDesc.slice(0, 40) : 'Vehicle damage'} (${selectedTruck?.truck_number || ''})`;
             const exp = await pb.collection('expenses').create({
               category: 'Employee',
               subcategory: 'Employee Advance',
@@ -179,7 +222,11 @@ export default function TruckAccidentsView({
           }
         }
 
-        toast.success(`Accident report logged for ${selectedTruck?.truck_number || 'Truck'}!`);
+        if (formSettlement === 'driver_paid_direct') {
+          toast.success(`Accident report saved: Paid directly by driver (₹0 company cost)`);
+        } else {
+          toast.success(`Accident report logged for ${selectedTruck?.truck_number || 'Truck'}!`);
+        }
       }
 
       setIsModalOpen(false);
@@ -228,9 +275,10 @@ export default function TruckAccidentsView({
       }
 
       // Liability filter
-      const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
-      if (liabilityFilter === 'driver_fined' && !isFined) return false;
-      if (liabilityFilter === 'company_expense' && isFined) return false;
+      const st = getSettlement(ac);
+      if (liabilityFilter === 'driver_paid_direct' && st !== 'driver_paid_direct') return false;
+      if (liabilityFilter === 'driver_fined' && st !== 'driver_fined') return false;
+      if (liabilityFilter === 'company_expense' && st !== 'company_expense') return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -254,10 +302,16 @@ export default function TruckAccidentsView({
     const list = filteredAccidents;
     const totalCount = list.length;
     const totalDamage = list.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
-    const driverFinedList = list.filter(a => a.fined_to_employee === true || a.fined_to_employee === 'true');
+
+    const driverPaidDirectList = list.filter(a => getSettlement(a) === 'driver_paid_direct');
+    const driverPaidDirectCount = driverPaidDirectList.length;
+    const driverPaidDirectTotal = driverPaidDirectList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+
+    const driverFinedList = list.filter(a => getSettlement(a) === 'driver_fined');
     const driverFinedCount = driverFinedList.length;
     const driverFinedTotal = driverFinedList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
-    const companyExpenseList = list.filter(a => !(a.fined_to_employee === true || a.fined_to_employee === 'true'));
+
+    const companyExpenseList = list.filter(a => getSettlement(a) === 'company_expense');
     const companyExpenseCount = companyExpenseList.length;
     const companyExpenseTotal = companyExpenseList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
 
@@ -269,6 +323,8 @@ export default function TruckAccidentsView({
     return {
       totalCount,
       totalDamage,
+      driverPaidDirectCount,
+      driverPaidDirectTotal,
       driverFinedCount,
       driverFinedTotal,
       companyExpenseCount,
@@ -359,9 +415,10 @@ export default function TruckAccidentsView({
               onChange={(e) => setLiabilityFilter(e.target.value)}
               className="w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-hidden focus:border-rose-500"
             >
-              <option value="all">⚖️ All Liabilities ({accidents.length})</option>
-              <option value="driver_fined">👤 Driver Fined / Deducted</option>
-              <option value="company_expense">🏢 Company Misc Expense</option>
+              <option value="all">⚖️ All Financial Liabilities ({accidents.length})</option>
+              <option value="driver_paid_direct">🟢 Paid Directly by Driver (Zero Co. Cost)</option>
+              <option value="driver_fined">👤 Driver Fined / Salary Deduction</option>
+              <option value="company_expense">🏢 Company Borne Expense</option>
             </select>
           </div>
 
@@ -425,16 +482,16 @@ export default function TruckAccidentsView({
         <Card className="border-border/60 bg-card shadow-xs rounded-2xl">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Fined to Driver</p>
-              <p className="text-2xl font-black font-mono text-amber-500 mt-1">
-                ₹{kpis.driverFinedTotal.toLocaleString('en-IN')}
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Paid Directly by Driver</p>
+              <p className="text-2xl font-black font-mono text-emerald-500 mt-1">
+                ₹{kpis.driverPaidDirectTotal.toLocaleString('en-IN')}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                {kpis.driverFinedCount} incidents debited as salary fine
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                {kpis.driverPaidDirectCount} settled on spot (₹0 co. cost)
               </p>
             </div>
-            <div className="p-3 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20">
-              <User className="w-5 h-5" />
+            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20">
+              <ShieldCheck className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
@@ -447,7 +504,7 @@ export default function TruckAccidentsView({
                 ₹{kpis.companyExpenseTotal.toLocaleString('en-IN')}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {kpis.companyExpenseCount} incidents logged as misc expense
+                {kpis.companyExpenseCount} incidents (plus ₹{kpis.driverFinedTotal.toLocaleString('en-IN')} fined)
               </p>
             </div>
             <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl border border-blue-500/20">
@@ -488,7 +545,7 @@ export default function TruckAccidentsView({
           {filteredAccidents.map((ac) => {
             const trk = trucks.find(t => t.id === ac.truck_id || t.truck_number === ac.truck_id);
             const drv = drivers.find(d => d.id === ac.employee_id);
-            const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
+            const st = getSettlement(ac);
             const photos = Array.isArray(ac.image_urls) ? ac.image_urls.filter(Boolean) : (ac.image_urls ? [ac.image_urls] : []);
 
             return (
@@ -522,9 +579,13 @@ export default function TruckAccidentsView({
                     </Badge>
 
                     {/* Liability Badge */}
-                    {isFined ? (
+                    {st === 'driver_paid_direct' ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
+                        🟢 Paid by Driver (Zero Co. Cost)
+                      </Badge>
+                    ) : st === 'driver_fined' ? (
                       <Badge className="bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold">
-                        ⚖️ Fined to Driver
+                        ⚖️ Fined to Driver (Salary Deduction)
                       </Badge>
                     ) : (
                       <Badge className="bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold">
@@ -542,6 +603,16 @@ export default function TruckAccidentsView({
                       <span className="text-base font-black font-mono text-rose-500">
                         ₹{(Number(ac.damage_cost) || 0).toLocaleString('en-IN')}
                       </span>
+                      {st === 'driver_paid_direct' && (
+                        <span className="text-[9px] font-bold text-emerald-500 block">
+                          Paid by Driver (₹0 Co. Cost)
+                        </span>
+                      )}
+                      {st === 'driver_fined' && (
+                        <span className="text-[9px] font-bold text-amber-500 block">
+                          Salary Deduction
+                        </span>
+                      )}
                     </div>
 
                     <Button 
@@ -595,14 +666,18 @@ export default function TruckAccidentsView({
                         <FileText className="w-3 h-3 text-amber-500" /> Incident Description & Circumstances:
                       </span>
                       <p className="text-foreground leading-relaxed mt-1">
-                        {ac.description || 'No detailed damage description entered for this record.'}
+                        {cleanDesc(ac.description) || 'No detailed damage description entered for this record.'}
                       </p>
                     </div>
-                    {isFined && (
+                    {st === 'driver_paid_direct' ? (
+                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
+                        ✓ Settled & paid directly by driver on the spot. Company has zero financial involvement or cost.
+                      </p>
+                    ) : st === 'driver_fined' ? (
                       <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 font-medium">
                         * ₹{(Number(ac.damage_cost) || 0).toLocaleString('en-IN')} marked for payroll deduction / driver liability.
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Photos Box */}
@@ -758,28 +833,106 @@ export default function TruckAccidentsView({
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Detail collision point, third party damage, location, mechanical impact, FIR/insurance remarks..."
+                  placeholder="Detail collision point, third party damage, location, mechanical impact, remarks..."
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
                   className="w-full bg-background border border-border/80 rounded-xl p-3 text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-rose-500"
                 />
               </div>
 
-              {/* Liability Toggle */}
-              <div className="p-3.5 bg-muted/40 rounded-xl border border-border/60 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="fined_to_employee"
-                  checked={formFined}
-                  onChange={(e) => setFormFined(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
-                />
-                <label htmlFor="fined_to_employee" className="text-xs text-foreground cursor-pointer select-none space-y-0.5">
-                  <span className="font-bold block text-amber-500">Fine / Charge damage to driver</span>
-                  <span className="text-[11px] text-muted-foreground block">
-                    When checked, this cost will be logged against driver advances / salary deduction. When unchecked, it is logged under Company Miscellaneous Expenses.
-                  </span>
+              {/* Financial Responsibility / Settlement Selector */}
+              <div className="space-y-1.5">
+                <label className="block text-muted-foreground font-semibold">
+                  Damage Settlement & Responsibility: <span className="text-rose-500">*</span>
                 </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Option 1: Paid Directly by Driver */}
+                  <div
+                    onClick={() => setFormSettlement('driver_paid_direct')}
+                    className={`p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between ${
+                      formSettlement === 'driver_paid_direct'
+                        ? 'bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500 shadow-xs'
+                        : 'bg-muted/30 border-border/60 hover:bg-muted/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">🟢</span>
+                      <input
+                        type="radio"
+                        name="settlement_type"
+                        checked={formSettlement === 'driver_paid_direct'}
+                        onChange={() => setFormSettlement('driver_paid_direct')}
+                        className="accent-emerald-500 cursor-pointer"
+                      />
+                    </div>
+                    <div className="mt-2 space-y-0.5">
+                      <span className="font-bold text-xs text-emerald-400 block">
+                        Paid Directly by Driver
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block leading-tight">
+                        Driver caused collision & paid damage on spot. Company has ₹0 liability (no co. expense, no deduction).
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Fine to Driver */}
+                  <div
+                    onClick={() => setFormSettlement('driver_fined')}
+                    className={`p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between ${
+                      formSettlement === 'driver_fined'
+                        ? 'bg-amber-500/10 border-amber-500 ring-1 ring-amber-500 shadow-xs'
+                        : 'bg-muted/30 border-border/60 hover:bg-muted/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">⚖️</span>
+                      <input
+                        type="radio"
+                        name="settlement_type"
+                        checked={formSettlement === 'driver_fined'}
+                        onChange={() => setFormSettlement('driver_fined')}
+                        className="accent-amber-500 cursor-pointer"
+                      />
+                    </div>
+                    <div className="mt-2 space-y-0.5">
+                      <span className="font-bold text-xs text-amber-400 block">
+                        Fine / Charge Driver
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block leading-tight">
+                        Company covers repair and debits cost against driver as advance / salary deduction fine.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Option 3: Company Borne */}
+                  <div
+                    onClick={() => setFormSettlement('company_expense')}
+                    className={`p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between ${
+                      formSettlement === 'company_expense'
+                        ? 'bg-blue-500/10 border-blue-500 ring-1 ring-blue-500 shadow-xs'
+                        : 'bg-muted/30 border-border/60 hover:bg-muted/60'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">🏢</span>
+                      <input
+                        type="radio"
+                        name="settlement_type"
+                        checked={formSettlement === 'company_expense'}
+                        onChange={() => setFormSettlement('company_expense')}
+                        className="accent-blue-500 cursor-pointer"
+                      />
+                    </div>
+                    <div className="mt-2 space-y-0.5">
+                      <span className="font-bold text-xs text-blue-400 block">
+                        Company Borne Expense
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block leading-tight">
+                        Company covers full repair cost under Miscellaneous Expenses. Driver is not charged.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Photo Uploads */}

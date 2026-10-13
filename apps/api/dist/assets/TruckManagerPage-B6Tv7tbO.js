@@ -2001,12 +2001,42 @@ function TruckAccidentsView({
   const [formDate, setFormDate] = c.useState(() => new Date().toISOString().split('T')[0]);
   const [formCost, setFormCost] = c.useState('');
   const [formDesc, setFormDesc] = c.useState('');
-  const [formFined, setFormFined] = c.useState(false);
+  const [formSettlement, setFormSettlement] = c.useState('driver_paid_direct');
   const [newPhotos, setNewPhotos] = c.useState([]);
   const [photoPreviews, setPhotoPreviews] = c.useState([]);
   const fileInputRef = c.useRef(null);
 
   const [photoViewer, setPhotoViewer] = c.useState({ isOpen: false, record: null, activeIndex: 0 });
+
+  const getSettlement = (ac) => {
+    if (!ac) return 'company_expense';
+    const desc = (ac.description || '').toLowerCase();
+    if (
+      desc.includes('<!-- settlement:driver_paid_direct -->') ||
+      desc.includes('paid directly by driver') ||
+      desc.includes('damage paid by driver') ||
+      desc.includes('paid by driver') ||
+      ac.settlement_type === 'driver_paid_direct'
+    ) return 'driver_paid_direct';
+    if (
+      desc.includes('<!-- settlement:driver_fined -->') ||
+      desc.includes('fined to driver') ||
+      ac.fined_to_employee === true ||
+      ac.fined_to_employee === 'true' ||
+      ac.settlement_type === 'driver_fined'
+    ) return 'driver_fined';
+    return 'company_expense';
+  };
+
+  const cleanDesc = (d) => {
+    if (!d) return '';
+    return d
+      .replace(/<!-- SETTLEMENT:[sS]*?-->/gi, '')
+      .replace(/\[Paid Directly by Driver[^\]]*\]/gi, '')
+      .replace(/\[Fined to Driver[^\]]*\]/gi, '')
+      .replace(/\[Company Borne[^\]]*\]/gi, '')
+      .trim();
+  };
 
   c.useEffect(() => {
     if (!photoViewer.isOpen || !photoViewer.record) return;
@@ -2036,7 +2066,7 @@ function TruckAccidentsView({
     setFormDate(new Date().toISOString().split('T')[0]);
     setFormCost('');
     setFormDesc('');
-    setFormFined(false);
+    setFormSettlement('driver_paid_direct');
     setNewPhotos([]);
     setPhotoPreviews([]);
     setIsModalOpen(true);
@@ -2048,8 +2078,8 @@ function TruckAccidentsView({
     setFormDriverId(accident.employee_id || '');
     setFormDate(accident.accident_date ? accident.accident_date.split('T')[0] : new Date().toISOString().split('T')[0]);
     setFormCost(accident.damage_cost || '');
-    setFormDesc(accident.description || '');
-    setFormFined(accident.fined_to_employee === true || accident.fined_to_employee === 'true');
+    setFormDesc(cleanDesc(accident.description));
+    setFormSettlement(getSettlement(accident));
     setNewPhotos([]);
     setPhotoPreviews([]);
     setIsModalOpen(true);
@@ -2082,13 +2112,25 @@ function TruckAccidentsView({
       const selectedTruck = trucks.find(t => t.id === formTruckId);
       const selectedDriver = drivers.find(d => d.id === formDriverId);
 
+      let settlementTag = '';
+      if (formSettlement === 'driver_paid_direct') {
+        settlementTag = '<!-- SETTLEMENT:driver_paid_direct -->\n[Paid Directly by Driver - Zero Company Liability] ';
+      } else if (formSettlement === 'driver_fined') {
+        settlementTag = '<!-- SETTLEMENT:driver_fined -->\n[Fined to Driver - Salary Deduction] ';
+      } else {
+        settlementTag = '<!-- SETTLEMENT:company_expense -->\n[Company Borne Expense] ';
+      }
+
+      const rawUserDesc = cleanDesc(formDesc);
+      const finalDesc = (settlementTag + rawUserDesc).trim();
+
       const formData = new FormData();
       formData.append('truck_id', formTruckId);
       formData.append('employee_id', formDriverId || '');
       formData.append('accident_date', isoDate);
       formData.append('damage_cost', costNum);
-      formData.append('description', (formDesc || '').trim());
-      formData.append('fined_to_employee', formFined ? 'true' : 'false');
+      formData.append('description', finalDesc);
+      formData.append('fined_to_employee', formSettlement === 'driver_fined' ? 'true' : 'false');
 
       newPhotos.forEach(file => {
         formData.append('image_urls', file);
@@ -2099,9 +2141,10 @@ function TruckAccidentsView({
         w.success('Accident report updated successfully');
       } else {
         await v.collection('driver_accident_reports').create(formData, { $autoCancel: false });
-        if (formFined && formDriverId) {
+        
+        if (formSettlement === 'driver_fined' && formDriverId) {
           try {
-            const desc = 'Accident Fine: ' + (formDesc ? formDesc.slice(0, 40) : 'Vehicle damage') + ' (' + (selectedTruck?.truck_number || '') + ')';
+            const desc = 'Accident Fine: ' + (rawUserDesc ? rawUserDesc.slice(0, 40) : 'Vehicle damage') + ' (' + (selectedTruck?.truck_number || '') + ')';
             const exp = await v.collection('expenses').create({
               category: 'Employee',
               subcategory: 'Employee Advance',
@@ -2138,7 +2181,12 @@ function TruckAccidentsView({
             console.warn('Syncing fine to cashbook notice:', err);
           }
         }
-        w.success('Accident report logged successfully');
+
+        if (formSettlement === 'driver_paid_direct') {
+          w.success('Accident report saved: Paid directly by driver (₹0 company cost)');
+        } else {
+          w.success('Accident report logged successfully');
+        }
       }
 
       setIsModalOpen(false);
@@ -2181,9 +2229,10 @@ function TruckAccidentsView({
         const matchesNumber = truckObj && ac.truck_id === truckObj.truck_number;
         if (!matchesId && !matchesNumber) return false;
       }
-      const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
-      if (liabilityFilter === 'driver_fined' && !isFined) return false;
-      if (liabilityFilter === 'company_expense' && isFined) return false;
+      const st = getSettlement(ac);
+      if (liabilityFilter === 'driver_paid_direct' && st !== 'driver_paid_direct') return false;
+      if (liabilityFilter === 'driver_fined' && st !== 'driver_fined') return false;
+      if (liabilityFilter === 'company_expense' && st !== 'company_expense') return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -2204,10 +2253,16 @@ function TruckAccidentsView({
     const list = filteredAccidents;
     const totalCount = list.length;
     const totalDamage = list.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
-    const driverFinedList = list.filter(a => a.fined_to_employee === true || a.fined_to_employee === 'true');
+
+    const driverPaidDirectList = list.filter(a => getSettlement(a) === 'driver_paid_direct');
+    const driverPaidDirectCount = driverPaidDirectList.length;
+    const driverPaidDirectTotal = driverPaidDirectList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
+
+    const driverFinedList = list.filter(a => getSettlement(a) === 'driver_fined');
     const driverFinedCount = driverFinedList.length;
     const driverFinedTotal = driverFinedList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
-    const companyExpenseList = list.filter(a => !(a.fined_to_employee === true || a.fined_to_employee === 'true'));
+
+    const companyExpenseList = list.filter(a => getSettlement(a) === 'company_expense');
     const companyExpenseCount = companyExpenseList.length;
     const companyExpenseTotal = companyExpenseList.reduce((sum, a) => sum + (Number(a.damage_cost) || 0), 0);
 
@@ -2218,6 +2273,8 @@ function TruckAccidentsView({
     return {
       totalCount,
       totalDamage,
+      driverPaidDirectCount,
+      driverPaidDirectTotal,
       driverFinedCount,
       driverFinedTotal,
       companyExpenseCount,
@@ -2278,6 +2335,7 @@ function TruckAccidentsView({
             className: "w-full bg-background border border-border/80 rounded-xl px-3 py-1.5 text-xs text-foreground font-semibold focus:outline-hidden focus:border-rose-500",
             children: [
               e.jsxs("option", { value: "all", children: ["⚖️ All Liabilities (", accidents.length, ")"] }),
+              e.jsx("option", { value: "driver_paid_direct", children: "🟢 Paid by Driver (Zero Co. Cost)" }),
               e.jsx("option", { value: "driver_fined", children: "👤 Driver Fined / Deducted" }),
               e.jsx("option", { value: "company_expense", children: "🏢 Company Misc Expense" })
             ]
@@ -2313,23 +2371,23 @@ function TruckAccidentsView({
           e.jsxs("p", { className: "text-2xl font-black font-mono text-rose-500 mt-1", children: ["₹", kpis.totalDamage.toLocaleString('en-IN')] }),
           e.jsx("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: "Cumulative collision impact cost" })
         ] }),
-        e.jsx("div", { className: "p-3 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20", children: e.jsx("span", { className: "text-xl", children: "💸" }) })
+        e.jsx("div", { className: "p-3 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20", children: e.jsx("span", { className: "text-xl", children: "💸" }) })
       ] }) }),
 
       e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
         e.jsxs("div", { children: [
-          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Fined to Driver" }),
-          e.jsxs("p", { className: "text-2xl font-black font-mono text-amber-500 mt-1", children: ["₹", kpis.driverFinedTotal.toLocaleString('en-IN')] }),
-          e.jsxs("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: [kpis.driverFinedCount, " incidents debited as salary fine"] })
+          e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Paid Directly by Driver" }),
+          e.jsxs("p", { className: "text-2xl font-black font-mono text-emerald-500 mt-1", children: ["₹", kpis.driverPaidDirectTotal.toLocaleString('en-IN')] }),
+          e.jsxs("p", { className: "text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5", children: [kpis.driverPaidDirectCount, " settled on spot (₹0 co. cost)"] })
         ] }),
-        e.jsx("div", { className: "p-3 bg-orange-500/10 text-orange-500 rounded-xl border border-orange-500/20", children: e.jsx("span", { className: "text-xl", children: "👤" }) })
+        e.jsx("div", { className: "p-3 bg-emerald-500/10 text-emerald-500 rounded-xl border border-emerald-500/20", children: e.jsx("span", { className: "text-xl", children: "🛡️" }) })
       ] }) }),
 
       e.jsx(M, { className: "border-border/60 bg-card shadow-xs rounded-2xl", children: e.jsxs(z, { className: "p-4 flex items-center justify-between", children: [
         e.jsxs("div", { children: [
           e.jsx("p", { className: "text-[11px] font-bold uppercase tracking-wider text-muted-foreground", children: "Company Borne" }),
           e.jsxs("p", { className: "text-2xl font-black font-mono text-blue-500 mt-1", children: ["₹", kpis.companyExpenseTotal.toLocaleString('en-IN')] }),
-          e.jsxs("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: [kpis.companyExpenseCount, " incidents logged as misc expense"] })
+          e.jsxs("p", { className: "text-[10px] text-muted-foreground mt-0.5", children: [kpis.companyExpenseCount, " incidents (plus ₹" + kpis.driverFinedTotal.toLocaleString('en-IN') + " fined)"] })
         ] }),
         e.jsx("div", { className: "p-3 bg-blue-500/10 text-blue-500 rounded-xl border border-blue-500/20", children: e.jsx("span", { className: "text-xl", children: "🏢" }) })
       ] }) })
@@ -2344,7 +2402,7 @@ function TruckAccidentsView({
     ] }) : e.jsx("div", { className: "space-y-3", children: filteredAccidents.map(ac => {
       const trk = trucks.find(t => t.id === ac.truck_id || t.truck_number === ac.truck_id);
       const drv = drivers.find(d => d.id === ac.employee_id);
-      const isFined = ac.fined_to_employee === true || ac.fined_to_employee === 'true';
+      const st = getSettlement(ac);
       const photos = Array.isArray(ac.image_urls) ? ac.image_urls.filter(Boolean) : (ac.image_urls ? [ac.image_urls] : []);
 
       return e.jsxs("div", { key: ac.id, className: "bg-card border border-border/70 hover:border-rose-500/30 rounded-2xl p-4 sm:p-5 shadow-xs transition-all space-y-3.5", children: [
@@ -2361,12 +2419,14 @@ function TruckAccidentsView({
             }),
             trk?.truck_name && e.jsx("span", { className: "text-xs text-muted-foreground font-semibold", children: trk.truck_name }),
             e.jsxs(h, { variant: "outline", className: "border-border/70 text-xs px-2 py-0.5", children: ["📅 ", formatDate(ac.accident_date)] }),
-            isFined ? e.jsx(h, { className: "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold", children: "⚖️ Fined to Driver" }) : e.jsx(h, { className: "bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold", children: "🏢 Company Borne Expense" })
+            st === 'driver_paid_direct' ? e.jsx(h, { className: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px] font-bold", children: "🟢 Paid by Driver (Zero Co. Cost)" }) : (st === 'driver_fined' ? e.jsx(h, { className: "bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold", children: "⚖️ Fined to Driver (Salary Deduction)" }) : e.jsx(h, { className: "bg-blue-500/15 text-blue-500 dark:text-blue-400 border-blue-500/30 text-[10px] font-bold", children: "🏢 Company Borne Expense" }))
           ] }),
           e.jsxs("div", { className: "flex items-center gap-2 self-end sm:self-center", children: [
             e.jsxs("div", { className: "text-right mr-1", children: [
               e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: "Damage Cost" }),
-              e.jsxs("span", { className: "text-base font-black font-mono text-rose-500", children: ["₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN')] })
+              e.jsxs("span", { className: "text-base font-black font-mono text-rose-500", children: ["₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN')] }),
+              st === 'driver_paid_direct' && e.jsx("span", { className: "text-[9px] font-bold text-emerald-500 block", children: "Paid by Driver (₹0 Co. Cost)" }),
+              st === 'driver_fined' && e.jsx("span", { className: "text-[9px] font-bold text-amber-500 block", children: "Salary Deduction" })
             ] }),
             e.jsx(j, { variant: "outline", size: "sm", onClick: () => openEditAccidentModal(ac), className: "h-8 px-2.5 rounded-xl border-border text-xs font-semibold hover:bg-muted", children: "✏️ Edit" }),
             e.jsx(j, { variant: "ghost", size: "sm", onClick: () => handleDeleteAccident(ac.id), className: "h-8 w-8 p-0 rounded-xl text-destructive hover:bg-destructive/10", children: "🗑️" })
@@ -2382,9 +2442,9 @@ function TruckAccidentsView({
           e.jsxs("div", { className: "md:col-span-6 bg-muted/40 p-3 rounded-xl border border-border/50 space-y-1 flex flex-col justify-between", children: [
             e.jsxs("div", { children: [
               e.jsx("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: "📝 Incident Description & Circumstances:" }),
-              e.jsx("p", { className: "text-foreground leading-relaxed mt-1", children: ac.description || "No detailed damage description entered for this record." })
+              e.jsx("p", { className: "text-foreground leading-relaxed mt-1", children: cleanDesc(ac.description) || "No detailed damage description entered for this record." })
             ] }),
-            isFined && e.jsxs("p", { className: "text-[10px] text-amber-600 dark:text-amber-400 mt-2 font-medium", children: ["* ₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN'), " marked for payroll deduction / driver liability."] })
+            st === 'driver_paid_direct' ? e.jsx("p", { className: "text-[10px] text-emerald-600 dark:text-emerald-400 mt-2 font-medium", children: "✓ Settled & paid directly by driver on the spot. Company has zero financial involvement or cost." }) : (st === 'driver_fined' ? e.jsxs("p", { className: "text-[10px] text-amber-600 dark:text-amber-400 mt-2 font-medium", children: ["* ₹", (Number(ac.damage_cost) || 0).toLocaleString('en-IN'), " marked for payroll deduction / driver liability."] }) : null)
           ] }),
           e.jsxs("div", { className: "md:col-span-3 bg-muted/40 p-3 rounded-xl border border-border/50 space-y-1.5", children: [
             e.jsxs("span", { className: "text-[10px] font-bold uppercase tracking-wider text-muted-foreground block", children: ["📷 Evidence Photos (", photos.length, "):"] }),
@@ -2483,19 +2543,82 @@ function TruckAccidentsView({
             className: "w-full bg-background border border-border/80 rounded-xl p-3 text-foreground placeholder-muted-foreground focus:outline-hidden focus:border-rose-500"
           })
         ] }),
-        e.jsxs("div", { className: "p-3.5 bg-muted/40 rounded-xl border border-border/60 flex items-start gap-3", children: [
-          e.jsx("input", {
-            type: "checkbox",
-            id: "modal_fined_to_employee",
-            checked: formFined,
-            onChange: (e) => setFormFined(e.target.checked),
-            className: "w-4 h-4 mt-0.5 rounded accent-amber-500 cursor-pointer"
-          }),
-          e.jsxs("label", { htmlFor: "modal_fined_to_employee", className: "text-xs text-foreground cursor-pointer select-none space-y-0.5", children: [
-            e.jsx("span", { className: "font-bold block text-amber-500", children: "Fine / Charge damage to driver" }),
-            e.jsx("span", { className: "text-[11px] text-muted-foreground block", children: "When checked, this cost will be debited as driver advance / salary deduction fine. When unchecked, it is logged under Company Miscellaneous Expenses." })
+
+        /* Financial Responsibility / Settlement Selector */
+        e.jsxs("div", { className: "space-y-1.5", children: [
+          e.jsxs("label", { className: "block text-muted-foreground font-semibold", children: [
+            "Damage Settlement & Responsibility: ",
+            e.jsx("span", { className: "text-rose-500", children: "*" })
+          ] }),
+          e.jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-2.5", children: [
+            /* Option 1: Paid Directly by Driver */
+            e.jsxs("div", {
+              onClick: () => setFormSettlement('driver_paid_direct'),
+              className: "p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between " + (formSettlement === 'driver_paid_direct' ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500" : "bg-muted/30 border-border/60 hover:bg-muted/60"),
+              children: [
+                e.jsxs("div", { className: "flex items-center justify-between", children: [
+                  e.jsx("span", { className: "text-sm", children: "🟢" }),
+                  e.jsx("input", {
+                    type: "radio",
+                    name: "settlement_type",
+                    checked: formSettlement === 'driver_paid_direct',
+                    onChange: () => setFormSettlement('driver_paid_direct'),
+                    className: "accent-emerald-500 cursor-pointer"
+                  })
+                ] }),
+                e.jsxs("div", { className: "mt-2 space-y-0.5", children: [
+                  e.jsx("span", { className: "font-bold text-xs text-emerald-400 block", children: "Paid Directly by Driver" }),
+                  e.jsx("span", { className: "text-[10px] text-muted-foreground block leading-tight", children: "Driver caused collision & paid damage on spot. Company has ₹0 liability (no co. expense, no deduction)." })
+                ] })
+              ]
+            }),
+
+            /* Option 2: Fine to Driver */
+            e.jsxs("div", {
+              onClick: () => setFormSettlement('driver_fined'),
+              className: "p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between " + (formSettlement === 'driver_fined' ? "bg-amber-500/10 border-amber-500 ring-1 ring-amber-500" : "bg-muted/30 border-border/60 hover:bg-muted/60"),
+              children: [
+                e.jsxs("div", { className: "flex items-center justify-between", children: [
+                  e.jsx("span", { className: "text-sm", children: "⚖️" }),
+                  e.jsx("input", {
+                    type: "radio",
+                    name: "settlement_type",
+                    checked: formSettlement === 'driver_fined',
+                    onChange: () => setFormSettlement('driver_fined'),
+                    className: "accent-amber-500 cursor-pointer"
+                  })
+                ] }),
+                e.jsxs("div", { className: "mt-2 space-y-0.5", children: [
+                  e.jsx("span", { className: "font-bold text-xs text-amber-400 block", children: "Fine / Charge Driver" }),
+                  e.jsx("span", { className: "text-[10px] text-muted-foreground block leading-tight", children: "Company covers repair and debits cost against driver as advance / salary deduction fine." })
+                ] })
+              ]
+            }),
+
+            /* Option 3: Company Borne */
+            e.jsxs("div", {
+              onClick: () => setFormSettlement('company_expense'),
+              className: "p-3 rounded-2xl border cursor-pointer transition-all select-none flex flex-col justify-between " + (formSettlement === 'company_expense' ? "bg-blue-500/10 border-blue-500 ring-1 ring-blue-500" : "bg-muted/30 border-border/60 hover:bg-muted/60"),
+              children: [
+                e.jsxs("div", { className: "flex items-center justify-between", children: [
+                  e.jsx("span", { className: "text-sm", children: "🏢" }),
+                  e.jsx("input", {
+                    type: "radio",
+                    name: "settlement_type",
+                    checked: formSettlement === 'company_expense',
+                    onChange: () => setFormSettlement('company_expense'),
+                    className: "accent-blue-500 cursor-pointer"
+                  })
+                ] }),
+                e.jsxs("div", { className: "mt-2 space-y-0.5", children: [
+                  e.jsx("span", { className: "font-bold text-xs text-blue-400 block", children: "Company Borne Expense" }),
+                  e.jsx("span", { className: "text-[10px] text-muted-foreground block leading-tight", children: "Company covers full repair cost under Miscellaneous Expenses. Driver is not charged." })
+                ] })
+              ]
+            })
           ] })
         ] }),
+
         e.jsxs("div", { className: "space-y-2", children: [
           e.jsxs("div", { className: "flex items-center justify-between", children: [
             e.jsx("label", { className: "text-muted-foreground font-semibold", children: "Attach Incident Photos:" }),
@@ -2561,7 +2684,6 @@ function TruckAccidentsView({
     ] }) })
   ] });
 }
-
 
 
 function DriverTruckAttributionLab({  onBackToFleet  }) {
