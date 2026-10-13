@@ -845,6 +845,21 @@ const ExpensesPage = () => {
   }, [expenses, advances, filteredExpenses, filteredAdvances, selectedSummaryPeriod, availableMonths, filters.dateFrom, filters.dateTo]);
 
 
+  const parseExpenseMeta = (notes) => {
+    if (!notes) return { displayNotes: '', meta: {} };
+    let meta = {};
+    let displayNotes = notes;
+    if (notes.includes('<!-- META_JSON:')) {
+      try {
+        const raw = notes.split('<!-- META_JSON:')[1].split('-->')[0];
+        meta = JSON.parse(raw);
+        displayNotes = notes.replace(/<!-- META_JSON:[\s\S]*?-->/g, '');
+      } catch (_) {}
+    }
+    displayNotes = displayNotes.replace(/<!-- BILLS_JSON:[\s\S]*?-->/g, '').trim();
+    return { displayNotes, meta };
+  };
+
   const getPaymentMethodBadge = (method) => {
     switch (method) {
       case 'Cash': return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">Cash</Badge>;
@@ -852,6 +867,8 @@ const ExpensesPage = () => {
       case 'Credit Card': return <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/20">Credit Card</Badge>;
       case 'UPI': return <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">UPI</Badge>;
       case 'Bank Transfer': return <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-500/20">Bank Transfer</Badge>;
+      case 'Cheque': return <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">Cheque</Badge>;
+      case 'FASTag / Fleet Card': return <Badge variant="outline" className="bg-sky-500/10 text-sky-400 border-sky-500/20">FASTag / Fleet</Badge>;
       default: return <Badge variant="outline">{method || 'Unknown'}</Badge>;
     }
   };
@@ -1033,14 +1050,42 @@ const ExpensesPage = () => {
                               </div>
                             </TableCell>
                             <TableCell className="max-w-[300px]">
-                              <p className="truncate text-foreground text-sm font-medium" title={expense.description}>{expense.description || '-'}</p>
-                              {expense.notes && <p className="truncate text-xs text-muted-foreground mt-0.5" title={expense.notes}>{expense.notes}</p>}
+                              {(() => {
+                                const { displayNotes, meta } = parseExpenseMeta(expense.notes);
+                                return (
+                                  <div>
+                                    <p className="truncate text-foreground text-sm font-medium" title={expense.description}>{expense.description || '-'}</p>
+                                    {meta.vendor_name && (
+                                      <p className="text-[11px] font-semibold text-primary/90 truncate flex items-center gap-1 mt-0.5">
+                                        <span>🏢</span> {meta.vendor_name} {meta.bill_number ? `(${meta.bill_number})` : ''}
+                                      </p>
+                                    )}
+                                    {displayNotes && <p className="truncate text-xs text-muted-foreground mt-0.5" title={displayNotes}>{displayNotes}</p>}
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="text-sm">
-                              <div className="flex flex-col gap-1">
-                                {getPaymentMethodBadge(expense.payment_method)}
-                                {expense.cardContext && <span className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> {expense.cardContext.card_number_last4}</span>}
-                              </div>
+                              {(() => {
+                                const { meta } = parseExpenseMeta(expense.notes);
+                                const refNo = meta.reference_number;
+                                return (
+                                  <div className="flex flex-col gap-1 items-start">
+                                    {getPaymentMethodBadge(expense.payment_method)}
+                                    {refNo && (
+                                      <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40 truncate max-w-[130px]" title={`Reference: ${refNo}`}>
+                                        Ref: {refNo}
+                                      </span>
+                                    )}
+                                    {meta.payment_account && (
+                                      <span className="text-[9px] text-muted-foreground truncate max-w-[120px]" title={meta.payment_account}>
+                                        🏦 {meta.payment_account}
+                                      </span>
+                                    )}
+                                    {expense.cardContext && <span className="text-xs text-muted-foreground flex items-center gap-1"><CreditCard className="w-3 h-3" /> {expense.cardContext.card_number_last4}</span>}
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="text-right font-bold tabular-nums text-foreground">₹{expense.amount?.toLocaleString()}</TableCell>
                             <TableCell className="text-right">
@@ -1207,6 +1252,14 @@ const ExpensesPage = () => {
                             </Badge>
                           )}
                           {getPaymentMethodBadge(expense.payment_method)}
+                          {(() => {
+                            const { meta } = parseExpenseMeta(expense.notes);
+                            return meta.reference_number ? (
+                              <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
+                                Ref: {meta.reference_number}
+                              </span>
+                            ) : null;
+                          })()}
                           {expense.cardContext && (
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded-md border border-border/30">
                               <CreditCard className="w-2.5 h-2.5" /> {expense.cardContext.card_number_last4}
@@ -1214,11 +1267,21 @@ const ExpensesPage = () => {
                           )}
                         </div>
 
-                        {expense.notes && (
-                          <p className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg border border-border/20">
-                            {expense.notes}
-                          </p>
-                        )}
+                        {(() => {
+                          const { displayNotes, meta } = parseExpenseMeta(expense.notes);
+                          return (
+                            (displayNotes || meta.vendor_name) && (
+                              <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-lg border border-border/20 space-y-0.5">
+                                {meta.vendor_name && (
+                                  <p className="font-semibold text-primary/90 flex items-center gap-1">
+                                    <span>🏢</span> {meta.vendor_name} {meta.bill_number ? `(${meta.bill_number})` : ''}
+                                  </p>
+                                )}
+                                {displayNotes && <p>{displayNotes}</p>}
+                              </div>
+                            )
+                          );
+                        })()}
 
                         <div className="flex justify-between items-center pt-2 border-t border-border/20">
                           <div>
