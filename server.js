@@ -13,10 +13,12 @@ import * as employeeCodeService from './apps/api/src/services/employeeCodeServic
 import * as driverAuthService from './apps/api/src/services/driverAuthService.js';
 import * as truckAnalyticsService from './apps/api/src/services/truckAnalyticsService.js';
 import pb from './apps/api/src/utils/pocketbaseClient.js';
+import { getRuntimeDatabaseClient, isSupabaseCutoverActive } from './apps/api/src/utils/supabaseClient.js';
 import { createMobileDriverData, MobileDataError, pageNumber } from './apps/api/src/services/mobileDriverData.js';
 import { downloadMobileDocument } from './apps/api/src/services/mobileDocumentDownload.js';
 
-const mobileDriverData = createMobileDriverData(pb);
+const runtimeDb = getRuntimeDatabaseClient(pb);
+const mobileDriverData = createMobileDriverData(runtimeDb);
 
 // Start persistent background reminder & SLA escalation scheduler (runs every 60s)
 setInterval(() => {
@@ -1185,18 +1187,18 @@ const server = http.createServer((req, res) => {
 
           let empName = '';
           try {
-            const emp = await pb.collection('employees').getOne(assignment.driver_employee_id, { $autoCancel: false });
+            const emp = await runtimeDb.collection('employees').getOne(assignment.driver_employee_id, { $autoCancel: false });
             empName = emp.name || '';
           } catch (_) {}
 
           const results = [];
           for (const tid of tripIds) {
-            const trip = await pb.collection('trip_logs').getOne(tid, { $autoCancel: false });
+            const trip = await runtimeDb.collection('trip_logs').getOne(tid, { $autoCancel: false });
             const oldCode = trip.driver_employee_code || null;
             const oldId = trip.driver_employee_id || null;
             const oldDriverName = trip.driver_name || null;
 
-            await pb.collection('trip_logs').update(trip.id, {
+            await runtimeDb.collection('trip_logs').update(trip.id, {
               driver_employee_id: assignment.driver_employee_id,
               driver_employee_code: assignment.driver_employee_code,
               driver_name: empName || trip.driver_name
@@ -1248,7 +1250,7 @@ const server = http.createServer((req, res) => {
 
         // 2. GET /api/office/trips/unassigned-driver-code
         if (cleanTripsPath === '/api/office/trips/unassigned-driver-code' && req.method === 'GET') {
-          const list = await pb.collection('trip_logs').getFullList({
+          const list = await runtimeDb.collection('trip_logs').getFullList({
             filter: 'driver_employee_code = "" || driver_employee_code = null',
             sort: '-date,-created',
             $autoCancel: false

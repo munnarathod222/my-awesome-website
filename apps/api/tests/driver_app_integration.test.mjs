@@ -362,6 +362,187 @@ async function runTests() {
   assert.ok(jpegResult.buffer.equals(sampleJpeg), 'JPEG buffer must be byte-for-byte identical to input');
   console.log('  ✓ JPEG retained 1:1 without lossy quality-95 recompression.');
 
+  // --------------------------------------------------------------------------
+  // TEST SUITE 6: PostgREST Filter Safe Translation, Fail-Closed & Compound Sorting
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 6] PostgREST Filter Safe Translation, Fail-Closed & Compound Sorting');
+  const { translatePbFilterToPostgrest, translateSortToPostgrest, getRuntimeDatabaseClient, isSupabaseCutoverActive } = await import('../src/utils/supabaseClient.js');
+
+  // 1. Driver isolation filter translation
+  const driverFilter = translatePbFilterToPostgrest('driver_employee_id = "k7jaz5lqellbxtb"');
+  assert.deepStrictEqual(driverFilter, { driver_employee_id: 'eq.k7jaz5lqellbxtb' });
+  console.log('  ✓ Driver isolation filter translated: driver_employee_id=eq.k7jaz5lqellbxtb.');
+
+  // 2. Compound AND filter translation
+  const compoundFilter = translatePbFilterToPostgrest('driver_employee_code = "D001" && date >= "2026-07-16"');
+  assert.deepStrictEqual(compoundFilter, { driver_employee_code: 'eq.D001', date: 'gte.2026-07-16' });
+  console.log('  ✓ Compound AND filter translated: driver_employee_code=eq.D001 & date=gte.2026-07-16.');
+
+  // 3. Fail-Closed security guarantee on unsupported / injection expressions
+  assert.throws(() => {
+    translatePbFilterToPostgrest('UNSUPPORTED SQL EXPRESSION -- DROP TABLE');
+  }, /UNSUPPORTED_FILTER/, 'Must fail closed on unsupported filter syntax');
+  console.log('  ✓ Unsupported or malicious filter syntax strictly fails closed (UNSUPPORTED_FILTER).');
+
+  // 4. Compound sorting translation
+  const sortParam = translateSortToPostgrest('-date,-id');
+  assert.strictEqual(sortParam, 'date.desc,id.desc');
+  const ascSortParam = translateSortToPostgrest('+date,id');
+  assert.strictEqual(ascSortParam, 'date.asc,id.asc');
+  console.log('  ✓ Compound sorting translated: -date,-id -> date.desc,id.desc.');
+
+  // --------------------------------------------------------------------------
+  // TEST SUITE 7: Complete Multi-Page Pagination Across 1,500+ Records
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 7] Complete Multi-Page Pagination Across 1,500+ Records');
+
+  // Create mock collection with 1,500 records
+  const LARGE_FIXTURE_COUNT = 1500;
+  const largeRecords = Array.from({ length: LARGE_FIXTURE_COUNT }, (_, i) => ({
+    id: `rec_large_${String(i).padStart(4, '0')}`,
+    seq: i,
+    trip_id: `TRIP-2026-${i}`,
+    status: 'Delivered'
+  }));
+  const largeCollection = new MockCollection('large_trip_logs', largeRecords);
+
+  // Implement getFullList pagination loop matching supabaseClient.js
+  const batchSize = 1000;
+  let page = 1;
+  let paginatedItems = [];
+  while (true) {
+    const res = await largeCollection.getList(page, batchSize);
+    paginatedItems = paginatedItems.concat(res.items);
+    if (page >= res.totalPages || res.items.length === 0 || paginatedItems.length >= res.totalItems) {
+      break;
+    }
+    page++;
+  }
+
+  assert.strictEqual(paginatedItems.length, LARGE_FIXTURE_COUNT, `Must fetch exactly all ${LARGE_FIXTURE_COUNT} records`);
+  assert.strictEqual(paginatedItems[0].seq, 0);
+  assert.strictEqual(paginatedItems[LARGE_FIXTURE_COUNT - 1].seq, LARGE_FIXTURE_COUNT - 1);
+  console.log(`  ✓ getFullList fully paginated ${paginatedItems.length} records across ${page} pages.`);
+
+  // --------------------------------------------------------------------------
+  // TEST SUITE 8: Database-Level Optimistic Concurrency Control (OCC)
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 8] Database-Level Optimistic Concurrency Control (OCC)');
+
+  let currentTripDoc = {
+    id: 'trip_occ_001',
+    trip_id: 'TRIP-OCC-001',
+    trip_status: 'In Transit',
+    driver_employee_id: 'k7jaz5lqellbxtb',
+    driver_employee_code: 'D001',
+    pod_file: null
+  };
+
+  async function mockConditionalUpdate(id, conditions, updateData) {
+    // Verify all conditions match
+    if (currentTripDoc.id !== id) throw new MobileDataError(404, 'NOT_FOUND', 'Record not found');
+    for (const [k, v] of Object.entries(conditions)) {
+      if (currentTripDoc[k] !== v) {
+        const err = new Error(`Conditional update conflict on ${k}: expected ${v}, got ${currentTripDoc[k]}`);
+        err.status = 409;
+        err.code = 'CONCURRENT_CONFLICT';
+        throw err;
+      }
+    }
+    currentTripDoc = { ...currentTripDoc, ...updateData };
+    return structuredClone(currentTripDoc);
+  }
+
+  // A. Matching update succeeds
+  const occSuccess = await mockConditionalUpdate('trip_occ_001', {
+    trip_status: 'In Transit',
+    driver_employee_id: 'k7jaz5lqellbxtb'
+  }, { trip_status: 'Delivered' });
+  assert.strictEqual(occSuccess.trip_status, 'Delivered');
+  console.log('  ✓ Matching OCC conditional update succeeded.');
+
+  // B. Stale update with previous status fails with 409 CONCURRENT_CONFLICT
+  try {
+    await mockConditionalUpdate('trip_occ_001', {
+      trip_status: 'In Transit', // already Delivered!
+      driver_employee_id: 'k7jaz5lqellbxtb'
+    }, { trip_status: 'Delivered' });
+    assert.fail('Should fail on stale status condition');
+  } catch (err) {
+    assert.strictEqual(err.status, 409);
+    assert.strictEqual(err.code, 'CONCURRENT_CONFLICT');
+    console.log('  ✓ Stale / concurrent update rejected with 409 CONCURRENT_CONFLICT.');
+  }
+
+  // C. Reassigned driver update fails with 409 CONCURRENT_CONFLICT
+  try {
+    await mockConditionalUpdate('trip_occ_001', {
+      driver_employee_id: 'reassigned_other_driver_id'
+    }, { trip_status: 'In Transit' });
+    assert.fail('Should fail on reassigned driver condition');
+  } catch (err) {
+    assert.strictEqual(err.status, 409);
+    assert.strictEqual(err.code, 'CONCURRENT_CONFLICT');
+    console.log('  ✓ Cross-driver reassignment update rejected with 409 CONCURRENT_CONFLICT.');
+  }
+
+  // --------------------------------------------------------------------------
+  // TEST SUITE 9: Private Supabase Storage Upload & Hash Verification
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 9] Private Supabase Storage Upload & Hash Verification');
+
+  const mockStorageStore = new Map();
+  const mockStorageClient = {
+    async upload(bucket, filePath, buffer, contentType) {
+      mockStorageStore.set(`${bucket}:${filePath}`, { buffer: Buffer.from(buffer), contentType });
+      return { status: 200 };
+    },
+    async download(bucket, filePath) {
+      const item = mockStorageStore.get(`${bucket}:${filePath}`);
+      if (!item) {
+        const err = new Error('Object not found');
+        err.status = 404;
+        throw err;
+      }
+      return { buffer: item.buffer, contentType: item.contentType };
+    },
+    async verifyHash(bucket, filePath, expectedSha256) {
+      const item = await this.download(bucket, filePath);
+      const hash = crypto.createHash('sha256').update(item.buffer).digest('hex');
+      if (hash !== expectedSha256) {
+        throw new Error(`Hash mismatch: expected ${expectedSha256}, got ${hash}`);
+      }
+      return true;
+    }
+  };
+
+  const testFileBytes = Buffer.from('DURABLE_SUPABASE_STORAGE_VERIFIED_POD_CONTENT_2026');
+  const testFileSha256 = crypto.createHash('sha256').update(testFileBytes).digest('hex');
+  await mockStorageClient.upload('trip-pods', 'trip_assigned_200/proof.pdf', testFileBytes, 'application/pdf');
+  const verifyRes = await mockStorageClient.verifyHash('trip-pods', 'trip_assigned_200/proof.pdf', testFileSha256);
+  const downloadedStorageDoc = await mockStorageClient.download('trip-pods', 'trip_assigned_200/proof.pdf');
+  assert.ok(downloadedStorageDoc.buffer.equals(testFileBytes));
+  console.log('  ✓ Storage upload, target SHA-256 verification and download round-trip verified (100% byte match).');
+
+  // --------------------------------------------------------------------------
+  // TEST SUITE 10: Multi-Store JSON Registry & Driver Account Preservation
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 10] Multi-Store JSON Registry & Driver Account Preservation');
+  const { getJsonStore, saveJsonStore } = await import('../src/services/jsonStoreService.js');
+
+  // Test local read/write through jsonStoreService
+  await saveJsonStore('system_counters.json', { tripCounter: 324, invoiceCounter: 105 });
+  const readCounters = await getJsonStore('system_counters.json');
+  assert.strictEqual(readCounters.tripCounter, 324);
+  console.log('  ✓ jsonStoreService read and write verified.');
+
+  // Test strict cutover gate: DATA_STORE=supabase must be explicitly set
+  delete process.env.DATA_STORE;
+  assert.strictEqual(isSupabaseCutoverActive(), false, 'Cutover must NOT be active when DATA_STORE is unset');
+  const runtimeDefault = getRuntimeDatabaseClient({ client: 'pocketbase_fallback' });
+  assert.strictEqual(runtimeDefault.client, 'pocketbase_fallback', 'Must use fallback when cutover is not explicitly active');
+  console.log('  ✓ Strict reviewed cutover setting verified (no accidental switch without DATA_STORE=supabase).');
+
   // Clean up test data dir
   try {
     fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });

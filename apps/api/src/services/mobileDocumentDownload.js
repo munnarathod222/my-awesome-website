@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { MobileDataError } from './mobileDriverData.js';
+import { isSupabaseCutoverActive, createSupabaseClient } from '../utils/supabaseClient.js';
 
 export function documentMime(bytes) {
   if (bytes.subarray(0, 5).toString() === '%PDF-') return 'application/pdf';
@@ -10,7 +11,7 @@ export function documentMime(bytes) {
   return null;
 }
 
-// Serves documents from private local storage or website storage endpoint.
+// Serves documents from private local storage, Supabase private storage, or website storage endpoint.
 // Ownership has already been checked by data.file().
 export async function downloadMobileDocument(row, name, { fetcher = fetch, port = process.env.PORT || '3001' } = {}) {
   const collection = row.collectionId || row.collectionName || 'trip_logs';
@@ -42,7 +43,31 @@ export async function downloadMobileDocument(row, name, { fetcher = fetch, port 
     }
   }
 
-  // 2. Fallback to website HTTP file route
+  // 2. Check private Supabase Storage (durable storage across Render redeployments)
+  if (isSupabaseCutoverActive() || (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    try {
+      const sb = createSupabaseClient();
+      if (sb) {
+        const bucket = collection === 'trip_logs' ? 'trip-pods' : 'documents';
+        const candidatePaths = [
+          `${row.id}/${name}`,
+          `${collection}/${row.id}/${name}`,
+          name
+        ];
+        for (const storagePath of candidatePaths) {
+          try {
+            const dl = await sb.storage.download(bucket, storagePath);
+            if (dl && dl.buffer && dl.buffer.length > 0) {
+              const type = dl.contentType || documentMime(dl.buffer);
+              if (type) return { bytes: dl.buffer, type };
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 3. Fallback to website HTTP file route
   const url = `http://127.0.0.1:${port}/api/files/${encodeURIComponent(collection)}/${encodeURIComponent(row.id)}/${encodeURIComponent(name)}`;
   let reply;
   try {

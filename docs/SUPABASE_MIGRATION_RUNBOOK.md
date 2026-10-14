@@ -30,7 +30,8 @@ Ensure the baseline totals match the verified database snapshot:
 - **Advances**: 102 employee advance records
 - **Attendance**: 291 attendance records
 - **Cashbook**: 377 ledger entries
-- **Local JSON stores**: 22 registries in `data/`
+- **Local JSON stores**: 23 registries in `data/` (all migrated to `jbc_json_stores`)
+- **Persistent Driver Accounts**: Authoritative `jbc_driver_accounts` preserved without overwriting from local files
 
 ---
 
@@ -38,10 +39,13 @@ Ensure the baseline totals match the verified database snapshot:
 1. Log into your Supabase Dashboard: `https://supabase.com/dashboard/project/<YOUR_SUPABASE_PROJECT_ID>`
 2. Open the **SQL Editor**.
 3. Paste and execute the contents of `supabase/schema.sql`.
-4. Verify that all 82 business tables, `jbc_driver_accounts`, RLS policies, and triggers are created:
+4. Verify that all 82 business tables, `jbc_driver_accounts`, `jbc_json_stores`, `jbc_idempotency_records`, storage buckets (`documents`, `trip-pods`), RLS policies, and triggers are created:
    - `employees`, `trucks`, `clients`, `routes`, `trip_logs`
    - `expenses`, `advances`, `attendance`, `cashbook`
-   - `truck_documents`, `employee_documents`, `jbc_driver_accounts`
+   - `truck_documents`, `employee_documents`
+   - `jbc_driver_accounts` (preserves existing driver credentials)
+   - `jbc_json_stores` (stores all 23 multi-store JSON ledgers)
+   - `jbc_idempotency_records` (stores upload deduplication and retry tokens)
    - Triggers: `trg_sync_trip_payment_to_cashbook`, `trg_sync_advance_to_cashbook`
 
 ---

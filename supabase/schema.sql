@@ -1793,3 +1793,45 @@ CREATE TABLE IF NOT EXISTS public."workshop_parts_inventory" (
 );
 ALTER TABLE public."workshop_parts_inventory" ENABLE ROW LEVEL SECURITY;
 
+-- ============================================================================
+-- PERSISTENT MULTI-STORE JSON REGISTRY (All 23 Inventoried JSON Data Stores)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.jbc_json_stores (
+    store_key TEXT PRIMARY KEY,
+    store_data JSONB NOT NULL,
+    entry_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+);
+CREATE INDEX IF NOT EXISTS idx_jbc_json_stores_key ON public.jbc_json_stores(store_key);
+ALTER TABLE public.jbc_json_stores ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- PERSISTENT IDEMPOTENCY & DEDUPLICATION REGISTRY
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.jbc_idempotency_records (
+    key TEXT PRIMARY KEY,
+    actor_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    sha256 TEXT NOT NULL,
+    result JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_jbc_idempotency_key ON public.jbc_idempotency_records(key);
+CREATE INDEX IF NOT EXISTS idx_jbc_idempotency_actor ON public.jbc_idempotency_records(actor_id);
+ALTER TABLE public.jbc_idempotency_records ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- PRIVATE STORAGE BUCKETS (Documents & PODs)
+-- ============================================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES 
+  ('documents', 'documents', false, 26214400, ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp']),
+  ('trip-pods', 'trip-pods', false, 26214400, ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+ON CONFLICT (id) DO UPDATE SET 
+  public = false,
+  file_size_limit = 26214400,
+  allowed_mime_types = ARRAY['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+

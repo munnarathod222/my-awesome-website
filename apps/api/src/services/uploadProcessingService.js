@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
+import { isSupabaseCutoverActive, createSupabaseClient } from '../utils/supabaseClient.js';
 
 // Known file magic signatures
 const MAGIC_SIGNATURES = [
@@ -39,7 +40,14 @@ function saveDedupCache() {
   try {
     fs.mkdirSync(path.dirname(DEDUP_FILE), { recursive: true });
     const tmp = `${DEDUP_FILE}.tmp.${Date.now()}`;
-    const obj = Object.fromEntries(DEDUP_CACHE.entries());
+    // Strip heavy file buffers from the persisted JSON cache to save disk/memory
+    const entries = [];
+    for (const [k, v] of DEDUP_CACHE.entries()) {
+      const cleanResult = { ...v.result };
+      delete cleanResult.buffer;
+      entries.push([k, { timestamp: v.timestamp, result: cleanResult }]);
+    }
+    const obj = Object.fromEntries(entries);
     fs.writeFileSync(tmp, JSON.stringify(obj), 'utf8');
     try {
       fs.renameSync(tmp, DEDUP_FILE);
@@ -150,9 +158,13 @@ export async function processUpload({
   const dedupKey = `${actorId}:${category}:${sha256}`;
   const cached = DEDUP_CACHE.get(dedupKey);
   if (cached && (Date.now() - cached.timestamp < DEDUP_TTL_MS)) {
+    const rawBuf = cached.result.buffer || buffer;
+    const finalBuf = Buffer.isBuffer(rawBuf)
+      ? rawBuf
+      : (rawBuf && rawBuf.type === 'Buffer' && Array.isArray(rawBuf.data) ? Buffer.from(rawBuf.data) : Buffer.from(rawBuf));
     return {
       ...cached.result,
-      buffer: cached.result.buffer || buffer,
+      buffer: finalBuf,
       isDuplicateRetry: true
     };
   }

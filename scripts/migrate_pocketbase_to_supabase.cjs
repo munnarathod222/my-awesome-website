@@ -116,12 +116,13 @@ async function supabaseRequest(endpoint, method = 'GET', body = null, headers = 
   const url = new URL(`${SUPABASE_CONFIG.url}${endpoint}`);
   const isHttps = url.protocol === 'https:';
   const client = isHttps ? https : http;
-  const postData = body ? JSON.stringify(body) : null;
+  const isBuffer = Buffer.isBuffer(body);
+  const postData = isBuffer ? body : (body !== null && body !== undefined ? JSON.stringify(body) : null);
 
   const defaultHeaders = {
     'apikey': SUPABASE_CONFIG.serviceKey,
     'Authorization': `Bearer ${SUPABASE_CONFIG.serviceKey}`,
-    'Content-Type': 'application/json'
+    ...(isBuffer ? { 'Content-Type': 'application/octet-stream' } : { 'Content-Type': 'application/json' })
   };
 
   return new Promise((resolve, reject) => {
@@ -130,19 +131,26 @@ async function supabaseRequest(endpoint, method = 'GET', body = null, headers = 
       port: url.port || (isHttps ? 443 : 80),
       path: `${url.pathname}${url.search}`,
       method,
-      headers: { ...defaultHeaders, ...headers, ...(postData ? { 'Content-Length': Buffer.byteLength(postData) } : {}) },
+      headers: { ...defaultHeaders, ...headers, ...(postData ? { 'Content-Length': isBuffer ? body.length : Buffer.byteLength(postData) } : {}) },
       timeout: 30000
     }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
       res.on('end', () => {
+        const rawBuffer = Buffer.concat(chunks);
+        const rawText = rawBuffer.toString('utf8');
         if (res.statusCode >= 400) {
-          return reject(new Error(`Supabase Error (${res.statusCode}) on ${endpoint}: ${data}`));
+          return reject(new Error(`Supabase Error (${res.statusCode}) on ${endpoint}: ${rawText}`));
         }
-        try {
-          resolve({ status: res.statusCode, headers: res.headers, data: data ? JSON.parse(data) : null });
-        } catch (_) {
-          resolve({ status: res.statusCode, headers: res.headers, data });
+        const contentType = res.headers['content-type'] || '';
+        if (contentType.includes('application/json')) {
+          try {
+            resolve({ status: res.statusCode, headers: res.headers, data: JSON.parse(rawText), buffer: rawBuffer });
+          } catch (_) {
+            resolve({ status: res.statusCode, headers: res.headers, data: rawText, buffer: rawBuffer });
+          }
+        } else {
+          resolve({ status: res.statusCode, headers: res.headers, data: rawText, buffer: rawBuffer });
         }
       });
     });
@@ -329,12 +337,32 @@ async function runMigration() {
     console.log('DONE');
   }
 
-  // B. Upsert Driver Accounts from driver_app_accounts.json to jbc_driver_accounts
+  // B. Migrate persistent driver accounts to jbc_driver_accounts (PRESERVE AUTHORITATIVE SUPABASE ACCOUNTS)
   const drvAccountsFile = jsonStores.find(s => s.file === 'driver_app_accounts.json');
   if (drvAccountsFile && drvAccountsFile.data) {
-    process.stdout.write('Migrating persistent driver accounts to jbc_driver_accounts... ');
+    process.stdout.write('Checking existing Supabase driver accounts to preserve authoritative credentials... ');
+    let existingIds = new Set();
+    let existingCodes = new Set();
+    try {
+      const existingRes = await supabaseRequest('/rest/v1/jbc_driver_accounts?select=employee_id,employee_code');
+      const rows = Array.isArray(existingRes.data) ? existingRes.data : [];
+      existingIds = new Set(rows.map(r => r.employee_id).filter(Boolean));
+      existingCodes = new Set(rows.map(r => r.employee_code).filter(Boolean));
+      console.log(`Found ${rows.length} existing authoritative driver accounts.`);
+    } catch (e) {
+      console.warn(`Could not query existing driver accounts: ${e.message}`);
+    }
+
     const accounts = Object.values(drvAccountsFile.data);
+    let migratedCount = 0;
+    let preservedCount = 0;
+
     for (const acc of accounts) {
+      if (existingIds.has(acc.employee_id) || existingCodes.has(acc.employee_code)) {
+        console.log(`  [PRESERVED] Driver account ${acc.employee_code} (${acc.employee_id}) already exists in Supabase. Authoritative credentials preserved.`);
+        preservedCount++;
+        continue;
+      }
       const payload = {
         employee_id: acc.employee_id,
         employee_code: acc.employee_code,
@@ -343,26 +371,50 @@ async function runMigration() {
         updated_at: new Date().toISOString()
       };
       await supabaseRequest('/rest/v1/jbc_driver_accounts', 'POST', payload, {
-        'Prefer': 'resolution=merge-duplicates,return=representation'
+        'Prefer': 'return=representation'
       });
+      migratedCount++;
     }
-    console.log(`${accounts.length} driver accounts migrated.`);
+    console.log(`Driver account migration complete: ${migratedCount} inserted, ${preservedCount} preserved untouched.`);
   }
 
-  // C. Upload storage files to Supabase Storage and verify SHA-256
+  // B2. Migrate ALL 23 JSON data stores to jbc_json_stores
+  console.log(`\nMigrating all ${jsonStores.length} JSON data stores to jbc_json_stores...`);
+  for (const s of jsonStores) {
+    const payload = {
+      store_key: s.file,
+      store_data: s.data,
+      entry_count: s.records,
+      updated_at: new Date().toISOString()
+    };
+    await supabaseRequest('/rest/v1/jbc_json_stores', 'POST', payload, {
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    });
+  }
+  console.log(`All ${jsonStores.length} JSON data stores migrated to jbc_json_stores.`);
+
+  // C. Upload storage files to Supabase Storage and verify target SHA-256 content hashes
   if (fileInventory.length > 0) {
-    console.log(`Uploading ${fileInventory.length} storage files to Supabase private storage...`);
+    console.log(`Uploading and verifying ${fileInventory.length} storage files in Supabase private storage...`);
     for (const f of fileInventory) {
       const relPath = path.relative(process.cwd(), f.path).replace(/\\/g, '/');
       const bytes = fs.readFileSync(f.path);
       const endpoint = `/storage/v1/object/documents/${encodeURIComponent(relPath)}`;
 
+      // Upload
       await supabaseRequest(endpoint, 'POST', bytes, {
         'Content-Type': 'application/octet-stream',
         'x-upsert': 'true'
       });
+
+      // Verify target content hash: download back from target storage and calculate SHA-256
+      const dlRes = await supabaseRequest(endpoint, 'GET');
+      const targetHash = crypto.createHash('sha256').update(dlRes.buffer).digest('hex');
+      if (targetHash !== f.sha256) {
+        throw new Error(`Target content hash verification failed for ${relPath}: expected ${f.sha256}, got ${targetHash}`);
+      }
     }
-    console.log('File uploads complete.');
+    console.log(`All ${fileInventory.length} storage files verified with 100% SHA-256 target hash match.`);
   }
 
   // D. Post-Migration Verification & Parity Reconciliation

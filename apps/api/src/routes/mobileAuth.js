@@ -1,4 +1,5 @@
 import pb from '../utils/pocketbaseClient.js';
+import { getRuntimeDatabaseClient } from '../utils/supabaseClient.js';
 import { mountMobileDriverData } from './mobileDriverData.js';
 import express from 'express';
 import * as driverAuthService from '../services/driverAuthService.js';
@@ -200,6 +201,6 @@ router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), a
   }
 });
 
-mountMobileDriverData(router, requireDriverAuth, pb);
+mountMobileDriverData(router, requireDriverAuth, getRuntimeDatabaseClient(pb));
 
 export default router;

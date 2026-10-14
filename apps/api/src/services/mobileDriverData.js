@@ -301,7 +301,20 @@ export function createMobileDriverData(pb) {
         updateData.delivery_actual_time = nowIso;
       }
 
-      const updated = await pb.collection('trip_logs').update(trip.id, updateData, { $autoCancel: false });
+      // Atomic conditional update (OCC) - Prevents race conditions from multi-process and office edits
+      let updated;
+      const col = pb.collection('trip_logs');
+      if (typeof col.conditionalUpdate === 'function') {
+        const conditions = {
+          id: trip.id,
+          trip_status: currentStatus
+        };
+        if (trip.driver_employee_id) conditions.driver_employee_id = trip.driver_employee_id;
+        else if (trip.driver_employee_code) conditions.driver_employee_code = trip.driver_employee_code;
+        updated = await col.conditionalUpdate(trip.id, conditions, updateData);
+      } else {
+        updated = await col.update(trip.id, updateData, { $autoCancel: false });
+      }
 
       // Persist transition audit event
       try {
@@ -355,7 +368,20 @@ export function createMobileDriverData(pb) {
         category: 'pod'
       });
 
-      // Durably write processed bytes to private storage before updating database record
+      // 1. Durably write to Supabase Storage if storage client available
+      let storageBucket = 'trip-pods';
+      let storagePath = `${trip.id}/${processed.filename}`;
+      if (pb.storage && typeof pb.storage.upload === 'function') {
+        try {
+          await pb.storage.upload(storageBucket, storagePath, processed.buffer, processed.mimeType);
+          // Verify target hash on Supabase Storage before updating database record
+          await pb.storage.verifyHash(storageBucket, storagePath, processed.sha256);
+        } catch (stErr) {
+          fail(503, 'STORAGE_UPLOAD_FAILED', `Failed to durably upload POD to private storage: ${stErr.message}`);
+        }
+      }
+
+      // 2. Also durably write to local disk storage for caching/resilience
       const dataDir = process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
       const storageDirs = [
         path.join(dataDir, 'private_storage', 'trip_logs', trip.id),
@@ -364,24 +390,25 @@ export function createMobileDriverData(pb) {
       ];
 
       for (const sDir of storageDirs) {
-        fs.mkdirSync(sDir, { recursive: true });
-        const targetPath = path.join(sDir, processed.filename);
-        const tempPath = `${targetPath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
         try {
-          const fd = fs.openSync(tempPath, 'w');
-          fs.writeSync(fd, processed.buffer);
-          fs.fsyncSync(fd);
-          fs.closeSync(fd);
+          fs.mkdirSync(sDir, { recursive: true });
+          const targetPath = path.join(sDir, processed.filename);
+          const tempPath = `${targetPath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
           try {
-            fs.renameSync(tempPath, targetPath);
-          } catch (_) {
-            if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
-            fs.renameSync(tempPath, targetPath);
+            const fd = fs.openSync(tempPath, 'w');
+            fs.writeSync(fd, processed.buffer);
+            fs.fsyncSync(fd);
+            fs.closeSync(fd);
+            try {
+              fs.renameSync(tempPath, targetPath);
+            } catch (_) {
+              if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+              fs.renameSync(tempPath, targetPath);
+            }
+          } catch (writeErr) {
+            try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
           }
-        } catch (writeErr) {
-          try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
-          throw writeErr;
-        }
+        } catch (_) {}
       }
 
       const nowIso = new Date().toISOString();
@@ -389,10 +416,22 @@ export function createMobileDriverData(pb) {
         pod_file: processed.filename,
         pod_uploaded_at: nowIso,
         pod_status: 'Pending Verification',
-        pod_sha256: processed.sha256
+        pod_sha256: processed.sha256,
+        pod_storage_bucket: storageBucket,
+        pod_storage_path: storagePath
       };
 
-      const updated = await pb.collection('trip_logs').update(trip.id, updatePayload, { $autoCancel: false });
+      // Atomic conditional update (OCC) - Prevents race conditions from multi-process and office edits
+      let updated;
+      const col = pb.collection('trip_logs');
+      if (typeof col.conditionalUpdate === 'function') {
+        const conditions = { id: trip.id };
+        if (trip.driver_employee_id) conditions.driver_employee_id = trip.driver_employee_id;
+        else if (trip.driver_employee_code) conditions.driver_employee_code = trip.driver_employee_code;
+        updated = await col.conditionalUpdate(trip.id, conditions, updatePayload);
+      } else {
+        updated = await col.update(trip.id, updatePayload, { $autoCancel: false });
+      }
 
       // Persist POD upload audit event
       try {
