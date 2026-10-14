@@ -1102,7 +1102,7 @@ const server = http.createServer((req, res) => {
       .replace('/api/driver/office/driver-access', '/api/office/driver-access');
     let body = '';
     req.on('data', c => body += c);
-    req.on('end', () => {
+    req.on('end', async () => {
       let parsed = {};
       try { if (body) parsed = JSON.parse(body); } catch (_) {}
 
