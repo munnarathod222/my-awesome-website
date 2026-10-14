@@ -10,7 +10,7 @@ import { DriverPodCaptureModal } from '../components/documents/DriverPodCaptureM
 import { TripOverviewPage } from './TripOverviewPage';
 
 export const TripLogsPage: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'logs' | 'overview'>('logs');
+  const [activeSubTab, setActiveSubTab] = useState<'logs' | 'overview' | 'reconciliation'>('logs');
   const [trips, setTrips] = useState<TripLog[]>(dbtabeses.getTrips());
   const [trucks] = useState<TruckType[]>(dbtabeses.getTrucks());
   const [clients] = useState<ClientProfile[]>(dbtabeses.getClients());
@@ -21,6 +21,9 @@ export const TripLogsPage: React.FC = () => {
   const [editTrip, setEditTrip] = useState<TripLog | null>(null);
   const [addModal, setAddModal] = useState(false);
   const [successNotif, setSuccessNotif] = useState('');
+  const [selectedDriverId, setSelectedDriverId] = useState(employees[0]?.id || '');
+  const [reconciliationDriverSelection, setReconciliationDriverSelection] = useState<Record<string, string>>({});
+  const [reconcilingTripId, setReconcilingTripId] = useState<string | null>(null);
 
   // Document modals
   const [viewingLr, setViewingLr] = useState<LorryReceipt | null>(null);
@@ -32,7 +35,7 @@ export const TripLogsPage: React.FC = () => {
   const [newTripNumber, setNewTripNumber] = useState(`TRIP-${Math.floor(100 + Math.random() * 900)}`);
   const [newClientName, setNewClientName] = useState('Amazon Logistics India');
   const [newTruckNumber, setNewTruckNumber] = useState('TG12U2637');
-  const [newDriverName, setNewDriverName] = useState('Vinod Kumar Rathod');
+  const [newDriverName, setNewDriverName] = useState(employees[0]?.name || 'Vinod Kumar Rathod');
   const [newOrigin, setNewOrigin] = useState('Hyderabad');
   const [newDestination, setNewDestination] = useState('Warangal');
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -56,15 +59,16 @@ export const TripLogsPage: React.FC = () => {
     e.preventDefault();
     const currentTrips = dbtabeses.getTrips();
     
+    const chosenEmp = employees.find(e => e.id === selectedDriverId) || employees[0];
     const createdTrip: TripLog = {
       id: 'trip-' + Date.now(),
       trip_number: newTripNumber,
       truck_id: 'truck-001',
       truck_number: newTruckNumber,
-      driver_id: 'emp-001',
-      driver_employee_id: 'emp-001',
-      driver_employee_code: 'D001',
-      driver_name: newDriverName,
+      driver_id: chosenEmp ? chosenEmp.id : 'emp-001',
+      driver_employee_id: chosenEmp ? chosenEmp.id : 'emp-001',
+      driver_employee_code: chosenEmp?.employee_code || 'D001',
+      driver_name: chosenEmp ? chosenEmp.name : newDriverName,
       client_id: 'cli-001',
       client_name: newClientName,
       origin: newOrigin,
@@ -114,6 +118,49 @@ export const TripLogsPage: React.FC = () => {
     setTimeout(() => setSuccessNotif(''), 3500);
   };
 
+  const handleAssignDriverReconciliation = async (tripId: string) => {
+    const chosenEmpId = reconciliationDriverSelection[tripId];
+    if (!chosenEmpId) return;
+    const chosenEmp = employees.find(e => e.id === chosenEmpId);
+    if (!chosenEmp) return;
+
+    setReconcilingTripId(tripId);
+    try {
+      const allTrips = dbtabeses.getTrips();
+      const idx = allTrips.findIndex(t => t.id === tripId);
+      if (idx !== -1) {
+        allTrips[idx] = {
+          ...allTrips[idx],
+          driver_id: chosenEmp.id,
+          driver_employee_id: chosenEmp.id,
+          driver_employee_code: chosenEmp.employee_code || 'D001',
+          driver_name: chosenEmp.name
+        };
+        dbtabeses.setTrips(allTrips);
+      }
+
+      try {
+        await fetch('/api/office/trips/assign-driver-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tripIds: [tripId],
+            employeeId: chosenEmp.id,
+            employeeCode: chosenEmp.employee_code,
+            assigned_by: 'Office Dispatcher'
+          })
+        });
+      } catch (_) {}
+
+      setSuccessNotif(`Assigned permanent code ${chosenEmp.employee_code || chosenEmp.name} to Trip!`);
+      setTimeout(() => setSuccessNotif(''), 3500);
+    } finally {
+      setReconcilingTripId(null);
+    }
+  };
+
+  const unresolvedTrips = trips.filter(t => !t.driver_employee_code || !t.driver_employee_id);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -156,10 +203,107 @@ export const TripLogsPage: React.FC = () => {
         >
           <Calculator className="w-4 h-4" /> Trip Cost Calculator
         </button>
+        <button
+          onClick={() => setActiveSubTab('reconciliation')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+            activeSubTab === 'reconciliation'
+              ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" /> Driver Code Reconciliation
+          {unresolvedTrips.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full font-mono">
+              {unresolvedTrips.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Trip Overview (Cost Calculator) Sub-Tab */}
       {activeSubTab === 'overview' && <TripOverviewPage />}
+
+      {/* Office Driver Code Reconciliation Sub-Tab */}
+      {activeSubTab === 'reconciliation' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-orange-400" /> Office Historical Trip Driver Reconciliation
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Trips must be explicitly assigned using permanent employee codes (e.g. <b>D001</b>, <b>D004</b>) before mobile driver access is permitted.
+              Historical string names are displayed for verification only and are never inferred automatically.
+            </p>
+          </div>
+
+          {unresolvedTrips.length === 0 ? (
+            <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-2xl space-y-2">
+              <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
+              <h4 className="text-base font-bold text-white">All Trips Fully Reconciled</h4>
+              <p className="text-xs text-slate-400">Every trip record in the database is currently mapped to a verified permanent driver employee code.</p>
+            </div>
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300">
+                  Unresolved Trips Requiring Explicit Driver Assignment ({unresolvedTrips.length})
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950/80 text-slate-400 uppercase font-mono border-b border-slate-800">
+                    <tr>
+                      <th className="px-4 py-3">Trip #</th>
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Route</th>
+                      <th className="px-4 py-3">Truck #</th>
+                      <th className="px-4 py-3">Historical Driver String</th>
+                      <th className="px-4 py-3">Assign Permanent Driver Code</th>
+                      <th className="px-4 py-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-sans">
+                    {unresolvedTrips.map(tr => {
+                      const selectedVal = reconciliationDriverSelection[tr.id] || employees[0]?.id || '';
+                      return (
+                        <tr key={tr.id} className="hover:bg-slate-800/30 transition">
+                          <td className="px-4 py-3 font-mono font-bold text-orange-400">{tr.trip_number}</td>
+                          <td className="px-4 py-3">{tr.start_date || 'N/A'}</td>
+                          <td className="px-4 py-3">{tr.origin} &rarr; {tr.destination}</td>
+                          <td className="px-4 py-3 font-mono">{tr.truck_number}</td>
+                          <td className="px-4 py-3 text-slate-400 italic">{tr.driver_name || 'None Recorded'}</td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={selectedVal}
+                              onChange={e => setReconciliationDriverSelection(prev => ({ ...prev, [tr.id]: e.target.value }))}
+                              className="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-medium text-xs max-w-xs"
+                            >
+                              {employees.map(e => (
+                                <option key={e.id} value={e.id}>
+                                  {e.employee_code ? `${e.employee_code} — ${e.name}` : `${e.name} (Code pending)`}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => handleAssignDriverReconciliation(tr.id)}
+                              disabled={reconcilingTripId === tr.id}
+                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold rounded-lg text-xs transition shadow-sm"
+                            >
+                              {reconcilingTripId === tr.id ? 'Assigning...' : 'Assign Code'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Trip Logs Sub-Tab */}
       {activeSubTab === 'logs' && (<>
@@ -330,8 +474,24 @@ export const TripLogsPage: React.FC = () => {
                   <input type="text" value={newTruckNumber} onChange={e => setNewTruckNumber(e.target.value)} className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Driver Name</label>
-                  <input type="text" value={newDriverName} onChange={e => setNewDriverName(e.target.value)} className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white" required />
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Permanent Driver Assignment</label>
+                  <select
+                    value={selectedDriverId}
+                    onChange={e => {
+                      setSelectedDriverId(e.target.value);
+                      const emp = employees.find(x => x.id === e.target.value);
+                      if (emp) setNewDriverName(emp.name);
+                    }}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-medium"
+                    required
+                  >
+                    <option value="">-- Select Permanent Driver --</option>
+                    {employees.map(e => (
+                      <option key={e.id} value={e.id}>
+                        {e.employee_code ? `${e.employee_code} — ${e.name}` : `${e.name} (Code pending)`}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

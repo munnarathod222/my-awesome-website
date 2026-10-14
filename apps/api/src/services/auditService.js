@@ -708,3 +708,44 @@ export function seedAuthenticBaseline() {
   baselineEvents.forEach(evt => ingestEvent(evt));
   return { success: true, count: eventsCache.length, events: eventsCache };
 }
+
+/**
+ * Record an audit event for driver and operational actions,
+ * persisting both to the local verifiable chained ledger and to Supabase audit_logs when active.
+ */
+export function recordAuditEvent(eventPayload, reqMeta = {}) {
+  const event = ingestEvent({
+    id: eventPayload.id || `evt_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+    event_type: eventPayload.event_type || 'SYSTEM_EVENT',
+    category: eventPayload.category || 'OPERATIONS',
+    actor_id: eventPayload.actor || eventPayload.actor_id || 'system',
+    action: eventPayload.action || 'ACTION',
+    entity_id: eventPayload.target_id || eventPayload.entity_id || 'system',
+    details: eventPayload.details || {},
+    metadata: eventPayload.metadata || {}
+  }, reqMeta);
+
+  if (process.env.DATA_STORE === 'supabase') {
+    try {
+      import('../utils/supabaseClient.js').then(({ createSupabaseClient }) => {
+        const sb = createSupabaseClient();
+        if (sb) {
+          sb.request('/rest/v1/audit_logs', 'POST', {
+            event_type: eventPayload.event_type || 'SYSTEM_EVENT',
+            category: eventPayload.category || 'OPERATIONS',
+            actor: eventPayload.actor || eventPayload.actor_id || 'system',
+            action: eventPayload.action || 'ACTION',
+            target_id: String(eventPayload.target_id || eventPayload.entity_id || ''),
+            details: eventPayload.details || {},
+            ip_address: reqMeta.ip || null,
+            user_agent: reqMeta.userAgent || null,
+            created_at: new Date().toISOString()
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    } catch (_) {}
+  }
+
+  return event;
+}
+

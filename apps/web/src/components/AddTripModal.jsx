@@ -500,17 +500,9 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                   <Select 
                     value={formData.truck_number} 
                     onValueChange={v => {
-                      const selectedTruck = trucks.find(t => t.truck_number === v);
-                      // Preselect ONLY explicit employee relation with permanent code; never infer from names
-                      const pairedDriver = employees.find(e => e.assigned_truck === selectedTruck?.id && e.employee_code && /^[DE]\d{3,}$/.test(e.employee_code));
                       setFormData(prev => ({
                         ...prev,
-                        truck_number: v,
-                        ...(pairedDriver ? {
-                          driver_employee_code: pairedDriver.employee_code,
-                          driver_employee_id: pairedDriver.id,
-                          driver_name: pairedDriver.name
-                        } : {})
+                        truck_number: v
                       }));
                     }} 
                     disabled={dataLoading}
