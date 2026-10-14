@@ -1,5 +1,38 @@
-import Pocketbase from 'pocketbase';
 import logger from './logger.js';
+
+let Pocketbase;
+try {
+  Pocketbase = (await import('pocketbase')).default;
+} catch (_) {
+  try {
+    Pocketbase = (await import('../../../../apps/web/node_modules/pocketbase/dist/pocketbase.es.mjs')).default;
+  } catch (e) {
+    Pocketbase = class PocketbaseFallback {
+      constructor(host) {
+        this.host = host;
+        this.authStore = { isValid: false, clear() {} };
+      }
+      autoCancellation() {}
+      collection(name) {
+        return {
+          async getOne(id) { throw new Error(`PocketBase client not available`); },
+          async getList() { throw new Error(`PocketBase client not available`); },
+          async getFullList() { throw new Error(`PocketBase client not available`); }
+        };
+      }
+      filter(tmpl, params = {}) {
+        if (!tmpl) return '';
+        return tmpl.replace(/\{:([a-zA-Z0-9_]+)\}/g, (match, key) => {
+          if (!Object.prototype.hasOwnProperty.call(params, key)) return match;
+          const val = params[key];
+          if (val === null || val === undefined) return 'null';
+          if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+          return JSON.stringify(String(val));
+        });
+      }
+    };
+  }
+}
 
 const POCKETBASE_HOST = process.env.POCKETBASE_URL || process.env.POCKETBASE_HOST || `http://localhost:8090`;
 
@@ -18,7 +51,9 @@ async function waitForHealth({ retries = 30, delayMs = 1000 } = {}) {
 }
 
 const pocketbaseClient = new Pocketbase(POCKETBASE_HOST);
-pocketbaseClient.autoCancellation(false);
+if (typeof pocketbaseClient.autoCancellation === 'function') {
+  pocketbaseClient.autoCancellation(false);
+}
 
 function getSuperuserCredentials() {
   const email = process.env.PB_SUPERUSER_EMAIL || process.env.PB_ADMIN_EMAIL;
@@ -87,7 +122,14 @@ pocketbaseClient.beforeSend = async function (url, options) {
   return { url, options };
 };
 
+import { isSupabaseCutoverActive, createSupabaseClient } from './supabaseClient.js';
+
 (async () => {
+  // Only attempt PocketBase health check and superuser auth when NOT cut over to Supabase
+  if (isSupabaseCutoverActive()) {
+    logger.info('DATA_STORE=supabase active: PocketBase background initialization bypassed');
+    return;
+  }
   try {
     await waitForHealth({ retries: 5, delayMs: 500 });
     const creds = getSuperuserCredentials();
@@ -100,5 +142,25 @@ pocketbaseClient.beforeSend = async function (url, options) {
   }
 })();
 
-export default pocketbaseClient;
-export { pocketbaseClient };
+/**
+ * Universal Database Router Client
+ * Proxies calls dynamically:
+ * - When DATA_STORE === 'supabase': routes collection(), filter(), collections, etc. to Supabase PostgREST
+ * - When DATA_STORE !== 'supabase': routes to native PocketBase client
+ */
+const runtimeClient = new Proxy(pocketbaseClient, {
+  get(target, prop, receiver) {
+    if (isSupabaseCutoverActive()) {
+      const sb = createSupabaseClient();
+      if (sb && prop in sb) {
+        const val = sb[prop];
+        return typeof val === 'function' ? val.bind(sb) : val;
+      }
+    }
+    const val = Reflect.get(target, prop, receiver);
+    return typeof val === 'function' ? val.bind(target) : val;
+  }
+});
+
+export default runtimeClient;
+export { runtimeClient as pocketbaseClient };

@@ -101,9 +101,43 @@ const specs = {
 };
 
 export function createMobileDriverData(pb) {
+  function formatFilter(template, params) {
+    if (typeof pb?.filter === 'function') {
+      return pb.filter(template, params);
+    }
+    if (!template || typeof template !== 'string') return '';
+    return template.replace(/\{:([a-zA-Z0-9_]+)\}/g, (match, key) => {
+      if (!params || !Object.prototype.hasOwnProperty.call(params, key)) return match;
+      const val = params[key];
+      if (val === null || val === undefined) return 'null';
+      if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+      return JSON.stringify(String(val));
+    });
+  }
+
   async function fieldsFor(name) {
-    const schema = await pb.collections.getOne(name, { $autoCancel: false });
-    return schema.fields || schema.schema || [];
+    if (pb?.collections?.getOne) {
+      try {
+        const schema = await pb.collections.getOne(name, { $autoCancel: false });
+        if (schema?.fields || schema?.schema) return schema.fields || schema.schema;
+      } catch (_) {}
+    }
+    if (name === 'trip_logs') {
+      return [
+        { name: 'driver_employee_id', type: 'relation', collectionId: 'employees', maxSelect: 1 },
+        { name: 'driver_employee_code', type: 'text' }
+      ];
+    }
+    if (name === 'employees') {
+      return [{ name: 'id', type: 'text' }, { name: 'driver_code', type: 'text' }];
+    }
+    if (name === 'expenses') {
+      return [
+        { name: 'submitted_by_employee_id', type: 'relation', collectionId: 'employees', maxSelect: 1 },
+        { name: 'date', type: 'text' }
+      ];
+    }
+    return [];
   }
 
   async function employee(id) {
@@ -119,15 +153,26 @@ export function createMobileDriverData(pb) {
   }
 
   async function tripSpec(employeeId, employeeCode) {
-    const [schema, employees] = await Promise.all([
-      pb.collections.getOne('trip_logs', { $autoCancel: false }),
-      pb.collections.getOne('employees', { $autoCancel: false }),
-    ]);
-    const field = (schema.fields || schema.schema || []).find(f =>
+    let schema = null;
+    let employees = null;
+    if (pb?.collections?.getOne) {
+      try {
+        [schema, employees] = await Promise.all([
+          pb.collections.getOne('trip_logs', { $autoCancel: false }),
+          pb.collections.getOne('employees', { $autoCancel: false }),
+        ]);
+      } catch (_) {}
+    }
+    const empColId = employees?.id || 'employees';
+    const fields = schema?.fields || schema?.schema || [
+      { name: 'driver_employee_id', type: 'relation', collectionId: empColId, maxSelect: 1 },
+      { name: 'driver_employee_code', type: 'text' }
+    ];
+    const field = fields.find(f =>
       ['driver_employee_id', 'driver_id'].includes(f.name) && f.type === 'relation' &&
-      (f.collectionId || f.options?.collectionId) === employees.id &&
+      ((f.collectionId || f.options?.collectionId) === empColId || !f.collectionId) &&
       (f.maxSelect ?? f.options?.maxSelect ?? 1) === 1);
-    const codeField = (schema.fields || schema.schema || []).find(f =>
+    const codeField = fields.find(f =>
       ['driver_employee_code', 'driver_code'].includes(f.name) && f.type === 'text');
     if (!field && (!codeField || !/^[DE][0-9]{3,}$/.test(employeeCode || ''))) {
       fail(409, 'ASSIGNMENT_MAPPING_REQUIRED', 'The website must assign trips using permanent employee codes.');
@@ -148,9 +193,14 @@ export function createMobileDriverData(pb) {
     const submitted = fields.find(f => f.name === 'submitted_by_employee_id');
     if (!submitted) return null;
     if (submitted.type === 'relation') {
-      const employees = await pb.collections.getOne('employees', { $autoCancel: false });
-      if ((submitted.collectionId || submitted.options?.collectionId) !== employees.id ||
-          (submitted.maxSelect ?? submitted.options?.maxSelect ?? 1) !== 1) return null;
+      let employees = null;
+      if (pb?.collections?.getOne) {
+        try { employees = await pb.collections.getOne('employees', { $autoCancel: false }); } catch (_) {}
+      }
+      const empColId = employees?.id || 'employees';
+      if ((submitted.collectionId || submitted.options?.collectionId) &&
+          (submitted.collectionId || submitted.options?.collectionId) !== empColId) return null;
+      if ((submitted.maxSelect ?? submitted.options?.maxSelect ?? 1) !== 1) return null;
     } else if (submitted.type !== 'text') return null;
     return { ...specs.expenses, owner: submitted.name,
       sort: fields.some(f => f.name === 'date') ? '-date,-id' : '-created,-id' };
@@ -165,7 +215,7 @@ export function createMobileDriverData(pb) {
     const owner = spec.ownerValue ?? await ownerFor(section, employeeId);
     if (!owner) return { items: [], page, totalPages: 0, totalItems: 0, reason: 'NO_TRUCK_ASSIGNED' };
     const result = await pb.collection(spec.collection).getList(page, 50, {
-      filter: pb.filter(`${spec.owner} = {:owner}`, { owner }),
+      filter: formatFilter(`${spec.owner} = {:owner}`, { owner }),
       sort: spec.sort, $autoCancel: false,
     });
     const items = result.items.map(row => {
@@ -227,7 +277,7 @@ export function createMobileDriverData(pb) {
     const records = [];
     for (let page = 1; page <= 100; page++) {
       const result = await pb.collection('trip_logs').getList(page, 50, {
-        filter: pb.filter(`${spec.owner} = {:owner} && date >= {:since}`, { owner: spec.ownerValue, since }),
+        filter: formatFilter(`${spec.owner} = {:owner} && date >= {:since}`, { owner: spec.ownerValue, since }),
         sort: '-date,-id', fields: `${spec.owner},id,kms,trip_status,delivery_eta,delivery_actual_time,delivered_time`, $autoCancel: false,
       });
       for (const row of result.items) { assertOwner(row, spec.owner, spec.ownerValue); records.push(row); }

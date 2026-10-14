@@ -16,6 +16,7 @@ import pb from './apps/api/src/utils/pocketbaseClient.js';
 import { getRuntimeDatabaseClient, isSupabaseCutoverActive } from './apps/api/src/utils/supabaseClient.js';
 import { createMobileDriverData, MobileDataError, pageNumber } from './apps/api/src/services/mobileDriverData.js';
 import { downloadMobileDocument } from './apps/api/src/services/mobileDocumentDownload.js';
+import { getJsonStore, saveJsonStore } from './apps/api/src/services/jsonStoreService.js';
 
 const runtimeDb = getRuntimeDatabaseClient(pb);
 const mobileDriverData = createMobileDriverData(runtimeDb);
@@ -679,6 +680,18 @@ const server = http.createServer((req, res) => {
       path.join(__dirname, 'dist/quotation_rates.json')
     ];
     if (req.method === 'GET') {
+      try {
+        const storeRates = await getJsonStore('quotation_rates.json');
+        if (storeRates) {
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+          return res.end(JSON.stringify(storeRates));
+        }
+      } catch (err) {
+        if (isSupabaseCutoverActive()) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      }
       for (const p of qRateCandidates) {
         if (fs.existsSync(p)) {
           res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
@@ -691,10 +704,11 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST') {
       let b = '';
       req.on('data', c => b += c);
-      req.on('end', () => {
+      req.on('end', async () => {
         try {
           const parsed = JSON.parse(b);
           parsed.updated_at = new Date().toISOString();
+          await saveJsonStore('quotation_rates.json', parsed);
           const str = JSON.stringify(parsed, null, 2);
           qRateCandidates.forEach(p => {
             try {

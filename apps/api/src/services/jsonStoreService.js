@@ -15,22 +15,23 @@ export async function getJsonStore(storeKey) {
   const normKey = storeKey.endsWith('.json') ? storeKey : `${storeKey}.json`;
 
   if (isSupabaseCutoverActive()) {
-    try {
-      const sb = createSupabaseClient();
-      if (sb) {
-        const row = await sb.collection('jbc_json_stores').getOne(normKey);
-        if (row && row.store_data) {
-          return row.store_data;
-        }
-      }
-    } catch (err) {
-      if (err.status !== 404) {
-        console.warn(`[jsonStoreService] Supabase read failed for ${normKey}:`, err.message);
-      }
+    const sb = createSupabaseClient();
+    if (!sb) {
+      throw new Error(`[jsonStoreService] Supabase cutover active (DATA_STORE=supabase) but client initialization failed.`);
     }
+    // Query jbc_json_stores by store_key primary key (not id)
+    const res = await sb.request(`/rest/v1/jbc_json_stores?store_key=eq.${encodeURIComponent(normKey)}&select=*`, 'GET', null, {
+      'Range': '0-0'
+    });
+    const rows = res.data;
+    if (Array.isArray(rows) && rows.length > 0) {
+      return rows[0].store_data ?? null;
+    }
+    // Record does not exist yet in Supabase
+    return null;
   }
 
-  // Fallback to local file
+  // Fallback to local file in local mode only
   const localFile = path.join(DATA_DIR, normKey);
   try {
     if (fs.existsSync(localFile)) {

@@ -2,6 +2,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import http from 'node:http';
 import { execSync, spawnSync } from 'node:child_process';
 import * as driverAuthService from '../src/services/driverAuthService.js';
 import { createMobileDriverData, MobileDataError } from '../src/services/mobileDriverData.js';
@@ -366,7 +367,7 @@ async function runTests() {
   // TEST SUITE 6: PostgREST Filter Safe Translation, Fail-Closed & Compound Sorting
   // --------------------------------------------------------------------------
   console.log('\n[Suite 6] PostgREST Filter Safe Translation, Fail-Closed & Compound Sorting');
-  const { translatePbFilterToPostgrest, translateSortToPostgrest, getRuntimeDatabaseClient, isSupabaseCutoverActive } = await import('../src/utils/supabaseClient.js');
+  const { translatePbFilterToPostgrest, translateSortToPostgrest, getRuntimeDatabaseClient, isSupabaseCutoverActive, createSupabaseClient } = await import('../src/utils/supabaseClient.js');
 
   // 1. Driver isolation filter translation
   const driverFilter = translatePbFilterToPostgrest('driver_employee_id = "k7jaz5lqellbxtb"');
@@ -378,10 +379,37 @@ async function runTests() {
   assert.deepStrictEqual(compoundFilter, { driver_employee_code: 'eq.D001', date: 'gte.2026-07-16' });
   console.log('  ✓ Compound AND filter translated: driver_employee_code=eq.D001 & date=gte.2026-07-16.');
 
+  // 2a. Repeated fields translation (preserves both lower and upper bounds without overwriting)
+  const rangeFilter = translatePbFilterToPostgrest('date >= "2026-10-01" && date <= "2026-10-31"');
+  assert.deepStrictEqual(rangeFilter, { date: ['gte.2026-10-01', 'lte.2026-10-31'] });
+  console.log('  ✓ Repeated fields preserved without overwriting: date=gte.2026-10-01 & date=lte.2026-10-31.');
+
+  // 2b. Null comparisons & empty strings
+  const nullFilter = translatePbFilterToPostgrest('pod_file = null');
+  assert.deepStrictEqual(nullFilter, { pod_file: 'is.null' });
+  const notNullFilter = translatePbFilterToPostgrest('pod_file != null');
+  assert.deepStrictEqual(notNullFilter, { pod_file: 'not.is.null' });
+  const emptyStrFilter = translatePbFilterToPostgrest('pod_file = ""');
+  assert.deepStrictEqual(emptyStrFilter, { pod_file: 'eq.' });
+  console.log('  ✓ Null and empty string comparisons translated (is.null, not.is.null, eq.).');
+
+  // 2c. Supported AND/OR expressions
+  const orFilter = translatePbFilterToPostgrest('status = "In Transit" || status = "Delivered"');
+  assert.deepStrictEqual(orFilter, { or: '(status.eq.In Transit,status.eq.Delivered)' });
+  const compoundOrFilter = translatePbFilterToPostgrest('driver_employee_code = "D001" && (status = "In Transit" || status = "Delivered")');
+  assert.deepStrictEqual(compoundOrFilter, {
+    driver_employee_code: 'eq.D001',
+    or: '(status.eq.In Transit,status.eq.Delivered)'
+  });
+  console.log('  ✓ Supported OR expressions translated to PostgREST format.');
+
   // 3. Fail-Closed security guarantee on unsupported / injection expressions
   assert.throws(() => {
     translatePbFilterToPostgrest('UNSUPPORTED SQL EXPRESSION -- DROP TABLE');
   }, /UNSUPPORTED_FILTER/, 'Must fail closed on unsupported filter syntax');
+  assert.throws(() => {
+    translatePbFilterToPostgrest('salary > 50000; SELECT * FROM users');
+  }, /UNSUPPORTED_FILTER/, 'Must fail closed on SQL injection / invalid syntax');
   console.log('  ✓ Unsupported or malicious filter syntax strictly fails closed (UNSUPPORTED_FILTER).');
 
   // 4. Compound sorting translation
@@ -542,6 +570,276 @@ async function runTests() {
   const runtimeDefault = getRuntimeDatabaseClient({ client: 'pocketbase_fallback' });
   assert.strictEqual(runtimeDefault.client, 'pocketbase_fallback', 'Must use fallback when cutover is not explicitly active');
   console.log('  ✓ Strict reviewed cutover setting verified (no accidental switch without DATA_STORE=supabase).');
+
+  // --------------------------------------------------------------------------
+  // TEST SUITE 11: Real Supabase PostgREST Adapter End-to-End Tests with
+  // Real mobileDriverData, Pagination, Date Ranges & Fail-Closed JSON Stores
+  // --------------------------------------------------------------------------
+  console.log('\n[Suite 11] Real Supabase PostgREST Adapter End-to-End Suite');
+
+  // In-memory PostgREST mock tables
+  const dbTables = {
+    employees: [
+      { id: 'k7jaz5lqellbxtb', name: 'Dayanand surwase', employee_code: 'D001', assigned_truck: 'trk_tg12_01' },
+      { id: 'emp_inactive_02', name: 'Inactive Driver', employee_code: 'D002', assigned_truck: null }
+    ],
+    trucks: [
+      { id: 'trk_tg12_01', truck_number: 'TG12 U 2637', model: 'BharatBenz 2823R', status: 'active' }
+    ],
+    trip_logs: [
+      {
+        id: 'trip_real_1',
+        trip_id: 'TRIP-REAL-1',
+        date: '2026-10-15',
+        driver_employee_id: 'k7jaz5lqellbxtb',
+        driver_employee_code: 'D001',
+        trip_status: 'Delivered',
+        truck_number: 'TG12 U 2637',
+        kms: 450,
+        pod_file: 'proof1.pdf'
+      },
+      {
+        id: 'trip_real_2',
+        trip_id: 'TRIP-REAL-2',
+        date: '2026-09-01',
+        driver_employee_id: 'k7jaz5lqellbxtb',
+        driver_employee_code: 'D001',
+        trip_status: 'In Transit',
+        truck_number: 'TG12 U 2637',
+        kms: 320,
+        pod_file: null
+      },
+      {
+        id: 'trip_real_3',
+        trip_id: 'TRIP-REAL-3',
+        date: '2026-10-20',
+        driver_employee_id: 'emp_other_03',
+        driver_employee_code: 'D003',
+        trip_status: 'Upcoming',
+        truck_number: 'TG12 U 9999',
+        kms: 100,
+        pod_file: null
+      }
+    ],
+    attendance: [
+      { id: 'att_1', staff_member: 'k7jaz5lqellbxtb', employee_id: 'k7jaz5lqellbxtb', date: '2026-10-14', status: 'Present' }
+    ],
+    advances: [
+      { id: 'adv_1', employee_id: 'k7jaz5lqellbxtb', date: '2026-10-10', amount: 5000, reason: 'Diesel expense' }
+    ],
+    employee_documents: [
+      { id: 'emp_doc_1', employee_id: 'k7jaz5lqellbxtb', document_type: 'Driving License', document_number: 'DL-9921', files: ['dl_front.jpg'] }
+    ],
+    truck_documents: [
+      { id: 'trk_doc_1', truck_id: 'trk_tg12_01', document_type: 'Fitness Certificate', document_number: 'FC-8823', files: ['fitness.pdf'] }
+    ],
+    expenses: [
+      { id: 'exp_1', submitted_by_employee_id: 'k7jaz5lqellbxtb', date: '2026-10-12', amount: 1200, category: 'Toll' }
+    ],
+    jbc_json_stores: [],
+    large_fixture: Array.from({ length: 1500 }, (_, i) => ({
+      id: `fix_${i}`,
+      seq: i,
+      name: `Fixture Record ${i}`
+    }))
+  };
+
+  // Create isolated PostgREST test server
+  const mockPostgrestServer = http.createServer((req, res) => {
+    const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = parsedUrl.pathname;
+
+    // Fail closed trigger for testing database error handling
+    if (parsedUrl.search.includes('failing_store.json')) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ code: 'PGRST500', message: 'Simulated PostgreSQL server error' }));
+    }
+
+    // PostgREST REST endpoints: /rest/v1/:table
+    if (pathname.startsWith('/rest/v1/')) {
+      const table = pathname.replace('/rest/v1/', '');
+      const rows = dbTables[table] || [];
+
+      if (req.method === 'GET') {
+        let filtered = [...rows];
+
+        // Parse query params (handling multiple/repeated params per key)
+        for (const [key, val] of parsedUrl.searchParams.entries()) {
+          if (['select', 'order'].includes(key)) continue;
+
+          if (val.startsWith('eq.')) {
+            const target = val.slice(3);
+            filtered = filtered.filter(r => String(r[key] ?? '') === target);
+          } else if (val.startsWith('gte.')) {
+            const target = val.slice(4);
+            filtered = filtered.filter(r => String(r[key] ?? '') >= target);
+          } else if (val.startsWith('lte.')) {
+            const target = val.slice(4);
+            filtered = filtered.filter(r => String(r[key] ?? '') <= target);
+          } else if (val === 'is.null') {
+            filtered = filtered.filter(r => r[key] === null || r[key] === undefined);
+          } else if (val === 'not.is.null') {
+            filtered = filtered.filter(r => r[key] !== null && r[key] !== undefined);
+          }
+        }
+
+        // Handle PostgREST Range header for pagination
+        const rangeHeader = req.headers['range'];
+        let from = 0;
+        let to = filtered.length - 1;
+        if (rangeHeader) {
+          const parts = rangeHeader.split('-');
+          from = parseInt(parts[0], 10) || 0;
+          to = parts[1] !== undefined ? parseInt(parts[1], 10) : filtered.length - 1;
+        }
+
+        const paged = filtered.slice(from, to + 1);
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Range': `${from}-${Math.min(to, filtered.length - 1)}/${filtered.length}`
+        });
+        return res.end(JSON.stringify(paged));
+      }
+
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          const parsed = JSON.parse(body || '{}');
+          if (table === 'jbc_json_stores') {
+            const idx = dbTables.jbc_json_stores.findIndex(s => s.store_key === parsed.store_key);
+            if (idx >= 0) dbTables.jbc_json_stores[idx] = parsed;
+            else dbTables.jbc_json_stores.push(parsed);
+          } else {
+            rows.push(parsed);
+          }
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify([parsed]));
+        });
+        return;
+      }
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Not found' }));
+  });
+
+  await new Promise((resolve) => mockPostgrestServer.listen(0, '127.0.0.1', resolve));
+  const serverPort = mockPostgrestServer.address().port;
+  const mockSupabaseUrl = `http://127.0.0.1:${serverPort}`;
+
+  try {
+    // Instantiate real Supabase client pointing to the real HTTP server
+    const realSb = createSupabaseClient({
+      url: mockSupabaseUrl,
+      key: 'test_service_role_key_2026'
+    });
+
+    assert.ok(realSb, 'realSb client instantiated');
+    assert.strictEqual(typeof realSb.filter, 'function', 'realSb provides filter()');
+    assert.strictEqual(typeof realSb.collections.getOne, 'function', 'realSb provides collections.getOne()');
+
+    // Instantiate real mobileDriverData with real Supabase adapter
+    const realMobileData = createMobileDriverData(realSb);
+
+    // 1. Trips Listing & Driver Isolation (real HTTP call through PostgREST)
+    const tripList = await realMobileData.list('trips', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(tripList.items.length, 2, 'Must return exactly 2 trips belonging to driver D001');
+    assert.ok(tripList.items.every(t => t.driver_employee_code === 'D001' || t.driver_employee_id === 'k7jaz5lqellbxtb'));
+    console.log('  ✓ Real mobileDriverData.list("trips") queried real adapter with driver isolation.');
+
+    // 2. Date Range Filter with Repeated Fields (gte AND lte)
+    const dateRangeResult = await realSb.collection('trip_logs').getList(1, 50, {
+      filter: 'date >= "2026-10-01" && date <= "2026-10-31"'
+    });
+    assert.strictEqual(dateRangeResult.items.length, 2);
+    assert.ok(!dateRangeResult.items.some(t => t.id === 'trip_real_2'), 'Trip from 2026-09-01 must be excluded by lower bound');
+    console.log('  ✓ Date range filter (date >= "..." && date <= "...") preserved both bounds in real adapter.');
+
+    // 3. Attendance, Advances, Employee Documents, Truck Documents, Expenses
+    const attList = await realMobileData.list('attendance', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(attList.items.length, 1);
+    assert.strictEqual(attList.items[0].id, 'att_1');
+    console.log('  ✓ Attendance section listed successfully via real adapter.');
+
+    const advList = await realMobileData.list('advances', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(advList.items.length, 1);
+    assert.strictEqual(advList.items[0].id, 'adv_1');
+    console.log('  ✓ Advances section listed successfully via real adapter.');
+
+    const empDocsList = await realMobileData.list('my-documents', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(empDocsList.items.length, 1);
+    assert.strictEqual(empDocsList.items[0].id, 'emp_doc_1');
+    console.log('  ✓ Employee documents listed successfully via real adapter.');
+
+    const trkDocsList = await realMobileData.list('truck-documents', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(trkDocsList.items.length, 1);
+    assert.strictEqual(trkDocsList.items[0].id, 'trk_doc_1');
+    console.log('  ✓ Truck documents listed successfully via real adapter.');
+
+    const expList = await realMobileData.list('expenses', 'k7jaz5lqellbxtb', 1, 'D001');
+    assert.strictEqual(expList.items.length, 1);
+    assert.strictEqual(expList.items[0].id, 'exp_1');
+    console.log('  ✓ Expenses section listed successfully via real adapter.');
+
+    // 4. Empty Results Handling
+    const emptyTrips = await realMobileData.list('trips', 'emp_inactive_02', 1, 'D002');
+    assert.strictEqual(emptyTrips.items.length, 0);
+    assert.strictEqual(emptyTrips.totalItems, 0);
+    const noTruckDocs = await realMobileData.list('truck-documents', 'emp_inactive_02', 1, 'D002');
+    assert.strictEqual(noTruckDocs.reason, 'NO_TRUCK_ASSIGNED');
+    console.log('  ✓ Empty results and unassigned truck states handled gracefully.');
+
+    // 5. Cross-Driver Access Denial
+    try {
+      await realMobileData.file('truck-documents', 'trk_doc_1', 0, 'emp_inactive_02', 'D002');
+      assert.fail('Should deny access to truck documents for unassigned driver');
+    } catch (err) {
+      assert.strictEqual(err.status, 403);
+      console.log('  ✓ Cross-driver document access denied with 403 ACCESS_DENIED.');
+    }
+
+    // 6. Complete Pagination over 1,500 records through real adapter
+    const allLargeItems = await realSb.collection('large_fixture').getFullList();
+    assert.strictEqual(allLargeItems.length, 1500, 'getFullList must fetch all 1,500 records');
+    console.log('  ✓ Real adapter getFullList fetched 1,500 records across multiple HTTP pages.');
+
+    // 7. JSON Store save/read round-trip with store_key in Supabase mode
+    process.env.DATA_STORE = 'supabase';
+    process.env.SUPABASE_URL = mockSupabaseUrl;
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test_service_role_key_2026';
+
+    const testStoreKey = 'active_corridors.json';
+    const storePayload = { corridorId: 'HYD-BLR', baseFreight: 21500, active: true };
+    await saveJsonStore(testStoreKey, storePayload);
+    const fetchedStore = await getJsonStore(testStoreKey);
+    assert.deepStrictEqual(fetchedStore, storePayload, 'Fetched store_data must match saved store_data');
+    console.log('  ✓ jsonStoreService save/read round-trip with store_key verified via PostgREST.');
+
+    // 8. Fail-Closed security: in Supabase mode, DB failures must NEVER fall back to stale local files
+    const staleLocalPath = path.join(TEST_DATA_DIR, 'failing_store.json');
+    fs.writeFileSync(staleLocalPath, JSON.stringify({ stale: true, oldVal: 999 }), 'utf8');
+
+    try {
+      await getJsonStore('failing_store.json');
+      assert.fail('Must fail closed on database failure');
+    } catch (dbErr) {
+      assert.ok(dbErr.message.includes('500') || dbErr.message.includes('PGRST500'), 'Error must reflect DB failure');
+      console.log('  ✓ Database failure strictly fails closed without silent fallback to stale local file.');
+    }
+
+    // 9. Universal Database Router Client (pocketbaseClient)
+    const { pocketbaseClient: universalClient } = await import('../src/utils/pocketbaseClient.js');
+    const routedTrip = await universalClient.collection('trip_logs').getOne('trip_real_1');
+    assert.strictEqual(routedTrip.id, 'trip_real_1');
+    console.log('  ✓ pocketbaseClient proxy dynamically routed calls to Supabase when DATA_STORE=supabase.');
+
+  } finally {
+    delete process.env.DATA_STORE;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    await new Promise((resolve) => mockPostgrestServer.close(resolve));
+  }
 
   // Clean up test data dir
   try {

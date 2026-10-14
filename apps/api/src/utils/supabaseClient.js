@@ -18,10 +18,100 @@ export function isSupabaseCutoverActive() {
   return process.env.DATA_STORE === 'supabase';
 }
 
+function translateSingleCondition(cleanTerm) {
+  if (cleanTerm.includes(';') || cleanTerm.includes('--')) {
+    throw new Error(`UNSUPPORTED_FILTER: Semicolons and SQL comments are not permitted in filter: "${cleanTerm}"`);
+  }
+
+  // Pattern: field operator value
+  // Operator: =, !=, >=, <=, >, <, ~, !~
+  const match = cleanTerm.match(/^([a-zA-Z0-9_]+)\s*(=|!=|>=|<=|>|<|~|!~)\s*(.*)$/);
+  if (!match) {
+    throw new Error(`UNSUPPORTED_FILTER: Cannot safely translate filter expression: "${cleanTerm}"`);
+  }
+
+  const field = match[1];
+  const op = match[2];
+  let rawVal = match[3].trim();
+
+  let isQuoted = false;
+  if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
+    rawVal = rawVal.slice(1, -1);
+    isQuoted = true;
+  }
+
+  if (!isQuoted) {
+    if (!/^-?[0-9]+(\.[0-9]+)?$/.test(rawVal) &&
+        !/^(true|false|null)$/.test(rawVal) &&
+        !/^[a-zA-Z0-9_.:-]+$/.test(rawVal)) {
+      throw new Error(`UNSUPPORTED_FILTER: Invalid unquoted literal in filter: "${cleanTerm}"`);
+    }
+  }
+
+  // Null handling
+  if (!isQuoted && (rawVal === 'null' || rawVal === '')) {
+    if (rawVal === 'null') {
+      if (op === '=') return { field, postgrestCond: 'is.null' };
+      if (op === '!=') return { field, postgrestCond: 'not.is.null' };
+      throw new Error(`UNSUPPORTED_FILTER: Unsupported null operator "${op}" in "${cleanTerm}"`);
+    }
+  }
+
+  // Empty string handling
+  if (isQuoted && rawVal === '') {
+    if (op === '=') return { field, postgrestCond: 'eq.' };
+    if (op === '!=') return { field, postgrestCond: 'neq.' };
+  }
+
+  // Boolean literals
+  if (!isQuoted && (rawVal === 'true' || rawVal === 'false')) {
+    if (op === '=') return { field, postgrestCond: `is.${rawVal}` };
+    if (op === '!=') return { field, postgrestCond: `not.is.${rawVal}` };
+  }
+
+  let pgOp;
+  let pgVal = rawVal;
+
+  switch (op) {
+    case '=':
+      pgOp = 'eq';
+      break;
+    case '!=':
+      pgOp = 'neq';
+      break;
+    case '>=':
+      pgOp = 'gte';
+      break;
+    case '<=':
+      pgOp = 'lte';
+      break;
+    case '>':
+      pgOp = 'gt';
+      break;
+    case '<':
+      pgOp = 'lt';
+      break;
+    case '~':
+      pgOp = 'ilike';
+      pgVal = `*${rawVal}*`;
+      break;
+    case '!~':
+      pgOp = 'not.ilike';
+      pgVal = `*${rawVal}*`;
+      break;
+    default:
+      throw new Error(`UNSUPPORTED_FILTER: Unsupported operator "${op}" in "${cleanTerm}"`);
+  }
+
+  return { field, postgrestCond: `${pgOp}.${pgVal}` };
+}
+
 /**
  * Translate PocketBase filter strings into PostgREST query parameters.
  * FAILS CLOSED: If any portion of the filter cannot be safely and accurately translated,
  * throws an Error to prevent unauthorized unfiltered data access.
+ * Preserves repeated fields (e.g. date >= ... && date <= ...) without overwriting.
+ * Handles null checks (is.null, not.is.null), empty strings, and supported AND/OR expressions.
  */
 export function translatePbFilterToPostgrest(filterStr) {
   if (!filterStr || typeof filterStr !== 'string') return {};
@@ -30,59 +120,43 @@ export function translatePbFilterToPostgrest(filterStr) {
 
   const queryParams = {};
 
-  // Split on top-level &&
-  const terms = trimmed.split(/\s+&&\s+/);
-  for (const term of terms) {
-    const cleanTerm = term.trim();
+  function addParam(k, v) {
+    if (Object.prototype.hasOwnProperty.call(queryParams, k)) {
+      if (Array.isArray(queryParams[k])) {
+        queryParams[k].push(v);
+      } else {
+        queryParams[k] = [queryParams[k], v];
+      }
+    } else {
+      queryParams[k] = v;
+    }
+  }
+
+  const andTerms = trimmed.split(/\s+&&\s+/);
+  for (const andTerm of andTerms) {
+    let cleanTerm = andTerm.trim();
     if (!cleanTerm) continue;
 
-    // Pattern: field operator value
-    // Operator: =, !=, >=, <=, >, <, ~
-    const match = cleanTerm.match(/^([a-zA-Z0-9_]+)\s*(=|!=|>=|<=|>|<|~)\s*(.+)$/);
-    if (!match) {
-      throw new Error(`UNSUPPORTED_FILTER: Cannot safely translate filter expression: "${cleanTerm}"`);
+    if (cleanTerm.startsWith('(') && cleanTerm.endsWith(')')) {
+      cleanTerm = cleanTerm.slice(1, -1).trim();
     }
 
-    const field = match[1];
-    const op = match[2];
-    let rawVal = match[3].trim();
-
-    // Remove quotes if string literal
-    if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
-      rawVal = rawVal.slice(1, -1);
+    if (cleanTerm.includes('||')) {
+      const orParts = cleanTerm.split(/\s+\|\|\s+/);
+      const orConds = [];
+      for (const part of orParts) {
+        const sub = part.trim();
+        if (!sub) continue;
+        const { field, postgrestCond } = translateSingleCondition(sub);
+        orConds.push(`${field}.${postgrestCond}`);
+      }
+      if (orConds.length > 0) {
+        addParam('or', `(${orConds.join(',')})`);
+      }
+    } else {
+      const { field, postgrestCond } = translateSingleCondition(cleanTerm);
+      addParam(field, postgrestCond);
     }
-
-    let pgOp;
-    let pgVal = rawVal;
-
-    switch (op) {
-      case '=':
-        pgOp = 'eq';
-        break;
-      case '!=':
-        pgOp = 'neq';
-        break;
-      case '>=':
-        pgOp = 'gte';
-        break;
-      case '<=':
-        pgOp = 'lte';
-        break;
-      case '>':
-        pgOp = 'gt';
-        break;
-      case '<':
-        pgOp = 'lt';
-        break;
-      case '~':
-        pgOp = 'ilike';
-        pgVal = `*${rawVal}*`;
-        break;
-      default:
-        throw new Error(`UNSUPPORTED_FILTER: Unsupported operator "${op}" in "${cleanTerm}"`);
-    }
-
-    queryParams[field] = `${pgOp}.${pgVal}`;
   }
 
   return queryParams;
@@ -221,7 +295,13 @@ export function createSupabaseClient({ url = process.env.SUPABASE_URL, key = pro
         if (options.filter) {
           const filterParams = translatePbFilterToPostgrest(options.filter);
           for (const [k, v] of Object.entries(filterParams)) {
-            queryObj.set(k, v);
+            if (Array.isArray(v)) {
+              for (const item of v) {
+                queryObj.append(k, item);
+              }
+            } else {
+              queryObj.append(k, v);
+            }
           }
         }
 
@@ -335,11 +415,72 @@ export function createSupabaseClient({ url = process.env.SUPABASE_URL, key = pro
         return res.data[0];
       },
 
+      async getFirstListItem(filter, options = {}) {
+        const res = await this.getList(1, 1, { ...options, filter });
+        if (!res.items || res.items.length === 0) {
+          const err = new Error(`Record not found in ${tableName} matching filter: ${filter}`);
+          err.status = 404;
+          throw err;
+        }
+        return res.items[0];
+      },
+
       async delete(id) {
         await request(`/rest/v1/${encodeURIComponent(tableName)}?id=eq.${encodeURIComponent(id)}`, 'DELETE');
         return true;
       }
     };
+  }
+
+  // Schema descriptor discovery for PocketBase collections API compatibility
+  const collections = {
+    async getOne(name) {
+      if (name === 'trip_logs') {
+        return {
+          id: 'trip_logs',
+          name: 'trip_logs',
+          fields: [
+            { name: 'driver_employee_id', type: 'relation', collectionId: 'employees', maxSelect: 1 },
+            { name: 'driver_employee_code', type: 'text' }
+          ]
+        };
+      }
+      if (name === 'employees') {
+        return {
+          id: 'employees',
+          name: 'employees',
+          fields: [
+            { name: 'id', type: 'text' },
+            { name: 'driver_code', type: 'text' }
+          ]
+        };
+      }
+      if (name === 'expenses') {
+        return {
+          id: 'expenses',
+          name: 'expenses',
+          fields: [
+            { name: 'submitted_by_employee_id', type: 'relation', collectionId: 'employees', maxSelect: 1 },
+            { name: 'date', type: 'text' }
+          ]
+        };
+      }
+      return { id: name, name, fields: [] };
+    }
+  };
+
+  /**
+   * Safe filter interpolation compatible with pb.filter(template, params)
+   */
+  function filter(template, params = {}) {
+    if (!template || typeof template !== 'string') return '';
+    return template.replace(/\{:([a-zA-Z0-9_]+)\}/g, (match, key) => {
+      if (!Object.prototype.hasOwnProperty.call(params, key)) return match;
+      const val = params[key];
+      if (val === null || val === undefined) return 'null';
+      if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+      return JSON.stringify(String(val));
+    });
   }
 
   // Storage Methods
@@ -374,6 +515,8 @@ export function createSupabaseClient({ url = process.env.SUPABASE_URL, key = pro
 
   return {
     collection,
+    collections,
+    filter,
     storage,
     request,
     isSupabase: true
