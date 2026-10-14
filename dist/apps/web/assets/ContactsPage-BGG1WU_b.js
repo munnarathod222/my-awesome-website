@@ -490,22 +490,29 @@ function safeParseArray(val) {
 function extractGoogleMapsUrl(contact) {
   if (!contact) return '';
   const directFields = [
-    contact.google_maps_url,
     contact.google_map_link,
-    contact.maps_url,
     contact.location_url,
-    contact.map_link,
-    contact.map_url
+    contact.maps_url,
+    contact.map_url,
+    contact.google_maps_url,
+    contact.map_link
   ];
   for (const f of directFields) {
     if (f && typeof f === 'string' && f.trim() && (f.includes('maps') || f.includes('goo.gl'))) {
-      const m = f.match(/https?:\/\/[^\s"'<>\]]+/i);
+      const trimmed = f.trim();
+      const m = trimmed.match(/https?:\/\/[^\s"'<>\]]+/i);
       if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+      return trimmed.startsWith('http') ? trimmed : 'https://' + trimmed;
     }
   }
   if (contact.notes && typeof contact.notes === 'string') {
     const m = contact.notes.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|www\.google\.com\/maps|maps\.google\.com)\/[^\s"'<>\]]+/i);
     if (m) return m[0].replace(/[\]\)\}>.,;'"\\]+$/, '').trim();
+    const locMatch = contact.notes.match(/\[Location:\s*([^\s\]]+)\]/i);
+    if (locMatch) {
+      const u = locMatch[1].trim();
+      return u.startsWith('http') ? u : 'https://' + u;
+    }
   }
   if (contact.physical_address && typeof contact.physical_address === 'string' && (contact.physical_address.includes('goo.gl') || contact.physical_address.includes('maps'))) {
     const m = contact.physical_address.match(/https?:\/\/[^\s"'<>\]]+/i);
@@ -588,10 +595,6 @@ function getContactMainGroup(contact) {
 
 
 
-
-
-
-
 function ka({ isOpen, onClose, contact, onSuccess, imports }) {
   const { e, h, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Input, Textarea, Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, toast, pb, currentUser, Loader2 } = imports;
   const [saving, setSaving] = useState(false);
@@ -639,7 +642,8 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       setPhysicalAddress(contact.physical_address || "");
       setCity(contact.city || "Hyderabad");
       setArea(contact.area || "");
-      setGoogleMapsUrl(contact.google_maps_url || contact.google_map_link || "");
+      const initialMapUrl = extractGoogleMapsUrl(contact);
+      setGoogleMapsUrl(initialMapUrl);
       setMainGroup(contact.main_group || "Fleet Repairs & Services");
       setPrimaryCategory(contact.primary_category || contact.contact_type || "Mechanic");
       setSecondaryCategories(safeParseArray(contact.secondary_categories));
@@ -653,7 +657,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       setIsPreferred(Boolean(contact.is_preferred));
       setVerificationStatus(contact.verification_status || "verified");
       setWorkingHours(contact.working_hours || "8:00 AM - 9:00 PM");
-      const cleanNotes = (contact.notes || "").replace(/\[Location:\s*https?:\/\/[^\]]+\]/gi, "").replace(/\[Finance:\s*[^\]]+\]/gi, "").trim();
+      const cleanNotes = (contact.notes || "").replace(/<!--\s*MAPS_URL:[^>]*-->/gi, "").replace(/\[Location:\s*[^\]]+\]/gi, "").replace(/\[Finance:\s*[^\]]+\]/gi, "").trim();
       setInternalNotes(cleanNotes);
     } else {
       setCompanyName("");
@@ -733,6 +737,18 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
     setSaving(true);
     try {
       const allPhones = [primaryPhone, alternatePhone].map((p) => p.trim()).filter(Boolean).join(", ");
+      let mapUrl = googleMapsUrl.trim();
+      if (mapUrl && !/^https?:\/\//i.test(mapUrl)) {
+        if (mapUrl.includes("goo.gl") || mapUrl.includes("google.com") || mapUrl.includes("maps")) {
+          mapUrl = "https://" + mapUrl;
+        }
+      }
+      let finalNotes = internalNotes.trim();
+      if (mapUrl) {
+        finalNotes = finalNotes.replace(/<!--\s*MAPS_URL:[^>]*-->/gi, "").replace(/\[Location:\s*[^\]]+\]/gi, "").trim();
+        finalNotes = finalNotes ? `${finalNotes}
+[Location: ${mapUrl}]` : `[Location: ${mapUrl}]`;
+      }
       const payload = {
         company_name: companyName.trim(),
         organisation_name: organisationName.trim() || companyName.trim(),
@@ -745,9 +761,11 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
         physical_address: physicalAddress.trim(),
         city: city.trim(),
         area: area.trim(),
-        google_maps_url: googleMapsUrl.trim(),
-        google_map_link: googleMapsUrl.trim(),
-        location_url: googleMapsUrl.trim(),
+        google_map_link: mapUrl,
+        location_url: mapUrl,
+        maps_url: mapUrl,
+        map_url: mapUrl,
+        google_maps_url: mapUrl,
         // Category Architecture
         main_group: mainGroup,
         primary_category: primaryCategory,
@@ -767,7 +785,7 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
         is_preferred: isPreferred ? 1 : 0,
         verification_status: verificationStatus,
         working_hours: workingHours.trim(),
-        notes: internalNotes.trim(),
+        notes: finalNotes,
         created_by: currentUser?.id || ""
       };
       if (contact && contact.id) {
@@ -786,346 +804,578 @@ function ka({ isOpen, onClose, contact, onSuccess, imports }) {
       setSaving(false);
     }
   };
-  return /* @__PURE__ */ h.createElement(Dialog, { open: isOpen, onOpenChange: (open) => !open && onClose() }, /* @__PURE__ */ h.createElement(DialogContent, { className: "w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-4 sm:p-6 rounded-2xl shadow-2xl" }, /* @__PURE__ */ h.createElement(DialogHeader, { className: "border-b border-slate-800 pb-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(DialogTitle, { className: "text-xl font-black text-white flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-primary text-2xl" }, "\u{1F4C7}"), contact ? `Edit CRM Contact: ${contact.company_name}` : "New Transport CRM & Service Contact"), /* @__PURE__ */ h.createElement("span", { className: "text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold" }, "Production CRM v2.0")), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none" }, /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setActiveTab("general"),
-      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "general" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F464}"),
-    " Standard & Location"
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setActiveTab("category"),
-      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "category" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F4C2}"),
-    " Group & Subcategories"
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setActiveTab("service"),
-      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "service" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F527}"),
-    " Multi-Brand & Intelligence"
-  ), /* @__PURE__ */ h.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setActiveTab("corporate"),
-      className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "corporate" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`
-    },
-    /* @__PURE__ */ h.createElement("span", null, "\u{1F3E2}"),
-    " Corporate & Settings"
-  ))), /* @__PURE__ */ h.createElement("form", { onSubmit: handleSubmit, className: "space-y-4 py-3" }, activeTab === "general" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Company / Shop / Contact Name *"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: companyName,
-      onChange: (e2) => setCompanyName(e2.target.value),
-      placeholder: "e.g. Sri Rama Auto Electricals / Royal Transport",
-      className: "bg-slate-950 border-slate-800 text-white font-bold text-sm",
-      required: true
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Designation / Role in Transport"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: designation,
-      onChange: (e2) => setDesignation(e2.target.value),
-      placeholder: "e.g. Master Mechanic / Logistics Head / Owner",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-emerald-400 flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F4DE}"), " Phone Numbers & WhatsApp Lines"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Preserves multiple numbers without comma clobbering")), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Primary Mobile *"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: primaryPhone,
-      onChange: (e2) => setPrimaryPhone(e2.target.value),
-      placeholder: "e.g. 9849735080",
-      className: "bg-slate-900 border-slate-800 text-emerald-400 font-mono font-bold text-xs",
-      required: true
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Alternate / Office"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: alternatePhone,
-      onChange: (e2) => setAlternatePhone(e2.target.value),
-      placeholder: "e.g. 9000250452",
-      className: "bg-slate-900 border-slate-800 text-slate-300 font-mono text-xs"
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "WhatsApp Dedicated"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: whatsappPhone,
-      onChange: (e2) => setWhatsappPhone(e2.target.value),
-      placeholder: "e.g. 9849735080",
-      className: "bg-slate-900 border-slate-800 text-teal-400 font-mono text-xs"
-    }
-  )))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "sm:col-span-2 space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Physical Address / Workshop Location *"), /* @__PURE__ */ h.createElement(
-    Textarea,
-    {
-      value: physicalAddress,
-      onChange: (e2) => setPhysicalAddress(e2.target.value),
-      placeholder: "Shop No, Landmark, Highway KM marker, Auto Nagar...",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[60px]",
-      required: true
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "City Hub"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: city,
-      onChange: (e2) => setCity(e2.target.value),
-      placeholder: "e.g. Hyderabad / Bhiwandi / Bengaluru",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Area / Transport Cluster"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: area,
-      onChange: (e2) => setArea(e2.target.value),
-      placeholder: "e.g. Ghatkesar / Autonagar / Peddamberpet",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  )))), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-rose-400 flex items-center gap-1" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F5FA}\uFE0F"), " Google Maps GPS Navigation Link"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: googleMapsUrl,
-      onChange: (e2) => setGoogleMapsUrl(e2.target.value),
-      placeholder: "https://maps.app.goo.gl/... (Enables 1-click driver GPS routing)",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
-    }
-  ))), activeTab === "category" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Main Group (8 Master Groups) *"), /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: mainGroup,
-      onChange: (e2) => {
-        const newGroup = e2.target.value;
-        setMainGroup(newGroup);
-        const gObj = MAIN_GROUPS_CONFIG.find((g) => g.title === newGroup);
-        if (gObj && gObj.categories.length > 0) {
-          setPrimaryCategory(gObj.categories[0].name);
-          setSubcategories(gObj.categories[0].subcategories.slice(0, 2));
-        }
-      },
-      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
-    },
-    MAIN_GROUPS_CONFIG.map((g) => /* @__PURE__ */ h.createElement("option", { key: g.id, value: g.title }, g.code, " \u2014 ", g.title))
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Primary Category *"), /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: primaryCategory,
-      onChange: (e2) => {
-        const newCat = e2.target.value;
-        setPrimaryCategory(newCat);
-        const cObj = availableCategories.find((c) => c.name === newCat);
-        if (cObj) {
-          setSubcategories(cObj.subcategories.slice(0, 2));
-        }
-      },
-      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
-    },
-    availableCategories.map((c) => /* @__PURE__ */ h.createElement("option", { key: c.id, value: c.name }, c.name))
-  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Subcategories (Multi-Select Supported)"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-primary font-bold" }, subcategories.length, " Selected")), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSubcategories.map((sub) => {
-    const isSelected = subcategories.includes(sub);
-    return /* @__PURE__ */ h.createElement(
-      "button",
-      {
-        key: sub,
-        type: "button",
-        onClick: () => toggleSubcategory(sub),
-        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-primary/20 border-primary text-primary font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
-      },
-      isSelected ? "\u2713 " : "+ ",
-      " ",
-      sub
-    );
-  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: customSubcategory,
-      onChange: (e2) => setCustomSubcategory(e2.target.value),
-      placeholder: "Add custom subcategory tag...",
-      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
-    }
-  ), /* @__PURE__ */ h.createElement(
-    Button,
-    {
-      type: "button",
-      size: "sm",
-      variant: "outline",
-      className: "h-8 text-xs border-slate-700",
-      onClick: () => {
-        if (customSubcategory.trim() && !subcategories.includes(customSubcategory.trim())) {
-          setSubcategories([...subcategories, customSubcategory.trim()]);
-          setCustomSubcategory("");
-        }
-      }
-    },
-    "Add Subcategory"
-  )))), activeTab === "service" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3" }, /* @__PURE__ */ h.createElement("div", { className: "flex items-center justify-between" }, /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-amber-400 flex items-center gap-1.5" }, /* @__PURE__ */ h.createElement("span", null, "\u{1F69B}"), " Centrally Managed Truck Brands (Multi-Select)"), /* @__PURE__ */ h.createElement("p", { className: "text-[10px] text-slate-400" }, "Select all manufacturer brands this workshop or technician supports")), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement("span", { className: "text-[10px] font-bold text-slate-400" }, "Centre Type:"), /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: workshopType,
-      onChange: (e2) => setWorkshopType(e2.target.value),
-      className: "h-7 rounded bg-slate-900 border border-slate-800 text-[11px] text-amber-300 font-bold px-2"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "independent" }, "Independent Workshop"),
-    /* @__PURE__ */ h.createElement("option", { value: "authorised" }, "Authorised OEM Centre"),
-    /* @__PURE__ */ h.createElement("option", { value: "roadside" }, "Roadside Mobile Van")
-  ))), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, TRUCK_BRANDS_MASTER.map((brand) => {
-    const isSelected = truckBrands.includes(brand);
-    return /* @__PURE__ */ h.createElement(
-      "button",
-      {
-        key: brand,
-        type: "button",
-        onClick: () => toggleBrand(brand),
-        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
-      },
-      isSelected ? "\u2713 " : "+ ",
-      " ",
-      brand
-    );
-  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: customBrand,
-      onChange: (e2) => setCustomBrand(e2.target.value),
-      placeholder: "Add custom truck brand (e.g. Scania, Force)...",
-      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
-    }
-  ), /* @__PURE__ */ h.createElement(
-    Button,
-    {
-      type: "button",
-      size: "sm",
-      variant: "outline",
-      className: "h-8 text-xs border-slate-700",
-      onClick: () => {
-        if (customBrand.trim() && !truckBrands.includes(customBrand.trim())) {
-          setTruckBrands([...truckBrands.filter((b) => b !== "Universal / All Brands"), customBrand.trim()]);
-          setCustomBrand("");
-        }
-      }
-    },
-    "Add Brand"
-  ))), /* @__PURE__ */ h.createElement("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Service Specialisations (Repair Expertise)"), /* @__PURE__ */ h.createElement("div", { className: "flex flex-wrap gap-2 pt-1" }, availableSpecialisations.map((spec) => {
-    const isSelected = serviceSpecialisations.includes(spec);
-    return /* @__PURE__ */ h.createElement(
-      "button",
-      {
-        key: spec,
-        type: "button",
-        onClick: () => toggleSpecialisation(spec),
-        className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`
-      },
-      isSelected ? "\u2713 " : "+ ",
-      " ",
-      spec
-    );
-  })), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80" }, /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: customSpecialisation,
-      onChange: (e2) => setCustomSpecialisation(e2.target.value),
-      placeholder: "Add custom specialisation...",
-      className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
-    }
-  ), /* @__PURE__ */ h.createElement(
-    Button,
-    {
-      type: "button",
-      size: "sm",
-      variant: "outline",
-      className: "h-8 text-xs border-slate-700",
-      onClick: () => {
-        if (customSpecialisation.trim() && !serviceSpecialisations.includes(customSpecialisation.trim())) {
-          setServiceSpecialisations([...serviceSpecialisations, customSpecialisation.trim()]);
-          setCustomSpecialisation("");
-        }
-      }
-    },
-    "Add Specialisation"
-  ))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: emergencyAvailable,
-      onChange: (e2) => setEmergencyAvailable(e2.target.checked),
-      className: "rounded text-primary focus:ring-0"
-    }
-  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6A8} 24/7 Emergency"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Available for night breakdown"))), /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: roadsideService,
-      onChange: (e2) => setRoadsideService(e2.target.checked),
-      className: "rounded text-primary focus:ring-0"
-    }
-  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-slate-200 block" }, "\u{1F6E0}\uFE0F Roadside / On-site"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "Dispatches mechanic to truck"))), /* @__PURE__ */ h.createElement("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950" }, /* @__PURE__ */ h.createElement(
-    "input",
-    {
-      type: "checkbox",
-      checked: isPreferred,
-      onChange: (e2) => setIsPreferred(e2.target.checked),
-      className: "rounded text-primary focus:ring-0"
-    }
-  ), /* @__PURE__ */ h.createElement("div", null, /* @__PURE__ */ h.createElement("span", { className: "text-xs font-bold text-amber-300 block" }, "\u2B50 Preferred Vendor"), /* @__PURE__ */ h.createElement("span", { className: "text-[10px] text-slate-400" }, "High priority dispatch status"))))), activeTab === "corporate" && /* @__PURE__ */ h.createElement("div", { className: "space-y-4 animate-in fade-in duration-150" }, /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Parent Corporate / Organisation"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: organisationName,
-      onChange: (e2) => setOrganisationName(e2.target.value),
-      placeholder: "e.g. Tata Steel / Flipkart / Reliance Hub",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "GSTIN Tax Registration"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: gstin,
-      onChange: (e2) => setGstin(e2.target.value.toUpperCase()),
-      placeholder: "15-character GSTIN (Optional)",
-      maxLength: 15,
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono uppercase"
-    }
-  ))), /* @__PURE__ */ h.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Email Address"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      type: "email",
-      value: email,
-      onChange: (e2) => setEmail(e2.target.value),
-      placeholder: "contact@company.com",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Working Hours"), /* @__PURE__ */ h.createElement(
-    Input,
-    {
-      value: workingHours,
-      onChange: (e2) => setWorkingHours(e2.target.value),
-      placeholder: "e.g. 24 Hours / 9:00 AM - 8:00 PM",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
-    }
-  )), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Verification Status"), /* @__PURE__ */ h.createElement(
-    "select",
-    {
-      value: verificationStatus,
-      onChange: (e2) => setVerificationStatus(e2.target.value),
-      className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none"
-    },
-    /* @__PURE__ */ h.createElement("option", { value: "verified" }, "Verified Contact"),
-    /* @__PURE__ */ h.createElement("option", { value: "pending" }, "Verification Pending"),
-    /* @__PURE__ */ h.createElement("option", { value: "unverified" }, "Unverified / Raw Contact")
-  ))), /* @__PURE__ */ h.createElement("div", { className: "space-y-1.5" }, /* @__PURE__ */ h.createElement(Label, { className: "text-xs font-bold text-slate-300" }, "Internal Fleet Notes & Past History"), /* @__PURE__ */ h.createElement(
-    Textarea,
-    {
-      value: internalNotes,
-      onChange: (e2) => setInternalNotes(e2.target.value),
-      placeholder: "Rates negotiated, reliable for night repairs, past experience with Hyderabad fleet...",
-      className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[70px]"
-    }
-  ))), /* @__PURE__ */ h.createElement(DialogFooter, { className: "pt-3 border-t border-slate-800 flex items-center justify-between gap-3" }, /* @__PURE__ */ h.createElement("div", { className: "text-[11px] text-slate-400" }, "* Required fields: Company Name, Primary Phone, Physical Address"), /* @__PURE__ */ h.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ h.createElement(Button, { type: "button", variant: "outline", onClick: onClose, disabled: saving, className: "border-slate-700 text-slate-300 text-xs" }, "Cancel"), /* @__PURE__ */ h.createElement(Button, { type: "submit", disabled: saving, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5 shadow-md" }, saving && /* @__PURE__ */ h.createElement(Loader2, { className: "w-4 h-4 animate-spin mr-1" }), contact ? "Update CRM Contact" : "Save CRM Contact"))))));
+  return /* @__PURE__ */ jsx(Dialog, { open: isOpen, onOpenChange: (open) => !open && onClose(), children: /* @__PURE__ */ jsxs(DialogContent, { className: "w-[96vw] max-w-4xl max-h-[92vh] overflow-y-auto bg-slate-900 border-slate-800 text-slate-100 p-4 sm:p-6 rounded-2xl shadow-2xl", children: [
+    /* @__PURE__ */ jsxs(DialogHeader, { className: "border-b border-slate-800 pb-3", children: [
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxs(DialogTitle, { className: "text-xl font-black text-white flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx("span", { className: "text-primary text-2xl", children: "\u{1F4C7}" }),
+          contact ? `Edit CRM Contact: ${contact.company_name}` : "New Transport CRM & Service Contact"
+        ] }),
+        /* @__PURE__ */ jsx("span", { className: "text-xs px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold", children: "Production CRM v2.0" })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 mt-3 overflow-x-auto pb-1 scrollbar-none", children: [
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setActiveTab("general"),
+            className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "general" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`,
+            children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F464}" }),
+              " Standard & Location"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setActiveTab("category"),
+            className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "category" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`,
+            children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F4C2}" }),
+              " Group & Subcategories"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setActiveTab("service"),
+            className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "service" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`,
+            children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F527}" }),
+              " Multi-Brand & Intelligence"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setActiveTab("corporate"),
+            className: `px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${activeTab === "corporate" ? "bg-primary text-primary-foreground shadow-md" : "bg-slate-800/60 text-slate-400 hover:text-white"}`,
+            children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F3E2}" }),
+              " Corporate & Settings"
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("form", { onSubmit: handleSubmit, className: "space-y-4 py-3", children: [
+      activeTab === "general" && /* @__PURE__ */ jsxs("div", { className: "space-y-4 animate-in fade-in duration-150", children: [
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Company / Shop / Contact Name *" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: companyName,
+                onChange: (e2) => setCompanyName(e2.target.value),
+                placeholder: "e.g. Sri Rama Auto Electricals / Royal Transport",
+                className: "bg-slate-950 border-slate-800 text-white font-bold text-sm",
+                required: true
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Designation / Role in Transport" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: designation,
+                onChange: (e2) => setDesignation(e2.target.value),
+                placeholder: "e.g. Master Mechanic / Logistics Head / Owner",
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "bg-slate-950/70 p-3.5 rounded-xl border border-slate-800/80 space-y-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxs(Label, { className: "text-xs font-bold text-emerald-400 flex items-center gap-1.5", children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F4DE}" }),
+              " Phone Numbers & WhatsApp Lines"
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400", children: "Preserves multiple numbers without comma clobbering" })
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold text-slate-400", children: "Primary Mobile *" }),
+              /* @__PURE__ */ jsx(
+                Input,
+                {
+                  value: primaryPhone,
+                  onChange: (e2) => setPrimaryPhone(e2.target.value),
+                  placeholder: "e.g. 9849735080",
+                  className: "bg-slate-900 border-slate-800 text-emerald-400 font-mono font-bold text-xs",
+                  required: true
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold text-slate-400", children: "Alternate / Office" }),
+              /* @__PURE__ */ jsx(
+                Input,
+                {
+                  value: alternatePhone,
+                  onChange: (e2) => setAlternatePhone(e2.target.value),
+                  placeholder: "e.g. 9000250452",
+                  className: "bg-slate-900 border-slate-800 text-slate-300 font-mono text-xs"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold text-slate-400", children: "WhatsApp Dedicated" }),
+              /* @__PURE__ */ jsx(
+                Input,
+                {
+                  value: whatsappPhone,
+                  onChange: (e2) => setWhatsappPhone(e2.target.value),
+                  placeholder: "e.g. 9849735080",
+                  className: "bg-slate-900 border-slate-800 text-teal-400 font-mono text-xs"
+                }
+              )
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "sm:col-span-2 space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Physical Address / Workshop Location *" }),
+            /* @__PURE__ */ jsx(
+              Textarea,
+              {
+                value: physicalAddress,
+                onChange: (e2) => setPhysicalAddress(e2.target.value),
+                placeholder: "Shop No, Landmark, Highway KM marker, Auto Nagar...",
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[60px]",
+                required: true
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-3", children: [
+            /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+              /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "City Hub" }),
+              /* @__PURE__ */ jsx(
+                Input,
+                {
+                  value: city,
+                  onChange: (e2) => setCity(e2.target.value),
+                  placeholder: "e.g. Hyderabad / Bhiwandi / Bengaluru",
+                  className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "space-y-1", children: [
+              /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Area / Transport Cluster" }),
+              /* @__PURE__ */ jsx(
+                Input,
+                {
+                  value: area,
+                  onChange: (e2) => setArea(e2.target.value),
+                  placeholder: "e.g. Ghatkesar / Autonagar / Peddamberpet",
+                  className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+                }
+              )
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxs(Label, { className: "text-xs font-bold text-rose-400 flex items-center gap-1", children: [
+              /* @__PURE__ */ jsx("span", { children: "\u{1F5FA}\uFE0F" }),
+              " Google Maps GPS Navigation Link"
+            ] }),
+            googleMapsUrl.trim() && /* @__PURE__ */ jsxs(
+              "a",
+              {
+                href: googleMapsUrl.trim().startsWith("http") ? googleMapsUrl.trim() : `https://${googleMapsUrl.trim()}`,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold underline flex items-center gap-1",
+                children: [
+                  /* @__PURE__ */ jsx("span", { children: "\u2197" }),
+                  " Test Link"
+                ]
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              value: googleMapsUrl,
+              onChange: (e2) => setGoogleMapsUrl(e2.target.value),
+              placeholder: "https://maps.app.goo.gl/... (Enables 1-click driver GPS routing)",
+              className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono"
+            }
+          )
+        ] })
+      ] }),
+      activeTab === "category" && /* @__PURE__ */ jsxs("div", { className: "space-y-4 animate-in fade-in duration-150", children: [
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Main Group (8 Master Groups) *" }),
+            /* @__PURE__ */ jsx(
+              "select",
+              {
+                value: mainGroup,
+                onChange: (e2) => {
+                  const newGroup = e2.target.value;
+                  setMainGroup(newGroup);
+                  const gObj = MAIN_GROUPS_CONFIG.find((g) => g.title === newGroup);
+                  if (gObj && gObj.categories.length > 0) {
+                    setPrimaryCategory(gObj.categories[0].name);
+                    setSubcategories(gObj.categories[0].subcategories.slice(0, 2));
+                  }
+                },
+                className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary",
+                children: MAIN_GROUPS_CONFIG.map((g) => /* @__PURE__ */ jsxs("option", { value: g.title, children: [
+                  g.code,
+                  " \u2014 ",
+                  g.title
+                ] }, g.id))
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Primary Category *" }),
+            /* @__PURE__ */ jsx(
+              "select",
+              {
+                value: primaryCategory,
+                onChange: (e2) => {
+                  const newCat = e2.target.value;
+                  setPrimaryCategory(newCat);
+                  const cObj = availableCategories.find((c) => c.name === newCat);
+                  if (cObj) {
+                    setSubcategories(cObj.subcategories.slice(0, 2));
+                  }
+                },
+                className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none focus:ring-1 focus:ring-primary",
+                children: availableCategories.map((c) => /* @__PURE__ */ jsx("option", { value: c.name, children: c.name }, c.id))
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Subcategories (Multi-Select Supported)" }),
+            /* @__PURE__ */ jsxs("span", { className: "text-[10px] text-primary font-bold", children: [
+              subcategories.length,
+              " Selected"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 pt-1", children: availableSubcategories.map((sub) => {
+            const isSelected = subcategories.includes(sub);
+            return /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => toggleSubcategory(sub),
+                className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-primary/20 border-primary text-primary font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`,
+                children: [
+                  isSelected ? "\u2713 " : "+ ",
+                  " ",
+                  sub
+                ]
+              },
+              sub
+            );
+          }) }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80", children: [
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: customSubcategory,
+                onChange: (e2) => setCustomSubcategory(e2.target.value),
+                placeholder: "Add custom subcategory tag...",
+                className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                type: "button",
+                size: "sm",
+                variant: "outline",
+                className: "h-8 text-xs border-slate-700",
+                onClick: () => {
+                  if (customSubcategory.trim() && !subcategories.includes(customSubcategory.trim())) {
+                    setSubcategories([...subcategories, customSubcategory.trim()]);
+                    setCustomSubcategory("");
+                  }
+                },
+                children: "Add Subcategory"
+              }
+            )
+          ] })
+        ] })
+      ] }),
+      activeTab === "service" && /* @__PURE__ */ jsxs("div", { className: "space-y-4 animate-in fade-in duration-150", children: [
+        /* @__PURE__ */ jsxs("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsxs(Label, { className: "text-xs font-bold text-amber-400 flex items-center gap-1.5", children: [
+                /* @__PURE__ */ jsx("span", { children: "\u{1F69B}" }),
+                " Centrally Managed Truck Brands (Multi-Select)"
+              ] }),
+              /* @__PURE__ */ jsx("p", { className: "text-[10px] text-slate-400", children: "Select all manufacturer brands this workshop or technician supports" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] font-bold text-slate-400", children: "Centre Type:" }),
+              /* @__PURE__ */ jsxs(
+                "select",
+                {
+                  value: workshopType,
+                  onChange: (e2) => setWorkshopType(e2.target.value),
+                  className: "h-7 rounded bg-slate-900 border border-slate-800 text-[11px] text-amber-300 font-bold px-2",
+                  children: [
+                    /* @__PURE__ */ jsx("option", { value: "independent", children: "Independent Workshop" }),
+                    /* @__PURE__ */ jsx("option", { value: "authorised", children: "Authorised OEM Centre" }),
+                    /* @__PURE__ */ jsx("option", { value: "roadside", children: "Roadside Mobile Van" })
+                  ]
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 pt-1", children: TRUCK_BRANDS_MASTER.map((brand) => {
+            const isSelected = truckBrands.includes(brand);
+            return /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => toggleBrand(brand),
+                className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`,
+                children: [
+                  isSelected ? "\u2713 " : "+ ",
+                  " ",
+                  brand
+                ]
+              },
+              brand
+            );
+          }) }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80", children: [
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: customBrand,
+                onChange: (e2) => setCustomBrand(e2.target.value),
+                placeholder: "Add custom truck brand (e.g. Scania, Force)...",
+                className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                type: "button",
+                size: "sm",
+                variant: "outline",
+                className: "h-8 text-xs border-slate-700",
+                onClick: () => {
+                  if (customBrand.trim() && !truckBrands.includes(customBrand.trim())) {
+                    setTruckBrands([...truckBrands.filter((b) => b !== "Universal / All Brands"), customBrand.trim()]);
+                    setCustomBrand("");
+                  }
+                },
+                children: "Add Brand"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-2.5", children: [
+          /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Service Specialisations (Repair Expertise)" }),
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 pt-1", children: availableSpecialisations.map((spec) => {
+            const isSelected = serviceSpecialisations.includes(spec);
+            return /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                onClick: () => toggleSpecialisation(spec),
+                className: `text-xs px-2.5 py-1 rounded-lg border transition-all ${isSelected ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold shadow-sm" : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"}`,
+                children: [
+                  isSelected ? "\u2713 " : "+ ",
+                  " ",
+                  spec
+                ]
+              },
+              spec
+            );
+          }) }),
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 pt-2 border-t border-slate-800/80", children: [
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: customSpecialisation,
+                onChange: (e2) => setCustomSpecialisation(e2.target.value),
+                placeholder: "Add custom specialisation...",
+                className: "bg-slate-900 border-slate-800 text-xs h-8 text-slate-200 flex-1"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                type: "button",
+                size: "sm",
+                variant: "outline",
+                className: "h-8 text-xs border-slate-700",
+                onClick: () => {
+                  if (customSpecialisation.trim() && !serviceSpecialisations.includes(customSpecialisation.trim())) {
+                    setServiceSpecialisations([...serviceSpecialisations, customSpecialisation.trim()]);
+                    setCustomSpecialisation("");
+                  }
+                },
+                children: "Add Specialisation"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
+          /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950", children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "checkbox",
+                checked: emergencyAvailable,
+                onChange: (e2) => setEmergencyAvailable(e2.target.checked),
+                className: "rounded text-primary focus:ring-0"
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-200 block", children: "\u{1F6A8} 24/7 Emergency" }),
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400", children: "Available for night breakdown" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950", children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "checkbox",
+                checked: roadsideService,
+                onChange: (e2) => setRoadsideService(e2.target.checked),
+                className: "rounded text-primary focus:ring-0"
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-slate-200 block", children: "\u{1F6E0}\uFE0F Roadside / On-site" }),
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400", children: "Dispatches mechanic to truck" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("label", { className: "flex items-center gap-2 p-3 rounded-xl bg-slate-950/70 border border-slate-800 cursor-pointer hover:bg-slate-950", children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "checkbox",
+                checked: isPreferred,
+                onChange: (e2) => setIsPreferred(e2.target.checked),
+                className: "rounded text-primary focus:ring-0"
+              }
+            ),
+            /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx("span", { className: "text-xs font-bold text-amber-300 block", children: "\u2B50 Preferred Vendor" }),
+              /* @__PURE__ */ jsx("span", { className: "text-[10px] text-slate-400", children: "High priority dispatch status" })
+            ] })
+          ] })
+        ] })
+      ] }),
+      activeTab === "corporate" && /* @__PURE__ */ jsxs("div", { className: "space-y-4 animate-in fade-in duration-150", children: [
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Parent Corporate / Organisation" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: organisationName,
+                onChange: (e2) => setOrganisationName(e2.target.value),
+                placeholder: "e.g. Tata Steel / Flipkart / Reliance Hub",
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "GSTIN Tax Registration" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: gstin,
+                onChange: (e2) => setGstin(e2.target.value.toUpperCase()),
+                placeholder: "15-character GSTIN (Optional)",
+                maxLength: 15,
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs font-mono uppercase"
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Email Address" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                type: "email",
+                value: email,
+                onChange: (e2) => setEmail(e2.target.value),
+                placeholder: "contact@company.com",
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Working Hours" }),
+            /* @__PURE__ */ jsx(
+              Input,
+              {
+                value: workingHours,
+                onChange: (e2) => setWorkingHours(e2.target.value),
+                placeholder: "e.g. 24 Hours / 9:00 AM - 8:00 PM",
+                className: "bg-slate-950 border-slate-800 text-slate-200 text-xs"
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+            /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Verification Status" }),
+            /* @__PURE__ */ jsxs(
+              "select",
+              {
+                value: verificationStatus,
+                onChange: (e2) => setVerificationStatus(e2.target.value),
+                className: "w-full h-9 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 font-semibold focus:outline-none",
+                children: [
+                  /* @__PURE__ */ jsx("option", { value: "verified", children: "Verified Contact" }),
+                  /* @__PURE__ */ jsx("option", { value: "pending", children: "Verification Pending" }),
+                  /* @__PURE__ */ jsx("option", { value: "unverified", children: "Unverified / Raw Contact" })
+                ]
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "space-y-1.5", children: [
+          /* @__PURE__ */ jsx(Label, { className: "text-xs font-bold text-slate-300", children: "Internal Fleet Notes & Past History" }),
+          /* @__PURE__ */ jsx(
+            Textarea,
+            {
+              value: internalNotes,
+              onChange: (e2) => setInternalNotes(e2.target.value),
+              placeholder: "Rates negotiated, reliable for night repairs, past experience with Hyderabad fleet...",
+              className: "bg-slate-950 border-slate-800 text-slate-200 text-xs min-h-[70px]"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(DialogFooter, { className: "pt-3 border-t border-slate-800 flex items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsx("div", { className: "text-[11px] text-slate-400", children: "* Required fields: Company Name, Primary Phone, Physical Address" }),
+        /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsx(Button, { type: "button", variant: "outline", onClick: onClose, disabled: saving, className: "border-slate-700 text-slate-300 text-xs", children: "Cancel" }),
+          /* @__PURE__ */ jsxs(Button, { type: "submit", disabled: saving, className: "bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs gap-1.5 shadow-md", children: [
+            saving && /* @__PURE__ */ jsx(Loader2, { className: "w-4 h-4 animate-spin mr-1" }),
+            contact ? "Update CRM Contact" : "Save CRM Contact"
+          ] })
+        ] })
+      ] })
+    ] })
+  ] }) });
 }
 
 
