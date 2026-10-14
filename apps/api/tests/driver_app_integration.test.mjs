@@ -403,6 +403,46 @@ async function runTests() {
   });
   console.log('  ✓ Supported OR expressions translated to PostgREST format.');
 
+  // 2d. Operator Precedence & Parentheses Preservation / Rejection
+  // Unparenthesized mixed precedence expressions must be rejected (fail closed)
+  assert.throws(() => {
+    translatePbFilterToPostgrest('a = 1 || b = 2 && c = 3');
+  }, /UNSUPPORTED_FILTER/, 'Ambiguous unparenthesized a = 1 || b = 2 && c = 3 must be rejected');
+  assert.throws(() => {
+    translatePbFilterToPostgrest('a = 1 && b = 2 || c = 3');
+  }, /UNSUPPORTED_FILTER/, 'Ambiguous unparenthesized a = 1 && b = 2 || c = 3 must be rejected');
+  console.log('  ✓ Ambiguous mixed precedence without parentheses strictly rejected (UNSUPPORTED_FILTER).');
+
+  // Explicit parentheses must be strictly preserved
+  const paren1 = translatePbFilterToPostgrest('(a = 1 || b = 2) && c = 3');
+  assert.deepStrictEqual(paren1, { or: '(a.eq.1,b.eq.2)', c: 'eq.3' });
+  const paren2 = translatePbFilterToPostgrest('a = 1 && (b = 2 || c = 3)');
+  assert.deepStrictEqual(paren2, { a: 'eq.1', or: '(b.eq.2,c.eq.3)' });
+  const paren3 = translatePbFilterToPostgrest('a = 1 || (b = 2 && c = 3)');
+  assert.deepStrictEqual(paren3, { or: '(a.eq.1,and(b.eq.2,c.eq.3))' });
+  const paren4 = translatePbFilterToPostgrest('(a = 1 && b = 2) || c = 3');
+  assert.deepStrictEqual(paren4, { or: '(and(a.eq.1,b.eq.2),c.eq.3)' });
+  console.log('  ✓ Explicit parentheses preserved across mixed AND/OR expressions.');
+
+  // 2e. Bound string values containing backslashes, quotes, commas, parentheses, operator-like text
+  const dummySb = createSupabaseClient({ url: 'https://mock.supabase.co', key: 'mock_key' });
+  const boundPathFilter = dummySb.filter('path = {:p}', { p: 'C:\\Users\\admin\\file.txt' });
+  const pathRes = translatePbFilterToPostgrest(boundPathFilter);
+  assert.strictEqual(pathRes.path, 'eq.C:\\Users\\admin\\file.txt', 'Backslashes must be preserved 1:1 without alteration');
+  console.log('  ✓ Bound string backslashes preserved 1:1 without alteration.');
+
+  const complexStr = 'Dallas, TX (North) && status = "Pending" \\ root';
+  const boundComplexFilter = dummySb.filter('note = {:val}', { val: complexStr });
+  const complexRes = translatePbFilterToPostgrest(boundComplexFilter);
+  assert.strictEqual(complexRes.note, `eq.${complexStr}`);
+
+  const orReservedFilter = translatePbFilterToPostgrest('(name = "Smith, John" || name = "C:\\\\dir") && status = "active"');
+  assert.deepStrictEqual(orReservedFilter, {
+    or: '(name.eq."Smith, John",name.eq."C:\\\\dir")',
+    status: 'eq.active'
+  });
+  console.log('  ✓ Quote-aware parsing and PostgREST literal escaping verified.');
+
   // 3. Fail-Closed security guarantee on unsupported / injection expressions
   assert.throws(() => {
     translatePbFilterToPostgrest('UNSUPPORTED SQL EXPRESSION -- DROP TABLE');
@@ -570,6 +610,26 @@ async function runTests() {
   const runtimeDefault = getRuntimeDatabaseClient({ client: 'pocketbase_fallback' });
   assert.strictEqual(runtimeDefault.client, 'pocketbase_fallback', 'Must use fallback when cutover is not explicitly active');
   console.log('  ✓ Strict reviewed cutover setting verified (no accidental switch without DATA_STORE=supabase).');
+
+  // Regression 1: With DATA_STORE=supabase and missing credentials, getRuntimeDatabaseClient must fail clearly (never return PocketBase fallback)
+  process.env.DATA_STORE = 'supabase';
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  assert.throws(() => {
+    getRuntimeDatabaseClient({ client: 'pocketbase_fallback' });
+  }, /DATA_STORE=supabase is set but Supabase credentials .* are missing/, 'getRuntimeDatabaseClient must throw when credentials are missing in Supabase mode');
+  console.log('  ✓ getRuntimeDatabaseClient strictly fails closed when DATA_STORE=supabase and credentials missing.');
+
+  // Regression 2: saveJsonStore must NEVER silently write locally when Supabase client initialization fails
+  const unauthorizedKey = 'unauthorized_local_write.json';
+  const unauthorizedPath = path.join(TEST_DATA_DIR, unauthorizedKey);
+  if (fs.existsSync(unauthorizedPath)) fs.unlinkSync(unauthorizedPath);
+  await assert.rejects(async () => {
+    await saveJsonStore(unauthorizedKey, { blocked: true });
+  }, /Supabase cutover active .* credentials .* missing/, 'saveJsonStore must reject when credentials are missing in Supabase mode');
+  assert.strictEqual(fs.existsSync(unauthorizedPath), false, 'saveJsonStore must NEVER write locally when DATA_STORE=supabase');
+  console.log('  ✓ saveJsonStore strictly rejects and never falls back to local writes in Supabase mode.');
+  delete process.env.DATA_STORE;
 
   // --------------------------------------------------------------------------
   // TEST SUITE 11: Real Supabase PostgREST Adapter End-to-End Tests with
@@ -833,6 +893,28 @@ async function runTests() {
     const routedTrip = await universalClient.collection('trip_logs').getOne('trip_real_1');
     assert.strictEqual(routedTrip.id, 'trip_real_1');
     console.log('  ✓ pocketbaseClient proxy dynamically routed calls to Supabase when DATA_STORE=supabase.');
+
+    // 10. Real Adapter quote-aware and precedence queries end-to-end
+    const complexFiltered = await realSb.collection('trip_logs').getList(1, 10, {
+      filter: '(trip_status = "In Transit" || trip_status = "Delivered") && driver_employee_code = "D001"'
+    });
+    assert.strictEqual(complexFiltered.items.length, 2, 'Must match exactly both D001 trips (Delivered and In Transit)');
+    assert.deepStrictEqual(complexFiltered.items.map(t => t.id).sort(), ['trip_real_1', 'trip_real_2']);
+    console.log('  ✓ Real adapter executed explicit parenthesized OR/AND filter query end-to-end.');
+
+    // Collection metadata discovery compatibility
+    const meta = await realSb.collections.getOne('trip_logs');
+    assert.strictEqual(meta.name, 'trip_logs');
+    assert.ok(Array.isArray(meta.fields) && meta.fields.length > 0);
+    console.log('  ✓ Real adapter collection metadata inspection verified.');
+
+    // Proxy fail-closed: universalClient throws if credentials missing in Supabase mode
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.throws(() => {
+      universalClient.collection('trip_logs');
+    }, /DATA_STORE=supabase is set but Supabase credentials .* are missing/, 'universalClient proxy must throw when credentials missing in Supabase mode');
+    console.log('  ✓ pocketbaseClient proxy strictly fails closed without credentials in Supabase mode.');
 
   } finally {
     delete process.env.DATA_STORE;

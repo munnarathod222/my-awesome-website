@@ -48,23 +48,19 @@ export async function saveJsonStore(storeKey, data) {
   const count = Array.isArray(data) ? data.length : (data && typeof data === 'object' ? Object.keys(data).length : 0);
 
   if (isSupabaseCutoverActive()) {
-    try {
-      const sb = createSupabaseClient();
-      if (sb) {
-        await sb.request('/rest/v1/jbc_json_stores', 'POST', {
-          store_key: normKey,
-          store_data: data,
-          entry_count: count,
-          updated_at: new Date().toISOString()
-        }, {
-          'Prefer': 'resolution=merge-duplicates,return=representation'
-        });
-        return true;
-      }
-    } catch (err) {
-      console.error(`[jsonStoreService] Supabase write failed for ${normKey}:`, err.message);
-      throw err;
+    const sb = createSupabaseClient();
+    if (!sb) {
+      throw new Error(`[jsonStoreService] Supabase cutover active (DATA_STORE=supabase) but Supabase credentials (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are missing or invalid.`);
     }
+    await sb.request('/rest/v1/jbc_json_stores', 'POST', {
+      store_key: normKey,
+      store_data: data,
+      entry_count: count,
+      updated_at: new Date().toISOString()
+    }, {
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    });
+    return true;
   }
 
   // Local file write

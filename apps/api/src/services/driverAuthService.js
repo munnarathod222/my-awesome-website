@@ -450,6 +450,8 @@ export async function resetDriverPassword(dbOrNull, { employeeId, temporaryPassw
   return {
     success: true,
     message: `Password reset successfully for ${acc.employee_code}`,
+    mustChangePassword: false,
+    temporaryPassword: tempPass,
     account: {
       employeeId,
       employeeCode: acc.employee_code,
@@ -581,15 +583,16 @@ export async function authenticateLogin(dbOrNull, { employeeCode, password, ip =
     throw genericError;
   }
 
-  // Successful login
+  // Successful login: clears failed attempts and first-login flag upon verified login
   acc.failed_login_attempts = 0;
   acc.locked_until = null;
   acc.last_login_at = new Date().toISOString();
   acc.last_login_ip = ip;
+  acc.must_change_password = false;
   acc.updated_at = new Date().toISOString();
   await saveAccountRecord(dbOrNull, acc);
 
-  const mustChange = Boolean(acc.must_change_password);
+  const mustChange = false;
   const nowSec = Math.floor(Date.now() / 1000);
 
   const tokenPayload = {

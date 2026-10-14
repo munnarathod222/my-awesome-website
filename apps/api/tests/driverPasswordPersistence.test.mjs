@@ -154,6 +154,7 @@ test('protected route accepts office-issued login and reports storage outage acc
   const {service:s,remote,dir}=await fixture(t);
   let source=await fs.readFile(new URL('../src/routes/mobileAuth.js',import.meta.url),'utf8');
   source=source.replace("import pb from '../utils/pocketbaseClient.js';","const pb = {};");
+  source=source.replace("import { getRuntimeDatabaseClient } from '../utils/supabaseClient.js';", "const getRuntimeDatabaseClient = () => ({});");
   source=source.replace("import { mountMobileDriverData } from './mobileDriverData.js';","const mountMobileDriverData = () => {};");
   source=source.replace("import express from 'express';","const express = { Router: () => ({post(){},get(){}}) };");
   source=source.replace("../services/driverAuthService.js","./driverAuthService.js");

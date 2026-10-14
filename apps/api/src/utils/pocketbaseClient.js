@@ -152,9 +152,15 @@ const runtimeClient = new Proxy(pocketbaseClient, {
   get(target, prop, receiver) {
     if (isSupabaseCutoverActive()) {
       const sb = createSupabaseClient();
-      if (sb && prop in sb) {
+      if (!sb) {
+        throw new Error('DATA_STORE=supabase is set but Supabase credentials (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are missing or invalid.');
+      }
+      if (prop in sb) {
         const val = sb[prop];
         return typeof val === 'function' ? val.bind(sb) : val;
+      }
+      if (prop === 'collection' || prop === 'collections' || prop === 'filter' || prop === 'storage' || prop === 'request') {
+        throw new Error(`Property "${String(prop)}" is not available on Supabase client.`);
       }
     }
     const val = Reflect.get(target, prop, receiver);

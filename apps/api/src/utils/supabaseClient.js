@@ -18,33 +18,169 @@ export function isSupabaseCutoverActive() {
   return process.env.DATA_STORE === 'supabase';
 }
 
-function translateSingleCondition(cleanTerm) {
-  if (cleanTerm.includes(';') || cleanTerm.includes('--')) {
-    throw new Error(`UNSUPPORTED_FILTER: Semicolons and SQL comments are not permitted in filter: "${cleanTerm}"`);
+function tokenizeFilter(input) {
+  const tokens = [];
+  let i = 0;
+  const n = input.length;
+
+  while (i < n) {
+    const ch = input[i];
+
+    // Skip whitespace
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
+
+    // Two-character operators: &&, ||, !=, >=, <=, !~
+    if (i + 1 < n) {
+      const two = input.slice(i, i + 2);
+      if (['&&', '||', '!=', '>=', '<=', '!~'].includes(two)) {
+        tokens.push({ type: two, value: two, pos: i });
+        i += 2;
+        continue;
+      }
+    }
+
+    // Single-character tokens: (, ), =, >, <, ~
+    if (['(', ')', '=', '>', '<', '~'].includes(ch)) {
+      tokens.push({ type: ch, value: ch, pos: i });
+      i++;
+      continue;
+    }
+
+    // String literals: "..." or '...'
+    if (ch === '"' || ch === "'") {
+      const quoteChar = ch;
+      let strVal = '';
+      let j = i + 1;
+      let closed = false;
+
+      while (j < n) {
+        const c = input[j];
+        if (c === '\\') {
+          if (j + 1 < n) {
+            const next = input[j + 1];
+            if (next === quoteChar) {
+              strVal += quoteChar;
+              j += 2;
+            } else if (next === '\\') {
+              strVal += '\\';
+              j += 2;
+            } else if (next === 'n') {
+              strVal += '\n';
+              j += 2;
+            } else if (next === 't') {
+              strVal += '\t';
+              j += 2;
+            } else if (next === 'r') {
+              strVal += '\r';
+              j += 2;
+            } else if (next === '"' || next === "'") {
+              strVal += next;
+              j += 2;
+            } else {
+              strVal += next;
+              j += 2;
+            }
+          } else {
+            throw new Error(`UNSUPPORTED_FILTER: Incomplete escape sequence in string at ${j}`);
+          }
+        } else if (c === quoteChar) {
+          closed = true;
+          j++;
+          break;
+        } else {
+          strVal += c;
+          j++;
+        }
+      }
+
+      if (!closed) {
+        throw new Error(`UNSUPPORTED_FILTER: Unterminated string literal starting at ${i}`);
+      }
+
+      tokens.push({ type: 'STRING', value: strVal, raw: input.slice(i, j), pos: i });
+      i = j;
+      continue;
+    }
+
+    // Semicolons or SQL comments: reject immediately (fail closed)
+    if (ch === ';' || (ch === '-' && i + 1 < n && input[i + 1] === '-')) {
+      throw new Error(`UNSUPPORTED_FILTER: Semicolons and SQL comments are not permitted in filter at position ${i}`);
+    }
+
+    // Word / literal / identifier / number
+    let j = i;
+    while (j < n && !/\s/.test(input[j]) && !['(', ')', '&', '|', '=', '!', '>', '<', '~', '"', "'", ';'].includes(input[j])) {
+      j++;
+    }
+    const word = input.slice(i, j);
+    if (!word) {
+      throw new Error(`UNSUPPORTED_FILTER: Unexpected character "${input[i]}" at position ${i}`);
+    }
+
+    tokens.push({ type: 'WORD', value: word, pos: i });
+    i = j;
   }
 
-  // Pattern: field operator value
-  // Operator: =, !=, >=, <=, >, <, ~, !~
-  const match = cleanTerm.match(/^([a-zA-Z0-9_]+)\s*(=|!=|>=|<=|>|<|~|!~)\s*(.*)$/);
-  if (!match) {
-    throw new Error(`UNSUPPORTED_FILTER: Cannot safely translate filter expression: "${cleanTerm}"`);
+  return tokens;
+}
+
+function unwrapOuterParens(tokens) {
+  let t = tokens;
+  while (t.length >= 3 && t[0].type === '(' && t[t.length - 1].type === ')') {
+    let depth = 0;
+    let allWrapped = true;
+    for (let i = 0; i < t.length - 1; i++) {
+      if (t[i].type === '(') depth++;
+      if (t[i].type === ')') depth--;
+      if (depth === 0) {
+        allWrapped = false;
+        break;
+      }
+    }
+    if (allWrapped) {
+      t = t.slice(1, -1);
+    } else {
+      break;
+    }
+  }
+  return t;
+}
+
+function formatPostgrestValue(val, isQuoted, inOrClause = false) {
+  if (!isQuoted && (val === 'null' || val === '')) {
+    return val;
   }
 
-  const field = match[1];
-  const op = match[2];
-  let rawVal = match[3].trim();
-
-  let isQuoted = false;
-  if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
-    rawVal = rawVal.slice(1, -1);
-    isQuoted = true;
+  if (inOrClause) {
+    // Inside or=(...), reserved characters (commas, parentheses, quotes, backslashes)
+    // must be safely enclosed in double-quotes and escaped according to PostgREST specification.
+    if (/[,()"\\]/.test(val)) {
+      const escaped = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      return `"${escaped}"`;
+    }
   }
+
+  return val;
+}
+
+function translateCondition(fieldToken, opToken, valToken, inOrClause = false) {
+  const field = fieldToken.value;
+  if (!/^[a-zA-Z0-9_]+$/.test(field)) {
+    throw new Error(`UNSUPPORTED_FILTER: Invalid field name "${field}"`);
+  }
+
+  const op = opToken.value;
+  const isQuoted = valToken.type === 'STRING';
+  const rawVal = valToken.value;
 
   if (!isQuoted) {
     if (!/^-?[0-9]+(\.[0-9]+)?$/.test(rawVal) &&
         !/^(true|false|null)$/.test(rawVal) &&
         !/^[a-zA-Z0-9_.:-]+$/.test(rawVal)) {
-      throw new Error(`UNSUPPORTED_FILTER: Invalid unquoted literal in filter: "${cleanTerm}"`);
+      throw new Error(`UNSUPPORTED_FILTER: Invalid unquoted literal in filter: "${rawVal}"`);
     }
   }
 
@@ -53,7 +189,7 @@ function translateSingleCondition(cleanTerm) {
     if (rawVal === 'null') {
       if (op === '=') return { field, postgrestCond: 'is.null' };
       if (op === '!=') return { field, postgrestCond: 'not.is.null' };
-      throw new Error(`UNSUPPORTED_FILTER: Unsupported null operator "${op}" in "${cleanTerm}"`);
+      throw new Error(`UNSUPPORTED_FILTER: Unsupported null operator "${op}"`);
     }
   }
 
@@ -70,7 +206,7 @@ function translateSingleCondition(cleanTerm) {
   }
 
   let pgOp;
-  let pgVal = rawVal;
+  let formattedVal = formatPostgrestValue(rawVal, isQuoted, inOrClause);
 
   switch (op) {
     case '=':
@@ -93,33 +229,94 @@ function translateSingleCondition(cleanTerm) {
       break;
     case '~':
       pgOp = 'ilike';
-      pgVal = `*${rawVal}*`;
+      formattedVal = `*${rawVal}*`;
+      if (inOrClause && /[\s,()"\\]/.test(formattedVal)) {
+        formattedVal = `"${formattedVal.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+      }
       break;
     case '!~':
       pgOp = 'not.ilike';
-      pgVal = `*${rawVal}*`;
+      formattedVal = `*${rawVal}*`;
+      if (inOrClause && /[\s,()"\\]/.test(formattedVal)) {
+        formattedVal = `"${formattedVal.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+      }
       break;
     default:
-      throw new Error(`UNSUPPORTED_FILTER: Unsupported operator "${op}" in "${cleanTerm}"`);
+      throw new Error(`UNSUPPORTED_FILTER: Unsupported operator "${op}"`);
   }
 
-  return { field, postgrestCond: `${pgOp}.${pgVal}` };
+  return { field, postgrestCond: `${pgOp}.${formattedVal}` };
 }
 
-/**
- * Translate PocketBase filter strings into PostgREST query parameters.
- * FAILS CLOSED: If any portion of the filter cannot be safely and accurately translated,
- * throws an Error to prevent unauthorized unfiltered data access.
- * Preserves repeated fields (e.g. date >= ... && date <= ...) without overwriting.
- * Handles null checks (is.null, not.is.null), empty strings, and supported AND/OR expressions.
- */
-export function translatePbFilterToPostgrest(filterStr) {
-  if (!filterStr || typeof filterStr !== 'string') return {};
-  const trimmed = filterStr.trim();
-  if (!trimmed) return {};
+// Split tokens by a binary operator (&& or ||) at current parenthesis level (depth 0)
+function splitTokensByOp(tokens, targetOp) {
+  const parts = [];
+  let current = [];
+  let parenDepth = 0;
+
+  for (const t of tokens) {
+    if (t.type === '(') {
+      parenDepth++;
+      current.push(t);
+    } else if (t.type === ')') {
+      parenDepth--;
+      if (parenDepth < 0) throw new Error('UNSUPPORTED_FILTER: Unmatched closing parenthesis');
+      current.push(t);
+    } else if (parenDepth === 0 && t.type === targetOp) {
+      if (current.length === 0) throw new Error(`UNSUPPORTED_FILTER: Dangling operator ${targetOp}`);
+      parts.push(current);
+      current = [];
+    } else {
+      current.push(t);
+    }
+  }
+
+  if (parenDepth !== 0) throw new Error('UNSUPPORTED_FILTER: Unclosed parenthesis');
+  if (current.length === 0 && parts.length > 0) throw new Error(`UNSUPPORTED_FILTER: Dangling operator ${targetOp}`);
+  if (current.length > 0) parts.push(current);
+
+  return parts;
+}
+
+// Check if a sequence of tokens at the current level mixes && and || without explicit parentheses
+function checkMixedOperators(tokens) {
+  let parenDepth = 0;
+  let hasAnd = false;
+  let hasOr = false;
+
+  for (const t of tokens) {
+    if (t.type === '(') parenDepth++;
+    else if (t.type === ')') parenDepth--;
+    else if (parenDepth === 0) {
+      if (t.type === '&&') hasAnd = true;
+      if (t.type === '||') hasOr = true;
+    }
+  }
+
+  if (hasAnd && hasOr) {
+    throw new Error('UNSUPPORTED_FILTER: Ambiguous operator precedence in mixed AND/OR expression without parentheses. Use explicit parentheses: e.g. (a = 1 || b = 2) && c = 3');
+  }
+}
+
+function parseConditionTokens(tokens, inOrClause = false) {
+  const t = unwrapOuterParens(tokens);
+
+  if (t.length !== 3) {
+    throw new Error(`UNSUPPORTED_FILTER: Invalid condition expression: ${t.map(x => x.raw || x.value).join(' ')}`);
+  }
+
+  return translateCondition(t[0], t[1], t[2], inOrClause);
+}
+
+function translateTokens(tokens) {
+  if (tokens.length === 0) return {};
+
+  const t = unwrapOuterParens(tokens);
+
+  // 1. Enforce explicit grouping: reject unparenthesized mixed AND and OR
+  checkMixedOperators(t);
 
   const queryParams = {};
-
   function addParam(k, v) {
     if (Object.prototype.hasOwnProperty.call(queryParams, k)) {
       if (Array.isArray(queryParams[k])) {
@@ -132,34 +329,77 @@ export function translatePbFilterToPostgrest(filterStr) {
     }
   }
 
-  const andTerms = trimmed.split(/\s+&&\s+/);
-  for (const andTerm of andTerms) {
-    let cleanTerm = andTerm.trim();
-    if (!cleanTerm) continue;
-
-    if (cleanTerm.startsWith('(') && cleanTerm.endsWith(')')) {
-      cleanTerm = cleanTerm.slice(1, -1).trim();
-    }
-
-    if (cleanTerm.includes('||')) {
-      const orParts = cleanTerm.split(/\s+\|\|\s+/);
-      const orConds = [];
-      for (const part of orParts) {
-        const sub = part.trim();
-        if (!sub) continue;
-        const { field, postgrestCond } = translateSingleCondition(sub);
-        orConds.push(`${field}.${postgrestCond}`);
-      }
-      if (orConds.length > 0) {
+  // 2. Check if top-level has &&
+  const andParts = splitTokensByOp(t, '&&');
+  if (andParts.length > 1) {
+    for (const part of andParts) {
+      const unwrapped = unwrapOuterParens(part);
+      checkMixedOperators(unwrapped);
+      const orParts = splitTokensByOp(unwrapped, '||');
+      if (orParts.length > 1) {
+        // Parenthesized OR inside AND: e.g. (a = 1 || b = 2)
+        const orConds = [];
+        for (const orPart of orParts) {
+          const { field, postgrestCond } = parseConditionTokens(orPart, true);
+          orConds.push(`${field}.${postgrestCond}`);
+        }
         addParam('or', `(${orConds.join(',')})`);
+      } else {
+        const { field, postgrestCond } = parseConditionTokens(unwrapped, false);
+        addParam(field, postgrestCond);
       }
-    } else {
-      const { field, postgrestCond } = translateSingleCondition(cleanTerm);
-      addParam(field, postgrestCond);
     }
+    return queryParams;
   }
 
+  // 3. Check if top-level has ||
+  const orParts = splitTokensByOp(t, '||');
+  if (orParts.length > 1) {
+    const orConds = [];
+    for (const part of orParts) {
+      const unwrapped = unwrapOuterParens(part);
+      checkMixedOperators(unwrapped);
+      const subAndParts = splitTokensByOp(unwrapped, '&&');
+      if (subAndParts.length > 1) {
+        // Parenthesized AND inside OR: e.g. (b = 2 && c = 3) inside OR
+        const andConds = [];
+        for (const subPart of subAndParts) {
+          const { field, postgrestCond } = parseConditionTokens(subPart, true);
+          andConds.push(`${field}.${postgrestCond}`);
+        }
+        orConds.push(`and(${andConds.join(',')})`);
+      } else {
+        const { field, postgrestCond } = parseConditionTokens(unwrapped, true);
+        orConds.push(`${field}.${postgrestCond}`);
+      }
+    }
+    addParam('or', `(${orConds.join(',')})`);
+    return queryParams;
+  }
+
+  // 4. Single condition
+  const { field, postgrestCond } = parseConditionTokens(t, false);
+  addParam(field, postgrestCond);
   return queryParams;
+}
+
+/**
+ * Translate PocketBase filter strings into PostgREST query parameters.
+ * FAILS CLOSED: If any portion of the filter cannot be safely and accurately translated,
+ * throws an Error to prevent unauthorized unfiltered data access.
+ * Preserves repeated fields (e.g. date >= ... && date <= ...) without overwriting.
+ * Handles null checks (is.null, not.is.null), empty strings, and supported AND/OR expressions.
+ * Enforces quote-awareness: backslashes, commas, parentheses, quotes, and operator-like text
+ * inside quoted literals are preserved and escaped accurately for PostgREST.
+ * Rejects ambiguous unparenthesized mixed operator expressions (e.g. a = 1 || b = 2 && c = 3).
+ */
+export function translatePbFilterToPostgrest(filterStr) {
+  if (!filterStr || typeof filterStr !== 'string') return {};
+  const trimmed = filterStr.trim();
+  if (!trimmed) return {};
+
+  const tokens = tokenizeFilter(trimmed);
+  return translateTokens(tokens);
 }
 
 /**
@@ -531,7 +771,10 @@ export function createSupabaseClient({ url = process.env.SUPABASE_URL, key = pro
 export function getRuntimeDatabaseClient(pocketbaseFallbackClient) {
   if (isSupabaseCutoverActive()) {
     const sb = createSupabaseClient();
-    if (sb) return sb;
+    if (!sb) {
+      throw new Error('DATA_STORE=supabase is set but Supabase credentials (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) are missing or invalid.');
+    }
+    return sb;
   }
   return pocketbaseFallbackClient;
 }
