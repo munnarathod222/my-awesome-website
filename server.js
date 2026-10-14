@@ -902,7 +902,7 @@ const server = http.createServer((req, res) => {
         // 1. POST /api/mobile/v1/auth/login or /api/mobile/v1/login
         if ((cleanAuthPath === '/api/mobile/v1/auth/login' || cleanAuthPath === '/api/mobile/v1/login') && req.method === 'POST') {
           const ip = req.socket.remoteAddress || '127.0.0.1';
-          const result = driverAuthService.authenticateLogin(null, {
+          const result = await driverAuthService.authenticateLogin(null, {
             employeeCode: parsed.employeeCode,
             password: parsed.password,
             ip
@@ -913,7 +913,7 @@ const server = http.createServer((req, res) => {
 
         // 2. POST /api/mobile/v1/auth/refresh or /api/mobile/v1/refresh
         if ((cleanAuthPath === '/api/mobile/v1/auth/refresh' || cleanAuthPath === '/api/mobile/v1/refresh') && req.method === 'POST') {
-          const result = driverAuthService.refreshSessionToken(null, { refreshToken: parsed.refreshToken });
+          const result = await driverAuthService.refreshSessionToken(null, { refreshToken: parsed.refreshToken });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify(result));
         }
@@ -942,19 +942,19 @@ const server = http.createServer((req, res) => {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, code: 'TOKEN_TYPE_INVALID', error: 'Invalid token type: Protected routes require an access token' }));
         }
-        const acc = driverAuthService.findAccountByEmployeeId(payload.sub);
+        const acc = await driverAuthService.findAccountByEmployeeId(payload.sub);
         if (!acc || acc.account_status !== 'active') {
           res.writeHead(403, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, code: 'ACCOUNT_DISABLED', error: 'Driver account is inactive' }));
         }
-        if (acc.password_version !== payload.pver) {
+        if (!driverAuthService.sessionMatchesAccount(acc, payload)) {
           res.writeHead(401, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: false, code: 'SESSION_REVOKED', error: 'Session revoked. Please log in again.' }));
         }
 
         // 3. POST /api/mobile/v1/auth/change-password or /api/mobile/v1/change-password
         if ((cleanAuthPath === '/api/mobile/v1/auth/change-password' || cleanAuthPath === '/api/mobile/v1/change-password') && req.method === 'POST') {
-          const result = driverAuthService.changeDriverPassword(null, {
+          const result = await driverAuthService.changeDriverPassword(null, {
             employeeId: acc.employee_id,
             currentPassword: parsed.currentPassword,
             newPassword: parsed.newPassword
@@ -965,20 +965,16 @@ const server = http.createServer((req, res) => {
 
         // 4. POST /api/mobile/v1/auth/logout or /api/mobile/v1/logout
         if ((cleanAuthPath === '/api/mobile/v1/auth/logout' || cleanAuthPath === '/api/mobile/v1/logout') && req.method === 'POST') {
-          const result = driverAuthService.logoutDriver(null, { employeeId: acc.employee_id });
+          const result = await driverAuthService.logoutDriver(null, { employeeId: acc.employee_id });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify(result));
         }
 
-        // If must change password, block any further operations
-        if (acc.must_change_password) {
-          res.writeHead(403, { 'Content-Type': 'application/json' });
-          return res.end(JSON.stringify({ success: false, code: 'PASSWORD_CHANGE_REQUIRED', error: 'Temporary password detected. You must change your password before continuing.' }));
-        }
+        // Optional password change notice (non-blocking)
 
         // 5. GET /api/mobile/v1/me or /api/mobile/v1/auth/me
         if ((cleanAuthPath === '/api/mobile/v1/me' || cleanAuthPath === '/api/mobile/v1/auth/me') && req.method === 'GET') {
-          const profile = driverAuthService.getDriverProfile(null, acc.employee_id);
+          const profile = await driverAuthService.getDriverProfile(null, acc.employee_id);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, driver: profile }));
         }
@@ -989,9 +985,9 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({
             success: true,
             apiVersion: 1,
-            mode: 'read-only',
-            sections: ['trips', 'expenses', 'attendance', 'my-documents', 'truck-documents', 'truck', 'performance'],
-            tripActions: false,
+            mode: 'interactive',
+            sections: ['trips', 'expenses', 'attendance', 'advances', 'my-documents', 'truck-documents', 'truck', 'performance'],
+            tripActions: true,
             expenseSubmission: false,
             attendanceCheckIn: false,
             pushNotifications: false
@@ -1012,11 +1008,49 @@ const server = http.createServer((req, res) => {
           return res.end(JSON.stringify({ success: true, performance: perf }));
         }
 
+        // 8a. POST /api/mobile/v1/trips/:id/transition or /api/mobile/v1/data/trips/:id/transition
+        const transitionMatch = cleanAuthPath.match(/^\/api\/mobile\/v1\/(?:data\/)?trips\/([^\/]+)\/transition$/);
+        if (transitionMatch && req.method === 'POST') {
+          const tripId = transitionMatch[1];
+          const targetStatus = parsed.targetStatus || parsed.status;
+          const meta = {
+            deviceId: req.headers['x-device-id'] || parsed.deviceId || null,
+            location: parsed.location || (parsed.latitude ? { lat: parsed.latitude, lng: parsed.longitude } : null)
+          };
+          const result = await mobileDriverData.transition(tripId, targetStatus, meta, acc.employee_id, acc.employee_code);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify(result));
+        }
+
+        // 8b. POST /api/mobile/v1/trips/:id/pod or /api/mobile/v1/data/trips/:id/pod
+        const podMatch = cleanAuthPath.match(/^\/api\/mobile\/v1\/(?:data\/)?trips\/([^\/]+)\/pod$/);
+        if (podMatch && req.method === 'POST') {
+          const tripId = podMatch[1];
+          let buf = null;
+          if (parsed && parsed.base64) {
+            buf = Buffer.from(parsed.base64.replace(/^data:[^;]+;base64,/, ''), 'base64');
+          } else if (parsed && parsed.buffer) {
+            buf = Buffer.from(parsed.buffer, 'base64');
+          }
+          if (!buf || buf.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, code: 'FILE_REQUIRED', error: 'POD image or document is required' }));
+          }
+          const filename = parsed.filename || `pod_${tripId}.jpg`;
+          const meta = {
+            deviceId: req.headers['x-device-id'] || parsed.deviceId || null,
+            location: parsed.location || (parsed.latitude ? { lat: parsed.latitude, lng: parsed.longitude } : null)
+          };
+          const result = await mobileDriverData.uploadPod(tripId, { buffer: buf, filename }, meta, acc.employee_id, acc.employee_code);
+          res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
+          return res.end(JSON.stringify(result));
+        }
+
         // 9. File downloads: GET /api/mobile/v1/data/:section/:id/files/:index
         const fileMatch = cleanAuthPath.match(/^\/api\/mobile\/v1\/data\/([^\/]+)\/([^\/]+)\/files\/(\d+)$/);
         if (fileMatch && req.method === 'GET') {
           const [, section, recId, index] = fileMatch;
-          const { row, name } = await mobileDriverData.file(section, recId, index, acc.employee_id);
+          const { row, name } = await mobileDriverData.file(section, recId, index, acc.employee_id, acc.employee_code);
           const { bytes, type } = await downloadMobileDocument(row, name);
           res.writeHead(200, {
             'Content-Type': type,
@@ -1074,7 +1108,7 @@ const server = http.createServer((req, res) => {
         const actor = req.headers['x-actor-id'] || 'Office Administrator';
 
         if (cleanOfficePath === '/api/office/driver-access/create' && req.method === 'POST') {
-          const result = driverAuthService.createDriverAccount(null, {
+          const result = await driverAuthService.createDriverAccount(null, {
             employeeId: parsed.employeeId,
             temporaryPassword: parsed.temporaryPassword,
             createdBy: actor
@@ -1084,7 +1118,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (cleanOfficePath === '/api/office/driver-access/reset-password' && req.method === 'POST') {
-          const result = driverAuthService.resetDriverPassword(null, {
+          const result = await driverAuthService.resetDriverPassword(null, {
             employeeId: parsed.employeeId,
             temporaryPassword: parsed.temporaryPassword,
             resetBy: actor
@@ -1094,7 +1128,7 @@ const server = http.createServer((req, res) => {
         }
 
         if (cleanOfficePath === '/api/office/driver-access/toggle-status' && req.method === 'POST') {
-          const result = driverAuthService.setAccountStatus(null, {
+          const result = await driverAuthService.setAccountStatus(null, {
             employeeId: parsed.employeeId,
             status: parsed.status,
             updatedBy: actor
@@ -1105,7 +1139,7 @@ const server = http.createServer((req, res) => {
 
         if (cleanOfficePath.startsWith('/api/office/driver-access/status/') && req.method === 'GET') {
           const empId = cleanOfficePath.split('/status/')[1].replace(/\/$/, '');
-          const status = driverAuthService.getAccountStatus(null, empId);
+          const status = await driverAuthService.getAccountStatus(null, empId);
           res.writeHead(200, { 'Content-Type': 'application/json' });
           return res.end(JSON.stringify({ success: true, ...status }));
         }

@@ -9,7 +9,7 @@ const router = express.Router();
 /**
  * Mobile Driver Authentication Middleware
  * Enforces strict JWT verification, password version checking (instant revocation),
- * account active status, and first-login password change gating.
+ * account active status, and account-instance session validation.
  */
 export const requireDriverAuth = (options = { allowMustChange: false }) => {
   return async (req, res, next) => {
@@ -73,7 +73,7 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
         });
       }
 
-      // Check session revocation via password_version
+      // Check account-instance session validation via sessionMatchesAccount
       if (!driverAuthService.sessionMatchesAccount(acc, payload)) {
         return res.status(401).json({
           success: false,
@@ -86,13 +86,17 @@ export const requireDriverAuth = (options = { allowMustChange: false }) => {
         accountId: acc.id,
         employeeId: acc.employee_id,
         employeeCode: acc.employee_code,
-        mustChangePassword: false
+        mustChangePassword: Boolean(acc.must_change_password)
       };
 
       return next();
     } catch (err) {
       logger.error(`Driver auth error: ${err.message}`);
-      return res.status(err.status || 500).json({ success: false, code: err.code || 'AUTH_VALIDATION_FAILED', error: err.status ? err.message : 'Internal authentication validation failure' });
+      return res.status(err.status || 500).json({
+        success: false,
+        code: err.code || 'AUTH_VALIDATION_FAILED',
+        error: err.status ? err.message : 'Internal authentication validation failure'
+      });
     }
   };
 };
@@ -112,7 +116,7 @@ router.post(['/login', '/auth/login'], async (req, res) => {
     const statusCode = err.status || 400;
     return res.status(statusCode).json({
       success: false,
-      code: err.code || (statusCode >= 500 ? 'AUTH_STORAGE_UNAVAILABLE' : statusCode === 429 ? 'ACCOUNT_LOCKED' : (statusCode === 403 ? 'ACCOUNT_DISABLED' : 'INVALID_CREDENTIALS')),
+      code: statusCode === 429 ? 'ACCOUNT_LOCKED' : (statusCode === 403 ? 'ACCOUNT_DISABLED' : 'INVALID_CREDENTIALS'),
       error: err.message
     });
   }
@@ -120,7 +124,7 @@ router.post(['/login', '/auth/login'], async (req, res) => {
 
 /**
  * POST /change-password and /auth/change-password
- * First login password change or regular password update
+ * First login password change or optional password update
  */
 router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ allowMustChange: true }), async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
@@ -133,9 +137,9 @@ router.post(['/change-password', '/auth/change-password'], requireDriverAuth({ a
     });
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(err.status || 400).json({
+    return res.status(400).json({
       success: false,
-      code: err.code || 'PASSWORD_CHANGE_FAILED',
+      code: 'PASSWORD_CHANGE_FAILED',
       error: err.message
     });
   }
@@ -155,7 +159,7 @@ router.post(['/refresh', '/auth/refresh'], async (req, res) => {
     const statusCode = err.status || 400;
     return res.status(statusCode).json({
       success: false,
-      code: err.code || 'REFRESH_FAILED',
+      code: 'REFRESH_FAILED',
       error: err.message
     });
   }
@@ -189,8 +193,7 @@ router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), a
       driver: profile
     });
   } catch (err) {
-    return res.status(err.status || 404).json({
-      code: err.code,
+    return res.status(404).json({
       success: false,
       error: err.message
     });
@@ -200,4 +203,3 @@ router.get(['/me', '/auth/me'], requireDriverAuth({ allowMustChange: false }), a
 mountMobileDriverData(router, requireDriverAuth, pb);
 
 export default router;
-

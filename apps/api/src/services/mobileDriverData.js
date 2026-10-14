@@ -1,50 +1,124 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import * as auditService from './auditService.js';
+import { processUpload } from './uploadProcessingService.js';
+
 // Driver-only read access. Never query by a caller-supplied employee ID or a name.
 export class MobileDataError extends Error {
-  constructor(status, code, message) { super(message); this.status = status; this.code = code; }
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
 }
-const fail = (status, code, message) => { throw new MobileDataError(status, code, message); };
+
+const fail = (status, code, message) => {
+  throw new MobileDataError(status, code, message);
+};
+
 const text = value => typeof value === 'string' ? value : '';
 const pick = (row, fields) => Object.fromEntries(fields.map(key => [key, row[key] ?? null]));
+
 export function pageNumber(value) {
   if (value === undefined) return 1;
   if (!/^[1-9]\d{0,4}$/.test(String(value))) fail(400, 'INVALID_PAGE', 'Invalid page number.');
   return Number(value);
 }
+
 export function assertOwner(row, field, employeeId) {
   if (!employeeId || row[field] !== employeeId) fail(403, 'ACCESS_DENIED', 'This record is not assigned to you.');
 }
+
 export function documentFiles(row) {
   return [...new Set([row.file, ...(Array.isArray(row.files) ? row.files : [row.files])]
     .filter(v => typeof v === 'string' && v && !/[\/\\\x00-\x1f]/.test(v)))];
 }
+
+/**
+ * Positive driver assignment matching:
+ * Requires an explicit driver assignment. Rejects unassigned trips and conflicting ID/code assignments.
+ */
+export function validateDriverAssignment(trip, employeeId, employeeCode) {
+  if (!trip) fail(404, 'NOT_FOUND', 'Trip not found.');
+  const hasId = Boolean(trip.driver_employee_id && String(trip.driver_employee_id).trim());
+  const hasCode = Boolean(trip.driver_employee_code && String(trip.driver_employee_code).trim());
+
+  if (!hasId && !hasCode) {
+    fail(403, 'TRIP_UNASSIGNED', 'This trip has not been assigned to any driver.');
+  }
+
+  // Reject conflicting or mismatched assignments
+  if (hasId && hasCode) {
+    if (trip.driver_employee_id !== employeeId || trip.driver_employee_code !== employeeCode) {
+      fail(403, 'TRIP_REASSIGNED', 'This trip is not assigned to the authenticated driver.');
+    }
+  } else if (hasId) {
+    if (trip.driver_employee_id !== employeeId) {
+      fail(403, 'TRIP_REASSIGNED', 'This trip is not assigned to the authenticated driver.');
+    }
+  } else if (hasCode) {
+    if (trip.driver_employee_code !== employeeCode) {
+      fail(403, 'TRIP_REASSIGNED', 'This trip is not assigned to the authenticated driver.');
+    }
+  }
+}
+
+/**
+ * Keyed In-Process Mutex to prevent reassignment and transition race conditions
+ */
+class TripLock {
+  constructor() {
+    this.locks = new Map();
+  }
+  async acquire(tripId) {
+    while (this.locks.has(tripId)) {
+      await this.locks.get(tripId);
+    }
+    let resolve;
+    const promise = new Promise(r => { resolve = r; });
+    this.locks.set(tripId, promise);
+    return () => {
+      this.locks.delete(tripId);
+      resolve();
+    };
+  }
+}
+
+const tripLocks = new TripLock();
+
 const specs = {
   expenses: { collection: 'expenses', owner: 'submitted_by_employee_id', sort: '-date,-id',
     fields: ['id', 'date', 'amount', 'category', 'description', 'status'] },
   attendance: { collection: 'attendance', owner: 'staff_member', sort: '-date,-id',
     fields: ['id', 'date', 'status', 'check_in_time', 'check_out_time', 'hours_worked'] },
+  advances: { collection: 'advances', owner: 'employee_id', sort: '-date,-id',
+    fields: ['id', 'date', 'amount', 'reason', 'remaining_balance', 'status', 'settled_date', 'notes'] },
   'my-documents': { collection: 'employee_documents', owner: 'employee_id', sort: '-created,-id',
     fields: ['id', 'document_type', 'document_name', 'document_number', 'issue_date', 'expiry_date', 'status'] },
   'truck-documents': { collection: 'truck_documents', owner: 'truck_id', sort: '-created,-id',
     fields: ['id', 'document_type', 'document_name', 'document_number', 'issue_date', 'expiry_date', 'status'] },
 };
+
 export function createMobileDriverData(pb) {
   async function fieldsFor(name) {
     const schema = await pb.collections.getOne(name, { $autoCancel: false });
     return schema.fields || schema.schema || [];
   }
+
   async function employee(id) {
     if (!id) fail(401, 'UNAUTHORIZED', 'Sign in again.');
     const row = await pb.collection('employees').getOne(id, { $autoCancel: false });
     if (row.id !== id) fail(403, 'ACCESS_DENIED', 'Employee identity mismatch.');
     return row;
   }
+
   async function ownerFor(section, employeeId) {
     if (section !== 'truck-documents') return employeeId;
     return text((await employee(employeeId)).assigned_truck);
   }
+
   async function tripSpec(employeeId, employeeCode) {
-    // Dispatch must explicitly store a permanent employee relation or code.
-    // Names are display-only and never authorize driver access.
     const [schema, employees] = await Promise.all([
       pb.collections.getOne('trip_logs', { $autoCancel: false }),
       pb.collections.getOne('employees', { $autoCancel: false }),
@@ -55,16 +129,22 @@ export function createMobileDriverData(pb) {
       (f.maxSelect ?? f.options?.maxSelect ?? 1) === 1);
     const codeField = (schema.fields || schema.schema || []).find(f =>
       ['driver_employee_code', 'driver_code'].includes(f.name) && f.type === 'text');
-    if (!field && (!codeField || !/^[DE][0-9]{3,}$/.test(employeeCode || '')))
+    if (!field && (!codeField || !/^[DE][0-9]{3,}$/.test(employeeCode || ''))) {
       fail(409, 'ASSIGNMENT_MAPPING_REQUIRED', 'The website must assign trips using permanent employee codes.');
+    }
     const owner = field?.name || codeField.name;
     const ownerValue = field ? employeeId : employeeCode;
-    return { collection: 'trip_logs', owner, ownerValue, sort: '-date,-id',
-      fields: ['id', 'trip_id', 'date', 'route', 'origin', 'destination', 'truck_number', 'trip_status', 'kms'] };
+    return {
+      collection: 'trip_logs',
+      owner,
+      ownerValue,
+      sort: '-date,-id',
+      fields: ['id', 'trip_id', 'date', 'route', 'origin', 'destination', 'truck_number', 'trip_status', 'kms', 'delivery_eta', 'delivery_actual_time', 'delivered_time', 'actual_start_time', 'client_name', 'cargo_details', 'pod_file', 'pod_uploaded_at', 'pod_status', 'driver_employee_code', 'driver_employee_id']
+    };
   }
+
   async function expenseSpec() {
     const fields = await fieldsFor('expenses');
-    // Assignment/beneficiary is not proof of who submitted an expense.
     const submitted = fields.find(f => f.name === 'submitted_by_employee_id');
     if (!submitted) return null;
     if (submitted.type === 'relation') {
@@ -75,6 +155,7 @@ export function createMobileDriverData(pb) {
     return { ...specs.expenses, owner: submitted.name,
       sort: fields.some(f => f.name === 'date') ? '-date,-id' : '-created,-id' };
   }
+
   async function list(section, employeeId, page = 1, employeeCode = null) {
     page = pageNumber(page);
     const spec = section === 'trips' ? await tripSpec(employeeId, employeeCode) :
@@ -89,6 +170,14 @@ export function createMobileDriverData(pb) {
     });
     const items = result.items.map(row => {
       assertOwner(row, spec.owner, owner);
+      if (section === 'trips') {
+        if (row.driver_employee_code && employeeCode && row.driver_employee_code !== employeeCode) {
+          fail(403, 'ACCESS_DENIED', 'Inconsistent driver assignment code.');
+        }
+        if (row.driver_employee_id && employeeId && row.driver_employee_id !== employeeId) {
+          fail(403, 'ACCESS_DENIED', 'Inconsistent driver assignment ID.');
+        }
+      }
       const item = pick(row, spec.fields);
       if (section.endsWith('documents')) item.files = documentFiles(row).map((_, index) => ({
         index, path: `data/${section}/${encodeURIComponent(row.id)}/files/${index}`,
@@ -97,6 +186,7 @@ export function createMobileDriverData(pb) {
     });
     return { items, page: result.page, totalPages: result.totalPages, totalItems: result.totalItems };
   }
+
   async function truck(employeeId) {
     const id = text((await employee(employeeId)).assigned_truck);
     if (!id) return null;
@@ -106,9 +196,20 @@ export function createMobileDriverData(pb) {
       'body_length', 'body_width', 'body_height', 'base_odometer', 'expected_mileage', 'fastag_provider', 'fastag_status',
       'current_fastag_balance', 'last_recharge_date', 'updated']);
   }
-  async function file(section, recordId, index, employeeId) {
-    if (!['my-documents', 'truck-documents'].includes(section) || !/^[a-zA-Z0-9_-]{1,64}$/.test(recordId))
+
+  async function file(section, recordId, index, employeeId, employeeCode = null) {
+    if (!['my-documents', 'truck-documents', 'trips'].includes(section) || !/^[a-zA-Z0-9_-]{1,64}$/.test(recordId)) {
       fail(404, 'NOT_FOUND', 'Document not found.');
+    }
+
+    if (section === 'trips') {
+      const trip = await pb.collection('trip_logs').getOne(recordId, { $autoCancel: false });
+      if (!trip) fail(404, 'NOT_FOUND', 'Trip not found.');
+      validateDriverAssignment(trip, employeeId, employeeCode);
+      if (!trip.pod_file) fail(404, 'NOT_FOUND', 'No POD file uploaded for this trip.');
+      return { row: trip, name: trip.pod_file };
+    }
+
     if (!/^\d{1,3}$/.test(String(index))) fail(404, 'NOT_FOUND', 'File not found.');
     const spec = specs[section];
     const owner = await ownerFor(section, employeeId);
@@ -119,6 +220,7 @@ export function createMobileDriverData(pb) {
     if (!name) fail(404, 'NOT_FOUND', 'File not found.');
     return { row, name };
   }
+
   async function performance(employeeId, employeeCode) {
     const spec = await tripSpec(employeeId, employeeCode);
     const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
@@ -134,7 +236,201 @@ export function createMobileDriverData(pb) {
     }
     return summarizePerformance(records, since);
   }
-  return { list, truck, file, performance };
+
+  async function transition(tripRecordId, targetStatus, meta = {}, employeeId, employeeCode) {
+    if (!tripRecordId) fail(400, 'TRIP_ID_REQUIRED', 'Trip ID is required.');
+    const validTargetStatuses = ['In Transit', 'Delivered'];
+    const normTarget = validTargetStatuses.find(s => s.toLowerCase() === String(targetStatus || '').trim().toLowerCase());
+    if (!normTarget) {
+      fail(400, 'INVALID_STATUS', `Target status must be one of: ${validTargetStatuses.join(', ')}`);
+    }
+
+    const releaseLock = await tripLocks.acquire(tripRecordId);
+    try {
+      const trip = await pb.collection('trip_logs').getOne(tripRecordId, { $autoCancel: false });
+      if (!trip) fail(404, 'NOT_FOUND', 'Trip not found.');
+
+      // Require positive authenticated driver match; reject unassigned trips & conflicting ID/codes
+      validateDriverAssignment(trip, employeeId, employeeCode);
+
+      const currentStatus = text(trip.trip_status).trim();
+
+      // Idempotency check: if already at the target status, return success idempotently
+      if (currentStatus.toLowerCase() === normTarget.toLowerCase()) {
+        return {
+          success: true,
+          idempotent: true,
+          message: `Trip is already in ${normTarget} status.`,
+          trip: pick(trip, ['id', 'trip_id', 'trip_status', 'date', 'route', 'truck_number', 'actual_start_time', 'delivered_time'])
+        };
+      }
+
+      // Agreed State Machine:
+      // Upcoming / Scheduled -> In Transit ONLY
+      // Upcoming directly to Delivered is strictly forbidden!
+      const isUpcoming = ['upcoming', 'scheduled'].includes(currentStatus.toLowerCase());
+      const isInTransit = ['in transit', 'running', 'active'].includes(currentStatus.toLowerCase());
+
+      if (isUpcoming) {
+        if (normTarget === 'Delivered') {
+          fail(400, 'INVALID_TRANSITION', "Cannot transition directly from 'Upcoming' to 'Delivered'. Trip must first be 'In Transit'.");
+        }
+        if (normTarget !== 'In Transit') {
+          fail(400, 'INVALID_TRANSITION', `Cannot transition to '${normTarget}' from current status '${currentStatus}'.`);
+        }
+      } else if (isInTransit) {
+        if (normTarget === 'Delivered') {
+          // Delivery proof is strictly required before completion
+          const hasProof = Boolean(trip.pod_file || trip.delivery_proof || trip.pod_sha256 || meta.hasDeliveryProof);
+          if (!hasProof) {
+            fail(400, 'DELIVERY_PROOF_REQUIRED', 'Proof of delivery (POD) must be uploaded before marking trip Delivered.');
+          }
+        } else {
+          fail(400, 'INVALID_TRANSITION', `Cannot transition from '${currentStatus}' to '${normTarget}'.`);
+        }
+      } else {
+        fail(400, 'INVALID_TRANSITION', `Trip is already in final status '${currentStatus}' and cannot be transitioned.`);
+      }
+
+      const nowIso = new Date().toISOString();
+      const updateData = { trip_status: normTarget };
+      if (normTarget === 'In Transit') {
+        updateData.actual_start_time = nowIso;
+      } else if (normTarget === 'Delivered') {
+        updateData.delivered_time = nowIso;
+        updateData.delivery_actual_time = nowIso;
+      }
+
+      const updated = await pb.collection('trip_logs').update(trip.id, updateData, { $autoCancel: false });
+
+      // Persist transition audit event
+      try {
+        auditService.recordAuditEvent({
+          event_type: 'DRIVER_TRIP_TRANSITION',
+          category: 'OPERATIONS',
+          actor: employeeCode || employeeId,
+          action: 'TRANSITION_TRIP_STATUS',
+          target_id: trip.trip_id || trip.id,
+          details: {
+            trip_record_id: trip.id,
+            trip_id: trip.trip_id,
+            previous_status: currentStatus,
+            new_status: normTarget,
+            device_id: meta.deviceId || null,
+            location: meta.location || null,
+            timestamp: nowIso
+          },
+          metadata: {
+            server_timestamp: nowIso
+          }
+        });
+      } catch (_) {}
+
+      return {
+        success: true,
+        idempotent: false,
+        message: `Trip status updated to ${normTarget}`,
+        trip: pick(updated, ['id', 'trip_id', 'trip_status', 'date', 'route', 'truck_number', 'actual_start_time', 'delivered_time'])
+      };
+    } finally {
+      releaseLock();
+    }
+  }
+
+  async function uploadPod(tripRecordId, { buffer, filename }, meta = {}, employeeId, employeeCode) {
+    if (!tripRecordId) fail(400, 'TRIP_ID_REQUIRED', 'Trip ID is required.');
+    const releaseLock = await tripLocks.acquire(tripRecordId);
+    try {
+      const trip = await pb.collection('trip_logs').getOne(tripRecordId, { $autoCancel: false });
+      if (!trip) fail(404, 'NOT_FOUND', 'Trip not found.');
+
+      // Require positive authenticated driver match; reject unassigned trips & conflicting ID/codes
+      validateDriverAssignment(trip, employeeId, employeeCode);
+
+      // Process upload with lossless compression, signed PDF preservation, and SHA-256 deduplication
+      const processed = await processUpload({
+        buffer,
+        filename: filename || `pod_${trip.trip_id || trip.id}.jpg`,
+        actorId: employeeCode || employeeId,
+        category: 'pod'
+      });
+
+      // Durably write processed bytes to private storage before updating database record
+      const dataDir = process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
+      const storageDirs = [
+        path.join(dataDir, 'private_storage', 'trip_logs', trip.id),
+        path.resolve(process.cwd(), 'data', 'private_storage', 'trip_logs', trip.id),
+        path.resolve(process.cwd(), 'apps/pocketbase/pb_data/storage', 'trip_logs', trip.id)
+      ];
+
+      for (const sDir of storageDirs) {
+        fs.mkdirSync(sDir, { recursive: true });
+        const targetPath = path.join(sDir, processed.filename);
+        const tempPath = `${targetPath}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+        try {
+          const fd = fs.openSync(tempPath, 'w');
+          fs.writeSync(fd, processed.buffer);
+          fs.fsyncSync(fd);
+          fs.closeSync(fd);
+          try {
+            fs.renameSync(tempPath, targetPath);
+          } catch (_) {
+            if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+            fs.renameSync(tempPath, targetPath);
+          }
+        } catch (writeErr) {
+          try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
+          throw writeErr;
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const updatePayload = {
+        pod_file: processed.filename,
+        pod_uploaded_at: nowIso,
+        pod_status: 'Pending Verification',
+        pod_sha256: processed.sha256
+      };
+
+      const updated = await pb.collection('trip_logs').update(trip.id, updatePayload, { $autoCancel: false });
+
+      // Persist POD upload audit event
+      try {
+        auditService.recordAuditEvent({
+          event_type: 'DRIVER_POD_UPLOADED',
+          category: 'OPERATIONS',
+          actor: employeeCode || employeeId,
+          action: 'UPLOAD_POD',
+          target_id: trip.trip_id || trip.id,
+          details: {
+            trip_record_id: trip.id,
+            filename: processed.filename,
+            sha256: processed.sha256,
+            size: processed.processedSize,
+            device_id: meta.deviceId || null,
+            timestamp: nowIso
+          }
+        });
+      } catch (_) {}
+
+      return {
+        success: true,
+        isDuplicateRetry: processed.isDuplicateRetry || false,
+        pod: {
+          filename: processed.filename,
+          size: processed.processedSize,
+          mimeType: processed.mimeType,
+          sha256: processed.sha256,
+          uploadedAt: nowIso
+        },
+        trip: pick(updated, ['id', 'trip_id', 'trip_status', 'pod_file', 'pod_uploaded_at', 'pod_status'])
+      };
+    } finally {
+      releaseLock();
+    }
+  }
+
+  return { list, truck, file, performance, transition, uploadPod };
 }
 
 export function summarizePerformance(records, since) {
@@ -146,7 +442,13 @@ export function summarizePerformance(records, since) {
     if (!Number.isFinite(eta) || !Number.isFinite(actual)) continue;
     measured++; if (actual <= eta) onTime++;
   }
-  return { since, periodDays: 90, totalTrips: records.length, completedTrips: completed.length,
-    completedKm: Math.round(km * 10) / 10, onTimeMeasuredTrips: measured,
-    onTimePercent: measured ? Math.round(100 * onTime / measured) : null };
+  return {
+    since,
+    periodDays: 90,
+    totalTrips: records.length,
+    completedTrips: completed.length,
+    completedKm: Math.round(km * 10) / 10,
+    onTimeMeasuredTrips: measured,
+    onTimePercent: measured ? Math.round(100 * onTime / measured) : null
+  };
 }
