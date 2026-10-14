@@ -1,5 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function copyDirSync(src, dest) {
   if (!fs.existsSync(src)) return;
@@ -32,5 +35,8 @@ if (fs.existsSync(rootDist) && fs.existsSync(path.join(rootDist, 'index.html')))
 } else if (fs.existsSync(apiDist) && fs.existsSync(path.join(apiDist, 'index.html'))) {
   console.log('Syncing apps/api/dist to rootDist...');
   copyDirSync(apiDist, rootDist);
+} else if (fs.existsSync(path.resolve(__dirname, 'dist'))) {
+  copyDirSync(path.resolve(__dirname, 'dist'), rootDist);
+  copyDirSync(path.resolve(__dirname, 'dist'), apiDist);
 }
 console.log('✅ Dist fallbacks synced successfully!');
