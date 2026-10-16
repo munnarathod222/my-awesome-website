@@ -6,7 +6,7 @@ import {
   CalendarRange, Filter, Search, Package, DollarSign, CheckCircle, 
   Truck, Plus, X, User, Calendar, FileText, Check, AlertCircle, 
   Sliders, ShieldCheck, History, UploadCloud, Wind, Droplets, RefreshCw,
-  TrendingUp, Activity
+  TrendingUp, Activity, CheckCircle2, RotateCcw, Share2, CheckSquare, Square, ClipboardCheck
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { cn } from '@/lib/utils.js';
 import PeriodicMaintenanceTab from '@/components/PeriodicMaintenanceTab.jsx';
+import AddMaintenanceProblemModal from '@/components/AddMaintenanceProblemModal.jsx';
 
 const CHECKLIST_ITEMS = [
   { key: 'engine_oil', label: 'Engine Oil', actionType: 'topup' },
@@ -134,6 +135,18 @@ export default function MaintenancePage() {
   const [newServiceLog, setNewServiceLog] = useState({ maintenance_date: format(new Date(), 'yyyy-MM-dd'), odometer_at_service: '', work_description_text: '', parts_replaced_input: '', cost_amount: '' });
   const [serviceLogFile, setServiceLogFile] = useState(null);
 
+  // Truck Workshop Problem Checklist states
+  const [newProblem, setNewProblem] = useState({
+    description: '',
+    category: 'Other',
+    severity: 'Medium',
+    assigned_technician: '',
+    issue_type: 'workshop'
+  });
+  const [isAddingProblem, setIsAddingProblem] = useState(false);
+  const [problemDrawerFilter, setProblemDrawerFilter] = useState('all'); // 'all', 'pending', 'resolved'
+  const [isProblemModalOpen, setIsProblemModalOpen] = useState(false);
+
   // Global filters (still used for inventory/problems tabs)
   const [filters, setFilters] = useState({
     truck_id: 'all',
@@ -237,11 +250,15 @@ export default function MaintenancePage() {
   // Handle deep link truck ID parameter
   useEffect(() => {
     const qParam = searchParams.get('truckId') || searchParams.get('truck') || searchParams.get('truck_number');
+    const tabParam = searchParams.get('tab');
     if (qParam && trucks.length > 0) {
       const normQ = qParam.replace(/[^A-Z0-9]/gi, '').toUpperCase();
       const found = trucks.find(t => t.id === qParam || (t.truck_number || '').replace(/[^A-Z0-9]/gi, '').toUpperCase() === normQ);
       if (found) {
         setSelectedTruck(found);
+        if (tabParam === 'problems' || tabParam === 'checklist') {
+          setDrawerTab('problems');
+        }
         setActiveTab('vehicles');
         setServiceLogSearch(found.truck_number);
         setInspectionSearch(found.truck_number);
@@ -401,6 +418,131 @@ export default function MaintenancePage() {
     }
   };
 
+  // Workshop Truck Problem Checklist Handlers
+  const handleAddTruckProblem = async (e) => {
+    if (e) e.preventDefault();
+    if (!selectedTruck) return;
+    if (!newProblem.description.trim()) {
+      toast.error('Please enter problem description');
+      return;
+    }
+
+    setIsAddingProblem(true);
+    try {
+      const isBreakdown = newProblem.issue_type === 'breakdown';
+      const payload = {
+        truck_id: selectedTruck.truck_number,
+        description: newProblem.description.trim(),
+        category: newProblem.category || 'Other',
+        severity: isBreakdown ? 'Critical' : (newProblem.severity || 'Medium'),
+        status: 'Open',
+        assigned_technician: newProblem.assigned_technician || '',
+        date_reported: new Date().toISOString()
+      };
+      await pb.collection('maintenance_problems').create(payload, { $autoCancel: false });
+      toast.success(isBreakdown ? 'Critical breakdown recorded' : 'Issue added to truck checklist');
+      setNewProblem({
+        description: '',
+        category: 'Other',
+        severity: 'Medium',
+        assigned_technician: '',
+        issue_type: 'workshop'
+      });
+      fetchData();
+    } catch (err) {
+      console.error('Failed to add workshop problem:', err);
+      toast.error(err.message || 'Failed to add problem');
+    } finally {
+      setIsAddingProblem(false);
+    }
+  };
+
+  const handleToggleProblemStatus = async (prob) => {
+    try {
+      const isCurrentlyDone = prob.status === 'Resolved';
+      const newStatus = isCurrentlyDone ? 'Open' : 'Resolved';
+      const payload = {
+        status: newStatus,
+        date_solved: newStatus === 'Resolved' ? new Date().toISOString() : null
+      };
+      await pb.collection('maintenance_problems').update(prob.id, payload, { $autoCancel: false });
+      toast.success(newStatus === 'Resolved' ? 'Problem marked as resolved' : 'Problem reopened');
+      fetchData();
+    } catch (e) {
+      console.error('Failed to update problem status:', e);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleDeleteProblem = async (problemId) => {
+    if (!window.confirm('Delete this problem item from the checklist?')) return;
+    try {
+      await pb.collection('maintenance_problems').delete(problemId, { $autoCancel: false });
+      toast.success('Problem removed from checklist');
+      fetchData();
+    } catch (e) {
+      console.error('Failed to delete problem:', e);
+      toast.error('Failed to delete problem');
+    }
+  };
+
+  const handleResolveAllTruckProblems = async (pendingItems) => {
+    if (!pendingItems || pendingItems.length === 0) {
+      toast.info('No open problems to resolve');
+      return;
+    }
+    if (!window.confirm(`Mark all ${pendingItems.length} workshop items as resolved?`)) return;
+    try {
+      const nowIso = new Date().toISOString();
+      await Promise.all(
+        pendingItems.map(p =>
+          pb.collection('maintenance_problems').update(p.id, {
+            status: 'Resolved',
+            date_solved: nowIso,
+            resolution_notes: p.resolution_notes || 'Resolved during workshop visit'
+          }, { $autoCancel: false })
+        )
+      );
+      toast.success(`All ${pendingItems.length} problems marked as resolved!`);
+      fetchData();
+    } catch (e) {
+      console.error('Failed to resolve all problems:', e);
+      toast.error('Failed to resolve problems');
+    }
+  };
+
+  const handleShareChecklist = (truckNumber, pendingList) => {
+    if (!pendingList || pendingList.length === 0) {
+      toast.info('No pending problems on this truck checklist');
+      return;
+    }
+    let text = `🔧 *WORKSHOP JOB CHECKLIST*\n🚚 *Vehicle:* ${truckNumber}\n📅 *Date:* ${format(new Date(), 'dd MMM yyyy')}\n\n`;
+    text += `*Items to Inspect & Resolve (${pendingList.length} points):*\n`;
+    pendingList.forEach((p, idx) => {
+      text += `${idx + 1}. [ ] ${p.description} [${p.category || 'General'}]\n`;
+    });
+    text += `\n_Please check and fix each point during workshop servicing._`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      toast.success('Checklist copied to clipboard!');
+    }
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleProblemSubmit = async (formDataOrObj) => {
+    try {
+      await pb.collection('maintenance_problems').create(formDataOrObj, { $autoCancel: false });
+      toast.success('Problem reported successfully');
+      setIsProblemModalOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error('Failed to report problem:', err);
+      toast.error(err.message || 'Failed to report problem');
+    }
+  };
+
   // Top level stats & data mapping for inventory / problems (Old tabs fallback)
   const uniqueTrucks = useMemo(() => {
     const tSet = new Set();
@@ -452,6 +594,8 @@ export default function MaintenancePage() {
   const statsSummary = useMemo(() => {
     const totalSpent = serviceLogs.reduce((sum, s) => sum + (Number(s.cost_amount) || 0), 0);
     const activeIssues = problems.filter(p => p.status !== 'Resolved').length;
+    const criticalBreakdowns = problems.filter(p => p.status !== 'Resolved' && (p.severity === 'Critical' || (p.category && p.category.toLowerCase().includes('breakdown')))).length;
+    const routineProblems = Math.max(0, activeIssues - criticalBreakdowns);
     const overdueCount = trucks.reduce((count, truck) => {
       const liveOdo = getLiveOdometer(truck);
       const status = getIntervalStatus(truck, liveOdo);
@@ -469,7 +613,7 @@ export default function MaintenancePage() {
         return overdue.length === 0 && truckIntervals.length > 0;
       }).length / trucks.length) * 100
     );
-    return { totalSpent, activeIssues, overdueCount, healthyTrucks };
+    return { totalSpent, activeIssues, criticalBreakdowns, routineProblems, overdueCount, healthyTrucks };
   }, [serviceLogs, problems, trucks, intervals, tripLogs]);
 
   // Dynamic Daily KMs calculation from Trip Logs
@@ -719,15 +863,22 @@ export default function MaintenancePage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden border border-border/70 shadow-lg bg-card/60 backdrop-blur-md hover:border-rose-500/40 transition-all duration-300">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-rose-500 to-amber-500" />
+        <Card className={cn(
+          "relative overflow-hidden border border-border/70 shadow-lg bg-card/60 backdrop-blur-md transition-all duration-300",
+          statsSummary.criticalBreakdowns > 0 ? "hover:border-rose-500/40" : "hover:border-amber-500/40"
+        )}>
+          <div className={cn("absolute top-0 left-0 w-full h-[3px]", statsSummary.criticalBreakdowns > 0 ? "bg-gradient-to-r from-rose-500 to-red-600" : "bg-gradient-to-r from-amber-500 to-yellow-500")} />
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3.5 bg-rose-500/10 text-rose-400 rounded-2xl border border-rose-500/20 shadow-sm">
-              <AlertTriangle className="w-6 h-6 animate-pulse" />
+            <div className={cn("p-3.5 rounded-2xl border shadow-sm", statsSummary.criticalBreakdowns > 0 ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20")}>
+              <AlertTriangle className={cn("w-6 h-6", statsSummary.criticalBreakdowns > 0 && "animate-pulse")} />
             </div>
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Breakdown Tickets</p>
-              <p className="text-2xl font-black mt-1 font-mono text-rose-400">{statsSummary.activeIssues} <span className="text-xs font-normal text-muted-foreground">Open Tickets</span></p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {statsSummary.criticalBreakdowns > 0 ? 'Active Roadside Breakdowns' : 'Workshop Pending Issues'}
+              </p>
+              <p className={cn("text-2xl font-black mt-1 font-mono", statsSummary.criticalBreakdowns > 0 ? "text-rose-400" : "text-amber-400")}>
+                {statsSummary.activeIssues} <span className="text-xs font-normal text-muted-foreground">{statsSummary.criticalBreakdowns > 0 ? `(${statsSummary.criticalBreakdowns} critical)` : 'Checklist Items'}</span>
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -1839,8 +1990,23 @@ export default function MaintenancePage() {
           </Card>
         </TabsContent>
 
-        {/* TAB 3: Problems Fallback */}
-        <TabsContent value="problems" className="m-0">
+        {/* TAB 3: Workshop Problems & Checklist */}
+        <TabsContent value="problems" className="m-0 space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-card p-4 rounded-2xl border border-border shadow-sm">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold font-heading text-foreground flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-primary" />
+                Fleet Workshop Issues & Checklist
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Log vehicle defects and check them off one-by-one during workshop visits.
+              </p>
+            </div>
+            <Button onClick={() => setIsProblemModalOpen(true)} className="rounded-xl shadow-sm text-xs font-bold gap-1.5 h-9">
+              <Plus className="w-4 h-4" /> Add Truck Problem
+            </Button>
+          </div>
+
           <Card className="rounded-2xl shadow-sm overflow-hidden border-border bg-card">
             <div className="p-4 border-b border-border bg-muted/20 flex flex-wrap gap-4 items-center">
               <Select value={filters.truck_id} onValueChange={(v) => setFilters(p => ({...p, truck_id: v}))}>
@@ -1858,7 +2024,7 @@ export default function MaintenancePage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Open">Pending (Open)</SelectItem>
                   <SelectItem value="Resolved">Resolved</SelectItem>
                 </SelectContent>
               </Select>
@@ -1874,40 +2040,74 @@ export default function MaintenancePage() {
                     <TableHead>Severity</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell>
+                        <TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredProblems.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8">No reported problems matching filters.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center py-8">No reported problems matching filters.</TableCell></TableRow>
                   ) : (
-                    filteredProblems.map(prob => (
-                      <TableRow key={prob.id}>
-                        <TableCell className="font-medium whitespace-nowrap">{formatDate(prob.date_reported)}</TableCell>
-                        <TableCell><Badge variant="outline">{prob.truck_id}</Badge></TableCell>
-                        <TableCell>{prob.category}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={
-                            prob.severity === 'Critical' ? 'bg-destructive text-destructive-foreground' :
-                            prob.severity === 'High' ? 'bg-destructive/20 text-destructive' :
-                            'bg-muted text-muted-foreground'
-                          }>
-                            {prob.severity}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={prob.status === 'Open' ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'}>
-                            {prob.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground">{prob.description}</TableCell>
-                      </TableRow>
-                    ))
+                    filteredProblems.map(prob => {
+                      const isDone = prob.status === 'Resolved';
+                      return (
+                        <TableRow key={prob.id} className={isDone ? "opacity-75 bg-muted/5" : ""}>
+                          <TableCell className="font-medium whitespace-nowrap">{formatDate(prob.date_reported)}</TableCell>
+                          <TableCell><Badge variant="outline" className="font-mono font-bold">{prob.truck_id}</Badge></TableCell>
+                          <TableCell>{prob.category}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={
+                              prob.severity === 'Critical' ? 'bg-destructive text-destructive-foreground' :
+                              prob.severity === 'High' ? 'bg-destructive/20 text-destructive' :
+                              'bg-muted text-muted-foreground'
+                            }>
+                              {prob.severity}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={isDone ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}>
+                              {prob.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={`max-w-xs truncate ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-medium'}`}>
+                            {prob.description}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="sm"
+                                variant={isDone ? "outline" : "default"}
+                                className={`h-7 px-2.5 text-[11px] rounded-lg font-bold gap-1 ${
+                                  isDone 
+                                    ? "border-muted-foreground/30 text-muted-foreground hover:bg-muted" 
+                                    : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                                }`}
+                                onClick={() => handleToggleProblemStatus(prob)}
+                              >
+                                {isDone ? (
+                                  <><RotateCcw className="w-3 h-3" /> Reopen</>
+                                ) : (
+                                  <><CheckCircle2 className="w-3 h-3" /> Resolve</>
+                                )}
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-7 h-7" 
+                                onClick={() => handleDeleteProblem(prob.id)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -1925,31 +2125,56 @@ export default function MaintenancePage() {
               ) : filteredProblems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground text-xs">No reported problems matching filters.</div>
               ) : (
-                filteredProblems.map(prob => (
-                  <div key={prob.id} className="p-4 space-y-2.5">
-                    <div className="flex justify-between items-start gap-3">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="outline" className="font-mono font-bold text-[10px]">{prob.truck_id}</Badge>
-                          <span className="text-[10px] text-muted-foreground">({prob.category})</span>
+                filteredProblems.map(prob => {
+                  const isDone = prob.status === 'Resolved';
+                  return (
+                    <div key={prob.id} className={`p-4 space-y-2.5 ${isDone ? "opacity-75 bg-muted/5" : ""}`}>
+                      <div className="flex justify-between items-start gap-3">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="font-mono font-bold text-[10px]">{prob.truck_id}</Badge>
+                            <span className="text-[10px] text-muted-foreground">({prob.category})</span>
+                          </div>
+                          <p className={`text-xs mt-1.5 leading-normal ${isDone ? 'line-through text-muted-foreground' : 'text-foreground font-semibold'}`}>
+                            {prob.description}
+                          </p>
                         </div>
-                        <p className="text-xs text-foreground mt-1.5 font-medium leading-normal">{prob.description}</p>
+                        <Badge className={isDone ? 'bg-success/20 text-success border-0 text-[9px] font-bold' : 'bg-warning/20 text-warning border-0 text-[9px] font-bold'}>
+                          {prob.status}
+                        </Badge>
                       </div>
-                      <Badge className={prob.status === 'Open' ? 'bg-warning/20 text-warning border-0 text-[9px] font-bold' : 'bg-success/20 text-success border-0 text-[9px] font-bold'}>
-                        {prob.status}
-                      </Badge>
+                      <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/20 pt-2">
+                        <span>Reported: {formatDate(prob.date_reported)}</span>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="secondary" className={cn(
+                            "text-[9px] font-bold uppercase tracking-wider",
+                            prob.severity === 'Critical' || prob.severity === 'High' ? 'bg-destructive/20 text-destructive border-0' : 'bg-muted text-muted-foreground border-0'
+                          )}>
+                            {prob.severity}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant={isDone ? "outline" : "default"}
+                            className={`h-6 px-2 text-[10px] rounded-md font-bold gap-1 ${
+                              isDone ? "border-muted-foreground/30 text-muted-foreground" : "bg-emerald-500 text-white"
+                            }`}
+                            onClick={() => handleToggleProblemStatus(prob)}
+                          >
+                            {isDone ? 'Reopen' : 'Resolve'}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-destructive w-6 h-6" 
+                            onClick={() => handleDeleteProblem(prob.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/20 pt-2">
-                      <span>Reported: {formatDate(prob.date_reported)}</span>
-                      <Badge variant="secondary" className={cn(
-                        "text-[9px] font-bold uppercase tracking-wider",
-                        prob.severity === 'Critical' || prob.severity === 'High' ? 'bg-destructive/20 text-destructive border-0' : 'bg-muted text-muted-foreground border-0'
-                      )}>
-                        {prob.severity}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </Card>
@@ -1960,7 +2185,10 @@ export default function MaintenancePage() {
       {selectedTruck && (() => {
         const lifetimeCost = serviceLogs.filter(s => s.truck_id === selectedTruck.id).reduce((sum, s) => sum + (s.cost_amount || 0), 0);
         const logsCount = serviceLogs.filter(s => s.truck_id === selectedTruck.id).length;
-        const activeBreakdowns = problems.filter(p => p.truck_id === selectedTruck.truck_number && p.status === 'Open').length;
+        const truckProblems = problems.filter(p => p.truck_id === selectedTruck.truck_number || p.truck_id === selectedTruck.id);
+        const pendingProblems = truckProblems.filter(p => p.status !== 'Resolved');
+        const resolvedProblems = truckProblems.filter(p => p.status === 'Resolved');
+        const criticalBreakdowns = pendingProblems.filter(p => p.severity === 'Critical' || (p.category && p.category.toLowerCase().includes('breakdown')));
 
         return (
           <Sheet open={!!selectedTruck} onOpenChange={(open) => !open && setSelectedTruck(null)}>
@@ -1995,9 +2223,18 @@ export default function MaintenancePage() {
                     <span className="text-sm font-black text-foreground mt-1 block">{logsCount} logs</span>
                   </div>
                   <div className="bg-muted/10 border border-border/20 rounded-xl p-3 text-center">
-                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">Active Breakdowns</span>
-                    <span className={cn("text-sm font-black mt-1 block", activeBreakdowns > 0 ? "text-rose-400" : "text-emerald-400")}>
-                      {activeBreakdowns} unresolved
+                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider block">
+                      {criticalBreakdowns.length > 0 ? 'Active Breakdown' : 'Workshop Checklist'}
+                    </span>
+                    <span className={cn(
+                      "text-sm font-black mt-1 block",
+                      criticalBreakdowns.length > 0 ? "text-rose-400" : pendingProblems.length > 0 ? "text-amber-400" : "text-emerald-400"
+                    )}>
+                      {criticalBreakdowns.length > 0 
+                        ? `${criticalBreakdowns.length} critical` 
+                        : pendingProblems.length > 0 
+                          ? `${pendingProblems.length} pending` 
+                          : 'All clear'}
                     </span>
                   </div>
                 </div>
@@ -2015,10 +2252,13 @@ export default function MaintenancePage() {
                     <History className="w-3.5 h-3.5" /> Logs
                   </TabsTrigger>
                   <TabsTrigger value="problems" className="gap-1.5 py-2 px-3.5 rounded-lg text-xs shrink-0 relative data-[state=active]:shadow-sm">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Issues
-                    {activeBreakdowns > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[8px] font-black flex items-center justify-center">
-                        {activeBreakdowns}
+                    <ClipboardCheck className="w-3.5 h-3.5" /> Workshop Checklist
+                    {pendingProblems.length > 0 && (
+                      <span className={cn(
+                        "ml-1 px-1.5 py-0.2 rounded-full text-[9px] font-black text-white",
+                        criticalBreakdowns.length > 0 ? "bg-rose-500" : "bg-amber-500"
+                      )}>
+                        {pendingProblems.length}
                       </span>
                     )}
                   </TabsTrigger>
@@ -2590,92 +2830,334 @@ export default function MaintenancePage() {
                 </div>
               </TabsContent>
 
-              {/* DRAWER TAB 4: Active vehicle problems specific to selected truck */}
-              <TabsContent value="problems" className="m-0 space-y-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-sm uppercase font-bold text-muted-foreground tracking-wider">Reported Issues Ledger</h4>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTruck(null);
-                        setActiveTab('problems');
-                        setFilters(prev => ({ ...prev, truck_id: selectedTruck.truck_number, problemStatus: 'Open' }));
-                      }}
-                      className="rounded-lg text-xs h-8"
-                    >
-                      Manage Tickets
-                    </Button>
-                  </div>
-                  {problems.filter(p => p.truck_id === selectedTruck.truck_number).length === 0 ? (
-                    <p className="text-sm italic text-muted-foreground/60 text-center py-6 border border-dashed border-border/40 rounded-2xl bg-muted/5">
-                      No problems reported for this truck registration.
+              {/* DRAWER TAB 4: Dedicated Workshop Job Checklist for selected truck */}
+              <TabsContent value="problems" className="m-0 space-y-5">
+                {/* Header with Title and Batch Actions */}
+                <div className="bg-secondary/10 border border-border/50 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-heading font-extrabold text-base flex items-center gap-2 text-foreground">
+                      <ClipboardCheck className="w-5 h-5 text-primary" />
+                      Workshop Job Checklist
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Review all pending issues for <span className="font-mono font-bold text-foreground">{selectedTruck.truck_number}</span> and resolve them item-by-item.
                     </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {problems.filter(p => p.truck_id === selectedTruck.truck_number).map(prob => {
-                        const isDone = prob.status === 'Resolved';
-                        const isHigh = prob.severity === 'High' || prob.severity === 'Critical';
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleShareChecklist(selectedTruck.truck_number, pendingProblems)}
+                      className="rounded-xl text-xs h-8 gap-1.5 border-border bg-card hover:bg-muted font-semibold"
+                      title="Share checklist with garage or driver"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-primary" />
+                      WhatsApp / Copy
+                    </Button>
+                    {pendingProblems.length > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleResolveAllTruckProblems(pendingProblems)}
+                        className="rounded-xl text-xs h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Resolve All ({pendingProblems.length})
+                      </Button>
+                    )}
+                  </div>
+                </div>
 
-                        return (
-                          <div key={prob.id} className="p-4 rounded-xl border border-border bg-card/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group/item relative">
-                            <div className="space-y-1.5 flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant="outline" 
+                {/* Inline Quick-Add Problem Form */}
+                <div className="bg-card border border-border/60 p-4 rounded-2xl shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                      <Plus className="w-3.5 h-3.5 text-primary" /> Add Problem to Checklist
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Defaults to Workshop Issue (not breakdown)
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleAddTruckProblem} className="space-y-3">
+                    <div>
+                      <Input
+                        placeholder="e.g. Wiper blade torn, brake sound at low speed, horn loose, AC cooling low..."
+                        value={newProblem.description}
+                        onChange={(e) => setNewProblem({ ...newProblem, description: e.target.value })}
+                        required
+                        className="h-10 text-xs sm:text-sm rounded-xl bg-background"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Category</label>
+                        <Select
+                          value={newProblem.category}
+                          onValueChange={(val) => setNewProblem({ ...newProblem, category: val })}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg bg-background">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['Engine', 'Transmission', 'Brakes', 'Tires', 'Electrical', 'Suspension', 'Cooling', 'Fuel', 'Other'].map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Issue Type / Priority</label>
+                        <Select
+                          value={newProblem.issue_type}
+                          onValueChange={(val) => {
+                            if (val === 'breakdown') {
+                              setNewProblem({ ...newProblem, issue_type: 'breakdown', severity: 'Critical' });
+                            } else if (val === 'high') {
+                              setNewProblem({ ...newProblem, issue_type: 'workshop', severity: 'High' });
+                            } else {
+                              setNewProblem({ ...newProblem, issue_type: 'workshop', severity: 'Medium' });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg bg-background">
+                            <SelectValue placeholder="Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="workshop">🔧 Workshop Checklist (Routine)</SelectItem>
+                            <SelectItem value="high">⚡ High Priority Fix</SelectItem>
+                            <SelectItem value="breakdown">🚨 Roadside Breakdown</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Technician / Garage</label>
+                        <Input
+                          placeholder="e.g. Workshop Raju / Self"
+                          value={newProblem.assigned_technician}
+                          onChange={(e) => setNewProblem({ ...newProblem, assigned_technician: e.target.value })}
+                          className="h-8 text-xs rounded-lg bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={isAddingProblem || !newProblem.description.trim()}
+                        className="rounded-xl h-8 px-4 text-xs font-bold gap-1 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {isAddingProblem ? 'Adding...' : 'Add to Checklist'}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Filter Sub-Tabs */}
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setProblemDrawerFilter('all')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-xs font-bold transition-all",
+                        problemDrawerFilter === 'all'
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      All ({truckProblems.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProblemDrawerFilter('pending')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-xs font-bold transition-all",
+                        problemDrawerFilter === 'pending'
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      Pending ({pendingProblems.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProblemDrawerFilter('resolved')}
+                      className={cn(
+                        "px-3 py-1 rounded-lg text-xs font-bold transition-all",
+                        problemDrawerFilter === 'resolved'
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      Resolved ({resolvedProblems.length})
+                    </button>
+                  </div>
+
+                  <span className="text-[11px] font-mono text-muted-foreground">
+                    {pendingProblems.length === 0 ? '✓ All resolved' : `${pendingProblems.length} remaining`}
+                  </span>
+                </div>
+
+                {/* Interactive Checklist Cards List */}
+                <div className="space-y-3">
+                  {(() => {
+                    const displayed = truckProblems.filter(p => {
+                      if (problemDrawerFilter === 'pending') return p.status !== 'Resolved';
+                      if (problemDrawerFilter === 'resolved') return p.status === 'Resolved';
+                      return true;
+                    });
+
+                    if (displayed.length === 0) {
+                      return (
+                        <div className="text-center py-10 border border-dashed border-border/40 rounded-2xl bg-muted/5 space-y-2">
+                          <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
+                          <p className="text-sm font-semibold text-foreground">
+                            {problemDrawerFilter === 'pending'
+                              ? '🎉 No pending problems! All workshop items resolved.'
+                              : problemDrawerFilter === 'resolved'
+                                ? 'No resolved problems recorded yet.'
+                                : 'No problem checklist items found for this vehicle.'}
+                          </p>
+                          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                            Use the quick-add bar above to add any defect or maintenance item before taking the truck to the workshop.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return displayed.map((prob) => {
+                      const isDone = prob.status === 'Resolved';
+                      const isCritical = prob.severity === 'Critical' || (prob.category && prob.category.toLowerCase().includes('breakdown'));
+                      const isHigh = prob.severity === 'High';
+
+                      return (
+                        <div
+                          key={prob.id}
+                          className={cn(
+                            "p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group relative",
+                            isDone 
+                              ? "bg-card/40 border-border/40 opacity-70" 
+                              : isCritical
+                                ? "bg-rose-500/5 border-rose-500/30 shadow-sm"
+                                : "bg-card border-border hover:border-border/80 shadow-sm"
+                          )}
+                        >
+                          {/* Checkbox & Details */}
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleProblemStatus(prob)}
+                              className={cn(
+                                "mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors",
+                                isDone
+                                  ? "bg-emerald-500 border-emerald-500 text-white"
+                                  : "border-border hover:border-primary bg-background"
+                              )}
+                              title={isDone ? "Mark as Open / Reopen" : "Mark as Resolved"}
+                            >
+                              {isDone && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </button>
+
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge
+                                  variant="outline"
                                   className={cn(
-                                    "capitalize font-bold text-[9px]",
-                                    isDone ? 'bg-success/10 text-success border-0' :
-                                    isHigh ? 'bg-destructive/10 text-destructive border-0' :
-                                    'bg-amber-500/10 text-amber-500 border-0'
+                                    "text-[9px] font-bold uppercase",
+                                    isCritical
+                                      ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                                      : isHigh
+                                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                        : "bg-muted text-muted-foreground border-0"
                                   )}
                                 >
-                                  {prob.severity}
+                                  {isCritical ? '🚨 Breakdown' : prob.severity}
                                 </Badge>
-                                <span className="text-[10px] text-muted-foreground font-semibold">({prob.category})</span>
+                                <span className="text-[10px] font-medium text-muted-foreground">
+                                  {prob.category}
+                                </span>
+                                {prob.assigned_technician && (
+                                  <span className="text-[10px] text-muted-foreground/80 font-mono">
+                                    • Tech: {prob.assigned_technician}
+                                  </span>
+                                )}
                               </div>
-                              <p className={`text-sm font-semibold leading-normal ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+
+                              <p className={cn(
+                                "text-sm leading-snug break-words",
+                                isDone ? "line-through text-muted-foreground" : "font-semibold text-foreground"
+                              )}>
                                 {prob.description}
                               </p>
-                              <p className="text-[10px] text-muted-foreground/60">Reported: {formatDate(prob.date_reported)}</p>
-                            </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/30">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                                isDone ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/10' : 'bg-amber-500/10 text-amber-400 border-amber-500/10'
-                              }`}>
-                                {prob.status}
-                              </span>
-                              {!isDone && (
-                                <Button 
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      await pb.collection('maintenance_problems').update(prob.id, { status: 'Resolved' }, { $autoCancel: false });
-                                      toast.success('Ticket marked as resolved');
-                                      fetchData();
-                                    } catch (e) {
-                                      toast.error('Failed to resolve ticket');
-                                    }
-                                  }}
-                                  className="h-7 px-2.5 text-[10px] rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold"
-                                >
-                                  Resolve
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60 pt-0.5">
+                                <span>Reported: {formatDate(prob.date_reported)}</span>
+                                {isDone && prob.date_solved && (
+                                  <span className="text-emerald-500 font-medium">
+                                    • Solved: {formatDate(prob.date_solved)}
+                                  </span>
+                                )}
+                                {prob.resolution_notes && (
+                                  <span className="italic truncate max-w-xs text-muted-foreground">
+                                    • Note: {prob.resolution_notes}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center justify-end gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/30">
+                            <Button
+                              size="sm"
+                              variant={isDone ? "outline" : "default"}
+                              className={cn(
+                                "h-7 px-2.5 text-[11px] rounded-lg font-bold gap-1",
+                                isDone
+                                  ? "border-muted-foreground/30 text-muted-foreground hover:bg-muted"
+                                  : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                              )}
+                              onClick={() => handleToggleProblemStatus(prob)}
+                            >
+                              {isDone ? (
+                                <><RotateCcw className="w-3 h-3" /> Reopen</>
+                              ) : (
+                                <><CheckCircle2 className="w-3 h-3" /> Resolve</>
+                              )}
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 w-7 h-7 rounded-lg"
+                              onClick={() => handleDeleteProblem(prob.id)}
+                              title="Delete Problem"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </TabsContent>
             </Tabs>
           </SheetContent>
         </Sheet>
       )})()}
+
+      {/* Add Maintenance Problem Modal */}
+      <AddMaintenanceProblemModal
+        isOpen={isProblemModalOpen}
+        onClose={() => setIsProblemModalOpen(false)}
+        onSubmit={handleProblemSubmit}
+      />
 
       {/* Invoice Lightbox Dialog */}
       {activeLightboxImage && (

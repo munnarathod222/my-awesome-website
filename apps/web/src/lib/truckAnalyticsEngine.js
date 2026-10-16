@@ -255,7 +255,7 @@ export function computeLogDrivenFleetAnalytics({
       ...vehicleProblems.filter(p => {
         const sev = (p.severity || '').toLowerCase();
         const cat = (p.category || '').toLowerCase();
-        return (sev === 'critical' || sev === 'high' || cat.includes('breakdown')) && p.status !== 'Cancelled';
+        return (sev === 'critical' || cat.includes('breakdown')) && p.status !== 'Cancelled';
       }),
       ...vehicleAccidents.filter(a => (a.accident_type || '').toLowerCase().includes('breakdown') || Number(a.damage_cost) > 10000)
     ];

@@ -678,8 +678,8 @@ export default function TruckManagerPage() {
                     variant="outline" 
                     size="sm" 
                     className="h-7 px-2 text-[11px] font-medium rounded-lg border-border/60 hover:bg-muted"
-                    onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)}
-                    title="Maintenance"
+                    onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}&tab=problems`)}
+                    title="Workshop Checklist & Maintenance"
                   >
                     <Wrench className="w-3 h-3 mr-1 text-amber-500" /> Maintenance
                   </Button>
@@ -711,6 +711,13 @@ export default function TruckManagerPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52 bg-card border border-border">
                       <DropdownMenuLabel>Vehicle Options</DropdownMenuLabel>
+                      <DropdownMenuItem 
+                        className="text-amber-500 font-medium cursor-pointer" 
+                        onSelect={() => navigate(`/fleet-maintenance?truckId=${truck.id}&tab=problems`)}
+                      >
+                        <Wrench className="w-3.5 h-3.5 mr-2 text-amber-500" />
+                        Workshop Checklist ({maintenanceProblems.filter(p => (p.truck_id === truck.truck_number || p.truck_id === truck.id) && p.status !== 'Resolved').length} pending)
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setModalConfig({ isOpen: true, truck })}>
                         <Edit className="w-3.5 h-3.5 mr-2 text-muted-foreground" /> Edit Details
                       </DropdownMenuItem>
@@ -948,7 +955,7 @@ export default function TruckManagerPage() {
                     <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-primary" onClick={() => navigate(`/tyres/${truck.id}`)} title="Tyres">
                       <Settings className="w-3 h-3" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-amber-500" onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}`)} title="Maintenance">
+                    <Button variant="ghost" size="icon" className="w-6 h-6 rounded hover:bg-muted text-amber-500" onClick={() => navigate(`/fleet-maintenance?truckId=${truck.id}&tab=problems`)} title="Workshop Checklist & Maintenance">
                       <Wrench className="w-3 h-3" />
                     </Button>
                     <Button 

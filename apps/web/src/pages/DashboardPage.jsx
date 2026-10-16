@@ -698,35 +698,36 @@ const DashboardPage = () => {
             </div>
           </motion.div>
 
-          {/* Breakdowns & FASTag Wallets */}
+          {/* Workshop Issues & FASTag Wallets */}
           <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card className="lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5">
                 <div>
                   <CardTitle className="text-base font-heading flex items-center gap-2">
-                    <Wrench className="w-4.5 h-4.5 text-primary" /> Active Breakdowns & Maintenance
+                    <Wrench className="w-4.5 h-4.5 text-primary" /> Workshop Issues &amp; Maintenance
                   </CardTitle>
-                  <CardDescription className="text-xs mt-0.5">Unresolved vehicle maintenance issues filed by drivers</CardDescription>
+                  <CardDescription className="text-xs mt-0.5">Unresolved vehicle defects and workshop checklist items</CardDescription>
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setIsMaintenanceModalOpen(true)}
+                  onClick={() => navigate('/fleet-maintenance?tab=problems')}
                   className="rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Log Issue
+                  <Plus className="w-3.5 h-3.5" /> View / Log Issues
                 </Button>
               </CardHeader>
               <CardContent className="p-5">
                 {openProblems.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center">
                     <ShieldCheck className="w-8 h-8 text-emerald-500 mb-2 opacity-75" />
-                    <p className="text-xs font-bold text-foreground">No active breakdown tickets</p>
-                    <p className="text-[10px] mt-0.5">All fleet vehicle maintenance requests are resolved.</p>
+                    <p className="text-xs font-bold text-foreground">No pending workshop issues</p>
+                    <p className="text-[10px] mt-0.5">All fleet vehicle maintenance requests and checklist items are resolved.</p>
                   </div>
                 ) : (
                   <div className="space-y-3.5">
                     {openProblems.map(prob => {
+                      const isCritical = prob.severity === 'Critical' || (prob.category && prob.category.toLowerCase().includes('breakdown'));
                       const isHigh = prob.severity === 'High';
                       return (
                         <div key={prob.id} className="flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all">
@@ -739,10 +740,10 @@ const DashboardPage = () => {
                             <p className="text-[9px] text-muted-foreground/60">{prob.date_reported ? new Date(prob.date_reported).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}</p>
                           </div>
                           <Badge 
-                            variant={isHigh ? 'destructive' : 'warning'}
+                            variant={isCritical ? 'destructive' : isHigh ? 'warning' : 'secondary'}
                             className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0"
                           >
-                            {prob.severity}
+                            {isCritical ? 'Breakdown' : isHigh ? 'High Priority' : 'Checklist'}
                           </Badge>
                         </div>
                       );

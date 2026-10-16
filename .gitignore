@@ -9,3 +9,51 @@ package-lock.json
 db_backups/
 full_live_backup.cjs
 *.cjs
+
+# Build and distribution directories (root and apps)
+/dist/
+apps/web/dist/
+apps/api/dist/
+
+# Tools, helper scripts and scratch
+/tools/
+/scripts/
+data/private_storage/
+data/test_scratch_*
+data/upload_dedup_cache.json
+apps/pocketbase/pb_data/storage/
+apps/pocketbase/pb_data/backups/
+pocketbase/
+
+# Patch, backup, transpiled, and original copies
+*.patched.*
+*.bak*
+*.original*
+*.original
+*.enhanced.*
+*.transpiled.*
+*.compiled.*
+*.clean*
+*.updated.*
+*.clean_v2.*
+
+# Root loose temporary files from prior experiments
+AdvancePayslipGenerator*
+EnhancedPayslipPreview*
+LoginPage.jsx
+PaymentRequestsPage*
+PayrollPage*
+PayrollSlipPreview.jsx
+PayslipPreviewModal.jsx
+pinCrypto.js
+temp_line204.js
+test.txt
+=
+/src/
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+apps_web_src_*
+create_configs.js

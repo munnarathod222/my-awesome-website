@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,16 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Wrench, AlertTriangle, CheckSquare } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils.js';
 import TruckSelector from './TruckSelector.jsx';
 
-export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }) {
+export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit, initialTruckId = '' }) {
+  const [issueType, setIssueType] = useState('workshop'); // 'workshop' or 'breakdown'
   const [formData, setFormData] = useState({
-    truck_id: '',
+    truck_id: initialTruckId || '',
     description: '',
-    category: '',
-    severity: '',
-    date_reported: '',
+    category: 'Other',
+    severity: 'Medium',
+    date_reported: format(new Date(), 'yyyy-MM-dd'),
     assigned_technician: '',
     status: 'Open'
   });
@@ -23,6 +26,22 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
   const [selectedImages, setSelectedImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIssueType('workshop');
+      setFormData({
+        truck_id: initialTruckId || '',
+        description: '',
+        category: 'Other',
+        severity: 'Medium',
+        date_reported: format(new Date(), 'yyyy-MM-dd'),
+        assigned_technician: '',
+        status: 'Open'
+      });
+      setSelectedImages([]);
+    }
+  }, [isOpen, initialTruckId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +54,15 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
 
   const handleTruckSelect = (truckId) => {
     setFormData((prev) => ({ ...prev, truck_id: truckId }));
+  };
+
+  const handleTypeChange = (type) => {
+    setIssueType(type);
+    if (type === 'breakdown') {
+      setFormData(prev => ({ ...prev, severity: 'Critical' }));
+    } else {
+      setFormData(prev => ({ ...prev, severity: 'Medium' }));
+    }
   };
 
   const validateAndAddFiles = (files) => {
@@ -97,7 +125,11 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.truck_id) {
-      toast.error('Truck ID is required');
+      toast.error('Truck selection is required');
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Problem description is required');
       return;
     }
 
@@ -117,9 +149,9 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
     setFormData({
       truck_id: '',
       description: '',
-      category: '',
-      severity: '',
-      date_reported: '',
+      category: 'Other',
+      severity: 'Medium',
+      date_reported: format(new Date(), 'yyyy-MM-dd'),
       assigned_technician: '',
       status: 'Open'
     });
@@ -129,11 +161,56 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[550px] rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Report Maintenance Problem</DialogTitle>
-          <DialogDescription>Log a defect or issue requiring attention.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckSquare className="w-5 h-5 text-primary" />
+            Add Truck Issue / Problem
+          </DialogTitle>
+          <DialogDescription>
+            Record a defect or task for this vehicle to resolve at the workshop.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           
+          {/* Issue Type Selector */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Issue Classification</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleTypeChange('workshop')}
+                className={cn(
+                  "p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all",
+                  issueType === 'workshop'
+                    ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary"
+                    : "border-border bg-card hover:bg-muted/30 text-muted-foreground"
+                )}
+              >
+                <Wrench className={cn("w-4 h-4 mt-0.5 shrink-0", issueType === 'workshop' ? "text-primary" : "text-muted-foreground")} />
+                <div>
+                  <div className="text-xs font-bold text-foreground">Workshop Checklist</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Routine defect to check &amp; resolve at garage</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTypeChange('breakdown')}
+                className={cn(
+                  "p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all",
+                  issueType === 'breakdown'
+                    ? "border-destructive bg-destructive/10 text-foreground ring-1 ring-destructive"
+                    : "border-border bg-card hover:bg-muted/30 text-muted-foreground"
+                )}
+              >
+                <AlertTriangle className={cn("w-4 h-4 mt-0.5 shrink-0", issueType === 'breakdown' ? "text-destructive" : "text-muted-foreground")} />
+                <div>
+                  <div className="text-xs font-bold text-foreground">Critical Breakdown</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Vehicle immobilized / road failure</div>
+                </div>
+              </button>
+            </div>
+          </div>
+
           <TruckSelector 
             selectedTruckId={formData.truck_id} 
             onTruckSelect={handleTruckSelect} 
@@ -145,8 +222,8 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
               <Input type="date" id="date_reported" name="date_reported" value={formData.date_reported} onChange={handleChange} required className="bg-background" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="assigned_technician">Assigned Technician</Label>
-              <Input id="assigned_technician" name="assigned_technician" value={formData.assigned_technician} onChange={handleChange} className="bg-background" />
+              <Label htmlFor="assigned_technician">Assigned Technician / Garage</Label>
+              <Input id="assigned_technician" name="assigned_technician" placeholder="e.g. Workshop Raju / Self" value={formData.assigned_technician} onChange={handleChange} className="bg-background" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
@@ -162,26 +239,36 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="severity">Severity</Label>
+              <Label htmlFor="severity">Priority / Severity</Label>
               <Select value={formData.severity} onValueChange={(val) => handleSelectChange('severity', val)} required>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Severity" />
                 </SelectTrigger>
                 <SelectContent>
-                  {['Low', 'Medium', 'High', 'Critical'].map(sev => (
-                    <SelectItem key={sev} value={sev}>{sev}</SelectItem>
-                  ))}
+                  <SelectItem value="Low">Low (Minor cosmetic)</SelectItem>
+                  <SelectItem value="Medium">Medium (Routine fix)</SelectItem>
+                  <SelectItem value="High">High (Needs attention soon)</SelectItem>
+                  <SelectItem value="Critical">Critical (Immediate repair)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} required className="bg-background" />
+            <Label htmlFor="description">Problem Description <span className="text-destructive">*</span></Label>
+            <Textarea 
+              id="description" 
+              name="description" 
+              placeholder="e.g. Wiper blade torn, brake sound when stopping, AC cooling low, horn button loose..." 
+              value={formData.description} 
+              onChange={handleChange} 
+              required 
+              className="bg-background min-h-[80px]" 
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>Upload Defect/Damage Images</Label>
+            <Label>Upload Defect / Part Photos (Optional)</Label>
             <div
               className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
                 isDragging ? 'border-primary bg-primary/10' : 'border-muted-foreground/20 hover:border-primary/50'
@@ -226,8 +313,10 @@ export default function AddMaintenanceProblemModal({ isOpen, onClose, onSubmit }
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Close</Button>
-            <Button type="submit">Submit</Button>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit">
+              {issueType === 'breakdown' ? 'Log Critical Breakdown' : 'Add to Workshop Checklist'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
