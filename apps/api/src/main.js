@@ -1371,7 +1371,14 @@ const uploadRecruitmentStoreToSupabase = async (options = {}) => {
       return false;
     }
 
-    const storeBuffer = Buffer.from(JSON.stringify(localList, null, 2), 'utf8');
+    const jsonContent = JSON.stringify(localList);
+    const { createHash } = await import('node:crypto');
+    const contentHash = createHash('sha256').update(jsonContent).digest('hex');
+    if (global._lastRecruitmentHash === contentHash && !options?.force) {
+      return true; // Skip unchanged upload to conserve outbound bandwidth
+    }
+
+    const storeBuffer = Buffer.from(jsonContent, 'utf8');
 
     let uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/driver_applications_store.json`, {
       method: 'POST',
@@ -1397,6 +1404,7 @@ const uploadRecruitmentStoreToSupabase = async (options = {}) => {
     }
 
     if (uploadRes.ok) {
+      global._lastRecruitmentHash = contentHash;
       logger.info(`✅ Recruitment Applications backup (${localList.length} records, ${storeBuffer.byteLength} bytes) synced to Supabase Cloud Storage!`);
       return true;
     }
@@ -1658,7 +1666,7 @@ const downloadBiddingCompaniesFromSupabase = async () => {
   } catch (e) {}
 };
 
-const uploadBidsStoreToSupabase = async () => {
+const uploadBidsStoreToSupabase = async (options = {}) => {
   try {
     const deletedSet = getDeletedBidsStore();
     let list = getBidsStore().filter(b => b && b.id && !deletedSet.has(String(b.id)));
@@ -1680,35 +1688,22 @@ const uploadBidsStoreToSupabase = async () => {
       }
     } catch (e) {}
 
-    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
+    const jsonContent = JSON.stringify(list);
+    const { createHash } = await import('node:crypto');
+    const contentHash = createHash('sha256').update(jsonContent).digest('hex');
 
-    let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
-      method: 'POST',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true'
-      },
-      body: buf
-    });
+    const delArr = Array.from(deletedSet);
+    const delJson = JSON.stringify(delArr);
+    const delHash = createHash('sha256').update(delJson).digest('hex');
 
-    if (!res.ok) {
-      res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
-        method: 'PUT',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: buf
-      });
+    if (global._lastBidsHash === contentHash && global._lastDeletedBidsHash === delHash && !options?.force) {
+      return true; // Skip unchanged upload to conserve outbound bandwidth
     }
 
-    // Upload deleted_bids.json
-    try {
-      const delBuf = Buffer.from(JSON.stringify(Array.from(deletedSet), null, 2), 'utf8');
-      let delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+    let bidsUploaded = false;
+    if (global._lastBidsHash !== contentHash || options?.force) {
+      const buf = Buffer.from(jsonContent, 'utf8');
+      let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
         method: 'POST',
         headers: {
           'apikey': supabaseKey,
@@ -1716,22 +1711,60 @@ const uploadBidsStoreToSupabase = async () => {
           'Content-Type': 'application/json',
           'x-upsert': 'true'
         },
-        body: delBuf
+        body: buf
       });
-      if (!delRes.ok) {
-        await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+
+      if (!res.ok) {
+        res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bids_store.json`, {
           method: 'PUT',
           headers: {
             'apikey': supabaseKey,
             'Authorization': `Bearer ${supabaseKey}`,
             'Content-Type': 'application/json'
           },
-          body: delBuf
+          body: buf
         });
       }
-    } catch (e) {}
+      if (res.ok) {
+        global._lastBidsHash = contentHash;
+        bidsUploaded = true;
+      }
+    } else {
+      bidsUploaded = true;
+    }
 
-    if (res.ok) {
+    // Upload deleted_bids.json only if changed
+    if (global._lastDeletedBidsHash !== delHash || options?.force) {
+      try {
+        const delBuf = Buffer.from(delJson, 'utf8');
+        let delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'x-upsert': 'true'
+          },
+          body: delBuf
+        });
+        if (!delRes.ok) {
+          delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/deleted_bids.json`, {
+            method: 'PUT',
+            headers: {
+              'apikey': supabaseKey,
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: delBuf
+          });
+        }
+        if (delRes.ok) {
+          global._lastDeletedBidsHash = delHash;
+        }
+      } catch (e) {}
+    }
+
+    if (bidsUploaded) {
       logger.info(`✅ Bidding logs (${list.length} active bids, ${deletedSet.size} deleted) backed up to Supabase!`);
       return true;
     }
@@ -1741,10 +1774,16 @@ const uploadBidsStoreToSupabase = async () => {
   }
 };
 
-const uploadBiddingCompaniesToSupabase = async () => {
+const uploadBiddingCompaniesToSupabase = async (options = {}) => {
   try {
     const list = getBiddingCompaniesStore();
-    const buf = Buffer.from(JSON.stringify(list, null, 2), 'utf8');
+    const jsonContent = JSON.stringify(list);
+    const { createHash } = await import('node:crypto');
+    const contentHash = createHash('sha256').update(jsonContent).digest('hex');
+    if (global._lastCompaniesHash === contentHash && !options?.force) {
+      return true;
+    }
+    const buf = Buffer.from(jsonContent, 'utf8');
     let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/bidding_companies.json`, {
       method: 'POST',
       headers: {
@@ -1766,17 +1805,25 @@ const uploadBiddingCompaniesToSupabase = async () => {
         body: buf
       });
     }
+    if (res.ok) {
+      global._lastCompaniesHash = contentHash;
+    }
     return res.ok;
   } catch (e) {
     return false;
   }
 };
 
-const uploadQuotesStoreToSupabase = async () => {
+const uploadQuotesStoreToSupabase = async (options = {}) => {
   try {
     const qPath = path.join(process.cwd(), 'quotes_store.json');
     if (!fs.existsSync(qPath)) return false;
     const buf = fs.readFileSync(qPath);
+    const { createHash } = await import('node:crypto');
+    const contentHash = createHash('sha256').update(buf).digest('hex');
+    if (global._lastQuotesHash === contentHash && !options?.force) {
+      return true;
+    }
     let res = await fetch(`${supabaseUrl}/storage/v1/object/backups/quotes_store.json`, {
       method: 'POST',
       headers: {
@@ -1797,6 +1844,9 @@ const uploadQuotesStoreToSupabase = async () => {
         },
         body: buf
       });
+    }
+    if (res.ok) {
+      global._lastQuotesHash = contentHash;
     }
     return true;
   } catch (e) {
@@ -1844,7 +1894,7 @@ let _isCloudSyncing = false;
 let _hasUnsyncedChanges = false;
 
 let _lastSyncTimestamp = 0;
-const MIN_SYNC_COOLDOWN_MS = 10 * 1000; // 10s cooldown to batch high-frequency operations & protect bandwidth
+const MIN_SYNC_COOLDOWN_MS = 60 * 1000; // 60s cooldown to batch high-frequency operations & protect bandwidth
 
 const triggerDebouncedCloudSync = (delayMs = 4000) => {
   if (global.isShuttingDown || global.isRestoringBackup) return;
@@ -2218,6 +2268,10 @@ const uploadNewStorageToSupabase = async (storageDir) => {
       if (uploadRes.ok) {
         _uploadedStorageFiles.add(relPath);
         logger.info(`✓ Uploaded new storage file: ${relPath}`);
+      } else if (uploadRes.status >= 400 && uploadRes.status < 500) {
+        // Mark client/duplicate errors to prevent indefinite loop every sync
+        _uploadedStorageFiles.add(relPath);
+        logger.warn(`Storage sync skipped unrecoverable file: ${relPath} (${uploadRes.status})`);
       }
     } catch (e) {
       logger.warn(`Storage sync warning for ${relPath}: ${e.message}`);
@@ -2233,29 +2287,32 @@ const startStorageBackgroundSync = (storageDir) => {
     try { fs.mkdirSync(storageDir, { recursive: true }); } catch (_) {}
   }
 
-  // 1. Initial sync after 3 seconds
+  // Initialize tracker with existing local files so they are not repeatedly re-uploaded
+  initStorageTracker(storageDir);
+
+  // 1. Initial sync after 10 seconds for any missed new files
   setTimeout(() => {
     uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Initial storage sync error: ${e.message}`));
-  }, 3000);
+  }, 10000);
 
-  // 2. Watch storage directory recursively
+  // 2. Watch storage directory recursively (event-driven)
   try {
     let watchDebounce = null;
     fs.watch(storageDir, { recursive: true }, (eventType, filename) => {
       clearTimeout(watchDebounce);
       watchDebounce = setTimeout(() => {
         uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Storage watch sync error: ${e.message}`));
-      }, 1500);
+      }, 5000);
     });
     logger.info('✓ Storage file system watcher active.');
   } catch (err) {
     logger.warn(`Storage watcher not available on this OS/FS: ${err.message}`);
   }
 
-  // 3. Periodic safety interval (every 30 seconds)
+  // 3. Periodic fallback safety interval (once every 6 hours instead of every 30 seconds)
   setInterval(() => {
     uploadNewStorageToSupabase(storageDir).catch(e => logger.warn(`Interval storage sync error: ${e.message}`));
-  }, 30000);
+  }, 6 * 60 * 60 * 1000);
 };
 
 // ----------------------------------------------------
@@ -4192,10 +4249,9 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
       const isAsync = req.query.async === 'true';
       if (isAsync) {
         res.json({ success: true, message: 'Database backup triggered in background.' });
-        setTimeout(async () => {
-          logger.info('🔄 Real-time sync: database backup triggered in background...');
-          await uploadDatabaseToSupabase(global.dbFilePath);
-        }, 100);
+        if (typeof triggerDebouncedCloudSync === 'function') {
+          triggerDebouncedCloudSync(8000);
+        }
         return;
       }
 
@@ -5924,9 +5980,13 @@ if (staticPath) {
       } else if (/\.(js|css|woff2?|ttf|eot)$/i.test(filePath)) {
         // Vite bundle chunks (content-hashed) -> 1 Year Immutable Cache (Cached by Cloudflare Edge & Browser)
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('CDN-Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Cloudflare-CDN-Cache-Control', 'public, max-age=31536000, immutable');
       } else if (/\.(png|jpe?g|webp|gif|svg|ico)$/i.test(filePath)) {
         // Static Images, Icons & Media -> 30-day cache with stale revalidate
         res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+        res.setHeader('CDN-Cache-Control', 'public, max-age=2592000');
+        res.setHeader('Cloudflare-CDN-Cache-Control', 'public, max-age=2592000');
       } else {
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=3600');
       }
