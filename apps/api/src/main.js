@@ -2624,6 +2624,77 @@ const runPocketBase = async () => {
       }
     }
 
+    // 2.9 Ensure 'back_file' and 'files' fields are in truck_documents schema and SQLite table
+    try {
+      const truckDocCol = db.prepare("SELECT * FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198'").get();
+      if (truckDocCol && truckDocCol.fields) {
+        const tdFields = JSON.parse(truckDocCol.fields);
+        let tdModified = false;
+
+        if (!tdFields.some(f => f.name === 'back_file')) {
+          logger.info("Migrating: Adding 'back_file' field to 'truck_documents' schema...");
+          tdFields.push({
+            hidden: false,
+            id: "file_back_truck_id",
+            name: "back_file",
+            presentable: false,
+            primaryKey: false,
+            required: false,
+            system: false,
+            type: "file",
+            maxSelect: 1,
+            maxSize: 20971520,
+            mimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"],
+            thumbs: []
+          });
+          tdModified = true;
+        }
+
+        if (!tdFields.some(f => f.name === 'files')) {
+          logger.info("Migrating: Adding 'files' field to 'truck_documents' schema...");
+          tdFields.push({
+            hidden: false,
+            id: "file_multi_truck_id",
+            name: "files",
+            presentable: false,
+            primaryKey: false,
+            required: false,
+            system: false,
+            type: "file",
+            maxSelect: 10,
+            maxSize: 20971520,
+            mimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"],
+            thumbs: []
+          });
+          tdModified = true;
+        }
+
+        const fileF = tdFields.find(f => f.name === 'file');
+        if (fileF && fileF.maxSelect < 10) {
+          fileF.maxSelect = 10;
+          tdModified = true;
+        }
+
+        if (tdModified) {
+          db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(tdFields), truckDocCol.id);
+          logger.info("✓ Boot migration: truck_documents schema updated with back_file & files!");
+        }
+      }
+
+      // Check SQLite table columns
+      const tdCols = db.prepare("PRAGMA table_info(truck_documents)").all();
+      if (!tdCols.some(c => c.name === 'back_file')) {
+        db.prepare("ALTER TABLE truck_documents ADD COLUMN back_file TEXT DEFAULT ''").run();
+        logger.info("✓ Boot migration: Added column 'back_file' to truck_documents table!");
+      }
+      if (!tdCols.some(c => c.name === 'files')) {
+        db.prepare("ALTER TABLE truck_documents ADD COLUMN files TEXT DEFAULT '[]'").run();
+        logger.info("✓ Boot migration: Added column 'files' to truck_documents table!");
+      }
+    } catch (tdFieldErr) {
+      logger.warn(`Could not migrate truck_documents back_file/files: ${tdFieldErr.message}`);
+    }
+
     // 2.8 Ensure 'Road Tax' is in document_type allowed values for truck_documents collection
     try {
       const truckDocCol = db.prepare("SELECT * FROM _collections WHERE name='truck_documents' OR id='pbc_9574740198'").get();
@@ -3700,6 +3771,45 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
           docTypeField.values.push('Road Tax');
           modified = true;
         }
+      }
+      if (!fields.some(f => f.name === 'back_file')) {
+        fields.push({
+          hidden: false,
+          id: "file_back_truck_id",
+          name: "back_file",
+          presentable: false,
+          primaryKey: false,
+          required: false,
+          system: false,
+          type: "file",
+          maxSelect: 1,
+          maxSize: 20971520,
+          mimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"],
+          thumbs: []
+        });
+        modified = true;
+      }
+      if (!fields.some(f => f.name === 'files')) {
+        fields.push({
+          hidden: false,
+          id: "file_multi_truck_id",
+          name: "files",
+          presentable: false,
+          primaryKey: false,
+          required: false,
+          system: false,
+          type: "file",
+          maxSelect: 10,
+          maxSize: 20971520,
+          mimeTypes: ["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"],
+          thumbs: []
+        });
+        modified = true;
+      }
+      const fileF = fields.find(f => f.name === 'file');
+      if (fileF && fileF.maxSelect < 10) {
+        fileF.maxSelect = 10;
+        modified = true;
       }
 
       if (modified) {

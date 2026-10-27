@@ -4116,7 +4116,7 @@
         "help": "",
         "hidden": false,
         "id": "file6098978314",
-        "maxSelect": 1,
+        "maxSelect": 10,
         "maxSize": 20971520,
         "mimeTypes": [
           "application/pdf",
@@ -4220,6 +4220,48 @@
         "required": false,
         "system": false,
         "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "file_back_truck_id",
+        "maxSelect": 1,
+        "maxSize": 20971520,
+        "mimeTypes": [
+          "application/pdf",
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp"
+        ],
+        "name": "back_file",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": [],
+        "type": "file"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "file_multi_truck_id",
+        "maxSelect": 10,
+        "maxSize": 20971520,
+        "mimeTypes": [
+          "application/pdf",
+          "image/jpeg",
+          "image/png",
+          "image/gif",
+          "image/webp"
+        ],
+        "name": "files",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": [],
+        "type": "file"
       }
     ],
     "indexes": [],

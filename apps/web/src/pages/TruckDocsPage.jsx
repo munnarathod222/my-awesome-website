@@ -1041,7 +1041,10 @@ const TruckDocsPage = () => {
                 </div>
               </div>
               {editingDoc?.file && !frontFile && !selectedFile && (
-                <p className="text-[10px] text-slate-400 pt-1">Current file: {editingDoc.file}</p>
+                <p className="text-[10px] text-slate-400 pt-1">Current Front: {editingDoc.file}</p>
+              {editingDoc?.back_file && !backFile && (
+                <p className="text-[10px] text-amber-400/80 pt-1">Current Back: {editingDoc.back_file}</p>
+              )}
               )}
             </div>
 
