@@ -17,12 +17,14 @@ const REMINDERS_FILE = path.join(DATA_DIR, 'productivity_reminders_ledger.json')
 const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'productivity_notifications_ledger.json');
 const WORKFLOWS_FILE = path.join(DATA_DIR, 'productivity_workflows_ledger.json');
 const ESCALATIONS_FILE = path.join(DATA_DIR, 'productivity_escalations_ledger.json');
+const FOCUS_FILE = path.join(DATA_DIR, 'productivity_focus_ledger.json');
 
 let tasksCache = [];
 let remindersCache = [];
 let notificationsCache = [];
 let workflowsCache = [];
 let escalationsCache = [];
+let focusCache = [];
 
 function loadAll() {
   try {
@@ -44,6 +46,10 @@ function loadAll() {
   try {
     escalationsCache = fs.existsSync(ESCALATIONS_FILE) ? JSON.parse(fs.readFileSync(ESCALATIONS_FILE, 'utf8')) : [];
   } catch (e) { escalationsCache = []; }
+
+  try {
+    focusCache = fs.existsSync(FOCUS_FILE) ? JSON.parse(fs.readFileSync(FOCUS_FILE, 'utf8')) : [];
+  } catch (e) { focusCache = []; }
 }
 
 loadAll();
@@ -60,6 +66,9 @@ function saveNotifications() {
 function saveWorkflows() {
   try { fs.writeFileSync(WORKFLOWS_FILE, JSON.stringify(workflowsCache, null, 2), 'utf8'); } catch (e) {}
 }
+function saveFocus() {
+  try { fs.writeFileSync(FOCUS_FILE, JSON.stringify(focusCache, null, 2), 'utf8'); } catch (e) {}
+}
 function saveEscalations() {
   try { fs.writeFileSync(ESCALATIONS_FILE, JSON.stringify(escalationsCache, null, 2), 'utf8'); } catch (e) {}
 }
@@ -71,10 +80,153 @@ function generateId(prefix = 'TSK') {
   return `${prefix}-${year}-${rand}`;
 }
 
+
+export const TRANSPORT_TEMPLATES = [
+  {
+    id: 'tpl_pre_trip',
+    title: 'Vehicle Pre-Trip Roadworthiness Inspection',
+    category: 'Fleet Maintenance',
+    department: 'Fleet',
+    priority: 'HIGH',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 0.75,
+    description: 'Mandatory pre-trip physical and safety inspection before vehicle departure from terminal.',
+    checklists: [
+      { id: 'pt_1', text: 'Engine oil level, coolant level & brake fluid verified' },
+      { id: 'pt_2', text: 'All tyres PSI check & spare wheel tread depth > 3mm' },
+      { id: 'pt_3', text: 'FASTag account active with minimum ₹1,500 balance' },
+      { id: 'pt_4', text: 'Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin' },
+      { id: 'pt_5', text: 'Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present' }
+    ]
+  },
+  {
+    id: 'tpl_dispatch_manifest',
+    title: 'Dispatch & Loading Manifest Verification',
+    category: 'Dispatch Logistics',
+    department: 'Dispatch',
+    priority: 'CRITICAL',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 1.0,
+    description: 'Ensure complete consignment verification, weight tally, and statutory E-Way bill validation.',
+    checklists: [
+      { id: 'dm_1', text: 'Verify Consignor Invoice count and Part-B E-Way bill valid for transit route' },
+      { id: 'dm_2', text: 'Driver physical breathalyzer sobriety test recorded in log' },
+      { id: 'dm_3', text: 'Gross vehicle weight recorded on certified weighbridge slip' },
+      { id: 'dm_4', text: 'Weatherproof tarpaulin lashing & tamper-evident container seal locked' },
+      { id: 'dm_5', text: 'Handover printed LR (Lorry Receipt) copy to driver with consignee address' }
+    ]
+  },
+  {
+    id: 'tpl_freight_invoicing',
+    title: 'Freight Invoicing & POD Collection Checklist',
+    category: 'Accounts & Billing',
+    department: 'Finance',
+    priority: 'MEDIUM',
+    eisenhower_quadrant: 3,
+    estimated_duration_hours: 0.5,
+    description: 'Complete post-unloading documentation, driver settlement, and billing submission.',
+    checklists: [
+      { id: 'fi_1', text: 'Original consignee signed & company stamped POD collected' },
+      { id: 'fi_2', text: 'High-resolution POD scanned and archived in Company Vault' },
+      { id: 'fi_3', text: 'Toll, diesel receipts & driver route advance reconciled in Cashbook' },
+      { id: 'fi_4', text: 'Tax Invoice generated with applicable GST rate (5% RCM or 12% Forward)' },
+      { id: 'fi_5', text: 'Invoice dispatch email with POD sent to client accounts' }
+    ]
+  },
+  {
+    id: 'tpl_breakdown_protocol',
+    title: 'Emergency Breakdown Escalation Protocol',
+    category: 'Route Operations',
+    department: 'Operations',
+    priority: 'URGENT',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 2.0,
+    description: 'Immediate action plan for highway breakdown, tyre burst, or mechanical stoppage.',
+    checklists: [
+      { id: 'bp_1', text: 'Pinpoint live vehicle GPS coordinates & confirm driver safety' },
+      { id: 'bp_2', text: 'Place reflective warning triangles 50m behind stationary truck' },
+      { id: 'bp_3', text: 'Dispatch nearest empanelled highway mechanic / mobile workshop' },
+      { id: 'bp_4', text: 'Alert client / consignee of anticipated transit delay' },
+      { id: 'bp_5', text: 'Arrange transshipment relief vehicle if repair ETA exceeds 4 hours' }
+    ]
+  },
+  {
+    id: 'tpl_quarterly_compliance',
+    title: 'Quarterly Fleet Compliance & Tax Audit',
+    category: 'Statutory Compliance',
+    department: 'Compliance',
+    priority: 'HIGH',
+    eisenhower_quadrant: 2,
+    estimated_duration_hours: 1.5,
+    description: 'Proactive audit of all vehicle statutory documents, state border taxes, and renewals.',
+    checklists: [
+      { id: 'qc_1', text: 'Check All-India Tourist/Goods Permit quarterly tax payment status' },
+      { id: 'qc_2', text: 'Verify PUC (Pollution Under Control) validity across active fleet' },
+      { id: 'qc_3', text: 'Speed governor calibration and fitness renewal inspection schedule' },
+      { id: 'qc_4', text: 'Comprehensive commercial vehicle insurance renewal audit (30-day notice)' },
+      { id: 'qc_5', text: 'Driver commercial driving license expiry & medical fitness records check' }
+    ]
+  }
+];
+
+export function deriveQuadrant(priority, dueDate) {
+  const isUrgent = priority === 'CRITICAL' || priority === 'URGENT' || priority === 'HIGH' ||
+    (dueDate && new Date(dueDate) <= new Date(Date.now() + 86400000 * 2));
+  const isImportant = priority === 'CRITICAL' || priority === 'HIGH' || priority === 'URGENT' || priority === 'MEDIUM';
+
+  if (isUrgent && isImportant) return 1; // Do First
+  if (!isUrgent && isImportant) return 2; // Schedule
+  if (isUrgent && !isImportant) return 3; // Delegate
+  return 4; // Backlog / Eliminate
+}
+
 // ── TASK OPERATIONS ──────────────────────────────────────────────────
 export function getTasks(filters = {}) {
   loadAll();
   let list = [...tasksCache];
+
+  if (filters.quadrant) {
+    const qNum = Number(filters.quadrant);
+    list = list.filter(t => (t.eisenhower_quadrant || t.quadrant || 2) === qNum);
+  }
+
+  if (filters.time_view) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfterTomorrow = new Date(tomorrow);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+    const next7Days = new Date(today);
+    next7Days.setDate(next7Days.getDate() + 7);
+
+    if (filters.time_view === 'today') {
+      list = list.filter(t => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return d >= today && d < tomorrow;
+      });
+    } else if (filters.time_view === 'tomorrow') {
+      list = list.filter(t => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return d >= tomorrow && d < dayAfterTomorrow;
+      });
+    } else if (filters.time_view === 'next7') {
+      list = list.filter(t => {
+        if (!t.due_date) return false;
+        const d = new Date(t.due_date);
+        return d >= today && d <= next7Days;
+      });
+    } else if (filters.time_view === 'overdue') {
+      list = list.filter(t => {
+        if (!t.due_date || t.status === 'COMPLETED' || t.status === 'CANCELLED') return false;
+        return new Date(t.due_date) < today;
+      });
+    } else if (filters.time_view === 'completed') {
+      list = list.filter(t => t.status === 'COMPLETED');
+    }
+  }
   if (filters.status && filters.status !== 'all') {
     list = list.filter(t => t.status === filters.status);
   }
@@ -142,6 +294,9 @@ export function createTask(taskData, actor = {}) {
     subtasks: Array.isArray(taskData.subtasks) ? taskData.subtasks : [],
     is_recurring: !!taskData.is_recurring,
     recurrence_rule: taskData.recurrence_rule || null,
+    eisenhower_quadrant: Number(taskData.eisenhower_quadrant || taskData.quadrant || deriveQuadrant(taskData.priority || 'MEDIUM', taskData.due_date)),
+    quadrant: Number(taskData.eisenhower_quadrant || taskData.quadrant || deriveQuadrant(taskData.priority || 'MEDIUM', taskData.due_date)),
+    scheduled_time: taskData.scheduled_time || '09:00',
     escalation_level: 0,
     created_at: now,
     updated_at: now
@@ -677,3 +832,81 @@ export function clearAll() {
   saveEscalations();
   return { success: true, message: 'All productivity tasks, reminders, and notifications cleared.' };
 }
+
+
+export function getTemplates() {
+  return TRANSPORT_TEMPLATES;
+}
+
+export function createTaskFromTemplate(templateId, actor = {}, overrides = {}) {
+  const tpl = TRANSPORT_TEMPLATES.find(t => t.id === templateId) || TRANSPORT_TEMPLATES[0];
+  const due = overrides.due_date || new Date(Date.now() + 86400000).toISOString();
+  return createTask({
+    title: overrides.title || tpl.title,
+    description: overrides.description || tpl.description,
+    category: overrides.category || tpl.category,
+    department: overrides.department || tpl.department,
+    priority: overrides.priority || tpl.priority,
+    eisenhower_quadrant: overrides.eisenhower_quadrant || tpl.eisenhower_quadrant,
+    quadrant: overrides.eisenhower_quadrant || tpl.eisenhower_quadrant,
+    estimated_duration_hours: tpl.estimated_duration_hours,
+    checklists: tpl.checklists.map(c => ({ id: `chk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, text: c.text, completed: false })),
+    checklist: tpl.checklists.map(c => ({ id: `chk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, text: c.text, completed: false })),
+    related_entity_type: overrides.related_entity_type || null,
+    related_entity_id: overrides.related_entity_id || null,
+    assigned_to_id: overrides.assigned_to_id || actor.id,
+    assigned_to_name: overrides.assigned_to_name || actor.name,
+    due_date: due,
+    scheduled_time: overrides.scheduled_time || '09:00'
+  }, actor);
+}
+
+export function getFocusSessions(filters = {}) {
+  loadAll();
+  let list = [...focusCache];
+  if (filters.date) {
+    const dStr = filters.date.slice(0, 10);
+    list = list.filter(s => (s.created_at || '').slice(0, 10) === dStr);
+  }
+  if (filters.task_id) {
+    list = list.filter(s => s.task_id === filters.task_id);
+  }
+  if (filters.user_id) {
+    list = list.filter(s => s.user_id === filters.user_id);
+  }
+  return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+export function logFocusSession(sessionData, actor = {}) {
+  loadAll();
+  const id = sessionData.id || generateId('FOC');
+  const now = new Date().toISOString();
+  const session = {
+    id,
+    task_id: sessionData.task_id || null,
+    task_title: sessionData.task_title || 'General Focus Session',
+    mode: sessionData.mode || 'POMODORO',
+    duration_seconds: Number(sessionData.duration_seconds) || 1500,
+    duration_minutes: Math.round((Number(sessionData.duration_seconds) || 1500) / 60),
+    completed: sessionData.completed !== false,
+    notes: sessionData.notes || '',
+    user_id: actor.id || sessionData.user_id || 'usr_staff',
+    user_name: actor.name || sessionData.user_name || 'Staff Member',
+    created_at: now
+  };
+
+  if (session.task_id) {
+    const task = tasksCache.find(t => t.id === session.task_id);
+    if (task) {
+      task.actual_duration_hours = Number(((task.actual_duration_hours || 0) + (session.duration_seconds / 3600)).toFixed(2));
+      task.updated_at = now;
+      saveTasks();
+    }
+  }
+
+  focusCache.unshift(session);
+  saveFocus();
+  return session;
+}
+
+export const processSchedulerTick = runBackgroundSchedulerTick;

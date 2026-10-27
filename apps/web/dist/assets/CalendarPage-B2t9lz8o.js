@@ -1,592 +1,2634 @@
-
-const BIZ_CATEGORIES = [
-  { id: 'all', label: 'All Operations', icon: '🌟' },
-  { id: 'truck_service', label: 'Truck Service', icon: '🔧' },
-  { id: 'insurance_renewal', label: 'Insurance Renewal', icon: '🛡️' },
-  { id: 'permit_expiry', label: 'Permit Expiry', icon: '📜' },
-  { id: 'driver_joining', label: 'Driver Joining', icon: '👤' },
-  { id: 'contract_renewal', label: 'Contract Renewal', icon: '📑' },
-  { id: 'invoice_due', label: 'Invoice Due', icon: '🧾' },
-  { id: 'emi', label: 'EMI', icon: '🏦' },
-  { id: 'tax', label: 'Tax', icon: '🏛️' },
-  { id: 'expected_payment', label: 'Expected Payment', icon: '💰' }
-];
-
-function buildBusinessCalendarEvents(trucks, truckDocs, jobCards, employees, clients, loanProfiles, emiExpenses, tripLogs, dueDates) {
-  const events = [];
-  const toYMD = (d) => {
-    if (!d) return '';
-    try {
-      const dt = new Date(d);
-      if (isNaN(dt.getTime())) return String(d).substring(0, 10);
-      return dt.toISOString().split('T')[0];
-    } catch {
-      return String(d).substring(0, 10);
-    }
-  };
-
-  (jobCards || []).forEach(jc => {
-    if (jc.entry_date) {
-      events.push({
-        id: 'srv_' + jc.id,
-        category: 'truck_service',
-        categoryLabel: 'Truck Service',
-        icon: '🔧',
-        title: 'Service: ' + (jc.truck_number || 'TG12U2637') + ' - ' + (jc.service_type || 'Workshop Maintenance'),
-        date: toYMD(jc.entry_date),
-        amount: jc.total_cost || 0,
-        truckNumber: jc.truck_number || 'TG12U2637',
-        status: jc.status === 'Closed' ? 'Completed' : 'Scheduled',
-        description: 'Job Card #' + (jc.job_card_number || '') + ': ' + (jc.complaints_list || jc.service_type || 'Maintenance') + '. Labour: ₹' + Number(jc.labour_cost || 0).toLocaleString('en-IN') + ', Parts: ₹' + Number(jc.parts_cost || 0).toLocaleString('en-IN') + '. Odo: ' + (jc.odometer_reading || 0) + ' km.',
-        priority: 'high'
-      });
-    }
-  });
-
-  events.push({
-    id: 'srv_projected_tg12u2637_next',
-    category: 'truck_service',
-    categoryLabel: 'Truck Service',
-    icon: '🔧',
-    title: '67,000 km Scheduled Preventive Service (TG12U2637)',
-    date: '2026-11-12',
-    amount: 18500,
-    truckNumber: 'TG12U2637',
-    status: 'Upcoming',
-    description: '10,000 km routine preventive maintenance: Engine oil change, fuel/oil filters, brake inspection, greasing.',
-    priority: 'high'
-  });
-
-  (truckDocs || []).forEach(doc => {
-    const type = (doc.document_type || doc.type || '').toLowerCase();
-    if (type.includes('insurance') && doc.expiry_date) {
-      const expDate = toYMD(doc.expiry_date);
-      events.push({
-        id: 'ins_' + doc.id,
-        category: 'insurance_renewal',
-        categoryLabel: 'Insurance Renewal',
-        icon: '🛡️',
-        title: 'Comprehensive Insurance Renewal: TG12U2637',
-        date: expDate,
-        truckNumber: 'TG12U2637',
-        status: new Date(expDate) < new Date() ? 'Overdue' : 'Upcoming',
-        description: 'Commercial Vehicle Comprehensive Policy Renewal due. Ensure cashless garage network & zero depreciation coverage.',
-        priority: 'urgent'
-      });
-    }
-  });
-  if (!events.some(e => e.category === 'insurance_renewal')) {
-    events.push({
-      id: 'ins_tg12u2637_baseline',
-      category: 'insurance_renewal',
-      categoryLabel: 'Insurance Renewal',
-      icon: '🛡️',
-      title: 'Comprehensive Insurance Renewal: TG12U2637',
-      date: '2026-12-09',
-      truckNumber: 'TG12U2637',
-      status: 'Upcoming',
-      description: 'Commercial Vehicle Comprehensive Policy Renewal due (IFFCO Tokio / National Insurance).',
-      priority: 'urgent'
-    });
+import { r as React } from "./vendor-react-Bs5V2qFE.js";
+import { g as downloadPdf, a as downloadExcel } from "./downloadUtils-2aSgxB0V.js";
+const CreditControlView = React.lazy(() => import("./CreditControlPage-ChjcFypa.js"));
+function cn(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
+function showFloatingNotification(message, type = "success") {
+  try {
+    const el = document.createElement("div");
+    el.className = `fixed bottom-5 right-5 z-[9999] px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold transition-all transform duration-300 ${type === "error" ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0";
+      setTimeout(() => el.remove(), 300);
+    }, 3e3);
+  } catch (e) {
   }
-
-  (truckDocs || []).forEach(doc => {
-    const type = (doc.document_type || doc.type || '').toLowerCase();
-    const expiry = doc.expiry_date || doc.valid_till;
-    if (!expiry || doc.truck_id === 'COMPANY_VAULT' || doc.truck_id === 'FLEET_RC_BUNDLE') return;
-
-    if (type.includes('pollution') || type.includes('puc')) {
-      events.push({
-        id: 'puc_' + doc.id,
-        category: 'permit_expiry',
-        categoryLabel: 'Permit Expiry',
-        icon: '📜',
-        title: 'PUC Pollution Certificate Expiry: TG12U2637',
-        date: toYMD(expiry),
-        truckNumber: 'TG12U2637',
-        status: 'Upcoming',
-        description: 'Mandatory emission test renewal required under Central Motor Vehicle Rules (CMVR).',
-        priority: 'normal'
-      });
-    } else if (type.includes('fitness')) {
-      events.push({
-        id: 'fit_' + doc.id,
-        category: 'permit_expiry',
-        categoryLabel: 'Permit Expiry',
-        icon: '📜',
-        title: 'Vehicle Fitness Certificate Expiry: TG12U2637',
-        date: toYMD(expiry),
-        truckNumber: 'TG12U2637',
-        status: 'Upcoming',
-        description: 'RTO commercial vehicle fitness inspection renewal.',
-        priority: 'high'
-      });
-    } else if (type.includes('permit')) {
-      events.push({
-        id: 'pmt_' + doc.id,
-        category: 'permit_expiry',
-        categoryLabel: 'Permit Expiry',
-        icon: '📜',
-        title: 'National Goods Carrier Permit Expiry: TG12U2637',
-        date: toYMD(expiry),
-        truckNumber: 'TG12U2637',
-        status: 'Upcoming',
-        description: 'All India Tourist / Goods carriage national authorization permit renewal.',
-        priority: 'high'
-      });
-    } else if (type.includes('rc')) {
-      events.push({
-        id: 'rc_' + doc.id,
-        category: 'permit_expiry',
-        categoryLabel: 'Permit Expiry',
-        icon: '📜',
-        title: 'Registration Certificate (RC) Expiry: TG12U2637',
-        date: toYMD(expiry),
-        truckNumber: 'TG12U2637',
-        status: 'Upcoming',
-        description: 'Heavy Commercial Goods Vehicle Registration Certificate renewal.',
-        priority: 'normal'
-      });
+}
+const toast = {
+  success: (msg) => {
+    try {
+      if (window.toast?.success) return window.toast.success(msg);
+    } catch (e) {
     }
-  });
-
-  (employees || []).forEach(emp => {
-    const isDriver = (emp.employee_type || '').toLowerCase() === 'driver' || (emp.position || '').toLowerCase().includes('driver');
-    const jDate = emp.joining_date || emp.hire_date;
-    if (isDriver && jDate) {
-      const formattedDate = toYMD(jDate);
-      events.push({
-        id: 'drv_join_' + emp.id,
-        category: 'driver_joining',
-        categoryLabel: 'Driver Joining',
-        icon: '👤',
-        title: 'Driver Onboarding: ' + emp.name,
-        date: formattedDate,
-        driverName: emp.name,
-        status: 'Completed',
-        description: 'Official onboarding & joining date for commercial pilot ' + emp.name + ' (Assigned to fleet operations).',
-        priority: 'normal'
-      });
-
-      const joinYear = new Date(formattedDate).getFullYear();
-      [2026, 2027].forEach(y => {
-        if (y > joinYear) {
-          const annivDate = y + '-' + formattedDate.substring(5, 10);
-          events.push({
-            id: 'drv_anniv_' + emp.id + '_' + y,
-            category: 'driver_joining',
-            categoryLabel: 'Driver Joining',
-            icon: '👤',
-            title: (y - joinYear) + ' Year Work Anniversary: ' + emp.name,
-            date: annivDate,
-            driverName: emp.name,
-            status: 'Upcoming',
-            description: 'Work anniversary milestone recognition & tenure review for pilot ' + emp.name + '.',
-            priority: 'normal'
-          });
-        }
-      });
+    showFloatingNotification(msg, "success");
+  },
+  error: (msg) => {
+    try {
+      if (window.toast?.error) return window.toast.error(msg);
+    } catch (e) {
     }
-  });
-
-  (clients || []).forEach(cl => {
-    const cDate = cl.contract_expiry || (cl.created ? toYMD(cl.created) : '');
-    if (cDate) {
-      [2026, 2027].forEach(y => {
-        const renewalDate = cl.contract_expiry ? toYMD(cl.contract_expiry) : (y + '-' + toYMD(cl.created).substring(5, 10));
-        events.push({
-          id: 'ctr_' + cl.id + '_' + y,
-          category: 'contract_renewal',
-          categoryLabel: 'Contract Renewal',
-          icon: '📑',
-          title: 'Contract Renewal: ' + (cl.company_name || cl.client_name),
-          date: renewalDate,
-          partyName: cl.company_name || cl.client_name,
-          status: new Date(renewalDate) < new Date() ? 'Completed' : 'Upcoming',
-          description: 'Annual transport master service contract & freight tariff renewal for ' + (cl.company_name || cl.client_name) + '. Payment terms: ' + (cl.payment_terms || 30) + ' days net credit.',
-          priority: 'high'
-        });
-      });
+    showFloatingNotification(msg, "error");
+  },
+  info: (msg) => {
+    try {
+      if (window.toast?.info) return window.toast.info(msg);
+    } catch (e) {
     }
-  });
-
-  const clientMap = new Map((clients || []).map(c => [c.id, c]));
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const todayStr = toYMD(new Date());
-
-  const pendingDeliveredTrips = (tripLogs || []).filter(t => {
-    const isDelivered = t.trip_status === 'Delivered' || t.trip_status === 'Completed';
-    const payStatus = (t.client_payment_status || t.payment_status || '').toLowerCase().trim();
-    const isPaid = payStatus === 'received' || payStatus === 'paid';
-    const rev = Number(t.revenue || t.amount || 0);
-    return isDelivered && !isPaid && rev > 0;
-  });
-
-  const byClient = {};
-  pendingDeliveredTrips.forEach(t => {
-    const cid = t.client_id || 'default_amazon';
-    if (!byClient[cid]) byClient[cid] = [];
-    byClient[cid].push(t);
-  });
-
-  for (const [cid, trips] of Object.entries(byClient)) {
-    const client = clientMap.get(cid) || (clients || []).find(c => (c.client_name || c.company_name || '').toLowerCase().includes('amazon')) || {
-      company_name: 'AMAZON TRANSPORTATION SERVICES',
-      client_name: 'Amazon',
-      billing_type: 'Contract',
-      payment_terms: '32',
-      isTdsApplicable: 1,
-      tdsRate: 1
-    };
-
-    const clientName = client.client_name || client.company_name || 'Amazon';
-    const isContract = (client.billing_type || 'Contract').toLowerCase() === 'contract';
-    const terms = parseInt(client.payment_terms || '30', 10) || 30;
-    const tdsPct = client.isTdsApplicable ? (client.tdsRate || 1) : 0;
-
-    if (isContract) {
-      const cycleGroups = {};
-      trips.forEach(t => {
-        const d = new Date(t.date || t.created);
-        if (isNaN(d.getTime())) return;
-        const y = d.getFullYear();
-        const m = d.getMonth() + 1;
-        const day = d.getDate();
-        const half = day <= 15 ? 1 : 2;
-        const key = y + '_' + String(m).padStart(2, '0') + '_H' + half;
-        if (!cycleGroups[key]) {
-          cycleGroups[key] = { year: y, month: m, half, trips: [], totalGross: 0 };
-        }
-        cycleGroups[key].trips.push(t);
-        cycleGroups[key].totalGross += Number(t.revenue || 0);
-      });
-
-      for (const [cycleKey, grp] of Object.entries(cycleGroups)) {
-        const cycleEndDate = grp.half === 1
-          ? new Date(grp.year, grp.month - 1, 15)
-          : new Date(grp.year, grp.month, 0);
-
-        const dueDate = new Date(cycleEndDate.getTime() + terms * 24 * 60 * 60 * 1000);
-        const dueYMD = toYMD(dueDate);
-        const mName = monthNames[grp.month - 1];
-        const cycleLabel = grp.half === 1 ? mName + ' 01–15' : mName + ' 16–' + cycleEndDate.getDate();
-        const netAmount = Math.round(grp.totalGross * (1 - tdsPct / 100));
-        const isOverdue = dueYMD < todayStr;
-
-        events.push({
-          id: 'inv_due_' + cid + '_' + cycleKey,
-          category: 'invoice_due',
-          categoryLabel: 'Invoice Due',
-          icon: '🧾',
-          title: 'Invoice Due: ' + clientName + ' (' + cycleLabel + ') - ₹' + grp.totalGross.toLocaleString('en-IN'),
-          date: dueYMD,
-          amount: grp.totalGross,
-          partyName: client.company_name || clientName,
-          truckNumber: 'TG12U2637',
-          status: isOverdue ? 'Overdue' : 'Upcoming',
-          description: 'B2B freight invoice due for ' + grp.trips.length + ' delivered trips during ' + cycleLabel + '.',
-          priority: isOverdue ? 'urgent' : 'high'
-        });
-
-        events.push({
-          id: 'exp_pay_' + cid + '_' + cycleKey,
-          category: 'expected_payment',
-          categoryLabel: 'Expected Payment',
-          icon: '💰',
-          title: 'Expected Payment: ' + clientName + ' - ₹' + netAmount.toLocaleString('en-IN'),
-          date: dueYMD,
-          amount: netAmount,
-          partyName: client.company_name || clientName,
-          truckNumber: 'TG12U2637',
-          status: isOverdue ? 'Overdue' : 'Expected',
-          description: 'Consolidated B2B contract freight settlement for ' + grp.trips.length + ' delivered trips (' + cycleLabel + '). Gross: ₹' + grp.totalGross.toLocaleString('en-IN') + ', Net: ₹' + netAmount.toLocaleString('en-IN') + ' (after ' + tdsPct + '% TDS). Credit terms: ' + terms + ' days.',
-          priority: isOverdue ? 'urgent' : 'high'
-        });
+    showFloatingNotification(msg, "info");
+  }
+};
+let audioCtx = null;
+let currentSource = null;
+let currentGain = null;
+function stopAmbientSound() {
+  if (currentSource) {
+    try {
+      currentSource.stop();
+    } catch (e) {
+    }
+    try {
+      currentSource.disconnect();
+    } catch (e) {
+    }
+    currentSource = null;
+  }
+}
+function playAmbientSound(type, volume = 0.3) {
+  stopAmbientSound();
+  if (type === "none" || !type) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const sampleRate = audioCtx.sampleRate;
+    const bufferSize = sampleRate * 2;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    if (type === "engine") {
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + 0.02 * white) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      }
+    } else if (type === "rain") {
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.969 * b2 + white * 0.153852;
+        output[i] = (b0 + b1 + b2 + white * 0.5362) * 0.11;
       }
     } else {
-      trips.forEach(t => {
-        const baseDate = t.date ? new Date(t.date) : new Date();
-        const spotDue = new Date(baseDate.getTime() + (terms || 7) * 24 * 60 * 60 * 1000);
-        const dueYMD = toYMD(spotDue);
-        const rev = Number(t.revenue || 0);
-        const isOverdue = dueYMD < todayStr;
-
-        events.push({
-          id: 'exp_pay_spot_' + t.id,
-          category: 'expected_payment',
-          categoryLabel: 'Expected Payment',
-          icon: '💰',
-          title: 'Expected Payment: ' + clientName + ' - ₹' + rev.toLocaleString('en-IN'),
-          date: dueYMD,
-          amount: rev,
-          partyName: client.company_name || clientName,
-          truckNumber: t.truck_number || 'TG12U2637',
-          status: isOverdue ? 'Overdue' : 'Expected',
-          description: 'Spot shipment payment for route ' + (t.route || 'Transit') + ' (Trip #' + (t.trip_id || t.id.slice(0, 8)) + ').',
-          priority: isOverdue ? 'urgent' : 'high'
-        });
-      });
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + 0.04 * white) / 1.04;
+        lastOut = output[i];
+      }
     }
+    const whiteNoise = audioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = type === "engine" ? "lowpass" : type === "rain" ? "bandpass" : "lowpass";
+    filter.frequency.value = type === "engine" ? 140 : type === "rain" ? 900 : 450;
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = volume;
+    whiteNoise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    whiteNoise.start(0);
+    currentSource = whiteNoise;
+    currentGain = gainNode;
+  } catch (err) {
+    console.warn("Web Audio synthesis not available:", err.message);
   }
-
-  (dueDates || []).forEach(dd => {
-    if (dd.due_date) {
-      events.push({
-        id: 'pdd_' + dd.id,
-        category: 'invoice_due',
-        categoryLabel: 'Invoice Due',
-        icon: '🧾',
-        title: 'Payment Due: ' + (dd.title || 'Corporate Statement'),
-        date: toYMD(dd.due_date),
-        amount: dd.full_payment_amount || dd.amount || 0,
-        status: dd.status || 'Unpaid',
-        description: dd.notes || 'Statement invoice payment due.',
-        priority: 'high'
-      });
-    }
-  });
-
-  const paidEmiDates = new Set((emiExpenses || []).map(e => toYMD(e.date)));
-  for (let y = 2026; y <= 2027; y++) {
-    for (let m = 1; m <= 12; m++) {
-      const emiDate = y + '-' + String(m).padStart(2, '0') + '-05';
-      const isPaid = paidEmiDates.has(emiDate) || new Date(emiDate) < new Date('2026-10-01');
-      events.push({
-        id: 'emi_iffco_' + emiDate,
-        category: 'emi',
-        categoryLabel: 'EMI',
-        icon: '🏦',
-        title: 'Vehicle Loan EMI: TG12U2637 - ₹33,410',
-        date: emiDate,
-        amount: 33410,
-        truckNumber: 'TG12U2637',
-        partyName: 'IFFCO Kisan Finance',
-        status: isPaid ? 'Paid' : 'Upcoming',
-        description: 'Monthly vehicle auto loan installment of ₹33,410 debited via ECS / NACH mandate on 5th of every month. Financier: IFFCO KISAAN.',
-        priority: 'urgent'
-      });
-    }
-  }
-
-  for (let y = 2026; y <= 2027; y++) {
-    for (let m = 1; m <= 12; m++) {
-      const monthStr = String(m).padStart(2, '0');
-      events.push({
-        id: 'tax_tds_' + y + '_' + monthStr,
-        category: 'tax',
-        categoryLabel: 'Tax',
-        icon: '🏛️',
-        title: 'Monthly TDS Payment (Sec 194C Transport)',
-        date: y + '-' + monthStr + '-07',
-        amount: 0,
-        status: new Date(y + '-' + monthStr + '-07') < new Date() ? 'Completed' : 'Upcoming',
-        description: 'Deposit of TDS deducted on transport contracts & contractor payments for preceding month (Challan ITNS 281).',
-        priority: 'high'
-      });
-
-      events.push({
-        id: 'tax_gstr1_' + y + '_' + monthStr,
-        category: 'tax',
-        categoryLabel: 'Tax',
-        icon: '🏛️',
-        title: 'Monthly GST GSTR-1 Filing',
-        date: y + '-' + monthStr + '-11',
-        status: new Date(y + '-' + monthStr + '-11') < new Date() ? 'Completed' : 'Upcoming',
-        description: 'Filing of outward supplies of transport services and e-way bill reconciliation.',
-        priority: 'normal'
-      });
-
-      events.push({
-        id: 'tax_gstr3b_' + y + '_' + monthStr,
-        category: 'tax',
-        categoryLabel: 'Tax',
-        icon: '🏛️',
-        title: 'Monthly GST GSTR-3B Summary Return',
-        date: y + '-' + monthStr + '-20',
-        status: new Date(y + '-' + monthStr + '-20') < new Date() ? 'Completed' : 'Upcoming',
-        description: 'Monthly summary return of inward/outward supplies, ITC claim, and GST liability discharge.',
-        priority: 'urgent'
-      });
-    }
-
-    const advMonths = ['06', '09', '12', '03'];
-    const advLabels = ['Q1 (15%)', 'Q2 (45%)', 'Q3 (75%)', 'Q4 (100%)'];
-    advMonths.forEach((am, idx) => {
-      const advYear = am === '03' ? y + 1 : y;
-      events.push({
-        id: 'tax_adv_' + advYear + '_' + am,
-        category: 'tax',
-        categoryLabel: 'Tax',
-        icon: '🏛️',
-        title: 'Advance Tax Installment ' + advLabels[idx],
-        date: advYear + '-' + am + '-15',
-        status: new Date(advYear + '-' + am + '-15') < new Date() ? 'Completed' : 'Upcoming',
-        description: 'Statutory quarterly income tax advance payment for FY ' + y + '-' + (y + 1) + '.',
-        priority: 'high'
-      });
-    });
-
-    ['03-31', '06-30', '09-30', '12-31'].forEach((rtDate, idx) => {
-      events.push({
-        id: 'tax_road_' + y + '_' + idx,
-        category: 'tax',
-        categoryLabel: 'Tax',
-        icon: '🏛️',
-        title: 'Quarterly Commercial MV Road Tax: TG12U2637 - ₹5,150',
-        date: y + '-' + rtDate,
-        amount: 5150,
-        truckNumber: 'TG12U2637',
-        status: new Date(y + '-' + rtDate) < new Date() ? 'Paid' : 'Upcoming',
-        description: 'Telangana Motor Vehicle quarterly road tax payment token renewal for heavy commercial goods vehicle TG12U2637.',
-        priority: 'urgent'
-      });
-    });
-  }
-
-// Stream 9 unified with consolidated cycles
-
-  events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  return events;
 }
-
-import{r as n,j as e,bs as Fs,ap as Os,ag as ee,a4 as se,a6 as w,a$ as te,aw as re,ba as ss,g as ts,at as rs,cy as as,dw as Is,cv as ns,aV as ke,aA as $s,b2 as ls,bl as Es,n as Bs,aU as zs,bG as qs,be as Qs,az as Vs,af as Us}from"./vendor-react-Bs5V2qFE.js";import{ar as ge,b2 as Ps,aR as Se,u as Ys,b3 as Hs,p as S,aq as Ws,ax as Gs,t as Y,k as f,B as c,X as p,C as _,S as H,e as W,g as G,h as J,i as X,I,O as we,w as ae,D as xe,a as me,b as ue,c as pe,d as he,j as be,L as $,b1 as Js,au as Xs}from"./index-DLxf9dwO.js";import{A as Ks,R as Zs}from"./ReminderDetailsModal-pkSDYcqN.js";import{s as et,e as st}from"./startOfMonth-CPqsb2_s.js";import{e as ds}from"./eachDayOfInterval-B703Z6PC.js";import{i as D}from"./isToday-CDNUloTc.js";import{i as os}from"./isSameMonth-BI6tq28A.js";import{i as Ce}from"./isSameDay-tDnVa-xb.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";import"./PaymentRecordModal-D0eRHf14.js";import"./alert-DkiyHHbs.js";function tt(y,i){const h=Ps(),u=h.weekStartsOn??h.locale?.options?.weekStartsOn??0,N=ge(y,i?.in),b=N.getDay(),A=(b<u?-7:0)+6-(b-u);return N.setDate(N.getDate()+A),N.setHours(23,59,59,999),N}function rt(y,i){const h=ge(y,i?.in),u=h.getFullYear(),N=h.getMonth(),b=Se(h,0);return b.setFullYear(u,N+1,0),b.setHours(0,0,0,0),b.getDate()}function at(y,i,h){const u=ge(y,h?.in),N=u.getFullYear(),b=u.getDate(),A=Se(y,0);A.setFullYear(N,i,15),A.setHours(0,0,0,0);const T=rt(A);return u.setMonth(i,Math.min(b,T)),u}function nt(y,i,h){const u=ge(y,h?.in);return isNaN(+u)?Se(y,NaN):(u.setFullYear(i),u)}function ft(){const{currentUser:y}=Ys(),[bizEvents,setBizEvents]=n.useState([]),[activeCategory,setActiveCategory]=n.useState("all"),[i,h]=n.useState(new Date),[u,N]=n.useState("events"),[b,A]=n.useState([]),[T,is]=n.useState([]),[E,cs]=n.useState([]),[B,xs]=n.useState([]),[_e,ms]=n.useState([]),[De,us]=n.useState([]),[Te,ps]=n.useState([]),[Me,Le]=n.useState(!0),[fe,Re]=n.useState("grid"),[ne,hs]=n.useState(""),[z,bs]=n.useState(!0),[q,gs]=n.useState(!0),[Q,fs]=n.useState(!0),[je,Ae]=n.useState("matrix"),[Ne,js]=n.useState(""),[K,Fe]=n.useState("all"),[x,Ns]=n.useState(null),[vs,le]=n.useState(!1),[o,ys]=n.useState(null),[ks,de]=n.useState(!1),[ws,oe]=n.useState(!1),[Oe,Ie]=n.useState(null),[$e,Cs]=n.useState(new Date),[Ss,Z]=n.useState(!1),[_s,ie]=n.useState(!1),[ve,Ee]=n.useState(!1),[g,M]=n.useState({date:"",truck_number:"",driver_name:"",route:"",cycle:"",revenue:"",trip_status:"Upcoming"}),L=n.useMemo(()=>et(i),[i]),V=n.useMemo(()=>st(L),[L]),Be=n.useMemo(()=>Hs(L),[L]),ze=n.useMemo(()=>tt(V),[V]),qe=n.useMemo(()=>ds({start:Be,end:ze}),[Be,ze]),ce=n.useMemo(()=>ds({start:L,end:V}),[L,V]),U=n.useCallback(async()=>{Le(!0);try{const s=f(L,"yyyy-MM-dd"),t=f(V,"yyyy-MM-dd"),r=await S.collection("trip_logs").getFullList({filter:`date >= "${s} 00:00:00" && date <= "${t} 23:59:59"`,sort:"date",$autoCancel:!1}).catch(()=>[]),a=await S.collection("reminders").getFullList({filter:`reminder_date >= "${s} 00:00:00" && reminder_date <= "${t} 23:59:59"`,expand:"truck_id",$autoCancel:!1}).catch(()=>[]);let m=[];try{m=(await S.collection("payment_due_dates").getFullList({filter:`due_date >= "${s}" && due_date <= "${t}"`,expand:"card_id",$autoCancel:!1})).filter(k=>(k.full_payment_amount||0)>0).map(k=>({id:k.id,title:`CC Statement Due: ${k.expand?.card_id?.card_name||"Credit Card"}`,amount:k.full_payment_amount||k.minimum_amount_due||0,date:Ws(k.due_date),type:"Credit Card Dues",status:k.status||"Unpaid",cardId:k.card_id}))}catch(R){console.warn("Could not load card due dates:",R.message)}const d=await S.collection("trucks").getFullList({sort:"truck_number",$autoCancel:!1}).catch(()=>[]),C=Gs(d),l=await S.collection("maintenance_problems").getFullList({$autoCancel:!1}).catch(()=>[]),O=await S.collection("maintenance_schedules").getFullList({$autoCancel:!1}).catch(()=>[]),j=await S.collection("maintenance_logs").getFullList({$autoCancel:!1}).catch(()=>[]);A(r),is(a),cs(m),xs(C),ms(l),us(O),ps(j);
-try{
-  const[bDocs,bJobs,bEmps,bClients,bLoans,bEmis]=await Promise.all([
-    S.collection("truck_documents").getFullList({$autoCancel:!1}).catch(()=>[]),
-    S.collection("workshop_job_cards").getFullList({$autoCancel:!1}).catch(()=>[]),
-    S.collection("employees").getFullList({$autoCancel:!1}).catch(()=>[]),
-    S.collection("clients").getFullList({$autoCancel:!1}).catch(()=>[]),
-    S.collection("loan_profiles").getFullList({$autoCancel:!1}).catch(()=>[]),
-    S.collection("expenses").getFullList({filter:'category="EMI"||subcategory="EMI"',$autoCancel:!1}).catch(()=>[])
-  ]);
-  const localEvts=buildBusinessCalendarEvents(d,bDocs,bJobs,bEmps,bClients,bLoans,bEmis,r,m);
-  setBizEvents(localEvts);
-  fetch("/api/business-calendar/events").then(res=>res.ok?res.json():null).then(d=>{if(d&&d.events&&d.events.length>0)setBizEvents(d.events);}).catch(()=>{});
-}catch(e){console.warn("Local calendar build warning:",e)}}catch(s){console.error("Failed to fetch calendar data:",s),Y.error("Could not load calendar events")}finally{Le(!1)}},[L,V]);n.useEffect(()=>{U()},[U]);const Qe=s=>{
-    const t=ne.toLowerCase().trim(),r=z?b.filter(d=>!d.date||!Ce(new Date(d.date.replace(" ","T")),s)?!1:t?(d.route||"").toLowerCase().includes(t)||(d.truck_number||"").toLowerCase().includes(t)||(d.driver_name||"").toLowerCase().includes(t):!0):[],a=q?T.filter(d=>!d.reminder_date||!Ce(new Date(d.reminder_date),s)?!1:t?(d.title||"").toLowerCase().includes(t)||(d.description||"").toLowerCase().includes(t):!0):[],m=Q?E.filter(d=>!d.date||!Ce(d.date,s)?!1:t?(d.title||"").toLowerCase().includes(t):!0):[];
-    const dayStr=(s instanceof Date?f(s,"yyyy-MM-dd"):String(s).substring(0,10));
-    const matchingBiz=(bizEvents||[]).filter(ev=>ev.date===dayStr&&(activeCategory==="all"||ev.category===activeCategory)&&(!t||(ev.title||"").toLowerCase().includes(t)||(ev.description||"").toLowerCase().includes(t)||(ev.truckNumber||"").toLowerCase().includes(t)));
-    const truckService=matchingBiz.filter(ev=>ev.category==="truck_service");
-    const insuranceRenewal=matchingBiz.filter(ev=>ev.category==="insurance_renewal");
-    const permitExpiry=matchingBiz.filter(ev=>ev.category==="permit_expiry");
-    const driverJoining=matchingBiz.filter(ev=>ev.category==="driver_joining");
-    const contractRenewal=matchingBiz.filter(ev=>ev.category==="contract_renewal");
-    const invoiceDue=matchingBiz.filter(ev=>ev.category==="invoice_due");
-    const emi=matchingBiz.filter(ev=>ev.category==="emi");
-    const tax=matchingBiz.filter(ev=>ev.category==="tax");
-    const expectedPayment=matchingBiz.filter(ev=>ev.category==="expected_payment");
-    return{trips:r,reminders:a,bills:m,bizEvents:matchingBiz,truckService,insuranceRenewal,permitExpiry,driverJoining,contractRenewal,invoiceDue,emi,tax,expectedPayment};
-  },P=s=>{if(!s)return"";if(s instanceof Date)return f(s,"yyyy-MM-dd");try{const t=typeof s=="string"?s.replace(" ","T"):String(s),r=new Date(t);return isNaN(r.getTime())?String(s).substring(0,10):f(r,"yyyy-MM-dd")}catch{return String(s).substring(0,10)}},F=n.useCallback((s,t)=>{const r=f(t,"yyyy-MM-dd"),a=(s.truck_number||"").trim().toLowerCase(),m=_e.find(l=>{if(!(l.truck_id===s.id||l.truck_id===s.truck_number||l.expand?.truck_id&&(l.expand.truck_id.truck_number||"").toLowerCase()===a))return!1;const j=P(l.date_reported);if(!j||j>r)return!1;const R=P(l.date_solved);return l.status!=="Solved"&&l.status!=="Resolved"||R&&R>r});if(m)return{status:"breakdown",color:"#ef4444",badgeColor:"bg-rose-500/15 text-rose-400 border-rose-500/30",label:"Breakdown",details:`Breakdown reported: ${m.description||m.problem_type||"Active vehicle repair issue"}`,raw:m,type:"breakdown"};const d=De.find(l=>l.vehicle_id===s.id||l.vehicle_id===s.truck_number||l.expand?.vehicle_id&&(l.expand.vehicle_id.truck_number||"").toLowerCase()===a?P(l.next_maintenance_date||l.scheduled_date)===r&&l.status!=="Completed":!1)||Te.find(l=>l.truck_id===s.id||l.truck_id===s.truck_number||l.expand?.truck_id&&(l.expand.truck_id.truck_number||"").toLowerCase()===a?P(l.date)===r:!1);if(d)return{status:"maintenance",color:"#f59e0b",badgeColor:"bg-amber-500/15 text-amber-400 border-amber-500/30",label:"Maintenance",details:`Maintenance: ${d.notes||d.maintenance_type||d.service_type||"Scheduled Fleet Service"}`,raw:d,type:"maintenance"};const C=b.find(l=>{if((l.truck_number||"").trim().toLowerCase()!==a)return!1;const j=P(l.date);if(j===r)return!0;if(l.end_date){const R=P(l.end_date);if(j&&R&&r>=j&&r<=R)return!0}return!1});if(C){const l=C.trip_status||"Dispatched",O=l.toLowerCase()==="delivered"||l.toLowerCase()==="completed",j=l.toLowerCase()==="in transit";return{status:"booked",color:j?"#4f46e5":"#2563eb",badgeColor:"bg-blue-500/15 text-blue-400 border-blue-500/30",label:O?"Trip Delivered":j?"In Transit":"Trip Booked",details:`Route: ${C.route||"Shipment"} · Driver: ${C.driver_name||"Assigned"} · Status: ${l}`,trip:C,type:"trip"}}return(s.status||"").toLowerCase()==="inactive"||(s.status||"").toLowerCase()==="suspended"?{status:"idle",color:"#64748b",badgeColor:"bg-slate-500/15 text-slate-400 border-slate-500/30",label:"Off-Duty / Inactive",details:"Truck marked inactive in fleet register",type:"inactive"}:{status:"available",color:"#10b981",badgeColor:"bg-emerald-500/15 text-emerald-400 border-emerald-500/30",label:"Available / Standby",details:"Operational vehicle ready for dispatches & bookings",type:"available"}},[b,_e,De,Te]),Ds=n.useCallback(s=>{let t=0,r=0,a=0,m=0,d=0;return B.forEach(C=>{const l=F(C,s);l.status==="available"?t++:l.status==="booked"?r++:l.status==="maintenance"?a++:l.status==="breakdown"?m++:l.status==="idle"&&d++}),{availableCount:t,bookedCount:r,maintenanceCount:a,breakdownCount:m,idleCount:d}},[B,F]),Ve=s=>{const t=B.map(r=>{const a=F(r,s);return{...r,solvedStatus:a.status,solvedDetails:a.details,solvedBadge:a.badgeColor,solvedLabel:a.label,solvedTrip:a.trip}});Ns({day:s,trucks:t}),le(!0)},Ts=(s,t)=>{const r=F(s,t);ys({truck:s,day:t,statusInfo:r,trip:r.trip}),de(!0)},Ue=(s,t="")=>{M({date:f(s,"yyyy-MM-dd"),truck_number:t,driver_name:"",route:"",cycle:"",revenue:"",trip_status:"Upcoming"}),le(!1),de(!1),ie(!0)},Ms=async s=>{if(s.preventDefault(),!g.truck_number||!g.date){Y.error("Truck number and date are required");return}Ee(!0);try{await S.collection("trip_logs").create({date:new Date(g.date).toISOString(),truck_number:g.truck_number,driver_name:g.driver_name,route:g.route,cycle:g.cycle,revenue:parseFloat(g.revenue)||0,trip_status:g.trip_status,client_payment_status:"pending"},{$autoCancel:!1}),Y.success("Trip log created successfully!"),ie(!1),U()}catch(t){console.error("Quick add trip error:",t),Y.error(t.message||"Failed to create trip log")}finally{Ee(!1)}},Pe=n.useMemo(()=>B.filter(s=>{const t=Ne.toLowerCase().trim();if(t){const r=`#${s.sequential_number}`.toLowerCase(),a=`${s.sequential_number}`;if(!((s.truck_number||"").toLowerCase().includes(t)||(s.truck_name||"").toLowerCase().includes(t)||r.includes(t)||a===t))return!1}return!(K!=="all"&&!ce.some(a=>F(s,a).status===K))}),[B,Ne,K,ce,F]),ye=n.useMemo(()=>{const s=[],t=ne.toLowerCase().trim();return z&&b.forEach(r=>{if(!r.date)return;const a=new Date(r.date.replace(" ","T"));t&&!(r.route||"").toLowerCase().includes(t)&&!(r.truck_number||"").toLowerCase().includes(t)&&!(r.driver_name||"").toLowerCase().includes(t)||s.push({id:r.id,date:a,type:"trip",title:r.route||"Dispatched Shipment",sub:`Truck: ${r.truck_number||"N/A"} · Driver: ${r.driver_name||"N/A"}`,status:r.trip_status||"Dispatched",raw:r})}),q&&T.forEach(r=>{if(!r.reminder_date)return;const a=new Date(r.reminder_date);t&&!(r.title||"").toLowerCase().includes(t)&&!(r.description||"").toLowerCase().includes(t)||s.push({id:r.id,date:a,type:"reminder",title:r.title,sub:r.description,status:r.status||"Pending",raw:r})}),Q&&E.forEach(r=>{r.date&&(t&&!(r.title||"").toLowerCase().includes(t)||s.push({id:r.id,date:r.date,type:"bill",title:r.title,sub:`Amount Due: ₹${r.amount?.toLocaleString()}`,status:r.status||"Unpaid",raw:r}))}),s.sort((r,a)=>r.date-a.date)},[b,T,E,z,q,Q,ne]),Ye=()=>h(Js(i,1)),He=()=>h(Xs(i,1)),We=()=>h(new Date),Ge=s=>{h(at(i,parseInt(s,10)))},Je=s=>{h(nt(i,parseInt(s,10)))},Xe=s=>{Cs(s),Z(!0)},Ls=async s=>{try{await S.collection("reminders").update(s,{status:"Completed",is_completed:!0},{$autoCancel:!1}),Y.success("Reminder marked as completed"),U()}catch{Y.error("Failed to complete reminder")}},v=Qe($e),Ke=v.trips.length+v.reminders.length+v.bills.length+(v.bizEvents||[]).length,Rs=n.useMemo(()=>E.reduce((s,t)=>s+(t.amount||0),0),[E]),As=n.useMemo(()=>T.filter(s=>s.status!=="Completed").length,[T]),Ze=["January","February","March","April","May","June","July","August","September","October","November","December"],es=[2025,2026,2027,2028];return e.jsxs("div",{className:"min-h-screen w-full bg-background/50 p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-5",children:[e.jsx(Fs,{children:e.jsx("title",{children:"Compliance & Operations Calendar | Jai Bhavani Cargo"})}),e.jsxs("div",{className:"flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-white/[0.04]",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 mb-1",children:[e.jsx(Os,{className:"w-4 h-4 text-primary"}),e.jsx("span",{className:"text-[10px] font-extrabold tracking-widest uppercase text-primary",children:"Enterprise Business Calendar"})]}),e.jsx("h1",{className:"text-2xl sm:text-3xl font-black tracking-tight text-foreground font-heading",children:"Unified Business Calendar"}),e.jsx("p",{className:"text-xs sm:text-sm text-muted-foreground mt-0.5",children:"One calendar containing: Truck service, Insurance renewal, Permit expiry, Driver joining, Contract renewal, Invoice due, EMI, Tax & Expected customer payment."})]}),e.jsx("div",{className:"flex items-center gap-2 self-stretch sm:self-auto flex-wrap",children:u==="events"&&e.jsxs(c,{onClick:()=>oe(!0),className:"rounded-xl text-xs gap-1.5 shadow-sm font-bold bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-none h-10",children:[e.jsx(ee,{className:"w-4 h-4"})," Add Reminder"]})})]}),e.jsxs("div",{className:"flex border-b border-border/40 p-1 bg-secondary/15 rounded-2xl max-w-md gap-1",children:[e.jsxs("button",{onClick:()=>N("events"),className:p("flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2",u==="events"?"bg-primary text-primary-foreground shadow":"text-muted-foreground hover:text-foreground"),children:[e.jsx(se,{className:"w-4 h-4"})," Compliance Calendar"]}),e.jsxs("button",{onClick:()=>N("trucks"),className:p("flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2",u==="trucks"?"bg-primary text-primary-foreground shadow":"text-muted-foreground hover:text-foreground"),children:[e.jsx(w,{className:"w-4 h-4"})," Truck Availability"]})]}),u==="events"?e.jsxs(e.Fragment,{children:[e.jsxs("div",{className:"flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none",children:BIZ_CATEGORIES.map(cat=>{
-    const isAct=activeCategory===cat.id;
-    const catCount=cat.id==="all"?(bizEvents||[]).length:(bizEvents||[]).filter(ev=>ev.category===cat.id).length;
-    return e.jsxs("button",{key:cat.id,onClick:()=>setActiveCategory(cat.id),className:p("px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5",isAct?"bg-primary text-primary-foreground border-primary shadow-sm ring-1 ring-primary/50":"bg-muted/30 text-muted-foreground border-border/60 hover:text-foreground hover:bg-muted/60"),children:[e.jsx("span",{children:cat.icon}),e.jsx("span",{children:cat.label}),e.jsx("span",{className:"px-1.5 py-0.2 rounded-md bg-white/10 text-[10px] font-mono",children:catCount})]});
-  })}),e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-3",children:[e.jsx(_,{className:"bg-card border-emerald-500/25 bg-emerald-500/5 p-4 rounded-2xl shadow-soft",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase text-emerald-400 tracking-wider",children:"Scheduled Dispatches"}),e.jsxs("div",{className:"text-2xl font-black text-foreground mt-0.5",children:[b.length," Trips"]})]}),e.jsx("div",{className:"p-3 bg-emerald-500/10 rounded-xl text-emerald-400",children:e.jsx(w,{className:"w-6 h-6"})})]})}),e.jsx(_,{className:"bg-card border-amber-500/25 bg-amber-500/5 p-4 rounded-2xl shadow-soft",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase text-amber-400 tracking-wider",children:"Compliance Reminders"}),e.jsxs("div",{className:"text-2xl font-black text-foreground mt-0.5",children:[As," Pending"]})]}),e.jsx("div",{className:"p-3 bg-amber-500/10 rounded-xl text-amber-400",children:e.jsx(te,{className:"w-6 h-6"})})]})}),e.jsx(_,{className:"bg-card border-indigo-500/25 bg-indigo-500/5 p-4 rounded-2xl shadow-soft",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] font-extrabold uppercase text-indigo-400 tracking-wider",children:"Financial Due Dates"}),e.jsxs("div",{className:"text-2xl font-black text-foreground mt-0.5",children:["₹",Rs.toLocaleString()]})]}),e.jsx("div",{className:"p-3 bg-indigo-500/10 rounded-xl text-indigo-400",children:e.jsx(re,{className:"w-6 h-6"})})]})})]}),e.jsxs("div",{className:"bg-card border border-border/40 rounded-2xl p-4 space-y-3 shadow-sm",children:[e.jsxs("div",{className:"flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3",children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsxs("div",{className:"flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/40",children:[e.jsx(c,{variant:"ghost",size:"icon",onClick:He,className:"h-8 w-8 rounded-lg",children:e.jsx(ss,{className:"w-4 h-4"})}),e.jsx(c,{variant:"ghost",size:"icon",onClick:Ye,className:"h-8 w-8 rounded-lg",children:e.jsx(ts,{className:"w-4 h-4"})})]}),e.jsxs(H,{value:i.getMonth().toString(),onValueChange:Ge,children:[e.jsx(W,{className:"w-36 h-9 rounded-xl text-xs font-bold bg-background",children:e.jsx(G,{})}),e.jsx(J,{children:Ze.map((s,t)=>e.jsx(X,{value:t.toString(),children:s},t))})]}),e.jsxs(H,{value:i.getFullYear().toString(),onValueChange:Je,children:[e.jsx(W,{className:"w-24 h-9 rounded-xl text-xs font-bold bg-background",children:e.jsx(G,{})}),e.jsx(J,{children:es.map(s=>e.jsx(X,{value:s.toString(),children:s},s))})]}),e.jsx(c,{variant:"outline",size:"sm",onClick:We,className:`rounded-xl text-xs h-9 px-3 font-bold ${D(i)?"border-primary text-primary":""}`,children:"Today"})]}),e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsxs("div",{className:"relative flex-1 md:w-52",children:[e.jsx(rs,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"}),e.jsx(I,{placeholder:"Search events, route...",value:ne,onChange:s=>hs(s.target.value),className:"pl-9 h-9 text-xs rounded-xl bg-background border-border/40"})]}),e.jsxs("div",{className:"flex items-center bg-muted/40 p-1 rounded-xl border border-border/40",children:[e.jsxs("button",{onClick:()=>Re("grid"),className:`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${fe==="grid"?"bg-primary text-primary-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`,children:[e.jsx(as,{className:"w-3.5 h-3.5"})," Grid"]}),e.jsxs("button",{onClick:()=>Re("agenda"),className:`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${fe==="agenda"?"bg-primary text-primary-foreground shadow-sm":"text-muted-foreground hover:text-foreground"}`,children:[e.jsx(Is,{className:"w-3.5 h-3.5"})," Agenda List"]})]})]})]}),e.jsxs("div",{className:"flex flex-wrap items-center gap-2 pt-2 border-t border-border/30",children:[e.jsxs("span",{className:"text-[11px] text-muted-foreground font-bold uppercase tracking-wider mr-1 flex items-center gap-1",children:[e.jsx(ns,{className:"w-3 h-3"})," Show:"]}),e.jsxs(c,{size:"sm",variant:z?"default":"outline",onClick:()=>bs(!z),className:`rounded-xl text-xs h-7 px-3 gap-1.5 font-bold ${z?"bg-emerald-600 hover:bg-emerald-700 text-white":""}`,children:[e.jsx(w,{className:"w-3 h-3"})," Trips (",b.length,")"]}),e.jsxs(c,{size:"sm",variant:q?"default":"outline",onClick:()=>gs(!q),className:`rounded-xl text-xs h-7 px-3 gap-1.5 font-bold ${q?"bg-amber-600 hover:bg-amber-700 text-white":""}`,children:[e.jsx(te,{className:"w-3 h-3"})," Reminders (",T.length,")"]}),e.jsxs(c,{size:"sm",variant:Q?"default":"outline",onClick:()=>fs(!Q),className:`rounded-xl text-xs h-7 px-3 gap-1.5 font-bold ${Q?"bg-indigo-600 hover:bg-indigo-700 text-white":""}`,children:[e.jsx(re,{className:"w-3 h-3"})," CC Dues (",E.length,")"]})]})]}),fe==="grid"?e.jsx(_,{className:"border-border/40 bg-card overflow-hidden rounded-3xl shadow-lg",children:e.jsxs(we,{className:"p-0",children:[e.jsxs("div",{className:"grid grid-cols-7 border-b border-border/30 bg-muted/30 text-center font-extrabold text-[11px] py-2.5 text-muted-foreground uppercase tracking-widest",children:[e.jsx("div",{children:"Sun"}),e.jsx("div",{children:"Mon"}),e.jsx("div",{children:"Tue"}),e.jsx("div",{children:"Wed"}),e.jsx("div",{children:"Thu"}),e.jsx("div",{children:"Fri"}),e.jsx("div",{children:"Sat"})]}),e.jsx("div",{className:"grid grid-cols-7 bg-border/20 gap-[1px]",children:Me?Array.from({length:35}).map((s,t)=>e.jsxs("div",{className:"min-h-[90px] sm:min-h-[110px] bg-card p-2 flex flex-col justify-between",children:[e.jsx("div",{className:"w-6 h-6 rounded-md bg-muted/40 animate-pulse"}),e.jsx("div",{className:"space-y-1",children:e.jsx("div",{className:"h-4 w-full bg-muted/20 rounded animate-pulse"})})]},t)):qe.map((s,t)=>{const r=os(s,i),a=Qe(s),m=a.trips.length+a.reminders.length+a.bills.length+(a.bizEvents?a.bizEvents.length:0);return e.jsxs("div",{onClick:()=>Xe(s),className:p("min-h-[85px] sm:min-h-[115px] bg-card p-1.5 sm:p-2 flex flex-col justify-between transition-all duration-200 cursor-pointer relative hover:bg-primary/5 group",!r&&"opacity-35 bg-muted/5",D(s)&&"bg-primary/10 ring-2 ring-primary/40 z-10"),children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsx("span",{className:p("text-xs font-black font-mono px-2 py-0.5 rounded-lg",D(s)?"bg-primary text-primary-foreground shadow-sm":"text-foreground/80"),children:f(s,"d")}),m>0&&e.jsx(ae,{variant:"secondary",className:"text-[10px] h-5 px-1.5 font-bold min-w-5 justify-center bg-primary/20 text-primary border-primary/30",children:m})]}),e.jsxs("div",{className:"hidden md:block space-y-1 mt-1.5 flex-grow overflow-y-hidden max-h-[75px]",children:[
-    a.emi&&a.emi.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 font-black flex items-center gap-1",children:["🏦 ",e.jsx("span",{className:"truncate",children:"EMI: ₹33,410"})]})),
-    a.tax&&a.tax.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-teal-500/15 text-teal-400 border border-teal-500/30 font-bold flex items-center gap-1",children:["🏛️ ",e.jsx("span",{className:"truncate",children:ev.title.replace("🏛️ ","")})]})),
-    a.insuranceRenewal&&a.insuranceRenewal.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold flex items-center gap-1",children:["🛡️ ",e.jsx("span",{className:"truncate",children:"Insurance Renewal"})]})),
-    a.permitExpiry&&a.permitExpiry.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold flex items-center gap-1",children:["📜 ",e.jsx("span",{className:"truncate",children:ev.title.replace("📜 ","").split(":")[0]})]})),
-    a.truckService&&a.truckService.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30 font-bold flex items-center gap-1",children:["🔧 ",e.jsx("span",{className:"truncate",children:ev.title.replace("🔧 ","")})]})),
-    a.driverJoining&&a.driverJoining.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/30 font-bold flex items-center gap-1",children:["👤 ",e.jsx("span",{className:"truncate",children:ev.driverName||"Driver Joining"})]})),
-    a.contractRenewal&&a.contractRenewal.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 font-bold flex items-center gap-1",children:["📑 ",e.jsx("span",{className:"truncate",children:ev.partyName||"Contract Renewal"})]})),
-    a.invoiceDue&&a.invoiceDue.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30 font-bold flex items-center gap-1",children:["🧾 ",e.jsx("span",{className:"truncate",children:"Invoice: ₹"+Number(ev.amount||0).toLocaleString('en-IN')})]})),
-    a.expectedPayment&&a.expectedPayment.slice(0,1).map(ev=>e.jsxs("div",{key:ev.id,className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-lime-500/15 text-lime-400 border border-lime-500/30 font-bold flex items-center gap-1",children:["💰 ",e.jsx("span",{className:"truncate",children:"Payment: ₹"+Number(ev.amount||0).toLocaleString('en-IN')})]})),
-    a.trips.slice(0,1).map(d=>e.jsxs("div",{className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1",children:[e.jsx(w,{className:"w-3 h-3 shrink-0 text-emerald-400"}),e.jsx("span",{className:"truncate",children:d.route})]},d.id)),
-    a.reminders.slice(0,1).map(d=>e.jsxs("div",{className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold flex items-center gap-1",children:[e.jsx(te,{className:"w-3 h-3 shrink-0 text-amber-400"}),e.jsx("span",{className:"truncate",children:d.title})]},d.id)),
-    a.bills.slice(0,1).map(d=>e.jsxs("div",{className:"text-[10px] truncate px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold flex items-center gap-1",children:[e.jsx(re,{className:"w-3 h-3 shrink-0 text-indigo-400"}),e.jsxs("span",{className:"truncate",children:["₹",d.amount.toLocaleString()]})]},d.id))
-  ,m>4&&e.jsxs("div",{className:"text-[9px] text-center text-muted-foreground font-extrabold",children:["+",m-4," more"]})]}),e.jsxs("div",{className:"flex md:hidden flex-wrap gap-1 justify-center mt-1",children:[a.trips.length>0&&e.jsxs("span",{className:"text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-black flex items-center gap-0.5",children:[e.jsx(w,{className:"w-2.5 h-2.5"})," ",a.trips.length]}),a.reminders.length>0&&e.jsxs("span",{className:"text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 font-black flex items-center gap-0.5",children:[e.jsx(te,{className:"w-2.5 h-2.5"})," ",a.reminders.length]}),a.bills.length>0&&e.jsxs("span",{className:"text-[9px] px-1 py-0.2 rounded bg-indigo-500/20 text-indigo-400 font-black flex items-center gap-0.5",children:[e.jsx(re,{className:"w-2.5 h-2.5"})," ",a.bills.length]})]})]},t)})})]})}):e.jsx(_,{className:"border-border/40 bg-card rounded-3xl p-4 sm:p-6 shadow-lg",children:e.jsxs("div",{className:"space-y-3",children:[e.jsxs("h3",{className:"text-base font-extrabold text-foreground flex items-center gap-2",children:[e.jsx(ke,{className:"w-4 h-4 text-primary"})," Month Schedule Agenda (",ye.length," Events)"]}),ye.length===0?e.jsxs("div",{className:"py-12 text-center text-muted-foreground",children:[e.jsx(se,{className:"w-12 h-12 mx-auto opacity-20 mb-3"}),e.jsx("p",{className:"text-base font-bold text-foreground",children:"No matching events found in agenda."}),e.jsx("p",{className:"text-xs mt-1",children:"Try adjusting your filters or search keywords."})]}):e.jsx("div",{className:"space-y-2.5",children:ye.map(s=>e.jsxs("div",{onClick:()=>Xe(s.date),className:"p-3 sm:p-4 rounded-2xl border border-border/40 bg-background/80 hover:bg-muted/20 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[e.jsxs("div",{className:"flex items-start sm:items-center gap-3",children:[e.jsxs("div",{className:"min-w-16 text-center py-1 px-2.5 rounded-xl bg-card border border-border/50 shrink-0",children:[e.jsx("div",{className:"text-[10px] uppercase font-bold text-muted-foreground",children:f(s.date,"MMM")}),e.jsx("div",{className:"text-lg font-black text-foreground",children:f(s.date,"dd")})]}),e.jsxs("div",{className:"space-y-0.5",children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx("span",{className:p("text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border",s.type==="trip"?"bg-emerald-500/10 text-emerald-400 border-emerald-500/20":s.type==="reminder"?"bg-amber-500/10 text-amber-400 border-amber-500/20":"bg-indigo-500/10 text-indigo-400 border-indigo-500/20"),children:s.type==="trip"?"Trip Dispatch":s.type==="reminder"?"Compliance Alert":"Credit Card Due"}),e.jsx("h4",{className:"text-sm font-bold text-foreground",children:s.title})]}),e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:s.sub})]})]}),e.jsxs("div",{className:"flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/30",children:[e.jsx(ae,{variant:"outline",className:"text-[10px] font-bold uppercase",children:s.status}),e.jsxs(c,{variant:"ghost",size:"sm",className:"h-8 px-2.5 text-xs rounded-xl gap-1 text-primary",children:["View ",e.jsx($s,{className:"w-3.5 h-3.5"})]})]})]},`${s.type}-${s.id}`))})]})})]}):e.jsxs(e.Fragment,{children:[e.jsxs("div",{className:"bg-card border border-border/40 rounded-2xl p-4 space-y-3 shadow-sm",children:[e.jsxs("div",{className:"flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3",children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsxs("span",{className:"text-[11px] text-muted-foreground font-bold uppercase tracking-wider flex items-center gap-1 shrink-0",children:[e.jsx(ns,{className:"w-3 h-3"})," Status:"]}),[{id:"all",label:"All Fleet",dot:"bg-primary"},{id:"available",label:"Available",dot:"bg-emerald-500 border-emerald-600"},{id:"booked",label:"Trip Booked",dot:"bg-blue-600 border-blue-700"},{id:"maintenance",label:"Maintenance",dot:"bg-amber-500 border-amber-600"},{id:"breakdown",label:"Breakdown",dot:"bg-rose-500 border-rose-600"},{id:"idle",label:"Off-Duty",dot:"bg-slate-500 border-slate-600"}].map(s=>e.jsxs("button",{onClick:()=>Fe(s.id),className:p("flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all",K===s.id?"bg-primary text-primary-foreground border-primary font-bold shadow-sm scale-[1.02]":"bg-muted/30 text-foreground border-border/40 hover:bg-muted/70"),children:[e.jsx("span",{className:p("w-2.5 h-2.5 rounded-full shrink-0 border",s.dot)}),e.jsx("span",{children:s.label})]},s.id))]}),e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsxs("div",{className:"relative flex-1 md:w-52",children:[e.jsx(rs,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"}),e.jsx(I,{placeholder:"Search truck number...",value:Ne,onChange:s=>js(s.target.value),className:"pl-9 h-9 text-xs rounded-xl bg-background border-border/40"})]}),e.jsxs("div",{className:"flex items-center bg-muted/40 p-1 rounded-xl border border-border/40",children:[e.jsxs("button",{onClick:()=>Ae("matrix"),className:p("flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all",je==="matrix"?"bg-primary text-primary-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:[e.jsx(as,{className:"w-3.5 h-3.5"})," Roster Grid"]}),e.jsxs("button",{onClick:()=>Ae("calendar"),className:p("flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all",je==="calendar"?"bg-primary text-primary-foreground shadow-sm":"text-muted-foreground hover:text-foreground"),children:[e.jsx(ke,{className:"w-3.5 h-3.5"})," Monthly Calendar"]})]})]})]}),e.jsxs("div",{className:"flex items-center gap-2 pt-2 border-t border-border/30 flex-wrap",children:[e.jsxs("div",{className:"flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/40",children:[e.jsx(c,{variant:"ghost",size:"icon",onClick:He,className:"h-7 w-7 rounded-lg",children:e.jsx(ss,{className:"w-3.5 h-3.5"})}),e.jsx(c,{variant:"ghost",size:"icon",onClick:Ye,className:"h-7 w-7 rounded-lg",children:e.jsx(ts,{className:"w-3.5 h-3.5"})})]}),e.jsxs(H,{value:i.getMonth().toString(),onValueChange:Ge,children:[e.jsx(W,{className:"w-32 h-8 rounded-xl text-xs font-bold bg-background",children:e.jsx(G,{})}),e.jsx(J,{children:Ze.map((s,t)=>e.jsx(X,{value:t.toString(),children:s},t))})]}),e.jsxs(H,{value:i.getFullYear().toString(),onValueChange:Je,children:[e.jsx(W,{className:"w-20 h-8 rounded-xl text-xs font-bold bg-background",children:e.jsx(G,{})}),e.jsx(J,{children:es.map(s=>e.jsx(X,{value:s.toString(),children:s},s))})]}),e.jsx(c,{variant:"outline",size:"sm",onClick:We,className:p("rounded-xl text-xs h-8 px-3 font-bold",D(i)&&"border-primary text-primary"),children:"Today"})]})]}),Me?e.jsxs(_,{className:"border-border/40 bg-card rounded-3xl p-20 flex flex-col items-center justify-center gap-3",children:[e.jsx(ls,{className:"w-8 h-8 animate-spin text-primary"}),e.jsx("span",{className:"text-sm text-muted-foreground",children:"Calculating fleet availability..."})]}):Pe.length===0?e.jsxs(_,{className:"border-border/40 bg-card rounded-3xl p-12 text-center text-muted-foreground",children:[e.jsx(w,{className:"w-12 h-12 opacity-20 mx-auto mb-3"}),e.jsx("p",{className:"text-lg font-bold text-foreground",children:"No matching trucks"}),e.jsx("p",{className:"text-sm mt-1",children:"Try changing your search term or status filter."}),K!=="all"&&e.jsx(c,{variant:"outline",size:"sm",onClick:()=>Fe("all"),className:"mt-3 text-xs",children:"Reset Filter"})]}):je==="matrix"?e.jsx(_,{className:"border-border/40 bg-card overflow-hidden rounded-3xl shadow-lg",children:e.jsx(we,{className:"p-0 overflow-x-auto",children:e.jsxs("table",{className:"w-full text-left border-collapse table-fixed min-w-[950px]",children:[e.jsx("thead",{children:e.jsxs("tr",{className:"bg-muted/40 border-b border-border/30",children:[e.jsx("th",{className:"w-[180px] p-3 text-[11px] font-black uppercase text-muted-foreground tracking-wider sticky left-0 bg-card z-10 border-r border-border/20",children:"Truck number"}),ce.map(s=>e.jsx("th",{onClick:()=>Ve(s),title:`Click to audit all trucks on ${f(s,"dd MMMM yyyy")}`,className:p("p-2 text-center text-[10px] font-mono border-r border-white/5 w-[32px] shrink-0 cursor-pointer hover:bg-primary/15 transition-colors",D(s)&&"bg-primary/10 text-primary font-black"),children:e.jsxs("div",{className:"flex flex-col items-center leading-none",children:[e.jsx("span",{className:"font-extrabold text-[12px]",children:f(s,"d")}),e.jsx("span",{className:"text-[8px] opacity-70 uppercase mt-0.5",children:f(s,"eeeeee")})]})},s.toISOString()))]})}),e.jsx("tbody",{children:Pe.map(s=>e.jsxs("tr",{className:"hover:bg-muted/10 border-b border-border/20 group",children:[e.jsxs("td",{className:"p-3 sticky left-0 bg-card font-mono font-bold text-xs text-foreground z-10 border-r border-border/20 flex flex-col justify-center min-h-[48px]",children:[e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsxs("span",{className:"px-1.5 py-0.5 rounded text-[10px] font-black bg-primary/10 text-primary border border-primary/20 shrink-0",children:["#",s.sequential_number]}),e.jsx("span",{className:"truncate",children:s.truck_number})]}),e.jsx("span",{className:"text-[9px] text-muted-foreground font-sans font-semibold mt-0.5",children:s.truck_name||"Fleet Asset"})]}),ce.map(t=>{const r=F(s,t);return e.jsx("td",{className:p("p-1 text-center border-r border-white/5 w-[32px] shrink-0 relative",D(t)&&"bg-primary/5"),children:e.jsx("button",{type:"button",onClick:()=>Ts(s,t),className:p("w-5 h-5 mx-auto rounded-full cursor-pointer transition-all border border-black/20 shadow-sm hover:scale-125 focus:outline-none focus:ring-2 focus:ring-primary block",D(t)&&"ring-1 ring-primary"),style:{backgroundColor:r.color},title:`${s.truck_number} (${f(t,"dd MMM")}): ${r.label}
-${r.details}
-Click to view details or book trip`})},t.toISOString())})]},s.id))})]})})}):e.jsx(_,{className:"border-border/40 bg-card overflow-hidden rounded-3xl shadow-lg",children:e.jsxs(we,{className:"p-0",children:[e.jsxs("div",{className:"grid grid-cols-7 border-b border-border/30 bg-muted/30 text-center font-extrabold text-[11px] py-2.5 text-muted-foreground uppercase tracking-widest",children:[e.jsx("div",{children:"Sun"}),e.jsx("div",{children:"Mon"}),e.jsx("div",{children:"Tue"}),e.jsx("div",{children:"Wed"}),e.jsx("div",{children:"Thu"}),e.jsx("div",{children:"Fri"}),e.jsx("div",{children:"Sat"})]}),e.jsx("div",{className:"grid grid-cols-7 bg-border/20 gap-[1px]",children:qe.map((s,t)=>{const r=os(s,i),a=Ds(s);return e.jsxs("div",{onClick:()=>Ve(s),className:p("min-h-[85px] sm:min-h-[110px] bg-card p-1.5 sm:p-2 flex flex-col justify-between transition-all duration-200 cursor-pointer relative hover:bg-primary/5 group",!r&&"opacity-35 bg-muted/5",D(s)&&"bg-primary/10 ring-2 ring-primary/40 z-10"),children:[e.jsx("div",{className:"flex justify-between items-start",children:e.jsx("span",{className:p("text-xs font-black font-mono px-2 py-0.5 rounded-lg",D(s)?"bg-primary text-primary-foreground shadow-sm":"text-foreground/80"),children:f(s,"d")})}),e.jsxs("div",{className:"flex flex-col gap-0.5 mt-2",children:[e.jsxs("div",{className:"flex items-center gap-1 text-[9px] font-bold text-emerald-500",children:[e.jsx("span",{className:"w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"}),e.jsxs("span",{children:[a.availableCount," Available"]})]}),a.bookedCount>0&&e.jsxs("div",{className:"flex items-center gap-1 text-[9px] font-bold text-blue-400",children:[e.jsx("span",{className:"w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"}),e.jsxs("span",{children:[a.bookedCount," Booked"]})]}),a.maintenanceCount>0&&e.jsxs("div",{className:"flex items-center gap-1 text-[9px] font-bold text-amber-400",children:[e.jsx("span",{className:"w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"}),e.jsxs("span",{children:[a.maintenanceCount," Maint"]})]}),a.breakdownCount>0&&e.jsxs("div",{className:"flex items-center gap-1 text-[9px] font-bold text-rose-400",children:[e.jsx("span",{className:"w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"}),e.jsxs("span",{children:[a.breakdownCount," Break"]})]}),a.idleCount>0&&e.jsxs("div",{className:"flex items-center gap-1 text-[9px] font-bold text-slate-400",children:[e.jsx("span",{className:"w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0"}),e.jsxs("span",{children:[a.idleCount," Off-Duty"]})]})]})]},t)})})]})})]}),e.jsx(xe,{open:Ss,onOpenChange:Z,children:e.jsxs(me,{className:"rounded-3xl max-w-lg bg-card border border-border p-6 shadow-2xl",children:[e.jsx(ue,{className:"pb-3 border-b border-border/30",children:e.jsx("div",{className:"flex items-center justify-between",children:e.jsxs("div",{children:[e.jsxs(pe,{className:"font-heading text-xl font-extrabold text-foreground flex items-center gap-2",children:[e.jsx(ke,{className:"w-5 h-5 text-primary"}),f($e,"EEEE, MMMM dd, yyyy")]}),e.jsxs(he,{className:"text-xs mt-0.5",children:[Ke," total operations & compliance events logged for this date."]})]})})}),e.jsx("div",{className:"py-3 space-y-4 max-h-[420px] overflow-y-auto",children:Ke===0?e.jsxs("div",{className:"py-12 text-center text-muted-foreground",children:[e.jsx(se,{className:"w-12 h-12 mx-auto opacity-20 mb-3"}),e.jsx("p",{className:"text-sm font-bold text-foreground",children:"No events scheduled on this day."}),e.jsx("p",{className:"text-xs mt-1",children:'Click "Add Reminder" to log an alert for this date.'})]}):e.jsxs("div",{className:"space-y-4",children:[
-    v.emi&&v.emi.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-yellow-400 flex items-center gap-1.5",children:["🏦 Vehicle Loan EMI (",v.emi.length,")"]}),
-      v.emi.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-yellow-500/5 rounded-2xl border border-yellow-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsxs("div",{className:"text-right shrink-0",children:[
-          e.jsxs("span",{className:"text-sm font-black text-yellow-400 font-mono block",children:["₹",Number(s.amount||0).toLocaleString('en-IN')]}),
-          e.jsx("span",{className:"text-[10px] px-2 py-0.5 rounded-md font-bold "+(s.status==="Paid"?"bg-emerald-500/10 text-emerald-400":"bg-yellow-500/10 text-yellow-400"),children:s.status})
-        ]})
-      ]}))
-    ]}),
-    v.tax&&v.tax.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-teal-400 flex items-center gap-1.5",children:["🏛️ Statutory Tax Deadlines (",v.tax.length,")"]}),
-      v.tax.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-teal-500/5 rounded-2xl border border-teal-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg uppercase font-bold "+(s.status==="Completed"||s.status==="Paid"?"bg-emerald-500/10 text-emerald-400 border border-emerald-500/20":"bg-teal-500/10 text-teal-400 border border-teal-500/20"),children:s.status})
-      ]}))
-    ]}),
-    v.insuranceRenewal&&v.insuranceRenewal.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5",children:["🛡️ Insurance Renewal (",v.insuranceRenewal.length,")"]}),
-      v.insuranceRenewal.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg uppercase font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",children:s.status})
-      ]}))
-    ]}),
-    v.permitExpiry&&v.permitExpiry.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5",children:["📜 Permit & Certificate Expiry (",v.permitExpiry.length,")"]}),
-      v.permitExpiry.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-amber-500/5 rounded-2xl border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg uppercase font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20",children:s.status})
-      ]}))
-    ]}),
-    v.truckService&&v.truckService.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-blue-400 flex items-center gap-1.5",children:["🔧 Truck Service & Maintenance (",v.truckService.length,")"]}),
-      v.truckService.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-blue-500/5 rounded-2xl border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        s.amount>0&&e.jsxs("span",{className:"text-xs font-bold text-blue-400 font-mono",children:["₹",Number(s.amount).toLocaleString('en-IN')]})
-      ]}))
-    ]}),
-    v.driverJoining&&v.driverJoining.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-purple-400 flex items-center gap-1.5",children:["👤 Driver Onboarding & Anniversaries (",v.driverJoining.length,")"]}),
-      v.driverJoining.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-purple-500/5 rounded-2xl border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg uppercase font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20",children:s.status})
-      ]}))
-    ]}),
-    v.contractRenewal&&v.contractRenewal.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5",children:["📑 Logistics Contract Renewal (",v.contractRenewal.length,")"]}),
-      v.contractRenewal.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-cyan-500/5 rounded-2xl border border-cyan-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg uppercase font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20",children:s.status})
-      ]}))
-    ]}),
-    v.invoiceDue&&v.invoiceDue.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-rose-400 flex items-center gap-1.5",children:["🧾 Client Invoices Due (",v.invoiceDue.length,")"]}),
-      v.invoiceDue.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-rose-500/5 rounded-2xl border border-rose-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        s.amount>0&&e.jsxs("span",{className:"text-xs font-bold text-rose-400 font-mono",children:["₹",Number(s.amount).toLocaleString('en-IN')]})
-      ]}))
-    ]}),
-    v.expectedPayment&&v.expectedPayment.length>0&&e.jsxs("div",{className:"space-y-2",children:[
-      e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-lime-400 flex items-center gap-1.5",children:["💰 Expected Customer Payment (",v.expectedPayment.length,")"]}),
-      v.expectedPayment.map(s=>e.jsxs("div",{key:s.id,className:"p-3.5 bg-lime-500/5 rounded-2xl border border-lime-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[
-        e.jsxs("div",{className:"space-y-1",children:[
-          e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),
-          e.jsx("p",{className:"text-xs text-muted-foreground",children:s.description})
-        ]}),
-        s.amount>0&&e.jsxs("span",{className:"text-xs font-bold text-lime-400 font-mono",children:["₹",Number(s.amount).toLocaleString('en-IN')]})
-      ]}))
-    ]}),
-    v.trips.length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5",children:[e.jsx(w,{className:"w-4 h-4"})," Dispatched Shipments (",v.trips.length,")"]}),v.trips.map(s=>e.jsxs("div",{className:"p-3.5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-sm font-black text-foreground",children:s.route}),e.jsxs("p",{className:"text-xs text-muted-foreground mt-0.5 font-medium",children:["Vehicle: ",e.jsx("strong",{className:"text-foreground",children:s.truck_number})," · Driver: ",e.jsx("strong",{className:"text-foreground",children:s.driver_name||"N/A"})]})]}),e.jsx("span",{className:"text-[10px] px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase self-start sm:self-center",children:s.trip_status||"Dispatched"})]},s.id))]}),v.reminders.length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5",children:[e.jsx(te,{className:"w-4 h-4"})," Compliance & Renewal Alerts (",v.reminders.length,")"]}),v.reminders.map(s=>e.jsxs("div",{className:"p-3.5 bg-amber-500/5 rounded-2xl border border-amber-500/20 flex flex-col sm:flex-row sm:items-start justify-between gap-3",children:[e.jsxs("div",{className:"space-y-1 flex-1",children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),s.status==="Completed"&&e.jsx(ae,{className:"bg-emerald-500/10 text-emerald-400 border-0 h-4 text-[9px] font-extrabold",children:"Completed"})]}),e.jsx("p",{className:"text-xs text-muted-foreground font-medium leading-normal",children:s.description})]}),s.status!=="Completed"?e.jsxs("div",{className:"flex items-center gap-1.5 shrink-0 self-end sm:self-center",children:[e.jsxs(c,{variant:"ghost",size:"sm",onClick:()=>{Z(!1),Ie(s)},className:"h-8 px-2.5 text-xs rounded-xl",children:[e.jsx(Es,{className:"w-3.5 h-3.5"})," Details"]}),e.jsxs(c,{size:"sm",onClick:()=>Ls(s.id),className:"h-8 px-3 text-xs rounded-xl gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold",children:[e.jsx(Bs,{className:"w-3.5 h-3.5"})," Resolve"]})]}):e.jsx("div",{className:"p-1.5 bg-emerald-500/15 text-emerald-400 rounded-xl shrink-0",children:e.jsx(zs,{className:"w-5 h-5"})})]},s.id))]}),v.bills.length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1.5",children:[e.jsx(re,{className:"w-4 h-4"})," Credit Card Due Dates (",v.bills.length,")"]}),v.bills.map(s=>e.jsxs("div",{className:"p-3.5 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 flex items-center justify-between gap-3",children:[e.jsxs("div",{children:[e.jsx("p",{className:"text-sm font-black text-foreground",children:s.title}),e.jsxs("p",{className:"text-xs text-muted-foreground mt-0.5 font-medium",children:["Amount Due: ",e.jsxs("strong",{className:"text-rose-400 font-mono",children:["₹",s.amount.toLocaleString()]})]})]}),e.jsx("span",{className:p("text-[10px] font-black px-2.5 py-1 rounded-lg uppercase border",s.status==="Paid"?"bg-emerald-500/10 text-emerald-400 border-emerald-500/20":"bg-rose-500/10 text-rose-400 border-rose-500/20"),children:s.status})]},s.id))]})]})}),e.jsxs(be,{className:"pt-3 border-t border-border/30 flex justify-between items-center flex-wrap gap-2",children:[e.jsxs(c,{size:"sm",onClick:()=>{Z(!1),oe(!0)},className:"rounded-xl text-xs gap-1 font-bold bg-primary text-primary-foreground",children:[e.jsx(ee,{className:"w-3.5 h-3.5"})," Add Reminder"]}),e.jsx(c,{variant:"ghost",className:"rounded-xl text-xs font-bold",onClick:()=>Z(!1),children:"Close"})]})]})}),e.jsx(xe,{open:ks,onOpenChange:de,children:e.jsxs(me,{className:"rounded-3xl max-w-lg bg-card border border-border p-6 shadow-2xl overflow-y-auto max-h-[85vh]",children:[e.jsxs(ue,{className:"pb-3 border-b border-border/30",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsxs("span",{className:"px-2 py-0.5 rounded-lg text-xs font-black bg-primary/10 text-primary border border-primary/20",children:["#",o?.truck?.sequential_number||"1"]}),e.jsx(pe,{className:"font-heading text-lg font-black text-foreground",children:o?.truck?.truck_number})]}),e.jsx("span",{className:"text-xs text-muted-foreground font-semibold",children:o?.truck?.truck_name||"Fleet Truck"})]}),e.jsxs(he,{className:"text-xs flex items-center gap-1 mt-1 text-muted-foreground font-medium",children:[e.jsx(se,{className:"w-3.5 h-3.5 text-primary"}),o?.day&&f(o.day,"EEEE, dd MMMM yyyy")]})]}),e.jsxs("div",{className:"py-4 space-y-4",children:[e.jsxs("div",{className:p("p-4 rounded-2xl border flex items-start gap-3",o?.statusInfo?.status==="available"?"bg-emerald-500/10 border-emerald-500/30":o?.statusInfo?.status==="booked"?"bg-blue-500/10 border-blue-500/30":o?.statusInfo?.status==="maintenance"?"bg-amber-500/10 border-amber-500/30":o?.statusInfo?.status==="breakdown"?"bg-rose-500/10 border-rose-500/30":"bg-slate-500/10 border-slate-500/30"),children:[e.jsx("div",{className:"w-4 h-4 rounded-full mt-0.5 shrink-0",style:{backgroundColor:o?.statusInfo?.color||"#10b981"}}),e.jsxs("div",{className:"space-y-1 flex-1",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("h4",{className:"font-extrabold text-sm text-foreground",children:o?.statusInfo?.label||"Available"}),e.jsx(ae,{variant:"outline",className:p("text-[10px] font-bold uppercase",o?.statusInfo?.badgeColor),children:o?.statusInfo?.status})]}),e.jsx("p",{className:"text-xs text-muted-foreground font-medium",children:o?.statusInfo?.details})]})]}),o?.trip&&e.jsxs("div",{className:"p-4 rounded-2xl bg-muted/40 border border-border/40 space-y-3",children:[e.jsxs("div",{className:"flex items-center justify-between border-b border-border/20 pb-2",children:[e.jsxs("span",{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-1.5",children:[e.jsx(w,{className:"w-3.5 h-3.5 text-primary"})," Trip Dispatch Details"]}),e.jsx(ae,{className:"bg-primary text-primary-foreground text-[10px] font-bold uppercase",children:o.trip.trip_status||"Delivered"})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-3 text-xs",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground block",children:"Route"}),e.jsx("span",{className:"font-bold text-foreground font-mono",children:o.trip.route||"Local Route"})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground block",children:"Assigned Driver"}),e.jsx("span",{className:"font-bold text-foreground",children:o.trip.driver_name||"Driver Assigned"})]}),o.trip.revenue>0&&e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground block",children:"Freight Revenue"}),e.jsxs("span",{className:"font-bold text-emerald-500 font-mono",children:["₹",o.trip.revenue.toLocaleString()]})]}),o.trip.cycle&&e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] uppercase font-bold text-muted-foreground block",children:"Trip Cycle"}),e.jsx("span",{className:"font-bold text-foreground",children:o.trip.cycle})]})]})]})]}),e.jsxs(be,{className:"flex gap-2 flex-wrap",children:[e.jsxs(c,{variant:"outline",className:"rounded-xl flex-1 font-bold gap-1.5 border-primary text-primary hover:bg-primary/10 text-xs",onClick:()=>{o?.day&&o?.truck?.truck_number&&Ue(o.day,o.truck.truck_number)},children:[e.jsx(ee,{className:"w-3.5 h-3.5"})," Book / Log Trip for This Truck"]}),e.jsx(c,{className:"rounded-xl flex-1 font-bold shadow-sm text-xs",onClick:()=>de(!1),children:"Done"})]})]})}),e.jsx(xe,{open:vs,onOpenChange:le,children:e.jsxs(me,{className:"rounded-3xl max-w-xl bg-card border border-border p-6 shadow-2xl overflow-y-auto max-h-[85vh]",children:[e.jsxs(ue,{className:"pb-3 border-b border-border/30",children:[e.jsxs(pe,{className:"font-heading text-lg font-black text-foreground flex items-center gap-2",children:[e.jsx(se,{className:"w-5 h-5 text-primary"}),"Fleet Availability: ",x?.day&&f(x.day,"eeee, dd MMMM yyyy")]}),e.jsx(he,{className:"text-xs",children:"Audit operational dispatches and maintenance allocations for every vehicle in the fleet."})]}),e.jsxs("div",{className:"py-4 space-y-5",children:[x?.trucks.filter(s=>s.solvedStatus==="breakdown").length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5",children:[e.jsx(qs,{className:"w-4 h-4"})," Breakdown / Repair Required (",x.trucks.filter(s=>s.solvedStatus==="breakdown").length,")"]}),e.jsx("div",{className:"grid gap-2",children:x.trucks.filter(s=>s.solvedStatus==="breakdown").map(s=>e.jsxs("div",{className:"p-3 bg-rose-500/5 rounded-xl border border-rose-500/20 text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center font-bold",children:[e.jsx("span",{className:"font-mono text-sm text-rose-400",children:s.truck_number}),e.jsx("span",{className:"text-muted-foreground",children:s.truck_name||"Fleet Truck"})]}),e.jsx("p",{className:"text-muted-foreground mt-1.5 font-medium",children:s.solvedDetails})]},s.id))})]}),x?.trucks.filter(s=>s.solvedStatus==="maintenance").length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5",children:[e.jsx(Qs,{className:"w-4 h-4"})," Under Scheduled Maintenance (",x.trucks.filter(s=>s.solvedStatus==="maintenance").length,")"]}),e.jsx("div",{className:"grid gap-2",children:x.trucks.filter(s=>s.solvedStatus==="maintenance").map(s=>e.jsxs("div",{className:"p-3 bg-amber-500/5 rounded-xl border border-amber-500/20 text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center font-bold",children:[e.jsx("span",{className:"font-mono text-sm text-amber-400",children:s.truck_number}),e.jsx("span",{className:"text-muted-foreground",children:s.truck_name||"Fleet Truck"})]}),e.jsx("p",{className:"text-muted-foreground mt-1.5 font-medium",children:s.solvedDetails})]},s.id))})]}),x?.trucks.filter(s=>s.solvedStatus==="booked").length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5",children:[e.jsx(w,{className:"w-4 h-4"})," Dispatched / Booked Trips (",x.trucks.filter(s=>s.solvedStatus==="booked").length,")"]}),e.jsx("div",{className:"grid gap-2",children:x.trucks.filter(s=>s.solvedStatus==="booked").map(s=>e.jsxs("div",{className:"p-3 bg-blue-500/5 rounded-xl border border-blue-500/20 text-xs",children:[e.jsxs("div",{className:"flex justify-between items-center font-bold",children:[e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx("span",{className:"font-mono text-sm text-blue-400",children:s.truck_number}),e.jsx("span",{className:"text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20",children:s.solvedLabel})]}),e.jsx("span",{className:"text-muted-foreground",children:s.truck_name||"Fleet Truck"})]}),e.jsx("p",{className:"text-muted-foreground mt-1.5 font-medium",children:s.solvedDetails})]},s.id))})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5",children:[e.jsx(Vs,{className:"w-4 h-4"})," Available / Ready for Dispatch (",x?.trucks.filter(s=>s.solvedStatus==="available").length||0,")"]}),x?.trucks.filter(s=>s.solvedStatus==="available").length===0?e.jsx("p",{className:"text-xs text-rose-400 font-medium italic pl-1",children:"No operational trucks are available on this day."}):e.jsx("div",{className:"grid grid-cols-1 sm:grid-cols-2 gap-2",children:x?.trucks.filter(s=>s.solvedStatus==="available").map(s=>e.jsxs("div",{className:"p-2.5 bg-emerald-500/5 rounded-xl border border-emerald-500/10 text-xs flex justify-between items-center",children:[e.jsxs("div",{className:"flex items-center gap-1.5",children:[e.jsx("span",{className:"font-mono font-bold text-foreground",children:s.truck_number}),e.jsx("span",{className:"text-[10px] text-muted-foreground",children:s.truck_name})]}),e.jsx("span",{className:"text-[10px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase",children:"Ready"})]},s.id))})]}),x?.trucks.filter(s=>s.solvedStatus==="idle").length>0&&e.jsxs("div",{className:"space-y-2",children:[e.jsxs("h4",{className:"text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5",children:[e.jsx(Us,{className:"w-4 h-4"})," Off-Duty / Inactive (",x.trucks.filter(s=>s.solvedStatus==="idle").length,")"]}),e.jsx("div",{className:"grid grid-cols-2 gap-2",children:x.trucks.filter(s=>s.solvedStatus==="idle").map(s=>e.jsxs("div",{className:"p-2.5 bg-slate-500/5 rounded-xl border border-slate-500/10 text-xs flex justify-between items-center",children:[e.jsx("span",{className:"font-mono font-bold text-foreground",children:s.truck_number}),e.jsx("span",{className:"text-[10px] text-slate-400 font-bold bg-slate-500/10 px-1.5 py-0.5 rounded uppercase",children:"Off-Duty"})]},s.id))})]})]}),e.jsxs(be,{className:"flex gap-2",children:[e.jsxs(c,{variant:"outline",className:"rounded-xl flex-1 font-bold gap-1.5 border-primary text-primary hover:bg-primary/10",onClick:()=>x?.day&&Ue(x.day),children:[e.jsx(ee,{className:"w-4 h-4"})," Add Trip on This Day"]}),e.jsx(c,{className:"rounded-xl flex-1 font-bold shadow-sm",onClick:()=>le(!1),children:"Close Audit"})]})]})}),e.jsx(Ks,{isOpen:ws,onClose:()=>oe(!1),onSuccess:()=>{oe(!1),U()}}),e.jsx(Zs,{isOpen:!!Oe,onClose:()=>Ie(null),reminder:Oe,onRefresh:U}),e.jsx(xe,{open:_s,onOpenChange:ie,children:e.jsxs(me,{className:"rounded-3xl max-w-lg bg-card border border-border p-6 shadow-2xl",children:[e.jsxs(ue,{className:"pb-3 border-b border-border/30",children:[e.jsxs(pe,{className:"font-heading text-lg font-black text-foreground flex items-center gap-2",children:[e.jsx(ee,{className:"w-5 h-5 text-primary"})," Add New Trip Log"]}),e.jsx(he,{className:"text-xs",children:"Quickly log a trip dispatch. Date and truck are pre-filled from the selected day."})]}),e.jsxs("form",{onSubmit:Ms,className:"py-4 space-y-4",children:[e.jsxs("div",{className:"grid grid-cols-2 gap-3",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Date *"}),e.jsx(I,{type:"date",value:g.date,onChange:s=>M(t=>({...t,date:s.target.value})),className:"h-9 text-xs rounded-xl bg-background border-border/40 font-mono",required:!0})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Truck *"}),e.jsxs(H,{value:g.truck_number,onValueChange:s=>M(t=>({...t,truck_number:s})),children:[e.jsx(W,{className:"h-9 text-xs rounded-xl bg-background border-border/40",children:e.jsx(G,{placeholder:"Select truck"})}),e.jsx(J,{children:B.map(s=>e.jsxs(X,{value:s.truck_number,children:["#",s.sequential_number," • ",s.truck_number," ",s.truck_name?`(${s.truck_name})`:""]},s.id))})]})]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-3",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Driver Name"}),e.jsx(I,{placeholder:"e.g. Raju",value:g.driver_name,onChange:s=>M(t=>({...t,driver_name:s.target.value})),className:"h-9 text-xs rounded-xl bg-background border-border/40"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Route"}),e.jsx(I,{placeholder:"e.g. Hyd → Mumbai",value:g.route,onChange:s=>M(t=>({...t,route:s.target.value})),className:"h-9 text-xs rounded-xl bg-background border-border/40"})]})]}),e.jsxs("div",{className:"grid grid-cols-3 gap-3",children:[e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Cycle"}),e.jsx(I,{placeholder:"e.g. Full",value:g.cycle,onChange:s=>M(t=>({...t,cycle:s.target.value})),className:"h-9 text-xs rounded-xl bg-background border-border/40"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Revenue (₹)"}),e.jsx(I,{type:"number",min:"0",placeholder:"0",value:g.revenue,onChange:s=>M(t=>({...t,revenue:s.target.value})),className:"h-9 text-xs rounded-xl bg-background border-border/40 font-mono"})]}),e.jsxs("div",{className:"space-y-1.5",children:[e.jsx($,{className:"text-xs font-bold uppercase text-muted-foreground tracking-wider",children:"Status"}),e.jsxs(H,{value:g.trip_status,onValueChange:s=>M(t=>({...t,trip_status:s})),children:[e.jsx(W,{className:"h-9 text-xs rounded-xl bg-background border-border/40",children:e.jsx(G,{})}),e.jsx(J,{children:["Upcoming","In Transit","Delivered","Cancelled"].map(s=>e.jsx(X,{value:s,children:s},s))})]})]})]}),e.jsxs(be,{className:"pt-2 border-t border-border/30 flex gap-2",children:[e.jsx(c,{type:"button",variant:"ghost",className:"rounded-xl flex-1 font-bold",onClick:()=>ie(!1),disabled:ve,children:"Cancel"}),e.jsx(c,{type:"submit",disabled:ve,className:"rounded-xl flex-1 font-bold bg-primary text-primary-foreground gap-1.5",children:ve?e.jsxs(e.Fragment,{children:[e.jsx(ls,{className:"w-3.5 h-3.5 animate-spin"})," Saving..."]}):e.jsxs(e.Fragment,{children:[e.jsx(w,{className:"w-3.5 h-3.5"})," Log Trip"]})})]})]})]})})]})}export{ft as default};
+function Card({ className, children, ...props }) {
+  return React.createElement("div", {
+    className: cn("rounded-2xl border bg-card text-card-foreground shadow-sm transition-all", className),
+    ...props
+  }, children);
+}
+function CardHeader({ className, children, ...props }) {
+  return React.createElement("div", {
+    className: cn("flex flex-col space-y-1.5 p-5", className),
+    ...props
+  }, children);
+}
+function CardTitle({ className, children, ...props }) {
+  return React.createElement("h3", {
+    className: cn("text-lg font-bold leading-none tracking-tight text-foreground", className),
+    ...props
+  }, children);
+}
+function CardDescription({ className, children, ...props }) {
+  return React.createElement("p", {
+    className: cn("text-xs text-muted-foreground", className),
+    ...props
+  }, children);
+}
+function CardContent({ className, children, ...props }) {
+  return React.createElement("div", {
+    className: cn("p-5 pt-0", className),
+    ...props
+  }, children);
+}
+function Button({ className, variant, size, children, ...props }) {
+  const base = "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer active:scale-95";
+  let vClass = "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm";
+  if (variant === "outline") vClass = "border border-border bg-background hover:bg-secondary/40 text-foreground";
+  else if (variant === "ghost") vClass = "hover:bg-secondary/30 text-muted-foreground hover:text-foreground";
+  else if (variant === "secondary") vClass = "bg-secondary text-secondary-foreground hover:bg-secondary/80";
+  else if (variant === "destructive") vClass = "bg-rose-600 text-white hover:bg-rose-700 shadow-sm";
+  let sClass = "h-9 px-4 py-2";
+  if (size === "sm") sClass = "h-8 rounded-lg px-3 text-[11px]";
+  else if (size === "lg") sClass = "h-10 rounded-xl px-6 text-sm";
+  else if (size === "icon") sClass = "h-8 w-8 p-0";
+  return React.createElement("button", {
+    className: cn(base, vClass, sClass, className),
+    ...props
+  }, children);
+}
+function Input({ className, ...props }) {
+  return React.createElement("input", {
+    className: cn(
+      "flex h-9 w-full rounded-xl border border-border bg-background px-3 py-1 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50",
+      className
+    ),
+    ...props
+  });
+}
+function Badge({ className, variant, children }) {
+  let vClass = "bg-primary/10 text-primary border-primary/20";
+  if (variant === "destructive") vClass = "bg-rose-500/15 text-rose-500 border-rose-500/30 font-semibold";
+  else if (variant === "warning") vClass = "bg-amber-500/15 text-amber-500 border-amber-500/30 font-semibold";
+  else if (variant === "success") vClass = "bg-emerald-500/15 text-emerald-500 border-emerald-500/30 font-semibold";
+  else if (variant === "outline") vClass = "border border-border text-foreground";
+  else if (variant === "secondary") vClass = "bg-secondary text-secondary-foreground";
+  return React.createElement("span", {
+    className: cn("inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors", vClass, className)
+  }, children);
+}
+function formatDateTime(val, fallback = "N/A") {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
+  } catch (e) {
+    return fallback;
+  }
+}
+function formatDateOnly(val, fallback = "N/A") {
+  if (!val) return fallback;
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  } catch (e) {
+    return fallback;
+  }
+}
+const PRIORITY_COLORS = {
+  LOW: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+  MEDIUM: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  HIGH: "bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold",
+  CRITICAL: "bg-rose-500/20 text-rose-400 border-rose-500/40 font-bold",
+  URGENT: "bg-rose-600/25 text-rose-300 border-rose-600/50 font-bold animate-pulse"
+};
+const STATUS_COLORS = {
+  NOT_STARTED: "bg-secondary text-secondary-foreground border-border",
+  IN_PROGRESS: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  WAITING_FOR_RESPONSE: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  PENDING_APPROVAL: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+  BLOCKED: "bg-red-500/20 text-red-400 border-red-500/30",
+  COMPLETED: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  CANCELLED: "bg-muted text-muted-foreground border-border"
+};
+const DEPARTMENT_COLORS = {
+  Operations: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+  Fleet: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+  Dispatch: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  Finance: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  Compliance: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  Admin: "bg-purple-500/15 text-purple-400 border-purple-500/30"
+};
+const TRANSPORT_TEMPLATES = [
+  {
+    id: "tpl_pre_trip",
+    title: "Vehicle Pre-Trip Roadworthiness Inspection",
+    category: "Fleet Maintenance",
+    department: "Fleet",
+    priority: "HIGH",
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 0.75,
+    description: "Mandatory pre-trip physical and safety inspection before vehicle departure from terminal.",
+    checklists: [
+      { id: "pt_1", text: "Engine oil level, coolant level & brake fluid verified" },
+      { id: "pt_2", text: "All tyres PSI check & spare wheel tread depth > 3mm" },
+      { id: "pt_3", text: "FASTag account active with minimum \u20B91,500 balance" },
+      { id: "pt_4", text: "Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin" },
+      { id: "pt_5", text: "Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present" }
+    ]
+  },
+  {
+    id: "tpl_dispatch_manifest",
+    title: "Dispatch & Loading Manifest Verification",
+    category: "Dispatch Logistics",
+    department: "Dispatch",
+    priority: "CRITICAL",
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 1,
+    description: "Ensure complete consignment verification, weight tally, and statutory E-Way bill validation.",
+    checklists: [
+      { id: "dm_1", text: "Verify Consignor Invoice count and Part-B E-Way bill valid for transit route" },
+      { id: "dm_2", text: "Driver physical breathalyzer sobriety test recorded in log" },
+      { id: "dm_3", text: "Gross vehicle weight recorded on certified weighbridge slip" },
+      { id: "dm_4", text: "Weatherproof tarpaulin lashing & tamper-evident container seal locked" },
+      { id: "dm_5", text: "Handover printed LR (Lorry Receipt) copy to driver with consignee address" }
+    ]
+  },
+  {
+    id: "tpl_freight_invoicing",
+    title: "Freight Invoicing & POD Collection Checklist",
+    category: "Accounts & Billing",
+    department: "Finance",
+    priority: "MEDIUM",
+    eisenhower_quadrant: 3,
+    estimated_duration_hours: 0.5,
+    description: "Complete post-unloading documentation, driver settlement, and billing submission.",
+    checklists: [
+      { id: "fi_1", text: "Original consignee signed & company stamped POD collected" },
+      { id: "fi_2", text: "High-resolution POD scanned and archived in Company Vault" },
+      { id: "fi_3", text: "Toll, diesel receipts & driver route advance reconciled in Cashbook" },
+      { id: "fi_4", text: "Tax Invoice generated with applicable GST rate (5% RCM or 12% Forward)" },
+      { id: "fi_5", text: "Invoice dispatch email with POD sent to client accounts" }
+    ]
+  },
+  {
+    id: "tpl_breakdown_protocol",
+    title: "Emergency Breakdown Escalation Protocol",
+    category: "Route Operations",
+    department: "Operations",
+    priority: "URGENT",
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 2,
+    description: "Immediate action plan for highway breakdown, tyre burst, or mechanical stoppage.",
+    checklists: [
+      { id: "bp_1", text: "Pinpoint live vehicle GPS coordinates & confirm driver safety" },
+      { id: "bp_2", text: "Place reflective warning triangles 50m behind stationary truck" },
+      { id: "bp_3", text: "Dispatch nearest empanelled highway mechanic / mobile workshop" },
+      { id: "bp_4", text: "Alert client / consignee of anticipated transit delay" },
+      { id: "bp_5", text: "Arrange transshipment relief vehicle if repair ETA exceeds 4 hours" }
+    ]
+  },
+  {
+    id: "tpl_quarterly_compliance",
+    title: "Quarterly Fleet Compliance & Tax Audit",
+    category: "Statutory Compliance",
+    department: "Compliance",
+    priority: "HIGH",
+    eisenhower_quadrant: 2,
+    estimated_duration_hours: 1.5,
+    description: "Proactive audit of all vehicle statutory documents, state border taxes, and renewals.",
+    checklists: [
+      { id: "qc_1", text: "Check All-India Tourist/Goods Permit quarterly tax payment status" },
+      { id: "qc_2", text: "Verify PUC (Pollution Under Control) validity across active fleet" },
+      { id: "qc_3", text: "Speed governor calibration and fitness renewal inspection schedule" },
+      { id: "qc_4", text: "Comprehensive commercial vehicle insurance renewal audit (30-day notice)" },
+      { id: "qc_5", text: "Driver commercial driving license expiry & medical fitness records check" }
+    ]
+  }
+];
+function useSafeAuth() {
+  const [user] = React.useState(() => {
+    try {
+      const raw = localStorage.getItem("app_auth_user");
+      if (raw) return JSON.parse(raw);
+      const pb = localStorage.getItem("pocketbase_auth");
+      if (pb) {
+        const parsed = JSON.parse(pb);
+        return parsed?.model || parsed?.record || null;
+      }
+    } catch (e) {
+    }
+    return {
+      id: "usr_operations",
+      name: "Operations Manager",
+      email: "operations@jaibhavanicargo.com",
+      role: "super_admin"
+    };
+  });
+  return { currentUser: user };
+}
+function EnterpriseProductivityDashboard() {
+  const { currentUser } = useSafeAuth();
+  const [activeTab, setActiveTab] = React.useState(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("tab")) return q.get("tab");
+      const p = window.location.pathname;
+      if (p.includes("credit-control")) return "credit_control";
+      if (p.includes("reminders")) return "reminders";
+      if (p.includes("calendar")) return "calendar";
+      if (p.includes("matrix")) return "matrix";
+      if (p.includes("focus") || p.includes("pomodoro")) return "focus";
+    } catch (e) {
+    }
+    return "tasks";
+  });
+  const handleTabChange = (tId) => {
+    setActiveTab(tId);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set("tab", tId);
+      window.history.replaceState({}, "", u.toString());
+    } catch (e) {
+    }
+  };
+  const [loading, setLoading] = React.useState(true);
+  const [summary, setSummary] = React.useState(null);
+  const [tasks, setTasks] = React.useState([]);
+  const [reminders, setReminders] = React.useState([]);
+  const [workflows, setWorkflows] = React.useState([]);
+  const [notifications, setNotifications] = React.useState([]);
+  const [focusSessions, setFocusSessions] = React.useState([]);
+  const [timeFilter, setTimeFilter] = React.useState("all");
+  const [deptFilter, setDeptFilter] = React.useState("all");
+  const [priorityFilter, setPriorityFilter] = React.useState("all");
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [showTaskModal, setShowTaskModal] = React.useState(false);
+  const [showReminderModal, setShowReminderModal] = React.useState(false);
+  const [showWorkflowModal, setShowWorkflowModal] = React.useState(false);
+  const [showTemplateModal, setShowTemplateModal] = React.useState(null);
+  const [showRejectModal, setShowRejectModal] = React.useState(null);
+  const [rejectionReason, setRejectionReason] = React.useState("");
+  const [selectedTask, setSelectedTask] = React.useState(null);
+  const [newChecklistText, setNewChecklistText] = React.useState("");
+  const [quickTaskTitle, setQuickTaskTitle] = React.useState("");
+  const [quickTaskTime, setQuickTaskTime] = React.useState("09:00");
+  const [quickTaskDept, setQuickTaskDept] = React.useState("Operations");
+  const [quickTaskPriority, setQuickTaskPriority] = React.useState("MEDIUM");
+  const [calMode, setCalMode] = React.useState("agenda");
+  const [selectedDate, setSelectedDate] = React.useState(() => /* @__PURE__ */ new Date());
+  const [timerMode, setTimerMode] = React.useState("pomodoro");
+  const [timerSeconds, setTimerSeconds] = React.useState(25 * 60);
+  const [timerRunning, setTimerRunning] = React.useState(false);
+  const [focusLinkedTaskId, setFocusLinkedTaskId] = React.useState("");
+  const [ambientSound, setAmbientSound] = React.useState("none");
+  const [ambientVolume, setAmbientVolume] = React.useState(0.3);
+  const [taskForm, setTaskForm] = React.useState({
+    title: "",
+    description: "",
+    department: "Operations",
+    priority: "MEDIUM",
+    eisenhower_quadrant: 2,
+    due_date: new Date(Date.now() + 864e5).toISOString().slice(0, 16),
+    scheduled_time: "09:00",
+    assigned_to_name: "Operations Staff",
+    related_entity_type: "",
+    related_entity_id: "",
+    recurring: "none"
+  });
+  const [reminderForm, setReminderForm] = React.useState({
+    title: "",
+    notes: "",
+    trigger_time: new Date(Date.now() + 36e5).toISOString().slice(0, 16),
+    priority: "MEDIUM",
+    recurrence_type: "NONE"
+  });
+  const [workflowForm, setWorkflowForm] = React.useState({
+    workflow_type: "EXPENSE_ADVANCE",
+    title: "",
+    description: "",
+    amount: ""
+  });
+  const fetchAllData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const [sumRes, taskRes, remRes, wfRes, notifRes, focRes] = await Promise.allSettled([
+        fetch("/api/productivity/summary").then((r) => r.json()),
+        fetch("/api/productivity/tasks").then((r) => r.json()),
+        fetch("/api/productivity/reminders").then((r) => r.json()),
+        fetch("/api/productivity/workflows").then((r) => r.json()),
+        fetch("/api/productivity/notifications").then((r) => r.json()),
+        fetch("/api/productivity/pomodoro").then((r) => r.json())
+      ]);
+      if (sumRes.status === "fulfilled") setSummary(sumRes.value);
+      if (taskRes.status === "fulfilled" && taskRes.value?.tasks) setTasks(taskRes.value.tasks);
+      if (remRes.status === "fulfilled" && remRes.value?.reminders) setReminders(remRes.value.reminders);
+      if (wfRes.status === "fulfilled" && wfRes.value?.workflows) setWorkflows(wfRes.value.workflows);
+      if (notifRes.status === "fulfilled" && notifRes.value?.notifications) setNotifications(notifRes.value.notifications);
+      if (focRes.status === "fulfilled" && focRes.value?.sessions) setFocusSessions(focRes.value.sessions);
+    } catch (err) {
+      console.error("Failed to fetch productivity data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  React.useEffect(() => {
+    fetchAllData();
+    const interval = setInterval(fetchAllData, 15e3);
+    return () => clearInterval(interval);
+  }, [fetchAllData]);
+  React.useEffect(() => {
+    let interval = null;
+    if (timerRunning) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => {
+          if (timerMode === "stopwatch") {
+            return prev + 1;
+          }
+          if (prev <= 1) {
+            setTimerRunning(false);
+            handleCompleteFocusSession();
+            toast.success("\u{1F514} Focus session complete! Take a break or start your next task.");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1e3);
+    }
+    return () => clearInterval(interval);
+  }, [timerRunning, timerMode, focusLinkedTaskId]);
+  const handleTimerModeChange = (mode) => {
+    setTimerRunning(false);
+    setTimerMode(mode);
+    if (mode === "pomodoro") setTimerSeconds(25 * 60);
+    else if (mode === "short_break") setTimerSeconds(5 * 60);
+    else if (mode === "long_break") setTimerSeconds(15 * 60);
+    else if (mode === "stopwatch") setTimerSeconds(0);
+  };
+  const handleAmbientChange = (type) => {
+    setAmbientSound(type);
+    playAmbientSound(type, ambientVolume);
+  };
+  const handleCompleteFocusSession = async () => {
+    const elapsed = timerMode === "stopwatch" ? timerSeconds : timerMode === "pomodoro" ? 25 * 60 - timerSeconds : 5 * 60 - timerSeconds;
+    if (elapsed < 10) return;
+    const taskObj = tasks.find((t) => t.id === focusLinkedTaskId);
+    try {
+      const res = await fetch("/api/productivity/pomodoro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_id: focusLinkedTaskId || null,
+          task_title: taskObj ? taskObj.title : "General Operations Focus",
+          mode: timerMode.toUpperCase(),
+          duration_seconds: elapsed,
+          completed: true
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFocusSessions((prev) => [data.session, ...prev]);
+        toast.success(`Logged ${Math.round(elapsed / 60)} min focus session!`);
+        fetchAllData();
+      }
+    } catch (e) {
+    }
+  };
+  const handleQuickAddTask = async (e) => {
+    if (e) e.preventDefault();
+    if (!quickTaskTitle.trim()) return;
+    try {
+      const res = await fetch("/api/productivity/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-actor-name": currentUser?.name || "Operations Lead"
+        },
+        body: JSON.stringify({
+          title: quickTaskTitle.trim(),
+          department: quickTaskDept,
+          priority: quickTaskPriority,
+          scheduled_time: quickTaskTime,
+          due_date: (/* @__PURE__ */ new Date()).toISOString()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuickTaskTitle("");
+        setTasks((prev) => [data.task, ...prev]);
+        toast.success("Task created successfully!");
+      }
+    } catch (err) {
+      toast.error("Failed to create task");
+    }
+  };
+  const handleToggleTaskStatus = async (task) => {
+    const isComp = task.status === "COMPLETED";
+    const nextStatus = isComp ? "NOT_STARTED" : "COMPLETED";
+    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, status: nextStatus } : t));
+    if (selectedTask?.id === task.id) {
+      setSelectedTask((prev) => ({ ...prev, status: nextStatus }));
+    }
+    try {
+      await fetch(`/api/productivity/tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      toast.success(nextStatus === "COMPLETED" ? "Task marked complete! Great job." : "Task marked active.");
+    } catch (err) {
+      fetchAllData();
+    }
+  };
+  const handleToggleChecklist = async (taskId, itemId) => {
+    try {
+      const res = await fetch(`/api/productivity/tasks/${taskId}/checklist/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId })
+      });
+      const data = await res.json();
+      if (data.success && data.task) {
+        setTasks((prev) => prev.map((t) => t.id === taskId ? data.task : t));
+        if (selectedTask?.id === taskId) {
+          setSelectedTask(data.task);
+        }
+      }
+    } catch (e) {
+    }
+  };
+  const handleAddChecklistItem = async () => {
+    if (!newChecklistText.trim() || !selectedTask) return;
+    const currentList = selectedTask.checklists || selectedTask.checklist || [];
+    const updated = [
+      ...currentList,
+      { id: `chk_${Date.now()}`, text: newChecklistText.trim(), completed: false }
+    ];
+    try {
+      const res = await fetch(`/api/productivity/tasks/${selectedTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklists: updated, checklist: updated })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedTask(data.task);
+        setTasks((prev) => prev.map((t) => t.id === selectedTask.id ? data.task : t));
+        setNewChecklistText("");
+      }
+    } catch (e) {
+    }
+  };
+  const handleMoveQuadrant = async (task, qNum) => {
+    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, eisenhower_quadrant: qNum, quadrant: qNum } : t));
+    try {
+      await fetch(`/api/productivity/tasks/${task.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eisenhower_quadrant: qNum, quadrant: qNum })
+      });
+      toast.success(`Moved to Quadrant ${qNum}`);
+    } catch (e) {
+    }
+  };
+  const handleApplyTemplate = async (templateId) => {
+    try {
+      const res = await fetch("/api/productivity/templates/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-actor-name": currentUser?.name || "Operations Lead"
+        },
+        body: JSON.stringify({ templateId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTasks((prev) => [data.task, ...prev]);
+        setShowTemplateModal(null);
+        toast.success(`Applied "${data.task.title}" with pre-trip checklist!`);
+        setActiveTab("tasks");
+      }
+    } catch (err) {
+      toast.error("Failed to instantiate template");
+    }
+  };
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/productivity/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-actor-name": currentUser?.name || "Operations Lead"
+        },
+        body: JSON.stringify(taskForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTasks((prev) => [data.task, ...prev]);
+        setShowTaskModal(false);
+        setTaskForm({
+          title: "",
+          description: "",
+          department: "Operations",
+          priority: "MEDIUM",
+          eisenhower_quadrant: 2,
+          due_date: new Date(Date.now() + 864e5).toISOString().slice(0, 16),
+          scheduled_time: "09:00",
+          assigned_to_name: "Operations Staff",
+          related_entity_type: "",
+          related_entity_id: "",
+          recurring: "none"
+        });
+        toast.success("Task created successfully!");
+      }
+    } catch (err) {
+      toast.error("Failed to create task");
+    }
+  };
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (selectedTask?.id === taskId) setSelectedTask(null);
+    try {
+      await fetch(`/api/productivity/tasks/${taskId}`, { method: "DELETE" });
+      toast.success("Task deleted");
+    } catch (e) {
+    }
+  };
+  const handleCreateReminder = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/productivity/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reminderForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminders((prev) => [data.reminder, ...prev]);
+        setShowReminderModal(false);
+        toast.success("Reminder scheduled!");
+      }
+    } catch (err) {
+      toast.error("Failed to create reminder");
+    }
+  };
+  const handleSnoozeReminder = async (id, minutes) => {
+    try {
+      const res = await fetch("/api/productivity/reminders/snooze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminderId: id, minutes })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminders((prev) => prev.map((r) => r.id === id ? data.reminder : r));
+        toast.success(`Snoozed for ${minutes} minutes`);
+      }
+    } catch (e) {
+    }
+  };
+  const handleCompleteReminder = async (id) => {
+    try {
+      const res = await fetch("/api/productivity/reminders/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminderId: id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminders((prev) => prev.map((r) => r.id === id ? data.reminder : r));
+        toast.success("Reminder completed");
+      }
+    } catch (e) {
+    }
+  };
+  const handleCreateWorkflow = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/productivity/workflows", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-actor-name": currentUser?.name || "Staff"
+        },
+        body: JSON.stringify(workflowForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWorkflows((prev) => [data.workflow, ...prev]);
+        setShowWorkflowModal(false);
+        toast.success("Approval request submitted to manager!");
+      }
+    } catch (err) {
+      toast.error("Failed to submit workflow");
+    }
+  };
+  const handleReviewWorkflow = async (id, action, reason = "") => {
+    try {
+      const res = await fetch("/api/productivity/workflows/review", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-actor-name": currentUser?.name || "Authorised Manager"
+        },
+        body: JSON.stringify({ workflowId: id, action, reason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWorkflows((prev) => prev.map((w) => w.id === id ? data.workflow : w));
+        setShowRejectModal(null);
+        toast.success(action === "APPROVE" ? "Workflow Approved!" : "Workflow Rejected.");
+      }
+    } catch (err) {
+      toast.error("Failed to process approval");
+    }
+  };
+  const filteredTasks = React.useMemo(() => {
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    const next7Days = new Date(today);
+    next7Days.setDate(next7Days.getDate() + 7);
+    return tasks.filter((t) => {
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        const mTitle = (t.title || "").toLowerCase().includes(q);
+        const mDept = (t.department || "").toLowerCase().includes(q);
+        const mRel = (t.related_entity_id || "").toLowerCase().includes(q);
+        if (!mTitle && !mDept && !mRel) return false;
+      }
+      if (deptFilter !== "all" && t.department !== deptFilter) return false;
+      if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+      if (timeFilter === "all") return true;
+      if (timeFilter === "completed") return t.status === "COMPLETED";
+      const d = t.due_date ? new Date(t.due_date) : null;
+      if (timeFilter === "overdue") {
+        return d && d < today && t.status !== "COMPLETED" && t.status !== "CANCELLED";
+      }
+      if (timeFilter === "today") {
+        return d && d >= today && d < tomorrow;
+      }
+      if (timeFilter === "tomorrow") {
+        return d && d >= tomorrow && d < dayAfter;
+      }
+      if (timeFilter === "next7") {
+        return d && d >= today && d <= next7Days;
+      }
+      return true;
+    });
+  }, [tasks, timeFilter, deptFilter, priorityFilter, searchTerm]);
+  const taskGroups = React.useMemo(() => {
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    const overdue = [];
+    const forToday = [];
+    const forTomorrow = [];
+    const upcoming = [];
+    const completed = [];
+    filteredTasks.forEach((t) => {
+      if (t.status === "COMPLETED") {
+        completed.push(t);
+        return;
+      }
+      const d = t.due_date ? new Date(t.due_date) : null;
+      if (!d) {
+        upcoming.push(t);
+      } else if (d < today) {
+        overdue.push(t);
+      } else if (d >= today && d < tomorrow) {
+        forToday.push(t);
+      } else if (d >= tomorrow && d < dayAfter) {
+        forTomorrow.push(t);
+      } else {
+        upcoming.push(t);
+      }
+    });
+    return { overdue, forToday, forTomorrow, upcoming, completed };
+  }, [filteredTasks]);
+  const matrixQuadrants = React.useMemo(() => {
+    const q1 = [];
+    const q2 = [];
+    const q3 = [];
+    const q4 = [];
+    tasks.filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED").forEach((t) => {
+      const q = t.eisenhower_quadrant || t.quadrant || (t.priority === "CRITICAL" || t.priority === "URGENT" || t.priority === "HIGH" ? 1 : 2);
+      if (q === 1) q1.push(t);
+      else if (q === 2) q2.push(t);
+      else if (q === 3) q3.push(t);
+      else q4.push(t);
+    });
+    return { q1, q2, q3, q4 };
+  }, [tasks]);
+  const todayFocusMinutes = React.useMemo(() => {
+    const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    return focusSessions.filter((s) => (s.created_at || "").slice(0, 10) === todayStr).reduce((acc, s) => acc + (s.duration_minutes || 25), 0);
+  }, [focusSessions]);
+  const todayPomoCount = React.useMemo(() => {
+    const todayStr = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    return focusSessions.filter((s) => (s.created_at || "").slice(0, 10) === todayStr && s.mode === "POMODORO").length;
+  }, [focusSessions]);
+  const timerDisplay = React.useMemo(() => {
+    const m = Math.floor(timerSeconds / 60);
+    const s = timerSeconds % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }, [timerSeconds]);
+  const TABS = [
+    { id: "tasks", label: "Inbox & Today", icon: "\u{1F4E5}", count: taskGroups.forToday.length + taskGroups.overdue.length },
+    { id: "matrix", label: "Priority Matrix", icon: "\u{1F3AF}", count: matrixQuadrants.q1.length },
+    { id: "calendar", label: "Operations Calendar", icon: "\u{1F4C5}" },
+    { id: "focus", label: "Pomodoro & Focus", icon: "\u23F1\uFE0F" },
+    { id: "kanban", label: "Kanban Board", icon: "\u{1F4CB}" },
+    { id: "templates", label: "Transport SOPs", icon: "\u{1F4D1}" },
+    { id: "workflows", label: "Approvals", icon: "\u2696\uFE0F", count: workflows.filter((w) => w.status === "PENDING").length },
+    { id: "reminders", label: "Reminders", icon: "\u{1F514}", count: reminders.filter((r) => r.status === "SCHEDULED" || r.status === "DUE").length },
+    { id: "credit_control", label: "Credit Control", icon: "\u{1F6E1}\uFE0F" },
+    { id: "analytics", label: "Workload & Reports", icon: "\u{1F4CA}" }
+  ];
+  return React.createElement(
+    "div",
+    { className: "min-h-screen bg-background text-foreground pb-20" },
+    // Top Bar / Header
+    React.createElement(
+      "div",
+      { className: "border-b border-border/60 bg-card/60 backdrop-blur sticky top-0 z-30 px-4 lg:px-8 py-3.5" },
+      React.createElement(
+        "div",
+        { className: "max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-3" },
+          React.createElement(
+            "div",
+            { className: "h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-md font-black text-lg" },
+            "JB"
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              React.createElement(
+                "h1",
+                { className: "text-lg font-black tracking-tight text-foreground" },
+                "Operations Planner"
+              ),
+              React.createElement(
+                Badge,
+                { variant: "outline", className: "text-[9px] bg-primary/10 text-primary border-primary/30 uppercase" },
+                "TickTick Enterprise"
+              )
+            ),
+            React.createElement(
+              "p",
+              { className: "text-[11px] text-muted-foreground font-medium" },
+              "Jai Bhavani Cargo & Logistics \u2014 Intelligent Fleet, Dispatch & Transport Command"
+            )
+          )
+        ),
+        // Action Buttons & Live Timer Pill
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 flex-wrap" },
+          timerRunning && React.createElement(
+            "div",
+            {
+              onClick: () => handleTabChange("focus"),
+              className: "flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs font-bold cursor-pointer animate-pulse"
+            },
+            React.createElement("span", null, "\u23F1\uFE0F"),
+            React.createElement("span", null, `Focus Active: ${timerDisplay}`)
+          ),
+          React.createElement(
+            Button,
+            {
+              size: "sm",
+              variant: "outline",
+              onClick: () => setShowReminderModal(true),
+              className: "rounded-xl text-xs gap-1.5"
+            },
+            React.createElement("span", null, "\u{1F514}"),
+            React.createElement("span", null, "Add Reminder")
+          ),
+          React.createElement(
+            Button,
+            {
+              size: "sm",
+              variant: "outline",
+              onClick: () => setShowWorkflowModal(true),
+              className: "rounded-xl text-xs gap-1.5"
+            },
+            React.createElement("span", null, "\u2696\uFE0F"),
+            React.createElement("span", null, "Request Approval")
+          ),
+          React.createElement(
+            Button,
+            {
+              size: "sm",
+              onClick: () => setShowTaskModal(true),
+              className: "rounded-xl text-xs gap-1.5 shadow-md shadow-primary/20"
+            },
+            React.createElement("span", null, "\u2795"),
+            React.createElement("span", null, "New Task")
+          )
+        )
+      )
+    ),
+    // Navigation Tabs Bar (Scrollable on Mobile)
+    React.createElement(
+      "div",
+      { className: "border-b border-border/50 bg-card/30 px-4 lg:px-8 overflow-x-auto no-scrollbar" },
+      React.createElement(
+        "div",
+        { className: "max-w-7xl mx-auto flex items-center gap-1.5 py-2 min-w-max" },
+        TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return React.createElement(
+            "button",
+            {
+              key: tab.id,
+              onClick: () => handleTabChange(tab.id),
+              className: cn(
+                "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none",
+                isActive ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              )
+            },
+            React.createElement("span", { className: "text-sm" }, tab.icon),
+            React.createElement("span", null, tab.label),
+            typeof tab.count === "number" && tab.count > 0 && React.createElement("span", {
+              className: cn(
+                "ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black",
+                isActive ? "bg-primary-foreground text-primary" : "bg-secondary text-secondary-foreground"
+              )
+            }, tab.count)
+          );
+        })
+      )
+    ),
+    // Main Content Container
+    React.createElement(
+      "div",
+      { className: "max-w-7xl mx-auto px-4 lg:px-8 pt-6" },
+      // ──────────────────────────────────────────────────────────────
+      // TAB 1: INBOX & TODAY (TickTick-Style Task Engine)
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "tasks" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        // Quick Add Input Bar (Top Natural-Language / Quick-Capture)
+        React.createElement(
+          Card,
+          { className: "p-2.5 bg-card/80 border-border/80 shadow-sm rounded-2xl" },
+          React.createElement(
+            "form",
+            { onSubmit: handleQuickAddTask, className: "flex flex-col md:flex-row items-center gap-2" },
+            React.createElement(
+              "div",
+              { className: "relative flex-1 w-full" },
+              React.createElement("input", {
+                type: "text",
+                value: quickTaskTitle,
+                onChange: (e) => setQuickTaskTitle(e.target.value),
+                placeholder: "\u26A1 Type a task and press Enter (e.g., Verify E-Way bills for MH12RN1234)...",
+                className: "w-full h-10 pl-3 pr-2 rounded-xl bg-background border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium"
+              })
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 w-full md:w-auto flex-wrap" },
+              React.createElement("input", {
+                type: "time",
+                value: quickTaskTime,
+                onChange: (e) => setQuickTaskTime(e.target.value),
+                className: "h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold"
+              }),
+              React.createElement(
+                "select",
+                {
+                  value: quickTaskDept,
+                  onChange: (e) => setQuickTaskDept(e.target.value),
+                  className: "h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: "Operations" }, "Operations"),
+                React.createElement("option", { value: "Dispatch" }, "Dispatch"),
+                React.createElement("option", { value: "Fleet" }, "Fleet"),
+                React.createElement("option", { value: "Finance" }, "Finance"),
+                React.createElement("option", { value: "Compliance" }, "Compliance")
+              ),
+              React.createElement(
+                "select",
+                {
+                  value: quickTaskPriority,
+                  onChange: (e) => setQuickTaskPriority(e.target.value),
+                  className: "h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: "LOW" }, "Low Priority"),
+                React.createElement("option", { value: "MEDIUM" }, "Medium Priority"),
+                React.createElement("option", { value: "HIGH" }, "High Priority"),
+                React.createElement("option", { value: "CRITICAL" }, "Critical Priority")
+              ),
+              React.createElement(
+                Button,
+                { type: "submit", size: "sm", className: "h-10 px-4 rounded-xl" },
+                "Add"
+              )
+            )
+          )
+        ),
+        // Sub-Filters Row: Time Views + Department + Priority
+        React.createElement(
+          "div",
+          { className: "flex flex-col md:flex-row items-center justify-between gap-3 text-xs" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 no-scrollbar" },
+            [
+              { id: "all", label: "All Tasks", icon: "\u{1F4CB}" },
+              { id: "today", label: "Today", icon: "\u2600\uFE0F" },
+              { id: "tomorrow", label: "Tomorrow", icon: "\u{1F305}" },
+              { id: "next7", label: "Next 7 Days", icon: "\u{1F4C5}" },
+              { id: "overdue", label: "Overdue", icon: "\u{1F6A8}" },
+              { id: "completed", label: "Completed", icon: "\u2705" }
+            ].map((b) => React.createElement(
+              "button",
+              {
+                key: b.id,
+                onClick: () => setTimeFilter(b.id),
+                className: cn(
+                  "px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap",
+                  timeFilter === b.id ? "bg-secondary text-foreground border border-border shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
+                )
+              },
+              React.createElement("span", null, b.icon),
+              React.createElement("span", null, b.label)
+            ))
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 w-full md:w-auto" },
+            React.createElement("input", {
+              type: "text",
+              value: searchTerm,
+              onChange: (e) => setSearchTerm(e.target.value),
+              placeholder: "\u{1F50D} Search tasks...",
+              className: "h-8 px-3 rounded-xl bg-background border border-border text-xs w-full md:w-48"
+            }),
+            React.createElement(
+              "select",
+              {
+                value: deptFilter,
+                onChange: (e) => setDeptFilter(e.target.value),
+                className: "h-8 px-2 rounded-xl bg-background border border-border text-xs font-semibold"
+              },
+              React.createElement("option", { value: "all" }, "All Depts"),
+              React.createElement("option", { value: "Operations" }, "Operations"),
+              React.createElement("option", { value: "Fleet" }, "Fleet"),
+              React.createElement("option", { value: "Dispatch" }, "Dispatch"),
+              React.createElement("option", { value: "Finance" }, "Finance"),
+              React.createElement("option", { value: "Compliance" }, "Compliance")
+            )
+          )
+        ),
+        // Task Group Renderers
+        React.createElement(
+          "div",
+          { className: "space-y-6" },
+          // 🚨 Overdue Group (if any)
+          (timeFilter === "all" || timeFilter === "overdue") && taskGroups.overdue.length > 0 && React.createElement(
+            "div",
+            { className: "space-y-2.5" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 px-1" },
+              React.createElement(
+                Badge,
+                { variant: "destructive", className: "text-[11px] font-black" },
+                `\u{1F6A8} Overdue (${taskGroups.overdue.length})`
+              ),
+              React.createElement(
+                "span",
+                { className: "text-[11px] text-rose-500 font-semibold" },
+                "Needs immediate operational attention"
+              )
+            ),
+            taskGroups.overdue.map((t) => renderTaskRow(t))
+          ),
+          // ☀️ Today Group
+          (timeFilter === "all" || timeFilter === "today") && React.createElement(
+            "div",
+            { className: "space-y-2.5" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 px-1" },
+              React.createElement(
+                "span",
+                { className: "text-xs font-bold text-foreground flex items-center gap-1.5" },
+                "\u2600\uFE0F Today",
+                React.createElement(Badge, { variant: "secondary", className: "text-[10px]" }, taskGroups.forToday.length)
+              ),
+              React.createElement(
+                "span",
+                { className: "text-[11px] text-muted-foreground" },
+                (/* @__PURE__ */ new Date()).toLocaleDateString("en-IN", { weekday: "long", month: "short", day: "numeric" })
+              )
+            ),
+            taskGroups.forToday.length === 0 ? React.createElement(
+              Card,
+              { className: "p-6 text-center text-muted-foreground text-xs rounded-2xl border-dashed" },
+              "\u2728 All clear for today! No pending tasks remaining."
+            ) : taskGroups.forToday.map((t) => renderTaskRow(t))
+          ),
+          // 🌅 Tomorrow Group
+          (timeFilter === "all" || timeFilter === "tomorrow") && taskGroups.forTomorrow.length > 0 && React.createElement(
+            "div",
+            { className: "space-y-2.5" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 px-1" },
+              React.createElement(
+                "span",
+                { className: "text-xs font-bold text-foreground flex items-center gap-1.5" },
+                "\u{1F305} Tomorrow",
+                React.createElement(Badge, { variant: "secondary", className: "text-[10px]" }, taskGroups.forTomorrow.length)
+              )
+            ),
+            taskGroups.forTomorrow.map((t) => renderTaskRow(t))
+          ),
+          // 📅 Upcoming Group
+          (timeFilter === "all" || timeFilter === "next7") && taskGroups.upcoming.length > 0 && React.createElement(
+            "div",
+            { className: "space-y-2.5" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 px-1" },
+              React.createElement(
+                "span",
+                { className: "text-xs font-bold text-foreground flex items-center gap-1.5" },
+                "\u{1F4C5} Upcoming / Later",
+                React.createElement(Badge, { variant: "secondary", className: "text-[10px]" }, taskGroups.upcoming.length)
+              )
+            ),
+            taskGroups.upcoming.map((t) => renderTaskRow(t))
+          ),
+          // ✅ Completed Group
+          (timeFilter === "all" || timeFilter === "completed") && taskGroups.completed.length > 0 && React.createElement(
+            "div",
+            { className: "space-y-2.5 pt-4" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 px-1" },
+              React.createElement(
+                "span",
+                { className: "text-xs font-bold text-muted-foreground flex items-center gap-1.5" },
+                "\u2705 Completed Tasks",
+                React.createElement(Badge, { variant: "secondary", className: "text-[10px]" }, taskGroups.completed.length)
+              )
+            ),
+            taskGroups.completed.slice(0, 15).map((t) => renderTaskRow(t))
+          )
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 2: PRIORITY MATRIX (Eisenhower 4-Quadrant View)
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "matrix" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex flex-col md:flex-row md:items-center justify-between gap-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "h2",
+              { className: "text-base font-black text-foreground flex items-center gap-2" },
+              "\u{1F3AF} Eisenhower Priority Matrix",
+              React.createElement(Badge, { variant: "outline", className: "text-[10px]" }, "Dynamic Dispatch Logic")
+            ),
+            React.createElement(
+              "p",
+              { className: "text-xs text-muted-foreground" },
+              "Categorize operational tasks into 4 tactical quadrants: Do First, Schedule, Delegate, and Backlog."
+            )
+          ),
+          React.createElement(
+            Button,
+            {
+              size: "sm",
+              variant: "outline",
+              onClick: () => setShowTaskModal(true),
+              className: "rounded-xl text-xs gap-1.5"
+            },
+            "\u2795 Add Task to Matrix"
+          )
+        ),
+        // 4 Quadrants Grid (2x2 on Desktop, 1 Col on Mobile)
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+          // Q1: Urgent & Important (Red / Do First)
+          renderQuadrantCard({
+            qNum: 1,
+            title: "DO FIRST",
+            subtitle: "Urgent & Important (Breakdowns, Today Expiries)",
+            colorClass: "border-rose-500/40 bg-rose-500/5",
+            badgeClass: "bg-rose-500 text-white",
+            tasks: matrixQuadrants.q1
+          }),
+          // Q2: Not Urgent & Important (Yellow / Schedule)
+          renderQuadrantCard({
+            qNum: 2,
+            title: "SCHEDULE",
+            subtitle: "Not Urgent & Important (Preventive Maintenance, Fleet Audits)",
+            colorClass: "border-amber-500/40 bg-amber-500/5",
+            badgeClass: "bg-amber-500 text-white",
+            tasks: matrixQuadrants.q2
+          }),
+          // Q3: Urgent & Not Important (Blue / Delegate)
+          renderQuadrantCard({
+            qNum: 3,
+            title: "DELEGATE",
+            subtitle: "Urgent & Not Important (Fuel Slips, Gate Passes, Routine Calls)",
+            colorClass: "border-blue-500/40 bg-blue-500/5",
+            badgeClass: "bg-blue-500 text-white",
+            tasks: matrixQuadrants.q3
+          }),
+          // Q4: Not Urgent & Not Important (Green / Backlog & Eliminate)
+          renderQuadrantCard({
+            qNum: 4,
+            title: "BACKLOG / ELIMINATE",
+            subtitle: "Not Urgent & Not Important (Old Files Archiving, Minor Cleanups)",
+            colorClass: "border-emerald-500/40 bg-emerald-500/5",
+            badgeClass: "bg-emerald-500 text-white",
+            tasks: matrixQuadrants.q4
+          })
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 3: OPERATIONS CALENDAR & DAILY TIMELINE
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "calendar" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex flex-col md:flex-row md:items-center justify-between gap-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "h2",
+              { className: "text-base font-black text-foreground flex items-center gap-2" },
+              "\u{1F4C5} Operations Calendar & Daily Timeline"
+            ),
+            React.createElement(
+              "p",
+              { className: "text-xs text-muted-foreground" },
+              "Plan vehicle dispatch slots, driver shifts, and maintenance schedules on an interactive timeline."
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "div",
+              { className: "flex items-center bg-secondary/30 p-1 rounded-xl border border-border" },
+              React.createElement("button", {
+                onClick: () => setCalMode("agenda"),
+                className: cn("px-3 py-1 rounded-lg text-xs font-bold transition-all", calMode === "agenda" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground")
+              }, "Daily Hourly Agenda"),
+              React.createElement("button", {
+                onClick: () => setCalMode("month"),
+                className: cn("px-3 py-1 rounded-lg text-xs font-bold transition-all", calMode === "month" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground")
+              }, "Month Grid")
+            ),
+            React.createElement(Button, {
+              size: "sm",
+              onClick: () => setSelectedDate(/* @__PURE__ */ new Date()),
+              variant: "outline",
+              className: "rounded-xl text-xs"
+            }, "Today")
+          )
+        ),
+        calMode === "agenda" ? renderDailyAgendaTimeline() : renderMonthCalendarGrid()
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 4: POMODORO & FOCUS TIME TRACKER
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "focus" && React.createElement(
+        "div",
+        { className: "max-w-4xl mx-auto space-y-6" },
+        React.createElement(
+          Card,
+          { className: "p-8 text-center bg-card/80 border-border/80 shadow-lg rounded-3xl relative overflow-hidden" },
+          // Mode Tabs (Pomodoro, Short Break, Long Break, Stopwatch)
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-center gap-2 mb-8 flex-wrap" },
+            [
+              { id: "pomodoro", label: "\u{1F345} Pomodoro (25m)" },
+              { id: "short_break", label: "\u2615 Short Break (5m)" },
+              { id: "long_break", label: "\u{1F334} Long Break (15m)" },
+              { id: "stopwatch", label: "\u23F1\uFE0F Stopwatch" }
+            ].map((m) => React.createElement("button", {
+              key: m.id,
+              onClick: () => handleTimerModeChange(m.id),
+              className: cn(
+                "px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                timerMode === m.id ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary/40 text-muted-foreground hover:text-foreground"
+              )
+            }, m.label))
+          ),
+          // Digital Clock Display
+          React.createElement(
+            "div",
+            { className: "my-6 font-mono font-black text-6xl md:text-8xl tracking-tight text-foreground select-none" },
+            timerDisplay
+          ),
+          // Linked Task Selector
+          React.createElement(
+            "div",
+            { className: "max-w-md mx-auto mb-8" },
+            React.createElement(
+              "label",
+              { className: "block text-[11px] font-bold text-muted-foreground mb-1.5 text-left" },
+              "\u{1F3AF} Link Active Task to this Session:"
+            ),
+            React.createElement(
+              "select",
+              {
+                value: focusLinkedTaskId,
+                onChange: (e) => setFocusLinkedTaskId(e.target.value),
+                className: "w-full h-10 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+              },
+              React.createElement("option", { value: "" }, "-- General Transport Operations (No specific task) --"),
+              tasks.filter((t) => t.status !== "COMPLETED").map((t) => React.createElement("option", {
+                key: t.id,
+                value: t.id
+              }, `[${t.department}] ${t.title}`))
+            )
+          ),
+          // Timer Controls
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-center gap-3" },
+            React.createElement(
+              Button,
+              {
+                size: "lg",
+                onClick: () => setTimerRunning(!timerRunning),
+                className: cn(
+                  "h-12 px-8 rounded-2xl text-sm font-black shadow-lg",
+                  timerRunning ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                )
+              },
+              timerRunning ? "\u23F8\uFE0F Pause" : "\u25B6\uFE0F Start Focus"
+            ),
+            React.createElement(
+              Button,
+              {
+                size: "lg",
+                variant: "outline",
+                onClick: () => {
+                  setTimerRunning(false);
+                  handleTimerModeChange(timerMode);
+                },
+                className: "h-12 px-6 rounded-2xl text-sm"
+              },
+              "\u{1F504} Reset"
+            ),
+            React.createElement(
+              Button,
+              {
+                size: "lg",
+                variant: "secondary",
+                onClick: () => {
+                  setTimerRunning(false);
+                  handleCompleteFocusSession();
+                  handleTimerModeChange(timerMode);
+                },
+                className: "h-12 px-6 rounded-2xl text-sm font-bold"
+              },
+              "\u2705 Done"
+            )
+          ),
+          // Synthesized Ambient Audio Generator Selector
+          React.createElement(
+            "div",
+            { className: "mt-8 pt-6 border-t border-border/50 max-w-lg mx-auto flex items-center justify-between gap-4 text-xs" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "font-bold" }, "\u{1F3A7} Ambient Transport Audio:"),
+              React.createElement(
+                "select",
+                {
+                  value: ambientSound,
+                  onChange: (e) => handleAmbientChange(e.target.value),
+                  className: "h-8 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: "none" }, "Mute (Silent)"),
+                React.createElement("option", { value: "engine" }, "\u{1F69B} Diesel Engine Hum"),
+                React.createElement("option", { value: "rain" }, "\u{1F327}\uFE0F Rain on Windshield"),
+                React.createElement("option", { value: "highway" }, "\u{1F6E3}\uFE0F Night Highway Wind")
+              )
+            ),
+            ambientSound !== "none" && React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5" },
+              React.createElement("span", { className: "text-[10px] text-muted-foreground" }, "Vol:"),
+              React.createElement("input", {
+                type: "range",
+                min: "0.05",
+                max: "0.8",
+                step: "0.05",
+                value: ambientVolume,
+                onChange: (e) => {
+                  const val = parseFloat(e.target.value);
+                  setAmbientVolume(val);
+                  if (currentGain) currentGain.gain.value = val;
+                },
+                className: "w-20"
+              })
+            )
+          )
+        ),
+        // Today's Focus Stats Cards
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-3 gap-4" },
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card/60" },
+            React.createElement("div", { className: "text-[11px] font-bold text-muted-foreground" }, "Total Focus Today"),
+            React.createElement(
+              "div",
+              { className: "text-2xl font-black text-foreground mt-1" },
+              `${Math.floor(todayFocusMinutes / 60)}h ${todayFocusMinutes % 60}m`
+            )
+          ),
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card/60" },
+            React.createElement("div", { className: "text-[11px] font-bold text-muted-foreground" }, "Completed Pomodoros"),
+            React.createElement(
+              "div",
+              { className: "text-2xl font-black text-primary mt-1" },
+              `${todayPomoCount} Sessions`
+            )
+          ),
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card/60" },
+            React.createElement("div", { className: "text-[11px] font-bold text-muted-foreground" }, "Daily Goal Progress"),
+            React.createElement(
+              "div",
+              { className: "text-2xl font-black text-emerald-500 mt-1" },
+              `${Math.min(100, Math.round(todayPomoCount / 6 * 100))}%`
+            )
+          )
+        ),
+        // Focus Session History Log
+        React.createElement(
+          Card,
+          { className: "p-5 rounded-2xl bg-card/60" },
+          React.createElement(
+            "h3",
+            { className: "text-xs font-black text-foreground mb-3 uppercase tracking-wider" },
+            "\u{1F4CB} Focus Session History Log"
+          ),
+          focusSessions.length === 0 ? React.createElement("p", { className: "text-xs text-muted-foreground py-4 text-center" }, "No focus sessions recorded today yet. Start the timer to log deep work!") : React.createElement(
+            "div",
+            { className: "divide-y divide-border/40 text-xs" },
+            focusSessions.slice(0, 10).map((s, idx) => React.createElement(
+              "div",
+              {
+                key: s.id || idx,
+                className: "py-2.5 flex items-center justify-between gap-3"
+              },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5" },
+                React.createElement("span", { className: "text-base" }, s.mode === "POMODORO" ? "\u{1F345}" : "\u23F1\uFE0F"),
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("div", { className: "font-bold text-foreground" }, s.task_title || "General Focus Session"),
+                  React.createElement("div", { className: "text-[10px] text-muted-foreground" }, formatDateTime(s.created_at))
+                )
+              ),
+              React.createElement(
+                Badge,
+                { variant: "outline", className: "text-[10px] font-mono" },
+                `${s.duration_minutes || 25} min`
+              )
+            ))
+          )
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 5: KANBAN BOARD
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "kanban" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement("h2", { className: "text-base font-black text-foreground" }, "\u{1F4CB} Operations Kanban Flow"),
+          React.createElement(Button, { size: "sm", onClick: () => setShowTaskModal(true), className: "rounded-xl text-xs" }, "\u2795 Add Task")
+        ),
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-4 gap-4" },
+          [
+            { id: "NOT_STARTED", label: "Backlog", statusKey: "NOT_STARTED", color: "border-slate-500/30" },
+            { id: "IN_PROGRESS", label: "In Progress", statusKey: "IN_PROGRESS", color: "border-blue-500/30" },
+            { id: "PENDING_APPROVAL", label: "Review / Approval", statusKey: "PENDING_APPROVAL", color: "border-amber-500/30" },
+            { id: "COMPLETED", label: "Completed", statusKey: "COMPLETED", color: "border-emerald-500/30" }
+          ].map((col) => {
+            const colTasks = tasks.filter((t) => (t.status || "NOT_STARTED") === col.statusKey);
+            return React.createElement(
+              "div",
+              {
+                key: col.id,
+                className: cn("rounded-2xl border bg-card/40 p-3.5 flex flex-col min-h-[500px]", col.color)
+              },
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between mb-3 px-1" },
+                React.createElement("span", { className: "text-xs font-bold text-foreground" }, col.label),
+                React.createElement(Badge, { variant: "secondary", className: "text-[10px]" }, colTasks.length)
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-2.5 flex-1 overflow-y-auto" },
+                colTasks.map((t) => React.createElement(
+                  Card,
+                  {
+                    key: t.id,
+                    onClick: () => setSelectedTask(t),
+                    className: "p-3 bg-card border-border/80 rounded-xl hover:border-primary/50 cursor-pointer shadow-sm"
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center justify-between gap-1 mb-1.5" },
+                    React.createElement(Badge, { variant: "outline", className: cn("text-[9px]", DEPARTMENT_COLORS[t.department] || "") }, t.department),
+                    React.createElement(Badge, { className: cn("text-[9px]", PRIORITY_COLORS[t.priority] || "") }, t.priority)
+                  ),
+                  React.createElement("div", { className: "text-xs font-bold text-foreground mb-1" }, t.title),
+                  t.due_date && React.createElement(
+                    "div",
+                    { className: "text-[10px] text-muted-foreground" },
+                    `Due: ${formatDateOnly(t.due_date)}`
+                  )
+                ))
+              )
+            );
+          })
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 6: TRANSPORT SOP TEMPLATES & CHECKLISTS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "templates" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "h2",
+            { className: "text-base font-black text-foreground flex items-center gap-2" },
+            "\u{1F4D1} Transport Operations SOP & Checklist Templates"
+          ),
+          React.createElement(
+            "p",
+            { className: "text-xs text-muted-foreground" },
+            "Deploy battle-tested transport checklists for vehicle pre-trip, loading manifest, POD collection, and breakdowns with a single click."
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" },
+          TRANSPORT_TEMPLATES.map((tpl) => React.createElement(
+            Card,
+            {
+              key: tpl.id,
+              className: "p-5 rounded-2xl bg-card/80 border-border/80 flex flex-col justify-between shadow-sm hover:border-primary/50 transition-all"
+            },
+            React.createElement(
+              "div",
+              { className: "space-y-3" },
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between" },
+                React.createElement(Badge, { variant: "outline", className: "text-[10px]" }, tpl.department),
+                React.createElement(Badge, { className: cn("text-[10px]", PRIORITY_COLORS[tpl.priority] || "") }, tpl.priority)
+              ),
+              React.createElement("h3", { className: "text-sm font-bold text-foreground" }, tpl.title),
+              React.createElement("p", { className: "text-xs text-muted-foreground" }, tpl.description),
+              React.createElement(
+                "div",
+                { className: "pt-2 border-t border-border/40 space-y-1.5" },
+                React.createElement(
+                  "span",
+                  { className: "text-[11px] font-bold text-muted-foreground block mb-1" },
+                  `Pre-configured Checklists (${tpl.checklists.length}):`
+                ),
+                tpl.checklists.map((chk, i) => React.createElement(
+                  "div",
+                  {
+                    key: i,
+                    className: "flex items-center gap-2 text-xs text-foreground/80"
+                  },
+                  React.createElement("span", { className: "text-primary" }, "\u2611\uFE0F"),
+                  React.createElement("span", null, chk.text)
+                ))
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "pt-4 mt-4 border-t border-border/40" },
+              React.createElement(
+                Button,
+                {
+                  onClick: () => handleApplyTemplate(tpl.id),
+                  className: "w-full rounded-xl text-xs gap-1.5 shadow-sm"
+                },
+                "\u{1F680} Apply as Active Task"
+              )
+            )
+          ))
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 7: WORKFLOWS & APPROVALS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "workflows" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement("h2", { className: "text-base font-black text-foreground" }, "\u2696\uFE0F Manager Approvals Queue"),
+          React.createElement(Button, { size: "sm", onClick: () => setShowWorkflowModal(true), className: "rounded-xl text-xs" }, "\u2795 Request Approval")
+        ),
+        workflows.length === 0 ? React.createElement(Card, { className: "p-8 text-center text-muted-foreground text-xs rounded-2xl" }, "No active approval requests pending.") : React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+          workflows.map((wf) => React.createElement(
+            Card,
+            {
+              key: wf.id,
+              className: "p-5 rounded-2xl bg-card border-border/80 shadow-sm"
+            },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between mb-2" },
+              React.createElement(Badge, { variant: "outline", className: "text-[10px]" }, wf.workflow_type),
+              React.createElement(Badge, {
+                className: wf.status === "APPROVED" ? "bg-emerald-500/15 text-emerald-500" : wf.status === "REJECTED" ? "bg-rose-500/15 text-rose-500" : "bg-amber-500/15 text-amber-500"
+              }, wf.status)
+            ),
+            React.createElement("h4", { className: "text-sm font-bold text-foreground mb-1" }, wf.title),
+            React.createElement("p", { className: "text-xs text-muted-foreground mb-3" }, wf.description),
+            wf.amount > 0 && React.createElement(
+              "div",
+              { className: "text-xs font-bold text-primary mb-3" },
+              `Amount: \u20B9${Number(wf.amount).toLocaleString("en-IN")}`
+            ),
+            wf.status === "PENDING" && React.createElement(
+              "div",
+              { className: "flex items-center gap-2 pt-3 border-t border-border/40" },
+              React.createElement(Button, {
+                size: "sm",
+                onClick: () => handleReviewWorkflow(wf.id, "APPROVE"),
+                className: "rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+              }, "\u2713 Approve"),
+              React.createElement(Button, {
+                size: "sm",
+                variant: "outline",
+                onClick: () => setShowRejectModal(wf.id),
+                className: "rounded-xl text-xs text-rose-500 border-rose-500/30 hover:bg-rose-500/10"
+              }, "\u2715 Reject")
+            )
+          ))
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 8: REMINDERS & ALERTS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "reminders" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement("h2", { className: "text-base font-black text-foreground" }, "\u{1F514} Scheduled Reminders & Alerts"),
+          React.createElement(Button, { size: "sm", onClick: () => setShowReminderModal(true), className: "rounded-xl text-xs" }, "\u2795 Add Reminder")
+        ),
+        reminders.length === 0 ? React.createElement(Card, { className: "p-8 text-center text-muted-foreground text-xs rounded-2xl" }, "No active reminders.") : React.createElement(
+          "div",
+          { className: "space-y-3" },
+          reminders.map((rem) => React.createElement(
+            Card,
+            {
+              key: rem.id,
+              className: "p-4 rounded-2xl bg-card border-border/80 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm"
+            },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("div", { className: "text-xs font-bold text-foreground" }, rem.title),
+              React.createElement(
+                "div",
+                { className: "text-[11px] text-muted-foreground" },
+                `Trigger: ${formatDateTime(rem.trigger_time)}`
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              React.createElement(Button, {
+                size: "sm",
+                variant: "outline",
+                onClick: () => handleSnoozeReminder(rem.id, 30),
+                className: "rounded-xl text-xs"
+              }, "\u{1F4A4} Snooze 30m"),
+              React.createElement(Button, {
+                size: "sm",
+                onClick: () => handleCompleteReminder(rem.id),
+                className: "rounded-xl text-xs"
+              }, "\u2713 Done")
+            )
+          ))
+        )
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 9: CREDIT CONTROL
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "credit_control" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(React.Suspense, {
+          fallback: React.createElement("div", { className: "p-8 text-center text-xs" }, "Loading Credit Control Center...")
+        }, React.createElement(CreditControlView, null))
+      ),
+      // ──────────────────────────────────────────────────────────────
+      // TAB 10: WORKLOAD & REPORTS ANALYTICS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === "analytics" && React.createElement(
+        "div",
+        { className: "space-y-6" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement("h2", { className: "text-base font-black text-foreground" }, "\u{1F4CA} Productivity & Workload Analytics"),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(Button, {
+              size: "sm",
+              variant: "outline",
+              onClick: () => downloadExcel(tasks, "Operations_Tasks_Report"),
+              className: "rounded-xl text-xs"
+            }, "\u{1F4E5} Export Excel"),
+            React.createElement(Button, {
+              size: "sm",
+              variant: "outline",
+              onClick: () => downloadPdf(tasks, "Operations_Tasks_Report"),
+              className: "rounded-xl text-xs"
+            }, "\u{1F4C4} Export PDF")
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-4 gap-4" },
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card" },
+            React.createElement("div", { className: "text-xs text-muted-foreground font-bold" }, "Total Active Tasks"),
+            React.createElement("div", { className: "text-2xl font-black text-foreground mt-1" }, tasks.filter((t) => t.status !== "COMPLETED").length)
+          ),
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card" },
+            React.createElement("div", { className: "text-xs text-muted-foreground font-bold" }, "Overdue SLA Breaches"),
+            React.createElement("div", { className: "text-2xl font-black text-rose-500 mt-1" }, taskGroups.overdue.length)
+          ),
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card" },
+            React.createElement("div", { className: "text-xs text-muted-foreground font-bold" }, "Completed Today"),
+            React.createElement("div", { className: "text-2xl font-black text-emerald-500 mt-1" }, taskGroups.completed.length)
+          ),
+          React.createElement(
+            Card,
+            { className: "p-4 rounded-2xl bg-card" },
+            React.createElement("div", { className: "text-xs text-muted-foreground font-bold" }, "Focus Time Logged"),
+            React.createElement("div", { className: "text-2xl font-black text-primary mt-1" }, `${todayFocusMinutes} min`)
+          )
+        )
+      )
+    ),
+    // ────────────────────────────────────────────────────────────────
+    // TASK DETAIL DRAWER / MODAL
+    // ────────────────────────────────────────────────────────────────
+    selectedTask && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end",
+        onClick: () => setSelectedTask(null)
+      },
+      React.createElement(
+        "div",
+        {
+          className: "w-full max-w-lg bg-card h-full shadow-2xl p-6 overflow-y-auto space-y-6",
+          onClick: (e) => e.stopPropagation()
+        },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between pb-4 border-b border-border/60" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(Badge, { variant: "outline", className: cn(DEPARTMENT_COLORS[selectedTask.department] || "") }, selectedTask.department),
+            React.createElement(Badge, { className: cn(PRIORITY_COLORS[selectedTask.priority] || "") }, selectedTask.priority)
+          ),
+          React.createElement("button", {
+            onClick: () => setSelectedTask(null),
+            className: "text-muted-foreground hover:text-foreground text-sm font-bold"
+          }, "\u2715 Close")
+        ),
+        React.createElement(
+          "div",
+          { className: "space-y-2" },
+          React.createElement("h3", { className: "text-base font-black text-foreground" }, selectedTask.title),
+          React.createElement("p", { className: "text-xs text-muted-foreground leading-relaxed" }, selectedTask.description || "No detailed description provided.")
+        ),
+        // Checklists Section
+        React.createElement(
+          "div",
+          { className: "space-y-3 pt-3 border-t border-border/60" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "text-xs font-bold text-foreground" }, "Checklist Items"),
+            React.createElement(
+              "span",
+              { className: "text-[10px] text-muted-foreground" },
+              `${(selectedTask.checklists || selectedTask.checklist || []).filter((c) => c.completed).length} / ${(selectedTask.checklists || selectedTask.checklist || []).length} done`
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "space-y-1.5" },
+            (selectedTask.checklists || selectedTask.checklist || []).map((chk) => React.createElement(
+              "div",
+              {
+                key: chk.id,
+                onClick: () => handleToggleChecklist(selectedTask.id, chk.id),
+                className: "flex items-center gap-2.5 p-2 rounded-xl bg-background border border-border/60 cursor-pointer hover:bg-secondary/20 transition-all text-xs"
+              },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: !!chk.completed,
+                onChange: () => {
+                },
+                className: "h-4 w-4 rounded accent-primary"
+              }),
+              React.createElement("span", { className: cn(chk.completed && "line-through text-muted-foreground") }, chk.text)
+            ))
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 pt-2" },
+            React.createElement("input", {
+              type: "text",
+              value: newChecklistText,
+              onChange: (e) => setNewChecklistText(e.target.value),
+              placeholder: "+ Add checklist item...",
+              className: "flex-1 h-8 px-3 rounded-xl bg-background border border-border text-xs"
+            }),
+            React.createElement(Button, { size: "sm", onClick: handleAddChecklistItem, className: "h-8 px-3 text-xs" }, "Add")
+          )
+        ),
+        // Action Buttons
+        React.createElement(
+          "div",
+          { className: "pt-6 border-t border-border/60 flex items-center gap-2" },
+          React.createElement(Button, {
+            onClick: () => handleToggleTaskStatus(selectedTask),
+            className: "flex-1 rounded-xl text-xs"
+          }, selectedTask.status === "COMPLETED" ? "Mark Active" : "\u2713 Mark Complete"),
+          React.createElement(Button, {
+            variant: "outline",
+            onClick: () => {
+              setFocusLinkedTaskId(selectedTask.id);
+              setActiveTab("focus");
+              setSelectedTask(null);
+            },
+            className: "rounded-xl text-xs"
+          }, "\u23F1\uFE0F Start Focus"),
+          React.createElement(Button, {
+            variant: "destructive",
+            onClick: () => handleDeleteTask(selectedTask.id),
+            className: "rounded-xl text-xs"
+          }, "\u{1F5D1}\uFE0F Delete")
+        )
+      )
+    ),
+    // ────────────────────────────────────────────────────────────────
+    // CREATE TASK MODAL
+    // ────────────────────────────────────────────────────────────────
+    showTaskModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4",
+        onClick: () => setShowTaskModal(false)
+      },
+      React.createElement(
+        Card,
+        {
+          className: "w-full max-w-lg p-6 bg-card rounded-2xl shadow-2xl space-y-4",
+          onClick: (e) => e.stopPropagation()
+        },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between pb-2 border-b border-border/60" },
+          React.createElement("h3", { className: "text-sm font-black text-foreground" }, "\u2795 Create Operational Task"),
+          React.createElement("button", { onClick: () => setShowTaskModal(false), className: "text-xs text-muted-foreground" }, "\u2715")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleCreateTask, className: "space-y-3.5 text-xs" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Task Title:"),
+            React.createElement(Input, {
+              required: true,
+              value: taskForm.title,
+              onChange: (e) => setTaskForm({ ...taskForm, title: e.target.value }),
+              placeholder: "e.g. Conduct pre-trip brake & tyre inspection"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Department:"),
+              React.createElement(
+                "select",
+                {
+                  value: taskForm.department,
+                  onChange: (e) => setTaskForm({ ...taskForm, department: e.target.value }),
+                  className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: "Operations" }, "Operations"),
+                React.createElement("option", { value: "Dispatch" }, "Dispatch"),
+                React.createElement("option", { value: "Fleet" }, "Fleet"),
+                React.createElement("option", { value: "Finance" }, "Finance"),
+                React.createElement("option", { value: "Compliance" }, "Compliance")
+              )
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Priority:"),
+              React.createElement(
+                "select",
+                {
+                  value: taskForm.priority,
+                  onChange: (e) => setTaskForm({ ...taskForm, priority: e.target.value }),
+                  className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: "LOW" }, "Low Priority"),
+                React.createElement("option", { value: "MEDIUM" }, "Medium Priority"),
+                React.createElement("option", { value: "HIGH" }, "High Priority"),
+                React.createElement("option", { value: "CRITICAL" }, "Critical Priority")
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Due Date:"),
+              React.createElement("input", {
+                type: "datetime-local",
+                value: taskForm.due_date,
+                onChange: (e) => setTaskForm({ ...taskForm, due_date: e.target.value }),
+                className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Quadrant:"),
+              React.createElement(
+                "select",
+                {
+                  value: taskForm.eisenhower_quadrant,
+                  onChange: (e) => setTaskForm({ ...taskForm, eisenhower_quadrant: Number(e.target.value) }),
+                  className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+                },
+                React.createElement("option", { value: 1 }, "Q1: Do First (Urgent & Important)"),
+                React.createElement("option", { value: 2 }, "Q2: Schedule (Not Urgent & Important)"),
+                React.createElement("option", { value: 3 }, "Q3: Delegate (Urgent & Not Important)"),
+                React.createElement("option", { value: 4 }, "Q4: Backlog (Not Urgent & Not Important)")
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Description:"),
+            React.createElement("textarea", {
+              rows: 3,
+              value: taskForm.description,
+              onChange: (e) => setTaskForm({ ...taskForm, description: e.target.value }),
+              placeholder: "Add details, truck number, driver instructions...",
+              className: "w-full p-3 rounded-xl bg-background border border-border text-xs font-medium"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-3 border-t border-border/60" },
+            React.createElement(Button, { type: "button", variant: "outline", onClick: () => setShowTaskModal(false) }, "Cancel"),
+            React.createElement(Button, { type: "submit" }, "Create Task")
+          )
+        )
+      )
+    ),
+    // ────────────────────────────────────────────────────────────────
+    // CREATE REMINDER MODAL
+    // ────────────────────────────────────────────────────────────────
+    showReminderModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4",
+        onClick: () => setShowReminderModal(false)
+      },
+      React.createElement(
+        Card,
+        {
+          className: "w-full max-w-md p-6 bg-card rounded-2xl shadow-2xl space-y-4",
+          onClick: (e) => e.stopPropagation()
+        },
+        React.createElement("h3", { className: "text-sm font-black text-foreground" }, "\u{1F514} Schedule Alert / Reminder"),
+        React.createElement(
+          "form",
+          { onSubmit: handleCreateReminder, className: "space-y-3 text-xs" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Reminder Title:"),
+            React.createElement(Input, {
+              required: true,
+              value: reminderForm.title,
+              onChange: (e) => setReminderForm({ ...reminderForm, title: e.target.value }),
+              placeholder: "e.g. Call client for loading gate pass clearance"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Trigger Time:"),
+            React.createElement("input", {
+              type: "datetime-local",
+              value: reminderForm.trigger_time,
+              onChange: (e) => setReminderForm({ ...reminderForm, trigger_time: e.target.value }),
+              className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-3" },
+            React.createElement(Button, { type: "button", variant: "outline", onClick: () => setShowReminderModal(false) }, "Cancel"),
+            React.createElement(Button, { type: "submit" }, "Schedule")
+          )
+        )
+      )
+    ),
+    // ────────────────────────────────────────────────────────────────
+    // CREATE WORKFLOW MODAL
+    // ────────────────────────────────────────────────────────────────
+    showWorkflowModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4",
+        onClick: () => setShowWorkflowModal(false)
+      },
+      React.createElement(
+        Card,
+        {
+          className: "w-full max-w-md p-6 bg-card rounded-2xl shadow-2xl space-y-4",
+          onClick: (e) => e.stopPropagation()
+        },
+        React.createElement("h3", { className: "text-sm font-black text-foreground" }, "\u2696\uFE0F Request Manager Approval"),
+        React.createElement(
+          "form",
+          { onSubmit: handleCreateWorkflow, className: "space-y-3 text-xs" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Approval Type:"),
+            React.createElement(
+              "select",
+              {
+                value: workflowForm.workflow_type,
+                onChange: (e) => setWorkflowForm({ ...workflowForm, workflow_type: e.target.value }),
+                className: "w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold"
+              },
+              React.createElement("option", { value: "EXPENSE_ADVANCE" }, "Driver Route Expense Advance"),
+              React.createElement("option", { value: "GATE_PASS" }, "Terminal Exit Gate Pass Clearance"),
+              React.createElement("option", { value: "DRIVER_LEAVE" }, "Driver Emergency Leave Request"),
+              React.createElement("option", { value: "MAINTENANCE_ESTIMATE" }, "Workshop Maintenance Estimate > \u20B95,000")
+            )
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Subject / Title:"),
+            React.createElement(Input, {
+              required: true,
+              value: workflowForm.title,
+              onChange: (e) => setWorkflowForm({ ...workflowForm, title: e.target.value }),
+              placeholder: "e.g. \u20B98,000 Diesel Advance for Trip JB-401"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block font-bold text-muted-foreground mb-1" }, "Amount (\u20B9):"),
+            React.createElement(Input, {
+              type: "number",
+              value: workflowForm.amount,
+              onChange: (e) => setWorkflowForm({ ...workflowForm, amount: e.target.value }),
+              placeholder: "0.00"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-3" },
+            React.createElement(Button, { type: "button", variant: "outline", onClick: () => setShowWorkflowModal(false) }, "Cancel"),
+            React.createElement(Button, { type: "submit" }, "Submit Request")
+          )
+        )
+      )
+    )
+  );
+  function renderTaskRow(task) {
+    const isComp = task.status === "COMPLETED";
+    const chkList = task.checklists || task.checklist || [];
+    const chkDone = chkList.filter((c) => c.completed).length;
+    return React.createElement(
+      Card,
+      {
+        key: task.id,
+        className: cn(
+          "p-3.5 rounded-2xl bg-card border-border/80 hover:border-primary/50 transition-all flex items-center justify-between gap-3 shadow-sm group",
+          isComp && "opacity-60 bg-muted/30"
+        )
+      },
+      // Left: Checkbox + Title + Time Slot Badge
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-3 min-w-0 flex-1" },
+        React.createElement("input", {
+          type: "checkbox",
+          checked: isComp,
+          onChange: () => handleToggleTaskStatus(task),
+          className: "h-4 w-4 rounded accent-primary cursor-pointer shrink-0"
+        }),
+        React.createElement(
+          "div",
+          {
+            onClick: () => setSelectedTask(task),
+            className: "min-w-0 flex-1 cursor-pointer"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 flex-wrap" },
+            React.createElement("span", {
+              className: cn(
+                "text-xs font-bold text-foreground truncate",
+                isComp && "line-through text-muted-foreground"
+              )
+            }, task.title),
+            // Time Slot Badge (TickTick style: 09:00 AM)
+            task.scheduled_time && React.createElement(Badge, {
+              variant: "outline",
+              className: "text-[9px] font-mono bg-secondary/50 text-foreground border-border px-1.5"
+            }, `\u23F0 ${task.scheduled_time}`),
+            // Department Badge
+            React.createElement(Badge, {
+              variant: "outline",
+              className: cn("text-[9px]", DEPARTMENT_COLORS[task.department] || "")
+            }, task.department),
+            // Priority Badge
+            React.createElement(Badge, {
+              className: cn("text-[9px]", PRIORITY_COLORS[task.priority] || "")
+            }, task.priority),
+            // Quadrant Badge
+            task.eisenhower_quadrant && React.createElement(Badge, {
+              variant: "outline",
+              className: "text-[9px] font-bold"
+            }, `Q${task.eisenhower_quadrant}`),
+            // Checklist indicator
+            chkList.length > 0 && React.createElement(Badge, {
+              variant: "outline",
+              className: "text-[9px] bg-secondary/40"
+            }, `\u2611\uFE0F ${chkDone}/${chkList.length}`)
+          ),
+          task.description && React.createElement(
+            "p",
+            { className: "text-[11px] text-muted-foreground truncate mt-0.5" },
+            task.description
+          )
+        )
+      ),
+      // Right: Actions (Focus, Drawer, Delete)
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity" },
+        React.createElement("button", {
+          title: "Start Focus Timer on this task",
+          onClick: () => {
+            setFocusLinkedTaskId(task.id);
+            setActiveTab("focus");
+          },
+          className: "p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary/40 text-xs cursor-pointer"
+        }, "\u23F1\uFE0F"),
+        React.createElement("button", {
+          title: "Delete Task",
+          onClick: () => handleDeleteTask(task.id),
+          className: "p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 text-xs cursor-pointer"
+        }, "\u{1F5D1}\uFE0F")
+      )
+    );
+  }
+  function renderQuadrantCard({ qNum, title, subtitle, colorClass, badgeClass, tasks: tasks2 }) {
+    return React.createElement(
+      Card,
+      {
+        className: cn("p-5 rounded-2xl border flex flex-col justify-between shadow-sm min-h-[380px]", colorClass)
+      },
+      React.createElement(
+        "div",
+        { className: "space-y-3" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between pb-2 border-b border-border/40" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              React.createElement(
+                "span",
+                { className: cn("px-2 py-0.5 rounded-md text-[10px] font-black", badgeClass) },
+                `Q${qNum}`
+              ),
+              React.createElement("h3", { className: "text-sm font-black text-foreground" }, title)
+            ),
+            React.createElement("p", { className: "text-[11px] text-muted-foreground mt-0.5" }, subtitle)
+          ),
+          React.createElement(Badge, { variant: "outline", className: "text-xs font-bold" }, tasks2.length)
+        ),
+        // Quadrant Tasks List
+        React.createElement(
+          "div",
+          { className: "space-y-2 max-h-72 overflow-y-auto pr-1" },
+          tasks2.length === 0 ? React.createElement(
+            "div",
+            { className: "py-8 text-center text-muted-foreground text-xs" },
+            "No tasks currently in this quadrant."
+          ) : tasks2.map((t) => React.createElement(
+            "div",
+            {
+              key: t.id,
+              className: "p-2.5 rounded-xl bg-card/90 border border-border/80 shadow-xs flex items-center justify-between gap-2 text-xs"
+            },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 min-w-0 flex-1" },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: t.status === "COMPLETED",
+                onChange: () => handleToggleTaskStatus(t),
+                className: "h-3.5 w-3.5 rounded accent-primary cursor-pointer"
+              }),
+              React.createElement("span", {
+                onClick: () => setSelectedTask(t),
+                className: "font-bold text-foreground truncate cursor-pointer hover:underline"
+              }, t.title)
+            ),
+            // Move Quadrant Selector
+            React.createElement(
+              "select",
+              {
+                value: qNum,
+                onChange: (e) => handleMoveQuadrant(t, Number(e.target.value)),
+                className: "h-6 px-1.5 rounded-lg bg-background border border-border text-[10px] font-bold text-muted-foreground"
+              },
+              React.createElement("option", { value: 1 }, "Q1 (Do First)"),
+              React.createElement("option", { value: 2 }, "Q2 (Schedule)"),
+              React.createElement("option", { value: 3 }, "Q3 (Delegate)"),
+              React.createElement("option", { value: 4 }, "Q4 (Backlog)")
+            )
+          ))
+        )
+      ),
+      // Inline Quick Add for this Quadrant
+      React.createElement(
+        "div",
+        { className: "pt-3 mt-3 border-t border-border/40" },
+        React.createElement("input", {
+          type: "text",
+          placeholder: `+ Add task to ${title}...`,
+          onKeyDown: async (e) => {
+            if (e.key === "Enter" && e.target.value.trim()) {
+              const text = e.target.value.trim();
+              e.target.value = "";
+              try {
+                const res = await fetch("/api/productivity/tasks", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    title: text,
+                    department: "Operations",
+                    priority: qNum === 1 ? "CRITICAL" : qNum === 2 ? "HIGH" : "MEDIUM",
+                    eisenhower_quadrant: qNum,
+                    due_date: (/* @__PURE__ */ new Date()).toISOString()
+                  })
+                });
+                const d = await res.json();
+                if (d.success) {
+                  setTasks((prev) => [d.task, ...prev]);
+                  toast.success(`Added to Q${qNum}`);
+                }
+              } catch (err) {
+              }
+            }
+          },
+          className: "w-full h-8 px-3 rounded-xl bg-background border border-border text-xs"
+        })
+      )
+    );
+  }
+  function renderDailyAgendaTimeline() {
+    const hours = [
+      "07:00",
+      "08:00",
+      "09:00",
+      "10:00",
+      "11:00",
+      "12:00",
+      "13:00",
+      "14:00",
+      "15:00",
+      "16:00",
+      "17:00",
+      "18:00",
+      "19:00",
+      "20:00",
+      "21:00",
+      "22:00"
+    ];
+    const selDateStr = selectedDate.toISOString().slice(0, 10);
+    return React.createElement(
+      "div",
+      { className: "space-y-4" },
+      // Date Navigator Bar
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between bg-card/60 p-3 rounded-2xl border border-border" },
+        React.createElement(Button, {
+          size: "sm",
+          variant: "outline",
+          onClick: () => setSelectedDate(new Date(selectedDate.getTime() - 864e5)),
+          className: "rounded-xl text-xs"
+        }, "\u25C0 Previous Day"),
+        React.createElement(
+          "div",
+          { className: "text-xs font-black text-foreground flex items-center gap-2" },
+          React.createElement("span", null, "\u{1F4C5}"),
+          React.createElement("span", null, selectedDate.toLocaleDateString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+          }))
+        ),
+        React.createElement(Button, {
+          size: "sm",
+          variant: "outline",
+          onClick: () => setSelectedDate(new Date(selectedDate.getTime() + 864e5)),
+          className: "rounded-xl text-xs"
+        }, "Next Day \u25B6")
+      ),
+      // Hour by Hour Vertical Flow
+      React.createElement(
+        "div",
+        { className: "divide-y divide-border/50 bg-card rounded-2xl border border-border overflow-hidden" },
+        hours.map((hour) => {
+          const matchedTasks = tasks.filter((t) => {
+            if (t.scheduled_time && t.scheduled_time.startsWith(hour.slice(0, 2))) return true;
+            if (t.due_date && t.due_date.slice(0, 10) === selDateStr) {
+              const taskH = new Date(t.due_date).getHours();
+              return taskH === parseInt(hour.slice(0, 2), 10);
+            }
+            return false;
+          });
+          return React.createElement(
+            "div",
+            {
+              key: hour,
+              className: "flex items-start gap-4 p-3 hover:bg-secondary/10 transition-colors"
+            },
+            // Hour Label
+            React.createElement(
+              "div",
+              { className: "w-16 text-right font-mono text-xs font-bold text-muted-foreground pt-1" },
+              hour
+            ),
+            // Slot Tasks Container
+            React.createElement(
+              "div",
+              { className: "flex-1 min-h-[42px] flex items-center gap-2 flex-wrap" },
+              matchedTasks.length === 0 ? React.createElement("span", { className: "text-[11px] text-muted-foreground/40 italic" }, "No scheduled dispatch or task") : matchedTasks.map((t) => React.createElement(
+                "div",
+                {
+                  key: t.id,
+                  onClick: () => setSelectedTask(t),
+                  className: cn(
+                    "px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs hover:scale-102 transition-all",
+                    DEPARTMENT_COLORS[t.department] || "bg-secondary text-secondary-foreground border-border"
+                  )
+                },
+                React.createElement("span", null, t.title),
+                React.createElement(Badge, { className: cn("text-[8px]", PRIORITY_COLORS[t.priority] || "") }, t.priority)
+              ))
+            )
+          );
+        })
+      )
+    );
+  }
+  function renderMonthCalendarGrid() {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(d);
+    }
+    return React.createElement(
+      "div",
+      { className: "space-y-4" },
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between bg-card/60 p-3 rounded-2xl border border-border" },
+        React.createElement(Button, {
+          size: "sm",
+          variant: "outline",
+          onClick: () => setSelectedDate(new Date(year, month - 1, 1)),
+          className: "rounded-xl text-xs"
+        }, "\u25C0 Previous Month"),
+        React.createElement(
+          "div",
+          { className: "text-sm font-black text-foreground" },
+          selectedDate.toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+        ),
+        React.createElement(Button, {
+          size: "sm",
+          variant: "outline",
+          onClick: () => setSelectedDate(new Date(year, month + 1, 1)),
+          className: "rounded-xl text-xs"
+        }, "Next Month \u25B6")
+      ),
+      React.createElement(
+        "div",
+        { className: "grid grid-cols-7 gap-2" },
+        ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => React.createElement("div", {
+          key: d,
+          className: "text-center font-bold text-[11px] text-muted-foreground py-2"
+        }, d)),
+        days.map((d, idx) => {
+          if (!d) {
+            return React.createElement("div", { key: idx, className: "h-24 rounded-2xl bg-secondary/10 border border-transparent" });
+          }
+          const dStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const dayTasks = tasks.filter((t) => (t.due_date || "").slice(0, 10) === dStr);
+          const isTodayDate = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) === dStr;
+          return React.createElement(
+            "div",
+            {
+              key: idx,
+              onClick: () => {
+                setSelectedDate(new Date(year, month, d));
+                setCalMode("agenda");
+              },
+              className: cn(
+                "h-24 p-2 rounded-2xl border bg-card/70 hover:border-primary cursor-pointer transition-all flex flex-col justify-between overflow-hidden",
+                isTodayDate ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-border/70"
+              )
+            },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between" },
+              React.createElement("span", { className: cn("text-xs font-black", isTodayDate ? "text-primary" : "text-foreground") }, d),
+              dayTasks.length > 0 && React.createElement(Badge, { variant: "secondary", className: "text-[9px] px-1" }, dayTasks.length)
+            ),
+            React.createElement(
+              "div",
+              { className: "space-y-1 overflow-hidden" },
+              dayTasks.slice(0, 2).map((t) => React.createElement("div", {
+                key: t.id,
+                className: cn("text-[9px] font-bold px-1.5 py-0.5 rounded truncate", DEPARTMENT_COLORS[t.department] || "bg-secondary")
+              }, t.title)),
+              dayTasks.length > 2 && React.createElement("div", { className: "text-[8px] text-muted-foreground" }, `+${dayTasks.length - 2} more`)
+            )
+          );
+        })
+      )
+    );
+  }
+}
+class ProductivityErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("Enterprise Productivity System error caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement(
+        "div",
+        {
+          className: "min-h-[400px] flex flex-col items-center justify-center p-8 text-center space-y-4 bg-card rounded-2xl border border-destructive/30 m-4"
+        },
+        React.createElement("div", { className: "h-12 w-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl font-bold" }, "\u26A0\uFE0F"),
+        React.createElement("h3", { className: "text-lg font-bold text-foreground" }, "Operations Planner Recovered Safely"),
+        React.createElement(
+          "p",
+          { className: "text-xs text-muted-foreground max-w-md" },
+          this.state.error?.message || "An unexpected operational UI state was encountered. The engine auto-isolated the exception."
+        ),
+        React.createElement(Button, {
+          onClick: () => {
+            this.setState({ hasError: false, error: null });
+            window.location.reload();
+          }
+        }, "Reload Operations Hub")
+      );
+    }
+    return this.props.children;
+  }
+}
+function EnterpriseProductivityPageWrapper() {
+  return React.createElement(ProductivityErrorBoundary, null, React.createElement(EnterpriseProductivityDashboard));
+}
+export {
+  EnterpriseProductivityPageWrapper as default
+};

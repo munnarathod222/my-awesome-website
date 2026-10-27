@@ -690,6 +690,83 @@ productivityRouter.post('/workflows/review', (req, res) => {
   }
 });
 
+
+productivityRouter.get('/templates', (req, res) => {
+  try {
+    const templates = productivityService.getTemplates();
+    return res.json({ success: true, count: templates.length, templates });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/templates/apply', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.createTaskFromTemplate(req.body.templateId, actor, req.body.overrides || {});
+    return res.status(201).json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.get('/pomodoro', (req, res) => {
+  try {
+    const sessions = productivityService.getFocusSessions(req.query);
+    return res.json({ success: true, count: sessions.length, sessions });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/pomodoro', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const session = productivityService.logFocusSession(req.body, actor);
+    return res.status(201).json({ success: true, session });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/tasks/:id/checklist/toggle', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.toggleChecklistItem(req.params.id, req.body.itemId || req.body.id, actor);
+    if (!task) return res.status(404).json({ success: false, error: 'Task or checklist item not found' });
+    return res.json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+productivityRouter.post('/tasks/checklist/toggle', (req, res) => {
+  try {
+    const actor = {
+      id: req.headers['x-actor-id'] || 'usr_staff',
+      name: req.headers['x-actor-name'] || 'Staff Member',
+      role: req.headers['x-actor-role'] || 'manager'
+    };
+    const task = productivityService.toggleChecklistItem(req.body.taskId, req.body.itemId || req.body.id, actor);
+    if (!task) return res.status(404).json({ success: false, error: 'Task or checklist item not found' });
+    return res.json({ success: true, task });
+  } catch (err) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 productivityRouter.post('/clear', (req, res) => {
   try {
     const result = productivityService.clearAll();

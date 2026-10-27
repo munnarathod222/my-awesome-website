@@ -1,0 +1,28 @@
+[
+  {
+    "id": "FOC-2026-F0527F",
+    "task_id": "TSK-2026-80E4D9",
+    "task_title": "Verify Pre-Trip Inspection for Truck MH12RN1234",
+    "mode": "POMODORO",
+    "duration_seconds": 1500,
+    "duration_minutes": 25,
+    "completed": true,
+    "notes": "",
+    "user_id": "usr_staff",
+    "user_name": "Staff Member",
+    "created_at": "2026-10-27T17:34:35.050Z"
+  },
+  {
+    "id": "FOC-2026-7848C0",
+    "task_id": "TSK-2026-62DDB6",
+    "task_title": "Verify Pre-Trip Inspection for Truck MH12RN1234",
+    "mode": "POMODORO",
+    "duration_seconds": 1500,
+    "duration_minutes": 25,
+    "completed": true,
+    "notes": "",
+    "user_id": "usr_staff",
+    "user_name": "Staff Member",
+    "created_at": "2026-10-27T17:34:14.953Z"
+  }
+]

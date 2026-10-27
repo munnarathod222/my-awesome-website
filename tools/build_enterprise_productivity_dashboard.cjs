@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 
-console.log('=== Building Enterprise Productivity & Workflow Command Center ===');
+console.log('=== Building Complete Production-Ready Operations Planner for Jai Bhavani Cargo ===');
 
 const sourceCode = `
 import { r as React } from "./vendor-react-Bs5V2qFE.js";
@@ -46,10 +46,89 @@ const toast = {
   }
 };
 
+// ── Web Audio API Ambient Transport Synthesizer (Zero External MP3 / Zero Bandwidth) ──
+let audioCtx = null;
+let currentSource = null;
+let currentGain = null;
+
+function stopAmbientSound() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch (e) {}
+    try { currentSource.disconnect(); } catch (e) {}
+    currentSource = null;
+  }
+}
+
+function playAmbientSound(type, volume = 0.3) {
+  stopAmbientSound();
+  if (type === 'none' || !type) return;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const sampleRate = audioCtx.sampleRate;
+    const bufferSize = sampleRate * 2;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+
+    if (type === 'engine') {
+      // Warm low-frequency diesel engine drone
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      }
+    } else if (type === 'rain') {
+      // Highway rain on cabin windshield
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        output[i] = (b0 + b1 + b2 + white * 0.5362) * 0.11;
+      }
+    } else {
+      // Night highway wind
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.04 * white)) / 1.04;
+        lastOut = output[i];
+      }
+    }
+
+    const whiteNoise = audioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = type === 'engine' ? 'lowpass' : (type === 'rain' ? 'bandpass' : 'lowpass');
+    filter.frequency.value = type === 'engine' ? 140 : (type === 'rain' ? 900 : 450);
+
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = volume;
+
+    whiteNoise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    whiteNoise.start(0);
+    currentSource = whiteNoise;
+    currentGain = gainNode;
+  } catch (err) {
+    console.warn('Web Audio synthesis not available:', err.message);
+  }
+}
+
 // UI Primitives
 function Card({ className, children, ...props }) {
   return React.createElement('div', {
-    className: cn('rounded-2xl border bg-card text-card-foreground shadow-sm', className),
+    className: cn('rounded-2xl border bg-card text-card-foreground shadow-sm transition-all', className),
     ...props
   }, children);
 }
@@ -78,11 +157,12 @@ function CardContent({ className, children, ...props }) {
   }, children);
 }
 function Button({ className, variant, size, children, ...props }) {
-  const base = 'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer';
-  let vClass = 'bg-primary text-primary-foreground hover:bg-primary/90';
+  const base = 'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-xs font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer active:scale-95';
+  let vClass = 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm';
   if (variant === 'outline') vClass = 'border border-border bg-background hover:bg-secondary/40 text-foreground';
   else if (variant === 'ghost') vClass = 'hover:bg-secondary/30 text-muted-foreground hover:text-foreground';
   else if (variant === 'secondary') vClass = 'bg-secondary text-secondary-foreground hover:bg-secondary/80';
+  else if (variant === 'destructive') vClass = 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm';
   
   let sClass = 'h-9 px-4 py-2';
   if (size === 'sm') sClass = 'h-8 rounded-lg px-3 text-[11px]';
@@ -104,47 +184,61 @@ function Input({ className, ...props }) {
   });
 }
 function Badge({ className, variant, children }) {
+  let vClass = 'bg-primary/10 text-primary border-primary/20';
+  if (variant === 'destructive') vClass = 'bg-rose-500/15 text-rose-500 border-rose-500/30 font-semibold';
+  else if (variant === 'warning') vClass = 'bg-amber-500/15 text-amber-500 border-amber-500/30 font-semibold';
+  else if (variant === 'success') vClass = 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30 font-semibold';
+  else if (variant === 'outline') vClass = 'border border-border text-foreground';
+  else if (variant === 'secondary') vClass = 'bg-secondary text-secondary-foreground';
+
   return React.createElement('span', {
-    className: cn(
-      'inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-extrabold border uppercase tracking-wider',
-      variant === 'outline' ? 'bg-transparent border-border' : 'bg-secondary/30 text-secondary-foreground border-transparent',
-      className
-    )
+    className: cn('inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[10px] font-bold tracking-wide transition-colors', vClass, className)
   }, children);
 }
 
-// Defensive date formatters (prevent RangeError)
 function formatDateTime(val, fallback = 'N/A') {
   if (!val) return fallback;
   try {
     const d = new Date(val);
-    return isNaN(d.getTime()) ? fallback : d.toLocaleString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
     });
-  } catch (e) { return fallback; }
+  } catch (e) {
+    return fallback;
+  }
 }
 
 function formatDateOnly(val, fallback = 'N/A') {
   if (!val) return fallback;
   try {
     const d = new Date(val);
-    return isNaN(d.getTime()) ? fallback : d.toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric'
+    if (isNaN(d.getTime())) return fallback;
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
     });
-  } catch (e) { return fallback; }
+  } catch (e) {
+    return fallback;
+  }
 }
 
 const PRIORITY_COLORS = {
-  LOW: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  LOW: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   MEDIUM: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  HIGH: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  CRITICAL: 'bg-rose-500/20 text-rose-400 border-rose-500/40 animate-pulse',
-  URGENT: 'bg-red-500/25 text-red-300 border-red-500/50 animate-pulse'
+  HIGH: 'bg-amber-500/15 text-amber-400 border-amber-500/30 font-bold',
+  CRITICAL: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-bold',
+  URGENT: 'bg-rose-600/25 text-rose-300 border-rose-600/50 font-bold animate-pulse'
 };
 
 const STATUS_COLORS = {
-  NOT_STARTED: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  NOT_STARTED: 'bg-secondary text-secondary-foreground border-border',
   IN_PROGRESS: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   WAITING_FOR_RESPONSE: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   PENDING_APPROVAL: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
@@ -152,6 +246,104 @@ const STATUS_COLORS = {
   COMPLETED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   CANCELLED: 'bg-muted text-muted-foreground border-border'
 };
+
+const DEPARTMENT_COLORS = {
+  Operations: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
+  Fleet: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
+  Dispatch: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  Finance: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  Compliance: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Admin: 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+};
+
+// 5 Standard Transport SOP Templates
+const TRANSPORT_TEMPLATES = [
+  {
+    id: 'tpl_pre_trip',
+    title: 'Vehicle Pre-Trip Roadworthiness Inspection',
+    category: 'Fleet Maintenance',
+    department: 'Fleet',
+    priority: 'HIGH',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 0.75,
+    description: 'Mandatory pre-trip physical and safety inspection before vehicle departure from terminal.',
+    checklists: [
+      { id: 'pt_1', text: 'Engine oil level, coolant level & brake fluid verified' },
+      { id: 'pt_2', text: 'All tyres PSI check & spare wheel tread depth > 3mm' },
+      { id: 'pt_3', text: 'FASTag account active with minimum ₹1,500 balance' },
+      { id: 'pt_4', text: 'Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin' },
+      { id: 'pt_5', text: 'Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present' }
+    ]
+  },
+  {
+    id: 'tpl_dispatch_manifest',
+    title: 'Dispatch & Loading Manifest Verification',
+    category: 'Dispatch Logistics',
+    department: 'Dispatch',
+    priority: 'CRITICAL',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 1.0,
+    description: 'Ensure complete consignment verification, weight tally, and statutory E-Way bill validation.',
+    checklists: [
+      { id: 'dm_1', text: 'Verify Consignor Invoice count and Part-B E-Way bill valid for transit route' },
+      { id: 'dm_2', text: 'Driver physical breathalyzer sobriety test recorded in log' },
+      { id: 'dm_3', text: 'Gross vehicle weight recorded on certified weighbridge slip' },
+      { id: 'dm_4', text: 'Weatherproof tarpaulin lashing & tamper-evident container seal locked' },
+      { id: 'dm_5', text: 'Handover printed LR (Lorry Receipt) copy to driver with consignee address' }
+    ]
+  },
+  {
+    id: 'tpl_freight_invoicing',
+    title: 'Freight Invoicing & POD Collection Checklist',
+    category: 'Accounts & Billing',
+    department: 'Finance',
+    priority: 'MEDIUM',
+    eisenhower_quadrant: 3,
+    estimated_duration_hours: 0.5,
+    description: 'Complete post-unloading documentation, driver settlement, and billing submission.',
+    checklists: [
+      { id: 'fi_1', text: 'Original consignee signed & company stamped POD collected' },
+      { id: 'fi_2', text: 'High-resolution POD scanned and archived in Company Vault' },
+      { id: 'fi_3', text: 'Toll, diesel receipts & driver route advance reconciled in Cashbook' },
+      { id: 'fi_4', text: 'Tax Invoice generated with applicable GST rate (5% RCM or 12% Forward)' },
+      { id: 'fi_5', text: 'Invoice dispatch email with POD sent to client accounts' }
+    ]
+  },
+  {
+    id: 'tpl_breakdown_protocol',
+    title: 'Emergency Breakdown Escalation Protocol',
+    category: 'Route Operations',
+    department: 'Operations',
+    priority: 'URGENT',
+    eisenhower_quadrant: 1,
+    estimated_duration_hours: 2.0,
+    description: 'Immediate action plan for highway breakdown, tyre burst, or mechanical stoppage.',
+    checklists: [
+      { id: 'bp_1', text: 'Pinpoint live vehicle GPS coordinates & confirm driver safety' },
+      { id: 'bp_2', text: 'Place reflective warning triangles 50m behind stationary truck' },
+      { id: 'bp_3', text: 'Dispatch nearest empanelled highway mechanic / mobile workshop' },
+      { id: 'bp_4', text: 'Alert client / consignee of anticipated transit delay' },
+      { id: 'bp_5', text: 'Arrange transshipment relief vehicle if repair ETA exceeds 4 hours' }
+    ]
+  },
+  {
+    id: 'tpl_quarterly_compliance',
+    title: 'Quarterly Fleet Compliance & Tax Audit',
+    category: 'Statutory Compliance',
+    department: 'Compliance',
+    priority: 'HIGH',
+    eisenhower_quadrant: 2,
+    estimated_duration_hours: 1.5,
+    description: 'Proactive audit of all vehicle statutory documents, state border taxes, and renewals.',
+    checklists: [
+      { id: 'qc_1', text: 'Check All-India Tourist/Goods Permit quarterly tax payment status' },
+      { id: 'qc_2', text: 'Verify PUC (Pollution Under Control) validity across active fleet' },
+      { id: 'qc_3', text: 'Speed governor calibration and fitness renewal inspection schedule' },
+      { id: 'qc_4', text: 'Comprehensive commercial vehicle insurance renewal audit (30-day notice)' },
+      { id: 'qc_5', text: 'Driver commercial driving license expiry & medical fitness records check' }
+    ]
+  }
+];
 
 // Resilient Auth resolution (Zero context dependency)
 function useSafeAuth() {
@@ -167,7 +359,7 @@ function useSafeAuth() {
     } catch (e) {}
     return {
       id: 'usr_operations',
-      name: 'Vinod Kumar Rathod',
+      name: 'Operations Manager',
       email: 'operations@jaibhavanicargo.com',
       role: 'super_admin'
     };
@@ -185,7 +377,9 @@ function EnterpriseProductivityDashboard() {
       const p = window.location.pathname;
       if (p.includes('credit-control')) return 'credit_control';
       if (p.includes('reminders')) return 'reminders';
-      if (p.includes('todo') || p.includes('tasks') || p.includes('workflow')) return 'tasks';
+      if (p.includes('calendar')) return 'calendar';
+      if (p.includes('matrix')) return 'matrix';
+      if (p.includes('focus') || p.includes('pomodoro')) return 'focus';
     } catch (e) {}
     return 'tasks';
   });
@@ -198,7 +392,7 @@ function EnterpriseProductivityDashboard() {
       window.history.replaceState({}, '', u.toString());
     } catch (e) {}
   };
-  const [viewMode, setViewMode] = React.useState('list'); // 'list', 'kanban'
+
   const [loading, setLoading] = React.useState(true);
 
   // Data states
@@ -207,9 +401,10 @@ function EnterpriseProductivityDashboard() {
   const [reminders, setReminders] = React.useState([]);
   const [workflows, setWorkflows] = React.useState([]);
   const [notifications, setNotifications] = React.useState([]);
+  const [focusSessions, setFocusSessions] = React.useState([]);
 
-  // Filters
-  const [statusFilter, setStatusFilter] = React.useState('all');
+  // Task Sub-Filters (TickTick-style)
+  const [timeFilter, setTimeFilter] = React.useState('all'); // 'all', 'today', 'tomorrow', 'next7', 'overdue', 'completed'
   const [deptFilter, setDeptFilter] = React.useState('all');
   const [priorityFilter, setPriorityFilter] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -218,6 +413,7 @@ function EnterpriseProductivityDashboard() {
   const [showTaskModal, setShowTaskModal] = React.useState(false);
   const [showReminderModal, setShowReminderModal] = React.useState(false);
   const [showWorkflowModal, setShowWorkflowModal] = React.useState(false);
+  const [showTemplateModal, setShowTemplateModal] = React.useState(null); // template object
   const [showRejectModal, setShowRejectModal] = React.useState(null); // workflow id
   const [rejectionReason, setRejectionReason] = React.useState('');
 
@@ -225,16 +421,37 @@ function EnterpriseProductivityDashboard() {
   const [selectedTask, setSelectedTask] = React.useState(null);
   const [newChecklistText, setNewChecklistText] = React.useState('');
 
+  // Quick Add Input Bar State
+  const [quickTaskTitle, setQuickTaskTitle] = React.useState('');
+  const [quickTaskTime, setQuickTaskTime] = React.useState('09:00');
+  const [quickTaskDept, setQuickTaskDept] = React.useState('Operations');
+  const [quickTaskPriority, setQuickTaskPriority] = React.useState('MEDIUM');
+
+  // Calendar State
+  const [calMode, setCalMode] = React.useState('agenda'); // 'agenda' | 'month'
+  const [selectedDate, setSelectedDate] = React.useState(() => new Date());
+
+  // Pomodoro / Focus State
+  const [timerMode, setTimerMode] = React.useState('pomodoro'); // 'pomodoro' (25m), 'short_break' (5m), 'long_break' (15m), 'stopwatch'
+  const [timerSeconds, setTimerSeconds] = React.useState(25 * 60);
+  const [timerRunning, setTimerRunning] = React.useState(false);
+  const [focusLinkedTaskId, setFocusLinkedTaskId] = React.useState('');
+  const [ambientSound, setAmbientSound] = React.useState('none'); // 'none', 'engine', 'rain', 'highway'
+  const [ambientVolume, setAmbientVolume] = React.useState(0.3);
+
   // New task form state
   const [taskForm, setTaskForm] = React.useState({
     title: '',
     description: '',
     department: 'Operations',
     priority: 'MEDIUM',
+    eisenhower_quadrant: 2,
     due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-    assigned_to_name: 'Vinod Kumar Rathod',
+    scheduled_time: '09:00',
+    assigned_to_name: 'Operations Staff',
     related_entity_type: '',
-    related_entity_id: ''
+    related_entity_id: '',
+    recurring: 'none'
   });
 
   // New reminder form state
@@ -248,1153 +465,1924 @@ function EnterpriseProductivityDashboard() {
 
   // New workflow form state
   const [workflowForm, setWorkflowForm] = React.useState({
+    workflow_type: 'EXPENSE_ADVANCE',
     title: '',
     description: '',
-    workflow_type: 'EXPENSE_RELEASE',
-    department: 'Finance',
     amount: ''
   });
 
-  // Load summary and datasets (On-demand, ZERO continuous polling)
-  const loadData = async () => {
-    setLoading(true);
+  // ── Load All Data ──────────────────────────────────────────────────
+  const fetchAllData = React.useCallback(async () => {
     try {
-      const [sumRes, taskRes, remRes, wfRes, notifRes] = await Promise.all([
-        fetch('/api/productivity/summary'),
-        fetch('/api/productivity/tasks'),
-        fetch('/api/productivity/reminders'),
-        fetch('/api/productivity/workflows'),
-        fetch('/api/productivity/notifications')
+      setLoading(true);
+      const [sumRes, taskRes, remRes, wfRes, notifRes, focRes] = await Promise.allSettled([
+        fetch('/api/productivity/summary').then(r => r.json()),
+        fetch('/api/productivity/tasks').then(r => r.json()),
+        fetch('/api/productivity/reminders').then(r => r.json()),
+        fetch('/api/productivity/workflows').then(r => r.json()),
+        fetch('/api/productivity/notifications').then(r => r.json()),
+        fetch('/api/productivity/pomodoro').then(r => r.json())
       ]);
 
-      if (sumRes.ok) {
-        const s = await sumRes.json();
-        if (s.success) setSummary(s);
-      }
-      if (taskRes.ok) {
-        const t = await taskRes.json();
-        if (t.success && Array.isArray(t.tasks)) setTasks(t.tasks);
-      }
-      if (remRes.ok) {
-        const r = await remRes.json();
-        if (r.success && Array.isArray(r.reminders)) setReminders(r.reminders);
-      }
-      if (wfRes.ok) {
-        const w = await wfRes.json();
-        if (w.success && Array.isArray(w.workflows)) setWorkflows(w.workflows);
-      }
-      if (notifRes.ok) {
-        const n = await notifRes.json();
-        if (n.success && Array.isArray(n.notifications)) setNotifications(n.notifications);
-      }
-    } catch (e) {
-      console.error('[Productivity Load Error]:', e);
+      if (sumRes.status === 'fulfilled') setSummary(sumRes.value);
+      if (taskRes.status === 'fulfilled' && taskRes.value?.tasks) setTasks(taskRes.value.tasks);
+      if (remRes.status === 'fulfilled' && remRes.value?.reminders) setReminders(remRes.value.reminders);
+      if (wfRes.status === 'fulfilled' && wfRes.value?.workflows) setWorkflows(wfRes.value.workflows);
+      if (notifRes.status === 'fulfilled' && notifRes.value?.notifications) setNotifications(notifRes.value.notifications);
+      if (focRes.status === 'fulfilled' && focRes.value?.sessions) setFocusSessions(focRes.value.sessions);
+    } catch (err) {
+      console.error('Failed to fetch productivity data:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  React.useEffect(() => {
-    loadData();
   }, []);
 
-  // Quick action: Create Task
-  const handleCreateTask = async (e) => {
-    e.preventDefault();
-    if (!taskForm.title.trim()) return toast.error('Please enter a task title');
-    try {
-      const payload = {
-        ...taskForm,
-        id: 'TSK-' + Date.now(),
-        due_date: new Date(taskForm.due_date).toISOString()
-      };
-      const res = await fetch('/api/productivity/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Task created successfully');
-        setShowTaskModal(false);
-        setTaskForm({
-          title: '', description: '', department: 'Operations', priority: 'MEDIUM',
-          due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-          assigned_to_name: currentUser.name || 'Vinod Kumar Rathod', related_entity_type: '', related_entity_id: ''
+  React.useEffect(() => {
+    fetchAllData();
+    const interval = setInterval(fetchAllData, 15000);
+    return () => clearInterval(interval);
+  }, [fetchAllData]);
+
+  // ── Pomodoro Timer Ticker ──────────────────────────────────────────
+  React.useEffect(() => {
+    let interval = null;
+    if (timerRunning) {
+      interval = setInterval(() => {
+        setTimerSeconds(prev => {
+          if (timerMode === 'stopwatch') {
+            return prev + 1;
+          }
+          if (prev <= 1) {
+            setTimerRunning(false);
+            // Completed countdown session
+            handleCompleteFocusSession();
+            toast.success('🔔 Focus session complete! Take a break or start your next task.');
+            return 0;
+          }
+          return prev - 1;
         });
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to create task');
-      }
-    } catch (err) {
-      toast.error('Network error creating task');
+      }, 1000);
     }
+    return () => clearInterval(interval);
+  }, [timerRunning, timerMode, focusLinkedTaskId]);
+
+  const handleTimerModeChange = (mode) => {
+    setTimerRunning(false);
+    setTimerMode(mode);
+    if (mode === 'pomodoro') setTimerSeconds(25 * 60);
+    else if (mode === 'short_break') setTimerSeconds(5 * 60);
+    else if (mode === 'long_break') setTimerSeconds(15 * 60);
+    else if (mode === 'stopwatch') setTimerSeconds(0);
   };
 
-  // Quick action: Create Reminder
-  const handleCreateReminder = async (e) => {
-    e.preventDefault();
-    if (!reminderForm.title.trim()) return toast.error('Please enter a reminder title');
-    try {
-      const payload = {
-        ...reminderForm,
-        id: 'REM-' + Date.now(),
-        trigger_time: new Date(reminderForm.trigger_time).toISOString()
-      };
-      const res = await fetch('/api/productivity/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Reminder scheduled successfully');
-        setShowReminderModal(false);
-        setReminderForm({
-          title: '', notes: '', trigger_time: new Date(Date.now() + 3600000).toISOString().slice(0, 16),
-          priority: 'MEDIUM', recurrence_type: 'NONE'
-        });
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to schedule reminder');
-      }
-    } catch (err) {
-      toast.error('Network error scheduling reminder');
-    }
+  const handleAmbientChange = (type) => {
+    setAmbientSound(type);
+    playAmbientSound(type, ambientVolume);
   };
 
-  // Quick action: Create Workflow Request
-  const handleCreateWorkflow = async (e) => {
-    e.preventDefault();
-    if (!workflowForm.title.trim()) return toast.error('Please enter a request title');
-    try {
-      const payload = {
-        ...workflowForm,
-        id: 'WF-' + Date.now()
-      };
-      const res = await fetch('/api/productivity/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Approval request submitted');
-        setShowWorkflowModal(false);
-        setWorkflowForm({ title: '', description: '', workflow_type: 'EXPENSE_RELEASE', department: 'Finance', amount: '' });
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to submit workflow');
-      }
-    } catch (err) {
-      toast.error('Network error submitting request');
-    }
-  };
-
-  // Update task status
-  const handleStatusChange = async (taskId, newStatus) => {
-    try {
-      const res = await fetch('/api/productivity/tasks/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ taskId, id: taskId, updates: { status: newStatus }, status: newStatus })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(\`Task updated to \${newStatus}\`);
-        loadData();
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(data.task || { ...selectedTask, status: newStatus });
-        }
-      } else {
-        toast.error(data.error || 'Failed to update status');
-      }
-    } catch (err) {
-      toast.error('Failed to update status');
-    }
-  };
-
-  // Delete task
-  const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
-    try {
-      const res = await fetch('/api/productivity/tasks/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ taskId, id: taskId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success('Task deleted successfully');
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(null);
-        }
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to delete task');
-      }
-    } catch (err) {
-      toast.error('Network error deleting task');
-    }
-  };
-
-  // Add checklist item to task
-  const handleAddChecklist = async () => {
-    if (!newChecklistText.trim() || !selectedTask) return;
-    const newItem = {
-      id: 'chk_' + Date.now(),
-      text: newChecklistText.trim(),
-      completed: false
-    };
-    const prevList = selectedTask.checklists || selectedTask.checklist || [];
-    const updatedChecklists = [...prevList, newItem];
-    try {
-      const res = await fetch('/api/productivity/tasks/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({
-          taskId: selectedTask.id,
-          id: selectedTask.id,
-          updates: { checklists: updatedChecklists, checklist: updatedChecklists },
-          checklists: updatedChecklists,
-          checklist: updatedChecklists
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedTask(data.task || { ...selectedTask, checklists: updatedChecklists, checklist: updatedChecklists });
-        setNewChecklistText('');
-        loadData();
-      }
-    } catch (err) {
-      toast.error('Failed to add checklist item');
-    }
-  };
-
-  // Toggle checklist item
-  const handleToggleChecklist = async (itemId) => {
-    if (!selectedTask) return;
-    const prevList = selectedTask.checklists || selectedTask.checklist || [];
-    const updatedChecklists = prevList.map(c => 
-      c.id === itemId ? { ...c, completed: !c.completed } : c
+  const handleCompleteFocusSession = async () => {
+    const elapsed = timerMode === 'stopwatch' ? timerSeconds : (
+      timerMode === 'pomodoro' ? 25 * 60 - timerSeconds : 5 * 60 - timerSeconds
     );
-    try {
-      const res = await fetch('/api/productivity/tasks/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({
-          taskId: selectedTask.id,
-          id: selectedTask.id,
-          updates: { checklists: updatedChecklists, checklist: updatedChecklists },
-          checklists: updatedChecklists,
-          checklist: updatedChecklists
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedTask(data.task || { ...selectedTask, checklists: updatedChecklists, checklist: updatedChecklists });
-        loadData();
-      }
-    } catch (err) {}
-  };
+    if (elapsed < 10) return; // ignore micro accidental clicks
 
-  // Complete reminder
-  const handleCompleteReminder = async (reminderId) => {
+    const taskObj = tasks.find(t => t.id === focusLinkedTaskId);
     try {
-      const res = await fetch('/api/productivity/reminders/complete', {
+      const res = await fetch('/api/productivity/pomodoro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reminderId, id: reminderId })
+        body: JSON.stringify({
+          task_id: focusLinkedTaskId || null,
+          task_title: taskObj ? taskObj.title : 'General Operations Focus',
+          mode: timerMode.toUpperCase(),
+          duration_seconds: elapsed,
+          completed: true
+        })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success('Reminder marked completed');
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to complete reminder');
+        setFocusSessions(prev => [data.session, ...prev]);
+        toast.success(\`Logged \${Math.round(elapsed / 60)} min focus session!\`);
+        fetchAllData();
+      }
+    } catch (e) {}
+  };
+
+  // ── Quick Add Task ────────────────────────────────────────────────
+  const handleQuickAddTask = async (e) => {
+    if (e) e.preventDefault();
+    if (!quickTaskTitle.trim()) return;
+
+    try {
+      const res = await fetch('/api/productivity/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-name': currentUser?.name || 'Operations Lead'
+        },
+        body: JSON.stringify({
+          title: quickTaskTitle.trim(),
+          department: quickTaskDept,
+          priority: quickTaskPriority,
+          scheduled_time: quickTaskTime,
+          due_date: new Date().toISOString()
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setQuickTaskTitle('');
+        setTasks(prev => [data.task, ...prev]);
+        toast.success('Task created successfully!');
       }
     } catch (err) {
-      toast.error('Failed to complete reminder');
+      toast.error('Failed to create task');
     }
   };
 
-  // Snooze reminder
-  const handleSnoozeReminder = async (reminderId, minutes) => {
+  // ── Toggle Task Completion ────────────────────────────────────────
+  const handleToggleTaskStatus = async (task) => {
+    const isComp = task.status === 'COMPLETED';
+    const nextStatus = isComp ? 'NOT_STARTED' : 'COMPLETED';
+    
+    // Optimistic UI update
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus } : t));
+    if (selectedTask?.id === task.id) {
+      setSelectedTask(prev => ({ ...prev, status: nextStatus }));
+    }
+
+    try {
+      await fetch(\`/api/productivity/tasks/\${task.id}\`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      toast.success(nextStatus === 'COMPLETED' ? 'Task marked complete! Great job.' : 'Task marked active.');
+    } catch (err) {
+      fetchAllData();
+    }
+  };
+
+  // ── Toggle Checklist Item ─────────────────────────────────────────
+  const handleToggleChecklist = async (taskId, itemId) => {
+    try {
+      const res = await fetch(\`/api/productivity/tasks/\${taskId}/checklist/toggle\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId })
+      });
+      const data = await res.json();
+      if (data.success && data.task) {
+        setTasks(prev => prev.map(t => t.id === taskId ? data.task : t));
+        if (selectedTask?.id === taskId) {
+          setSelectedTask(data.task);
+        }
+      }
+    } catch (e) {}
+  };
+
+  // ── Add Checklist Item ────────────────────────────────────────────
+  const handleAddChecklistItem = async () => {
+    if (!newChecklistText.trim() || !selectedTask) return;
+    const currentList = selectedTask.checklists || selectedTask.checklist || [];
+    const updated = [
+      ...currentList,
+      { id: \`chk_\${Date.now()}\`, text: newChecklistText.trim(), completed: false }
+    ];
+    try {
+      const res = await fetch(\`/api/productivity/tasks/\${selectedTask.id}\`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checklists: updated, checklist: updated })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedTask(data.task);
+        setTasks(prev => prev.map(t => t.id === selectedTask.id ? data.task : t));
+        setNewChecklistText('');
+      }
+    } catch (e) {}
+  };
+
+  // ── Move Task to Another Eisenhower Quadrant ──────────────────────
+  const handleMoveQuadrant = async (task, qNum) => {
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, eisenhower_quadrant: qNum, quadrant: qNum } : t));
+    try {
+      await fetch(\`/api/productivity/tasks/\${task.id}\`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eisenhower_quadrant: qNum, quadrant: qNum })
+      });
+      toast.success(\`Moved to Quadrant \${qNum}\`);
+    } catch (e) {}
+  };
+
+  // ── Apply Transport Template ──────────────────────────────────────
+  const handleApplyTemplate = async (templateId) => {
+    try {
+      const res = await fetch('/api/productivity/templates/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-name': currentUser?.name || 'Operations Lead'
+        },
+        body: JSON.stringify({ templateId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTasks(prev => [data.task, ...prev]);
+        setShowTemplateModal(null);
+        toast.success(\`Applied "\${data.task.title}" with pre-trip checklist!\`);
+        setActiveTab('tasks');
+      }
+    } catch (err) {
+      toast.error('Failed to instantiate template');
+    }
+  };
+
+  // ── Create Full Task Modal Submit ─────────────────────────────────
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/productivity/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-name': currentUser?.name || 'Operations Lead'
+        },
+        body: JSON.stringify(taskForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTasks(prev => [data.task, ...prev]);
+        setShowTaskModal(false);
+        setTaskForm({
+          title: '',
+          description: '',
+          department: 'Operations',
+          priority: 'MEDIUM',
+          eisenhower_quadrant: 2,
+          due_date: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+          scheduled_time: '09:00',
+          assigned_to_name: 'Operations Staff',
+          related_entity_type: '',
+          related_entity_id: '',
+          recurring: 'none'
+        });
+        toast.success('Task created successfully!');
+      }
+    } catch (err) {
+      toast.error('Failed to create task');
+    }
+  };
+
+  // ── Delete Task ───────────────────────────────────────────────────
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    if (selectedTask?.id === taskId) setSelectedTask(null);
+    try {
+      await fetch(\`/api/productivity/tasks/\${taskId}\`, { method: 'DELETE' });
+      toast.success('Task deleted');
+    } catch (e) {}
+  };
+
+  // ── Create Reminder ───────────────────────────────────────────────
+  const handleCreateReminder = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/productivity/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reminderForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminders(prev => [data.reminder, ...prev]);
+        setShowReminderModal(false);
+        toast.success('Reminder scheduled!');
+      }
+    } catch (err) {
+      toast.error('Failed to create reminder');
+    }
+  };
+
+  const handleSnoozeReminder = async (id, minutes) => {
     try {
       const res = await fetch('/api/productivity/reminders/snooze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reminderId, id: reminderId, minutes })
+        body: JSON.stringify({ reminderId: id, minutes })
       });
       const data = await res.json();
       if (data.success) {
+        setReminders(prev => prev.map(r => r.id === id ? data.reminder : r));
         toast.success(\`Snoozed for \${minutes} minutes\`);
-        loadData();
-      } else {
-        toast.error(data.error || 'Failed to snooze reminder');
+      }
+    } catch (e) {}
+  };
+
+  const handleCompleteReminder = async (id) => {
+    try {
+      const res = await fetch('/api/productivity/reminders/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reminderId: id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReminders(prev => prev.map(r => r.id === id ? data.reminder : r));
+        toast.success('Reminder completed');
+      }
+    } catch (e) {}
+  };
+
+  // ── Create Workflow ───────────────────────────────────────────────
+  const handleCreateWorkflow = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/productivity/workflows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-name': currentUser?.name || 'Staff'
+        },
+        body: JSON.stringify(workflowForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWorkflows(prev => [data.workflow, ...prev]);
+        setShowWorkflowModal(false);
+        toast.success('Approval request submitted to manager!');
       }
     } catch (err) {
-      toast.error('Failed to snooze reminder');
+      toast.error('Failed to submit workflow');
     }
   };
 
-  // Approval review
-  const handleWorkflowReview = async (workflowId, action, reason = '') => {
+  const handleReviewWorkflow = async (id, action, reason = '') => {
     try {
       const res = await fetch('/api/productivity/workflows/review', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-actor-name': currentUser.name, 'x-actor-id': currentUser.id },
-        body: JSON.stringify({ workflowId, id: workflowId, action, reason })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-actor-name': currentUser?.name || 'Authorised Manager'
+        },
+        body: JSON.stringify({ workflowId: id, action, reason })
       });
       const data = await res.json();
       if (data.success) {
-        toast.success(\`Request \${action === 'APPROVE' ? 'Approved' : 'Rejected'}\`);
+        setWorkflows(prev => prev.map(w => w.id === id ? data.workflow : w));
         setShowRejectModal(null);
-        setRejectionReason('');
-        loadData();
-      } else {
-        toast.error(data.error || 'Action rejected');
+        toast.success(action === 'APPROVE' ? 'Workflow Approved!' : 'Workflow Rejected.');
       }
     } catch (err) {
-      toast.error('Error processing workflow action');
+      toast.error('Failed to process approval');
     }
   };
 
-  // Filtered tasks
+  // ── TickTick Filtering Logic ──────────────────────────────────────
   const filteredTasks = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
+    const next7Days = new Date(today);
+    next7Days.setDate(next7Days.getDate() + 7);
+
     return tasks.filter(t => {
-      if (statusFilter !== 'all' && t.status !== statusFilter) return false;
-      if (deptFilter !== 'all' && t.department !== deptFilter) return false;
-      if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+      // Search
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
-        const match = 
-          (t.title || '').toLowerCase().includes(q) ||
-          (t.description || '').toLowerCase().includes(q) ||
-          (t.related_entity_id || '').toLowerCase().includes(q) ||
-          (t.assigned_to_name || '').toLowerCase().includes(q);
-        if (!match) return false;
+        const mTitle = (t.title || '').toLowerCase().includes(q);
+        const mDept = (t.department || '').toLowerCase().includes(q);
+        const mRel = (t.related_entity_id || '').toLowerCase().includes(q);
+        if (!mTitle && !mDept && !mRel) return false;
+      }
+      // Department
+      if (deptFilter !== 'all' && t.department !== deptFilter) return false;
+      // Priority
+      if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+
+      // Time Filter (TickTick buckets)
+      if (timeFilter === 'all') return true;
+      if (timeFilter === 'completed') return t.status === 'COMPLETED';
+
+      const d = t.due_date ? new Date(t.due_date) : null;
+      if (timeFilter === 'overdue') {
+        return d && d < today && t.status !== 'COMPLETED' && t.status !== 'CANCELLED';
+      }
+      if (timeFilter === 'today') {
+        return d && d >= today && d < tomorrow;
+      }
+      if (timeFilter === 'tomorrow') {
+        return d && d >= tomorrow && d < dayAfter;
+      }
+      if (timeFilter === 'next7') {
+        return d && d >= today && d <= next7Days;
       }
       return true;
     });
-  }, [tasks, statusFilter, deptFilter, priorityFilter, searchTerm]);
+  }, [tasks, timeFilter, deptFilter, priorityFilter, searchTerm]);
 
-  const metrics = summary?.metrics || {
-    my_tasks_today: 0,
-    overdue_tasks: 0,
-    upcoming_reminders: 0,
-    high_priority_tasks: 0,
-    tasks_in_progress: 0,
-    tasks_awaiting_approval: 0,
-    completed_tasks: 0,
-    daily_completion_percentage: 0,
-    escalated_tasks: 0,
-    pending_notifications: 0
-  };
+  // Grouped task sections for All / Today view
+  const taskGroups = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(tomorrow);
+    dayAfter.setDate(dayAfter.getDate() + 1);
 
-  return React.createElement('div', {
-    className: 'min-h-[calc(100dvh-4rem)] p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6 bg-background text-foreground'
-  },
-    // ── Command Center Header ─────────────────────────────────────────
-    React.createElement('div', {
-      className: 'flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card border border-border/70 p-5 rounded-3xl backdrop-blur-md shadow-sm'
-    },
-      React.createElement('div', null,
+    const overdue = [];
+    const forToday = [];
+    const forTomorrow = [];
+    const upcoming = [];
+    const completed = [];
+
+    filteredTasks.forEach(t => {
+      if (t.status === 'COMPLETED') {
+        completed.push(t);
+        return;
+      }
+      const d = t.due_date ? new Date(t.due_date) : null;
+      if (!d) {
+        upcoming.push(t);
+      } else if (d < today) {
+        overdue.push(t);
+      } else if (d >= today && d < tomorrow) {
+        forToday.push(t);
+      } else if (d >= tomorrow && d < dayAfter) {
+        forTomorrow.push(t);
+      } else {
+        upcoming.push(t);
+      }
+    });
+
+    return { overdue, forToday, forTomorrow, upcoming, completed };
+  }, [filteredTasks]);
+
+  // ── Priority Matrix Quadrant Groups ───────────────────────────────
+  const matrixQuadrants = React.useMemo(() => {
+    const q1 = []; // Do First (Urgent & Important)
+    const q2 = []; // Schedule (Not Urgent & Important)
+    const q3 = []; // Delegate (Urgent & Not Important)
+    const q4 = []; // Eliminate / Backlog (Not Urgent & Not Important)
+
+    tasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').forEach(t => {
+      const q = t.eisenhower_quadrant || t.quadrant || (
+        (t.priority === 'CRITICAL' || t.priority === 'URGENT' || t.priority === 'HIGH') ? 1 : 2
+      );
+      if (q === 1) q1.push(t);
+      else if (q === 2) q2.push(t);
+      else if (q === 3) q3.push(t);
+      else q4.push(t);
+    });
+
+    return { q1, q2, q3, q4 };
+  }, [tasks]);
+
+  // ── Focus Stats Calculation ───────────────────────────────────────
+  const todayFocusMinutes = React.useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return focusSessions
+      .filter(s => (s.created_at || '').slice(0, 10) === todayStr)
+      .reduce((acc, s) => acc + (s.duration_minutes || 25), 0);
+  }, [focusSessions]);
+
+  const todayPomoCount = React.useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return focusSessions.filter(s => (s.created_at || '').slice(0, 10) === todayStr && s.mode === 'POMODORO').length;
+  }, [focusSessions]);
+
+  // Format digital countdown string
+  const timerDisplay = React.useMemo(() => {
+    const m = Math.floor(timerSeconds / 60);
+    const s = timerSeconds % 60;
+    return \`\${String(m).padStart(2, '0')}:\${String(s).padStart(2, '0')}\`;
+  }, [timerSeconds]);
+
+  // ── Navigation Tabs Configuration ─────────────────────────────────
+  const TABS = [
+    { id: 'tasks', label: 'Inbox & Today', icon: '📥', count: taskGroups.forToday.length + taskGroups.overdue.length },
+    { id: 'matrix', label: 'Priority Matrix', icon: '🎯', count: matrixQuadrants.q1.length },
+    { id: 'calendar', label: 'Operations Calendar', icon: '📅' },
+    { id: 'focus', label: 'Pomodoro & Focus', icon: '⏱️' },
+    { id: 'kanban', label: 'Kanban Board', icon: '📋' },
+    { id: 'templates', label: 'Transport SOPs', icon: '📑' },
+    { id: 'workflows', label: 'Approvals', icon: '⚖️', count: workflows.filter(w => w.status === 'PENDING').length },
+    { id: 'reminders', label: 'Reminders', icon: '🔔', count: reminders.filter(r => r.status === 'SCHEDULED' || r.status === 'DUE').length },
+    { id: 'credit_control', label: 'Credit Control', icon: '🛡️' },
+    { id: 'analytics', label: 'Workload & Reports', icon: '📊' }
+  ];
+
+  return React.createElement('div', { className: 'min-h-screen bg-background text-foreground pb-20' },
+    
+    // Top Bar / Header
+    React.createElement('div', { className: 'border-b border-border/60 bg-card/60 backdrop-blur sticky top-0 z-30 px-4 lg:px-8 py-3.5' },
+      React.createElement('div', { className: 'max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4' },
         React.createElement('div', { className: 'flex items-center gap-3' },
-          React.createElement('div', { className: 'p-2.5 bg-primary/15 text-primary rounded-2xl border border-primary/30 text-xl font-bold' }, '⚡'),
+          React.createElement('div', { className: 'h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-primary/60 flex items-center justify-center text-primary-foreground shadow-md font-black text-lg' },
+            'JB'
+          ),
           React.createElement('div', null,
-            React.createElement('h1', { className: 'text-2xl sm:text-3xl font-black tracking-tight text-foreground' },
-              'Workflow Command Center'
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('h1', { className: 'text-lg font-black tracking-tight text-foreground' },
+                'Operations Planner'
+              ),
+              React.createElement(Badge, { variant: 'outline', className: 'text-[9px] bg-primary/10 text-primary border-primary/30 uppercase' },
+                'TickTick Enterprise'
+              )
             ),
-            React.createElement('p', { className: 'text-xs text-muted-foreground mt-0.5' },
-              'Enterprise task lifecycle, persistent background reminders, SLA escalation & multi-stage approvals.'
+            React.createElement('p', { className: 'text-[11px] text-muted-foreground font-medium' },
+              'Jai Bhavani Cargo & Logistics — Intelligent Fleet, Dispatch & Transport Command'
             )
           )
-        )
-      ),
-      React.createElement('div', { className: 'flex flex-wrap items-center gap-2' },
-        React.createElement(Button, {
-          size: 'sm',
-          onClick: () => setShowTaskModal(true),
-          className: 'rounded-xl font-bold text-xs bg-primary text-primary-foreground shadow-md'
-        }, '+ Quick Task'),
-        React.createElement(Button, {
-          size: 'sm',
-          variant: 'outline',
-          onClick: () => setShowReminderModal(true),
-          className: 'rounded-xl font-bold text-xs border-border'
-        }, '+ Scheduled Reminder'),
-        React.createElement(Button, {
-          size: 'sm',
-          variant: 'outline',
-          onClick: () => setShowWorkflowModal(true),
-          className: 'rounded-xl font-bold text-xs border-purple-500/30 text-purple-400 hover:bg-purple-500/10'
-        }, '+ Request Approval'),
-        React.createElement(Button, {
-          size: 'icon',
-          variant: 'outline',
-          onClick: loadData,
-          className: 'rounded-xl'
-        }, '🔄')
-      )
-    ),
-
-    // ── 14 Live KPI Widgets Grid ─────────────────────────────────────
-    React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3' },
-      // 1. My Tasks Today
-      React.createElement(Card, { className: 'border-l-4 border-l-blue-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground' }, 'My Tasks Today'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-foreground' }, metrics.my_tasks_today),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, 'Active today')
-      ),
-      // 2. Overdue Tasks
-      React.createElement(Card, { className: 'border-l-4 border-l-rose-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-rose-400' }, 'Overdue Tasks'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-rose-400' }, metrics.overdue_tasks),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, 'Immediate action needed')
-      ),
-      // 3. Upcoming Reminders
-      React.createElement(Card, { className: 'border-l-4 border-l-amber-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-amber-400' }, 'Upcoming Reminders'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-foreground' }, metrics.upcoming_reminders),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, 'Next 48 hours')
-      ),
-      // 4. In Progress
-      React.createElement(Card, { className: 'border-l-4 border-l-cyan-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground' }, 'In Progress'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-foreground' }, metrics.tasks_in_progress),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, 'Under active execution')
-      ),
-      // 5. Awaiting Approval
-      React.createElement(Card, { className: 'border-l-4 border-l-purple-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-purple-400' }, 'Pending Approvals'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-foreground' }, metrics.tasks_awaiting_approval),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, 'Requires sign-off')
-      ),
-      // 6. Completion Meter
-      React.createElement(Card, { className: 'border-l-4 border-l-emerald-500 bg-card p-4 rounded-2xl' },
-        React.createElement('span', { className: 'text-[10px] font-extrabold uppercase tracking-wider text-emerald-400' }, 'Daily Completion'),
-        React.createElement('h3', { className: 'text-2xl font-black mt-1 text-emerald-400' }, \`\${metrics.daily_completion_percentage}%\`),
-        React.createElement('p', { className: 'text-[10px] text-muted-foreground mt-1' }, \`\${metrics.completed_tasks} completed\`)
-      )
-    ),
-
-    // ── Navigation Tabs Bar ──────────────────────────────────────────
-    React.createElement('div', { className: 'flex flex-wrap items-center justify-between border-b border-border/70 pb-3 gap-2' },
-      React.createElement('div', { className: 'flex items-center gap-1.5' },
-        [
-          { id: 'tasks', label: '📋 Task Management' },
-          { id: 'reminders', label: '🔔 Scheduled Reminders' },
-          { id: 'credit_control', label: '🛡️ Credit Control & Limits' },
-          { id: 'workflows', label: '⚖️ Approvals & Workflows' },
-          { id: 'notifications', label: '📫 Notifications' }
-        ].map(tab => 
-          React.createElement(Button, {
-            key: tab.id,
-            size: 'sm',
-            variant: activeTab === tab.id ? 'default' : 'ghost',
-            onClick: () => handleTabChange(tab.id),
-            className: cn('rounded-xl text-xs font-bold transition-all', activeTab === tab.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')
-          }, tab.label)
-        )
-      ),
-      activeTab === 'tasks' && React.createElement('div', { className: 'flex items-center gap-1 bg-secondary/20 p-1 rounded-xl border border-border/50' },
-        React.createElement(Button, {
-          size: 'sm',
-          variant: viewMode === 'list' ? 'secondary' : 'ghost',
-          onClick: () => setViewMode('list'),
-          className: 'h-7 px-2.5 text-[11px] rounded-lg'
-        }, '☰ List'),
-        React.createElement(Button, {
-          size: 'sm',
-          variant: viewMode === 'kanban' ? 'secondary' : 'ghost',
-          onClick: () => setViewMode('kanban'),
-          className: 'h-7 px-2.5 text-[11px] rounded-lg'
-        }, '▦ Kanban')
-      )
-    ),
-
-    // ── TAB 1: Task Management ───────────────────────────────────────
-    activeTab === 'tasks' && React.createElement('div', { className: 'space-y-4' },
-      // Search and Filter Bar
-      React.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-4 gap-2 bg-card p-3 rounded-2xl border border-border/60' },
-        React.createElement(Input, {
-          placeholder: 'Search tasks, records, assignees...',
-          value: searchTerm,
-          onChange: e => setSearchTerm(e.target.value),
-          className: 'h-9'
-        }),
-        React.createElement('select', {
-          value: statusFilter,
-          onChange: e => setStatusFilter(e.target.value),
-          className: 'h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground cursor-pointer focus:outline-none'
-        },
-          React.createElement('option', { value: 'all' }, 'All Statuses'),
-          React.createElement('option', { value: 'NOT_STARTED' }, 'Not Started'),
-          React.createElement('option', { value: 'IN_PROGRESS' }, 'In Progress'),
-          React.createElement('option', { value: 'PENDING_APPROVAL' }, 'Pending Approval'),
-          React.createElement('option', { value: 'COMPLETED' }, 'Completed')
         ),
-        React.createElement('select', {
-          value: deptFilter,
-          onChange: e => setDeptFilter(e.target.value),
-          className: 'h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground cursor-pointer focus:outline-none'
-        },
-          React.createElement('option', { value: 'all' }, 'All Departments'),
-          React.createElement('option', { value: 'Operations' }, 'Operations'),
-          React.createElement('option', { value: 'Fleet' }, 'Fleet Maintenance'),
-          React.createElement('option', { value: 'Finance' }, 'Finance & Billing'),
-          React.createElement('option', { value: 'Compliance' }, 'Compliance & Docs')
-        ),
-        React.createElement('select', {
-          value: priorityFilter,
-          onChange: e => setPriorityFilter(e.target.value),
-          className: 'h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground cursor-pointer focus:outline-none'
-        },
-          React.createElement('option', { value: 'all' }, 'All Priorities'),
-          React.createElement('option', { value: 'LOW' }, 'Low'),
-          React.createElement('option', { value: 'MEDIUM' }, 'Medium'),
-          React.createElement('option', { value: 'HIGH' }, 'High'),
-          React.createElement('option', { value: 'CRITICAL' }, 'Critical')
-        )
-      ),
 
-      // List View
-      viewMode === 'list' && React.createElement('div', { className: 'space-y-2' },
-        filteredTasks.length === 0 
-          ? React.createElement('div', { className: 'py-16 text-center text-muted-foreground bg-card rounded-2xl border border-border/50' },
-              React.createElement('p', { className: 'text-2xl' }, '📝'),
-              React.createElement('p', { className: 'font-bold mt-1 text-foreground' }, 'No tasks found.'),
-              React.createElement('p', { className: 'text-xs text-muted-foreground' }, 'Create a new task with "+ Quick Task".')
-            )
-          : filteredTasks.map(t => 
-              React.createElement('div', {
-                key: t.id,
-                className: 'p-4 rounded-2xl bg-card border border-border/60 hover:border-primary/40 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-3 shadow-sm'
-              },
-                React.createElement('div', { className: 'space-y-1.5 flex-1' },
-                  React.createElement('div', { className: 'flex flex-wrap items-center gap-2' },
-                    React.createElement(Badge, { className: PRIORITY_COLORS[t.priority] }, t.priority),
-                    React.createElement(Badge, { className: STATUS_COLORS[t.status] }, t.status.replace(/_/g, ' ')),
-                    React.createElement('span', { className: 'font-mono text-[11px] text-muted-foreground' }, t.id),
-                    t.department && React.createElement('span', { className: 'text-[10px] text-muted-foreground px-2 py-0.5 rounded bg-secondary/30' }, t.department)
-                  ),
-                  React.createElement('h4', {
-                    onClick: () => setSelectedTask(t),
-                    className: 'text-sm font-bold text-foreground hover:text-primary cursor-pointer transition-colors'
-                  }, t.title),
-                  React.createElement('p', { className: 'text-xs text-muted-foreground line-clamp-1' }, t.description),
-                  React.createElement('div', { className: 'flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground' },
-                    React.createElement('span', null, \`👤 \${t.assigned_to_name}\`),
-                    React.createElement('span', null, \`📅 Due: \${formatDateTime(t.due_date)}\`),
-                    t.related_entity_id && React.createElement('span', { className: 'font-mono text-primary font-bold' }, \`🔗 \${t.related_entity_id}\`),
-                    (() => {
-                      const chks = t.checklists || t.checklist || [];
-                      return chks.length > 0 ? React.createElement('span', { className: 'text-emerald-400 font-bold' },
-                        \`✓ \${chks.filter(c => c.completed).length}/\${chks.length} Checklist\`
-                      ) : null;
-                    })()
-                  )
-                ),
-                React.createElement('div', { className: 'flex items-center gap-1.5 shrink-0' },
-                  t.status !== 'COMPLETED' && React.createElement(Button, {
-                    size: 'sm',
-                    onClick: () => handleStatusChange(t.id, 'COMPLETED'),
-                    className: 'h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs'
-                  }, '✓ Complete'),
-                  t.status === 'COMPLETED' && React.createElement(Button, {
-                    size: 'sm',
-                    variant: 'outline',
-                    onClick: () => handleStatusChange(t.id, 'IN_PROGRESS'),
-                    className: 'h-8 px-3 rounded-xl text-xs font-bold'
-                  }, 'Reopen'),
-                  React.createElement(Button, {
-                    size: 'sm',
-                    variant: 'outline',
-                    onClick: () => setSelectedTask(t),
-                    className: 'h-8 px-3 rounded-xl text-xs font-bold'
-                  }, 'Details 🔍'),
-                  React.createElement(Button, {
-                    size: 'sm',
-                    variant: 'ghost',
-                    onClick: (e) => { e.stopPropagation(); handleDeleteTask(t.id); },
-                    className: 'h-8 px-2 rounded-xl text-xs text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10'
-                  }, '🗑️')
-                )
-              )
-            )
-      ),
-
-      // Kanban Board View
-      viewMode === 'kanban' && React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4' },
-        ['NOT_STARTED', 'IN_PROGRESS', 'PENDING_APPROVAL', 'COMPLETED'].map(colStatus => {
-          const colTasks = filteredTasks.filter(t => t.status === colStatus);
-          return React.createElement('div', {
-            key: colStatus,
-            className: 'bg-card/50 border border-border/60 rounded-2xl p-4 flex flex-col min-h-[450px]'
+        // Action Buttons & Live Timer Pill
+        React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' },
+          timerRunning && React.createElement('div', {
+            onClick: () => handleTabChange('focus'),
+            className: 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs font-bold cursor-pointer animate-pulse'
           },
-            React.createElement('div', { className: 'flex justify-between items-center pb-3 border-b border-border/50 mb-3' },
-              React.createElement('h4', { className: 'text-xs font-black uppercase tracking-wider text-foreground' },
-                colStatus.replace(/_/g, ' ')
-              ),
-              React.createElement(Badge, { variant: 'outline', className: 'font-mono' }, colTasks.length)
-            ),
-            React.createElement('div', { className: 'space-y-3 flex-1 overflow-y-auto' },
-              colTasks.map(t => 
-                React.createElement('div', {
-                  key: t.id,
-                  onClick: () => setSelectedTask(t),
-                  className: 'p-3 rounded-xl bg-card border border-border hover:border-primary/40 transition-all cursor-pointer shadow-sm space-y-2'
-                },
-                  React.createElement('div', { className: 'flex justify-between items-center' },
-                    React.createElement(Badge, { className: PRIORITY_COLORS[t.priority] }, t.priority),
-                    React.createElement('span', { className: 'font-mono text-[10px] text-muted-foreground' }, t.id)
-                  ),
-                  React.createElement('h5', { className: 'text-xs font-bold text-foreground leading-snug' }, t.title),
-                  React.createElement('div', { className: 'text-[10px] text-muted-foreground flex justify-between' },
-                    React.createElement('span', null, t.assigned_to_name),
-                    React.createElement('span', null, formatDateOnly(t.due_date))
-                  )
-                )
-              )
+            React.createElement('span', null, '⏱️'),
+            React.createElement('span', null, \`Focus Active: \${timerDisplay}\`)
+          ),
+
+          React.createElement(Button, {
+            size: 'sm',
+            variant: 'outline',
+            onClick: () => setShowReminderModal(true),
+            className: 'rounded-xl text-xs gap-1.5'
+          },
+            React.createElement('span', null, '🔔'),
+            React.createElement('span', null, 'Add Reminder')
+          ),
+
+          React.createElement(Button, {
+            size: 'sm',
+            variant: 'outline',
+            onClick: () => setShowWorkflowModal(true),
+            className: 'rounded-xl text-xs gap-1.5'
+          },
+            React.createElement('span', null, '⚖️'),
+            React.createElement('span', null, 'Request Approval')
+          ),
+
+          React.createElement(Button, {
+            size: 'sm',
+            onClick: () => setShowTaskModal(true),
+            className: 'rounded-xl text-xs gap-1.5 shadow-md shadow-primary/20'
+          },
+            React.createElement('span', null, '➕'),
+            React.createElement('span', null, 'New Task')
+          )
+        )
+      )
+    ),
+
+    // Navigation Tabs Bar (Scrollable on Mobile)
+    React.createElement('div', { className: 'border-b border-border/50 bg-card/30 px-4 lg:px-8 overflow-x-auto no-scrollbar' },
+      React.createElement('div', { className: 'max-w-7xl mx-auto flex items-center gap-1.5 py-2 min-w-max' },
+        TABS.map(tab => {
+          const isActive = activeTab === tab.id;
+          return React.createElement('button', {
+            key: tab.id,
+            onClick: () => handleTabChange(tab.id),
+            className: cn(
+              'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer select-none',
+              isActive
+                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary/40'
             )
+          },
+            React.createElement('span', { className: 'text-sm' }, tab.icon),
+            React.createElement('span', null, tab.label),
+            typeof tab.count === 'number' && tab.count > 0 && React.createElement('span', {
+              className: cn(
+                'ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black',
+                isActive ? 'bg-primary-foreground text-primary' : 'bg-secondary text-secondary-foreground'
+              )
+            }, tab.count)
           );
         })
       )
     ),
 
-    // ── TAB 2: Reminders & Background Scheduler ─────────────────────
-    activeTab === 'reminders' && React.createElement('div', { className: 'space-y-4' },
-      React.createElement(Card, { className: 'rounded-2xl border-border/60' },
-        React.createElement(CardHeader, { className: 'border-b border-border/40' },
-          React.createElement(CardTitle, null, '🔔 Enterprise Background Reminder Queue'),
-          React.createElement(CardDescription, null,
-            'All reminders are tracked on the persistent server scheduler (ticks independently of active browser sessions).'
-          )
-        ),
-        React.createElement(CardContent, { className: 'p-5 space-y-3' },
-          reminders.length === 0
-            ? React.createElement('div', { className: 'py-12 text-center text-muted-foreground' },
-                React.createElement('p', { className: 'text-2xl' }, '⏰'),
-                React.createElement('p', { className: 'font-bold mt-1 text-foreground' }, 'No active reminders.'),
-                React.createElement('p', { className: 'text-xs text-muted-foreground' }, 'Add reminders for vehicle inspections, tax due dates, or invoices.')
-              )
-            : reminders.map(r => 
-                React.createElement('div', {
-                  key: r.id,
-                  className: 'p-4 rounded-2xl bg-card border border-border/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'
-                },
-                  React.createElement('div', { className: 'space-y-1' },
-                    React.createElement('div', { className: 'flex items-center gap-2' },
-                      React.createElement(Badge, { className: PRIORITY_COLORS[r.priority] }, r.priority),
-                      React.createElement('span', { className: 'font-bold text-sm text-foreground' }, r.title),
-                      r.recurrence_type !== 'NONE' && React.createElement(Badge, { variant: 'outline', className: 'text-primary' }, \`🔁 \${r.recurrence_type}\`)
-                    ),
-                    React.createElement('p', { className: 'text-xs text-muted-foreground' }, r.notes || 'No description notes provided.'),
-                    React.createElement('div', { className: 'flex gap-3 text-[11px] text-muted-foreground font-mono' },
-                      React.createElement('span', null, \`Trigger: \${formatDateTime(r.trigger_time)}\`),
-                      React.createElement('span', null, \`Owner: \${r.owner_name}\`),
-                      r.snooze_count > 0 && React.createElement('span', { className: 'text-amber-400' }, \`Snoozed \${r.snooze_count}x\`)
-                    )
-                  ),
-                  React.createElement('div', { className: 'flex items-center gap-2 shrink-0' },
-                    r.status !== 'COMPLETED' && React.createElement(Button, {
-                      size: 'sm',
-                      onClick: () => handleCompleteReminder(r.id),
-                      className: 'h-8 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs'
-                    }, '✓ Dismiss'),
-                    r.status !== 'COMPLETED' && React.createElement(Button, {
-                      size: 'sm',
-                      variant: 'outline',
-                      onClick: () => handleSnoozeReminder(r.id, 60),
-                      className: 'h-8 px-3 rounded-xl text-xs'
-                    }, 'Snooze 1h')
-                  )
-                )
-              )
-        )
-      )
-    ),
+    // Main Content Container
+    React.createElement('div', { className: 'max-w-7xl mx-auto px-4 lg:px-8 pt-6' },
 
-    // ── TAB: Credit Control & Risk Limits ────────────────────────────
-    activeTab === 'credit_control' && React.createElement('div', { className: 'space-y-4' },
-      React.createElement(React.Suspense, {
-        fallback: React.createElement('div', { className: 'py-16 text-center text-muted-foreground bg-card rounded-2xl border border-border/50' },
-          React.createElement('p', { className: 'text-2xl animate-pulse' }, '🛡️'),
-          React.createElement('p', { className: 'font-bold mt-2 text-foreground' }, 'Loading Credit Control & Risk Limits...'),
-          React.createElement('p', { className: 'text-xs text-muted-foreground' }, 'Fetching customer limits, exposure balances, and payment terms.')
-        )
-      }, React.createElement(CreditControlView, null))
-    ),
-
-    // ── TAB 3: Multi-Stage Approval Workflows ────────────────────────
-    activeTab === 'workflows' && React.createElement('div', { className: 'space-y-4' },
-      React.createElement(Card, { className: 'rounded-2xl border-border/60' },
-        React.createElement(CardHeader, { className: 'border-b border-border/40' },
-          React.createElement(CardTitle, null, '⚖️ Multi-Stage Governance & Financial Approvals'),
-          React.createElement(CardDescription, null,
-            'Mandatory separation of duties: requesters cannot approve their own high-value expenditures.'
-          )
-        ),
-        React.createElement(CardContent, { className: 'p-5 space-y-4' },
-          workflows.length === 0
-            ? React.createElement('div', { className: 'py-12 text-center text-muted-foreground' },
-                React.createElement('p', { className: 'text-2xl' }, '📂'),
-                React.createElement('p', { className: 'font-bold mt-1 text-foreground' }, 'No active approval requests.'),
-                React.createElement('p', { className: 'text-xs text-muted-foreground' }, 'Click "+ Request Approval" to initiate review.')
-              )
-            : workflows.map(wf => 
-                React.createElement('div', {
-                  key: wf.id,
-                  className: 'p-5 rounded-2xl bg-card border border-border/60 shadow-sm space-y-3'
-                },
-                  React.createElement('div', { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2' },
-                    React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' },
-                      React.createElement(Badge, { variant: 'outline', className: 'font-mono' }, wf.id),
-                      React.createElement('h4', { className: 'font-bold text-base text-foreground' }, wf.title),
-                      React.createElement(Badge, {
-                        className: wf.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400' : wf.status === 'REJECTED' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'
-                      }, wf.status)
-                    ),
-                    wf.amount > 0 && React.createElement('span', { className: 'text-base font-black text-emerald-400 font-mono' },
-                      \`Rs. \${Number(wf.amount).toLocaleString('en-IN')}\`
-                    )
-                  ),
-                  React.createElement('p', { className: 'text-xs text-muted-foreground leading-relaxed' }, wf.description),
-                  React.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-secondary/15 p-3 rounded-xl font-mono text-muted-foreground' },
-                    React.createElement('div', null,
-                      React.createElement('span', { className: 'text-[10px] block uppercase font-bold text-muted-foreground' }, 'Requester'),
-                      React.createElement('span', { className: 'text-foreground' }, wf.requester_name)
-                    ),
-                    React.createElement('div', null,
-                      React.createElement('span', { className: 'text-[10px] block uppercase font-bold text-muted-foreground' }, 'Department'),
-                      React.createElement('span', { className: 'text-foreground' }, wf.department)
-                    ),
-                    React.createElement('div', null,
-                      React.createElement('span', { className: 'text-[10px] block uppercase font-bold text-muted-foreground' }, 'Stage'),
-                      React.createElement('span', { className: 'text-foreground font-bold' }, \`\${wf.current_stage} / \${wf.total_stages}\`)
-                    ),
-                    React.createElement('div', null,
-                      React.createElement('span', { className: 'text-[10px] block uppercase font-bold text-muted-foreground' }, 'Requested At'),
-                      React.createElement('span', { className: 'text-foreground' }, formatDateOnly(wf.created_at))
-                    )
-                  ),
-                  wf.status === 'PENDING' && React.createElement('div', { className: 'flex justify-end gap-2 pt-2' },
-                    React.createElement(Button, {
-                      size: 'sm',
-                      onClick: () => handleWorkflowReview(wf.id, 'APPROVE'),
-                      className: 'h-8 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs'
-                    }, '✓ Approve Request'),
-                    React.createElement(Button, {
-                      size: 'sm',
-                      variant: 'outline',
-                      onClick: () => setShowRejectModal(wf.id),
-                      className: 'h-8 px-4 rounded-xl text-rose-400 border-rose-500/30 hover:bg-rose-500/10 font-bold text-xs'
-                    }, '✕ Reject')
-                  )
-                )
-              )
-        )
-      )
-    ),
-
-    // ── TAB 4: Notifications ─────────────────────────────────────────
-    activeTab === 'notifications' && React.createElement('div', { className: 'space-y-4' },
-      React.createElement(Card, { className: 'rounded-2xl border-border/60' },
-        React.createElement(CardHeader, { className: 'border-b border-border/40' },
-          React.createElement(CardTitle, null, '📫 Real-Time Operational Notifications'),
-          React.createElement(CardDescription, null,
-            'In-app reminders, SLA breach escalations, and automated vehicle document alerts.'
-          )
-        ),
-        React.createElement(CardContent, { className: 'p-5 space-y-3' },
-          notifications.length === 0
-            ? React.createElement('div', { className: 'py-12 text-center text-muted-foreground' },
-                React.createElement('p', { className: 'text-2xl' }, '✉️'),
-                React.createElement('p', { className: 'font-bold mt-1 text-foreground' }, 'Inbox clean. No unread notifications.')
-              )
-            : notifications.map(n => 
-                React.createElement('div', {
-                  key: n.id,
-                  className: 'p-3.5 rounded-2xl bg-card border border-border/60 flex justify-between items-center gap-3'
-                },
-                  React.createElement('div', { className: 'space-y-0.5' },
-                    React.createElement('h5', { className: 'font-bold text-xs text-foreground' }, n.payload?.title || 'Notification'),
-                    React.createElement('p', { className: 'text-xs text-muted-foreground' }, n.payload?.notes || ''),
-                    React.createElement('span', { className: 'text-[10px] text-muted-foreground font-mono' }, formatDateTime(n.created_at))
-                  ),
-                  n.status !== 'ACKNOWLEDGED' && React.createElement(Button, {
-                    size: 'sm',
-                    variant: 'outline',
-                    onClick: async () => {
-                      await fetch('/api/productivity/notifications/ack', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ notificationId: n.id })
-                      });
-                      loadData();
-                    },
-                    className: 'h-7 px-2.5 text-[10px] rounded-lg'
-                  }, 'Mark Read')
-                )
-              )
-        )
-      )
-    ),
-
-    // ── TASK DETAIL & CHECKLIST DRAWER MODAL ─────────────────────────
-    selectedTask && React.createElement('div', {
-      className: 'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4'
-    },
-      React.createElement('div', {
-        className: 'bg-card border border-border rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl'
-      },
-        React.createElement('div', { className: 'p-5 border-b border-border bg-secondary/10 flex justify-between items-center' },
-          React.createElement('div', null,
-            React.createElement('div', { className: 'flex items-center gap-2' },
-              React.createElement(Badge, { className: PRIORITY_COLORS[selectedTask.priority] }, selectedTask.priority),
-              React.createElement('span', { className: 'font-mono text-xs text-muted-foreground' }, selectedTask.id)
+      // ──────────────────────────────────────────────────────────────
+      // TAB 1: INBOX & TODAY (TickTick-Style Task Engine)
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'tasks' && React.createElement('div', { className: 'space-y-6' },
+        
+        // Quick Add Input Bar (Top Natural-Language / Quick-Capture)
+        React.createElement(Card, { className: 'p-2.5 bg-card/80 border-border/80 shadow-sm rounded-2xl' },
+          React.createElement('form', { onSubmit: handleQuickAddTask, className: 'flex flex-col md:flex-row items-center gap-2' },
+            React.createElement('div', { className: 'relative flex-1 w-full' },
+              React.createElement('input', {
+                type: 'text',
+                value: quickTaskTitle,
+                onChange: e => setQuickTaskTitle(e.target.value),
+                placeholder: '⚡ Type a task and press Enter (e.g., Verify E-Way bills for MH12RN1234)...',
+                className: 'w-full h-10 pl-3 pr-2 rounded-xl bg-background border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium'
+              })
             ),
-            React.createElement('h3', { className: 'font-black text-lg text-foreground mt-1' }, selectedTask.title)
-          ),
-          React.createElement(Button, {
-            size: 'sm',
-            variant: 'ghost',
-            onClick: () => setSelectedTask(null),
-            className: 'rounded-xl h-8 w-8 p-0 text-muted-foreground hover:text-foreground'
-          }, '✕')
-        ),
-        React.createElement('div', { className: 'p-6 overflow-y-auto space-y-4 flex-1' },
-          React.createElement('div', null,
-            React.createElement('h4', { className: 'text-xs font-bold text-muted-foreground uppercase' }, 'Description'),
-            React.createElement('p', { className: 'text-xs text-foreground mt-1 leading-relaxed' }, selectedTask.description || 'No description provided.')
-          ),
-          React.createElement('div', { className: 'grid grid-cols-2 gap-3 text-xs bg-secondary/15 p-3 rounded-2xl border border-border/50 font-mono' },
-            React.createElement('div', null,
-              React.createElement('span', { className: 'text-[10px] text-muted-foreground uppercase block font-bold' }, 'Assigned To'),
-              React.createElement('span', { className: 'text-foreground' }, selectedTask.assigned_to_name)
-            ),
-            React.createElement('div', null,
-              React.createElement('span', { className: 'text-[10px] text-muted-foreground uppercase block font-bold' }, 'Due Date'),
-              React.createElement('span', { className: 'text-foreground' }, formatDateTime(selectedTask.due_date))
-            )
-          ),
-          // Checklists section
-          React.createElement('div', { className: 'space-y-2 pt-2 border-t border-border/50' },
-            React.createElement('h4', { className: 'text-xs font-bold text-foreground uppercase tracking-wider' }, 'Checklist & Subtasks'),
-            React.createElement('div', { className: 'space-y-1.5' },
-              ((selectedTask.checklists || selectedTask.checklist || [])).map(chk => 
-                React.createElement('div', {
-                  key: chk.id,
-                  onClick: () => handleToggleChecklist(chk.id),
-                  className: 'flex items-center gap-2 p-2 rounded-xl bg-background border border-border/60 cursor-pointer hover:bg-secondary/20 transition-colors'
-                },
-                  React.createElement('input', {
-                    type: 'checkbox',
-                    checked: !!chk.completed,
-                    readOnly: true,
-                    className: 'rounded accent-primary cursor-pointer'
-                  }),
-                  React.createElement('span', {
-                    className: cn('text-xs text-foreground flex-1', chk.completed && 'line-through text-muted-foreground')
-                  }, chk.text)
-                )
-              )
-            ),
-            React.createElement('div', { className: 'flex gap-2 pt-1' },
-              React.createElement(Input, {
-                placeholder: 'Add new checklist item...',
-                value: newChecklistText,
-                onChange: e => setNewChecklistText(e.target.value),
-                onKeyDown: e => e.key === 'Enter' && handleAddChecklist(),
-                className: 'h-8 text-xs'
+            React.createElement('div', { className: 'flex items-center gap-2 w-full md:w-auto flex-wrap' },
+              React.createElement('input', {
+                type: 'time',
+                value: quickTaskTime,
+                onChange: e => setQuickTaskTime(e.target.value),
+                className: 'h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold'
               }),
-              React.createElement(Button, {
-                size: 'sm',
-                onClick: handleAddChecklist,
-                className: 'h-8 px-3'
-              }, 'Add')
+              React.createElement('select', {
+                value: quickTaskDept,
+                onChange: e => setQuickTaskDept(e.target.value),
+                className: 'h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold'
+              },
+                React.createElement('option', { value: 'Operations' }, 'Operations'),
+                React.createElement('option', { value: 'Dispatch' }, 'Dispatch'),
+                React.createElement('option', { value: 'Fleet' }, 'Fleet'),
+                React.createElement('option', { value: 'Finance' }, 'Finance'),
+                React.createElement('option', { value: 'Compliance' }, 'Compliance')
+              ),
+              React.createElement('select', {
+                value: quickTaskPriority,
+                onChange: e => setQuickTaskPriority(e.target.value),
+                className: 'h-10 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold'
+              },
+                React.createElement('option', { value: 'LOW' }, 'Low Priority'),
+                React.createElement('option', { value: 'MEDIUM' }, 'Medium Priority'),
+                React.createElement('option', { value: 'HIGH' }, 'High Priority'),
+                React.createElement('option', { value: 'CRITICAL' }, 'Critical Priority')
+              ),
+              React.createElement(Button, { type: 'submit', size: 'sm', className: 'h-10 px-4 rounded-xl' },
+                'Add'
+              )
             )
           )
         ),
-        React.createElement('div', { className: 'p-4 border-t border-border bg-secondary/5 flex justify-between items-center' },
+
+        // Sub-Filters Row: Time Views + Department + Priority
+        React.createElement('div', { className: 'flex flex-col md:flex-row items-center justify-between gap-3 text-xs' },
+          React.createElement('div', { className: 'flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 no-scrollbar' },
+            [
+              { id: 'all', label: 'All Tasks', icon: '📋' },
+              { id: 'today', label: 'Today', icon: '☀️' },
+              { id: 'tomorrow', label: 'Tomorrow', icon: '🌅' },
+              { id: 'next7', label: 'Next 7 Days', icon: '📅' },
+              { id: 'overdue', label: 'Overdue', icon: '🚨' },
+              { id: 'completed', label: 'Completed', icon: '✅' }
+            ].map(b => React.createElement('button', {
+              key: b.id,
+              onClick: () => setTimeFilter(b.id),
+              className: cn(
+                'px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap',
+                timeFilter === b.id
+                  ? 'bg-secondary text-foreground border border-border shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'
+              )
+            },
+              React.createElement('span', null, b.icon),
+              React.createElement('span', null, b.label)
+            ))
+          ),
+
+          React.createElement('div', { className: 'flex items-center gap-2 w-full md:w-auto' },
+            React.createElement('input', {
+              type: 'text',
+              value: searchTerm,
+              onChange: e => setSearchTerm(e.target.value),
+              placeholder: '🔍 Search tasks...',
+              className: 'h-8 px-3 rounded-xl bg-background border border-border text-xs w-full md:w-48'
+            }),
+            React.createElement('select', {
+              value: deptFilter,
+              onChange: e => setDeptFilter(e.target.value),
+              className: 'h-8 px-2 rounded-xl bg-background border border-border text-xs font-semibold'
+            },
+              React.createElement('option', { value: 'all' }, 'All Depts'),
+              React.createElement('option', { value: 'Operations' }, 'Operations'),
+              React.createElement('option', { value: 'Fleet' }, 'Fleet'),
+              React.createElement('option', { value: 'Dispatch' }, 'Dispatch'),
+              React.createElement('option', { value: 'Finance' }, 'Finance'),
+              React.createElement('option', { value: 'Compliance' }, 'Compliance')
+            )
+          )
+        ),
+
+        // Task Group Renderers
+        React.createElement('div', { className: 'space-y-6' },
+          // 🚨 Overdue Group (if any)
+          (timeFilter === 'all' || timeFilter === 'overdue') && taskGroups.overdue.length > 0 &&
+            React.createElement('div', { className: 'space-y-2.5' },
+              React.createElement('div', { className: 'flex items-center gap-2 px-1' },
+                React.createElement(Badge, { variant: 'destructive', className: 'text-[11px] font-black' },
+                  \`🚨 Overdue (\${taskGroups.overdue.length})\`
+                ),
+                React.createElement('span', { className: 'text-[11px] text-rose-500 font-semibold' },
+                  'Needs immediate operational attention'
+                )
+              ),
+              taskGroups.overdue.map(t => renderTaskRow(t))
+            ),
+
+          // ☀️ Today Group
+          (timeFilter === 'all' || timeFilter === 'today') &&
+            React.createElement('div', { className: 'space-y-2.5' },
+              React.createElement('div', { className: 'flex items-center gap-2 px-1' },
+                React.createElement('span', { className: 'text-xs font-bold text-foreground flex items-center gap-1.5' },
+                  '☀️ Today',
+                  React.createElement(Badge, { variant: 'secondary', className: 'text-[10px]' }, taskGroups.forToday.length)
+                ),
+                React.createElement('span', { className: 'text-[11px] text-muted-foreground' },
+                  new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' })
+                )
+              ),
+              taskGroups.forToday.length === 0
+                ? React.createElement(Card, { className: 'p-6 text-center text-muted-foreground text-xs rounded-2xl border-dashed' },
+                    '✨ All clear for today! No pending tasks remaining.'
+                  )
+                : taskGroups.forToday.map(t => renderTaskRow(t))
+            ),
+
+          // 🌅 Tomorrow Group
+          (timeFilter === 'all' || timeFilter === 'tomorrow') && taskGroups.forTomorrow.length > 0 &&
+            React.createElement('div', { className: 'space-y-2.5' },
+              React.createElement('div', { className: 'flex items-center gap-2 px-1' },
+                React.createElement('span', { className: 'text-xs font-bold text-foreground flex items-center gap-1.5' },
+                  '🌅 Tomorrow',
+                  React.createElement(Badge, { variant: 'secondary', className: 'text-[10px]' }, taskGroups.forTomorrow.length)
+                )
+              ),
+              taskGroups.forTomorrow.map(t => renderTaskRow(t))
+            ),
+
+          // 📅 Upcoming Group
+          (timeFilter === 'all' || timeFilter === 'next7') && taskGroups.upcoming.length > 0 &&
+            React.createElement('div', { className: 'space-y-2.5' },
+              React.createElement('div', { className: 'flex items-center gap-2 px-1' },
+                React.createElement('span', { className: 'text-xs font-bold text-foreground flex items-center gap-1.5' },
+                  '📅 Upcoming / Later',
+                  React.createElement(Badge, { variant: 'secondary', className: 'text-[10px]' }, taskGroups.upcoming.length)
+                )
+              ),
+              taskGroups.upcoming.map(t => renderTaskRow(t))
+            ),
+
+          // ✅ Completed Group
+          (timeFilter === 'all' || timeFilter === 'completed') && taskGroups.completed.length > 0 &&
+            React.createElement('div', { className: 'space-y-2.5 pt-4' },
+              React.createElement('div', { className: 'flex items-center gap-2 px-1' },
+                React.createElement('span', { className: 'text-xs font-bold text-muted-foreground flex items-center gap-1.5' },
+                  '✅ Completed Tasks',
+                  React.createElement(Badge, { variant: 'secondary', className: 'text-[10px]' }, taskGroups.completed.length)
+                )
+              ),
+              taskGroups.completed.slice(0, 15).map(t => renderTaskRow(t))
+            )
+        )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 2: PRIORITY MATRIX (Eisenhower 4-Quadrant View)
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'matrix' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex flex-col md:flex-row md:items-center justify-between gap-3' },
+          React.createElement('div', null,
+            React.createElement('h2', { className: 'text-base font-black text-foreground flex items-center gap-2' },
+              '🎯 Eisenhower Priority Matrix',
+              React.createElement(Badge, { variant: 'outline', className: 'text-[10px]' }, 'Dynamic Dispatch Logic')
+            ),
+            React.createElement('p', { className: 'text-xs text-muted-foreground' },
+              'Categorize operational tasks into 4 tactical quadrants: Do First, Schedule, Delegate, and Backlog.'
+            )
+          ),
           React.createElement(Button, {
             size: 'sm',
             variant: 'outline',
-            onClick: () => handleDeleteTask(selectedTask.id),
-            className: 'rounded-xl font-bold px-3 text-rose-400 border-rose-500/30 hover:bg-rose-500/10'
-          }, '🗑️ Delete Task'),
-          React.createElement(Button, {
-            size: 'sm',
-            onClick: () => setSelectedTask(null),
-            className: 'rounded-xl font-bold px-4'
-          }, 'Close')
+            onClick: () => setShowTaskModal(true),
+            className: 'rounded-xl text-xs gap-1.5'
+          },
+            '➕ Add Task to Matrix'
+          )
+        ),
+
+        // 4 Quadrants Grid (2x2 on Desktop, 1 Col on Mobile)
+        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+          
+          // Q1: Urgent & Important (Red / Do First)
+          renderQuadrantCard({
+            qNum: 1,
+            title: 'DO FIRST',
+            subtitle: 'Urgent & Important (Breakdowns, Today Expiries)',
+            colorClass: 'border-rose-500/40 bg-rose-500/5',
+            badgeClass: 'bg-rose-500 text-white',
+            tasks: matrixQuadrants.q1
+          }),
+
+          // Q2: Not Urgent & Important (Yellow / Schedule)
+          renderQuadrantCard({
+            qNum: 2,
+            title: 'SCHEDULE',
+            subtitle: 'Not Urgent & Important (Preventive Maintenance, Fleet Audits)',
+            colorClass: 'border-amber-500/40 bg-amber-500/5',
+            badgeClass: 'bg-amber-500 text-white',
+            tasks: matrixQuadrants.q2
+          }),
+
+          // Q3: Urgent & Not Important (Blue / Delegate)
+          renderQuadrantCard({
+            qNum: 3,
+            title: 'DELEGATE',
+            subtitle: 'Urgent & Not Important (Fuel Slips, Gate Passes, Routine Calls)',
+            colorClass: 'border-blue-500/40 bg-blue-500/5',
+            badgeClass: 'bg-blue-500 text-white',
+            tasks: matrixQuadrants.q3
+          }),
+
+          // Q4: Not Urgent & Not Important (Green / Backlog & Eliminate)
+          renderQuadrantCard({
+            qNum: 4,
+            title: 'BACKLOG / ELIMINATE',
+            subtitle: 'Not Urgent & Not Important (Old Files Archiving, Minor Cleanups)',
+            colorClass: 'border-emerald-500/40 bg-emerald-500/5',
+            badgeClass: 'bg-emerald-500 text-white',
+            tasks: matrixQuadrants.q4
+          })
+        )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 3: OPERATIONS CALENDAR & DAILY TIMELINE
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'calendar' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex flex-col md:flex-row md:items-center justify-between gap-3' },
+          React.createElement('div', null,
+            React.createElement('h2', { className: 'text-base font-black text-foreground flex items-center gap-2' },
+              '📅 Operations Calendar & Daily Timeline'
+            ),
+            React.createElement('p', { className: 'text-xs text-muted-foreground' },
+              'Plan vehicle dispatch slots, driver shifts, and maintenance schedules on an interactive timeline.'
+            )
+          ),
+          React.createElement('div', { className: 'flex items-center gap-2' },
+            React.createElement('div', { className: 'flex items-center bg-secondary/30 p-1 rounded-xl border border-border' },
+              React.createElement('button', {
+                onClick: () => setCalMode('agenda'),
+                className: cn('px-3 py-1 rounded-lg text-xs font-bold transition-all', calMode === 'agenda' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground')
+              }, 'Daily Hourly Agenda'),
+              React.createElement('button', {
+                onClick: () => setCalMode('month'),
+                className: cn('px-3 py-1 rounded-lg text-xs font-bold transition-all', calMode === 'month' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground')
+              }, 'Month Grid')
+            ),
+            React.createElement(Button, {
+              size: 'sm',
+              onClick: () => setSelectedDate(new Date()),
+              variant: 'outline',
+              className: 'rounded-xl text-xs'
+            }, 'Today')
+          )
+        ),
+
+        calMode === 'agenda' ? renderDailyAgendaTimeline() : renderMonthCalendarGrid()
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 4: POMODORO & FOCUS TIME TRACKER
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'focus' && React.createElement('div', { className: 'max-w-4xl mx-auto space-y-6' },
+        React.createElement(Card, { className: 'p-8 text-center bg-card/80 border-border/80 shadow-lg rounded-3xl relative overflow-hidden' },
+          
+          // Mode Tabs (Pomodoro, Short Break, Long Break, Stopwatch)
+          React.createElement('div', { className: 'flex items-center justify-center gap-2 mb-8 flex-wrap' },
+            [
+              { id: 'pomodoro', label: '🍅 Pomodoro (25m)' },
+              { id: 'short_break', label: '☕ Short Break (5m)' },
+              { id: 'long_break', label: '🌴 Long Break (15m)' },
+              { id: 'stopwatch', label: '⏱️ Stopwatch' }
+            ].map(m => React.createElement('button', {
+              key: m.id,
+              onClick: () => handleTimerModeChange(m.id),
+              className: cn(
+                'px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                timerMode === m.id
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-secondary/40 text-muted-foreground hover:text-foreground'
+              )
+            }, m.label))
+          ),
+
+          // Digital Clock Display
+          React.createElement('div', { className: 'my-6 font-mono font-black text-6xl md:text-8xl tracking-tight text-foreground select-none' },
+            timerDisplay
+          ),
+
+          // Linked Task Selector
+          React.createElement('div', { className: 'max-w-md mx-auto mb-8' },
+            React.createElement('label', { className: 'block text-[11px] font-bold text-muted-foreground mb-1.5 text-left' },
+              '🎯 Link Active Task to this Session:'
+            ),
+            React.createElement('select', {
+              value: focusLinkedTaskId,
+              onChange: e => setFocusLinkedTaskId(e.target.value),
+              className: 'w-full h-10 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
+            },
+              React.createElement('option', { value: '' }, '-- General Transport Operations (No specific task) --'),
+              tasks.filter(t => t.status !== 'COMPLETED').map(t => React.createElement('option', {
+                key: t.id,
+                value: t.id
+              }, \`[\${t.department}] \${t.title}\`))
+            )
+          ),
+
+          // Timer Controls
+          React.createElement('div', { className: 'flex items-center justify-center gap-3' },
+            React.createElement(Button, {
+              size: 'lg',
+              onClick: () => setTimerRunning(!timerRunning),
+              className: cn(
+                'h-12 px-8 rounded-2xl text-sm font-black shadow-lg',
+                timerRunning ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'
+              )
+            },
+              timerRunning ? '⏸️ Pause' : '▶️ Start Focus'
+            ),
+
+            React.createElement(Button, {
+              size: 'lg',
+              variant: 'outline',
+              onClick: () => {
+                setTimerRunning(false);
+                handleTimerModeChange(timerMode);
+              },
+              className: 'h-12 px-6 rounded-2xl text-sm'
+            },
+              '🔄 Reset'
+            ),
+
+            React.createElement(Button, {
+              size: 'lg',
+              variant: 'secondary',
+              onClick: () => {
+                setTimerRunning(false);
+                handleCompleteFocusSession();
+                handleTimerModeChange(timerMode);
+              },
+              className: 'h-12 px-6 rounded-2xl text-sm font-bold'
+            },
+              '✅ Done'
+            )
+          ),
+
+          // Synthesized Ambient Audio Generator Selector
+          React.createElement('div', { className: 'mt-8 pt-6 border-t border-border/50 max-w-lg mx-auto flex items-center justify-between gap-4 text-xs' },
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('span', { className: 'font-bold' }, '🎧 Ambient Transport Audio:'),
+              React.createElement('select', {
+                value: ambientSound,
+                onChange: e => handleAmbientChange(e.target.value),
+                className: 'h-8 px-2.5 rounded-xl bg-background border border-border text-xs font-semibold'
+              },
+                React.createElement('option', { value: 'none' }, 'Mute (Silent)'),
+                React.createElement('option', { value: 'engine' }, '🚛 Diesel Engine Hum'),
+                React.createElement('option', { value: 'rain' }, '🌧️ Rain on Windshield'),
+                React.createElement('option', { value: 'highway' }, '🛣️ Night Highway Wind')
+              )
+            ),
+            ambientSound !== 'none' && React.createElement('div', { className: 'flex items-center gap-1.5' },
+              React.createElement('span', { className: 'text-[10px] text-muted-foreground' }, 'Vol:'),
+              React.createElement('input', {
+                type: 'range',
+                min: '0.05',
+                max: '0.8',
+                step: '0.05',
+                value: ambientVolume,
+                onChange: e => {
+                  const val = parseFloat(e.target.value);
+                  setAmbientVolume(val);
+                  if (currentGain) currentGain.gain.value = val;
+                },
+                className: 'w-20'
+              })
+            )
+          )
+        ),
+
+        // Today's Focus Stats Cards
+        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-4' },
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card/60' },
+            React.createElement('div', { className: 'text-[11px] font-bold text-muted-foreground' }, 'Total Focus Today'),
+            React.createElement('div', { className: 'text-2xl font-black text-foreground mt-1' },
+              \`\${Math.floor(todayFocusMinutes / 60)}h \${todayFocusMinutes % 60}m\`
+            )
+          ),
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card/60' },
+            React.createElement('div', { className: 'text-[11px] font-bold text-muted-foreground' }, 'Completed Pomodoros'),
+            React.createElement('div', { className: 'text-2xl font-black text-primary mt-1' },
+              \`\${todayPomoCount} Sessions\`
+            )
+          ),
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card/60' },
+            React.createElement('div', { className: 'text-[11px] font-bold text-muted-foreground' }, 'Daily Goal Progress'),
+            React.createElement('div', { className: 'text-2xl font-black text-emerald-500 mt-1' },
+              \`\${Math.min(100, Math.round((todayPomoCount / 6) * 100))}%\`
+            )
+          )
+        ),
+
+        // Focus Session History Log
+        React.createElement(Card, { className: 'p-5 rounded-2xl bg-card/60' },
+          React.createElement('h3', { className: 'text-xs font-black text-foreground mb-3 uppercase tracking-wider' },
+            '📋 Focus Session History Log'
+          ),
+          focusSessions.length === 0
+            ? React.createElement('p', { className: 'text-xs text-muted-foreground py-4 text-center' }, 'No focus sessions recorded today yet. Start the timer to log deep work!')
+            : React.createElement('div', { className: 'divide-y divide-border/40 text-xs' },
+                focusSessions.slice(0, 10).map((s, idx) => React.createElement('div', {
+                  key: s.id || idx,
+                  className: 'py-2.5 flex items-center justify-between gap-3'
+                },
+                  React.createElement('div', { className: 'flex items-center gap-2.5' },
+                    React.createElement('span', { className: 'text-base' }, s.mode === 'POMODORO' ? '🍅' : '⏱️'),
+                    React.createElement('div', null,
+                      React.createElement('div', { className: 'font-bold text-foreground' }, s.task_title || 'General Focus Session'),
+                      React.createElement('div', { className: 'text-[10px] text-muted-foreground' }, formatDateTime(s.created_at))
+                    )
+                  ),
+                  React.createElement(Badge, { variant: 'outline', className: 'text-[10px] font-mono' },
+                    \`\${s.duration_minutes || 25} min\`
+                  )
+                ))
+              )
+        )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 5: KANBAN BOARD
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'kanban' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex items-center justify-between' },
+          React.createElement('h2', { className: 'text-base font-black text-foreground' }, '📋 Operations Kanban Flow'),
+          React.createElement(Button, { size: 'sm', onClick: () => setShowTaskModal(true), className: 'rounded-xl text-xs' }, '➕ Add Task')
+        ),
+
+        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4' },
+          [
+            { id: 'NOT_STARTED', label: 'Backlog', statusKey: 'NOT_STARTED', color: 'border-slate-500/30' },
+            { id: 'IN_PROGRESS', label: 'In Progress', statusKey: 'IN_PROGRESS', color: 'border-blue-500/30' },
+            { id: 'PENDING_APPROVAL', label: 'Review / Approval', statusKey: 'PENDING_APPROVAL', color: 'border-amber-500/30' },
+            { id: 'COMPLETED', label: 'Completed', statusKey: 'COMPLETED', color: 'border-emerald-500/30' }
+          ].map(col => {
+            const colTasks = tasks.filter(t => (t.status || 'NOT_STARTED') === col.statusKey);
+            return React.createElement('div', {
+              key: col.id,
+              className: cn('rounded-2xl border bg-card/40 p-3.5 flex flex-col min-h-[500px]', col.color)
+            },
+              React.createElement('div', { className: 'flex items-center justify-between mb-3 px-1' },
+                React.createElement('span', { className: 'text-xs font-bold text-foreground' }, col.label),
+                React.createElement(Badge, { variant: 'secondary', className: 'text-[10px]' }, colTasks.length)
+              ),
+
+              React.createElement('div', { className: 'space-y-2.5 flex-1 overflow-y-auto' },
+                colTasks.map(t => React.createElement(Card, {
+                  key: t.id,
+                  onClick: () => setSelectedTask(t),
+                  className: 'p-3 bg-card border-border/80 rounded-xl hover:border-primary/50 cursor-pointer shadow-sm'
+                },
+                  React.createElement('div', { className: 'flex items-center justify-between gap-1 mb-1.5' },
+                    React.createElement(Badge, { variant: 'outline', className: cn('text-[9px]', DEPARTMENT_COLORS[t.department] || '') }, t.department),
+                    React.createElement(Badge, { className: cn('text-[9px]', PRIORITY_COLORS[t.priority] || '') }, t.priority)
+                  ),
+                  React.createElement('div', { className: 'text-xs font-bold text-foreground mb-1' }, t.title),
+                  t.due_date && React.createElement('div', { className: 'text-[10px] text-muted-foreground' },
+                    \`Due: \${formatDateOnly(t.due_date)}\`
+                  )
+                ))
+              )
+            );
+          })
+        )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 6: TRANSPORT SOP TEMPLATES & CHECKLISTS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'templates' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', null,
+          React.createElement('h2', { className: 'text-base font-black text-foreground flex items-center gap-2' },
+            '📑 Transport Operations SOP & Checklist Templates'
+          ),
+          React.createElement('p', { className: 'text-xs text-muted-foreground' },
+            'Deploy battle-tested transport checklists for vehicle pre-trip, loading manifest, POD collection, and breakdowns with a single click.'
+          )
+        ),
+
+        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' },
+          TRANSPORT_TEMPLATES.map(tpl => React.createElement(Card, {
+            key: tpl.id,
+            className: 'p-5 rounded-2xl bg-card/80 border-border/80 flex flex-col justify-between shadow-sm hover:border-primary/50 transition-all'
+          },
+            React.createElement('div', { className: 'space-y-3' },
+              React.createElement('div', { className: 'flex items-center justify-between' },
+                React.createElement(Badge, { variant: 'outline', className: 'text-[10px]' }, tpl.department),
+                React.createElement(Badge, { className: cn('text-[10px]', PRIORITY_COLORS[tpl.priority] || '') }, tpl.priority)
+              ),
+              React.createElement('h3', { className: 'text-sm font-bold text-foreground' }, tpl.title),
+              React.createElement('p', { className: 'text-xs text-muted-foreground' }, tpl.description),
+
+              React.createElement('div', { className: 'pt-2 border-t border-border/40 space-y-1.5' },
+                React.createElement('span', { className: 'text-[11px] font-bold text-muted-foreground block mb-1' },
+                  \`Pre-configured Checklists (\${tpl.checklists.length}):\`
+                ),
+                tpl.checklists.map((chk, i) => React.createElement('div', {
+                  key: i,
+                  className: 'flex items-center gap-2 text-xs text-foreground/80'
+                },
+                  React.createElement('span', { className: 'text-primary' }, '☑️'),
+                  React.createElement('span', null, chk.text)
+                ))
+              )
+            ),
+
+            React.createElement('div', { className: 'pt-4 mt-4 border-t border-border/40' },
+              React.createElement(Button, {
+                onClick: () => handleApplyTemplate(tpl.id),
+                className: 'w-full rounded-xl text-xs gap-1.5 shadow-sm'
+              },
+                '🚀 Apply as Active Task'
+              )
+            )
+          ))
+        )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 7: WORKFLOWS & APPROVALS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'workflows' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex items-center justify-between' },
+          React.createElement('h2', { className: 'text-base font-black text-foreground' }, '⚖️ Manager Approvals Queue'),
+          React.createElement(Button, { size: 'sm', onClick: () => setShowWorkflowModal(true), className: 'rounded-xl text-xs' }, '➕ Request Approval')
+        ),
+
+        workflows.length === 0
+          ? React.createElement(Card, { className: 'p-8 text-center text-muted-foreground text-xs rounded-2xl' }, 'No active approval requests pending.')
+          : React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 gap-4' },
+              workflows.map(wf => React.createElement(Card, {
+                key: wf.id,
+                className: 'p-5 rounded-2xl bg-card border-border/80 shadow-sm'
+              },
+                React.createElement('div', { className: 'flex items-center justify-between mb-2' },
+                  React.createElement(Badge, { variant: 'outline', className: 'text-[10px]' }, wf.workflow_type),
+                  React.createElement(Badge, {
+                    className: wf.status === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-500' : (wf.status === 'REJECTED' ? 'bg-rose-500/15 text-rose-500' : 'bg-amber-500/15 text-amber-500')
+                  }, wf.status)
+                ),
+                React.createElement('h4', { className: 'text-sm font-bold text-foreground mb-1' }, wf.title),
+                React.createElement('p', { className: 'text-xs text-muted-foreground mb-3' }, wf.description),
+                
+                wf.amount > 0 && React.createElement('div', { className: 'text-xs font-bold text-primary mb-3' },
+                  \`Amount: ₹\${Number(wf.amount).toLocaleString('en-IN')}\`
+                ),
+
+                wf.status === 'PENDING' && React.createElement('div', { className: 'flex items-center gap-2 pt-3 border-t border-border/40' },
+                  React.createElement(Button, {
+                    size: 'sm',
+                    onClick: () => handleReviewWorkflow(wf.id, 'APPROVE'),
+                    className: 'rounded-xl text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }, '✓ Approve'),
+                  React.createElement(Button, {
+                    size: 'sm',
+                    variant: 'outline',
+                    onClick: () => setShowRejectModal(wf.id),
+                    className: 'rounded-xl text-xs text-rose-500 border-rose-500/30 hover:bg-rose-500/10'
+                  }, '✕ Reject')
+                )
+              ))
+            )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 8: REMINDERS & ALERTS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'reminders' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex items-center justify-between' },
+          React.createElement('h2', { className: 'text-base font-black text-foreground' }, '🔔 Scheduled Reminders & Alerts'),
+          React.createElement(Button, { size: 'sm', onClick: () => setShowReminderModal(true), className: 'rounded-xl text-xs' }, '➕ Add Reminder')
+        ),
+
+        reminders.length === 0
+          ? React.createElement(Card, { className: 'p-8 text-center text-muted-foreground text-xs rounded-2xl' }, 'No active reminders.')
+          : React.createElement('div', { className: 'space-y-3' },
+              reminders.map(rem => React.createElement(Card, {
+                key: rem.id,
+                className: 'p-4 rounded-2xl bg-card border-border/80 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm'
+              },
+                React.createElement('div', null,
+                  React.createElement('div', { className: 'text-xs font-bold text-foreground' }, rem.title),
+                  React.createElement('div', { className: 'text-[11px] text-muted-foreground' },
+                    \`Trigger: \${formatDateTime(rem.trigger_time)}\`
+                  )
+                ),
+                React.createElement('div', { className: 'flex items-center gap-2' },
+                  React.createElement(Button, {
+                    size: 'sm',
+                    variant: 'outline',
+                    onClick: () => handleSnoozeReminder(rem.id, 30),
+                    className: 'rounded-xl text-xs'
+                  }, '💤 Snooze 30m'),
+                  React.createElement(Button, {
+                    size: 'sm',
+                    onClick: () => handleCompleteReminder(rem.id),
+                    className: 'rounded-xl text-xs'
+                  }, '✓ Done')
+                )
+              ))
+            )
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 9: CREDIT CONTROL
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'credit_control' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement(React.Suspense, {
+          fallback: React.createElement('div', { className: 'p-8 text-center text-xs' }, 'Loading Credit Control Center...')
+        }, React.createElement(CreditControlView, null))
+      ),
+
+      // ──────────────────────────────────────────────────────────────
+      // TAB 10: WORKLOAD & REPORTS ANALYTICS
+      // ──────────────────────────────────────────────────────────────
+      activeTab === 'analytics' && React.createElement('div', { className: 'space-y-6' },
+        React.createElement('div', { className: 'flex items-center justify-between' },
+          React.createElement('h2', { className: 'text-base font-black text-foreground' }, '📊 Productivity & Workload Analytics'),
+          React.createElement('div', { className: 'flex items-center gap-2' },
+            React.createElement(Button, {
+              size: 'sm',
+              variant: 'outline',
+              onClick: () => downloadExcel(tasks, 'Operations_Tasks_Report'),
+              className: 'rounded-xl text-xs'
+            }, '📥 Export Excel'),
+            React.createElement(Button, {
+              size: 'sm',
+              variant: 'outline',
+              onClick: () => downloadPdf(tasks, 'Operations_Tasks_Report'),
+              className: 'rounded-xl text-xs'
+            }, '📄 Export PDF')
+          )
+        ),
+
+        React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-4' },
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card' },
+            React.createElement('div', { className: 'text-xs text-muted-foreground font-bold' }, 'Total Active Tasks'),
+            React.createElement('div', { className: 'text-2xl font-black text-foreground mt-1' }, tasks.filter(t => t.status !== 'COMPLETED').length)
+          ),
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card' },
+            React.createElement('div', { className: 'text-xs text-muted-foreground font-bold' }, 'Overdue SLA Breaches'),
+            React.createElement('div', { className: 'text-2xl font-black text-rose-500 mt-1' }, taskGroups.overdue.length)
+          ),
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card' },
+            React.createElement('div', { className: 'text-xs text-muted-foreground font-bold' }, 'Completed Today'),
+            React.createElement('div', { className: 'text-2xl font-black text-emerald-500 mt-1' }, taskGroups.completed.length)
+          ),
+          React.createElement(Card, { className: 'p-4 rounded-2xl bg-card' },
+            React.createElement('div', { className: 'text-xs text-muted-foreground font-bold' }, 'Focus Time Logged'),
+            React.createElement('div', { className: 'text-2xl font-black text-primary mt-1' }, \`\${todayFocusMinutes} min\`)
+          )
         )
       )
     ),
 
-    // ── MODAL: Create Quick Task ─────────────────────────────────────
-    showTaskModal && React.createElement('div', {
-      className: 'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4'
+    // ────────────────────────────────────────────────────────────────
+    // TASK DETAIL DRAWER / MODAL
+    // ────────────────────────────────────────────────────────────────
+    selectedTask && React.createElement('div', {
+      className: 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end',
+      onClick: () => setSelectedTask(null)
     },
       React.createElement('div', {
-        className: 'bg-card border border-border rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl'
+        className: 'w-full max-w-lg bg-card h-full shadow-2xl p-6 overflow-y-auto space-y-6',
+        onClick: e => e.stopPropagation()
       },
-        React.createElement('h3', { className: 'text-lg font-black text-foreground' }, 'Create Operational Task'),
-        React.createElement('form', { onSubmit: handleCreateTask, className: 'space-y-3' },
+        React.createElement('div', { className: 'flex items-center justify-between pb-4 border-b border-border/60' },
+          React.createElement('div', { className: 'flex items-center gap-2' },
+            React.createElement(Badge, { variant: 'outline', className: cn(DEPARTMENT_COLORS[selectedTask.department] || '') }, selectedTask.department),
+            React.createElement(Badge, { className: cn(PRIORITY_COLORS[selectedTask.priority] || '') }, selectedTask.priority)
+          ),
+          React.createElement('button', {
+            onClick: () => setSelectedTask(null),
+            className: 'text-muted-foreground hover:text-foreground text-sm font-bold'
+          }, '✕ Close')
+        ),
+
+        React.createElement('div', { className: 'space-y-2' },
+          React.createElement('h3', { className: 'text-base font-black text-foreground' }, selectedTask.title),
+          React.createElement('p', { className: 'text-xs text-muted-foreground leading-relaxed' }, selectedTask.description || 'No detailed description provided.')
+        ),
+
+        // Checklists Section
+        React.createElement('div', { className: 'space-y-3 pt-3 border-t border-border/60' },
+          React.createElement('div', { className: 'flex items-center justify-between' },
+            React.createElement('span', { className: 'text-xs font-bold text-foreground' }, 'Checklist Items'),
+            React.createElement('span', { className: 'text-[10px] text-muted-foreground' },
+              \`\${(selectedTask.checklists || selectedTask.checklist || []).filter(c => c.completed).length} / \${(selectedTask.checklists || selectedTask.checklist || []).length} done\`
+            )
+          ),
+
+          React.createElement('div', { className: 'space-y-1.5' },
+            (selectedTask.checklists || selectedTask.checklist || []).map(chk => React.createElement('div', {
+              key: chk.id,
+              onClick: () => handleToggleChecklist(selectedTask.id, chk.id),
+              className: 'flex items-center gap-2.5 p-2 rounded-xl bg-background border border-border/60 cursor-pointer hover:bg-secondary/20 transition-all text-xs'
+            },
+              React.createElement('input', {
+                type: 'checkbox',
+                checked: !!chk.completed,
+                onChange: () => {},
+                className: 'h-4 w-4 rounded accent-primary'
+              }),
+              React.createElement('span', { className: cn(chk.completed && 'line-through text-muted-foreground') }, chk.text)
+            ))
+          ),
+
+          React.createElement('div', { className: 'flex items-center gap-2 pt-2' },
+            React.createElement('input', {
+              type: 'text',
+              value: newChecklistText,
+              onChange: e => setNewChecklistText(e.target.value),
+              placeholder: '+ Add checklist item...',
+              className: 'flex-1 h-8 px-3 rounded-xl bg-background border border-border text-xs'
+            }),
+            React.createElement(Button, { size: 'sm', onClick: handleAddChecklistItem, className: 'h-8 px-3 text-xs' }, 'Add')
+          )
+        ),
+
+        // Action Buttons
+        React.createElement('div', { className: 'pt-6 border-t border-border/60 flex items-center gap-2' },
+          React.createElement(Button, {
+            onClick: () => handleToggleTaskStatus(selectedTask),
+            className: 'flex-1 rounded-xl text-xs'
+          }, selectedTask.status === 'COMPLETED' ? 'Mark Active' : '✓ Mark Complete'),
+          React.createElement(Button, {
+            variant: 'outline',
+            onClick: () => {
+              setFocusLinkedTaskId(selectedTask.id);
+              setActiveTab('focus');
+              setSelectedTask(null);
+            },
+            className: 'rounded-xl text-xs'
+          }, '⏱️ Start Focus'),
+          React.createElement(Button, {
+            variant: 'destructive',
+            onClick: () => handleDeleteTask(selectedTask.id),
+            className: 'rounded-xl text-xs'
+          }, '🗑️ Delete')
+        )
+      )
+    ),
+
+    // ────────────────────────────────────────────────────────────────
+    // CREATE TASK MODAL
+    // ────────────────────────────────────────────────────────────────
+    showTaskModal && React.createElement('div', {
+      className: 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4',
+      onClick: () => setShowTaskModal(false)
+    },
+      React.createElement(Card, {
+        className: 'w-full max-w-lg p-6 bg-card rounded-2xl shadow-2xl space-y-4',
+        onClick: e => e.stopPropagation()
+      },
+        React.createElement('div', { className: 'flex items-center justify-between pb-2 border-b border-border/60' },
+          React.createElement('h3', { className: 'text-sm font-black text-foreground' }, '➕ Create Operational Task'),
+          React.createElement('button', { onClick: () => setShowTaskModal(false), className: 'text-xs text-muted-foreground' }, '✕')
+        ),
+
+        React.createElement('form', { onSubmit: handleCreateTask, className: 'space-y-3.5 text-xs' },
           React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Task Title *'),
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Task Title:'),
             React.createElement(Input, {
               required: true,
-              placeholder: 'e.g. Verify Tyre Pressure on Truck MH-04-GP-1234',
               value: taskForm.title,
-              onChange: e => setTaskForm({ ...taskForm, title: e.target.value })
+              onChange: e => setTaskForm({ ...taskForm, title: e.target.value }),
+              placeholder: 'e.g. Conduct pre-trip brake & tyre inspection'
             })
           ),
-          React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Description'),
-            React.createElement('textarea', {
-              rows: 2,
-              placeholder: 'Operational context, checklist points, instructions...',
-              value: taskForm.description,
-              onChange: e => setTaskForm({ ...taskForm, description: e.target.value }),
-              className: 'w-full rounded-xl border border-border bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary'
-            })
-          ),
+
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
             React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Department'),
+              React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Department:'),
               React.createElement('select', {
                 value: taskForm.department,
                 onChange: e => setTaskForm({ ...taskForm, department: e.target.value }),
-                className: 'w-full h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground'
+                className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
               },
                 React.createElement('option', { value: 'Operations' }, 'Operations'),
-                React.createElement('option', { value: 'Fleet' }, 'Fleet Maintenance'),
-                React.createElement('option', { value: 'Finance' }, 'Finance & Billing'),
-                React.createElement('option', { value: 'Compliance' }, 'Compliance & Docs')
+                React.createElement('option', { value: 'Dispatch' }, 'Dispatch'),
+                React.createElement('option', { value: 'Fleet' }, 'Fleet'),
+                React.createElement('option', { value: 'Finance' }, 'Finance'),
+                React.createElement('option', { value: 'Compliance' }, 'Compliance')
               )
             ),
             React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Priority'),
+              React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Priority:'),
               React.createElement('select', {
                 value: taskForm.priority,
                 onChange: e => setTaskForm({ ...taskForm, priority: e.target.value }),
-                className: 'w-full h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground'
+                className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
               },
-                React.createElement('option', { value: 'LOW' }, 'Low'),
-                React.createElement('option', { value: 'MEDIUM' }, 'Medium'),
-                React.createElement('option', { value: 'HIGH' }, 'High'),
-                React.createElement('option', { value: 'CRITICAL' }, 'Critical')
+                React.createElement('option', { value: 'LOW' }, 'Low Priority'),
+                React.createElement('option', { value: 'MEDIUM' }, 'Medium Priority'),
+                React.createElement('option', { value: 'HIGH' }, 'High Priority'),
+                React.createElement('option', { value: 'CRITICAL' }, 'Critical Priority')
               )
             )
           ),
+
           React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
             React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Due Date & Time *'),
-              React.createElement(Input, {
+              React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Due Date:'),
+              React.createElement('input', {
                 type: 'datetime-local',
-                required: true,
                 value: taskForm.due_date,
-                onChange: e => setTaskForm({ ...taskForm, due_date: e.target.value })
+                onChange: e => setTaskForm({ ...taskForm, due_date: e.target.value }),
+                className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
               })
             ),
             React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Linked Record (Truck/LR)'),
-              React.createElement(Input, {
-                placeholder: 'e.g. MH-04-GP-1234 or LR-2026-001',
-                value: taskForm.related_entity_id,
-                onChange: e => setTaskForm({ ...taskForm, related_entity_id: e.target.value })
-              })
+              React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Quadrant:'),
+              React.createElement('select', {
+                value: taskForm.eisenhower_quadrant,
+                onChange: e => setTaskForm({ ...taskForm, eisenhower_quadrant: Number(e.target.value) }),
+                className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
+              },
+                React.createElement('option', { value: 1 }, 'Q1: Do First (Urgent & Important)'),
+                React.createElement('option', { value: 2 }, 'Q2: Schedule (Not Urgent & Important)'),
+                React.createElement('option', { value: 3 }, 'Q3: Delegate (Urgent & Not Important)'),
+                React.createElement('option', { value: 4 }, 'Q4: Backlog (Not Urgent & Not Important)')
+              )
             )
           ),
-          React.createElement('div', { className: 'flex justify-end gap-2 pt-3' },
-            React.createElement(Button, {
-              type: 'button',
-              variant: 'outline',
-              onClick: () => setShowTaskModal(false)
-            }, 'Cancel'),
-            React.createElement(Button, {
-              type: 'submit',
-              className: 'bg-primary text-primary-foreground font-bold'
-            }, 'Create Task')
-          )
-        )
-      )
-    ),
 
-    // ── MODAL: Create Scheduled Reminder ─────────────────────────────
-    showReminderModal && React.createElement('div', {
-      className: 'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4'
-    },
-      React.createElement('div', {
-        className: 'bg-card border border-border rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl'
-      },
-        React.createElement('h3', { className: 'text-lg font-black text-foreground' }, 'Schedule Background Reminder'),
-        React.createElement('form', { onSubmit: handleCreateReminder, className: 'space-y-3' },
           React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Reminder Title *'),
-            React.createElement(Input, {
-              required: true,
-              placeholder: 'e.g. Renew Truck Insurance MH-12-RN-5678',
-              value: reminderForm.title,
-              onChange: e => setReminderForm({ ...reminderForm, title: e.target.value })
-            })
-          ),
-          React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Trigger Date & Time *'),
-            React.createElement(Input, {
-              type: 'datetime-local',
-              required: true,
-              value: reminderForm.trigger_time,
-              onChange: e => setReminderForm({ ...reminderForm, trigger_time: e.target.value })
-            })
-          ),
-          React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-            React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Priority'),
-              React.createElement('select', {
-                value: reminderForm.priority,
-                onChange: e => setReminderForm({ ...reminderForm, priority: e.target.value }),
-                className: 'w-full h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground'
-              },
-                React.createElement('option', { value: 'LOW' }, 'Low'),
-                React.createElement('option', { value: 'MEDIUM' }, 'Medium'),
-                React.createElement('option', { value: 'HIGH' }, 'High'),
-                React.createElement('option', { value: 'CRITICAL' }, 'Critical')
-              )
-            ),
-            React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Recurrence Schedule'),
-              React.createElement('select', {
-                value: reminderForm.recurrence_type,
-                onChange: e => setReminderForm({ ...reminderForm, recurrence_type: e.target.value }),
-                className: 'w-full h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground'
-              },
-                React.createElement('option', { value: 'NONE' }, 'One-Time'),
-                React.createElement('option', { value: 'DAILY' }, 'Daily Recurring'),
-                React.createElement('option', { value: 'WEEKLY' }, 'Weekly Recurring'),
-                React.createElement('option', { value: 'MONTHLY' }, 'Monthly Recurring')
-              )
-            )
-          ),
-          React.createElement('div', { className: 'flex justify-end gap-2 pt-3' },
-            React.createElement(Button, {
-              type: 'button',
-              variant: 'outline',
-              onClick: () => setShowReminderModal(false)
-            }, 'Cancel'),
-            React.createElement(Button, {
-              type: 'submit',
-              className: 'bg-primary text-primary-foreground font-bold'
-            }, 'Schedule Reminder')
-          )
-        )
-      )
-    ),
-
-    // ── MODAL: Request Approval Workflow ─────────────────────────────
-    showWorkflowModal && React.createElement('div', {
-      className: 'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4'
-    },
-      React.createElement('div', {
-        className: 'bg-card border border-border rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl'
-      },
-        React.createElement('h3', { className: 'text-lg font-black text-foreground' }, 'Initiate Approval Request'),
-        React.createElement('form', { onSubmit: handleCreateWorkflow, className: 'space-y-3' },
-          React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Request Title *'),
-            React.createElement(Input, {
-              required: true,
-              placeholder: 'e.g. Major Engine Overhaul Approval',
-              value: workflowForm.title,
-              onChange: e => setWorkflowForm({ ...workflowForm, title: e.target.value })
-            })
-          ),
-          React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
-            React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Workflow Type'),
-              React.createElement('select', {
-                value: workflowForm.workflow_type,
-                onChange: e => setWorkflowForm({ ...workflowForm, workflow_type: e.target.value }),
-                className: 'w-full h-9 px-3 rounded-xl border border-border bg-background text-xs text-foreground'
-              },
-                React.createElement('option', { value: 'EXPENSE_RELEASE' }, 'Expense Release'),
-                React.createElement('option', { value: 'MAINTENANCE_OVER_50K' }, 'Maintenance > Rs. 50,000'),
-                React.createElement('option', { value: 'VEHICLE_PURCHASE' }, 'Vehicle Purchase'),
-                React.createElement('option', { value: 'VENDOR_ONBOARDING' }, 'Vendor Onboarding')
-              )
-            ),
-            React.createElement('div', null,
-              React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Expenditure Amount (INR)'),
-              React.createElement(Input, {
-                type: 'number',
-                placeholder: 'e.g. 75000',
-                value: workflowForm.amount,
-                onChange: e => setWorkflowForm({ ...workflowForm, amount: e.target.value })
-              })
-            )
-          ),
-          React.createElement('div', null,
-            React.createElement('label', { className: 'text-[11px] font-bold text-muted-foreground uppercase' }, 'Justification & Details'),
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Description:'),
             React.createElement('textarea', {
-              rows: 2,
-              placeholder: 'Operational necessity, quotation details, vendor references...',
-              value: workflowForm.description,
-              onChange: e => setWorkflowForm({ ...workflowForm, description: e.target.value }),
-              className: 'w-full rounded-xl border border-border bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary'
+              rows: 3,
+              value: taskForm.description,
+              onChange: e => setTaskForm({ ...taskForm, description: e.target.value }),
+              placeholder: 'Add details, truck number, driver instructions...',
+              className: 'w-full p-3 rounded-xl bg-background border border-border text-xs font-medium'
             })
           ),
-          React.createElement('div', { className: 'flex justify-end gap-2 pt-3' },
-            React.createElement(Button, {
-              type: 'button',
-              variant: 'outline',
-              onClick: () => setShowWorkflowModal(false)
-            }, 'Cancel'),
-            React.createElement(Button, {
-              type: 'submit',
-              className: 'bg-primary text-primary-foreground font-bold'
-            }, 'Submit Request')
+
+          React.createElement('div', { className: 'flex justify-end gap-2 pt-3 border-t border-border/60' },
+            React.createElement(Button, { type: 'button', variant: 'outline', onClick: () => setShowTaskModal(false) }, 'Cancel'),
+            React.createElement(Button, { type: 'submit' }, 'Create Task')
           )
         )
       )
     ),
 
-    // ── MODAL: Mandatory Rejection Reason ─────────────────────────────
-    showRejectModal && React.createElement('div', {
-      className: 'fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4'
+    // ────────────────────────────────────────────────────────────────
+    // CREATE REMINDER MODAL
+    // ────────────────────────────────────────────────────────────────
+    showReminderModal && React.createElement('div', {
+      className: 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4',
+      onClick: () => setShowReminderModal(false)
     },
-      React.createElement('div', {
-        className: 'bg-card border border-rose-500/40 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl'
+      React.createElement(Card, {
+        className: 'w-full max-w-md p-6 bg-card rounded-2xl shadow-2xl space-y-4',
+        onClick: e => e.stopPropagation()
       },
-        React.createElement('h3', { className: 'text-base font-black text-rose-400' }, 'Mandatory Rejection Explanation'),
-        React.createElement('p', { className: 'text-xs text-muted-foreground' },
-          'Compliance requires a documented reason for rejecting this workflow request.'
-        ),
-        React.createElement('textarea', {
-          rows: 3,
-          required: true,
-          placeholder: 'Provide specific reason (e.g. budget limit exceeded, alternative vendor preferred)...',
-          value: rejectionReason,
-          onChange: e => setRejectionReason(e.target.value),
-          className: 'w-full rounded-xl border border-border bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-rose-500'
-        }),
-        React.createElement('div', { className: 'flex justify-end gap-2 pt-2' },
-          React.createElement(Button, {
-            variant: 'outline',
-            onClick: () => { setShowRejectModal(null); setRejectionReason(''); }
-          }, 'Cancel'),
-          React.createElement(Button, {
-            disabled: rejectionReason.trim().length < 5,
-            onClick: () => handleWorkflowReview(showRejectModal, 'REJECT', rejectionReason),
-            className: 'bg-rose-600 hover:bg-rose-500 text-white font-bold'
-          }, 'Confirm Rejection')
+        React.createElement('h3', { className: 'text-sm font-black text-foreground' }, '🔔 Schedule Alert / Reminder'),
+        React.createElement('form', { onSubmit: handleCreateReminder, className: 'space-y-3 text-xs' },
+          React.createElement('div', null,
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Reminder Title:'),
+            React.createElement(Input, {
+              required: true,
+              value: reminderForm.title,
+              onChange: e => setReminderForm({ ...reminderForm, title: e.target.value }),
+              placeholder: 'e.g. Call client for loading gate pass clearance'
+            })
+          ),
+          React.createElement('div', null,
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Trigger Time:'),
+            React.createElement('input', {
+              type: 'datetime-local',
+              value: reminderForm.trigger_time,
+              onChange: e => setReminderForm({ ...reminderForm, trigger_time: e.target.value }),
+              className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
+            })
+          ),
+          React.createElement('div', { className: 'flex justify-end gap-2 pt-3' },
+            React.createElement(Button, { type: 'button', variant: 'outline', onClick: () => setShowReminderModal(false) }, 'Cancel'),
+            React.createElement(Button, { type: 'submit' }, 'Schedule')
+          )
+        )
+      )
+    ),
+
+    // ────────────────────────────────────────────────────────────────
+    // CREATE WORKFLOW MODAL
+    // ────────────────────────────────────────────────────────────────
+    showWorkflowModal && React.createElement('div', {
+      className: 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4',
+      onClick: () => setShowWorkflowModal(false)
+    },
+      React.createElement(Card, {
+        className: 'w-full max-w-md p-6 bg-card rounded-2xl shadow-2xl space-y-4',
+        onClick: e => e.stopPropagation()
+      },
+        React.createElement('h3', { className: 'text-sm font-black text-foreground' }, '⚖️ Request Manager Approval'),
+        React.createElement('form', { onSubmit: handleCreateWorkflow, className: 'space-y-3 text-xs' },
+          React.createElement('div', null,
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Approval Type:'),
+            React.createElement('select', {
+              value: workflowForm.workflow_type,
+              onChange: e => setWorkflowForm({ ...workflowForm, workflow_type: e.target.value }),
+              className: 'w-full h-9 px-3 rounded-xl bg-background border border-border text-xs font-semibold'
+            },
+              React.createElement('option', { value: 'EXPENSE_ADVANCE' }, 'Driver Route Expense Advance'),
+              React.createElement('option', { value: 'GATE_PASS' }, 'Terminal Exit Gate Pass Clearance'),
+              React.createElement('option', { value: 'DRIVER_LEAVE' }, 'Driver Emergency Leave Request'),
+              React.createElement('option', { value: 'MAINTENANCE_ESTIMATE' }, 'Workshop Maintenance Estimate > ₹5,000')
+            )
+          ),
+          React.createElement('div', null,
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Subject / Title:'),
+            React.createElement(Input, {
+              required: true,
+              value: workflowForm.title,
+              onChange: e => setWorkflowForm({ ...workflowForm, title: e.target.value }),
+              placeholder: 'e.g. ₹8,000 Diesel Advance for Trip JB-401'
+            })
+          ),
+          React.createElement('div', null,
+            React.createElement('label', { className: 'block font-bold text-muted-foreground mb-1' }, 'Amount (₹):'),
+            React.createElement(Input, {
+              type: 'number',
+              value: workflowForm.amount,
+              onChange: e => setWorkflowForm({ ...workflowForm, amount: e.target.value }),
+              placeholder: '0.00'
+            })
+          ),
+          React.createElement('div', { className: 'flex justify-end gap-2 pt-3' },
+            React.createElement(Button, { type: 'button', variant: 'outline', onClick: () => setShowWorkflowModal(false) }, 'Cancel'),
+            React.createElement(Button, { type: 'submit' }, 'Submit Request')
+          )
         )
       )
     )
   );
+
+  // ── HELPER: Render Single Task Row (TickTick Style) ───────────────
+  function renderTaskRow(task) {
+    const isComp = task.status === 'COMPLETED';
+    const chkList = task.checklists || task.checklist || [];
+    const chkDone = chkList.filter(c => c.completed).length;
+
+    return React.createElement(Card, {
+      key: task.id,
+      className: cn(
+        'p-3.5 rounded-2xl bg-card border-border/80 hover:border-primary/50 transition-all flex items-center justify-between gap-3 shadow-sm group',
+        isComp && 'opacity-60 bg-muted/30'
+      )
+    },
+      // Left: Checkbox + Title + Time Slot Badge
+      React.createElement('div', { className: 'flex items-center gap-3 min-w-0 flex-1' },
+        React.createElement('input', {
+          type: 'checkbox',
+          checked: isComp,
+          onChange: () => handleToggleTaskStatus(task),
+          className: 'h-4 w-4 rounded accent-primary cursor-pointer shrink-0'
+        }),
+
+        React.createElement('div', {
+          onClick: () => setSelectedTask(task),
+          className: 'min-w-0 flex-1 cursor-pointer'
+        },
+          React.createElement('div', { className: 'flex items-center gap-2 flex-wrap' },
+            React.createElement('span', {
+              className: cn(
+                'text-xs font-bold text-foreground truncate',
+                isComp && 'line-through text-muted-foreground'
+              )
+            }, task.title),
+
+            // Time Slot Badge (TickTick style: 09:00 AM)
+            task.scheduled_time && React.createElement(Badge, {
+              variant: 'outline',
+              className: 'text-[9px] font-mono bg-secondary/50 text-foreground border-border px-1.5'
+            }, \`⏰ \${task.scheduled_time}\`),
+
+            // Department Badge
+            React.createElement(Badge, {
+              variant: 'outline',
+              className: cn('text-[9px]', DEPARTMENT_COLORS[task.department] || '')
+            }, task.department),
+
+            // Priority Badge
+            React.createElement(Badge, {
+              className: cn('text-[9px]', PRIORITY_COLORS[task.priority] || '')
+            }, task.priority),
+
+            // Quadrant Badge
+            task.eisenhower_quadrant && React.createElement(Badge, {
+              variant: 'outline',
+              className: 'text-[9px] font-bold'
+            }, \`Q\${task.eisenhower_quadrant}\`),
+
+            // Checklist indicator
+            chkList.length > 0 && React.createElement(Badge, {
+              variant: 'outline',
+              className: 'text-[9px] bg-secondary/40'
+            }, \`☑️ \${chkDone}/\${chkList.length}\`)
+          ),
+
+          task.description && React.createElement('p', { className: 'text-[11px] text-muted-foreground truncate mt-0.5' },
+            task.description
+          )
+        )
+      ),
+
+      // Right: Actions (Focus, Drawer, Delete)
+      React.createElement('div', { className: 'flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity' },
+        React.createElement('button', {
+          title: 'Start Focus Timer on this task',
+          onClick: () => {
+            setFocusLinkedTaskId(task.id);
+            setActiveTab('focus');
+          },
+          className: 'p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-secondary/40 text-xs cursor-pointer'
+        }, '⏱️'),
+
+        React.createElement('button', {
+          title: 'Delete Task',
+          onClick: () => handleDeleteTask(task.id),
+          className: 'p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 text-xs cursor-pointer'
+        }, '🗑️')
+      )
+    );
+  }
+
+  // ── HELPER: Render Eisenhower Quadrant Card ───────────────────────
+  function renderQuadrantCard({ qNum, title, subtitle, colorClass, badgeClass, tasks }) {
+    return React.createElement(Card, {
+      className: cn('p-5 rounded-2xl border flex flex-col justify-between shadow-sm min-h-[380px]', colorClass)
+    },
+      React.createElement('div', { className: 'space-y-3' },
+        React.createElement('div', { className: 'flex items-center justify-between pb-2 border-b border-border/40' },
+          React.createElement('div', null,
+            React.createElement('div', { className: 'flex items-center gap-2' },
+              React.createElement('span', { className: cn('px-2 py-0.5 rounded-md text-[10px] font-black', badgeClass) },
+                \`Q\${qNum}\`
+              ),
+              React.createElement('h3', { className: 'text-sm font-black text-foreground' }, title)
+            ),
+            React.createElement('p', { className: 'text-[11px] text-muted-foreground mt-0.5' }, subtitle)
+          ),
+          React.createElement(Badge, { variant: 'outline', className: 'text-xs font-bold' }, tasks.length)
+        ),
+
+        // Quadrant Tasks List
+        React.createElement('div', { className: 'space-y-2 max-h-72 overflow-y-auto pr-1' },
+          tasks.length === 0
+            ? React.createElement('div', { className: 'py-8 text-center text-muted-foreground text-xs' },
+                'No tasks currently in this quadrant.'
+              )
+            : tasks.map(t => React.createElement('div', {
+                key: t.id,
+                className: 'p-2.5 rounded-xl bg-card/90 border border-border/80 shadow-xs flex items-center justify-between gap-2 text-xs'
+              },
+                React.createElement('div', { className: 'flex items-center gap-2 min-w-0 flex-1' },
+                  React.createElement('input', {
+                    type: 'checkbox',
+                    checked: t.status === 'COMPLETED',
+                    onChange: () => handleToggleTaskStatus(t),
+                    className: 'h-3.5 w-3.5 rounded accent-primary cursor-pointer'
+                  }),
+                  React.createElement('span', {
+                    onClick: () => setSelectedTask(t),
+                    className: 'font-bold text-foreground truncate cursor-pointer hover:underline'
+                  }, t.title)
+                ),
+
+                // Move Quadrant Selector
+                React.createElement('select', {
+                  value: qNum,
+                  onChange: e => handleMoveQuadrant(t, Number(e.target.value)),
+                  className: 'h-6 px-1.5 rounded-lg bg-background border border-border text-[10px] font-bold text-muted-foreground'
+                },
+                  React.createElement('option', { value: 1 }, 'Q1 (Do First)'),
+                  React.createElement('option', { value: 2 }, 'Q2 (Schedule)'),
+                  React.createElement('option', { value: 3 }, 'Q3 (Delegate)'),
+                  React.createElement('option', { value: 4 }, 'Q4 (Backlog)')
+                )
+              ))
+        )
+      ),
+
+      // Inline Quick Add for this Quadrant
+      React.createElement('div', { className: 'pt-3 mt-3 border-t border-border/40' },
+        React.createElement('input', {
+          type: 'text',
+          placeholder: \`+ Add task to \${title}...\`,
+          onKeyDown: async e => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+              const text = e.target.value.trim();
+              e.target.value = '';
+              try {
+                const res = await fetch('/api/productivity/tasks', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    title: text,
+                    department: 'Operations',
+                    priority: qNum === 1 ? 'CRITICAL' : (qNum === 2 ? 'HIGH' : 'MEDIUM'),
+                    eisenhower_quadrant: qNum,
+                    due_date: new Date().toISOString()
+                  })
+                });
+                const d = await res.json();
+                if (d.success) {
+                  setTasks(prev => [d.task, ...prev]);
+                  toast.success(\`Added to Q\${qNum}\`);
+                }
+              } catch (err) {}
+            }
+          },
+          className: 'w-full h-8 px-3 rounded-xl bg-background border border-border text-xs'
+        })
+      )
+    );
+  }
+
+  // ── HELPER: Render Daily Hourly Agenda Timeline (07:00 to 22:00) ───
+  function renderDailyAgendaTimeline() {
+    const hours = [
+      '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+      '13:00', '14:00', '15:00', '16:00', '17:00', '18:00',
+      '19:00', '20:00', '21:00', '22:00'
+    ];
+
+    const selDateStr = selectedDate.toISOString().slice(0, 10);
+
+    return React.createElement('div', { className: 'space-y-4' },
+      // Date Navigator Bar
+      React.createElement('div', { className: 'flex items-center justify-between bg-card/60 p-3 rounded-2xl border border-border' },
+        React.createElement(Button, {
+          size: 'sm',
+          variant: 'outline',
+          onClick: () => setSelectedDate(new Date(selectedDate.getTime() - 86400000)),
+          className: 'rounded-xl text-xs'
+        }, '◀ Previous Day'),
+
+        React.createElement('div', { className: 'text-xs font-black text-foreground flex items-center gap-2' },
+          React.createElement('span', null, '📅'),
+          React.createElement('span', null, selectedDate.toLocaleDateString('en-IN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }))
+        ),
+
+        React.createElement(Button, {
+          size: 'sm',
+          variant: 'outline',
+          onClick: () => setSelectedDate(new Date(selectedDate.getTime() + 86400000)),
+          className: 'rounded-xl text-xs'
+        }, 'Next Day ▶')
+      ),
+
+      // Hour by Hour Vertical Flow
+      React.createElement('div', { className: 'divide-y divide-border/50 bg-card rounded-2xl border border-border overflow-hidden' },
+        hours.map(hour => {
+          const matchedTasks = tasks.filter(t => {
+            if (t.scheduled_time && t.scheduled_time.startsWith(hour.slice(0, 2))) return true;
+            if (t.due_date && t.due_date.slice(0, 10) === selDateStr) {
+              const taskH = new Date(t.due_date).getHours();
+              return taskH === parseInt(hour.slice(0, 2), 10);
+            }
+            return false;
+          });
+
+          return React.createElement('div', {
+            key: hour,
+            className: 'flex items-start gap-4 p-3 hover:bg-secondary/10 transition-colors'
+          },
+            // Hour Label
+            React.createElement('div', { className: 'w-16 text-right font-mono text-xs font-bold text-muted-foreground pt-1' },
+              hour
+            ),
+
+            // Slot Tasks Container
+            React.createElement('div', { className: 'flex-1 min-h-[42px] flex items-center gap-2 flex-wrap' },
+              matchedTasks.length === 0
+                ? React.createElement('span', { className: 'text-[11px] text-muted-foreground/40 italic' }, 'No scheduled dispatch or task')
+                : matchedTasks.map(t => React.createElement('div', {
+                    key: t.id,
+                    onClick: () => setSelectedTask(t),
+                    className: cn(
+                      'px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer shadow-xs hover:scale-102 transition-all',
+                      DEPARTMENT_COLORS[t.department] || 'bg-secondary text-secondary-foreground border-border'
+                    )
+                  },
+                    React.createElement('span', null, t.title),
+                    React.createElement(Badge, { className: cn('text-[8px]', PRIORITY_COLORS[t.priority] || '') }, t.priority)
+                  ))
+            )
+          );
+        })
+      )
+    );
+  }
+
+  // ── HELPER: Render Month Calendar Grid (35 Days) ───────────────────
+  function renderMonthCalendarGrid() {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push(d);
+    }
+
+    return React.createElement('div', { className: 'space-y-4' },
+      React.createElement('div', { className: 'flex items-center justify-between bg-card/60 p-3 rounded-2xl border border-border' },
+        React.createElement(Button, {
+          size: 'sm',
+          variant: 'outline',
+          onClick: () => setSelectedDate(new Date(year, month - 1, 1)),
+          className: 'rounded-xl text-xs'
+        }, '◀ Previous Month'),
+
+        React.createElement('div', { className: 'text-sm font-black text-foreground' },
+          selectedDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+        ),
+
+        React.createElement(Button, {
+          size: 'sm',
+          variant: 'outline',
+          onClick: () => setSelectedDate(new Date(year, month + 1, 1)),
+          className: 'rounded-xl text-xs'
+        }, 'Next Month ▶')
+      ),
+
+      React.createElement('div', { className: 'grid grid-cols-7 gap-2' },
+        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => React.createElement('div', {
+          key: d,
+          className: 'text-center font-bold text-[11px] text-muted-foreground py-2'
+        }, d)),
+
+        days.map((d, idx) => {
+          if (!d) {
+            return React.createElement('div', { key: idx, className: 'h-24 rounded-2xl bg-secondary/10 border border-transparent' });
+          }
+          const dStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(d).padStart(2, '0')}\`;
+          const dayTasks = tasks.filter(t => (t.due_date || '').slice(0, 10) === dStr);
+          const isTodayDate = new Date().toISOString().slice(0, 10) === dStr;
+
+          return React.createElement('div', {
+            key: idx,
+            onClick: () => {
+              setSelectedDate(new Date(year, month, d));
+              setCalMode('agenda');
+            },
+            className: cn(
+              'h-24 p-2 rounded-2xl border bg-card/70 hover:border-primary cursor-pointer transition-all flex flex-col justify-between overflow-hidden',
+              isTodayDate ? 'border-primary ring-2 ring-primary/20 bg-primary/5' : 'border-border/70'
+            )
+          },
+            React.createElement('div', { className: 'flex items-center justify-between' },
+              React.createElement('span', { className: cn('text-xs font-black', isTodayDate ? 'text-primary' : 'text-foreground') }, d),
+              dayTasks.length > 0 && React.createElement(Badge, { variant: 'secondary', className: 'text-[9px] px-1' }, dayTasks.length)
+            ),
+
+            React.createElement('div', { className: 'space-y-1 overflow-hidden' },
+              dayTasks.slice(0, 2).map(t => React.createElement('div', {
+                key: t.id,
+                className: cn('text-[9px] font-bold px-1.5 py-0.5 rounded truncate', DEPARTMENT_COLORS[t.department] || 'bg-secondary')
+              }, t.title)),
+              dayTasks.length > 2 && React.createElement('div', { className: 'text-[8px] text-muted-foreground' }, \`+\${dayTasks.length - 2} more\`)
+            )
+          );
+        })
+      )
+    );
+  }
 }
 
+// Global Crash-Resilient Error Boundary
 class ProductivityErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -1404,23 +2392,24 @@ class ProductivityErrorBoundary extends React.Component {
     return { hasError: true, error };
   }
   componentDidCatch(error, errorInfo) {
-    console.error('[Productivity Error Caught]:', error, errorInfo);
+    console.error('Enterprise Productivity System error caught:', error, errorInfo);
   }
   render() {
     if (this.state.hasError) {
       return React.createElement('div', {
-        className: 'p-8 text-center space-y-4 max-w-lg mx-auto my-12 bg-card border border-rose-500/30 rounded-3xl shadow-xl'
+        className: 'min-h-[400px] flex flex-col items-center justify-center p-8 text-center space-y-4 bg-card rounded-2xl border border-destructive/30 m-4'
       },
-        React.createElement('div', { className: 'text-4xl' }, '🛡️'),
-        React.createElement('h3', { className: 'text-lg font-bold text-rose-400' }, 'Productivity Recovery Mode'),
-        React.createElement('p', { className: 'text-xs text-muted-foreground' }, this.state.error?.message || 'A transient UI rendering issue occurred.'),
-        React.createElement('button', {
+        React.createElement('div', { className: 'h-12 w-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center text-xl font-bold' }, '⚠️'),
+        React.createElement('h3', { className: 'text-lg font-bold text-foreground' }, 'Operations Planner Recovered Safely'),
+        React.createElement('p', { className: 'text-xs text-muted-foreground max-w-md' },
+          this.state.error?.message || 'An unexpected operational UI state was encountered. The engine auto-isolated the exception.'
+        ),
+        React.createElement(Button, {
           onClick: () => {
             this.setState({ hasError: false, error: null });
             window.location.reload();
-          },
-          className: 'px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground cursor-pointer'
-        }, 'Reload Productivity Center')
+          }
+        }, 'Reload Operations Hub')
       );
     }
     return this.props.children;
@@ -1433,21 +2422,25 @@ export default function EnterpriseProductivityPageWrapper() {
 `;
 
 fs.writeFileSync(path.resolve(__dirname, 'ProductivityPage.jsx'), sourceCode, 'utf8');
-console.log('✓ Generated tools/ProductivityPage.jsx');
+console.log('✓ Generated tools/ProductivityPage.jsx with complete Operations Planner features');
 
 const destTargets = [
   'dist/assets/TaskManagerPage-VJl7o3Rx.js',
   'dist/assets/TodoListPage-BVzmZuuC.js',
   'dist/assets/RemindersPage-BOmHrdLZ.js',
+  'dist/assets/CalendarPage-B2t9lz8o.js',
   'apps/web/dist/assets/TaskManagerPage-VJl7o3Rx.js',
   'apps/web/dist/assets/TodoListPage-BVzmZuuC.js',
   'apps/web/dist/assets/RemindersPage-BOmHrdLZ.js',
+  'apps/web/dist/assets/CalendarPage-B2t9lz8o.js',
   'apps/api/dist/assets/TaskManagerPage-VJl7o3Rx.js',
   'apps/api/dist/assets/TodoListPage-BVzmZuuC.js',
   'apps/api/dist/assets/RemindersPage-BOmHrdLZ.js',
+  'apps/api/dist/assets/CalendarPage-B2t9lz8o.js',
   'dist/apps/web/assets/TaskManagerPage-VJl7o3Rx.js',
   'dist/apps/web/assets/TodoListPage-BVzmZuuC.js',
-  'dist/apps/web/assets/RemindersPage-BOmHrdLZ.js'
+  'dist/apps/web/assets/RemindersPage-BOmHrdLZ.js',
+  'dist/apps/web/assets/CalendarPage-B2t9lz8o.js'
 ];
 
 try {
@@ -1481,4 +2474,4 @@ try {
   process.exit(1);
 }
 
-console.log('=== Enterprise Productivity Dashboard compiled successfully! ===');
+console.log('=== Complete Operations Planner compiled successfully! ===');

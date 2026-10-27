@@ -2033,5 +2033,375 @@
     "user_agent": "JBC-Client-Web",
     "previous_event_hash": "86f0e71d445af8e051d8ce7ea6b329f070645fc62587e96b42537f3c21d3e193",
     "current_event_hash": "20b81d383b04709c8177616bf5f657975442408dfc624822c0c38e3bfc28cdb3"
+  },
+  {
+    "id": "evt_1793122454946_6idqa3",
+    "sequence_number": 52,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-27T17:34:14.946Z",
+    "recorded_at": "2026-10-27T17:34:14.946Z",
+    "actor": {
+      "id": "usr_operations",
+      "name": "System Operator",
+      "email": "system@jaibhavanicargo.com",
+      "role": "manager",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "LOGISTICS",
+    "entity_type": "TASK",
+    "entity_id": "TSK-2026-62DDB6",
+    "action": "CREATE",
+    "outcome": "SUCCESS",
+    "severity": "INFO",
+    "details": "Created task \"Verify Pre-Trip Inspection for Truck MH12RN1234\" assigned to Operations Staff (Due: 2026-10-27T17:34:14.935Z)",
+    "previous_values": null,
+    "new_values": {
+      "id": "TSK-2026-62DDB6",
+      "title": "Verify Pre-Trip Inspection for Truck MH12RN1234",
+      "description": "",
+      "category": "General Operations",
+      "subcategory": "",
+      "priority": "HIGH",
+      "status": "NOT_STARTED",
+      "created_by_id": "usr_operations",
+      "created_by_name": "Operations Lead",
+      "assigned_to_id": "usr_operations",
+      "assigned_to_name": "Operations Staff",
+      "accountable_owner_id": "usr_operations",
+      "accountable_owner_name": "Operations Lead",
+      "department": "Fleet",
+      "start_date": "2026-10-27T17:34:14.942Z",
+      "due_date": "2026-10-27T17:34:14.935Z",
+      "completion_date": null,
+      "estimated_duration_hours": 1,
+      "actual_duration_hours": 0,
+      "related_entity_type": null,
+      "related_entity_id": null,
+      "attachments": [],
+      "completion_evidence": {},
+      "checklists": [],
+      "checklist": [],
+      "parent_task_id": null,
+      "subtasks": [],
+      "is_recurring": false,
+      "recurrence_rule": null,
+      "escalation_level": 0,
+      "created_at": "2026-10-27T17:34:14.942Z",
+      "updated_at": "2026-10-27T17:34:14.942Z"
+    },
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1793122454947_41re",
+    "correlation_id": "corr_1793122454947",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "20b81d383b04709c8177616bf5f657975442408dfc624822c0c38e3bfc28cdb3",
+    "current_event_hash": "b61786b2bb66c34fb24c95d423d8f5704868fcf8bcd4fb616ce3d0473d2f6743"
+  },
+  {
+    "id": "evt_1793122454966_93wvjg",
+    "sequence_number": 53,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-27T17:34:14.966Z",
+    "recorded_at": "2026-10-27T17:34:14.966Z",
+    "actor": {
+      "id": "usr_test",
+      "name": "System Operator",
+      "email": "system@jaibhavanicargo.com",
+      "role": "manager",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "LOGISTICS",
+    "entity_type": "TASK",
+    "entity_id": "TSK-2026-206A38",
+    "action": "CREATE",
+    "outcome": "SUCCESS",
+    "severity": "INFO",
+    "details": "Created task \"Vehicle Pre-Trip Roadworthiness Inspection\" assigned to Tester (Due: 2026-10-28T17:34:14.956Z)",
+    "previous_values": null,
+    "new_values": {
+      "id": "TSK-2026-206A38",
+      "title": "Vehicle Pre-Trip Roadworthiness Inspection",
+      "description": "Mandatory pre-trip physical and safety inspection before vehicle departure from terminal.",
+      "category": "Fleet Maintenance",
+      "subcategory": "",
+      "priority": "HIGH",
+      "status": "NOT_STARTED",
+      "created_by_id": "usr_test",
+      "created_by_name": "Tester",
+      "assigned_to_id": "usr_test",
+      "assigned_to_name": "Tester",
+      "accountable_owner_id": "usr_test",
+      "accountable_owner_name": "Tester",
+      "department": "Fleet",
+      "start_date": "2026-10-27T17:34:14.962Z",
+      "due_date": "2026-10-28T17:34:14.956Z",
+      "completion_date": null,
+      "estimated_duration_hours": 0.75,
+      "actual_duration_hours": 0,
+      "related_entity_type": null,
+      "related_entity_id": null,
+      "attachments": [],
+      "completion_evidence": {},
+      "checklists": [
+        {
+          "id": "chk_1793122454956_s8x7",
+          "text": "Engine oil level, coolant level & brake fluid verified",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_wpda",
+          "text": "All tyres PSI check & spare wheel tread depth > 3mm",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_kcu8",
+          "text": "FASTag account active with minimum ₹1,500 balance",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_wygd",
+          "text": "Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_63yt",
+          "text": "Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present",
+          "completed": false
+        }
+      ],
+      "checklist": [
+        {
+          "id": "chk_1793122454956_s8x7",
+          "text": "Engine oil level, coolant level & brake fluid verified",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_wpda",
+          "text": "All tyres PSI check & spare wheel tread depth > 3mm",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_kcu8",
+          "text": "FASTag account active with minimum ₹1,500 balance",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_wygd",
+          "text": "Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122454956_63yt",
+          "text": "Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present",
+          "completed": false
+        }
+      ],
+      "parent_task_id": null,
+      "subtasks": [],
+      "is_recurring": false,
+      "recurrence_rule": null,
+      "escalation_level": 0,
+      "created_at": "2026-10-27T17:34:14.962Z",
+      "updated_at": "2026-10-27T17:34:14.962Z"
+    },
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1793122454966_mn5a",
+    "correlation_id": "corr_1793122454966",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "b61786b2bb66c34fb24c95d423d8f5704868fcf8bcd4fb616ce3d0473d2f6743",
+    "current_event_hash": "46db4360aeb8dac9a235a0fcc3addc8b8d009fbafb6804084fc00fb4b21179be"
+  },
+  {
+    "id": "evt_1793122475040_2klyza",
+    "sequence_number": 54,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-27T17:34:35.040Z",
+    "recorded_at": "2026-10-27T17:34:35.040Z",
+    "actor": {
+      "id": "usr_operations",
+      "name": "System Operator",
+      "email": "system@jaibhavanicargo.com",
+      "role": "manager",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "LOGISTICS",
+    "entity_type": "TASK",
+    "entity_id": "TSK-2026-80E4D9",
+    "action": "CREATE",
+    "outcome": "SUCCESS",
+    "severity": "INFO",
+    "details": "Created task \"Verify Pre-Trip Inspection for Truck MH12RN1234\" assigned to Operations Staff (Due: 2026-10-27T17:34:35.030Z)",
+    "previous_values": null,
+    "new_values": {
+      "id": "TSK-2026-80E4D9",
+      "title": "Verify Pre-Trip Inspection for Truck MH12RN1234",
+      "description": "",
+      "category": "General Operations",
+      "subcategory": "",
+      "priority": "HIGH",
+      "status": "NOT_STARTED",
+      "created_by_id": "usr_operations",
+      "created_by_name": "Operations Lead",
+      "assigned_to_id": "usr_operations",
+      "assigned_to_name": "Operations Staff",
+      "accountable_owner_id": "usr_operations",
+      "accountable_owner_name": "Operations Lead",
+      "department": "Fleet",
+      "start_date": "2026-10-27T17:34:35.035Z",
+      "due_date": "2026-10-27T17:34:35.030Z",
+      "completion_date": null,
+      "estimated_duration_hours": 1,
+      "actual_duration_hours": 0,
+      "related_entity_type": null,
+      "related_entity_id": null,
+      "attachments": [],
+      "completion_evidence": {},
+      "checklists": [],
+      "checklist": [],
+      "parent_task_id": null,
+      "subtasks": [],
+      "is_recurring": false,
+      "recurrence_rule": null,
+      "eisenhower_quadrant": 1,
+      "quadrant": 1,
+      "scheduled_time": "09:00",
+      "escalation_level": 0,
+      "created_at": "2026-10-27T17:34:35.035Z",
+      "updated_at": "2026-10-27T17:34:35.035Z"
+    },
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1793122475042_1r1k",
+    "correlation_id": "corr_1793122475042",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "46db4360aeb8dac9a235a0fcc3addc8b8d009fbafb6804084fc00fb4b21179be",
+    "current_event_hash": "487d017c48f3c7ed7090be1c5adc5fd161327ce4fc2adab9a0389cda8e0578c5"
+  },
+  {
+    "id": "evt_1793122475062_6z1j1n",
+    "sequence_number": 55,
+    "schema_version": "1.0",
+    "timestamp": "2026-10-27T17:34:35.062Z",
+    "recorded_at": "2026-10-27T17:34:35.062Z",
+    "actor": {
+      "id": "usr_test",
+      "name": "System Operator",
+      "email": "system@jaibhavanicargo.com",
+      "role": "manager",
+      "tenant_id": "JBC_MAIN"
+    },
+    "module": "LOGISTICS",
+    "entity_type": "TASK",
+    "entity_id": "TSK-2026-4856B0",
+    "action": "CREATE",
+    "outcome": "SUCCESS",
+    "severity": "INFO",
+    "details": "Created task \"Vehicle Pre-Trip Roadworthiness Inspection\" assigned to Tester (Due: 2026-10-28T17:34:35.052Z)",
+    "previous_values": null,
+    "new_values": {
+      "id": "TSK-2026-4856B0",
+      "title": "Vehicle Pre-Trip Roadworthiness Inspection",
+      "description": "Mandatory pre-trip physical and safety inspection before vehicle departure from terminal.",
+      "category": "Fleet Maintenance",
+      "subcategory": "",
+      "priority": "HIGH",
+      "status": "NOT_STARTED",
+      "created_by_id": "usr_test",
+      "created_by_name": "Tester",
+      "assigned_to_id": "usr_test",
+      "assigned_to_name": "Tester",
+      "accountable_owner_id": "usr_test",
+      "accountable_owner_name": "Tester",
+      "department": "Fleet",
+      "start_date": "2026-10-27T17:34:35.058Z",
+      "due_date": "2026-10-28T17:34:35.052Z",
+      "completion_date": null,
+      "estimated_duration_hours": 0.75,
+      "actual_duration_hours": 0,
+      "related_entity_type": null,
+      "related_entity_id": null,
+      "attachments": [],
+      "completion_evidence": {},
+      "checklists": [
+        {
+          "id": "chk_1793122475052_nmeo",
+          "text": "Engine oil level, coolant level & brake fluid verified",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_gv3u",
+          "text": "All tyres PSI check & spare wheel tread depth > 3mm",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_o7i2",
+          "text": "FASTag account active with minimum ₹1,500 balance",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_c0cp",
+          "text": "Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_4u19",
+          "text": "Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present",
+          "completed": false
+        }
+      ],
+      "checklist": [
+        {
+          "id": "chk_1793122475052_nmeo",
+          "text": "Engine oil level, coolant level & brake fluid verified",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_gv3u",
+          "text": "All tyres PSI check & spare wheel tread depth > 3mm",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_o7i2",
+          "text": "FASTag account active with minimum ₹1,500 balance",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_c0cp",
+          "text": "Original / Digilocker RC, All-India Permit, Insurance, and PUC in cabin",
+          "completed": false
+        },
+        {
+          "id": "chk_1793122475052_4u19",
+          "text": "Emergency toolkit, hydraulic jack, triangle reflectors & fire extinguisher present",
+          "completed": false
+        }
+      ],
+      "parent_task_id": null,
+      "subtasks": [],
+      "is_recurring": false,
+      "recurrence_rule": null,
+      "eisenhower_quadrant": 1,
+      "quadrant": 1,
+      "scheduled_time": "09:00",
+      "escalation_level": 0,
+      "created_at": "2026-10-27T17:34:35.058Z",
+      "updated_at": "2026-10-27T17:34:35.058Z"
+    },
+    "changed_fields": [],
+    "reason": null,
+    "request_id": "req_1793122475062_2rsa",
+    "correlation_id": "corr_1793122475062",
+    "session_ref_hash": "bbcea229db8100fe",
+    "source_ip": "127.0.0.1",
+    "user_agent": "JBC-Client-Web",
+    "previous_event_hash": "487d017c48f3c7ed7090be1c5adc5fd161327ce4fc2adab9a0389cda8e0578c5",
+    "current_event_hash": "4f181f4d2ea9453a1224ce143bfa065de8af35f151ccc44b61bc5c17d0e4b531"
   }
 ]
