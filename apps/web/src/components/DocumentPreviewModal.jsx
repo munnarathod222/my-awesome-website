@@ -18,44 +18,33 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, collec
 
   const helplineNum = document?.helpline_number || document?.insurance_helpline || document?.helpline || '';
 
-  // Extract all document files (front page, back page, files array, file string/array, back_file, file_url, url)
+  // Extract all document files (prioritize clean front and back pair if both exist)
   const filesList = React.useMemo(() => {
     if (!document) return [];
+
+    // Prioritize clean Front and Back pair if both exist (avoids duplicate 4-page glitch)
+    const front = (typeof document.file === 'string' && document.file) || (Array.isArray(document.file) && document.file[0]);
+    const back = (typeof document.back_file === 'string' && document.back_file) || (typeof document.back_page === 'string' && document.back_page);
+    if (front && back && front !== back) {
+      return [front, back];
+    }
+
+    // If multiple attached files or files array
+    if (Array.isArray(document.files) && document.files.length > 0) {
+      return Array.from(new Set(document.files.filter(Boolean)));
+    }
+
+    if (Array.isArray(document.attached_files) && document.attached_files.length > 0) {
+      const att = document.attached_files.map(f => typeof f === 'string' ? f : (f?.file_url || f?.url)).filter(Boolean);
+      if (att.length > 0) return Array.from(new Set(att));
+    }
+
     const list = [];
-    
-    if (Array.isArray(document.files)) {
-      list.push(...document.files);
-    } else if (typeof document.files === 'string' && document.files) {
-      list.push(document.files);
-    }
-
-    if (Array.isArray(document.file)) {
-      list.push(...document.file);
-    } else if (typeof document.file === 'string' && document.file) {
-      list.push(document.file);
-    }
-
-    if (typeof document.file_url === 'string' && document.file_url) {
-      list.push(document.file_url);
-    }
-
-    if (typeof document.url === 'string' && document.url) {
-      list.push(document.url);
-    }
-
-    if (typeof document.back_file === 'string' && document.back_file) {
-      list.push(document.back_file);
-    }
-    if (typeof document.back_page === 'string' && document.back_page) {
-      list.push(document.back_page);
-    }
-    if (Array.isArray(document.attached_files)) {
-      document.attached_files.forEach(f => {
-        if (typeof f === 'string') list.push(f);
-        else if (f && f.file_url) list.push(f.file_url);
-        else if (f && f.url) list.push(f.url);
-      });
-    }
+    if (front) list.push(front);
+    if (back && back !== front) list.push(back);
+    if (typeof document.file_url === 'string' && document.file_url) list.push(document.file_url);
+    if (typeof document.url === 'string' && document.url) list.push(document.url);
+    if (typeof document.files === 'string' && document.files) list.push(document.files);
 
     return Array.from(new Set(list.filter(Boolean)));
   }, [document]);

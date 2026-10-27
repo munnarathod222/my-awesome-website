@@ -307,18 +307,13 @@ const TruckDocsPage = () => {
         }
       });
       if (frontFile && backFile) {
-        data.append('files', frontFile);
-        data.append('files', backFile);
         data.append('file', frontFile);
         data.append('back_file', backFile);
       } else if (frontFile) {
-        data.append('files', frontFile);
         data.append('file', frontFile);
       } else if (backFile) {
-        data.append('files', backFile);
         data.append('back_file', backFile);
       } else if (selectedFile) {
-        data.append('files', selectedFile);
         data.append('file', selectedFile);
       }
 
