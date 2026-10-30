@@ -178,7 +178,13 @@ export default function CashbookPage() {
     }
     
     let currentBal = openingAmt;
-    const asc = [...regularTxs].reverse();
+    // Deterministic chronological sort (oldest to newest)
+    const asc = [...regularTxs].sort((a, b) => {
+      const timeA = new Date(a.date || a.created || 0).getTime();
+      const timeB = new Date(b.date || b.created || 0).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      return (a.id || '').localeCompare(b.id || '');
+    });
     
     const calculated = asc.map(tx => {
       const amt = Number(tx.amount) || 0;
@@ -195,7 +201,8 @@ export default function CashbookPage() {
       };
     });
     
-    const reversed = calculated.reverse();
+    // Clone before reversing to avoid mutating calculated in place
+    const reversed = [...calculated].reverse();
     
     // Prepend Opening Balance item if it exists
     if (openingBalanceRecord) {

@@ -199,7 +199,7 @@ const DashboardPage = () => {
         pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }).catch(() => []),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
-        pb.collection('expenses').getList(1, 500, { fields: 'id,amount', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('expenses').getList(1, 1000, { fields: 'id,amount,category,subcategory', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Recent trips — all statuses so dispatcher sees the full picture
         pb.collection('trip_logs').getList(1, 8, {
           sort: '-date',
@@ -233,7 +233,13 @@ const DashboardPage = () => {
         }
       });
       const netFleetRevenue = fleetRevenue - totalTds;
-      const fleetExpenses = expenseItems.reduce((s, e) => s + (e.amount || 0), 0);
+      // Exclude Employee Advances from operating expenses to prevent double-counting against operating revenue
+      const operatingExpenses = expenseItems.filter(e => {
+        const cat = (e.category || '').toLowerCase();
+        const sub = (e.subcategory || '').toLowerCase();
+        return !cat.includes('advance') && !sub.includes('advance');
+      });
+      const fleetExpenses = operatingExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
       const fleetProfit = netFleetRevenue - fleetExpenses;
 
       // Low Fastag count
