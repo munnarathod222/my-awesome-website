@@ -11,9 +11,9 @@ full_live_backup.cjs
 *.cjs
 
 # Build and distribution directories (root and apps)
-/dist/
-apps/web/dist/
-apps/api/dist/
+# /dist/
+# apps/web/dist/
+# apps/api/dist/
 
 # Tools, helper scripts and scratch
 /tools/
