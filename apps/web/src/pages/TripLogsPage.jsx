@@ -1029,7 +1029,12 @@ const TripLogsPage = () => {
                             </TableCell>
                             {!isDispatcher && (
                               <TableCell className="text-right text-sm font-bold text-foreground">
-                                {formatCurrency(log.revenue)}
+                                <div>{formatCurrency(log.revenue)}</div>
+                                {Number(log.munsiyana_deduction) > 0 && (
+                                  <div className="text-[10px] font-normal text-amber-500" title="Munsiyana deduction by client">
+                                    -₹{Number(log.munsiyana_deduction).toLocaleString('en-IN')} Munsi.
+                                  </div>
+                                )}
                               </TableCell>
                             )}
                             {!isDispatcher && (

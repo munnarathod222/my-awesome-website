@@ -46,7 +46,7 @@ export const calculateClientMetrics = (clientId, trips = [], billingType = 'Spot
     const isFullyPaid = (trip.client_payment_status || '').toLowerCase() === 'received' || (trip.client_payment_status || '').toLowerCase() === 'paid' || trip.payment_status === 'Paid';
 
     if (!isUpcoming || isFullyPaid) {
-      totalInvoiced += revenue;
+      totalInvoiced += netBilledRevenue;
     }
 
     // Calculate trip age / payment duration days
@@ -65,7 +65,7 @@ export const calculateClientMetrics = (clientId, trips = [], billingType = 'Spot
     }
 
     if (isFullyPaid) {
-      totalReceived += revenue;
+      totalReceived += netBilledRevenue;
       receivedTripsCount++;
       if (!lastPaymentDate || new Date(trip.date) > new Date(lastPaymentDate)) {
         lastPaymentDate = trip.date;
@@ -74,7 +74,7 @@ export const calculateClientMetrics = (clientId, trips = [], billingType = 'Spot
       // For both Contract and Spot: only completed/delivered past/present trips count towards outstanding dues
       totalReceived += advance;
       if (isDelivered) {
-        totalPending += Math.max(0, revenue - advance);
+        totalPending += Math.max(0, netBilledRevenue - advance);
         pendingTripsCount++;
       }
     }

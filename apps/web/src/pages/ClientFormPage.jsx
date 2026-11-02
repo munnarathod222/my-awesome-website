@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, MapPin } from 'lucide-react';
+import { ArrowLeft, Save, MapPin, Receipt, ShieldAlert } from 'lucide-react';
+import { MUNSIYANA_PRESETS } from '@/lib/munsiyanaEngine.js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,11 @@ export default function ClientFormPage() {
     notes: '',
     requires_pod: false,
     isTdsApplicable: false,
-    tdsRate: '2.00'
+    tdsRate: '2.00',
+    munsiyana_enabled: false,
+    munsiyana_type: 'slabs_corporate',
+    munsiyana_rate: '',
+    munsiyana_slabs: JSON.stringify(MUNSIYANA_PRESETS.DELHIVERY_CORPORATE.slabs)
   });
 
   useEffect(() => {
@@ -77,7 +82,13 @@ export default function ClientFormPage() {
             notes: client.notes || '',
             requires_pod: client.requires_pod || false,
             isTdsApplicable: client.isTdsApplicable || false,
-            tdsRate: client.tdsRate?.toString() || '2.00'
+            tdsRate: client.tdsRate?.toString() || '2.00',
+            munsiyana_enabled: Boolean(client.munsiyana_enabled),
+            munsiyana_type: client.munsiyana_type || 'slabs_corporate',
+            munsiyana_rate: client.munsiyana_rate !== undefined && client.munsiyana_rate !== null ? client.munsiyana_rate.toString() : '',
+            munsiyana_slabs: typeof client.munsiyana_slabs === 'string'
+              ? client.munsiyana_slabs
+              : (client.munsiyana_slabs ? JSON.stringify(client.munsiyana_slabs) : JSON.stringify(MUNSIYANA_PRESETS.DELHIVERY_CORPORATE.slabs))
           });
         } catch (err) {
           console.error("Failed to load client", err);
@@ -113,6 +124,10 @@ export default function ClientFormPage() {
         ...formData,
         credit_limit: Number(formData.credit_limit) || 0,
         tdsRate: formData.isTdsApplicable ? (Number(formData.tdsRate) || 0) : 0,
+        munsiyana_enabled: Boolean(formData.munsiyana_enabled),
+        munsiyana_type: formData.munsiyana_type || 'slabs_corporate',
+        munsiyana_rate: Number(formData.munsiyana_rate) || 0,
+        munsiyana_slabs: formData.munsiyana_slabs || JSON.stringify(MUNSIYANA_PRESETS.DELHIVERY_CORPORATE.slabs),
       };
 
       if (isEdit) {
@@ -370,6 +385,129 @@ export default function ClientFormPage() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          
+          {/* Contract Deductions & Munsiyana Section */}
+          <Card className="border-border shadow-sm">
+            <CardHeader className="bg-muted/20 border-b border-border pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-amber-500" /> Contract Deductions & Munsiyana
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Configure trip freight deductions according to client supply partner agreements (e.g. Delhivery Orion terms).
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-5">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="munsiyana_enabled"
+                  name="munsiyana_enabled"
+                  checked={formData.munsiyana_enabled}
+                  onChange={(e) => setFormData(prev => ({ ...prev, munsiyana_enabled: e.target.checked }))}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="munsiyana_enabled" className="text-sm font-semibold cursor-pointer">
+                  Applies Munsiyana Deductions (Trip Balance Fee)
+                </Label>
+              </div>
+
+              {formData.munsiyana_enabled && (
+                <div className="space-y-4 pt-2 border-t border-border/50 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="munsiyana_type">Munsiyana Rule Model</Label>
+                      <Select 
+                        value={formData.munsiyana_type} 
+                        onValueChange={(val) => {
+                          setFormData(prev => {
+                            let slabs = prev.munsiyana_slabs;
+                            if (val === 'slabs_corporate') {
+                              slabs = JSON.stringify(MUNSIYANA_PRESETS.DELHIVERY_CORPORATE.slabs);
+                            } else if (val === 'slabs_agri') {
+                              slabs = JSON.stringify(MUNSIYANA_PRESETS.DELHIVERY_AGRI.slabs);
+                            }
+                            return { ...prev, munsiyana_type: val, munsiyana_slabs: slabs };
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select calculation model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="slabs_corporate">🏢 Delhivery Corporate (Regular Slabs)</SelectItem>
+                          <SelectItem value="slabs_agri">🌾 Delhivery Agri & Commodity (Slabs)</SelectItem>
+                          <SelectItem value="flat">💵 Flat Amount (₹ per trip)</SelectItem>
+                          <SelectItem value="percentage">📊 Percentage (% of Freight)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {(formData.munsiyana_type === 'flat' || formData.munsiyana_type === 'percentage') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="munsiyana_rate">
+                          {formData.munsiyana_type === 'flat' ? 'Flat Amount (₹)' : 'Rate Percentage (%)'}
+                        </Label>
+                        <Input
+                          type="number"
+                          id="munsiyana_rate"
+                          name="munsiyana_rate"
+                          value={formData.munsiyana_rate}
+                          onChange={handleChange}
+                          placeholder={formData.munsiyana_type === 'flat' ? 'e.g. 500' : 'e.g. 2.5'}
+                          min="0"
+                          step={formData.munsiyana_type === 'flat' ? '1' : '0.01'}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Slabs Preview Table */}
+                  {(formData.munsiyana_type === 'slabs_corporate' || formData.munsiyana_type === 'slabs_agri') && (
+                    <div className="bg-secondary/20 rounded-xl p-4 border border-border/60 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-foreground mb-1">
+                        <span>Active Freight Slabs ({formData.munsiyana_type === 'slabs_corporate' ? 'Corporate Regular' : 'Agri & Commodity'})</span>
+                        <span className="text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">Contract Verified</span>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-border/60 text-muted-foreground text-left">
+                              <th className="py-1.5 font-medium">Freight Value Range</th>
+                              <th className="py-1.5 font-medium text-right">Munsiyana Deducted</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/30">
+                            {(formData.munsiyana_type === 'slabs_corporate' 
+                              ? MUNSIYANA_PRESETS.DELHIVERY_CORPORATE.slabs 
+                              : MUNSIYANA_PRESETS.DELHIVERY_AGRI.slabs
+                            ).map((slab, idx) => (
+                              <tr key={idx} className="text-foreground">
+                                <td className="py-1.5">{slab.label}</td>
+                                <td className="py-1.5 text-right font-bold text-amber-500">₹{slab.amount.toLocaleString('en-IN')} / trip</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delhivery Contract Terms Summary */}
+                  <div className="p-3.5 bg-amber-500/5 rounded-xl border border-amber-500/20 space-y-1.5 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground flex items-center gap-1.5">
+                      <ShieldAlert className="w-4 h-4 text-amber-500" /> Delhivery Orion Contract Deductions Policy:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1 text-[11px]">
+                      <li><strong className="text-foreground">Munsiyana:</strong> Flat slab fee automatically deducted from the balance freight amount paid to the Supply Partner.</li>
+                      <li><strong className="text-foreground">Shortage Deductions:</strong> Billed strictly at actuals with 100% recovery.</li>
+                      <li><strong className="text-foreground">POD Damage Risk Sharing:</strong> Claims under ₹5,000 are 100% debited to partner. Claims between ₹5,000 and ₹15,000 have the first ₹5,000 debited to partner and remainder split 50/50 with Delhivery.</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

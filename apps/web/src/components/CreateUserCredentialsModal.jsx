@@ -236,6 +236,7 @@ export default function CreateUserCredentialsModal({ isOpen, onClose, editUser =
           }
         }
       }
+      }
 
       setCreatedCredentials({
         name: cleanName,

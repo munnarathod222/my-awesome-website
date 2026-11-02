@@ -207,6 +207,29 @@ const ClientDetailsPage = () => {
                   )}
                 </div>
               </div>
+
+              {client.munsiyana_enabled ? (
+                <div className="pt-3 mt-3 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Munsiyana Terms</p>
+                    <Badge variant="outline" className="text-amber-500 border-amber-500/30 bg-amber-500/10 text-[10px]">
+                      Contract Active
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {client.munsiyana_type === 'slabs_corporate' || !client.munsiyana_type
+                      ? 'Delhivery Corporate Slabs (₹300 / ₹500 / ₹650)'
+                      : client.munsiyana_type === 'slabs_agri'
+                      ? 'Delhivery Agri Slabs (₹250 / ₹350 / ₹500)'
+                      : client.munsiyana_type === 'flat'
+                      ? `Flat ₹${client.munsiyana_rate} / trip`
+                      : `${client.munsiyana_rate}% of Freight`}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/80 mt-1 italic">
+                    POD Damage: &lt;₹5k partner debit; ₹5k-₹15k split 50/50 with Delhivery.
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

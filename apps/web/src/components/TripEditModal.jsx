@@ -32,7 +32,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     assigned_managers: '',
     vendor_payout: '',
     payment_model: 'Model2',
-    toll_deduction: ''
+    toll_deduction: '',
+    munsiyana_deduction: '',
+    shortage_deduction: '',
+    damage_deduction: ''
   });
 
   useEffect(() => {
@@ -59,7 +62,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           assigned_managers: trip.assigned_managers || '',
           vendor_payout: trip.vendor_payout || '',
           payment_model: trip.payment_model || 'Model2',
-          toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : ''
+          toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : '',
+          munsiyana_deduction: trip.munsiyana_deduction !== undefined && trip.munsiyana_deduction !== null ? trip.munsiyana_deduction.toString() : '',
+          shortage_deduction: trip.shortage_deduction !== undefined && trip.shortage_deduction !== null ? trip.shortage_deduction.toString() : '',
+          damage_deduction: trip.damage_deduction !== undefined && trip.damage_deduction !== null ? trip.damage_deduction.toString() : ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -94,6 +100,9 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         mileage: parseFloat(formData.mileage) || 0,
         assigned_managers: formData.assigned_managers,
         toll_deduction: parseFloat(formData.toll_deduction) || 0,
+        munsiyana_deduction: parseFloat(formData.munsiyana_deduction) || 0,
+        shortage_deduction: parseFloat(formData.shortage_deduction) || 0,
+        damage_deduction: parseFloat(formData.damage_deduction) || 0,
         
         ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
         payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),
@@ -300,7 +309,7 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                     <div className="pt-1 border-t border-border flex justify-between font-bold text-xs">
                       <span className="text-foreground">Est. Trip Owner Net Payout:</span>
                       <span className="text-emerald-500 font-extrabold text-sm">
-                        ₹{Math.max(0, (parseFloat(formData.revenue) || 0) - (parseFloat(formData.toll_deduction) || 0)).toLocaleString('en-IN')}
+                        ₹{Math.max(0, (parseFloat(formData.revenue) || 0) - (parseFloat(formData.toll_deduction) || 0) - (parseFloat(formData.munsiyana_deduction) || 0) - (parseFloat(formData.shortage_deduction) || 0) - (parseFloat(formData.damage_deduction) || 0)).toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>

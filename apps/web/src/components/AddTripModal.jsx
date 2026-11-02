@@ -15,6 +15,8 @@ import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { TRIP_STATUS_OPTIONS } from '@/lib/tripStatusUtils.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
+import { calculateMunsiyana, calculateDamageLiability } from '@/lib/munsiyanaEngine.js';
+import { Receipt, ShieldAlert } from 'lucide-react';
 
 
 const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
@@ -52,7 +54,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     truck_number: '',
     vendor_payout: '',
     payment_model: 'Model2',
-    toll_deduction: ''
+    toll_deduction: '',
+    munsiyana_deduction: '',
+    shortage_deduction: '',
+    damage_deduction: '',
+    damage_claim_amount: ''
   });
 
   useEffect(() => {
@@ -219,6 +225,28 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  const handleAmountChange = (newAmount) => {
+    let autoMunsiyana = formData.munsiyana_deduction;
+    if (selectedClientInfo?.munsiyana_enabled) {
+      const res = calculateMunsiyana(newAmount, selectedClientInfo);
+      autoMunsiyana = res.amount ? res.amount.toString() : '';
+    }
+    setFormData(prev => ({
+      ...prev,
+      amount: newAmount,
+      munsiyana_deduction: autoMunsiyana
+    }));
+  };
+
+  const handleDamageClaimChange = (claimAmount) => {
+    const res = calculateDamageLiability(claimAmount);
+    setFormData(prev => ({
+      ...prev,
+      damage_claim_amount: claimAmount,
+      damage_deduction: res.partnerLiability ? res.partnerLiability.toString() : ''
+    }));
+  };
+
   const handleRouteSelection = (routeId) => {
     if (routeId === 'custom') {
       setFormData(prev => ({
@@ -238,6 +266,9 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         selected_route_id: routeId,
         route: selectedRoute.route_code,
         amount: selectedRoute.amount_per_trip?.toString() || '',
+        munsiyana_deduction: selectedClientInfo?.munsiyana_enabled && selectedRoute.amount_per_trip 
+          ? (calculateMunsiyana(selectedRoute.amount_per_trip, selectedClientInfo).amount?.toString() || '') 
+          : prev.munsiyana_deduction,
         kms: selectedRoute.distance_km?.toString() || ''
       }));
     }
@@ -672,7 +703,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     <div className="pt-1 border-t border-border flex justify-between font-bold text-xs">
                       <span className="text-foreground">Est. Trip Owner Net Payout:</span>
                       <span className="text-emerald-500 font-extrabold text-sm">
-                        ₹{Math.max(0, (parseFloat(formData.amount) || 0) - (parseFloat(formData.advance_paid_to_driver) || 0) - (parseFloat(formData.toll_deduction) || 0)).toLocaleString('en-IN')}
+                        ₹{Math.max(0, (parseFloat(formData.amount) || 0) - (parseFloat(formData.advance_paid_to_driver) || 0) - (parseFloat(formData.toll_deduction) || 0) - (parseFloat(formData.munsiyana_deduction) || 0) - (parseFloat(formData.shortage_deduction) || 0) - (parseFloat(formData.damage_deduction) || 0)).toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
