@@ -18,19 +18,83 @@ import RouteModal from '@/components/RouteModal.jsx';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { formatMapUrl } from '@/lib/locationUtils.js';
 
+const isRoundTripRoute = (route) => {
+  if (!route) return false;
+  return Boolean(
+    route.is_round_trip || 
+    route.is_round_trip_rate || 
+    route.is_split_round_trip || 
+    route.is_combined_round_trip ||
+    route.down_route_code
+  );
+};
+
 const getRates = (route) => {
-  const rate = route.amount_per_trip || 0;
-  if (route.is_round_trip_rate) {
-    return {
-      legRate: rate / 2,
-      roundTripRate: rate
-    };
-  } else {
-    return {
-      legRate: rate,
-      roundTripRate: rate * 2
-    };
+  const rate = parseFloat(route?.amount_per_trip) || 0;
+  const isRT = isRoundTripRoute(route);
+
+  if (isRT) {
+    if (route.is_round_trip_rate) {
+      return {
+        isRoundTrip: true,
+        legRate: rate / 2,
+        roundTripRate: rate,
+        displayRate: rate
+      };
+    } else {
+      return {
+        isRoundTrip: true,
+        legRate: rate,
+        roundTripRate: rate * 2,
+        displayRate: rate * 2
+      };
+    }
   }
+
+  // ONE-WAY TRIP: DO NOT DOUBLE! Rate is strictly the one-way amount.
+  return {
+    isRoundTrip: false,
+    legRate: rate,
+    roundTripRate: null,
+    displayRate: rate
+  };
+};
+
+const getRouteMapDetails = (route, fallbackStart, fallbackEnd) => {
+  const stops = Array.isArray(route?.stops) 
+    ? route.stops 
+    : (typeof route?.stops === 'string' ? (() => { try { return JSON.parse(route.stops); } catch { return []; } })() : []);
+  
+  // Find loading dock stop or first stop with map_link
+  const loadingDock = stops.find(s => (s.type === 'loading_dock' || s.stop_type === 'loading_dock') && s.map_link) || stops.find(s => s.map_link);
+  // Find delivery dock stop or last stop with map_link
+  const deliveryDock = [...stops].reverse().find(s => (s.type === 'delivery_dock' || s.stop_type === 'delivery_dock') && s.map_link) || stops[stops.length - 1];
+
+  const originLinkRaw = route?.start_location_map_link || loadingDock?.map_link || '';
+  const destLinkRaw = route?.end_location_map_link || deliveryDock?.map_link || '';
+  const primaryRouteMapRaw = route?.google_map_link || destLinkRaw || originLinkRaw || '';
+
+  const originMapUrl = originLinkRaw 
+    ? formatMapUrl(originLinkRaw) 
+    : (fallbackStart || route?.start_location ? formatMapUrl('', fallbackStart || route?.start_location) : '');
+
+  const destMapUrl = destLinkRaw 
+    ? formatMapUrl(destLinkRaw) 
+    : (fallbackEnd || route?.end_location ? formatMapUrl('', fallbackEnd || route?.end_location) : '');
+
+  const primaryMapUrl = primaryRouteMapRaw 
+    ? formatMapUrl(primaryRouteMapRaw) 
+    : '';
+
+  return {
+    originMapUrl,
+    destMapUrl,
+    primaryMapUrl,
+    hasDirectPrimaryLink: Boolean(primaryRouteMapRaw),
+    loadingDock,
+    deliveryDock,
+    stops
+  };
 };
 
 export default function RoutesPage() {
@@ -423,7 +487,8 @@ export default function RoutesPage() {
             {sortedRoutes.map(route => {
               const { start, end } = parseRouteStations(route.route_name);
               const styles = getRouteTierStyles(route.distance_km);
-              const { legRate, roundTripRate } = getRates(route);
+              const { legRate, roundTripRate, isRoundTrip } = getRates(route);
+              const mapDetails = getRouteMapDetails(route, start, end);
               
               return (
                 <Card 
@@ -515,9 +580,9 @@ export default function RoutesPage() {
                       <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border w-fit ${styles.badge}`}>
                         {styles.text}
                       </span>
-                      {formatMapUrl(route.google_map_link, route.route_name) && (
+                      {mapDetails.primaryMapUrl && (
                         <a 
-                          href={formatMapUrl(route.google_map_link, route.route_name)} 
+                          href={mapDetails.primaryMapUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -627,12 +692,12 @@ export default function RoutesPage() {
                         <div className="text-left w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Origin</div>
                           <a
-                            href={formatMapUrl(route.start_location_map_link, start || route.start_location)}
+                            href={mapDetails.originMapUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                            title={`Open ${start} in Google Maps`}
+                            title={`Open ${start} GPS in Google Maps`}
                           >
                             {start} <Map className="w-2.5 h-2.5 shrink-0" />
                           </a>
@@ -649,12 +714,12 @@ export default function RoutesPage() {
                         <div className="text-right w-[40%]">
                           <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Destination</div>
                           <a
-                            href={formatMapUrl(route.end_location_map_link, end || route.end_location)}
+                            href={mapDetails.destMapUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
                             className="font-semibold text-sm truncate text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 justify-end"
-                            title={`Open ${end || 'N/A'} in Google Maps`}
+                            title={`Open ${end || 'N/A'} GPS in Google Maps`}
                           >
                             <Map className="w-2.5 h-2.5 shrink-0" /> {end || 'N/A'}
                           </a>
@@ -680,25 +745,51 @@ export default function RoutesPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 justify-center pl-1.5">
-                      <IndianRupee className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <div className="text-center sm:text-left">
-                        <span className="text-[9px] text-muted-foreground block leading-tight font-medium">Leg Rate</span>
-                        <span className="font-bold text-xs tracking-tight text-foreground">
-                          {formatCurrency(legRate)}
-                        </span>
-                      </div>
-                    </div>
+                    {isRoundTrip ? (
+                      <>
+                        <div className="flex items-center gap-1.5 justify-center pl-1.5">
+                          <IndianRupee className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <div className="text-center sm:text-left">
+                            <span className="text-[9px] text-muted-foreground block leading-tight font-medium">Leg Rate</span>
+                            <span className="font-bold text-xs tracking-tight text-foreground">
+                              {formatCurrency(legRate)}
+                            </span>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center gap-1.5 justify-center pl-1.5">
-                      <IndianRupee className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <div className="text-center sm:text-left">
-                        <span className="text-[9px] text-primary block leading-tight font-medium">Round Trip</span>
-                        <span className="font-bold text-xs tracking-tight text-primary dark:text-primary-foreground">
-                          {formatCurrency(roundTripRate)}
-                        </span>
-                      </div>
-                    </div>
+                        <div className="flex items-center gap-1.5 justify-center pl-1.5">
+                          <IndianRupee className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <div className="text-center sm:text-left">
+                            <span className="text-[9px] text-primary block leading-tight font-medium">Round Trip</span>
+                            <span className="font-bold text-xs tracking-tight text-primary dark:text-primary-foreground">
+                              {formatCurrency(roundTripRate)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1.5 justify-center pl-1.5">
+                          <Truck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <div className="text-center sm:text-left">
+                            <span className="text-[9px] text-muted-foreground block leading-tight font-medium">Trip Type</span>
+                            <span className="font-semibold text-xs tracking-tight text-foreground">
+                              One-Way
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 justify-center pl-1.5">
+                          <IndianRupee className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          <div className="text-center sm:text-left">
+                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 block leading-tight font-medium">Trip Fare</span>
+                            <span className="font-bold text-xs tracking-tight text-emerald-600 dark:text-emerald-400">
+                              {formatCurrency(legRate)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </Card>
               );
@@ -734,7 +825,7 @@ export default function RoutesPage() {
                     </TableHead>
                     <TableHead onClick={() => handleSort('amount_per_trip')} className="cursor-pointer text-right hover:bg-muted/60 transition-colors w-[130px]">
                       <div className="flex items-center justify-end font-heading text-xs uppercase font-bold tracking-wider py-1 text-foreground">
-                        Leg Rate <SortIcon columnKey="amount_per_trip" />
+                        Trip Fare <SortIcon columnKey="amount_per_trip" />
                       </div>
                     </TableHead>
                     <TableHead className="text-right w-[130px]">
@@ -815,11 +906,15 @@ export default function RoutesPage() {
                         <TableCell className="text-right font-medium text-sm text-muted-foreground py-3 font-mono">
                           {route.fastag_charge ? `₹${route.fastag_charge.toLocaleString('en-IN')}` : '-'}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-sm text-muted-foreground py-3">
+                        <TableCell className="text-right font-medium text-sm text-foreground py-3">
                           {formatCurrency(legRate)}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-sm text-primary py-3">
-                          {formatCurrency(roundTripRate)}
+                        <TableCell className="text-right font-bold text-sm py-3">
+                          {isRoundTrip ? (
+                            <span className="text-primary">{formatCurrency(roundTripRate)}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs font-normal">One-Way</span>
+                          )}
                         </TableCell>
                       <TableCell className="hidden md:table-cell text-xs text-muted-foreground truncate max-w-[220px] py-3" title={route.description}>
                         {route.description || '-'}

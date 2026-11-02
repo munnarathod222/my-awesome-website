@@ -69,7 +69,12 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           google_map_link: route.google_map_link || '',
           start_location_map_link: route.start_location_map_link || '',
           end_location_map_link: route.end_location_map_link || '',
-          stops: Array.isArray(route.stops) ? route.stops : [],
+          stops: Array.isArray(route.stops) && route.stops.length > 0 
+            ? route.stops 
+            : [
+                { type: 'loading_dock', stop_name: route.start_location || 'Loading Dock', map_link: route.start_location_map_link || '', contact_phone: route.loading_supervisor_phone || '', sequence: 1 },
+                { type: 'delivery_dock', stop_name: route.end_location || 'Destination', map_link: route.end_location_map_link || route.google_map_link || '', contact_phone: route.unloading_supervisor_phone || '', sequence: 2 }
+              ],
           
           is_split_round_trip: false,
           up_code: '',
@@ -91,7 +96,10 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           google_map_link: '',
           start_location_map_link: '',
           end_location_map_link: '',
-          stops: [],
+          stops: [
+            { type: 'loading_dock', stop_name: 'Loading Dock', map_link: '', contact_phone: '', sequence: 1 },
+            { type: 'delivery_dock', stop_name: 'Destination', map_link: '', contact_phone: '', sequence: 2 }
+          ],
           
           is_split_round_trip: false,
           up_code: '',
@@ -108,7 +116,16 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
   const handleAddStop = () => {
     setFormData(prev => ({
       ...prev,
-      stops: [...prev.stops, { stop_name: '', map_link: '', sequence: prev.stops.length + 1 }]
+      stops: [
+        ...prev.stops,
+        {
+          type: prev.stops.length === 0 ? 'loading_dock' : 'delivery_dock',
+          stop_name: '',
+          map_link: '',
+          contact_phone: '',
+          sequence: prev.stops.length + 1
+        }
+      ]
     }));
   };
 
@@ -248,6 +265,18 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           toast.success('Round-trip legs created successfully');
         }
       } else {
+        const stops = formData.stops || [];
+        const loadingDock = stops.find(s => s.type === 'loading_dock' && s.map_link) || stops.find(s => s.type === 'loading_dock') || stops[0];
+        const deliveryDock = [...stops].reverse().find(s => s.type === 'delivery_dock' && s.map_link) || [...stops].reverse().find(s => s.type === 'delivery_dock') || stops[stops.length - 1];
+
+        const originMapLink = formData.start_location_map_link || loadingDock?.map_link || '';
+        const destMapLink = formData.end_location_map_link || deliveryDock?.map_link || '';
+        const routeMapLink = formData.google_map_link || destMapLink || originMapLink || '';
+
+        const stationParts = (formData.route_name || '').split(/(?:\s+to\s+|\s*-\s*|\s*➔\s*|\s*->\s*)/i);
+        const parsedStart = stationParts.length >= 2 ? stationParts[0].trim() : formData.route_name;
+        const parsedEnd = stationParts.length >= 2 ? stationParts[stationParts.length - 1].trim() : formData.route_name;
+
         const payload = {
           route_name: formData.route_name,
           route_code: formData.route_code,
@@ -255,14 +284,17 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
           fastag_charge: parseFloat(formData.fastag_charge) || 0,
           distance_km: parseFloat(formData.distance_km) || 0,
           description: formData.description,
-          is_round_trip_rate: formData.is_round_trip_rate,
-          start_location: formData.route_name.split(' - ')[0] || formData.route_name,
-          end_location: formData.route_name.split(' - ')[1] || formData.route_name,
+          is_round_trip: Boolean(formData.is_split_round_trip || formData.is_round_trip_rate),
+          is_round_trip_rate: Boolean(formData.is_round_trip_rate),
+          start_location: parsedStart,
+          end_location: parsedEnd,
           distance: parseFloat(formData.distance_km) || 0,
-          google_map_link: formData.google_map_link || '',
-          start_location_map_link: formData.start_location_map_link || '',
-          end_location_map_link: formData.end_location_map_link || '',
-          stops: formData.stops || []
+          google_map_link: routeMapLink,
+          start_location_map_link: originMapLink,
+          end_location_map_link: destMapLink,
+          loading_supervisor_phone: loadingDock?.contact_phone || '',
+          unloading_supervisor_phone: deliveryDock?.contact_phone || '',
+          stops: stops
         };
 
         if (isEdit) {
@@ -533,48 +565,70 @@ export default function RouteModal({ isOpen, onClose, route, onSuccess }) {
             />
           </div>
 
-          <div className="space-y-3 pt-2">
+          {/* Loading & Delivery Docks (Multi-Stop Docks) */}
+          <div className="space-y-3 pt-2 border-t border-border/40">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold text-primary">Intermediate Stops (Multi-Stop Option)</Label>
-              <Button type="button" size="sm" variant="outline" onClick={handleAddStop} className="h-8 text-xs">
-                + Add Stop
+              <Label className="text-sm font-semibold text-primary flex items-center gap-1.5">
+                🏭 Loading &amp; Delivery Docks (Multi-Stop Docks)
+              </Label>
+              <Button type="button" size="sm" variant="outline" onClick={handleAddStop} className="h-8 text-xs font-bold text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10">
+                + Add Dock Stop
               </Button>
             </div>
             
             {formData.stops.length === 0 ? (
               <p className="text-xs text-muted-foreground italic bg-background/50 p-3 rounded-xl border border-dashed border-border text-center">
-                No intermediate stops defined.
+                No extra delivery docks defined. (Default: 1 Loading Dock + 1 Final Delivery Dock)
               </p>
             ) : (
-              <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
                 {formData.stops.map((stop, idx) => (
-                  <div key={idx} className="flex gap-2 items-start bg-background/30 p-3 rounded-xl border border-border/50 relative group">
-                    <span className="text-[10px] font-bold text-muted-foreground bg-border w-5 h-5 rounded-full flex items-center justify-center mt-2.5">
-                      {stop.sequence}
+                  <div key={idx} className="flex gap-2 items-start bg-background/50 p-3 rounded-xl border border-border/60 relative group">
+                    <span className="text-[10px] font-bold text-muted-foreground bg-border w-5 h-5 rounded-full flex items-center justify-center mt-2.5 shrink-0">
+                      {stop.sequence || idx + 1}
                     </span>
                     <div className="flex-1 space-y-2">
-                      <Input
-                        placeholder="Stop Name (e.g. Pune Toll)"
-                        value={stop.stop_name}
-                        onChange={(e) => handleStopChange(idx, 'stop_name', e.target.value)}
-                        className="h-8 text-xs bg-background"
-                        required
-                      />
-                      <Input
-                        placeholder="Google Maps URL for this stop"
-                        value={stop.map_link}
-                        onChange={(e) => handleStopChange(idx, 'map_link', e.target.value)}
-                        className="h-8 text-xs bg-background"
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={stop.type || (idx === 0 ? 'loading_dock' : 'delivery_dock')}
+                          onChange={(e) => handleStopChange(idx, 'type', e.target.value)}
+                          className="h-8 text-xs bg-background border border-border rounded-lg px-2 font-bold text-primary"
+                        >
+                          <option value="loading_dock">🏭 Loading Dock (Origin)</option>
+                          <option value="delivery_dock">📦 Delivery Dock (Unloading)</option>
+                          <option value="intermediate_stop">📍 Intermediate Stop</option>
+                        </select>
+                        <Input
+                          placeholder="Dock Name & Gate #"
+                          value={stop.stop_name || ''}
+                          onChange={(e) => handleStopChange(idx, 'stop_name', e.target.value)}
+                          className="h-8 text-xs bg-background"
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          placeholder="Google Maps GPS Link"
+                          value={stop.map_link || ''}
+                          onChange={(e) => handleStopChange(idx, 'map_link', e.target.value)}
+                          className="h-8 text-xs bg-background"
+                        />
+                        <Input
+                          placeholder="Supervisor Phone (e.g. 9876543210)"
+                          value={stop.contact_phone || ''}
+                          onChange={(e) => handleStopChange(idx, 'contact_phone', e.target.value)}
+                          className="h-8 text-xs bg-background font-mono"
+                        />
+                      </div>
                     </div>
                     <Button
                       type="button"
                       size="icon"
                       variant="ghost"
                       onClick={() => handleRemoveStop(idx)}
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10 mt-1"
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10 mt-1 shrink-0"
                     >
-                      Delete
+                      ✕
                     </Button>
                   </div>
                 ))}
