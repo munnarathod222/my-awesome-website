@@ -199,6 +199,46 @@ Ke=async s=>{
     V(!1);
   }
 },
+compressImageFile=async(file)=>{
+  if(!file||!file.type||!file.type.startsWith("image/"))return file;
+  if(file.size<=1024*1024)return file;
+  return new Promise(resolve=>{
+    try{
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const img=new Image();
+        img.onload=()=>{
+          try{
+            const canvas=document.createElement("canvas");
+            let w=img.width,h=img.height;
+            const maxDim=1920;
+            if(w>maxDim||h>maxDim){
+              if(w>h){h=Math.round((h*maxDim)/w);w=maxDim}
+              else{w=Math.round((w*maxDim)/h);h=maxDim}
+            }
+            canvas.width=w;
+            canvas.height=h;
+            const ctx=canvas.getContext("2d");
+            ctx.drawImage(img,0,0,w,h);
+            canvas.toBlob(blob=>{
+              if(blob&&blob.size<file.size){
+                const compName=file.name.replace(/\.[^/.]+$/,".jpg");
+                const compressed=new File([blob],compName,{type:"image/jpeg"});
+                resolve(compressed);
+              }else{
+                resolve(file);
+              }
+            },"image/jpeg",0.85);
+          }catch(_){resolve(file)}
+        };
+        img.onerror=()=>resolve(file);
+        img.src=e.target.result;
+      };
+      reader.onerror=()=>resolve(file);
+      reader.readAsDataURL(file);
+    }catch(_){resolve(file)}
+  });
+},
 batchUpload50RCs=async()=>{
   if(batchRcTargetMode==="new"&&!batchRcFiles.length)return u.error("Please select at least one truck RC to create compilation");
   if(!batchRcFiles.length&&!existingAttachedRcs.length)return u.error("No truck RCs to save in compilation");
@@ -210,25 +250,35 @@ batchUpload50RCs=async()=>{
     if(batchRcFiles.length>0){
       u.info(`Uploading ${batchRcFiles.length} truck RCs... Please wait.`);
       for(let idx=0;idx<batchRcFiles.length;idx++){
-        const file=batchRcFiles[idx];
-        setBatchRcProgress(`Uploading truck RC ${idx+1} of ${batchRcFiles.length}: ${file.name}`);
+        const rawFile=batchRcFiles[idx];
+        setBatchRcProgress(`Preparing & uploading truck RC ${idx+1} of ${batchRcFiles.length}: ${rawFile.name}...`);
+        const fileToUpload=await compressImageFile(rawFile);
         const formData=new FormData();
-        formData.append("file",file);
+        formData.append("file",fileToUpload);
         formData.append("truck_id","FLEET_RC_BUNDLE");
         formData.append("document_type","RC");
-        formData.append("document_name",file.name);
+        formData.append("document_name",rawFile.name);
         formData.append("status","Active");
         formData.append("expiry_date","2099-12-31T00:00:00.000Z");
         const res=await B.collection("truck_documents").create(formData,{$autoCancel:!1});
-        const fileUrl=B.files.getURL(res,res.file);
-        const cleanName=file.name.replace(/\.[^/.]+$/,"");
-        const truckMatch=cleanName.match(/([A-Z]{2}[0-9]{1,2}[A-Z]{0,3}[0-9]{4})/i);
-        const truckNum=truckMatch?truckMatch[1].toUpperCase():`Truck ${existingAttachedRcs.length+idx+1}`;
+        const rawFileStr=Array.isArray(res.file)?res.file[0]:(res.file||(res.files&&res.files[0])||"");
+        const fileUrl=rawFileStr?B.files.getURL(res,rawFileStr):(res.file_url||"");
+
+        let truckNum="";
+        const cleanName=rawFile.name.replace(/\.[^/.]+$/,"").replace(/\.[^/.]+$/,"");
+        if(!/^(img|image|scan|doc|photo|file|p_)/i.test(cleanName)){
+          const truckMatch=cleanName.match(/([A-Z]{2}\s*[-]?\s*[0-9]{1,2}\s*[-]?\s*[A-Z]{1,3}\s*[-]?\s*[0-9]{4})/i);
+          if(truckMatch)truckNum=truckMatch[1].replace(/[\s-]/g,"").toUpperCase();
+        }
+        if(!truckNum){
+          truckNum=`Truck ${existingAttachedRcs.length+idx+1}`;
+        }
+
         newlyUploaded.push({
           id:"rc_"+Date.now()+"_"+idx,
-          name:file.name,
+          name:rawFile.name,
           url:fileUrl,
-          size:(file.size/(1024*1024)).toFixed(2)+" MB",
+          size:(fileToUpload.size/(1024*1024)).toFixed(2)+" MB",
           truck_number:truckNum,
           uploaded_at:new Date().toISOString()
         });
@@ -247,11 +297,14 @@ batchUpload50RCs=async()=>{
 
     const totalCount=merged.length;
     const finalTitle=batchRcTitle.trim()||`Fleet Commercial Vehicle RCs (${totalCount} Trucks)`;
+    const docList=Array.isArray(i)?[...i]:[];
     let updatedList;
 
-    if(batchRcTargetMode==="append"&&selectedCompilationId){
-      updatedList=i.map(doc=>{
-        if(doc.id===selectedCompilationId){
+    if(batchRcTargetMode==="append"){
+      let found=false;
+      updatedList=docList.map(doc=>{
+        if((selectedCompilationId&&doc.id===selectedCompilationId)||(!selectedCompilationId&&(doc.is_multi_file||doc.attached_files?.length>0))){
+          found=true;
           return {
             ...doc,
             title:finalTitle,
@@ -266,6 +319,41 @@ batchUpload50RCs=async()=>{
         }
         return doc;
       });
+      if(!found&&docList.length>0){
+        const firstComp=docList.find(d=>d&&(d.is_multi_file||d.title?.includes("REGISTRATION CERTIFICATES")));
+        if(firstComp){
+          updatedList=docList.map(doc=>doc.id===firstComp.id?{
+            ...doc,
+            title:finalTitle,
+            file_url:merged[0]?.url||doc.file_url,
+            file_size:`${totalCount} Truck RCs Attached`,
+            is_multi_file:!0,
+            rc_count:totalCount,
+            file_count:totalCount,
+            attached_files:merged,
+            updated_at:new Date().toISOString()
+          }:doc);
+          found=true;
+        }
+      }
+      if(!found){
+        const newDoc={
+          id:"vault_"+Date.now(),
+          title:finalTitle,
+          category:"Fleet & Vehicle Documents",
+          sub_category:"Commercial Vehicle RC Compilation",
+          financial_year:"N/A",
+          file_url:merged[0]?.url||"",
+          file_size:`${totalCount} Truck RCs Attached`,
+          notes:"Consolidated commercial vehicle registration certificates for fleet financing & bank compliance.",
+          is_multi_file:!0,
+          rc_count:totalCount,
+          file_count:totalCount,
+          attached_files:merged,
+          created_at:new Date().toISOString()
+        };
+        updatedList=[newDoc,...docList];
+      }
       u.success(`Successfully updated compilation! Now contains ${totalCount} truck RCs.`);
     }else{
       const newDoc={
@@ -283,13 +371,13 @@ batchUpload50RCs=async()=>{
         attached_files:merged,
         created_at:new Date().toISOString()
       };
-      updatedList=[newDoc,...i];
+      updatedList=[newDoc,...docList];
       u.success(`Successfully created compilation with ${totalCount} truck RCs!`);
     }
 
     const w=JSON.stringify(updatedList);
     try{
-      await B.collection("company_settings").update(a.id,{company_docs_json:w},{$autoCancel:!1});
+      await B.collection("company_settings").update(a?.id||"companysettings",{company_docs_json:w},{$autoCancel:!1});
     }catch(updErr){
       const rList=await B.collection("company_settings").getList(1,1,{$autoCancel:!1});
       if(rList.items?.length>0){
@@ -306,7 +394,8 @@ batchUpload50RCs=async()=>{
     setExistingAttachedRcs([]);
   }catch(err){
     console.error("Batch RC compilation failed:",err);
-    u.error("Failed to save truck RCs");
+    const msg=err?.data?.message||err?.message||(typeof err==="string"?err:"Network or server error");
+    u.error(`Failed to save truck RCs: ${msg}`);
   }finally{
     setBatchRcUploading(!1);
     setBatchRcProgress("");
