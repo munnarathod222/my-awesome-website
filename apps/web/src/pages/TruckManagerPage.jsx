@@ -535,11 +535,11 @@ export default function TruckManagerPage() {
                             {(() => {
                               const curYm = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
                               const cleanP = (truck.truck_number || '').replace(/[\s\-_]/g, '').toUpperCase();
-                              const mTrips = (trips || []).filter(t => {
-                                const raw = t.date || t.start_date || t.created;
+                              const mTrips = (trips || []).filter(tr => {
+                                const raw = tr.date || tr.start_date || tr.created;
                                 if (!raw || !String(raw).startsWith(curYm)) return false;
-                                if (t.truck_id && t.truck_id === truck.id) return true;
-                                const tp = (t.truck_number || t.vehicle_number || '').replace(/[\s\-_]/g, '').toUpperCase();
+                                if (tr.truck_id && tr.truck_id === truck.id) return true;
+                                const tp = (tr.truck_number || tr.vehicle_number || '').replace(/[\s\-_]/g, '').toUpperCase();
                                 return tp && cleanP && (tp === cleanP || tp.includes(cleanP) || cleanP.includes(tp));
                               }).length;
                               const badgeCls = mTrips >= 8 ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400' : mTrips >= 4 ? 'border-amber-500/40 bg-amber-500/15 text-amber-400' : 'border-rose-500/40 bg-rose-500/15 text-rose-400';
