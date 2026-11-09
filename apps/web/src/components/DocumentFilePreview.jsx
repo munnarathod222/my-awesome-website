@@ -6,14 +6,22 @@ import { format } from 'date-fns';
 
 const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false, readOnly = false, onMoveUp, onMoveDown }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [downloadUrl, setDownloadUrl] = useState(null);
 
   useEffect(() => {
     if (isNew && file instanceof File) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      setDownloadUrl(url);
       return () => URL.revokeObjectURL(url);
     } else if (!isNew && typeof file === 'string' && docRecord) {
-      setPreviewUrl(pb.files.getUrl(docRecord, file));
+      const isImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(file);
+      if (isImg) {
+        setPreviewUrl(pb.files.getUrl(docRecord, file, { thumb: '120x120' }));
+      } else {
+        setPreviewUrl(pb.files.getUrl(docRecord, file));
+      }
+      setDownloadUrl(pb.files.getUrl(docRecord, file));
     }
   }, [file, isNew, docRecord]);
 
@@ -34,7 +42,7 @@ const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false, readOnl
         <div className="flex-shrink-0 w-12 h-12 rounded bg-muted flex items-center justify-center overflow-hidden">
           {previewUrl ? (
             <a 
-              href={previewUrl} 
+              href={downloadUrl || previewUrl} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
@@ -79,9 +87,9 @@ const DocumentFilePreview = ({ file, docRecord, onDelete, isNew = false, readOnl
             <span className="sr-only">Move Down</span>
           </Button>
         )}
-        {previewUrl && !isNew && (
+        {downloadUrl && !isNew && (
           <Button variant="ghost" size="icon" asChild>
-            <a href={previewUrl} target="_blank" rel="noopener noreferrer" download>
+            <a href={downloadUrl} target="_blank" rel="noopener noreferrer" download>
               <Download className="w-4 h-4" />
               <span className="sr-only">Download</span>
             </a>
