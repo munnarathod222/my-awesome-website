@@ -367,7 +367,8 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         bill_number: formData.bill_number?.trim() || undefined,
         emi_principal: formData.category === 'EMI' && formData.emi_principal ? Number(formData.emi_principal) : undefined,
         emi_interest: formData.category === 'EMI' && formData.emi_interest ? Number(formData.emi_interest) : undefined,
-        emi_charges: formData.category === 'EMI' && formData.emi_charges ? Number(formData.emi_charges) : undefined
+        emi_charges: formData.category === 'EMI' && formData.emi_charges ? Number(formData.emi_charges) : undefined,
+        emi_subcategory: formData.category === 'EMI' ? (formData.subcategory || 'Vehicle Loan EMI') : undefined
       };
 
       const cleanMeta = Object.fromEntries(Object.entries(meta).filter(([_, v]) => v !== undefined && v !== ''));
@@ -401,7 +402,10 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
         created_by: currentUser?.id || 'system'
       };
 
-      if (payload.category !== 'Regular' && payload.category !== 'Employee' && payload.category !== 'EMI') {
+      if (payload.category === 'EMI') {
+        // EMI subcategory is stored in metadata & notes, keep DB select field clean for PocketBase enum compatibility
+        payload.subcategory = '';
+      } else if (payload.category !== 'Regular' && payload.category !== 'Employee') {
         payload.subcategory = '';
       }
 
@@ -468,7 +472,22 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
           record = await withTimeout(pb.collection('expenses').update(expense.id, formDataToSend, { $autoCancel: false }), 90000);
         } else {
           if (currentUser?.id) formDataToSend.append('created_by', currentUser.id);
-          record = await withTimeout(pb.collection('expenses').create(formDataToSend, { $autoCancel: false }), 90000);
+          try {
+            record = await withTimeout(pb.collection('expenses').create(formDataToSend, { $autoCancel: false }), 90000);
+          } catch (createErr) {
+            console.warn('Direct expense create notice, trying clean fallback payload:', createErr?.message || createErr);
+            const fallbackData = new FormData();
+            fallbackData.append('date', dateISO);
+            fallbackData.append('amount', String(payload.amount));
+            fallbackData.append('category', payload.category);
+            fallbackData.append('subcategory', (payload.category === 'Regular' || payload.category === 'Employee') ? payload.subcategory : '');
+            fallbackData.append('description', payload.description || (payload.category === 'EMI' ? 'Vehicle EMI' : 'Expense'));
+            fallbackData.append('payment_method', payload.payment_method);
+            fallbackData.append('status', payload.status);
+            if (finalNotes) fallbackData.append('notes', finalNotes);
+            if (currentUser?.id) fallbackData.append('created_by', currentUser.id);
+            record = await withTimeout(pb.collection('expenses').create(fallbackData, { $autoCancel: false }), 90000);
+          }
         }
       }
 

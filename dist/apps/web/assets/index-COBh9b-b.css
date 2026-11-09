@@ -141,7 +141,7 @@ body {
   .gap-4 { gap: 0.25rem !important; }
 
   /* Compact, stylish buttons & inputs */
-  button[role="combobox"], select {
+  button[role="combobox"]:not(.select-trigger-badge):not([class*="h-6"]):not([class*="h-7"]), select:not(.select-trigger-badge) {
     max-width: 100% !important;
     box-sizing: border-box !important;
     height: 2.25rem !important;
@@ -198,21 +198,53 @@ body {
   }
 }
 
-/* Compact Select Trigger Badges in cards */
-.select-trigger-badge, button.select-trigger-badge, [role="combobox"].select-trigger-badge {
+/* Compact Select Trigger Badges in cards & mobile views */
+.select-trigger-badge, 
+button.select-trigger-badge, 
+[role="combobox"].select-trigger-badge,
+button[role="combobox"][class*="h-6"],
+[role="combobox"][class*="h-6"],
+button[role="combobox"][class*="h-7"],
+[role="combobox"][class*="h-7"] {
   height: 26px !important;
   min-height: 26px !important;
   max-height: 26px !important;
-  width: 105px !important;
-  min-width: 105px !important;
-  max-width: 105px !important;
+  width: auto !important;
+  min-width: 80px !important;
+  max-width: 140px !important;
   padding: 0 8px !important;
   font-size: 10px !important;
-  line-height: 26px !important;
+  line-height: 24px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   box-sizing: border-box !important;
   flex-shrink: 0 !important;
-  flex-basis: 105px !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 768px) {
+  .select-trigger-badge, 
+  button.select-trigger-badge, 
+  [role="combobox"].select-trigger-badge,
+  button[role="combobox"][class*="h-6"],
+  [role="combobox"][class*="h-6"],
+  button[role="combobox"][class*="h-7"],
+  [role="combobox"][class*="h-7"] {
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    width: auto !important;
+    min-width: 85px !important;
+    max-width: 130px !important;
+    padding: 0 8px !important;
+    font-size: 10px !important;
+    line-height: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
 }
