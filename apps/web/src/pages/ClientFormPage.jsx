@@ -44,7 +44,11 @@ export default function ClientFormPage() {
     notes: '',
     requires_pod: false,
     isTdsApplicable: false,
-    tdsRate: '2.00'
+    tdsRate: '2.00',
+    munsiyana_applicable: false,
+    munsiyana_type: 'slab',
+    munsiyana_category: 'Corporate',
+    munsiyana_flat_amount: 300
   });
 
   useEffect(() => {
@@ -77,7 +81,11 @@ export default function ClientFormPage() {
             notes: client.notes || '',
             requires_pod: client.requires_pod || false,
             isTdsApplicable: client.isTdsApplicable || false,
-            tdsRate: client.tdsRate?.toString() || '2.00'
+            tdsRate: client.tdsRate?.toString() || '2.00',
+            munsiyana_applicable: client.munsiyana_applicable || false,
+            munsiyana_type: client.munsiyana_type || 'slab',
+            munsiyana_category: client.munsiyana_category || 'Corporate',
+            munsiyana_flat_amount: client.munsiyana_flat_amount ?? 300
           });
         } catch (err) {
           console.error("Failed to load client", err);
@@ -113,6 +121,10 @@ export default function ClientFormPage() {
         ...formData,
         credit_limit: Number(formData.credit_limit) || 0,
         tdsRate: formData.isTdsApplicable ? (Number(formData.tdsRate) || 0) : 0,
+        munsiyana_applicable: Boolean(formData.munsiyana_applicable),
+        munsiyana_type: formData.munsiyana_type || 'slab',
+        munsiyana_category: formData.munsiyana_category || 'Corporate',
+        munsiyana_flat_amount: Number(formData.munsiyana_flat_amount) || 0,
       };
 
       if (isEdit) {
@@ -367,6 +379,112 @@ export default function ClientFormPage() {
                       placeholder="2.00"
                       required={formData.isTdsApplicable}
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Munsiyana Deduction Configuration */}
+              <div className="pt-4 border-t border-border/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="munsiyana_applicable"
+                      name="munsiyana_applicable"
+                      checked={formData.munsiyana_applicable}
+                      onChange={(e) => setFormData(prev => ({ ...prev, munsiyana_applicable: e.target.checked }))}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    />
+                    <Label htmlFor="munsiyana_applicable" className="text-sm font-semibold leading-none cursor-pointer">
+                      Applies Munsiyana Fee / Deduction
+                    </Label>
+                  </div>
+                  {formData.munsiyana_applicable && (
+                    <span className="text-xs bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full font-medium border border-amber-500/20">
+                      Contract Deduction Active
+                    </span>
+                  )}
+                </div>
+
+                {formData.munsiyana_applicable && (
+                  <div className="p-4 bg-muted/40 rounded-xl border border-border/70 space-y-4 animate-in fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="munsiyana_type">Munsiyana Rule Type</Label>
+                        <Select 
+                          value={formData.munsiyana_type} 
+                          onValueChange={(val) => handleSelectChange('munsiyana_type', val)}
+                        >
+                          <SelectTrigger id="munsiyana_type" className="bg-background">
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="slab">Standard Slabs (Freight Slabs)</SelectItem>
+                            <SelectItem value="flat">Fixed Flat Amount (₹)</SelectItem>
+                            <SelectItem value="percentage">Percentage of Freight (%)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {formData.munsiyana_type === 'slab' && (
+                        <div className="space-y-2">
+                          <Label htmlFor="munsiyana_category">Contract Category</Label>
+                          <Select 
+                            value={formData.munsiyana_category} 
+                            onValueChange={(val) => handleSelectChange('munsiyana_category', val)}
+                          >
+                            <SelectTrigger id="munsiyana_category" className="bg-background">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Corporate">Corporate / Regular (₹300 / ₹500 / ₹650)</SelectItem>
+                              <SelectItem value="Agri_Commodity">Agri & Commodity (₹250 / ₹350 / ₹500)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {(formData.munsiyana_type === 'flat' || formData.munsiyana_type === 'percentage') && (
+                        <div className="space-y-2">
+                          <Label htmlFor="munsiyana_flat_amount">
+                            {formData.munsiyana_type === 'flat' ? 'Flat Amount (₹)' : 'Deduction Rate (%)'}
+                          </Label>
+                          <Input
+                            type="number"
+                            step={formData.munsiyana_type === 'flat' ? '1' : '0.1'}
+                            min="0"
+                            id="munsiyana_flat_amount"
+                            name="munsiyana_flat_amount"
+                            value={formData.munsiyana_flat_amount}
+                            onChange={handleChange}
+                            placeholder={formData.munsiyana_type === 'flat' ? '300' : '1.5'}
+                            className="bg-background"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {formData.munsiyana_type === 'slab' && (
+                      <div className="text-xs text-muted-foreground bg-background/60 p-3 rounded-lg border border-border/50">
+                        <p className="font-semibold text-foreground mb-1">
+                          Active Freight Slabs ({formData.munsiyana_category === 'Corporate' ? 'Corporate / Regular' : 'Agri & Commodity'}):
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                          <div className="p-2 rounded bg-secondary/30 border border-border/40">
+                            <span className="block text-[11px] text-muted-foreground">&lt; ₹25,000</span>
+                            <span className="font-bold text-foreground">₹{formData.munsiyana_category === 'Corporate' ? '300' : '250'}</span>
+                          </div>
+                          <div className="p-2 rounded bg-secondary/30 border border-border/40">
+                            <span className="block text-[11px] text-muted-foreground">₹25,000 - ₹49,999</span>
+                            <span className="font-bold text-foreground">₹{formData.munsiyana_category === 'Corporate' ? '500' : '350'}</span>
+                          </div>
+                          <div className="p-2 rounded bg-secondary/30 border border-border/40">
+                            <span className="block text-[11px] text-muted-foreground">≥ ₹50,000</span>
+                            <span className="font-bold text-foreground">₹{formData.munsiyana_category === 'Corporate' ? '650' : '500'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

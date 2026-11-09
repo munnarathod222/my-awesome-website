@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { TRIP_STATUS_OPTIONS } from '@/lib/tripStatusUtils.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
+import { calculateMunsiyana } from '@/lib/munsiyanaCalculator.js';
 
 
 const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
@@ -161,7 +162,13 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       truck_number: '',
       vendor_payout: '',
       payment_model: 'Model2',
-      toll_deduction: ''
+      toll_deduction: '',
+      loading_charges: '',
+      loading_paid_by: 'client',
+      unloading_charges: '',
+      unloading_paid_by: 'client',
+      broker_commission: '',
+      munsiyana: ''
     });
     setClientMetrics(null);
     setSelectedClientInfo(null);
@@ -206,6 +213,13 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
 
     const clientInfo = clients.find(c => c.id === clientId);
     setSelectedClientInfo(clientInfo);
+
+    if (clientInfo?.munsiyana_applicable) {
+      const autoMun = calculateMunsiyana(clientInfo, formData.amount);
+      if (autoMun > 0) {
+        setFormData(prev => ({ ...prev, client_id: clientId, munsiyana: autoMun.toString() }));
+      }
+    }
 
     try {
       const logs = await pb.collection('trip_logs').getFullList({
@@ -307,7 +321,13 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
           : (isAttached
               ? (formData.payment_model === 'Model3' ? 500 : grossRev - (parseFloat(formData.vendor_payout) || 0))
               : 0),
-        subcontractor_settlement_status: isAttachedFamily ? 'Pending' : (isAttached ? 'Pending' : '')
+        subcontractor_settlement_status: isAttachedFamily ? 'Pending' : (isAttached ? 'Pending' : ''),
+        loading_charges: parseFloat(formData.loading_charges) || 0,
+        loading_paid_by: formData.loading_paid_by || 'client',
+        unloading_charges: parseFloat(formData.unloading_charges) || 0,
+        unloading_paid_by: formData.unloading_paid_by || 'client',
+        broker_commission: parseFloat(formData.broker_commission) || 0,
+        munsiyana: parseFloat(formData.munsiyana) || 0
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });
@@ -583,7 +603,15 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                     step="0.01" 
                     placeholder="0.00" 
                     value={formData.amount} 
-                    onChange={e => setFormData({...formData, amount: e.target.value})} 
+                    onChange={e => {
+                      const newAmt = e.target.value;
+                      let newMun = formData.munsiyana;
+                      if (selectedClientInfo?.munsiyana_applicable) {
+                        const calculated = calculateMunsiyana(selectedClientInfo, newAmt);
+                        newMun = calculated > 0 ? calculated.toString() : '';
+                      }
+                      setFormData(prev => ({ ...prev, amount: newAmt, munsiyana: newMun }));
+                    }} 
                     required 
                     className="bg-background h-9 text-xs"
                   />
@@ -750,6 +778,182 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                 </div>
               )}
+
+              {/* Operational Charges, Commissions & Deductions Section */}
+              <div className="space-y-3 p-3.5 rounded-2xl bg-secondary/15 border border-border/70 animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📦</span>
+                    <h4 className="font-semibold text-xs text-foreground uppercase tracking-wider">Charges, Commissions & Deductions</h4>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-mono">Loading • Unloading • Broker • Munsiyana</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {/* Loading Charges */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/70 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Loading Charges (₹)</Label>
+                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'client' }))}
+                          className={cn(
+                            "px-2 py-0.5 rounded font-medium transition-all",
+                            formData.loading_paid_by === 'client' 
+                              ? "bg-primary text-primary-foreground shadow-xs font-semibold" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Bill Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'company' }))}
+                          className={cn(
+                            "px-2 py-0.5 rounded font-medium transition-all",
+                            formData.loading_paid_by === 'company' 
+                              ? "bg-amber-600 text-white shadow-xs font-semibold" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Company Paid
+                        </button>
+                      </div>
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.loading_charges}
+                      onChange={e => setFormData({ ...formData, loading_charges: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      {formData.loading_paid_by === 'client' ? '+ Added to client invoice/receivable' : '- Deducted as company expense'}
+                    </span>
+                  </div>
+
+                  {/* Unloading Charges */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/70 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Unloading Charges (₹)</Label>
+                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'client' }))}
+                          className={cn(
+                            "px-2 py-0.5 rounded font-medium transition-all",
+                            formData.unloading_paid_by === 'client' 
+                              ? "bg-primary text-primary-foreground shadow-xs font-semibold" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Bill Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'company' }))}
+                          className={cn(
+                            "px-2 py-0.5 rounded font-medium transition-all",
+                            formData.unloading_paid_by === 'company' 
+                              ? "bg-amber-600 text-white shadow-xs font-semibold" 
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Company Paid
+                        </button>
+                      </div>
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.unloading_charges}
+                      onChange={e => setFormData({ ...formData, unloading_charges: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      {formData.unloading_paid_by === 'client' ? '+ Added to client invoice/receivable' : '- Deducted as company expense'}
+                    </span>
+                  </div>
+
+                  {/* Broker Commission */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/70 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Broker Commission (₹)</Label>
+                      <span className="text-[10px] text-muted-foreground font-mono">Direct Brokerage</span>
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.broker_commission}
+                      onChange={e => setFormData({ ...formData, broker_commission: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      Direct commission fee payable to broker
+                    </span>
+                  </div>
+
+                  {/* Munsiyana Deduction */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/70 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium">Munsiyana (₹)</Label>
+                      {selectedClientInfo?.munsiyana_applicable && (
+                        <span className="text-[9px] bg-amber-500/10 text-amber-500 font-bold px-1.5 py-0.5 rounded border border-amber-500/20">
+                          {selectedClientInfo.munsiyana_type === 'flat' ? 'Flat' : (selectedClientInfo.munsiyana_category || 'Corporate')}
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.munsiyana}
+                      onChange={e => setFormData({ ...formData, munsiyana: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      Fee deducted from client balance payout
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Real-time Breakdown */}
+                {(Number(formData.loading_charges) > 0 || Number(formData.unloading_charges) > 0 || Number(formData.broker_commission) > 0 || Number(formData.munsiyana) > 0) && (
+                  <div className="p-2.5 rounded-xl bg-background/90 border border-border/60 text-xs flex flex-wrap gap-x-4 gap-y-1 items-center justify-between font-mono">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">Adjusted Client Receivable:</span>
+                      <span className="font-bold text-primary">
+                        ₹{(
+                          (parseFloat(formData.amount) || 0) +
+                          (formData.loading_paid_by === 'client' ? (parseFloat(formData.loading_charges) || 0) : 0) +
+                          (formData.unloading_paid_by === 'client' ? (parseFloat(formData.unloading_charges) || 0) : 0) -
+                          (parseFloat(formData.munsiyana) || 0)
+                        ).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    {(Number(formData.broker_commission) > 0 || formData.loading_paid_by === 'company' || formData.unloading_paid_by === 'company') && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Company Operational Extra:</span>
+                        <span className="font-bold text-rose-500">
+                          ₹{(
+                            (formData.loading_paid_by === 'company' ? (parseFloat(formData.loading_charges) || 0) : 0) +
+                            (formData.unloading_paid_by === 'company' ? (parseFloat(formData.unloading_charges) || 0) : 0) +
+                            (parseFloat(formData.broker_commission) || 0)
+                          ).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div className="space-y-1.5">

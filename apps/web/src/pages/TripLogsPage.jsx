@@ -1028,8 +1028,34 @@ const TripLogsPage = () => {
                               />
                             </TableCell>
                             {!isDispatcher && (
-                              <TableCell className="text-right text-sm font-bold text-foreground">
-                                {formatCurrency(log.revenue)}
+                              <TableCell className="text-right">
+                                <div className="text-sm font-bold text-foreground">
+                                  {formatCurrency(log.revenue)}
+                                </div>
+                                {(Number(log.loading_charges) > 0 || Number(log.unloading_charges) > 0 || Number(log.broker_commission) > 0 || Number(log.munsiyana) > 0) && (
+                                  <div className="flex flex-col items-end gap-0.5 mt-1 text-[9px] font-mono">
+                                    {Number(log.loading_charges) > 0 && (
+                                      <span className={log.loading_paid_by === 'company' ? "text-amber-500 font-semibold" : "text-blue-400 font-semibold"}>
+                                        Load: +₹{Number(log.loading_charges).toLocaleString('en-IN')} {log.loading_paid_by === 'company' ? '(Co)' : '(Cl)'}
+                                      </span>
+                                    )}
+                                    {Number(log.unloading_charges) > 0 && (
+                                      <span className={log.unloading_paid_by === 'company' ? "text-amber-500 font-semibold" : "text-blue-400 font-semibold"}>
+                                        Unload: +₹{Number(log.unloading_charges).toLocaleString('en-IN')} {log.unloading_paid_by === 'company' ? '(Co)' : '(Cl)'}
+                                      </span>
+                                    )}
+                                    {Number(log.broker_commission) > 0 && (
+                                      <span className="text-purple-400 font-semibold">
+                                        Broker: -₹{Number(log.broker_commission).toLocaleString('en-IN')}
+                                      </span>
+                                    )}
+                                    {Number(log.munsiyana) > 0 && (
+                                      <span className="text-rose-400 font-semibold">
+                                        Mun: -₹{Number(log.munsiyana).toLocaleString('en-IN')}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </TableCell>
                             )}
                             {!isDispatcher && (
@@ -1179,7 +1205,7 @@ const TripLogsPage = () => {
               </div>
 
               {/* Mobile View List (Shown on screens < md) */}
-              <div className="md:hidden space-y-4 px-1 pb-4">
+              <div className="md:hidden space-y-4 px-1 pb-32">
                 {filteredLogs.length === 0 ? (
                   <div className="text-center py-16 text-muted-foreground bg-secondary/10 rounded-2xl p-6 border border-white/5">
                     <Truck className="w-10 h-10 opacity-30 mx-auto mb-3" />
@@ -1195,10 +1221,10 @@ const TripLogsPage = () => {
                       {/* Row 1: Trip ID, Date & Payment Status */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-sm text-primary">
+                          <span className="font-mono font-bold text-xs text-primary bg-primary/10 border border-primary/25 px-2 py-0.5 rounded-lg shadow-sm whitespace-nowrap shrink-0">
                             {log.trip_id || 'N/A'}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap shrink-0">
                             • {formatTripDate(log.date)}
                           </span>
                         </div>
@@ -1218,7 +1244,7 @@ const TripLogsPage = () => {
                             }}
                           >
                             <SelectTrigger className={cn(
-                              "h-7 border px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0",
+                              "select-trigger-badge h-7 border px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0 w-auto whitespace-nowrap",
                               log.client_payment_status === 'received' ? 'bg-success/15 text-success border-success/30' :
                               log.client_payment_status === 'delayed' ? 'bg-destructive/15 text-destructive border-destructive/30' :
                               log.client_payment_status === 'pending' ? 'bg-warning/15 text-warning border-warning/30' :
@@ -1254,7 +1280,7 @@ const TripLogsPage = () => {
                             }}
                           >
                             <SelectTrigger className={cn(
-                              "h-7 border px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0",
+                              "select-trigger-badge h-7 border px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-3 [&>svg]:w-3 shrink-0 w-auto whitespace-nowrap",
                               getTripStatusColor(log.trip_status)
                             )}>
                               <SelectValue>{getTripStatusLabel(log.trip_status)}</SelectValue>
@@ -1301,6 +1327,42 @@ const TripLogsPage = () => {
                           />
                         </div>
                       </div>
+
+                      {/* Charges & Deductions Pill Bar */}
+                      {(Number(log.loading_charges) > 0 || Number(log.unloading_charges) > 0 || Number(log.broker_commission) > 0 || Number(log.munsiyana) > 0) && (
+                        <div className="flex flex-wrap gap-1.5 py-1 text-[10px] font-mono">
+                          {Number(log.loading_charges) > 0 && (
+                            <span className={cn(
+                              "px-2 py-0.5 rounded border text-[10px]",
+                              log.loading_paid_by === 'company' 
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                                : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            )}>
+                              Load: ₹{Number(log.loading_charges).toLocaleString('en-IN')} {log.loading_paid_by === 'company' ? '(Co)' : '(Cl)'}
+                            </span>
+                          )}
+                          {Number(log.unloading_charges) > 0 && (
+                            <span className={cn(
+                              "px-2 py-0.5 rounded border text-[10px]",
+                              log.unloading_paid_by === 'company' 
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20" 
+                                : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            )}>
+                              Unload: ₹{Number(log.unloading_charges).toLocaleString('en-IN')} {log.unloading_paid_by === 'company' ? '(Co)' : '(Cl)'}
+                            </span>
+                          )}
+                          {Number(log.broker_commission) > 0 && (
+                            <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              Broker: ₹{Number(log.broker_commission).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                          {Number(log.munsiyana) > 0 && (
+                            <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              Mun: -₹{Number(log.munsiyana).toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Row 4: Financials & Action Buttons */}
                       <div className="flex items-center justify-between pt-1">

@@ -207,6 +207,31 @@ const ClientDetailsPage = () => {
                   )}
                 </div>
               </div>
+              {(client.munsiyana_applicable || client.isTdsApplicable) && (
+                <div className="pt-3 mt-3 border-t border-border space-y-2">
+                  <p className="text-sm font-medium">Contract Terms & Deductions</p>
+                  <div className="space-y-1.5 text-xs">
+                    {client.munsiyana_applicable && (
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-amber-500 font-medium">Munsiyana Deduction:</span>
+                        <span className="font-bold text-foreground">
+                          {client.munsiyana_type === 'flat'
+                            ? `Flat ₹${client.munsiyana_flat_amount || 300}`
+                            : client.munsiyana_type === 'percentage'
+                              ? `${client.munsiyana_flat_amount || 0}%`
+                              : `${client.munsiyana_category === 'Agri_Commodity' ? 'Agri' : 'Corporate'} Slabs`}
+                        </span>
+                      </div>
+                    )}
+                    {client.isTdsApplicable && (
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-primary/10 border border-primary/20">
+                        <span className="text-primary font-medium">TDS Deduction:</span>
+                        <span className="font-bold text-foreground">{client.tdsRate || '2.00'}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

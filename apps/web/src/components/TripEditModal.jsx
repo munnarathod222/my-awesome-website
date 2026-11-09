@@ -32,7 +32,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     assigned_managers: '',
     vendor_payout: '',
     payment_model: 'Model2',
-    toll_deduction: ''
+    toll_deduction: '',
+    loading_charges: '',
+    loading_paid_by: 'client',
+    unloading_charges: '',
+    unloading_paid_by: 'client',
+    broker_commission: '',
+    munsiyana: ''
   });
 
   useEffect(() => {
@@ -59,7 +65,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           assigned_managers: trip.assigned_managers || '',
           vendor_payout: trip.vendor_payout || '',
           payment_model: trip.payment_model || 'Model2',
-          toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : ''
+          toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : '',
+          loading_charges: trip.loading_charges !== undefined && trip.loading_charges !== null ? trip.loading_charges.toString() : '',
+          loading_paid_by: trip.loading_paid_by || 'client',
+          unloading_charges: trip.unloading_charges !== undefined && trip.unloading_charges !== null ? trip.unloading_charges.toString() : '',
+          unloading_paid_by: trip.unloading_paid_by || 'client',
+          broker_commission: trip.broker_commission !== undefined && trip.broker_commission !== null ? trip.broker_commission.toString() : '',
+          munsiyana: trip.munsiyana !== undefined && trip.munsiyana !== null ? trip.munsiyana.toString() : ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -94,6 +106,12 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         mileage: parseFloat(formData.mileage) || 0,
         assigned_managers: formData.assigned_managers,
         toll_deduction: parseFloat(formData.toll_deduction) || 0,
+        loading_charges: parseFloat(formData.loading_charges) || 0,
+        loading_paid_by: formData.loading_paid_by || 'client',
+        unloading_charges: parseFloat(formData.unloading_charges) || 0,
+        unloading_paid_by: formData.unloading_paid_by || 'client',
+        broker_commission: parseFloat(formData.broker_commission) || 0,
+        munsiyana: parseFloat(formData.munsiyana) || 0,
         
         ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
         payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),
@@ -406,6 +424,133 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                     <SelectItem value="blank">Blank</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Operational Charges, Broker Commission & Deductions */}
+              <div className="space-y-3 p-4 rounded-2xl bg-secondary/20 border border-border/70 md:col-span-2">
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📦</span>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-foreground">Operational Charges & Deductions</Label>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-mono">Billed to Client vs Company Paid</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Loading Charges */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-loading_charges" className="text-xs font-medium">Loading Charges (₹)</Label>
+                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'client' }))}
+                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.loading_paid_by === 'client' ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Bill Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'company' }))}
+                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.loading_paid_by === 'company' ? "bg-amber-600 text-white shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Company Paid
+                        </button>
+                      </div>
+                    </div>
+                    <Input
+                      id="edit-loading_charges"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.loading_charges}
+                      onChange={e => setFormData({ ...formData, loading_charges: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      {formData.loading_paid_by === 'client' ? '+ Added to client invoice' : '- Company operational expense'}
+                    </span>
+                  </div>
+
+                  {/* Unloading Charges */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-unloading_charges" className="text-xs font-medium">Unloading Charges (₹)</Label>
+                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'client' }))}
+                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.unloading_paid_by === 'client' ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Bill Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'company' }))}
+                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.unloading_paid_by === 'company' ? "bg-amber-600 text-white shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                        >
+                          Company Paid
+                        </button>
+                      </div>
+                    </div>
+                    <Input
+                      id="edit-unloading_charges"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.unloading_charges}
+                      onChange={e => setFormData({ ...formData, unloading_charges: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      {formData.unloading_paid_by === 'client' ? '+ Added to client invoice' : '- Company operational expense'}
+                    </span>
+                  </div>
+
+                  {/* Broker Commission */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-broker_commission" className="text-xs font-medium">Broker Commission (₹)</Label>
+                      <span className="text-[10px] text-muted-foreground font-mono">Broker Margin</span>
+                    </div>
+                    <Input
+                      id="edit-broker_commission"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.broker_commission}
+                      onChange={e => setFormData({ ...formData, broker_commission: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      Commission payable to load broker
+                    </span>
+                  </div>
+
+                  {/* Munsiyana Deduction */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-munsiyana" className="text-xs font-medium">Munsiyana Deduction (₹)</Label>
+                      <span className="text-[10px] text-amber-500 font-mono">Contract Deduction</span>
+                    </div>
+                    <Input
+                      id="edit-munsiyana"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.munsiyana}
+                      onChange={e => setFormData({ ...formData, munsiyana: e.target.value })}
+                      className="bg-background h-8 text-xs font-medium"
+                    />
+                    <span className="text-[10px] text-muted-foreground block">
+                      Deducted from balance amount paid by client
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">
