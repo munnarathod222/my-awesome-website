@@ -1,3 +1,4 @@
+import FleetMonthlyTripTracker from '@/components/FleetMonthlyTripTracker.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -145,6 +146,9 @@ const DashboardPage = () => {
     }
   }, [currentUser, navigate]);
 
+  const [allFleetTrips, setAllFleetTrips] = useState([]);
+  const [allFleetTrucks, setAllFleetTrucks] = useState([]);
+  const [allFleetDrivers, setAllFleetDrivers] = useState([]);
   const [stats, setStats] = useState({
     users: 0, trips: 0, trucks: 0, pods: 0,
     revenue: 0, grossRevenue: 0, expenses: 0,
@@ -214,7 +218,9 @@ const DashboardPage = () => {
         pb.collection('trip_logs').getList(1, 1, { filter: 'trip_status = "In Transit"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         
         // Open Maintenance Problems
-        pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] }))
+        pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('trip_logs').getFullList({ sort: '-date', $autoCancel: false }).catch(() => []),
+        pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => [])
       ]);
 
       let fleetRevenue = 0, brokerageProfit = 0, totalTds = 0;
@@ -534,6 +540,12 @@ const DashboardPage = () => {
           </motion.div>
 
           {/* Recent Trips + System Health */}
+          
+          {/* Zero-Search Fleet & Driver Monthly Trip Intelligence Tracker */}
+          <motion.div variants={item} id="monthly-trip-intelligence">
+            <FleetMonthlyTripTracker trips={allFleetTrips} trucks={allFleetTrucks} drivers={allFleetDrivers} />
+          </motion.div>
+
           <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <Card className="lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5">

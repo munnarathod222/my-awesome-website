@@ -1203,7 +1203,7 @@ Thank you for your dedicated service & safe driving on the highways!
                             <span className="text-slate-400 font-mono text-[11px] block">🛣️ Route Activity (15 pts max)</span>
                             <div className="flex justify-between items-baseline font-mono">
                               <strong className="text-amber-400 text-sm">{driver.actScore} pts</strong>
-                              <span className="text-slate-400 text-[10px]">{driver.total} trips</span>
+                              <span className="text-emerald-400 text-[10px] font-bold">{(() => { const curYm = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'); return (driver.tripLogsList || []).filter(t => { const raw = t.date || t.start_date || t.created; return raw && String(raw).startsWith(curYm); }).length; })()} this month / {driver.total} total</span>
                             </div>
                             <p className="text-[10px] text-slate-500">{driver.kms.toLocaleString()} km covered</p>
                           </div>

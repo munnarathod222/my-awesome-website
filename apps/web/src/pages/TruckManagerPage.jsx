@@ -532,6 +532,23 @@ export default function TruckManagerPage() {
                             <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0 rounded text-[10px] font-bold">
                               ⚡ {trkAnalytics.utilization_pct || 0}% Util
                             </Badge>
+                            {(() => {
+                              const curYm = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+                              const cleanP = (truck.truck_number || '').replace(/[\s\-_]/g, '').toUpperCase();
+                              const mTrips = (trips || []).filter(t => {
+                                const raw = t.date || t.start_date || t.created;
+                                if (!raw || !String(raw).startsWith(curYm)) return false;
+                                if (t.truck_id && t.truck_id === truck.id) return true;
+                                const tp = (t.truck_number || t.vehicle_number || '').replace(/[\s\-_]/g, '').toUpperCase();
+                                return tp && cleanP && (tp === cleanP || tp.includes(cleanP) || cleanP.includes(tp));
+                              }).length;
+                              const badgeCls = mTrips >= 8 ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400' : mTrips >= 4 ? 'border-amber-500/40 bg-amber-500/15 text-amber-400' : 'border-rose-500/40 bg-rose-500/15 text-rose-400';
+                              return (
+                                <Badge variant="outline" className={`px-1.5 py-0 rounded text-[10px] font-bold font-mono border ${badgeCls}`}>
+                                  🚚 {mTrips} Trips (This Month)
+                                </Badge>
+                              );
+                            })()}
                             <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-1.5 py-0 rounded text-[10px] font-bold font-mono">
                               🛡️ Rel: {trkAnalytics.reliability_score || 100}/100
                             </Badge>
