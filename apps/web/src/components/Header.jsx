@@ -139,6 +139,11 @@ export default function Header() {
   const userInitials = ((currentUser?.full_name || currentUser?.name || 'U')
     .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2));
 
+  const [isMobileNotifDrawerOpen, setIsMobileNotifDrawerOpen] = useState(false);
+  const [notifDrawerTab, setNotifDrawerTab] = useState('all');
+  const [expiringDocsCount, setExpiringDocsCount] = useState(0);
+  const [expiringDocsList, setExpiringDocsList] = useState([]);
+  const [lowFastagList, setLowFastagList] = useState([]);
   const [pendingQuotes, setPendingQuotes] = useState([]);
   const [pendingSignups, setPendingSignups] = useState([]);
   const lastKnownQuoteIdsRef = React.useRef(new Set());
@@ -261,6 +266,27 @@ export default function Header() {
       });
 
       setPendingQuotes(list);
+      try {
+        const docsRes = await pb.collection('truck_documents').getFullList({ filter: 'status = "Active"', $autoCancel: false }).catch(() => []);
+        const now = new Date();
+        const expList = [];
+        (docsRes || []).forEach(d => {
+          if (!d.expiry_date) return;
+          const exp = new Date(d.expiry_date);
+          const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 3600 * 24));
+          if (diffDays <= 30) {
+            expList.push({ ...d, daysLeft: diffDays });
+          }
+        });
+        setExpiringDocsCount(expList.length);
+        setExpiringDocsList(expList);
+      } catch (err) {}
+      try {
+        const trksRes = await pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }).catch(() => []);
+        const lowF = (trksRes || []).filter(t => t.current_fastag_balance !== undefined && t.current_fastag_balance !== null && Number(t.current_fastag_balance) < 2000);
+        setLowFastagList(lowF);
+      } catch (err) {}
+
     } catch (e) {}
   }, [isAdmin, isSuperAdmin, isAuthenticated, navigate]);
 
@@ -892,7 +918,64 @@ export default function Header() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* 1. Mobile Notification Center Bell */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => setIsMobileNotifDrawerOpen(true)}
+                className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all shrink-0"
+                title="Notification Center"
+              >
+                <Bell className={cn("w-4 h-4", (pendingQuotes.length + expiringDocsList.length + lowFastagList.length + pendingSignups.length) > 0 ? "text-amber-400 animate-pulse" : "text-slate-400")} />
+                {(pendingQuotes.length + expiringDocsList.length + lowFastagList.length + pendingSignups.length) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-md animate-pulse">
+                    {(pendingQuotes.length + expiringDocsList.length + lowFastagList.length + pendingSignups.length) > 9 ? '9+' : (pendingQuotes.length + expiringDocsList.length + lowFastagList.length + pendingSignups.length)}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* 2. Mobile Inbound Enquiries Shortcut */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => navigate('/quotes-manager')}
+                className="relative w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-300 active:scale-95 transition-all shrink-0"
+                title={`Inbound Enquiries (${pendingQuotes.length} Pending)`}
+              >
+                <MessageSquareWarning className="w-4 h-4 text-amber-400" />
+                {pendingQuotes.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black flex items-center justify-center shadow-md shadow-amber-500/40 animate-pulse">
+                    {pendingQuotes.length > 9 ? '9+' : pendingQuotes.length}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* 3. Mobile Rate & EMI Calculator Shortcut */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => navigate('/emi-calculator')}
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-cyan-400 hover:text-cyan-300 active:scale-95 transition-all shrink-0"
+                title="Trip & EMI Calculator"
+              >
+                <Calculator className="w-4 h-4 text-cyan-400" />
+              </button>
+            )}
+
+            {/* 4. Mobile Staff Tasks Shortcut */}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => navigate('/tasks')}
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-900 border border-slate-800 text-emerald-400 hover:text-emerald-300 active:scale-95 transition-all shrink-0"
+                title="Staff Tasks"
+              >
+                <CheckSquare className="w-4 h-4 text-emerald-400" />
+              </button>
+            )}
             {isAuthenticated && (isAdmin || isSuperAdmin) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
