@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
   Truck, CircleDashed, FileBox, QrCode, Wrench, Droplet,
@@ -14,15 +14,23 @@ import {
 export default function LaunchpadPage() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const role = currentUser?.role || 'user';
-  const email = (currentUser?.email || '').toLowerCase();
-  const isSuper = email === 'munnarathod222@gmail.com' || role === 'superuser' || role === 'super_admin';
-
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const tabsScrollRef = useRef(null);
 
-  // 7 Exact Sidebar Sections with Complete Tab Data & Distinct Color Schemes
+  const goTo = (path) => {
+    try {
+      if (typeof navigate === 'function') {
+        navigate(path);
+        return;
+      }
+    } catch (e) {
+      console.warn('Navigation error, fallback to location:', e);
+    }
+    window.location.href = path;
+  };
+
+  // 7 Complete Sidebar Sections matching all sidebar tabs with rich descriptions & colors
   const menuGroups = useMemo(() => [
     {
       id: 'main_analytics',
@@ -36,15 +44,15 @@ export default function LaunchpadPage() {
       gradient: 'from-cyan-500/20 via-blue-500/10 to-transparent border-cyan-500/30',
       iconBg: 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/25',
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', desc: 'Real-time overview of fleet operations', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: Sparkles, label: 'AI Freight Marketplace', path: '/marketplace', desc: 'AI load matching, corridor rates & shipper loads', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user'] },
-        { icon: Target, label: 'Bidding Intelligence', path: '/bidding-intelligence', desc: 'Freight lane bids, benchmark rates & bidding logs', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: BarChart3, label: 'Analytics', path: '/analytics', desc: 'P&L reporting & financial matrices', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: TrendingUp, label: 'Trip Overview', path: '/dashboard/trip-overview', desc: 'Global route metrics & calculations', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: Calculator, label: 'Vehicle TCO & ROI', path: '/tco-roi', desc: 'Calculate vehicle loan profiles & TCO', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: PieChart, label: 'Client Analysis', path: '/client-analysis', desc: 'Revenue split and payment margins', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: Trophy, label: 'Leaderboard', path: '/leaderboard', desc: 'Top performing drivers leaderboard', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: IdCard, label: 'Driver Scorecard', path: '/driver-scorecard', desc: 'Driver safety, fuel and performance metrics', roles: ['super_admin', 'admin', 'manager'] }
+        { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', desc: 'Real-time overview of fleet operations' },
+        { icon: Sparkles, label: 'AI Freight Marketplace', path: '/marketplace', desc: 'AI load matching, corridor rates & shipper loads' },
+        { icon: Target, label: 'Bidding Intelligence', path: '/bidding-intelligence', desc: 'Freight lane bids, benchmark rates & bidding logs' },
+        { icon: BarChart3, label: 'Analytics', path: '/analytics', desc: 'P&L reporting & financial matrices' },
+        { icon: TrendingUp, label: 'Trip Overview', path: '/dashboard/trip-overview', desc: 'Global route metrics & calculations' },
+        { icon: Calculator, label: 'Vehicle TCO & ROI', path: '/vehicle-tco', desc: 'Calculate vehicle loan profiles & TCO' },
+        { icon: PieChart, label: 'Client Analysis', path: '/client-analysis', desc: 'Revenue split and payment margins' },
+        { icon: Trophy, label: 'Leaderboard', path: '/leaderboard', desc: 'Top performing drivers leaderboard' },
+        { icon: IdCard, label: 'Driver Scorecard', path: '/driver-scorecard', desc: 'Driver safety, fuel and performance metrics' }
       ]
     },
     {
@@ -59,19 +67,19 @@ export default function LaunchpadPage() {
       gradient: 'from-emerald-500/20 via-teal-500/10 to-transparent border-emerald-500/30',
       iconBg: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
       items: [
-        { icon: Truck, label: 'Truck Manager', path: '/truck-manager', desc: 'Track physical trucks & managers', roles: ['super_admin', 'admin', 'dispatcher', 'supervisor'] },
-        { icon: MapPin, label: 'GPS Tracking', path: '/gps', desc: 'Live vehicle telematics & geo-fencing', roles: ['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor', 'user'] },
-        { icon: CircleDashed, label: 'Tyres & Battery', path: '/tyres', desc: 'Track tyre serial numbers & replacement lifecycles', roles: ['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor'] },
-        { icon: FileBox, label: 'Vehicle Docs', path: '/truck-docs', desc: 'RC, Insurance & permit renewals', roles: ['super_admin', 'admin', 'dispatcher', 'supervisor'] },
-        { icon: QrCode, label: 'Vehicle QR Pass Hub', path: '/truck-docs?view=qr_pass', desc: 'Instant QR gate passes for security checkpoints', roles: ['super_admin', 'admin', 'dispatcher', 'manager', 'supervisor'] },
-        { icon: Wrench, label: 'Fleet Maintenance', path: '/fleet-maintenance', desc: 'Servicing logs, problems & inventory', roles: ['super_admin', 'admin', 'dispatcher'] },
-        { icon: Droplet, label: 'Fuel Tracker & AI Scanner', path: '/fuel-tracker', desc: 'Fuel purchases, efficiency KMPL & receipts', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: ClipboardList, label: 'Trip Logs', path: '/trip-logs', desc: 'Manage & dispatch trip schedules', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: Navigation, label: 'Track Shipment', path: '/tracking', desc: 'Live consignment tracking & ETA status', roles: ['super_admin', 'admin', 'dispatcher', 'manager', 'user'] },
-        { icon: MapPin, label: 'Route Master', path: '/routes-master', desc: 'Route rate configurations & origins', roles: ['super_admin', 'admin', 'dispatcher'] },
-        { icon: Package, label: 'Inventory', path: '/inventory', desc: 'Manage spare parts stock levels', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: FileBox, label: 'Lorry Receipts & POD', path: '/pod-management', desc: 'Official LR / Bilty generation & POD verification', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', desc: 'Vehicle inspections before releases', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] }
+        { icon: Truck, label: 'Truck Manager', path: '/truck-manager', desc: 'Track physical trucks & managers' },
+        { icon: MapPin, label: 'GPS Tracking', path: '/gps', desc: 'Live vehicle telematics & geo-fencing' },
+        { icon: CircleDashed, label: 'Tyres & Battery', path: '/tyres', desc: 'Track tyre serial numbers & replacement lifecycles' },
+        { icon: FileBox, label: 'Vehicle Docs', path: '/truck-docs', desc: 'RC, Insurance & permit renewals' },
+        { icon: QrCode, label: 'Vehicle QR Pass Hub', path: '/truck-docs?view=qr_pass', desc: 'Instant QR gate passes for security checkpoints' },
+        { icon: Wrench, label: 'Fleet Maintenance', path: '/fleet-maintenance', desc: 'Servicing logs, problems & inventory' },
+        { icon: Droplet, label: 'Fuel Tracker & AI Scanner', path: '/fuel-tracker', desc: 'Fuel purchases, efficiency KMPL & receipts' },
+        { icon: ClipboardList, label: 'Trip Logs', path: '/trip-logs', desc: 'Manage & dispatch trip schedules' },
+        { icon: Navigation, label: 'Track Shipment', path: '/tracking', desc: 'Live consignment tracking & ETA status' },
+        { icon: MapPin, label: 'Route Master', path: '/routes-master', desc: 'Route rate configurations & origins' },
+        { icon: Package, label: 'Inventory', path: '/inventory', desc: 'Manage spare parts stock levels' },
+        { icon: FileBox, label: 'Lorry Receipts & POD', path: '/pod-management', desc: 'Official LR / Bilty generation & POD verification' },
+        { icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', desc: 'Vehicle inspections before releases' }
       ]
     },
     {
@@ -86,25 +94,24 @@ export default function LaunchpadPage() {
       gradient: 'from-amber-500/20 via-orange-500/10 to-transparent border-amber-500/30',
       iconBg: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
       items: [
-        { icon: Receipt, label: 'Cashbook', path: '/cashbook', desc: 'Petty cash balances & double entry ledger', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: FileText, label: 'Expenses', path: '/expenses', desc: 'Track fleet and operational overheads', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: AlertTriangle, label: 'Payment Requests', path: '/payment-requests', desc: 'Submit and approve vendor requests', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: Receipt, label: 'Invoice Matching', path: '/invoice-matching', desc: 'Match invoices with client trips and PODs', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: CreditCard, label: 'FASTag Management', path: '/fastag', desc: 'Truck balances, tolls & recharge history', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: CreditCard, label: 'Credit Cards', path: '/credit-cards', desc: 'Manage company cards & payments', roles: ['super_admin', 'admin'] },
-        { icon: Receipt, label: 'GST ITC Tax', path: '/gst-itc', desc: 'Tax liabilities, credits and GST filings', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: ShieldAlert, label: 'Insurance Manager', path: '/insurance-manager', desc: 'Fleet policy renewals, claims & broker rates', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: ShieldCheck, label: 'Company Vault', path: '/company-vault', desc: 'Secure encrypted document & certificate storage', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: Calculator, label: 'EMI Calculator', path: '/emi-calculator', desc: 'Calculate vehicle loan profiles & amortization', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: FileText, label: 'Payroll', path: '/payroll', desc: 'Staff salaries, advances & monthly disbursements', roles: ['super_admin', 'admin'] },
-        { icon: FileText, label: 'Quotes & B2B Contracts', path: '/quotes-manager', desc: 'B2B rate cards, proposals & quotation PDFs', roles: ['super_admin', 'admin', 'manager'] }
+        { icon: Receipt, label: 'Cashbook', path: '/cashbook', desc: 'Petty cash balances & double entry ledger' },
+        { icon: FileText, label: 'Expenses', path: '/expenses', desc: 'Track fleet and operational overheads' },
+        { icon: AlertTriangle, label: 'Payment Requests', path: '/payment-requests', desc: 'Submit and approve vendor requests' },
+        { icon: CreditCard, label: 'FASTag Management', path: '/fastag', desc: 'Truck balances, tolls & recharge history' },
+        { icon: CreditCard, label: 'Credit Cards', path: '/credit-cards', desc: 'Manage company cards & payments' },
+        { icon: Receipt, label: 'GST ITC Tax', path: '/gst-itc', desc: 'Tax liabilities, credits and GST filings' },
+        { icon: ShieldAlert, label: 'Insurance Manager', path: '/insurance-manager', desc: 'Fleet policy renewals, claims & broker rates' },
+        { icon: ShieldCheck, label: 'Company Vault', path: '/company-vault', desc: 'Secure encrypted document & certificate storage' },
+        { icon: Calculator, label: 'EMI Calculator', path: '/emi-calculator', desc: 'Calculate vehicle loan profiles & amortization' },
+        { icon: FileText, label: 'Payroll', path: '/payroll', desc: 'Staff salaries, advances & monthly disbursements' },
+        { icon: FileText, label: 'Quotes & B2B Contracts', path: '/quotes-manager', desc: 'B2B rate cards, proposals & quotation PDFs' }
       ]
     },
     {
       id: 'staff_hr',
       title: 'Staff & HR',
-      shortTitle: 'Staff',
-      subtitle: 'Drivers, employees, attendance & hiring',
+      shortTitle: 'HR',
+      subtitle: 'Employees, drivers, attendance & recruitment',
       icon: Users,
       accentColor: 'text-violet-400',
       activeBg: 'bg-violet-500 text-slate-950 font-black shadow-lg shadow-violet-500/25 border-violet-400',
@@ -112,17 +119,17 @@ export default function LaunchpadPage() {
       gradient: 'from-violet-500/20 via-purple-500/10 to-transparent border-violet-500/30',
       iconBg: 'bg-violet-500/15 text-violet-400 border border-violet-500/25',
       items: [
-        { icon: Users, label: 'Employees', path: '/employees', desc: 'Driver profiles and active staff directory', roles: ['super_admin', 'admin', 'manager', 'supervisor'] },
-        { icon: FileBox, label: 'Employee Docs', path: '/employee-docs', desc: 'ID proofs, DL copies & driver contracts', roles: ['super_admin', 'admin', 'supervisor'] },
-        { icon: CalendarDays, label: 'Attendance Hub', path: '/dashboard/attendance', desc: 'Daily biometric and manual attendance logs', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: UserPlus, label: 'Recruitment Portal', path: '/recruitment', desc: 'Driver hiring pipeline, tests & test drives', roles: ['super_admin', 'admin', 'manager'] }
+        { icon: Users, label: 'Employees', path: '/employees', desc: 'Manage company workforce & designations' },
+        { icon: FileBox, label: 'Employee Docs', path: '/employee-docs', desc: 'KYC records, Aadhaar, PAN & licences' },
+        { icon: CalendarDays, label: 'Attendance Hub', path: '/dashboard/attendance', desc: 'Daily roll call, duty shifts & leaves' },
+        { icon: UserPlus, label: 'Recruitment Portal', path: '/recruitment', desc: 'Driver hiring, interviews & test drives' }
       ]
     },
     {
       id: 'crm_partners',
       title: 'CRM & Partners',
       shortTitle: 'CRM',
-      subtitle: 'Clients, vendors, credit limits & leads',
+      subtitle: 'Clients, vendors, brokers & directory',
       icon: Building2,
       accentColor: 'text-rose-400',
       activeBg: 'bg-rose-500 text-slate-950 font-black shadow-lg shadow-rose-500/25 border-rose-400',
@@ -130,19 +137,17 @@ export default function LaunchpadPage() {
       gradient: 'from-rose-500/20 via-pink-500/10 to-transparent border-rose-500/30',
       iconBg: 'bg-rose-500/15 text-rose-400 border border-rose-500/25',
       items: [
-        { icon: Users, label: 'Clients List', path: '/clients', desc: 'Client accounts, billing terms & credit limits', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: ShieldAlert, label: 'Credit Control', path: '/credit-control', desc: 'Track overdue balances & automated follow-ups', roles: ['super_admin', 'admin', 'manager'] },
-        { icon: Building2, label: 'Vendor Registration Tracker', path: '/vendor-tracker', desc: 'Subcontractor empanelment & compliance status', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: Building2, label: 'Transport CRM', path: '/transport-crm', desc: 'Shipper interactions, deals & lane history', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: Target, label: 'Sales & Vendor Leads', path: '/sales-leads', desc: 'New freight opportunities & vendor inquiries', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: Contact2, label: 'Contacts Directory', path: '/contacts', desc: 'Shippers, brokers, mechanics & emergency contacts', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] }
+        { icon: Users, label: 'Clients List', path: '/clients', desc: 'Corporate shippers, billing GST & addresses' },
+        { icon: Building2, label: 'Vendor Registration Tracker', path: '/vendor-tracker', desc: 'New vendor onboarding & document status' },
+        { icon: Building2, label: 'Transport CRM', path: '/transport-crm', desc: 'Broker accounts, rate contracts & deals' },
+        { icon: Contact2, label: 'Contacts Directory', path: '/contacts', desc: 'Unified directory of clients, drivers & mechanics' }
       ]
     },
     {
       id: 'studio_tools',
       title: 'Studio & Tools',
       shortTitle: 'Tools',
-      subtitle: 'Mail, calendar, tasks & workflow engine',
+      subtitle: 'Mail, calendar, tasks & backup',
       icon: Briefcase,
       accentColor: 'text-indigo-400',
       activeBg: 'bg-indigo-500 text-slate-950 font-black shadow-lg shadow-indigo-500/25 border-indigo-400',
@@ -150,13 +155,12 @@ export default function LaunchpadPage() {
       gradient: 'from-indigo-500/20 via-blue-500/10 to-transparent border-indigo-500/30',
       iconBg: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/25',
       items: [
-        { icon: Briefcase, label: 'Branding Hub', path: '/branding-hub', desc: 'Official letterheads, badges & company assets', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user'] },
-        { icon: Mail, label: 'Business Mail', path: '/business-mail', desc: 'Communication portal & corporate mailboxes', roles: ['super_admin', 'admin', 'manager', 'dispatcher'] },
-        { icon: CalendarDays, label: 'Calendar', path: '/calendar', desc: 'Monthly dispatch schedules & compliance reminders', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: Bell, label: 'Reminders', path: '/reminders', desc: 'Stay updated on vehicle & regulatory deadlines', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: CheckSquare, label: 'To-Do List', path: '/todo', desc: 'Daily operational task checklist manager', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: CheckSquare, label: 'Workflow Command Center', path: '/todo', desc: 'Enterprise tasks, approvals & automated sync', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] },
-        { icon: Database, label: 'Data Backup & Export', path: '/data-backup', desc: 'Export full PDF, Excel & CSV database dumps', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user'] }
+        { icon: Briefcase, label: 'Branding Hub', path: '/branding-hub', desc: 'Official letterheads, badges & company assets' },
+        { icon: Mail, label: 'Business Mail', path: '/business-mail', desc: 'Communication portal & corporate mailboxes' },
+        { icon: CalendarDays, label: 'Calendar', path: '/calendar', desc: 'Monthly dispatch schedules & compliance reminders' },
+        { icon: Bell, label: 'Reminders', path: '/reminders', desc: 'Stay updated on vehicle & regulatory deadlines' },
+        { icon: CheckSquare, label: 'To-Do List', path: '/todo', desc: 'Daily operational task checklist manager' },
+        { icon: Database, label: 'Data Backup & Export', path: '/data-backup', desc: 'Export full PDF, Excel & CSV database dumps' }
       ]
     },
     {
@@ -171,130 +175,133 @@ export default function LaunchpadPage() {
       gradient: 'from-slate-500/20 via-zinc-500/10 to-transparent border-slate-500/30',
       iconBg: 'bg-slate-800 text-slate-200 border border-slate-700',
       items: [
-        { icon: Users, label: 'User Management', path: '/dashboard/users', desc: 'Portal system users, invitations & roles', roles: ['superuser', 'super_admin', 'admin'] },
-        { icon: ShieldCheck, label: 'Audit & Security Logs', path: '/dashboard/audit-logs', desc: 'System event audits, logins & security tracking', roles: ['superuser', 'super_admin'] },
-        { icon: FileText, label: 'Reports Center', path: '/reports', desc: 'Comprehensive business reports & summaries', roles: ['super_admin', 'admin'] },
-        { icon: Settings, label: 'Settings', path: '/dashboard/profile', desc: 'Personal profile, security & system options', roles: ['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor'] }
+        { icon: Users, label: 'User Management', path: '/dashboard/users', desc: 'Portal system users, invitations & roles' },
+        { icon: ShieldCheck, label: 'Audit & Security Logs', path: '/dashboard/audit-logs', desc: 'System event audits, logins & security tracking' },
+        { icon: FileText, label: 'Reports Center', path: '/reports', desc: 'Comprehensive business reports & summaries' },
+        { icon: Settings, label: 'Settings', path: '/dashboard/profile', desc: 'Personal profile, security & system options' }
       ]
     }
   ], []);
 
-  // Filter groups according to user role
-  const authorizedGroups = useMemo(() => {
-    return menuGroups.map(group => {
-      const filteredItems = group.items.filter(item => {
-        if (isSuper) return true;
-        return (item.roles || []).includes(role);
-      });
-      return {
-        ...group,
-        items: filteredItems,
-        count: filteredItems.length
-      };
-    }).filter(group => group.count > 0);
-  }, [menuGroups, isSuper, role]);
+  // Display all groups and items unconditionally
+  const allGroups = useMemo(() => {
+    return menuGroups.map(group => ({
+      ...group,
+      count: group.items.length
+    }));
+  }, [menuGroups]);
 
-  // Total modules count
+  // Total modules count (51 full modules)
   const totalModulesCount = useMemo(() => {
-    return authorizedGroups.reduce((acc, g) => acc + g.count, 0);
-  }, [authorizedGroups]);
+    return allGroups.reduce((acc, g) => acc + g.count, 0);
+  }, [allGroups]);
 
-  // Categories list for tab pills
-  const categoriesList = useMemo(() => {
-    const list = [{ title: 'All', count: totalModulesCount, id: 'all', icon: Sparkles }];
-    authorizedGroups.forEach(g => {
-      list.push({ title: g.title, count: g.count, id: g.id, icon: g.icon, activeBg: g.activeBg, accentColor: g.accentColor });
-    });
-    return list;
-  }, [authorizedGroups, totalModulesCount]);
-
-  // Filter groups based on search and activeCategory
+  // Filter groups & items by search query and active category tab
   const displayedGroups = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    return authorizedGroups.map(group => {
-      if (activeCategory !== 'All' && group.title !== activeCategory) {
-        return null;
-      }
-      const matchedItems = group.items.filter(item => {
-        if (!query) return true;
-        return (
-          item.label.toLowerCase().includes(query) ||
-          item.desc.toLowerCase().includes(query)
+    const q = searchQuery.toLowerCase().trim();
+
+    return allGroups
+      .filter(group => {
+        if (activeCategory === 'All') return true;
+        return group.title === activeCategory || group.id === activeCategory;
+      })
+      .map(group => {
+        if (!q) return group;
+        const matchingItems = group.items.filter(item =>
+          item.label.toLowerCase().includes(q) ||
+          (item.desc && item.desc.toLowerCase().includes(q)) ||
+          item.path.toLowerCase().includes(q)
         );
-      });
-      if (matchedItems.length === 0) return null;
-      return {
-        ...group,
-        items: matchedItems
-      };
-    }).filter(Boolean);
-  }, [authorizedGroups, activeCategory, searchQuery]);
+        return {
+          ...group,
+          items: matchingItems
+        };
+      })
+      .filter(group => group.items.length > 0);
+  }, [allGroups, searchQuery, activeCategory]);
 
   return (
-    <div className="min-h-screen bg-[#070A13] text-white px-4 pt-4 pb-28 md:hidden">
-      {/* Brand Header */}
+    <div className="md:hidden min-h-screen bg-slate-950 text-slate-100 p-4 pb-28 font-sans select-none">
+      {/* Top Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <span className="text-[10px] tracking-widest font-black uppercase text-cyan-400/90 flex items-center gap-1">
-            <span>JAI BHAVANI CARGO</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 tracking-wider uppercase">
+            <span>Jai Bhavani Cargo</span>
             <span className="text-slate-600">•</span>
-            <span className="text-slate-400">OPERATIONS PORTAL</span>
-          </span>
-          <h1 className="text-2xl font-black tracking-tight mt-0.5 flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-400">
-            App Hub <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+            <span className="text-cyan-400">Operations Portal</span>
+          </div>
+          <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2 mt-0.5">
+            App Hub <Sparkles className="w-4 h-4 text-amber-400 inline" />
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <div className="px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-mono text-cyan-400 font-bold">
+          <div className="px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-mono font-bold text-cyan-400">
             {totalModulesCount} Modules
           </div>
-          <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center font-extrabold text-xs text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]">
-            {(currentUser?.full_name || currentUser?.name || 'U').charAt(0).toUpperCase()}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white text-xs font-black shadow-md shadow-cyan-900/30">
+            {((currentUser?.full_name || currentUser?.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}
           </div>
         </div>
       </div>
 
-      {/* Modern App Search */}
+      {/* Instant Search Bar */}
       <div className="relative mb-3.5">
+        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
         <input
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search all modules (e.g. cashbook, tyres, bilty)..."
-          className="w-full bg-slate-900/80 border border-slate-800 rounded-2xl py-3 pl-11 pr-10 text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 backdrop-blur-md transition-all text-white shadow-inner"
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search all modules (e.g. cashbook, tyres, bilty, lr)..."
+          className="w-full pl-9 pr-9 py-2.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all shadow-inner"
         />
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         {searchQuery && (
-          <button 
+          <button
             type="button"
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-slate-300 transition"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
           >
-            <X className="w-3 h-3" />
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      {/* Interactive Categorized Sidebar Tabs Bar (with icons & module count badges) */}
-      <div 
+      {/* Category Tabs Bar: All 7 Sidebar Sections */}
+      <div
         ref={tabsScrollRef}
-        className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none snap-x snap-mandatory -mx-4 px-4 scroll-smooth"
+        className="flex items-center gap-2 overflow-x-auto pb-2.5 pt-0.5 scrollbar-none mb-3 -mx-4 px-4 scroll-smooth"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        {categoriesList.map(cat => {
+        {/* 'All' Tab */}
+        <button
+          type="button"
+          onClick={() => setActiveCategory('All')}
+          className={'shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ' + (
+            activeCategory === 'All'
+              ? 'bg-cyan-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25 border-cyan-400 scale-[1.02]'
+              : 'bg-slate-900/90 text-slate-300 border-slate-800/80 hover:bg-slate-800 hover:text-white'
+          )}
+        >
+          <span>All</span>
+          <span className={'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black ' + (
+            activeCategory === 'All' ? 'bg-black/20 text-slate-950' : 'bg-slate-800 text-slate-400'
+          )}>
+            {totalModulesCount}
+          </span>
+        </button>
+
+        {/* 7 Sidebar Category Tabs */}
+        {allGroups.map(cat => {
           const isActive = activeCategory === cat.title;
           const IconComp = cat.icon;
           return (
             <button
               key={cat.id}
               type="button"
-              onClick={() => {
-                setActiveCategory(cat.title);
-                setSearchQuery('');
-              }}
-              className={'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all snap-align-start cursor-pointer border ' + (
+              onClick={() => setActiveCategory(cat.title)}
+              className={'shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap ' + (
                 isActive
-                  ? (cat.activeBg || 'bg-cyan-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25 border-cyan-400 scale-[1.02]')
-                  : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  ? cat.activeBg + ' scale-[1.02]'
+                  : 'bg-slate-900/90 text-slate-300 border-slate-800/80 hover:bg-slate-800 hover:text-white'
               )}
             >
               <IconComp className={'w-3.5 h-3.5 ' + (isActive ? 'text-slate-950' : (cat.accentColor || 'text-slate-400'))} />
@@ -309,7 +316,7 @@ export default function LaunchpadPage() {
         })}
       </div>
 
-      {/* When a specific category is selected, show an executive banner header */}
+      {/* Category Banner Header when category selected */}
       {activeCategory !== 'All' && displayedGroups.length > 0 && (() => {
         const currentGroup = displayedGroups[0];
         const GroupIcon = currentGroup.icon;
@@ -387,11 +394,30 @@ export default function LaunchpadPage() {
                   return (
                     <div
                       key={item.path + item.label}
-                      onClick={() => navigate(item.path)}
+                      onClick={() => goTo(item.path)}
+                      role="link"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          goTo(item.path);
+                        }
+                      }}
                       className={'flex flex-col items-start p-3 rounded-2xl border bg-gradient-to-br ' + group.gradient + ' transition-all cursor-pointer relative overflow-hidden group/item active:scale-[0.97] shadow-sm hover:shadow-md hover:border-slate-700'}
                     >
+                      {/* Overlay link for guaranteed mobile touch and click navigation */}
+                      <a
+                        href={item.path}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goTo(item.path);
+                        }}
+                        className="absolute inset-0 z-10 block"
+                        aria-label={item.label}
+                      />
+
                       {/* Icon & Arrow */}
-                      <div className="w-full flex items-center justify-between mb-2">
+                      <div className="w-full flex items-center justify-between mb-2 pointer-events-none">
                         <div className={'w-8 h-8 rounded-xl flex items-center justify-center ' + group.iconBg}>
                           <ItemIcon className="w-4 h-4" />
                         </div>
@@ -399,7 +425,7 @@ export default function LaunchpadPage() {
                       </div>
 
                       {/* Title & Desc */}
-                      <div className="w-full mt-auto">
+                      <div className="w-full mt-auto pointer-events-none">
                         <h3 className="text-xs font-bold text-white leading-tight line-clamp-1">
                           {item.label}
                         </h3>
