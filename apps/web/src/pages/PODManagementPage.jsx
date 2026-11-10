@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
+import MultiPodViewerModal from '@/components/MultiPodViewerModal.jsx';
+import { getPodFiles, compressDocumentBatch, formatBytes } from '@/lib/imageCompressor.js';
 
 export default function PODManagementPage() {
   const [trips, setTrips] = useState([]);
@@ -15,6 +17,8 @@ export default function PODManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
+  const [viewingPodTrip, setViewingPodTrip] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(null);
 
   const fetchPODTrips = async () => {
     setLoading(true);

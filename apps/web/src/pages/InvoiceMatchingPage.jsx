@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import pb from '@/lib/pocketbaseClient.js';
+import { getPodFiles } from '@/lib/imageCompressor.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
@@ -125,7 +126,8 @@ export default function InvoiceMatchingPage() {
       // A trip has POD if it has files in delivery_proofs or pod_file/pod_link in trip_logs
       const relatedProofs = proofs.filter(p => p.trip_id === trip.id);
       const hasProofRecord = relatedProofs.length > 0;
-      const hasTripPod = !!trip.pod_file || !!trip.pod_link;
+      const podFiles = getPodFiles(trip);
+      const hasTripPod = podFiles.length > 0 || !!trip.pod_link;
       const hasPOD = hasProofRecord || hasTripPod;
       
       let podStatus = 'Missing';

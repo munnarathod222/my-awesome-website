@@ -2157,7 +2157,7 @@
         "help": "",
         "hidden": false,
         "id": "file812748463",
-        "maxSelect": 1,
+        "maxSelect": 10,
         "maxSize": 20971520,
         "mimeTypes": null,
         "name": "pod_file",

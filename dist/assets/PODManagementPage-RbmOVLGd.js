@@ -1,3 +1,83 @@
+
+function _compressDocImg(file, maxDim = 2048, quality = 0.82) {
+  if (!file) return Promise.resolve(file);
+  if (file.type === "application/pdf" || (file.name && file.name.toLowerCase().endsWith(".pdf"))) {
+    return Promise.resolve(file);
+  }
+  if (!file.type || !file.type.startsWith("image/")) {
+    return Promise.resolve(file);
+  }
+  return new Promise((resolve) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d", { alpha: false });
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob || blob.size >= file.size) {
+                resolve(file);
+                return;
+              }
+              const cleanName = (file.name || "pod.jpg").replace(/\.[^/.]+$/, "") + ".jpg";
+              const compressedFile = new File([blob], cleanName, {
+                type: "image/jpeg",
+                lastModified: Date.now()
+              });
+              resolve(compressedFile);
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    } catch (err) {
+      resolve(file);
+    }
+  });
+}
+
+function _getPodFilesList(trip) {
+  if (!trip || !trip.pod_file) return [];
+  if (Array.isArray(trip.pod_file)) {
+    return trip.pod_file.filter(Boolean);
+  }
+  if (typeof trip.pod_file === "string") {
+    const s = trip.pod_file.trim();
+    if (!s) return [];
+    if (s.startsWith("[") && s.endsWith("]")) {
+      try {
+        const arr = JSON.parse(s);
+        if (Array.isArray(arr)) return arr.filter(Boolean);
+      } catch (e) {}
+    }
+    return [s];
+  }
+  return [];
+}
+
 import {
   r as React,
   bs as Helmet,
@@ -210,21 +290,32 @@ function LorryReceiptsPodHubPage() {
     loadData();
   }, []);
   const handleUploadPod = async (e, tripId) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFiles = Array.from(e.target.files || []);
+    if (!rawFiles.length) return;
     setUploadingTripId(tripId);
+    const toastId = toast.loading(`Compressing & preparing ${rawFiles.length} POD file(s)...`);
     try {
+      const origTotal = rawFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+      const compressedFiles = await Promise.all(rawFiles.map(f => _compressDocImg(f, 2048, 0.82)));
+      const compTotal = compressedFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+      const pctSaved = origTotal > 0 ? Math.round(((origTotal - compTotal) / origTotal) * 100) : 0;
+
       const formData = new FormData();
-      formData.append("pod_file", file);
+      for (const f of compressedFiles) {
+        formData.append("pod_file", f);
+      }
       formData.append("pod_status", "Uploaded");
-      await pb.collection("trip_logs").update(tripId, formData);
-      toast.success("POD document uploaded successfully!");
-      loadData();
+      await pb.collection("trip_logs").update(tripId, formData, { $autoCancel: false });
+      
+      const savedMsg = pctSaved > 0 ? ` (Saved ${pctSaved}% data)` : "";
+      toast.success(`Successfully uploaded ${compressedFiles.length} POD file(s)!${savedMsg}`, { id: toastId });
+      await loadData();
     } catch (err) {
-      console.error("POD upload failed:", err);
-      toast.error("Failed to upload POD document.");
+      console.error("Upload error:", err);
+      toast.error("Failed to upload POD: " + (err.message || "Unknown error"), { id: toastId });
     } finally {
       setUploadingTripId(null);
+      if (e.target) e.target.value = "";
     }
   };
   const handleTogglePodVerify = async (trip) => {
@@ -619,12 +710,17 @@ function LorryReceiptsPodHubPage() {
       ), trip.pod_file ? /* @__PURE__ */ React.createElement(
         "button",
         {
-          onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, trip.pod_file),
-            tripId: trip.trip_id || trip.id,
-            truck: trip.truck_number,
-            client: clientName
-          }),
+          onClick: () => {
+    const pFiles = _getPodFilesList(trip);
+    setViewingPodDoc({
+      trip: trip,
+      files: pFiles.map(fn => ({ filename: fn, url: pb.files.getUrl(trip, fn) })),
+      activeIdx: 0,
+      tripId: trip.trip_id || trip.id,
+      truck: trip.truck_number,
+      client: clientName
+    });
+  },
           className: "p-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-lg cursor-pointer transition",
           title: "View Signed POD"
         },
@@ -643,8 +739,7 @@ function LorryReceiptsPodHubPage() {
             type: "file",
             id: "upload-lr-" + trip.id,
             className: "hidden",
-            accept: "image/*,application/pdf",
-            onChange: (e) => handleUploadPod(e, trip.id)
+            multiple: true, accept: "image/*,application/pdf", onChange: (e) => handleUploadPod(e, trip.id)
           }
         )
       ) : null)));
@@ -662,12 +757,17 @@ function LorryReceiptsPodHubPage() {
       return /* @__PURE__ */ React.createElement("tr", { key: trip.id, className: "hover:bg-slate-800/40 transition" }, /* @__PURE__ */ React.createElement("td", { className: "p-3.5 pl-5" }, /* @__PURE__ */ React.createElement("p", { className: "font-bold text-white font-mono" }, trip.trip_id || trip.id?.slice(0, 10) || "TRIP"), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 mt-1 inline-block" }, lrNum)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-slate-100" }, clientName), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 mt-0.5" }, isReq ? /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30" }, "Mandated POD") : /* @__PURE__ */ React.createElement("span", { className: "px-1.5 py-0.2 rounded text-[9px] text-slate-500 bg-slate-800 border border-slate-700" }, "Optional"))), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, /* @__PURE__ */ React.createElement("p", { className: "font-mono font-bold text-slate-200" }, trip.truck_number || "TG12U2637"), /* @__PURE__ */ React.createElement("p", { className: "text-[11px] text-slate-400" }, trip.driver_name || "Assigned Driver")), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300" }, formatRoute(trip)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5 text-slate-300 font-mono" }, formatTripDate(trip.date)), /* @__PURE__ */ React.createElement("td", { className: "p-3.5" }, hasFile ? /* @__PURE__ */ React.createElement(
         "button",
         {
-          onClick: () => setViewingPodDoc({
-            url: pb.files.getUrl(trip, trip.pod_file),
-            tripId: trip.trip_id || trip.id,
-            truck: trip.truck_number,
-            client: clientName
-          }),
+          onClick: () => {
+    const pFiles = _getPodFilesList(trip);
+    setViewingPodDoc({
+      trip: trip,
+      files: pFiles.map(fn => ({ filename: fn, url: pb.files.getUrl(trip, fn) })),
+      activeIdx: 0,
+      tripId: trip.trip_id || trip.id,
+      truck: trip.truck_number,
+      client: clientName
+    });
+  },
           className: "flex items-center gap-1.5 px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold cursor-pointer transition"
         },
         /* @__PURE__ */ React.createElement(EyeIcon, { className: "w-3.5 h-3.5" }),
@@ -696,8 +796,7 @@ function LorryReceiptsPodHubPage() {
             type: "file",
             id: "pod-upload-" + trip.id,
             className: "hidden",
-            accept: "image/*,application/pdf",
-            onChange: (e) => handleUploadPod(e, trip.id)
+            multiple: true, accept: "image/*,application/pdf", onChange: (e) => handleUploadPod(e, trip.id)
           }
         )
       ), (hasFile || hasLink) && /* @__PURE__ */ React.createElement(
@@ -942,47 +1041,173 @@ function LorryReceiptsPodHubPage() {
         padding: "6px 8px"
       } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" } }, "FOR ", companySettings.company_name), /* @__PURE__ */ React.createElement("div", { style: { margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" } }, companySettings.signatory_name || "Vinod Kumar Rathod"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" } }, companySettings.signatory_title || "Managing Director", " \u2022 AUTHORISED SIGNATORY")))
     )
-  )))), viewingPodDoc && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client)), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setViewingPodDoc(null),
-      className: "p-1 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[300px]" }, viewingPodDoc.url.toLowerCase().endsWith(".pdf") ? /* @__PURE__ */ React.createElement(
-    "iframe",
-    {
-      src: viewingPodDoc.url,
-      className: "w-full h-[550px] rounded-xl border border-slate-800",
-      title: "POD PDF Document"
-    }
-  ) : /* @__PURE__ */ React.createElement(
-    "img",
-    {
-      src: viewingPodDoc.url,
-      alt: "Signed POD",
-      className: "max-h-[550px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
-    }
-  )), /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-end gap-2" }, /* @__PURE__ */ React.createElement(
-    "a",
-    {
-      href: viewingPodDoc.url,
-      target: "_blank",
-      rel: "noopener noreferrer",
-      download: true,
-      className: "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement(DownloadIcon, { className: "w-3.5 h-3.5" }),
-    /* @__PURE__ */ React.createElement("span", null, "Download File")
-  ), /* @__PURE__ */ React.createElement(
-    Button,
-    {
-      variant: "outline",
-      onClick: () => setViewingPodDoc(null),
-      className: "rounded-xl border-slate-700 text-slate-300"
-    },
-    "Close Preview"
-  )))), isCreatingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-5 h-5 text-amber-400" }), /* @__PURE__ */ React.createElement("span", null, "Issue New Lorry Receipt / Consignment Note")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Generate official transporter consignment note (LR / Bilty) with automated tracking")), /* @__PURE__ */ React.createElement(
+  )))), viewingPodDoc && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" },
+  /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" },
+    /* Header */
+    /* @__PURE__ */ React.createElement("div", { className: "p-4 px-6 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3" },
+      /* @__PURE__ */ React.createElement("div", { className: "min-w-0" },
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          /* @__PURE__ */ React.createElement("h3", { className: "font-black text-sm sm:text-base text-white tracking-wide truncate" }, "Signed Proof of Delivery (POD)"),
+          (viewingPodDoc.files && viewingPodDoc.files.length > 0) && /* @__PURE__ */ React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 shrink-0" },
+            "Page " + ((viewingPodDoc.activeIdx || 0) + 1) + " of " + viewingPodDoc.files.length
+          )
+        ),
+        /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5 truncate" },
+          "Trip: " + viewingPodDoc.tripId + " • Truck: " + viewingPodDoc.truck + " • Client: " + viewingPodDoc.client
+        )
+      ),
+      /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 shrink-0" },
+        /* Add More PODs button */
+        /* @__PURE__ */ React.createElement("label", {
+          className: "px-2.5 py-1.5 rounded-xl bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+        },
+          /* @__PURE__ */ React.createElement("span", null, "+ Add Page"),
+          /* @__PURE__ */ React.createElement("input", {
+            type: "file",
+            className: "hidden",
+            multiple: true,
+            accept: "image/*,application/pdf",
+            onChange: async (e) => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length || !viewingPodDoc.trip) return;
+              const toastId = toast.loading("Compressing & uploading " + files.length + " page(s)...");
+              try {
+                const comp = await Promise.all(files.map(f => _compressDocImg(f, 2048, 0.82)));
+                const fd = new FormData();
+                for (const f of comp) fd.append("pod_file", f);
+                const updated = await pb.collection("trip_logs").update(viewingPodDoc.trip.id, fd, { $autoCancel: false });
+                toast.success("Added " + comp.length + " page(s) successfully!", { id: toastId });
+                const updatedFiles = _getPodFilesList(updated);
+                setViewingPodDoc({
+                  ...viewingPodDoc,
+                  trip: updated,
+                  files: updatedFiles.map(fn => ({ filename: fn, url: pb.files.getUrl(updated, fn) })),
+                  activeIdx: updatedFiles.length - 1
+                });
+                loadData();
+              } catch (err) {
+                toast.error("Upload failed: " + (err.message || "Error"), { id: toastId });
+              }
+            }
+          })
+        ),
+        /* Close button */
+        /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setViewingPodDoc(null),
+          className: "p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+        }, /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" }))
+      )
+    ),
+    /* Main View Area */
+    (() => {
+      const activeFile = (viewingPodDoc.files && viewingPodDoc.files[viewingPodDoc.activeIdx || 0]) || { url: viewingPodDoc.url, filename: "pod" };
+      const isPdf = (activeFile.url || "").toLowerCase().includes(".pdf");
+      const hasMultiple = viewingPodDoc.files && viewingPodDoc.files.length > 1;
+      return /* @__PURE__ */ React.createElement("div", { className: "relative p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-950/80 min-h-[340px]" },
+        /* Prev button */
+        hasMultiple && /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setViewingPodDoc(prev => ({
+            ...prev,
+            activeIdx: ((prev.activeIdx || 0) - 1 + prev.files.length) % prev.files.length
+          })),
+          className: "absolute left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 flex items-center justify-center font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition cursor-pointer"
+        }, "‹"),
+        /* Document Content */
+        isPdf ? /* @__PURE__ */ React.createElement("iframe", {
+          src: activeFile.url,
+          className: "w-full h-[520px] rounded-xl border border-slate-800",
+          title: "POD PDF Document"
+        }) : /* @__PURE__ */ React.createElement("img", {
+          src: activeFile.url,
+          alt: "Signed POD Page " + ((viewingPodDoc.activeIdx || 0) + 1),
+          className: "max-h-[520px] w-auto max-w-full rounded-xl shadow-lg border border-slate-800 object-contain"
+        }),
+        /* Next button */
+        hasMultiple && /* @__PURE__ */ React.createElement("button", {
+          onClick: () => setViewingPodDoc(prev => ({
+            ...prev,
+            activeIdx: ((prev.activeIdx || 0) + 1) % prev.files.length
+          })),
+          className: "absolute right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 flex items-center justify-center font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition cursor-pointer"
+        }, "›")
+      );
+    })(),
+    /* Thumbnail Strip (if multiple) */
+    (viewingPodDoc.files && viewingPodDoc.files.length > 1) && /* @__PURE__ */ React.createElement("div", { className: "px-4 py-2 bg-slate-950/90 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto select-none" },
+      viewingPodDoc.files.map((f, idx) => {
+        const isCurrent = idx === (viewingPodDoc.activeIdx || 0);
+        const isPdfThumb = (f.url || "").toLowerCase().includes(".pdf");
+        return /* @__PURE__ */ React.createElement("button", {
+          key: idx,
+          onClick: () => setViewingPodDoc(prev => ({ ...prev, activeIdx: idx })),
+          className: "w-12 h-14 rounded-lg overflow-hidden border-2 shrink-0 relative transition cursor-pointer " + (isCurrent ? "border-primary ring-2 ring-primary/40 scale-105" : "border-slate-800 opacity-60 hover:opacity-100")
+        },
+          isPdfThumb ? /* @__PURE__ */ React.createElement("div", { className: "w-full h-full bg-red-950/40 text-red-400 font-bold text-[9px] flex items-center justify-center flex-col" }, "PDF", /* @__PURE__ */ React.createElement("span", { className: "text-[8px]" }, "P." + (idx + 1))) :
+          /* @__PURE__ */ React.createElement("img", { src: f.url, alt: "Page " + (idx + 1), className: "w-full h-full object-cover" }),
+          /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-0 inset-x-0 bg-black/80 text-[8px] text-center font-bold text-slate-300" }, (idx + 1))
+        );
+      })
+    ),
+    /* Footer */
+    (() => {
+      const activeFile = (viewingPodDoc.files && viewingPodDoc.files[viewingPodDoc.activeIdx || 0]) || { url: viewingPodDoc.url, filename: "pod" };
+      return /* @__PURE__ */ React.createElement("div", { className: "p-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-2" },
+        /* Left: Delete this page */
+        (viewingPodDoc.trip && activeFile.filename) ? /* @__PURE__ */ React.createElement("button", {
+          onClick: async () => {
+            if (!window.confirm("Are you sure you want to delete this POD page?")) return;
+            const toastId = toast.loading("Removing POD page...");
+            try {
+              const fd = new FormData();
+              fd.append("pod_file-", activeFile.filename);
+              const updated = await pb.collection("trip_logs").update(viewingPodDoc.trip.id, fd, { $autoCancel: false });
+              const updatedFiles = _getPodFilesList(updated);
+              toast.success("Page deleted successfully!", { id: toastId });
+              if (updatedFiles.length === 0) {
+                setViewingPodDoc(null);
+              } else {
+                setViewingPodDoc({
+                  ...viewingPodDoc,
+                  trip: updated,
+                  files: updatedFiles.map(fn => ({ filename: fn, url: pb.files.getUrl(updated, fn) })),
+                  activeIdx: Math.min(viewingPodDoc.activeIdx || 0, updatedFiles.length - 1)
+                });
+              }
+              loadData();
+            } catch (err) {
+              toast.error("Failed to delete page: " + (err.message || "Error"), { id: toastId });
+            }
+          },
+          className: "text-xs font-semibold text-rose-400 hover:text-rose-300 hover:underline px-2 py-1 cursor-pointer"
+        }, "🗑️ Delete Page") : /* @__PURE__ */ React.createElement("div", null),
+        /* Right: Fullscreen, Download, Close */
+        /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" },
+          /* @__PURE__ */ React.createElement("a", {
+            href: activeFile.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+          }, "Fullscreen ↗"),
+          /* @__PURE__ */ React.createElement("a", {
+            href: activeFile.url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            download: true,
+            className: "px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+          },
+            /* @__PURE__ */ React.createElement(DownloadIcon, { className: "w-3.5 h-3.5" }),
+            /* @__PURE__ */ React.createElement("span", null, "Download")
+          ),
+          /* @__PURE__ */ React.createElement(Button, {
+            variant: "outline",
+            onClick: () => setViewingPodDoc(null),
+            className: "rounded-xl border-slate-700 text-slate-300"
+          }, "Close")
+        )
+      );
+    })()
+  )
+), isCreatingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-base flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-5 h-5 text-amber-400" }), /* @__PURE__ */ React.createElement("span", null, "Issue New Lorry Receipt / Consignment Note")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Generate official transporter consignment note (LR / Bilty) with automated tracking")), /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => setIsCreatingLr(false),

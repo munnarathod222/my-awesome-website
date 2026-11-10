@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
+import { getPodFiles } from '@/lib/imageCompressor.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
@@ -288,7 +289,8 @@ export default function ClientPortalPage() {
   }, [tripLogs, searchQuery]);
 
   const handleOpenPod = (trip) => {
-    const podUrl = trip.pod_url || trip.pod_link || (trip.pod_file ? pb.files.getUrl(trip, trip.pod_file) : null);
+    const podFiles = getPodFiles(trip);
+    const podUrl = trip.pod_url || trip.pod_link || (podFiles.length > 0 ? pb.files.getUrl(trip, podFiles[0]) : null);
     setSelectedPodTrip({ ...trip, podUrl });
     setIsPodModalOpen(true);
   };

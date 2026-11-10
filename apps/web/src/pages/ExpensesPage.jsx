@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import pb from '@/lib/pocketbaseClient.js';
 import { logAuditEvent } from '@/lib/auditLogger.js';
 import { toast } from 'sonner';
+import { compressDocumentBatch, formatBytes } from '@/lib/imageCompressor.js';
 import ExpenseFilters from '@/components/ExpenseFilters.jsx';
 import ExpenseModal from '@/components/ExpenseModal.jsx';
 import AdvanceEditModal from '@/components/AdvanceEditModal.jsx';

@@ -12,60 +12,7 @@ import AdvanceIntegrationService from '@/lib/AdvanceIntegrationService.js';
 import { recordTollDeduction } from '@/lib/fastagDeductionUtils.js';
 import DocumentFilePreview from './DocumentFilePreview.jsx';
 import { generateExpenseFileName } from '@/lib/fileNamingUtils.js';
-
-// 🛡️ High-Fidelity Client-Side Bill & Receipt Image Compressor
-// Preserves 100% readability of bill text, numbers, dates & stamps while reducing 4MB photos down to ~150 KB
-const compressImageFile = async (file) => {
-  if (!file || !file.type || !file.type.startsWith('image/')) {
-    return file; // If PDF or non-image, keep as-is
-  }
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        // High document resolution: max 1600px ensures all bill text, numbers, and receipts remain razor-sharp
-        const MAX_DIM = 1600;
-        let width = img.width;
-        let height = img.height;
-        if (width > MAX_DIM || height > MAX_DIM) {
-          if (width > height) {
-            height = Math.round((height * MAX_DIM) / width);
-            width = MAX_DIM;
-          } else {
-            width = Math.round((width * MAX_DIM) / height);
-            height = MAX_DIM;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob((blob) => {
-          if (blob && blob.size < file.size) {
-            const cleanName = file.name.replace(/\.[^.]+$/, '.jpg');
-            const compressedFile = new File([blob], cleanName, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            console.log(`Compressed bill "${file.name}" from ${(file.size / 1024).toFixed(0)} KB to ${(compressedFile.size / 1024).toFixed(0)} KB (crystal clear quality preserved)`);
-            resolve(compressedFile);
-          } else {
-            resolve(file);
-          }
-        }, 'image/jpeg', 0.82);
-      };
-      img.onerror = () => resolve(file);
-      img.src = e.target.result;
-    };
-    reader.onerror = () => resolve(file);
-    reader.readAsDataURL(file);
-  });
-};
+import { compressDocumentImage, compressDocumentBatch, formatBytes } from '@/lib/imageCompressor.js';
 
 export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, trucks: propTrucks }) {
   const { currentUser } = useAuth();
