@@ -150,6 +150,8 @@ const DashboardPage = () => {
   const [allFleetTrucks, setAllFleetTrucks] = useState([]);
   const [allFleetDrivers, setAllFleetDrivers] = useState([]);
   const [stats, setStats] = useState({
+    todayBusiness: 0, todayExpenses: 0, todayProfit: 0, todayMargin: '0',
+    todayTripsCount: 0, todayExpensesCount: 0, todayDeliveredCount: 0, todayInTransitCount: 0,
     users: 0, trips: 0, trucks: 0, pods: 0,
     revenue: 0, grossRevenue: 0, expenses: 0,
     fleetProfit: 0, brokerageProfit: 0, retainedEarnings: 0
@@ -189,7 +191,9 @@ const DashboardPage = () => {
         upcomingTripsCount,
         dispatchedTripsCount,
         inTransitTripsCount,
-        maintenanceProblemsRes
+        maintenanceProblemsRes,
+        allTripsFullList,
+        employeesRes
       ] = await Promise.all([
         pb.collection('users').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Revenue query — Delivered trips only
@@ -203,7 +207,7 @@ const DashboardPage = () => {
         pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }).catch(() => []),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
-        pb.collection('expenses').getList(1, 1000, { fields: 'id,amount,category,subcategory', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('expenses').getList(1, 1000, { fields: 'id,amount,category,subcategory,date,bill_date,created', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Recent trips — all statuses so dispatcher sees the full picture
         pb.collection('trip_logs').getList(1, 8, {
           sort: '-date',
@@ -263,13 +267,51 @@ const DashboardPage = () => {
         }
       });
 
-      // Sorted FASTag balance list (lowest first)
+      // ── Today's Business Calculations (IST: UTC + 5:30) ────────────────────
+      const now = new Date();
+      const istDateStr = new Date(now.getTime() + (330 + now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
+
+      const safeAllTrips = Array.isArray(allTripsFullList) ? allTripsFullList : [];
+      const todayTrips = safeAllTrips.filter(t => {
+        if (!t) return false;
+        const tripDate = (t.date || '').slice(0, 10);
+        const createdDate = (t.created || '').slice(0, 10);
+        return tripDate === istDateStr || createdDate === istDateStr;
+      });
+
+      const todayBusiness = todayTrips.reduce((sum, t) => sum + (Number(t.revenue) || Number(t.freight_amount) || Number(t.rate) || 0), 0);
+      const todayDeliveredCount = todayTrips.filter(t => t.trip_status === 'Delivered').length;
+      const todayInTransitCount = todayTrips.filter(t => t.trip_status === 'In Transit' || t.trip_status === 'Dispatched').length;
+
+      const safeExpenses = Array.isArray(expensesRes?.items) ? expensesRes.items : [];
+      const todayExpensesList = safeExpenses.filter(e => {
+        if (!e) return false;
+        const cat = (e.category || '').toLowerCase();
+        const sub = (e.subcategory || '').toLowerCase();
+        if (cat.includes('advance') || sub.includes('advance')) return false;
+        const bDate = (e.bill_date || e.date || e.created || '').slice(0, 10);
+        return bDate === istDateStr;
+      });
+
+      const todayExpenses = todayExpensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const todayProfit = todayBusiness - todayExpenses;
+      const todayMargin = todayBusiness > 0 ? ((todayProfit / todayBusiness) * 100).toFixed(1) : '0';
+
+            // Sorted FASTag balance list (lowest first)
       const sortedFastag = [...safeTrucks]
         .filter(t => t && t.current_fastag_balance !== undefined && t.current_fastag_balance !== null)
         .sort((a, b) => (a.current_fastag_balance || 0) - (b.current_fastag_balance || 0))
         .slice(0, 5);
 
       setStats({
+        todayBusiness,
+        todayExpenses,
+        todayProfit,
+        todayMargin,
+        todayTripsCount: todayTrips.length,
+        todayExpensesCount: todayExpensesList.length,
+        todayDeliveredCount,
+        todayInTransitCount,
         users: usersRes?.totalItems || 0,
         trips: allTripsCount?.totalItems || 0,         // all trips (any status)
         deliveredTrips: deliveredTripsRes?.totalItems || 0, // completed only
@@ -448,31 +490,36 @@ const DashboardPage = () => {
 
       {(isSuperAdmin || isAdmin) ? (
         <>
-          {/* KPI Grid */}
+          {/* KPI Grid - Today's Business Live Pulse */}
           <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard loading={loading} title="Net Revenue"
-              rawValue={Math.round(stats.revenue)}
-              displayValue={`₹${Math.round(stats.revenue).toLocaleString()}`}
+            <StatCard loading={loading} title="Today's Business"
+              rawValue={Math.round(stats.todayBusiness || 0)}
+              displayValue={`₹${Math.round(stats.todayBusiness || 0).toLocaleString('en-IN')}`}
               icon={Activity} accentColor="#6366f1"
-              description={`Delivered trips only · Gross ₹${Math.round(stats.grossRevenue).toLocaleString()}`}
-              onClick={() => navigate('/analytics?tab=revenue')}
+              description={stats.todayTripsCount > 0 ? `${stats.todayTripsCount} shipment(s) booked today` : 'No shipments booked yet today'}
+              onClick={() => navigate('/trip-logs')}
             />
-            <StatCard loading={loading} title="Retained Earnings"
-              rawValue={Math.round(stats.retainedEarnings)}
-              displayValue={`₹${Math.round(stats.retainedEarnings).toLocaleString()}`}
+            <StatCard loading={loading} title="Today's Expenses"
+              rawValue={Math.round(stats.todayExpenses || 0)}
+              displayValue={`₹${Math.round(stats.todayExpenses || 0).toLocaleString('en-IN')}`}
+              icon={Receipt}
+              accentColor="#f59e0b"
+              description={stats.todayExpensesCount > 0 ? `${stats.todayExpensesCount} bill(s) logged today` : 'No expenses logged today'}
+              onClick={() => navigate('/expenses')}
+            />
+            <StatCard loading={loading} title="Today's Profit"
+              rawValue={Math.round(stats.todayProfit || 0)}
+              displayValue={`${(stats.todayProfit || 0) < 0 ? '-' : ''}₹${Math.abs(Math.round(stats.todayProfit || 0)).toLocaleString('en-IN')}`}
               icon={TrendingUp}
-              accentColor={stats.retainedEarnings >= 0 ? '#10b981' : '#f43f5e'}
-              description={`Fleet ₹${Math.round(stats.fleetProfit).toLocaleString()} · Brokerage ₹${Math.round(stats.brokerageProfit).toLocaleString()}`}
+              accentColor={(stats.todayProfit || 0) >= 0 ? '#10b981' : '#f43f5e'}
+              description={(stats.todayBusiness || 0) > 0 ? `${stats.todayMargin}% net operating margin` : 'Awaiting today\'s trip revenue'}
               onClick={() => navigate('/analytics')}
             />
-            <StatCard loading={loading} title="Total Shipments"
-              rawValue={stats.trips} icon={Package} accentColor="#8b5cf6"
-              description={`${stats.deliveredTrips ?? 0} delivered · ${(stats.trips || 0) - (stats.deliveredTrips || 0)} in progress`}
-              onClick={() => navigate('/analytics?tab=shipments')}
-            />
-            <StatCard loading={loading} title="Fleet Size"
-              rawValue={stats.trucks} icon={Truck} accentColor="#f59e0b"
-              description="Registered vehicles"
+            <StatCard loading={loading} title="Today's Trips"
+              rawValue={stats.todayTripsCount || 0}
+              icon={Truck} accentColor="#0ea5e9"
+              description={stats.todayTripsCount > 0 ? `${stats.todayInTransitCount || 0} in transit · ${stats.todayDeliveredCount || 0} delivered` : `Fleet: ${stats.trucks || 0} registered vehicles`}
+              onClick={() => navigate('/track-shipment')}
             />
           </motion.div>
 
