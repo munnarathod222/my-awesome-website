@@ -1,4 +1,270 @@
 
+function _IdleDayLossCalculatorModal({ isOpen, onClose, truck, allTrucks = [], allTrips = [], ReactModule }) {
+  const [activeTab, setActiveTab] = ReactModule.useState('calculator');
+  const [selectedPlate, setSelectedPlate] = ReactModule.useState('');
+  const [daysIdle, setDaysIdle] = ReactModule.useState(3);
+  const [monthlyEmi, setMonthlyEmi] = ReactModule.useState(42000);
+  const [driverDailyWage, setDriverDailyWage] = ReactModule.useState(700);
+  const [insuranceTaxDaily, setInsuranceTaxDaily] = ReactModule.useState(250);
+  const [parkingDaily, setParkingDaily] = ReactModule.useState(150);
+  const [dailyRevenue, setDailyRevenue] = ReactModule.useState(8000);
+  const [profitMarginPct, setProfitMarginPct] = ReactModule.useState(25);
+
+  const [consigneeName, setConsigneeName] = ReactModule.useState('');
+  const [locationName, setLocationName] = ReactModule.useState('');
+  const [delayedHours, setDelayedHours] = ReactModule.useState(48);
+  const [freeHoursAgreed, setFreeHoursAgreed] = ReactModule.useState(24);
+  const [detentionRatePerDay, setDetentionRatePerDay] = ReactModule.useState(3000);
+  const [copied, setCopied] = ReactModule.useState(false);
+
+  ReactModule.useEffect(() => {
+    if (truck && (truck.plate || truck.truck_number || truck.truckNumber)) {
+      setSelectedPlate(truck.plate || truck.truck_number || truck.truckNumber);
+    } else if (allTrucks.length > 0) {
+      setSelectedPlate(allTrucks[0].truck_number || allTrucks[0].plate || '');
+    }
+  }, [truck, allTrucks, isOpen]);
+
+  const dailyEmi = Math.round(monthlyEmi / 30);
+  const totalDailyFixedBleed = dailyEmi + Number(driverDailyWage) + Number(insuranceTaxDaily) + Number(parkingDaily);
+  const cumulativeFixedBleed = totalDailyFixedBleed * daysIdle;
+  const foregoneGrossRevenue = Number(dailyRevenue) * daysIdle;
+  const foregoneNetMargin = Math.round(foregoneGrossRevenue * (Number(profitMarginPct) / 100));
+  const totalEconomicLoss = cumulativeFixedBleed + foregoneNetMargin;
+  const avgTripProfit = Math.round(Number(dailyRevenue) * 2 * (Number(profitMarginPct) / 100)) || 4000;
+  const recoveryTripsNeeded = Math.ceil(totalEconomicLoss / avgTripProfit);
+
+  const billableDetentionHours = Math.max(0, Number(delayedHours) - Number(freeHoursAgreed));
+  const billableDetentionDays = (billableDetentionHours / 24).toFixed(1);
+  const totalDetentionClaimAmount = Math.round(Math.max(1, Math.ceil(billableDetentionHours / 24)) * Number(detentionRatePerDay));
+
+  const generateWhatsAppClaim = () => {
+    return '🚨 *OFFICIAL DETENTION CHARGE INVOICE CLAIM*\n*JAI BHAVANI CARGO & TRANSPORT SOLUTIONS*\n---------------------------------------------\n📋 *Consignment / Vehicle Details:*\n• Vehicle No: *' + (selectedPlate || 'Commercial Truck') + '*\n• Consignee / Plant: *' + (consigneeName || 'Factory Warehouse') + '*\n• Halt Location: *' + (locationName || 'Unloading Yard') + '*\n\n⏱️ *Detention Breakdown:*\n• Total Plant Halt: *' + delayedHours + ' Hours*\n• Free Unloading Time Allowed: *' + freeHoursAgreed + ' Hours*\n• Net Billable Detention: *' + billableDetentionHours + ' Hours (' + billableDetentionDays + ' Days)*\n• Standard Detention Tariff: *₹' + Number(detentionRatePerDay).toLocaleString('en-IN') + ' / 24 hrs*\n\n💰 *TOTAL DETENTION PAYABLE:*\n👉 *₹' + totalDetentionClaimAmount.toLocaleString('en-IN') + '*\n\n⚠️ _Notice: As per All-India Motor Transport Congress (AIMTC) freight contract norms, detention beyond agreed free unloading window is payable immediately prior to final gate clearance._';
+  };
+
+  const handleCopyWhatsApp = () => {
+    const text = generateWhatsAppClaim();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  if (!isOpen) return null;
+
+  return ReactModule.createElement('div', {
+    className: 'fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200'
+  }, ReactModule.createElement('div', {
+    className: 'bg-slate-950 border border-slate-800 text-white rounded-3xl p-4 sm:p-6 shadow-2xl max-w-2xl w-full flex flex-col gap-4 max-h-[92vh] overflow-y-auto'
+  },
+    /* Header */
+    ReactModule.createElement('div', { className: 'flex items-center justify-between pb-3 border-b border-slate-800' },
+      ReactModule.createElement('div', { className: 'flex items-center gap-3' },
+        ReactModule.createElement('div', { className: 'w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 font-bold text-lg' }, '📉'),
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('div', { className: 'flex items-center gap-2' },
+            ReactModule.createElement('h3', { className: 'font-bold text-base sm:text-lg text-white' }, 'Idle Day Loss Calculator'),
+            ReactModule.createElement('span', { className: 'border border-rose-500/30 text-rose-400 bg-rose-500/10 text-[10px] font-mono px-2 py-0.5 rounded-full' }, 'LIVE ENGINE')
+          ),
+          ReactModule.createElement('p', { className: 'text-xs text-slate-400 mt-0.5' }, 'Quantify silent cash bleed and generate detention recovery claims')
+        )
+      ),
+      ReactModule.createElement('button', {
+        onClick: onClose,
+        className: 'p-1.5 text-slate-400 hover:text-white rounded-xl bg-slate-800 transition cursor-pointer'
+      }, '✕')
+    ),
+
+    /* Tab Switcher */
+    ReactModule.createElement('div', { className: 'flex p-1 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-semibold' },
+      ReactModule.createElement('button', {
+        type: 'button',
+        onClick: () => setActiveTab('calculator'),
+        className: 'flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ' + (activeTab === 'calculator' ? 'bg-rose-600 text-white font-bold shadow-md' : 'text-slate-400 hover:text-white')
+      }, '📉 Idle Standing Bleed'),
+      ReactModule.createElement('button', {
+        type: 'button',
+        onClick: () => setActiveTab('detention'),
+        className: 'flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer ' + (activeTab === 'detention' ? 'bg-amber-600 text-white font-bold shadow-md' : 'text-slate-400 hover:text-white')
+      }, '🛡️ Client Detention Claimer')
+    ),
+
+    /* TAB 1: CALCULATOR */
+    activeTab === 'calculator' && ReactModule.createElement('div', { className: 'space-y-4 pt-1' },
+      /* Truck & Slider */
+      ReactModule.createElement('div', { className: 'p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3' },
+        ReactModule.createElement('div', { className: 'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2' },
+          ReactModule.createElement('span', { className: 'text-xs text-slate-400 uppercase font-bold tracking-wider' }, 'Select Vehicle:'),
+          allTrucks.length > 0 ? ReactModule.createElement('select', {
+            value: selectedPlate,
+            onChange: e => setSelectedPlate(e.target.value),
+            className: 'h-8 text-xs font-mono font-bold bg-slate-950 border border-slate-700 text-amber-300 rounded-lg px-2.5 focus:outline-none'
+          }, allTrucks.map((t, idx) => ReactModule.createElement('option', { key: idx, value: t.truck_number || t.plate || '' }, (t.truck_number || t.plate || 'Vehicle')))) : null
+        ),
+        ReactModule.createElement('div', { className: 'pt-2' },
+          ReactModule.createElement('div', { className: 'flex justify-between items-center text-xs' },
+            ReactModule.createElement('span', { className: 'font-semibold text-slate-300' }, 'Days Vehicle Has Been Idle:'),
+            ReactModule.createElement('span', { className: 'text-base font-black font-mono text-rose-400 bg-rose-950/40 border border-rose-500/30 px-2.5 py-0.5 rounded-lg' }, daysIdle + (daysIdle === 1 ? ' Day' : ' Days'))
+          ),
+          ReactModule.createElement('input', {
+            type: 'range',
+            min: 1,
+            max: 30,
+            value: daysIdle,
+            onChange: e => setDaysIdle(parseInt(e.target.value, 10)),
+            className: 'w-full mt-2 accent-rose-500 cursor-pointer h-2 bg-slate-800 rounded-lg'
+          }),
+          ReactModule.createElement('div', { className: 'flex justify-between text-[10px] text-slate-500 font-mono mt-1' },
+            ReactModule.createElement('span', null, '1 day'),
+            ReactModule.createElement('span', null, '7 days'),
+            ReactModule.createElement('span', null, '15 days'),
+            ReactModule.createElement('span', null, '30 days')
+          )
+        )
+      ),
+
+      /* Hero Loss Metrics */
+      ReactModule.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-3 gap-3' },
+        ReactModule.createElement('div', { className: 'p-3.5 bg-slate-900 border border-slate-800 rounded-2xl' },
+          ReactModule.createElement('span', { className: 'text-[10px] font-bold text-slate-400 uppercase tracking-wider block' }, 'Daily Cash Bleed'),
+          ReactModule.createElement('span', { className: 'text-xl sm:text-2xl font-black font-mono text-rose-400 mt-1 block' }, '₹' + totalDailyFixedBleed.toLocaleString('en-IN')),
+          ReactModule.createElement('span', { className: 'text-[10px] text-slate-500' }, 'Every 24 hrs truck sits')
+        ),
+        ReactModule.createElement('div', { className: 'p-3.5 bg-rose-950/20 border border-rose-500/30 rounded-2xl' },
+          ReactModule.createElement('span', { className: 'text-[10px] font-bold text-rose-400 uppercase tracking-wider block' }, 'Total Cash Lost (' + daysIdle + 'd)'),
+          ReactModule.createElement('span', { className: 'text-xl sm:text-2xl font-black font-mono text-rose-300 mt-1 block' }, '₹' + cumulativeFixedBleed.toLocaleString('en-IN')),
+          ReactModule.createElement('span', { className: 'text-[10px] text-rose-400/80' }, 'Direct out-of-pocket drain')
+        ),
+        ReactModule.createElement('div', { className: 'p-3.5 bg-amber-950/20 border border-amber-500/30 rounded-2xl' },
+          ReactModule.createElement('span', { className: 'text-[10px] font-bold text-amber-400 uppercase tracking-wider block' }, 'Total Economic Loss'),
+          ReactModule.createElement('span', { className: 'text-xl sm:text-2xl font-black font-mono text-amber-300 mt-1 block' }, '₹' + totalEconomicLoss.toLocaleString('en-IN')),
+          ReactModule.createElement('span', { className: 'text-[10px] text-amber-400/80' }, 'Bleed + Lost ₹' + foregoneNetMargin.toLocaleString('en-IN') + ' profit')
+        )
+      ),
+
+      /* Fixed Cost Inputs */
+      ReactModule.createElement('div', { className: 'p-3.5 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-2' },
+        ReactModule.createElement('span', { className: 'text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-slate-800 pb-1.5' }, 'Fixed Daily Cost Breakdown (Customizable)'),
+        ReactModule.createElement('div', { className: 'grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs' },
+          ReactModule.createElement('div', { className: 'p-2 bg-slate-950 border border-slate-800 rounded-xl' },
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Monthly EMI (₹)'),
+            ReactModule.createElement('input', {
+              type: 'number',
+              value: monthlyEmi,
+              onChange: e => setMonthlyEmi(Number(e.target.value) || 0),
+              className: 'w-full mt-1 bg-transparent font-mono font-bold text-slate-200 border-b border-slate-700 text-xs py-0.5 focus:outline-none'
+            }),
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-500 mt-0.5 block font-mono' }, '₹' + dailyEmi + '/day')
+          ),
+          ReactModule.createElement('div', { className: 'p-2 bg-slate-950 border border-slate-800 rounded-xl' },
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Driver Pay / Day'),
+            ReactModule.createElement('input', {
+              type: 'number',
+              value: driverDailyWage,
+              onChange: e => setDriverDailyWage(Number(e.target.value) || 0),
+              className: 'w-full mt-1 bg-transparent font-mono font-bold text-slate-200 border-b border-slate-700 text-xs py-0.5 focus:outline-none'
+            }),
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-500 mt-0.5 block' }, 'Retainer wage')
+          ),
+          ReactModule.createElement('div', { className: 'p-2 bg-slate-950 border border-slate-800 rounded-xl' },
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Insurance & Tax'),
+            ReactModule.createElement('input', {
+              type: 'number',
+              value: insuranceTaxDaily,
+              onChange: e => setInsuranceTaxDaily(Number(e.target.value) || 0),
+              className: 'w-full mt-1 bg-transparent font-mono font-bold text-slate-200 border-b border-slate-700 text-xs py-0.5 focus:outline-none'
+            }),
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-500 mt-0.5 block' }, 'Daily amortized')
+          ),
+          ReactModule.createElement('div', { className: 'p-2 bg-slate-950 border border-slate-800 rounded-xl' },
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Parking / Yard'),
+            ReactModule.createElement('input', {
+              type: 'number',
+              value: parkingDaily,
+              onChange: e => setParkingDaily(Number(e.target.value) || 0),
+              className: 'w-full mt-1 bg-transparent font-mono font-bold text-slate-200 border-b border-slate-700 text-xs py-0.5 focus:outline-none'
+            }),
+            ReactModule.createElement('span', { className: 'text-[10px] text-slate-500 mt-0.5 block' }, 'Halt charges')
+          )
+        )
+      ),
+
+      /* Recovery Box */
+      ReactModule.createElement('div', { className: 'p-3 bg-blue-950/20 border border-blue-500/30 rounded-2xl flex items-center justify-between gap-3 text-xs' },
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'font-bold text-blue-300 block' }, 'Trips Needed to Recover Lost Money:'),
+          ReactModule.createElement('p', { className: 'text-[11px] text-slate-400 mt-0.5' },
+            'Requires ', ReactModule.createElement('strong', { className: 'text-blue-300' }, recoveryTripsNeeded + ' trips'), ' to break even from this ' + daysIdle + '-day idle period.'
+          )
+        ),
+        ReactModule.createElement('button', {
+          onClick: () => { onClose(); window.location.href = '/trip-logs'; },
+          className: 'px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shrink-0'
+        }, 'Assign Load →')
+      )
+    ),
+
+    /* TAB 2: DETENTION */
+    activeTab === 'detention' && ReactModule.createElement('div', { className: 'space-y-4 pt-1' },
+      ReactModule.createElement('div', { className: 'p-3 bg-amber-950/20 border border-amber-500/30 rounded-2xl text-xs text-slate-300' },
+        ReactModule.createElement('p', { className: 'text-amber-300 font-bold' }, '🛡️ Claim Plant / Consignee Detention Damages:'),
+        ReactModule.createElement('p', { className: 'text-slate-400 text-[11px] mt-0.5' }, 'When client plant delays loading/unloading beyond free hours, legally invoice detention.')
+      ),
+      ReactModule.createElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs' },
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Client / Plant Name:'),
+          ReactModule.createElement('input', {
+            placeholder: 'e.g. Factory Warehouse / Depot',
+            value: consigneeName,
+            onChange: e => setConsigneeName(e.target.value),
+            className: 'w-full h-8 mt-1 px-2.5 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs'
+          })
+        ),
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Plant Location:'),
+          ReactModule.createElement('input', {
+            placeholder: 'e.g. Balanagar Depot / Nhava Sheva',
+            value: locationName,
+            onChange: e => setLocationName(e.target.value),
+            className: 'w-full h-8 mt-1 px-2.5 bg-slate-900 border border-slate-700 text-white rounded-lg text-xs'
+          })
+        ),
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Total Hours Held at Plant:'),
+          ReactModule.createElement('input', {
+            type: 'number',
+            value: delayedHours,
+            onChange: e => setDelayedHours(Number(e.target.value) || 0),
+            className: 'w-full h-8 mt-1 px-2.5 bg-slate-900 border border-slate-700 text-white font-mono rounded-lg text-xs'
+          })
+        ),
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'text-[10px] text-slate-400 block' }, 'Free Agreed Unloading Hours:'),
+          ReactModule.createElement('input', {
+            type: 'number',
+            value: freeHoursAgreed,
+            onChange: e => setFreeHoursAgreed(Number(e.target.value) || 0),
+            className: 'w-full h-8 mt-1 px-2.5 bg-slate-900 border border-slate-700 text-white font-mono rounded-lg text-xs'
+          })
+        )
+      ),
+      ReactModule.createElement('div', { className: 'p-3.5 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-between' },
+        ReactModule.createElement('div', null,
+          ReactModule.createElement('span', { className: 'text-[10px] uppercase font-bold text-slate-400 block' }, 'Billable Detention (' + billableDetentionHours + ' Hours)'),
+          ReactModule.createElement('span', { className: 'text-2xl font-black font-mono text-emerald-400 mt-0.5 block' }, '₹' + totalDetentionClaimAmount.toLocaleString('en-IN'))
+        ),
+        ReactModule.createElement('button', {
+          onClick: handleCopyWhatsApp,
+          className: 'px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-lg'
+        }, copied ? '✓ Copied!' : 'Copy WhatsApp Notice')
+      ),
+      ReactModule.createElement('div', { className: 'p-3 bg-slate-950 border border-slate-800 rounded-xl text-[11px] font-mono text-slate-300 whitespace-pre-wrap max-h-36 overflow-y-auto select-all' },
+        generateWhatsAppClaim()
+      )
+    )
+  ));
+}
+
+
 // ── JBC ROLE-BASED DASHBOARD INJECTION (Rule #64) ──────────────────────
 const JBC_ROLE_META = {
   super_admin: { label: "Super Admin (Owner / MD)", scope: "Everything (Full 360° Access)", icon: "👑", badge: "bg-purple-500/20 text-purple-300 border-purple-500/40" },
@@ -42,7 +308,7 @@ const MonthlyTripIntelligenceTracker = () => {
   const curYm = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
   const [selectedMonth, setSelectedMonth] = a.useState(curYm);
   const [activeTab, setActiveTab] = a.useState("trucks");
-  const [detailItem, setDetailItem] = a.useState(null);
+  const [detailItem, setDetailItem] = a.useState(null), [selectedIdleLossTruck, setSelectedIdleLossTruck] = a.useState(null), [isIdleLossModalOpen, setIsIdleLossModalOpen] = a.useState(false);
 
   const loadData = async () => {
     try {
@@ -349,6 +615,15 @@ const MonthlyTripIntelligenceTracker = () => {
                   e.jsx("span", { className: "text-2xl font-black font-mono " + (underutilizedCount > 0 ? "text-rose-400" : "text-slate-300"), children: underutilizedCount }),
                   e.jsx("span", { className: "text-[10px] text-slate-400 font-medium", children: underutilizedCount === 1 ? "truck < 4 trips" : "trucks < 4 trips" })
                 ]
+              }),
+              e.jsxs("button", {
+                type: "button",
+                onClick: () => {
+                  setSelectedIdleLossTruck(null);
+                  setIsIdleLossModalOpen(true);
+                },
+                className: "mt-2 text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer hover:underline",
+                children: ["📉 ", "Idle Loss Calculator →"]
               })
             ]
           })
@@ -432,6 +707,21 @@ const MonthlyTripIntelligenceTracker = () => {
                           e.jsxs("span", { className: "font-bold text-emerald-400", children: ["₹", trk.rev.toLocaleString("en-IN")] })
                         ]
                       })
+                    ]
+                  }),
+
+                  e.jsxs("button", {
+                    type: "button",
+                    onClick: (ev) => {
+                      ev.stopPropagation();
+                      setSelectedIdleLossTruck({ plate: trk.plate, truck_number: trk.plate, model: trk.model });
+                      setIsIdleLossModalOpen(true);
+                    },
+                    className: "w-full my-2 py-1.5 px-2.5 rounded-xl bg-rose-950/30 hover:bg-rose-900/40 border border-rose-500/30 flex items-center justify-between text-xs transition cursor-pointer group/loss",
+                    title: "Calculate idle day standing loss and EMI bleed for this truck",
+                    children: [
+                      e.jsxs("span", { className: "flex items-center gap-1.5 text-rose-300 font-semibold text-[11px]", children: ["📉 ", "Idle Loss Analysis"] }),
+                      e.jsx("span", { className: "text-[10px] font-mono font-bold text-rose-400 group-hover/loss:underline", children: "Calculate Bleed →" })
                     ]
                   })
                 ]
@@ -565,6 +855,13 @@ const MonthlyTripIntelligenceTracker = () => {
         })
       }),
 
+      e.jsx(_IdleDayLossCalculatorModal, {
+        isOpen: isIdleLossModalOpen,
+        onClose: () => setIsIdleLossModalOpen(false),
+        truck: selectedIdleLossTruck,
+        allTrucks: truckStats || [],
+        ReactModule: a
+      }),
       detailItem && e.jsx("div", {
         className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4",
         children: e.jsxs("div", {

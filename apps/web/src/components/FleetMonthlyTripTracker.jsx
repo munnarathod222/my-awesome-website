@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Truck, Users, Calendar, ChevronRight, TrendingUp, AlertTriangle, 
+  Truck, Users, Calendar, ChevronRight, TrendingUp, AlertTriangle, TrendingDown, 
   CheckCircle2, Clock, MapPin, IndianRupee, Eye, ExternalLink, X, 
   BarChart3, Sparkles, ShieldCheck, ArrowUpRight
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import IdleDayLossCalculatorModal from './IdleDayLossCalculatorModal.jsx';
 import { Link } from 'react-router-dom';
 import { 
   computeMonthlyFleetAndDriverStats, 
@@ -25,7 +26,9 @@ export default function FleetMonthlyTripTracker({
   
   const [selectedMonth, setSelectedMonth] = useState(currentYm);
   const [activeTab, setActiveTab] = useState('trucks'); // 'trucks' | 'drivers'
-  const [detailModalItem, setDetailModalItem] = useState(null); // { type: 'truck'|'driver', item: {...} }
+  const [detailModalItem, setDetailModalItem] = useState(null);
+  const [selectedIdleLossTruck, setSelectedIdleLossTruck] = useState(null);
+  const [isIdleLossModalOpen, setIsIdleLossModalOpen] = useState(false); // { type: 'truck'|'driver', item: {...} }
 
   const availableMonths = useMemo(() => getAvailableMonthsList(trips), [trips]);
 
@@ -170,6 +173,17 @@ export default function FleetMonthlyTripTracker({
               {stats.underutilizedCount === 1 ? 'truck < 4 trips' : 'trucks < 4 trips'}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedIdleLossTruck(null);
+              setIsIdleLossModalOpen(true);
+            }}
+            className="mt-2 text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 cursor-pointer hover:underline"
+          >
+            <TrendingDown className="w-3 h-3" />
+            <span>Idle Loss Calculator →</span>
+          </button>
         </div>
       </div>
 
@@ -255,6 +269,26 @@ export default function FleetMonthlyTripTracker({
                       <span className="font-bold text-emerald-400">₹{trk.totalFreight.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
+
+                  {/* Idle Day Loss Calculator Pill */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedIdleLossTruck(trk);
+                      setIsIdleLossModalOpen(true);
+                    }}
+                    className="w-full my-2 py-1.5 px-2.5 rounded-xl bg-rose-950/30 hover:bg-rose-900/40 border border-rose-500/30 flex items-center justify-between text-xs transition cursor-pointer group/loss"
+                    title="Calculate idle day standing loss and EMI bleed for this truck"
+                  >
+                    <span className="flex items-center gap-1.5 text-rose-300 font-semibold text-[11px]">
+                      <TrendingDown className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      Idle Loss Analysis
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-rose-400 group-hover/loss:underline flex items-center gap-0.5">
+                      Calculate Bleed →
+                    </span>
+                  </button>
                 </div>
 
                 {/* Bottom Actions */}
@@ -503,6 +537,14 @@ export default function FleetMonthlyTripTracker({
           </DialogContent>
         </Dialog>
       )}
+      {/* Idle Day Loss Calculator Modal */}
+      <IdleDayLossCalculatorModal
+        isOpen={isIdleLossModalOpen}
+        onClose={() => setIsIdleLossModalOpen(false)}
+        truck={selectedIdleLossTruck}
+        allTrucks={trucks.length > 0 ? trucks : stats.trucks}
+        allTrips={trips}
+      />
     </div>
   );
 }
