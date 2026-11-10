@@ -299,7 +299,13 @@ ${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}
       const route = trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} ➔ ${trip.destination}` : 'Origin ➔ Destination');
       const delDate = pod?.delivery_date || trip?.delivery_date ? format(new Date(pod?.delivery_date || trip?.delivery_date), 'dd MMM yyyy (hh:mm a)') : (trip?.date ? format(new Date(trip.date), 'dd MMM yyyy') : 'Delivered & Received');
 
-      const signedPodUrl = trip?.pod_link || (trip?.pod_file ? (trip.pod_file.startsWith('http') ? trip.pod_file : `${trackingBase}/api/files/trips/${trip.id}/${trip.pod_file}`) : '') || (trip?.pod_document ? `${trackingBase}/api/files/trips/${trip.id}/${trip.pod_document}` : '') || activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}`;
+      const rawPodFile = trip?.pod_file || trip?.pod_document || pod?.file || pod?.image;
+      const podFileStr = typeof rawPodFile === 'string' ? rawPodFile.trim() : (Array.isArray(rawPodFile) && typeof rawPodFile[0] === 'string' ? rawPodFile[0].trim() : '');
+      const signedPodUrl = (typeof trip?.pod_link === 'string' && trip.pod_link.trim())
+        ? trip.pod_link.trim()
+        : (podFileStr ? (podFileStr.startsWith('http') ? podFileStr : `${trackingBase}/api/files/${trip?.collectionName || 'trip_logs'}/${trip?.id || pod?.id}/${podFileStr}`) : '')
+        || activeDocumentUrl 
+        || `${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}`;
       const invoicePdfUrl = `${trackingBase}/api/invoices/trip/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}/pdf`;
 
       return `📑 *JAI BHAVANI CARGO - PROOF OF DELIVERY (POD) ACKNOWLEDGEMENT*
