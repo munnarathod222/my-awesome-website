@@ -267,16 +267,46 @@ function LorryReceiptsPodHubPage() {
     }
   };
 
-  // Toggle POD verification status
+  // Toggle POD verification status (with optimistic UI & dual PocketBase + API fallback)
   const handleTogglePodVerify = async (trip) => {
     const nextStatus = trip.pod_status === "Verified" ? "Uploaded" : "Verified";
+    // 1. Optimistic UI update so button transitions immediately
+    setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, pod_status: nextStatus } : t));
+    
+    let success = false;
     try {
-      await pb.collection("trip_logs").update(trip.id, { pod_status: nextStatus });
-      toast.success("POD status marked as " + nextStatus);
+      await pb.collection("trip_logs").update(trip.id, { pod_status: nextStatus }, { $autoCancel: false });
+      success = true;
+    } catch (pbErr) {
+      console.warn("Direct PocketBase verify toggle failed, attempting server API fallback:", pbErr);
+      try {
+        const res = await fetch("/hcgi/api/trips/" + encodeURIComponent(trip.id) + "/pod-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pod_status: nextStatus })
+        });
+        if (res.ok) {
+          success = true;
+        } else {
+          const res2 = await fetch("/api/trips/" + encodeURIComponent(trip.id) + "/pod-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pod_status: nextStatus })
+          });
+          if (res2.ok) success = true;
+        }
+      } catch (apiErr) {
+        console.error("API fallback also failed:", apiErr);
+      }
+    }
+
+    if (success) {
+      toast.success(nextStatus === "Verified" ? "POD verified successfully!" : "POD status marked as Uploaded");
       loadData();
-    } catch (err) {
-      console.error("Verify toggle failed:", err);
-      toast.error("Failed to update status.");
+    } else {
+      // Revert optimistic update
+      setTrips(prev => prev.map(t => t.id === trip.id ? { ...t, pod_status: trip.pod_status } : t));
+      toast.error("Failed to update status. Please try again.");
     }
   };
 

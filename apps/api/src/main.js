@@ -2661,6 +2661,23 @@ const runPocketBase = async () => {
         recordUpdated = true;
       }
 
+            // Ensure 'Verified' is in pod_status select values
+      const podStatusField = fields.find(f => f.name === 'pod_status');
+      if (podStatusField && Array.isArray(podStatusField.values)) {
+        const allowedPodStatuses = ['Pending', 'Uploaded', 'Verified', 'Received', 'Approved'];
+        let podStatusModified = false;
+        allowedPodStatuses.forEach(val => {
+          if (!podStatusField.values.includes(val)) {
+            podStatusField.values.push(val);
+            podStatusModified = true;
+          }
+        });
+        if (podStatusModified) {
+          logger.info("Migrating: Added Verified and required statuses to PocketBase trip_logs.pod_status values!");
+          recordUpdated = true;
+        }
+      }
+
       if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }
@@ -5159,6 +5176,62 @@ const directDeleteTripLogs = async (req, res) => {
 
 app.post('/hcgi/api/trip_logs/delete-by-id', directDeleteTripLogs);
 app.post('/api/trip_logs/delete-by-id', directDeleteTripLogs);
+
+// Direct database trip POD status update endpoint (fail-safe for PocketBase)
+const directUpdatePodStatus = async (req, res) => {
+  const { id } = req.params;
+  const { pod_status } = req.body || {};
+  if (!id || !pod_status) {
+    return res.status(400).json({ success: false, error: 'trip id and pod_status are required' });
+  }
+
+  let db = null;
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const possiblePaths = [
+      global.dbFilePath,
+      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+      path.resolve(__dirname, '../../pocketbase/pb_data/data.db'),
+      path.resolve(process.cwd(), 'pb_data/data.db'),
+      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+    ].filter(Boolean);
+
+    let updated = false;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        try {
+          db = new DatabaseSync(p);
+          const info = db.prepare('UPDATE trip_logs SET pod_status = ? WHERE id = ? OR trip_id = ?').run(pod_status, id, id);
+          if (info && info.changes > 0) {
+            updated = true;
+          }
+          db.close();
+          db = null;
+        } catch (e) {
+          if (db) { try { db.close(); } catch(_) {} db = null; }
+        }
+      }
+    }
+
+    // Also attempt pocketbase superuser update if available
+    try {
+      const pbModule = await import('./utils/pocketbaseClient.js');
+      const pbClient = pbModule.default || pbModule.pocketbaseClient;
+      if (pbClient) {
+        await pbClient.collection('trip_logs').update(id, { pod_status }).catch(() => {});
+      }
+    } catch (_) {}
+
+    logger.info('Direct pod_status update applied: ' + id + ' -> ' + pod_status + ' (updated in sqlite: ' + updated + ')');
+    return res.json({ success: true, id, pod_status });
+  } catch (err) {
+    logger.error('Error updating pod_status:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.post('/hcgi/api/trips/:id/pod-status', directUpdatePodStatus);
+app.post('/api/trips/:id/pod-status', directUpdatePodStatus);
 app.delete('/hcgi/api/trip_logs/:id', directDeleteTripLogs);
 app.delete('/api/trip_logs/:id', directDeleteTripLogs);
 

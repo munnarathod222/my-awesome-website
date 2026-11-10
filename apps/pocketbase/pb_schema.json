@@ -2180,7 +2180,10 @@
         "type": "select",
         "values": [
           "Pending",
-          "Uploaded"
+          "Uploaded",
+          "Verified",
+          "Received",
+          "Approved"
         ]
       },
       {

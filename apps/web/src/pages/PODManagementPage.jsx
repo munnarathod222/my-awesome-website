@@ -90,7 +90,7 @@ export default function PODManagementPage() {
       const currentTrip = trips.find(t => t.id === tripId);
       const data = {
         pod_link: link,
-        pod_status: (link || currentTrip?.pod_file) ? 'Uploaded' : 'Pending'
+        pod_status: (link || currentTrip?.pod_file) ? (currentTrip?.pod_status === 'Verified' ? 'Verified' : 'Uploaded') : 'Pending'
       };
       await pb.collection('trip_logs').update(tripId, data);
       toast.success(link ? 'POD link saved successfully.' : 'POD link cleared.');
