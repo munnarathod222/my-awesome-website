@@ -192,11 +192,11 @@ function CompareLoansView() {
   };
 
   return e.jsxs("div", {
-    className: "space-y-6 animate-in fade-in duration-300",
+    className: "space-y-4 sm:space-y-6 animate-in fade-in duration-300 w-full max-w-full min-w-0 overflow-hidden box-border",
     children: [
       // Header & Controls
       e.jsxs("div", {
-        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-5 rounded-2xl shadow-sm",
+        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-3.5 sm:p-5 rounded-2xl shadow-sm w-full min-w-0",
         children: [
           e.jsxs("div", {
             children: [
@@ -716,11 +716,11 @@ function DiscountCalculatorView() {
   };
 
   return e.jsxs("div", {
-    className: "space-y-6 animate-in fade-in duration-300",
+    className: "space-y-4 sm:space-y-6 animate-in fade-in duration-300 w-full max-w-full min-w-0 overflow-hidden box-border",
     children: [
       // Header
       e.jsxs("div", {
-        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-5 rounded-2xl shadow-sm",
+        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-3.5 sm:p-5 rounded-2xl shadow-sm w-full min-w-0",
         children: [
           e.jsxs("div", {
             children: [
@@ -899,7 +899,7 @@ function DiscountCalculatorView() {
                   children: [
                     e.jsx("label", { className: "text-slate-300 font-semibold text-xs block", children: "Applicable GST Tax Slab" }),
                     e.jsx("div", {
-                      className: "grid grid-cols-5 gap-2",
+                      className: "grid grid-cols-5 gap-1.5 sm:gap-2 w-full min-w-0",
                       children: [0, 5, 12, 18, 28].map(slab => e.jsxs("button", {
                         key: slab,
                         type: "button",
@@ -1222,11 +1222,11 @@ function DaysCalculatorView() {
   };
 
   return e.jsxs("div", {
-    className: "space-y-6 animate-in fade-in duration-300",
+    className: "space-y-4 sm:space-y-6 animate-in fade-in duration-300 w-full max-w-full min-w-0 overflow-hidden box-border",
     children: [
       // Top Header
       e.jsxs("div", {
-        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-5 rounded-2xl shadow-sm",
+        className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 bg-[#0f1523] border border-[#1e293b]/70 p-3.5 sm:p-5 rounded-2xl shadow-sm w-full min-w-0",
         children: [
           e.jsxs("div", {
             children: [
@@ -1615,26 +1615,26 @@ function UpgradedEMICalculatorHub(props) {
   };
 
   return e.jsxs("div", {
-    className: "min-h-screen bg-[#070b13] text-slate-100 p-4 sm:p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto",
+    className: "min-h-screen bg-[#070b13] text-slate-100 p-2.5 sm:p-5 md:p-8 space-y-4 sm:space-y-6 w-full max-w-[1400px] mx-auto box-border overflow-x-hidden",
     children: [
       // Top Navigation Hub Header & Tabs Switcher
       e.jsxs("div", {
-        className: "bg-[#0b0f19] border border-[#1e293b]/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4",
+        className: "bg-[#0b0f19] border border-[#1e293b]/80 rounded-2xl p-3 sm:p-5 shadow-sm space-y-3 sm:space-y-4 w-full max-w-full min-w-0 overflow-hidden box-border",
         children: [
           e.jsxs("div", {
-            className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4",
+            className: "flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 w-full min-w-0",
             children: [
               e.jsxs("div", {
                 children: [
                   e.jsxs("div", {
-                    className: "flex items-center gap-2.5",
+                    className: "flex flex-wrap items-center gap-2 sm:gap-2.5 w-full min-w-0",
                     children: [
                       e.jsx("span", { className: "text-2xl", children: "🧮" }),
-                      e.jsx("h1", { className: "text-xl sm:text-2xl font-black text-white tracking-tight font-heading", children: "Fleet Financial & Loan Calculator Hub" }),
+                      e.jsx("h1", { className: "text-base sm:text-2xl font-black text-white tracking-tight font-heading break-words min-w-0", children: "Fleet Financial & Loan Calculator Hub" }),
                       e.jsx("span", { className: "text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest", children: "PRO UPGRADED" })
                     ]
                   }),
-                  e.jsx("p", { className: "text-xs sm:text-sm text-slate-400 mt-1", children: "Comprehensive financial calculation suite for commercial fleet loans, multi-offer comparisons, freight discounts, and credit duration." })
+                  e.jsx("p", { className: "text-xs sm:text-sm text-slate-400 mt-1 break-words min-w-0", children: "Comprehensive financial calculation suite for commercial fleet loans, multi-offer comparisons, freight discounts, and credit duration." })
                 ]
               }),
               e.jsxs("div", {
@@ -1649,7 +1649,7 @@ function UpgradedEMICalculatorHub(props) {
 
           // Tabs Navigation Switcher
           e.jsxs("div", {
-            className: "flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none",
+            className: "flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 pt-1 scrollbar-none w-full max-w-full min-w-0 flex-nowrap -mx-1 px-1 sm:mx-0 sm:px-0",
             children: [
               e.jsxs("button", {
                 type: "button",

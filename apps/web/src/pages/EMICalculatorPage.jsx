@@ -513,16 +513,16 @@ export default function EMICalculatorPage() {
   const activeProfileName = profiles?.find(p => p.id === activeProfileId)?.profileName;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-0 sm:p-2 w-full max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-500 overflow-x-hidden pb-24 sm:pb-8 box-border min-w-0">
       <Helmet>
         <title>EMI Calculator | Financial Hub</title>
         <meta name="description" content="Calculate and manage your loan EMIs" />
       </Helmet>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card p-5 rounded-2xl border border-border shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 bg-card p-3.5 sm:p-5 rounded-2xl border border-border shadow-sm w-full max-w-full min-w-0 overflow-hidden box-border">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-3">
-            <Calculator className="w-7 h-7 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+            <Calculator className="w-6 h-6 sm:w-7 sm:h-7 text-primary shrink-0" />
             EMI Calculator
             {profilesLoading && !profiles?.length ? (
               <div className="h-5 w-24 bg-muted animate-pulse rounded-md ml-2"></div>
@@ -539,11 +539,11 @@ export default function EMICalculatorPage() {
               </div>
             ) : null}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm break-words min-w-0">
             Calculate your monthly installments and track outstanding loan balances.
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto min-w-0">
           <ProfileSelector 
             profiles={profiles || []} 
             activeProfileId={activeProfileId} 
@@ -551,16 +551,16 @@ export default function EMICalculatorPage() {
             loading={profilesLoading}
             trucks={trucks}
           />
-          <Button variant="outline" onClick={() => setIsManagerOpen(true)} disabled={profilesLoading && !profiles?.length} className="rounded-xl shadow-sm">
+          <Button variant="outline" onClick={() => setIsManagerOpen(true)} disabled={profilesLoading && !profiles?.length} className="rounded-xl shadow-sm w-full sm:w-auto justify-center shrink-0">
             {profilesLoading && !profiles?.length ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Settings2 className="w-4 h-4 mr-2" />}
             Manage Profiles
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 w-full min-w-0">
         {/* Input Section */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-4 sm:space-y-6 w-full min-w-0">
           <Card className="border-border shadow-sm">
             <CardHeader className="bg-muted/20 border-b border-border pb-4">
               <div className="flex items-center justify-between">
@@ -829,28 +829,25 @@ export default function EMICalculatorPage() {
         </div>
 
         {/* Status & Summary Section */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-6 w-full min-w-0">
           {summary ? (
             <>
               {/* Primary Highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full min-w-0">
                 <Card className="bg-primary text-primary-foreground border-transparent shadow-md rounded-2xl">
-                  <CardContent className="p-6">
-                    <p className="text-primary-foreground/80 text-sm font-medium mb-1">Monthly EMI</p>
+                  <CardContent className="p-4 sm:p-6"><p className="text-primary-foreground/80 text-sm font-medium mb-1">Monthly EMI</p>
                     <p className="text-3xl font-bold tracking-tight tabular-nums">{formatCurrency(summary.emi)}</p>
                     <p className="text-primary-foreground/70 text-xs mt-2 truncate">{bankName} Loan</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-card border-border shadow-sm rounded-2xl">
-                  <CardContent className="p-6">
-                    <p className="text-muted-foreground text-sm font-medium mb-1">Total Interest</p>
+                  <CardContent className="p-4 sm:p-6"><p className="text-muted-foreground text-sm font-medium mb-1">Total Interest</p>
                     <p className="text-2xl font-bold tracking-tight text-destructive tabular-nums">{formatCurrency(summary.totalInterest)}</p>
                     <p className="text-muted-foreground text-xs mt-2">Over {tenureType === 'years' ? tenure * 12 : tenure} months</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-card border-border shadow-sm rounded-2xl">
-                  <CardContent className="p-6">
-                    <p className="text-muted-foreground text-sm font-medium mb-1">Total Amount Payable</p>
+                  <CardContent className="p-4 sm:p-6"><p className="text-muted-foreground text-sm font-medium mb-1">Total Amount Payable</p>
                     <p className="text-2xl font-bold tracking-tight tabular-nums">{formatCurrency(summary.totalAmount)}</p>
                     <p className="text-muted-foreground text-xs mt-2">Principal + Interest</p>
                   </CardContent>
@@ -869,7 +866,7 @@ export default function EMICalculatorPage() {
                       Your extra payments will significantly reduce your loan cost and tenure!
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <CardContent className="p-3.5 sm:p-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 w-full min-w-0">
                     <div className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-500/20">
                       <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Total Interest Saved</p>
                       <p className="text-2xl font-extrabold text-emerald-500 tabular-nums">
@@ -902,7 +899,7 @@ export default function EMICalculatorPage() {
               )}
 
               {/* Status and Visualization Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full min-w-0">
                 {/* Current Status As of Today */}
                 <Card className="border-border shadow-sm overflow-hidden rounded-2xl flex flex-col justify-between">
                   <CardHeader className="bg-muted/20 border-b border-border pb-4">
