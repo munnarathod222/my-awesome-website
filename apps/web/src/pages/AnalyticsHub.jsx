@@ -36,6 +36,7 @@ import CategoryMonthlyTable from '@/components/CategoryMonthlyTable.jsx';
 import CategoryMonthlyCharts from '@/components/CategoryMonthlyCharts.jsx';
 import CategoryComparisonMonthly from '@/components/CategoryComparisonMonthly.jsx';
 import CharteredAccountantPortal from '@/components/CharteredAccountantPortal.jsx';
+import BusinessGrowthTracker from '@/components/BusinessGrowthTracker.jsx';
 import { 
   BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, 
   Tooltip, XAxis, YAxis, CartesianGrid 
@@ -125,7 +126,13 @@ const AnalyticsHub = () => {
   });
 
   const [selectedTruckId, setSelectedTruckId] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('tab')) return p.get('tab');
+    }
+    return 'overview';
+  });
   const [selectedMonth, setSelectedMonth] = useState('2026-07');
   const [drilldownActive, setDrilldownActive] = useState(false);
   const [customInsValues, setCustomInsValues] = useState({});
@@ -643,6 +650,7 @@ const AnalyticsHub = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="flex w-full overflow-x-auto hide-scrollbar sm:w-auto bg-muted/50 p-1 rounded-xl mb-8 gap-1 no-print flex-row inline-flex whitespace-nowrap scroll-smooth">
               <TabsTrigger value="overview" className="rounded-lg text-xs shrink-0">Overview</TabsTrigger>
+              <TabsTrigger value="growth" className="rounded-lg text-xs shrink-0 font-medium text-indigo-400 data-[state=active]:text-indigo-200 data-[state=active]:bg-indigo-950/60">📈 Business Growth</TabsTrigger>
               <TabsTrigger value="revenue" className="rounded-lg text-xs shrink-0">Revenue</TabsTrigger>
               <TabsTrigger value="shipments" className="rounded-lg text-xs shrink-0">Shipments</TabsTrigger>
               <TabsTrigger value="expenses" className="rounded-lg text-xs shrink-0">Expenses</TabsTrigger>
@@ -1536,6 +1544,15 @@ const AnalyticsHub = () => {
               <CharteredAccountantPortal 
                 startDate={filters.startDate} 
                 endDate={filters.endDate} 
+              />
+            </TabsContent>
+
+            {/* Tab Content: Business Growth Command Center */}
+            <TabsContent value="growth" className="space-y-6 m-0 animate-in fade-in duration-300">
+              <BusinessGrowthTracker 
+                trips={data.trips || []} 
+                expenses={data.expensesList || []} 
+                trucks={data.trucks || []} 
               />
             </TabsContent>
           </Tabs>

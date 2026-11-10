@@ -1,4 +1,5 @@
 import FleetMonthlyTripTracker from '@/components/FleetMonthlyTripTracker.jsx';
+import BusinessGrowthWidget from '@/components/BusinessGrowthWidget.jsx';
 import React, { useEffect, useState, useRef } from 'react';
 import { useRoleBasedAccess } from '@/hooks/useRoleBasedAccess.js';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -149,6 +150,7 @@ const DashboardPage = () => {
   const [allFleetTrips, setAllFleetTrips] = useState([]);
   const [allFleetTrucks, setAllFleetTrucks] = useState([]);
   const [allFleetDrivers, setAllFleetDrivers] = useState([]);
+  const [allFleetExpenses, setAllFleetExpenses] = useState([]);
   const [stats, setStats] = useState({
     todayBusiness: 0, todayExpenses: 0, todayProfit: 0, todayMargin: '0',
     todayTripsCount: 0, todayExpensesCount: 0, todayDeliveredCount: 0, todayInTransitCount: 0,
@@ -331,6 +333,10 @@ const DashboardPage = () => {
       setRecentTrips(recentTripsRes?.items || []);
       setOpenProblems(maintenanceProblemsRes?.items || []);
       setFastagList(sortedFastag);
+      setAllFleetTrips(Array.isArray(allTripsFullList) ? allTripsFullList : []);
+      setAllFleetTrucks(safeTrucks);
+      setAllFleetDrivers(Array.isArray(employeesRes) ? employeesRes : []);
+      setAllFleetExpenses(expenseItems);
       setLastRefreshed(new Date());
     } catch (err) {
       console.error('[Dashboard] fetch error:', err);
@@ -520,6 +526,16 @@ const DashboardPage = () => {
               icon={Truck} accentColor="#0ea5e9"
               description={stats.todayTripsCount > 0 ? `${stats.todayInTransitCount || 0} in transit · ${stats.todayDeliveredCount || 0} delivered` : `Fleet: ${stats.trucks || 0} registered vehicles`}
               onClick={() => navigate('/track-shipment')}
+            />
+          </motion.div>
+
+          {/* Business Growth Pulse & Target Pacing */}
+          <motion.div variants={item} id="business-growth-pulse">
+            <BusinessGrowthWidget 
+              trips={allFleetTrips} 
+              expenses={allFleetExpenses} 
+              trucks={allFleetTrucks} 
+              onOpenFullGrowth={() => navigate('/analytics?tab=growth')} 
             />
           </motion.div>
 

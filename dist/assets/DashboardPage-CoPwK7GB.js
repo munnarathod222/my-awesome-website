@@ -1,4 +1,332 @@
 
+function _computeGrowthMetrics(allTrips = [], allExpenses = [], allTrucks = [], targetRevenue = null) {
+  const safeTrips = Array.isArray(allTrips) ? allTrips : [];
+  const safeExpenses = Array.isArray(allExpenses) ? allExpenses : [];
+  const safeTrucks = Array.isArray(allTrucks) ? allTrucks : [];
+
+  const now = new Date();
+  const istDate = new Date(now.getTime() + (330 + now.getTimezoneOffset()) * 60000);
+  const currentYear = istDate.getFullYear();
+  const currentMonthIdx = istDate.getMonth();
+  const currentDay = istDate.getDate();
+  const daysInCurrentMonth = new Date(currentYear, currentMonthIdx + 1, 0).getDate();
+
+  const getMonthKey = (y, m) => `${y}-${(m + 1).toString().padStart(2, '0')}`;
+  const getMonthLabel = (y, m) => new Date(y, m, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+  const monthList = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(currentYear, currentMonthIdx - i, 1);
+    const y = d.getFullYear();
+    const mIdx = d.getMonth();
+    monthList.push({
+      key: getMonthKey(y, mIdx),
+      label: getMonthLabel(y, mIdx),
+      year: y,
+      monthIdx: mIdx,
+      isCurrent: i === 0
+    });
+  }
+
+  const monthlyBuckets = {};
+  monthList.forEach(m => {
+    monthlyBuckets[m.key] = {
+      key: m.key,
+      label: m.label,
+      revenue: 0,
+      expenses: 0,
+      profit: 0,
+      margin: 0,
+      tripCount: 0,
+      arpt: 0,
+      clients: {},
+      lanes: {}
+    };
+  });
+
+  safeTrips.forEach(t => {
+    if (!t) return;
+    const dStr = (t.date || t.created || t.start_date || '').slice(0, 7);
+    if (!monthlyBuckets[dStr]) return;
+    const rev = Number(t.revenue) || Number(t.freight_amount) || Number(t.rate) || 0;
+    monthlyBuckets[dStr].revenue += rev;
+    monthlyBuckets[dStr].tripCount += 1;
+    const client = (t.client_name || t.customer_name || 'Market / Spot Load').trim();
+    monthlyBuckets[dStr].clients[client] = (monthlyBuckets[dStr].clients[client] || 0) + rev;
+    const origin = (t.origin || t.from || 'Hub').trim();
+    const dest = (t.destination || t.to || 'Dest').trim();
+    const lane = origin + ' ➔ ' + dest;
+    monthlyBuckets[dStr].lanes[lane] = (monthlyBuckets[dStr].lanes[lane] || 0) + 1;
+  });
+
+  safeExpenses.forEach(e => {
+    if (!e) return;
+    const cat = (e.category || '').toLowerCase();
+    const sub = (e.subcategory || '').toLowerCase();
+    if (cat.includes('advance') || sub.includes('advance')) return;
+    const dStr = (e.bill_date || e.date || e.created || '').slice(0, 7);
+    if (!monthlyBuckets[dStr]) return;
+    monthlyBuckets[dStr].expenses += (Number(e.amount) || 0);
+  });
+
+  const sortedMonths = monthList.map((m, idx) => {
+    const data = monthlyBuckets[m.key];
+    const profit = data.revenue - data.expenses;
+    const margin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
+    const arpt = data.tripCount > 0 ? Math.round(data.revenue / data.tripCount) : 0;
+    let momRevGrowth = 0;
+    if (idx > 0) {
+      const prev = monthlyBuckets[monthList[idx - 1].key];
+      momRevGrowth = prev.revenue > 0 
+        ? ((data.revenue - prev.revenue) / prev.revenue) * 100 
+        : (data.revenue > 0 ? 100 : 0);
+    }
+    return {
+      ...data,
+      profit,
+      margin: Math.round(margin * 10) / 10,
+      arpt,
+      momRevGrowth: Math.round(momRevGrowth * 10) / 10,
+      isCurrent: m.isCurrent
+    };
+  });
+
+  const currentMonthData = sortedMonths[sortedMonths.length - 1];
+  const prevMonthData = sortedMonths[sortedMonths.length - 2] || { revenue: 0, profit: 0, tripCount: 0 };
+
+  const defaultTarget = targetRevenue || (prevMonthData.revenue > 0 ? Math.round(prevMonthData.revenue * 1.15) : 2500000);
+  const target = Math.max(Number(targetRevenue) || defaultTarget, 100000);
+
+  const daysElapsed = Math.max(currentDay, 1);
+  const dailyRunRate = currentMonthData.revenue / daysElapsed;
+  const projectedMonthRevenue = Math.round(dailyRunRate * daysInCurrentMonth);
+  const targetPctAchieved = Math.min(Math.round((currentMonthData.revenue / target) * 1000) / 10, 999);
+
+  const expectedPacingPct = (daysElapsed / daysInCurrentMonth) * 100;
+  let pacingStatus = 'on_track';
+  if (targetPctAchieved >= expectedPacingPct * 1.05) {
+    pacingStatus = 'ahead';
+  } else if (targetPctAchieved < expectedPacingPct * 0.85) {
+    pacingStatus = 'lagging';
+  }
+
+  const fleetCount = Math.max(safeTrucks.length, 1);
+  const yieldPerTruckPerDay = Math.round(currentMonthData.revenue / (fleetCount * daysElapsed));
+  const tripsPerTruck = Math.round((currentMonthData.tripCount / fleetCount) * 10) / 10;
+  const scalePotentialOneTruck = Math.round(projectedMonthRevenue / fleetCount);
+
+  const sortedLanes = Object.entries(currentMonthData.lanes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([lane, count]) => ({ lane, count }));
+
+  const totalMonthRev = Math.max(currentMonthData.revenue, 1);
+  const sortedClients = Object.entries(currentMonthData.clients)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([name, rev]) => ({
+      name,
+      revenue: rev,
+      sharePct: Math.round((rev / totalMonthRev) * 1000) / 10
+    }));
+
+  return {
+    currentMonth: currentMonthData,
+    prevMonth: prevMonthData,
+    target,
+    daysElapsed,
+    daysInCurrentMonth,
+    daysRemaining: daysInCurrentMonth - daysElapsed,
+    dailyRunRate: Math.round(dailyRunRate),
+    projectedMonthRevenue,
+    targetPctAchieved,
+    pacingStatus,
+    fleetCount,
+    yieldPerTruckPerDay,
+    tripsPerTruck,
+    scalePotentialOneTruck,
+    history: sortedMonths,
+    topLanes: sortedLanes,
+    topClients: sortedClients
+  };
+}
+
+function _generateGrowthWhatsAppSnapshot(growth) {
+  if (!growth) return '';
+  const { currentMonth, target, targetPctAchieved, projectedMonthRevenue, fleetCount, tripsPerTruck, yieldPerTruckPerDay, daysElapsed, daysInCurrentMonth } = growth;
+  const revFormatted = '₹' + (currentMonth.revenue || 0).toLocaleString('en-IN');
+  const profitFormatted = '₹' + (currentMonth.profit || 0).toLocaleString('en-IN');
+  const targetFormatted = '₹' + target.toLocaleString('en-IN');
+  const projectedFormatted = '₹' + projectedMonthRevenue.toLocaleString('en-IN');
+  const momSign = currentMonth.momRevGrowth >= 0 ? '+' : '';
+
+  return '📊 *JAI BHAVANI CARGO — BUSINESS GROWTH PULSE* 🚚\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '🗓️ *Period:* ' + currentMonth.label + ' (Day ' + daysElapsed + ' of ' + daysInCurrentMonth + ')\n' +
+    '🎯 *Monthly Target:* ' + targetFormatted + '\n' +
+    '💰 *Revenue to Date:* ' + revFormatted + ' (' + targetPctAchieved + '% achieved)\n' +
+    '📈 *MoM Growth Rate:* ' + momSign + currentMonth.momRevGrowth + '%\n' +
+    '💵 *Net Margin:* ' + currentMonth.margin + '% (' + profitFormatted + ')\n' +
+    '🔮 *Month-End Run-Rate Forecast:* ' + projectedFormatted + '\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '🚛 *Fleet Scale & Utilization:*\n' +
+    '• Active Fleet: ' + fleetCount + ' Registered Trucks\n' +
+    '• Turnaround Frequency: ' + tripsPerTruck + ' trips/truck\n' +
+    '• Daily Asset Yield: ₹' + yieldPerTruckPerDay.toLocaleString('en-IN') + '/truck/day\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+    '⚡ _Generated instantly via Jai Bhavani Cargo Portal_';
+}
+
+
+function _BusinessGrowthWidget({ trips = [], expenses = [], trucks = [], onOpenFullGrowth, ReactModule, jsx }) {
+  const [copied, setCopied] = ReactModule.useState(false);
+  const storedTarget = typeof window !== 'undefined' ? Number(localStorage.getItem('jbc_monthly_growth_target')) : null;
+  const growth = _computeGrowthMetrics(trips, expenses, trucks, storedTarget);
+
+  const { currentMonth, target, daysElapsed, daysInCurrentMonth, daysRemaining, projectedMonthRevenue, targetPctAchieved, pacingStatus, yieldPerTruckPerDay, scalePotentialOneTruck } = growth;
+
+  const handleCopyWhatsApp = () => {
+    const text = _generateGrowthWhatsAppSnapshot(growth);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const remainingToTarget = Math.max(target - currentMonth.revenue, 0);
+  const dailyNeeded = daysRemaining > 0 ? Math.round(remainingToTarget / daysRemaining) : 0;
+
+  return jsx.jsxs("div", {
+    className: "border border-indigo-500/25 bg-gradient-to-br from-indigo-950/30 via-slate-900/60 to-slate-950/80 rounded-2xl shadow-xl overflow-hidden backdrop-blur-md",
+    children: [
+      jsx.jsxs("div", {
+        className: "px-5 py-3.5 border-b border-indigo-500/15 flex flex-wrap items-center justify-between gap-3 bg-indigo-500/5",
+        children: [
+          jsx.jsxs("div", {
+            className: "flex items-center gap-2.5",
+            children: [
+              jsx.jsx("div", {
+                className: "p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-inner",
+                children: jsx.jsx("svg", { className: "w-4 h-4 text-indigo-400", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: "2", children: jsx.jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" }) })
+              }),
+              jsx.jsxs("div", {
+                children: [
+                  jsx.jsxs("div", {
+                    className: "flex items-center gap-2",
+                    children: [
+                      jsx.jsx("h3", { className: "text-sm font-semibold text-slate-100 tracking-tight", children: "Business Growth Pulse & Target Pacing" }),
+                      jsx.jsx("span", { className: "px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30", children: currentMonth.label })
+                    ]
+                  }),
+                  jsx.jsxs("p", {
+                    className: "text-[11px] text-slate-400",
+                    children: ["Day ", daysElapsed, " of ", daysInCurrentMonth, " · ", daysRemaining, " days remaining in billing cycle"]
+                  })
+                ]
+              })
+            ]
+          }),
+          jsx.jsxs("div", {
+            className: "flex items-center gap-2",
+            children: [
+              jsx.jsxs("button", {
+                onClick: handleCopyWhatsApp,
+                className: "h-8 px-3 text-xs border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/50 text-emerald-300 rounded-lg flex items-center gap-1.5 transition-all font-medium",
+                children: [
+                  jsx.jsx("span", { children: copied ? "✓ Copied Snapshot" : "📤 WhatsApp Snapshot" })
+                ]
+              }),
+              onOpenFullGrowth ? jsx.jsxs("button", {
+                onClick: onOpenFullGrowth,
+                className: "h-8 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-1 font-medium shadow-md shadow-indigo-600/30 transition-all",
+                children: [
+                  jsx.jsx("span", { children: "Full Growth Hub" }),
+                  jsx.jsx("span", { children: "→" })
+                ]
+              }) : null
+            ]
+          })
+        ]
+      }),
+      jsx.jsxs("div", {
+        className: "p-5 space-y-4",
+        children: [
+          jsx.jsxs("div", {
+            className: "grid grid-cols-2 md:grid-cols-4 gap-3",
+            children: [
+              jsx.jsxs("div", {
+                className: "p-3.5 rounded-xl bg-slate-900/60 border border-slate-800",
+                children: [
+                  jsx.jsxs("div", { className: "text-[11px] font-medium text-slate-400 flex items-center justify-between", children: [jsx.jsx("span", { children: "Month Revenue" }), jsx.jsx("span", { className: "text-indigo-400", children: "🎯" })] }),
+                  jsx.jsxs("div", { className: "text-lg font-bold text-slate-100 mt-1", children: ["₹", (currentMonth.revenue || 0).toLocaleString("en-IN")] }),
+                  jsx.jsxs("div", { className: "text-[11px] text-slate-400 mt-0.5", children: ["Target: ₹", target.toLocaleString("en-IN")] })
+                ]
+              }),
+              jsx.jsxs("div", {
+                className: "p-3.5 rounded-xl bg-slate-900/60 border border-slate-800",
+                children: [
+                  jsx.jsxs("div", { className: "text-[11px] font-medium text-slate-400 flex items-center justify-between", children: [jsx.jsx("span", { children: "MoM Revenue Velocity" }), jsx.jsx("span", { children: currentMonth.momRevGrowth >= 0 ? "📈" : "📉" })] }),
+                  jsx.jsxs("div", { className: "text-lg font-bold mt-1 " + (currentMonth.momRevGrowth >= 0 ? "text-emerald-400" : "text-rose-400"), children: [(currentMonth.momRevGrowth >= 0 ? "+" : ""), currentMonth.momRevGrowth, "%"] }),
+                  jsx.jsxs("div", { className: "text-[11px] text-slate-400 mt-0.5", children: ["Net Margin: ", currentMonth.margin, "%"] })
+                ]
+              }),
+              jsx.jsxs("div", {
+                className: "p-3.5 rounded-xl bg-slate-900/60 border border-slate-800",
+                children: [
+                  jsx.jsxs("div", { className: "text-[11px] font-medium text-slate-400 flex items-center justify-between", children: [jsx.jsx("span", { children: "Month-End Run Rate" }), jsx.jsx("span", { className: "text-amber-400", children: "⚡" })] }),
+                  jsx.jsxs("div", { className: "text-lg font-bold text-amber-300 mt-1", children: ["₹", projectedMonthRevenue.toLocaleString("en-IN")] }),
+                  jsx.jsxs("div", { className: "text-[11px] text-slate-400 mt-0.5", children: ["Daily Pace: ₹", growth.dailyRunRate.toLocaleString("en-IN"), "/day"] })
+                ]
+              }),
+              jsx.jsxs("div", {
+                className: "p-3.5 rounded-xl bg-slate-900/60 border border-slate-800",
+                children: [
+                  jsx.jsxs("div", { className: "text-[11px] font-medium text-slate-400 flex items-center justify-between", children: [jsx.jsx("span", { children: "Asset Yield / Truck" }), jsx.jsx("span", { className: "text-sky-400 text-[10px]", children: growth.tripsPerTruck + " trips/ea" })] }),
+                  jsx.jsxs("div", { className: "text-lg font-bold text-sky-300 mt-1", children: ["₹", yieldPerTruckPerDay.toLocaleString("en-IN"), jsx.jsx("span", { className: "text-[10px] font-normal text-slate-400", children: "/day" })] }),
+                  jsx.jsxs("div", { className: "text-[11px] text-slate-400 mt-0.5", children: ["+1 Truck: ~₹", Math.round(scalePotentialOneTruck / 1000), "k/mo"] })
+                ]
+              })
+            ]
+          }),
+          jsx.jsxs("div", {
+            className: "p-3.5 rounded-xl bg-slate-950/70 border border-indigo-500/20 space-y-2",
+            children: [
+              jsx.jsxs("div", {
+                className: "flex items-center justify-between text-xs",
+                children: [
+                  jsx.jsxs("div", { className: "flex items-center gap-2", children: [jsx.jsx("span", { className: "font-semibold text-slate-200", children: "Target Progress" }), jsx.jsxs("span", { className: "text-indigo-400 font-bold", children: [targetPctAchieved, "%"] })] }),
+                  jsx.jsx("div", {
+                    className: "text-[11px]",
+                    children: pacingStatus === 'ahead' ? jsx.jsx("span", { className: "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-medium border border-emerald-500/30", children: "🚀 Ahead of Schedule" }) :
+                              pacingStatus === 'on_track' ? jsx.jsx("span", { className: "px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium border border-blue-500/30", children: "🟢 On Track with Run-Rate" }) :
+                              jsx.jsxs("span", { className: "px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium border border-amber-500/30", children: ["⚠️ Pacing Needs ₹", dailyNeeded.toLocaleString("en-IN"), "/day"] })
+                  })
+                ]
+              }),
+              jsx.jsx("div", {
+                className: "w-full h-2.5 bg-slate-800 rounded-full overflow-hidden relative border border-slate-700/50",
+                children: jsx.jsx("div", {
+                  className: "h-full rounded-full transition-all duration-700 " + (pacingStatus === 'ahead' ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : pacingStatus === 'on_track' ? 'bg-gradient-to-r from-indigo-500 to-blue-400' : 'bg-gradient-to-r from-amber-500 to-rose-400'),
+                  style: { width: Math.min(targetPctAchieved, 100) + "%" }
+                })
+              }),
+              jsx.jsxs("div", {
+                className: "flex items-center justify-between text-[11px] text-slate-400 pt-0.5",
+                children: [
+                  jsx.jsxs("span", { children: ["₹", (currentMonth.revenue || 0).toLocaleString("en-IN"), " achieved"] }),
+                  jsx.jsx("span", { children: remainingToTarget > 0 ? "₹" + remainingToTarget.toLocaleString("en-IN") + " needed in " + daysRemaining + " days" : "🎉 Monthly Target Achieved!" })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    ]
+  });
+}
+
+
 function _IdleDayLossCalculatorModal({ isOpen, onClose, truck, allTrucks = [], allTrips = [], ReactModule }) {
   const [activeTab, setActiveTab] = ReactModule.useState('calculator');
   const [selectedPlate, setSelectedPlate] = ReactModule.useState('');
@@ -974,7 +1302,10 @@ const ut=()=>{const{currentUser:c}=gs(),{isSuperAdmin:i,isAdmin:I}=Gs(),{t:w}=Js
     window.dispatchEvent(new Event("jbc-role-change"));
   };
   const jbcResetRole=()=>{localStorage.removeItem("jbc_simulated_role");setJbcSimRole(jbcCurrentRole);window.dispatchEvent(new Event("jbc-role-change"));};
-  a.useEffect(()=>{(c?.role==="Client"||c?.role==="client")&&m("/client-portal",{replace:!0})},[c,m]);const[t,L]=a.useState({todayBusiness:0,todayExpenses:0,todayProfit:0,todayMargin:"0",todayTripsCount:0,todayExpensesCount:0,todayDeliveredCount:0,todayInTransitCount:0,users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,x,y,A,F,T,D,allTripsList]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getList(1,1000,{fields:"id,amount,category,subcategory",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getFullList({sort:"-date",$autoCancel:!1}).catch(()=>[])]);let P=0,U=0,qe=0;const Be=J?.items||[],He=s?.items||[],Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=He.filter(N=>!((N.category||"").toLowerCase().includes("advance")||(N.subcategory||"").toLowerCase().includes("advance"))).reduce((N,pe)=>N+(pe.amount||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);
+  a.useEffect(()=>{(c?.role==="Client"||c?.role==="client")&&m("/client-portal",{replace:!0})},[c,m]);const [_fleetTrips, setFleetTrips] = a.useState([]);
+const [_fleetExpenses, setFleetExpenses] = a.useState([]);
+const [_fleetTrucks, setFleetTrucks] = a.useState([]);
+const[t,L]=a.useState({todayBusiness:0,todayExpenses:0,todayProfit:0,todayMargin:"0",todayTripsCount:0,todayExpensesCount:0,todayDeliveredCount:0,todayInTransitCount:0,users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,x,y,A,F,T,D,allTripsList]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getList(1,1000,{fields:"id,amount,category,subcategory",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getFullList({sort:"-date",$autoCancel:!1}).catch(()=>[])]);let P=0,U=0,qe=0;const Be=J?.items||[],He=s?.items||[],Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=He.filter(N=>!((N.category||"").toLowerCase().includes("advance")||(N.subcategory||"").toLowerCase().includes("advance"))).reduce((N,pe)=>N+(pe.amount||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);
 const _now = new Date();
 const _istDateStr = new Date(_now.getTime() + (330 + _now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
 const _safeAllTrips = Array.isArray(allTripsList) ? allTripsList : [];
@@ -1000,6 +1331,9 @@ const _todayExpensesList = _safeExpenses.filter(N => {
 const _todayExpenses = _todayExpensesList.reduce((sum, N) => sum + (Number(N.amount) || 0), 0);
 const _todayProfit = _todayBusiness - _todayExpenses;
 const _todayMargin = _todayBusiness > 0 ? ((_todayProfit / _todayBusiness) * 100).toFixed(1) : '0';
+setFleetTrips(_safeAllTrips);
+setFleetExpenses(_safeExpenses);
+setFleetTrucks(Fe);
 
 L({
   todayBusiness: _todayBusiness,
@@ -1068,4 +1402,4 @@ L({
     description:(t.todayTripsCount||0)>0?`${t.todayInTransitCount||0} in transit · ${t.todayDeliveredCount||0} delivered`:`Fleet: ${t.trucks||0} registered vehicles`,
     onClick:()=>m("/track-shipment")
   })
-]}),e.jsx(k.div,{variants:E,children:e.jsxs(Y,{className:"border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5",children:[e.jsx("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-sm font-heading flex items-center gap-2",children:[e.jsx(Je,{className:"w-4 h-4 text-primary"})," Active Shipment Pipeline"]}),e.jsx(Te,{className:"text-xs",children:"Real-time status of active logistical jobs"})]})}),e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4 relative",children:[e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 border border-border/20 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-slate-500/10 rounded-lg text-slate-400",children:e.jsx(Xe,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider",children:"Upcoming"}),e.jsx("p",{className:"text-lg font-extrabold text-foreground mt-0.5",children:t.upcomingTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-blue-500/10 rounded-lg text-blue-400",children:e.jsx(ve,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-blue-400/80 uppercase font-bold tracking-wider",children:"Dispatched"}),e.jsx("p",{className:"text-lg font-extrabold text-blue-400 mt-0.5",children:t.dispatchedTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-amber-500/10 rounded-lg text-amber-400",children:e.jsx(ts,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400/80 uppercase font-bold tracking-wider",children:"In Transit"}),e.jsx("p",{className:"text-lg font-extrabold text-amber-400 mt-0.5",children:t.inTransitTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(We,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-emerald-400/80 uppercase font-bold tracking-wider",children:"Delivered"}),e.jsx("p",{className:"text-lg font-extrabold text-emerald-400 mt-0.5",children:t.deliveredTrips||0})]})]})]})]})}),e.jsx(k.div,{variants:E,id:"monthly-trip-intelligence",children:e.jsx(MonthlyTripIntelligenceTracker,{})}),e.jsx(k.div,{variants:E,id:"fleet-status-hub",children:e.jsx(ms,{})}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsx(je,{className:"text-base font-heading",children:w("recent_shipments")}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Latest 8 trips in the system"})]}),e.jsx(v,{variant:"ghost",size:"sm",asChild:!0,className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:e.jsxs(Es,{to:"/trip-logs",children:["All trips ",e.jsx(fe,{className:"w-3.5 h-3.5"})]})})]}),e.jsx(De,{className:"p-3 space-y-1.5",children:f.length===0?e.jsxs("div",{className:"text-center py-10",children:[e.jsx(ve,{className:"w-10 h-10 mx-auto text-muted-foreground/30 mb-3"}),e.jsx("p",{className:"text-sm text-muted-foreground",children:"No shipments yet."}),e.jsx(v,{size:"sm",className:"mt-3 rounded-xl",onClick:()=>G(!0),children:"Dispatch First Trip"})]}):f.map(l=>e.jsx(nt,{trip:l},l.id))})]}),e.jsxs("div",{className:"space-y-4",children:[e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md",children:[e.jsx(Se,{className:"pb-3 border-b border-border/30 px-5 pt-5",children:e.jsx(je,{className:"text-base font-heading",children:w("system_health")})}),e.jsxs(De,{className:"px-5 py-4 space-y-5",children:[[{label:"PODs Pending",value:t.pods,pct:t.trips?Math.min(Math.round(t.pods/t.trips*100),100):0,color:"#f59e0b"},{label:"Registered Users",value:t.users,pct:Math.min(t.users*10,100),color:"#10b981"},{label:"Fleet Utilisation",value:null,pct:78,color:"#6366f1"}].map(({label:l,value:h,pct:H,color:J})=>e.jsxs("div",{children:[e.jsxs("div",{className:"flex justify-between text-xs mb-1.5",children:[e.jsx("span",{className:"font-semibold text-foreground",children:l}),e.jsx("span",{className:"text-muted-foreground font-bold",children:h!==null?h:`${H}%`})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx(k.div,{initial:{width:0},animate:{width:`${H}%`},transition:{duration:.9,ease:"easeOut"},className:"h-1.5 rounded-full",style:{backgroundColor:J}})})]},l)),e.jsxs("div",{className:"pt-3 border-t border-border/30 space-y-2",children:[e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/analytics"),children:[e.jsx(Ps,{className:"w-3.5 h-3.5"})," Full Analytics"]}),e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/reports"),children:[e.jsx(Ze,{className:"w-3.5 h-3.5"})," View Reports"]})]})]})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5 bg-muted/5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Os,{className:"w-4 h-4 text-amber-500"})," Compliance Action Center"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"High-priority operational checklists"})]})}),e.jsxs(De,{className:"p-5 space-y-3.5",children:[t.lowFastagCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/15 hover:bg-amber-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-amber-500/20 rounded-lg text-amber-500 mt-0.5",children:e.jsx(ds,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors",children:"Recharge FASTags"}),e.jsxs("p",{className:"text-[10px] text-amber-400/80 mt-0.5",children:[e.jsx("strong",{children:t.lowFastagCount})," trucks have balances under ₹2,000"]})]}),e.jsx(fe,{className:"w-4 h-4 text-amber-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.expiringDocsCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/15 hover:bg-rose-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-rose-500/20 rounded-lg text-rose-500 mt-0.5",children:e.jsx(Ge,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors",children:"Renew Fleet Permits"}),e.jsxs("p",{className:"text-[10px] text-rose-400/80 mt-0.5",children:[e.jsx("strong",{children:t.expiringDocsCount})," credentials expiring within 30 days"]})]}),e.jsx(fe,{className:"w-4 h-4 text-rose-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),C>0&&e.jsxs("div",{onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/15 hover:bg-blue-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-blue-500/20 rounded-lg text-blue-500 mt-0.5",children:e.jsx(xs,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors",children:"Approve User Access"}),e.jsxs("p",{className:"text-[10px] text-blue-400/80 mt-0.5",children:[e.jsx("strong",{children:C})," signup requests awaiting review"]})]}),e.jsx(fe,{className:"w-4 h-4 text-blue-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.pods>0&&e.jsxs("div",{onClick:()=>m("/pod-management"),className:"flex items-start gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/15 hover:bg-violet-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-violet-500/20 rounded-lg text-violet-500 mt-0.5",children:e.jsx(Ze,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-violet-400 group-hover:text-violet-300 transition-colors",children:"Verify Delivery Proofs"}),e.jsxs("p",{className:"text-[10px] text-violet-400/80 mt-0.5",children:[e.jsx("strong",{children:t.pods})," PODs require validation & archival"]})]}),e.jsx(fe,{className:"w-4 h-4 text-violet-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.lowFastagCount===0&&t.expiringDocsCount===0&&C===0&&t.pods===0&&e.jsxs("div",{className:"py-6 text-center text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"Fleet is fully compliant"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All certifications, fastags, and signups are resolved."})]})]})]})]})]}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Vs,{className:"w-4.5 h-4.5 text-primary"})," Active Breakdowns & Maintenance"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Unresolved vehicle maintenance issues filed by drivers"})]}),e.jsxs(v,{variant:"ghost",size:"sm",onClick:()=>ie(!0),className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:[e.jsx(Us,{className:"w-3.5 h-3.5"})," Log Issue"]})]}),e.jsx(De,{className:"p-5",children:Z.length===0?e.jsxs("div",{className:"text-center py-8 text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"No active breakdown tickets"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All fleet vehicle maintenance requests are resolved."})]}):e.jsx("div",{className:"space-y-3.5",children:Z.map(l=>{const h=l.severity==="High";return e.jsxs("div",{className:"flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs font-bold text-foreground font-mono",children:l.truck_id?l.truck_id:"Unknown Truck"}),e.jsxs("span",{className:"text-[10px] text-muted-foreground font-medium",children:["(",l.category,")"]})]}),e.jsx("p",{className:"text-xs text-muted-foreground leading-normal",children:l.description}),e.jsx("p",{className:"text-[9px] text-muted-foreground/60",children:l.date_reported?new Date(l.date_reported).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"-"})]}),e.jsx(X,{variant:h?"destructive":"warning",className:"text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0",children:l.severity})]},l.id)})})})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(zs,{className:"w-4.5 h-4.5 text-amber-500"})," FASTag Balance Monitor"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Top 5 lowest FASTag account balances"})]})}),e.jsx(De,{className:"p-5 space-y-4",children:te.length===0?e.jsx("div",{className:"text-center py-6 text-muted-foreground text-xs",children:"No FASTag balance data available."}):te.map(l=>{const h=l.current_fastag_balance||0,H=h<2e3,J=Math.min(100,Math.max(0,h/5e3*100));return e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"font-bold text-foreground font-mono",children:l.truck_number}),e.jsxs("span",{className:`font-bold tabular-nums ${H?"text-rose-400":"text-emerald-400"}`,children:["₹",h.toLocaleString()]})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx("div",{className:`h-1.5 rounded-full ${H?"bg-rose-500":"bg-primary"}`,style:{width:`${J}%`}})})]},l.id)})})]})]})]}):e.jsxs(k.div,{variants:E,className:"space-y-4",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsx(be,{title:w("assigned_shipments"),rawValue:t.trips,icon:ve,accentColor:"#6366f1",onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{title:w("pending_pods"),rawValue:t.pods,icon:Ze,accentColor:"#f59e0b"}),e.jsx(be,{title:w("active_tasks"),rawValue:12,icon:Xe,accentColor:"#8b5cf6"})]}),e.jsx(ms,{})]}),e.jsx(Ys,{isOpen:o,onClose:()=>R(!1),onSuccess:()=>{R(!1),V(!0)}}),e.jsx(Qs,{isOpen:le,onClose:()=>G(!1),onSuccess:()=>{G(!1),V(!0)}}),e.jsx(Zs,{isOpen:xe,onClose:()=>me(!1),onSuccess:()=>{me(!1),V(!0)}}),e.jsx(et,{isOpen:ne,onClose:()=>ie(!1),onSuccess:()=>{ie(!1),V(!0)}}),e.jsx(rt,{isOpen:ue,onClose:()=>Ve(!1),summaryData:{month:se(new Date,"MMMM yyyy"),completedTrips:t.trips||28,grossRevenue:t.grossRevenue||t.revenue||198800,fuelCost:t.expenses||68450,netProfit:t.fleetProfit||130350,outstandingDue:198800}}),$&&e.jsx(st,{isOpen:$,onClose:()=>Ue(!1),onApplyScan:l=>{Ue(!1),m("/fuel-tracker",{state:{scannedFuel:l}})}})]})};export{ut as default};
+]}),e.jsx(k.div,{variants:E,id:"business-growth-pulse",children:e.jsx(_BusinessGrowthWidget,{trips:_fleetTrips,expenses:_fleetExpenses,trucks:_fleetTrucks,onOpenFullGrowth:()=>m("/analytics?tab=growth"),ReactModule:a,jsx:e})}),e.jsx(k.div,{variants:E,children:e.jsxs(Y,{className:"border border-border/40 bg-card/45 backdrop-blur-sm rounded-2xl shadow-md p-5",children:[e.jsx("div",{className:"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/30 pb-3 mb-4",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-sm font-heading flex items-center gap-2",children:[e.jsx(Je,{className:"w-4 h-4 text-primary"})," Active Shipment Pipeline"]}),e.jsx(Te,{className:"text-xs",children:"Real-time status of active logistical jobs"})]})}),e.jsxs("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4 relative",children:[e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-muted/20 border border-border/20 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-slate-500/10 rounded-lg text-slate-400",children:e.jsx(Xe,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider",children:"Upcoming"}),e.jsx("p",{className:"text-lg font-extrabold text-foreground mt-0.5",children:t.upcomingTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-blue-500/10 rounded-lg text-blue-400",children:e.jsx(ve,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-blue-400/80 uppercase font-bold tracking-wider",children:"Dispatched"}),e.jsx("p",{className:"text-lg font-extrabold text-blue-400 mt-0.5",children:t.dispatchedTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-amber-500/10 rounded-lg text-amber-400",children:e.jsx(ts,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400/80 uppercase font-bold tracking-wider",children:"In Transit"}),e.jsx("p",{className:"text-lg font-extrabold text-amber-400 mt-0.5",children:t.inTransitTrips||0})]})]}),e.jsxs("div",{className:"flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-xl",children:[e.jsx("div",{className:"p-2 bg-emerald-500/10 rounded-lg text-emerald-400",children:e.jsx(We,{className:"w-4 h-4"})}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-emerald-400/80 uppercase font-bold tracking-wider",children:"Delivered"}),e.jsx("p",{className:"text-lg font-extrabold text-emerald-400 mt-0.5",children:t.deliveredTrips||0})]})]})]})]})}),e.jsx(k.div,{variants:E,id:"monthly-trip-intelligence",children:e.jsx(MonthlyTripIntelligenceTracker,{})}),e.jsx(k.div,{variants:E,id:"fleet-status-hub",children:e.jsx(ms,{})}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsx(je,{className:"text-base font-heading",children:w("recent_shipments")}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Latest 8 trips in the system"})]}),e.jsx(v,{variant:"ghost",size:"sm",asChild:!0,className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:e.jsxs(Es,{to:"/trip-logs",children:["All trips ",e.jsx(fe,{className:"w-3.5 h-3.5"})]})})]}),e.jsx(De,{className:"p-3 space-y-1.5",children:f.length===0?e.jsxs("div",{className:"text-center py-10",children:[e.jsx(ve,{className:"w-10 h-10 mx-auto text-muted-foreground/30 mb-3"}),e.jsx("p",{className:"text-sm text-muted-foreground",children:"No shipments yet."}),e.jsx(v,{size:"sm",className:"mt-3 rounded-xl",onClick:()=>G(!0),children:"Dispatch First Trip"})]}):f.map(l=>e.jsx(nt,{trip:l},l.id))})]}),e.jsxs("div",{className:"space-y-4",children:[e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md",children:[e.jsx(Se,{className:"pb-3 border-b border-border/30 px-5 pt-5",children:e.jsx(je,{className:"text-base font-heading",children:w("system_health")})}),e.jsxs(De,{className:"px-5 py-4 space-y-5",children:[[{label:"PODs Pending",value:t.pods,pct:t.trips?Math.min(Math.round(t.pods/t.trips*100),100):0,color:"#f59e0b"},{label:"Registered Users",value:t.users,pct:Math.min(t.users*10,100),color:"#10b981"},{label:"Fleet Utilisation",value:null,pct:78,color:"#6366f1"}].map(({label:l,value:h,pct:H,color:J})=>e.jsxs("div",{children:[e.jsxs("div",{className:"flex justify-between text-xs mb-1.5",children:[e.jsx("span",{className:"font-semibold text-foreground",children:l}),e.jsx("span",{className:"text-muted-foreground font-bold",children:h!==null?h:`${H}%`})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx(k.div,{initial:{width:0},animate:{width:`${H}%`},transition:{duration:.9,ease:"easeOut"},className:"h-1.5 rounded-full",style:{backgroundColor:J}})})]},l)),e.jsxs("div",{className:"pt-3 border-t border-border/30 space-y-2",children:[e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/analytics"),children:[e.jsx(Ps,{className:"w-3.5 h-3.5"})," Full Analytics"]}),e.jsxs(v,{className:"w-full rounded-xl text-xs gap-2",variant:"outline",onClick:()=>m("/reports"),children:[e.jsx(Ze,{className:"w-3.5 h-3.5"})," View Reports"]})]})]})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5 bg-muted/5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Os,{className:"w-4 h-4 text-amber-500"})," Compliance Action Center"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"High-priority operational checklists"})]})}),e.jsxs(De,{className:"p-5 space-y-3.5",children:[t.lowFastagCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/15 hover:bg-amber-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-amber-500/20 rounded-lg text-amber-500 mt-0.5",children:e.jsx(ds,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-amber-400 group-hover:text-amber-300 transition-colors",children:"Recharge FASTags"}),e.jsxs("p",{className:"text-[10px] text-amber-400/80 mt-0.5",children:[e.jsx("strong",{children:t.lowFastagCount})," trucks have balances under ₹2,000"]})]}),e.jsx(fe,{className:"w-4 h-4 text-amber-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.expiringDocsCount>0&&e.jsxs("div",{onClick:()=>{const l=document.getElementById("fleet-status-hub");if(l){l.scrollIntoView({behavior:"smooth"});const h=document.querySelector('[value="alerts"]');h&&h.click()}},className:"flex items-start gap-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/15 hover:bg-rose-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-rose-500/20 rounded-lg text-rose-500 mt-0.5",children:e.jsx(Ge,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-rose-400 group-hover:text-rose-300 transition-colors",children:"Renew Fleet Permits"}),e.jsxs("p",{className:"text-[10px] text-rose-400/80 mt-0.5",children:[e.jsx("strong",{children:t.expiringDocsCount})," credentials expiring within 30 days"]})]}),e.jsx(fe,{className:"w-4 h-4 text-rose-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),C>0&&e.jsxs("div",{onClick:()=>m("/dashboard/users?tab=signup-requests"),className:"flex items-start gap-3 p-3 rounded-xl bg-blue-500/10 border border-blue-500/15 hover:bg-blue-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-blue-500/20 rounded-lg text-blue-500 mt-0.5",children:e.jsx(xs,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-blue-400 group-hover:text-blue-300 transition-colors",children:"Approve User Access"}),e.jsxs("p",{className:"text-[10px] text-blue-400/80 mt-0.5",children:[e.jsx("strong",{children:C})," signup requests awaiting review"]})]}),e.jsx(fe,{className:"w-4 h-4 text-blue-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.pods>0&&e.jsxs("div",{onClick:()=>m("/pod-management"),className:"flex items-start gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/15 hover:bg-violet-500/15 transition-all cursor-pointer group",children:[e.jsx("div",{className:"p-1.5 bg-violet-500/20 rounded-lg text-violet-500 mt-0.5",children:e.jsx(Ze,{className:"w-4 h-4"})}),e.jsxs("div",{className:"flex-1 min-w-0",children:[e.jsx("p",{className:"text-xs font-bold text-violet-400 group-hover:text-violet-300 transition-colors",children:"Verify Delivery Proofs"}),e.jsxs("p",{className:"text-[10px] text-violet-400/80 mt-0.5",children:[e.jsx("strong",{children:t.pods})," PODs require validation & archival"]})]}),e.jsx(fe,{className:"w-4 h-4 text-violet-500/50 self-center group-hover:translate-x-0.5 transition-transform"})]}),t.lowFastagCount===0&&t.expiringDocsCount===0&&C===0&&t.pods===0&&e.jsxs("div",{className:"py-6 text-center text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"Fleet is fully compliant"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All certifications, fastags, and signups are resolved."})]})]})]})]})]}),e.jsxs(k.div,{variants:E,className:"grid grid-cols-1 lg:grid-cols-3 gap-4",children:[e.jsxs(Y,{className:"lg:col-span-2 border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsxs(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:[e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(Vs,{className:"w-4.5 h-4.5 text-primary"})," Active Breakdowns & Maintenance"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Unresolved vehicle maintenance issues filed by drivers"})]}),e.jsxs(v,{variant:"ghost",size:"sm",onClick:()=>ie(!0),className:"rounded-xl text-xs gap-1 text-primary hover:text-primary hover:bg-primary/10",children:[e.jsx(Us,{className:"w-3.5 h-3.5"})," Log Issue"]})]}),e.jsx(De,{className:"p-5",children:Z.length===0?e.jsxs("div",{className:"text-center py-8 text-muted-foreground flex flex-col items-center justify-center",children:[e.jsx(We,{className:"w-8 h-8 text-emerald-500 mb-2 opacity-75"}),e.jsx("p",{className:"text-xs font-bold text-foreground",children:"No active breakdown tickets"}),e.jsx("p",{className:"text-[10px] mt-0.5",children:"All fleet vehicle maintenance requests are resolved."})]}):e.jsx("div",{className:"space-y-3.5",children:Z.map(l=>{const h=l.severity==="High";return e.jsxs("div",{className:"flex justify-between items-start gap-4 p-3 rounded-xl bg-muted/10 border border-border/30 hover:bg-muted/20 transition-all",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx("span",{className:"text-xs font-bold text-foreground font-mono",children:l.truck_id?l.truck_id:"Unknown Truck"}),e.jsxs("span",{className:"text-[10px] text-muted-foreground font-medium",children:["(",l.category,")"]})]}),e.jsx("p",{className:"text-xs text-muted-foreground leading-normal",children:l.description}),e.jsx("p",{className:"text-[9px] text-muted-foreground/60",children:l.date_reported?new Date(l.date_reported).toLocaleDateString("en-IN",{day:"2-digit",month:"short"}):"-"})]}),e.jsx(X,{variant:h?"destructive":"warning",className:"text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border-0",children:l.severity})]},l.id)})})})]}),e.jsxs(Y,{className:"border border-border/40 bg-card/50 backdrop-blur-sm rounded-2xl shadow-md overflow-hidden",children:[e.jsx(Se,{className:"flex flex-row items-center justify-between pb-3 border-b border-border/30 px-5 pt-5",children:e.jsxs("div",{children:[e.jsxs(je,{className:"text-base font-heading flex items-center gap-2",children:[e.jsx(zs,{className:"w-4.5 h-4.5 text-amber-500"})," FASTag Balance Monitor"]}),e.jsx(Te,{className:"text-xs mt-0.5",children:"Top 5 lowest FASTag account balances"})]})}),e.jsx(De,{className:"p-5 space-y-4",children:te.length===0?e.jsx("div",{className:"text-center py-6 text-muted-foreground text-xs",children:"No FASTag balance data available."}):te.map(l=>{const h=l.current_fastag_balance||0,H=h<2e3,J=Math.min(100,Math.max(0,h/5e3*100));return e.jsxs("div",{className:"space-y-1.5",children:[e.jsxs("div",{className:"flex justify-between items-center text-xs",children:[e.jsx("span",{className:"font-bold text-foreground font-mono",children:l.truck_number}),e.jsxs("span",{className:`font-bold tabular-nums ${H?"text-rose-400":"text-emerald-400"}`,children:["₹",h.toLocaleString()]})]}),e.jsx("div",{className:"w-full bg-secondary/60 rounded-full h-1.5 overflow-hidden",children:e.jsx("div",{className:`h-1.5 rounded-full ${H?"bg-rose-500":"bg-primary"}`,style:{width:`${J}%`}})})]},l.id)})})]})]})]}):e.jsxs(k.div,{variants:E,className:"space-y-4",children:[e.jsxs("div",{className:"grid grid-cols-1 sm:grid-cols-3 gap-4",children:[e.jsx(be,{title:w("assigned_shipments"),rawValue:t.trips,icon:ve,accentColor:"#6366f1",onClick:()=>m("/analytics?tab=shipments")}),e.jsx(be,{title:w("pending_pods"),rawValue:t.pods,icon:Ze,accentColor:"#f59e0b"}),e.jsx(be,{title:w("active_tasks"),rawValue:12,icon:Xe,accentColor:"#8b5cf6"})]}),e.jsx(ms,{})]}),e.jsx(Ys,{isOpen:o,onClose:()=>R(!1),onSuccess:()=>{R(!1),V(!0)}}),e.jsx(Qs,{isOpen:le,onClose:()=>G(!1),onSuccess:()=>{G(!1),V(!0)}}),e.jsx(Zs,{isOpen:xe,onClose:()=>me(!1),onSuccess:()=>{me(!1),V(!0)}}),e.jsx(et,{isOpen:ne,onClose:()=>ie(!1),onSuccess:()=>{ie(!1),V(!0)}}),e.jsx(rt,{isOpen:ue,onClose:()=>Ve(!1),summaryData:{month:se(new Date,"MMMM yyyy"),completedTrips:t.trips||28,grossRevenue:t.grossRevenue||t.revenue||198800,fuelCost:t.expenses||68450,netProfit:t.fleetProfit||130350,outstandingDue:198800}}),$&&e.jsx(st,{isOpen:$,onClose:()=>Ue(!1),onApplyScan:l=>{Ue(!1),m("/fuel-tracker",{state:{scannedFuel:l}})}})]})};export{ut as default};
