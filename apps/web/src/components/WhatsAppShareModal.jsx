@@ -91,182 +91,216 @@ export default function WhatsAppShareModal({
 
   const generatedMessage = useMemo(() => {
     const trackingBase = 'https://www.jaibhavanicargo.com';
+    const officialPhone = '+91 7799072244';
+    const officialEmail = 'operations@jaibhavanicargo.com';
+    const officialBank = `🏦 *Official Bank Account for Remittance:*
+• Bank: HDFC BANK
+• Account No: 50200086884846
+• IFSC Code: HDFC0000456
+• Branch: Ghatkesar Branch
+• Beneficiary: Jai Bhavani Cargo & Logistics
+• GSTIN: 36DPXPR9171A1Z8`;
 
     // 0. DRIVER DISPATCH & GPS NAVIGATION TO UNLOADING POINT
     if (templateType === 'driver_dispatch') {
       const tripId = trip?.lr_number || trip?.trip_id || trip?.id || 'TRIP';
       const truckNo = trip?.truck_number || 'N/A';
       const driverName = trip?.driver_name || trip?.expand?.driver_id?.name || 'Driver';
-      const destination = trip?.end_location || trip?.destination || trip?.route || 'Destination Point';
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+      const routeStr = trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} to ${trip.destination}` : 'Corridor Highway');
+      const routeParts = routeStr.split(/➔|->|to|TO/i);
+      const origCity = (trip?.origin || trip?.start_location || routeParts[0] || 'Origin Hub').trim();
+      const destCity = (trip?.destination || trip?.end_location || routeParts[1] || 'Destination Hub').trim();
 
-      return `📍 *JAI BHAVANI CARGO - GPS NAVIGATION & ROUTE FOR DRIVER*
+      const origGps = trip?.start_location_map_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(origCity)}`;
+      const destGps = trip?.end_location_map_link || `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destCity)}`;
+      const driverNavUrl = `${trackingBase}/driver-nav/${encodeURIComponent(tripId)}`;
+
+      return `📍 *JAI BHAVANI CARGO - DRIVER GPS NAVIGATION & TRIP ROUTE*
 
 Dear *${driverName}*,
 
-Here are your route and GPS navigation directions:
+Here are your dock directions & Google Maps GPS navigation for Truck *${truckNo}* (Trip/LR: *${tripId}*):
 
-📌 *Trip & Vehicle Information:*
-• Trip Ref / LR No: *${tripId}*
-• Vehicle No: *${truckNo}*
-• Destination: *${destination}*
+🛣️ *Assigned Highway Route:*
+• Corridor: *${origCity} ➔ ${destCity}*
 
-🗺️ *Google Maps GPS Navigation Link (Tap to Navigate):*
-${mapsUrl}
+🏢 *Loading Hub Point:*
+• Location: *${origCity}*
+• Map Link: ${origGps}
 
-Drive safely and follow all road regulations!
-📞 Dispatch Control Room: +91 9876543210`;
+🎯 *Final Unloading / Delivery Point:*
+• Location: *${destCity}*
+• Direct GPS Navigation: ${destGps}
+
+📱 *Driver 1-Tap Navigation Dashboard:*
+${driverNavUrl}
+
+Drive safe, adhere to highway lane rules, and inform control room upon arrival!
+📞 Operations Support: ${officialPhone}`;
     }
 
     // 1. BOOKING CONFIRMATION WITH DRIVER & VEHICLE DETAILS
     if (templateType === 'booking_confirmation') {
-      const tripId = trip?.trip_id || trip?.id || quote?.id || 'N/A';
+      const tripId = trip?.lr_number || trip?.trip_id || trip?.id || quote?.id || 'N/A';
       const clientName = trip?.expand?.client_id?.client_name || trip?.client_name || quote?.client_name || 'Valued Partner';
       const truckNo = trip?.truck_number || 'To Be Assigned';
-      const truckSize = trip?.truck_size || trip?.truck_type || '24 FT Container';
-      const driverName = trip?.driver_name || trip?.expand?.driver_id?.name || 'Assigned Driver';
-      const driverPhone = trip?.driver_phone || trip?.expand?.driver_id?.phone || 'Contact Dispatch';
-      const route = trip?.route || `${trip?.origin || 'Origin'} ➔ ${trip?.destination || 'Destination'}`;
+      const truckSize = trip?.truck_size || trip?.truck_type || 'Container Truck';
+      const driverName = trip?.driver_name || trip?.expand?.driver_id?.name || 'Assigned Highway Driver';
+      const rawDriverPhone = trip?.driver_phone || trip?.expand?.driver_id?.phone;
+      const driverPhone = rawDriverPhone ? String(rawDriverPhone) : `${officialPhone} (Central Dispatch)`;
+      const route = trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} ➔ ${trip.destination}` : 'Origin ➔ Destination');
       let loadingDate = 'Today';
       try {
         if (trip?.date) loadingDate = format(new Date(trip.date), 'dd MMM yyyy');
       } catch(e) {}
 
-      return `🚛 *JAI BHAVANI CARGO - TRIP BOOKING & DISPATCH CONFIRMATION*
+      return `🚛 *JAI BHAVANI CARGO - TRIP BOOKING & VEHICLE CONFIRMATION*
 
 Dear *${clientName}*,
 
-Your freight trip booking has been confirmed! Here are the vehicle & driver details:
+Your freight booking has been confirmed! Here are the allocated vehicle & driver details:
 
-📌 *Booking & Vehicle Info:*
+📌 *Consignment & Vehicle Info:*
 • Booking / LR Ref: *${tripId}*
 • Vehicle No: *${truckNo}* (${truckSize})
-• Route: *${route}*
-• Loading Date: *${loadingDate}*
+• Freight Route: *${route}*
+• Scheduled Loading: *${loadingDate}*
 
 👤 *Assigned Driver Details:*
 • Driver Name: *${driverName}*
 • Contact No: *${driverPhone}*
 
-📄 *Attached Booking & Consignment Note:*
-${activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(tripId)}`}
-
-📍 *Live GPS Tracking & Route:*
-${trackingBase}/track/${encodeURIComponent(tripId)}
+📍 *Live GPS Consignment Tracking:*
+${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}
 
 Thank you for choosing Jai Bhavani Cargo & Logistics!
-📞 Operations Support: +91 9876543210`;
+📞 Central Operations: ${officialPhone}
+✉️ ${officialEmail}`;
     }
 
     // 2. RATE QUOTE / FREIGHT ESTIMATION
     if (templateType === 'quote') {
-      const quoteNo = quote?.quote_no || quote?.id || trip?.trip_id || 'QT-8821';
-      const clientName = quote?.client_name || trip?.expand?.client_id?.client_name || 'Valued Customer';
-      const route = quote?.route || `${quote?.origin || 'Origin'} ➔ ${quote?.destination || 'Destination'}` || trip?.route || 'Origin ➔ Destination';
-      const vehicleType = quote?.truck_type || trip?.truck_size || '32 FT MX / 24 FT HQ';
-      const rate = (quote?.amount || quote?.quoted_rate || trip?.revenue || 0).toLocaleString('en-IN');
-      const validTill = quote?.valid_till ? format(new Date(quote.valid_till), 'dd MMM yyyy') : '7 Days';
+      const quoteNo = quote?.quote_no || quote?.quote_number || (trip?.lr_number ? `QT-${trip.lr_number}` : (trip?.trip_id ? `QT-${trip.trip_id}` : 'QT-2026-8812'));
+      const clientName = quote?.client_name || quote?.customer_name || trip?.client_name || trip?.expand?.client_id?.client_name || 'Valued Customer';
+      const rawAmount = quote?.amount || quote?.total_price || quote?.quoted_rate || trip?.revenue || 0;
+      const rate = Number(rawAmount).toLocaleString('en-IN');
+      const route = quote?.route || trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} to ${trip.destination}` : (quote?.origin && quote?.destination ? `${quote.origin} ➔ ${quote.destination}` : 'Corridor Route'));
+      const vehicleType = quote?.truck_type || trip?.truck_size || trip?.truck_type || '24 FT / 32 FT Container';
+      const validTill = quote?.valid_till ? format(new Date(quote.valid_till), 'dd MMM yyyy') : '7 Days from quotation date';
 
       return `🏷️ *JAI BHAVANI CARGO - OFFICIAL FREIGHT RATE QUOTATION*
 
 Dear *${clientName}*,
 
-Please find below our official logistics rate quote for your route requirements:
+We are pleased to provide our official freight rate quotation for your corridor requirements:
 
-📌 *Quotation Details (${quoteNo}):*
-• Route: *${route}*
+📌 *Quotation Summary (${quoteNo}):*
+• Corridor / Route: *${route}*
 • Vehicle Required: *${vehicleType}*
 • Quoted Freight Rate: *₹${rate}* (Excl. GST)
-• Rate Validity: *${validTill}*
+• Rate Validity: *7 Days from quotation date*
 
-📄 *Official Quotation PDF:*
+✅ *Key Inclusions:*
+• Dedicated verified container vehicle & experienced highway driver
+• Real-time GPS Tracking link with arrival alerts
+• 24x7 Central Operations & Control Room monitoring
+
+📄 *Official Quotation PDF & Portal:*
 ${activeDocumentUrl || 'https://www.jaibhavanicargo.com'}
 
-✅ *Service Inclusions:*
-• Dedicated GPS Tracking Link
-• Experienced Highway Driver & Verified Vehicle
-• 24x7 Control Room Support
-
-To confirm booking or request modifications, please respond to this message.
+To confirm vehicle dispatch or discuss schedule, please respond to this message.
 
 *Jai Bhavani Cargo & Logistics*
-📞 Booking Desk: +91 9876543210`;
+📞 Booking Desk: ${officialPhone}
+✉️ ${officialEmail}`;
     }
 
     // 3. INVOICE / BILL SUMMARY
     if (templateType === 'invoice') {
-      const invNo = invoice?.invoice_no || invoice?.id || trip?.trip_id || 'INV-001';
-      const clientName = invoice?.client_name || trip?.expand?.client_id?.client_name || 'Valued Customer';
+      const invNo = invoice?.invoice_no || invoice?.id || trip?.invoice_no || trip?.trip_id || 'INV-001';
+      const clientName = invoice?.client_name || trip?.expand?.client_id?.client_name || trip?.client_name || 'Valued Customer';
       const amount = (invoice?.total_amount || invoice?.amount || trip?.revenue || 0).toLocaleString('en-IN');
-      const dueDate = invoice?.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy') : 'Immediate';
+      const dueDate = invoice?.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy') : 'Upon Receipt / Immediate';
 
       return `🧾 *JAI BHAVANI CARGO - FREIGHT INVOICE SUMMARY*
 
 Dear *${clientName}*,
 
-Please find the details for Invoice *#${invNo}*:
+Please find the details for Freight Invoice *#${invNo}*:
 
-📌 *Invoice Breakdown:*
+📌 *Invoice Summary:*
 • Invoice No: *${invNo}*
 • Total Amount Payable: *₹${amount}*
-• Due Date: *${dueDate}*
+• Payment Due Date: *${dueDate}*
 
-📄 *Attached Invoice PDF Download:*
-${activeDocumentUrl || `https://www.jaibhavanicargo.com/track/${encodeURIComponent(invNo)}`}
+${officialBank}
 
-🏦 *Bank Account Details for Payment:*
-• Account Name: Jai Bhavani Cargo & Logistics
-• Bank Name: HDFC Bank
-• Account No: 50200098765432
-• IFSC Code: HDFC0001234
-• GSTIN: 36DPXPR9171A1Z8
+📄 *Download Digital Invoice PDF:*
+${activeDocumentUrl || `${trackingBase}/api/invoices/trip/${encodeURIComponent(trip?.trip_id || trip?.id || invNo)}/pdf`}
 
 Thank you for your prompt settlement!
 *Jai Bhavani Cargo Billing Desk*
-📞 Support: +91 9876543210`;
+📞 Accounts Support: ${officialPhone}`;
     }
 
     // 4. LIVE TRIP STATUS UPDATE
     if (templateType === 'trip_status' || templateType === 'eta_delivery') {
-      const tripId = trip?.trip_id || trip?.id || 'N/A';
+      const tripId = trip?.lr_number || trip?.trip_id || trip?.id || 'N/A';
       const clientName = trip?.expand?.client_id?.client_name || trip?.client_name || 'Valued Client';
       const truckNo = trip?.truck_number || 'N/A';
-      const driverName = trip?.driver_name || 'N/A';
-      const route = trip?.route || 'Origin ➔ Destination';
-      const status = trip?.trip_status || 'In Transit';
+      const driverName = trip?.driver_name || 'Assigned Highway Driver';
+      const route = trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} ➔ ${trip.destination}` : 'Origin ➔ Destination');
+      const rawStatus = trip?.trip_status || 'In Transit';
+      const isDelivered = rawStatus.toLowerCase().includes('deliver') || rawStatus.toLowerCase().includes('complete') || rawStatus.toLowerCase().includes('settle');
       
-      let formattedEta = 'En-route as per schedule';
-      if (etaDate) {
-        try { formattedEta = format(new Date(etaDate), 'dd MMM yyyy (E)'); } catch (e) {}
+      let statusLine = '';
+      let timeLine = '';
+      if (isDelivered) {
+        statusLine = '✅ DELIVERED & ACKNOWLEDGED';
+        const delDate = trip?.delivery_date ? format(new Date(trip.delivery_date), 'dd MMM yyyy (hh:mm a)') : (trip?.date ? format(new Date(trip.date), 'dd MMM yyyy') : 'Delivered & Received');
+        timeLine = `• Delivery Timestamp: *${delDate}*`;
+      } else {
+        statusLine = `🚚 ${rawStatus.toUpperCase()} (On Schedule)`;
+        let formattedEta = 'En-route as per schedule';
+        if (etaDate) {
+          try { formattedEta = format(new Date(etaDate), 'dd MMM yyyy (E)'); } catch (e) {}
+        }
+        timeLine = `• Expected Delivery (ETA): *${formattedEta}*`;
       }
+
+      const delayLine = trip?.late_delivery_reason ? `\n🚨 *Transit Notice:* ${trip.late_delivery_reason}` : '';
 
       return `🚚 *JAI BHAVANI CARGO - LIVE TRIP STATUS & ETA UPDATE*
 
 Dear *${clientName}*,
 
-Here is the real-time status update for Trip / LR No: *${tripId}*:
+Here is the real-time consignment status for Trip / LR No: *${tripId}*:
 
 📌 *Current Progress:*
 • Trip / LR No: *${tripId}*
-• Status: *${status}*
+• Status: *${statusLine}*
 • Vehicle No: *${truckNo}*
 • Route: *${route}*
 • Driver: *${driverName}*
-• Expected Delivery (ETA): *${formattedEta}*
+${timeLine}${delayLine}
 
-📍 *Live GPS Location & Route Tracking:*
-${trackingBase}/track/${encodeURIComponent(tripId)}
+📍 *Live GPS Consignment Tracking Link:*
+${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}
 
-*Jai Bhavani Cargo Control Room*
-📞 Hotline: +91 9876543210`;
+*Jai Bhavani Cargo Central Control Room*
+📞 Hotline: ${officialPhone}`;
     }
 
     // 5. POD (PROOF OF DELIVERY) ACKNOWLEDGEMENT
     if (templateType === 'pod_proof') {
-      const tripId = trip?.trip_id || pod?.trip_id || trip?.id || 'N/A';
+      const tripId = trip?.lr_number || trip?.trip_id || pod?.trip_id || trip?.id || 'N/A';
       const clientName = trip?.expand?.client_id?.client_name || trip?.client_name || 'Valued Customer';
       const truckNo = trip?.truck_number || 'N/A';
-      const deliveredDate = pod?.delivery_date || trip?.delivery_date ? format(new Date(pod?.delivery_date || trip?.delivery_date), 'dd MMM yyyy (hh:mm a)') : 'Today';
+      const route = trip?.route || (trip?.origin && trip?.destination ? `${trip.origin} ➔ ${trip.destination}` : 'Origin ➔ Destination');
+      const delDate = pod?.delivery_date || trip?.delivery_date ? format(new Date(pod?.delivery_date || trip?.delivery_date), 'dd MMM yyyy (hh:mm a)') : (trip?.date ? format(new Date(trip.date), 'dd MMM yyyy') : 'Delivered & Received');
+
+      const signedPodUrl = trip?.pod_link || (trip?.pod_file ? (trip.pod_file.startsWith('http') ? trip.pod_file : `${trackingBase}/api/files/trips/${trip.id}/${trip.pod_file}`) : '') || (trip?.pod_document ? `${trackingBase}/api/files/trips/${trip.id}/${trip.pod_document}` : '') || activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}`;
+      const invoicePdfUrl = `${trackingBase}/api/invoices/trip/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}/pdf`;
 
       return `📑 *JAI BHAVANI CARGO - PROOF OF DELIVERY (POD) ACKNOWLEDGEMENT*
 
@@ -277,41 +311,90 @@ We are pleased to inform you that your shipment under Trip / LR No: *${tripId}* 
 📌 *Delivery Summary:*
 • Trip / LR No: *${tripId}*
 • Vehicle No: *${truckNo}*
-• Status: *DELIVERED & ACKNOWLEDGED*
-• Delivery Timestamp: *${deliveredDate}*
+• Route: *${route}*
+• Delivery Status: *DELIVERED & ACKNOWLEDGED*
+• Delivery Timestamp: *${delDate}*
 
-📄 *Attached Signed POD Document Copy:*
-${activeDocumentUrl || `${trackingBase}/track/${encodeURIComponent(tripId)}`}
+📄 *View Signed POD Copy & Live Verification:*
+${signedPodUrl}
 
-Thank you for partnering with Jai Bhavani Cargo & Logistics!
-📞 Customer Care: +91 9876543210`;
+🧾 *Download Official Consignment Invoice PDF:*
+${invoicePdfUrl}
+
+Thank you for choosing Jai Bhavani Cargo & Logistics!
+📞 Accounts & POD Desk: ${officialPhone}`;
     }
 
-    // 6. PAYMENT CONFIRMATION
+    // 6. PAYMENT CONFIRMATION / REMINDER
     if (templateType === 'payment_confirmation') {
-      const tripId = trip?.trip_id || trip?.id || 'N/A';
+      const tripId = trip?.lr_number || trip?.trip_id || trip?.id || 'N/A';
       const clientName = trip?.expand?.client_id?.client_name || trip?.client_name || 'Valued Client';
-      const amountReceived = paymentData?.amount ? (Number(paymentData.amount)).toLocaleString('en-IN') : (trip?.advance_received_from_client || 0).toLocaleString('en-IN');
-      const paymentMode = paymentData?.payment_method || trip?.client_payment_status || 'Bank Transfer / Online';
-      const balancePending = Math.max(0, (trip?.revenue || 0) - (trip?.advance_received_from_client || 0)).toLocaleString('en-IN');
+      const truckNo = trip?.truck_number || 'N/A';
+      const route = trip?.route || 'Corridor Transit';
+      const rev = Number(trip?.revenue || paymentData?.total_amount || 0);
+      const adv = Number(paymentData?.amount || trip?.advance_received_from_client || 0);
+      const bal = Math.max(0, rev - adv);
+      const isFullyPaid = bal <= 0 || trip?.client_payment_status === 'received' || trip?.client_payment_status === 'Paid';
+      const payMode = paymentData?.payment_method || (trip?.client_payment_status && trip.client_payment_status !== 'pending' ? trip.client_payment_status : 'Bank Transfer / NEFT');
 
-      return `✅ *JAI BHAVANI CARGO - PAYMENT RECEIVED CONFIRMATION*
+      if (isFullyPaid) {
+        return `✅ *JAI BHAVANI CARGO - FULL PAYMENT SETTLEMENT CONFIRMATION*
 
 Dear *${clientName}*,
 
-We have successfully received payment for your freight shipment. Here are the transaction details:
+We confirm receipt of the full payment settlement for your freight shipment:
 
-���� *Payment Receipt Details:*
-• Trip / LR No: *${tripId}*
-• Amount Received: *₹${amountReceived}*
-• Payment Mode: *${paymentMode}*
-• Vehicle No: *${trip?.truck_number || 'N/A'}*
-• Route: *${trip?.route || 'N/A'}*
-• Balance Pending: *₹${balancePending}*
+📌 *Settlement Details:*
+• Trip / LR Ref: *${tripId}*
+• Total Freight: *₹${rev.toLocaleString('en-IN')}*
+• Amount Received: *₹${(rev || adv).toLocaleString('en-IN')}*
+• Payment Mode: *${payMode}*
+• Vehicle No: *${truckNo}*
+• Route: *${route}*
+• Balance Outstanding: *₹0 (Fully Cleared)*
 
-Thank you for your business!
-*Jai Bhavani Cargo & Logistics*
-📞 Accounts Support: +91 9876543210`;
+Your account for this shipment is completely settled. Thank you for your business!
+📞 Accounts Desk: ${officialPhone}`;
+      }
+
+      if (adv > 0 && bal > 0) {
+        return `💵 *JAI BHAVANI CARGO - ADVANCE PAYMENT RECEIVED & BALANCE NOTICE*
+
+Dear *${clientName}*,
+
+We have received the advance freight payment for Trip / LR No: *${tripId}*. Here is your payment summary:
+
+📌 *Payment Summary:*
+• Trip / LR Ref: *${tripId}*
+• Total Freight Agreed: *₹${rev.toLocaleString('en-IN')}*
+• Advance Received: *₹${adv.toLocaleString('en-IN')}*
+• Balance Pending Due: *₹${bal.toLocaleString('en-IN')}*
+• Vehicle No: *${truckNo}*
+• Route: *${route}*
+
+${officialBank}
+
+Thank you for your cooperation!
+📞 Accounts Desk: ${officialPhone}`;
+      }
+
+      return `⚠️ *JAI BHAVANI CARGO - FREIGHT PAYMENT REMINDER*
+
+Dear *${clientName}*,
+
+This is a gentle payment reminder for freight shipment under Trip / LR No: *${tripId}*.
+
+📌 *Consignment Summary:*
+• Trip / LR Ref: *${tripId}*
+• Total Freight Due: *₹${rev.toLocaleString('en-IN')}*
+• Vehicle No: *${truckNo}*
+• Route: *${route}*
+• Settlement Status: *Pending Payment*
+
+${officialBank}
+
+Please share the transaction reference once transferred.
+📞 Billing Desk: ${officialPhone}`;
     }
 
     return customText || `Hello, update from Jai Bhavani Cargo.`;
