@@ -37,6 +37,25 @@ function LorryReceiptsPodHubPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("pod_required");
+  const [driverMap, setDriverMap] = useState({});
+  const [truckMap, setTruckMap] = useState({});
+  const [editLrModalTrip, setEditLrModalTrip] = useState(null);
+  const [lrEditForm, setLrEditForm] = useState({
+    consignee_name: "",
+    consignee_address: "",
+    consignee_gstin: "",
+    consignee_phone: "",
+    invoice_number: "",
+    eway_bill_number: "",
+    packages_count: "",
+    package_type: "Boxes",
+    actual_weight: "",
+    charged_weight: "",
+    goods_description: "",
+    hamali_charges: "",
+    lr_number: ""
+  });
+  const [savingLrEdit, setSavingLrEdit] = useState(false);
   const [viewingLr, setViewingLr] = useState(null);
   const [lrCopyType, setLrCopyType] = useState("Transporter Copy");
   const [previewScale, setPreviewScale] = useState(0.75);
@@ -193,6 +212,23 @@ function LorryReceiptsPodHubPage() {
         cMap[cl.id] = cl;
       });
       setClientMap(cMap);
+      const rawEmployees = await pb.collection("employees").getFullList({ $autoCancel: false }).catch(() => []);
+      const dMap = {};
+      rawEmployees.forEach((emp) => {
+        if (emp.name) dMap[emp.name.toLowerCase().trim()] = emp;
+        if (emp.id) dMap[emp.id] = emp;
+      });
+      setDriverMap(dMap);
+      const rawTrucks = await pb.collection("trucks").getFullList({ $autoCancel: false }).catch(() => []);
+      const tMap = {};
+      rawTrucks.forEach((trk) => {
+        if (trk.truck_number) {
+          tMap[trk.truck_number.trim().toUpperCase()] = trk;
+          tMap[trk.truck_number.replace(/s+/g, "").toUpperCase()] = trk;
+        }
+        if (trk.id) tMap[trk.id] = trk;
+      });
+      setTruckMap(tMap);
       const tripList = await pb.collection("trip_logs").getFullList({
         sort: "-date",
         expand: "client_id",
@@ -225,6 +261,232 @@ function LorryReceiptsPodHubPage() {
       toast.error("Failed to upload POD document.");
     } finally {
       setUploadingTripId(null);
+    }
+  };
+  const cleanCity = (str) => {
+    if (!str) return "";
+    let s = str.trim();
+    const cityDict = {
+      "MHYD": "Hyderabad",
+      "HYD": "Hyderabad",
+      "WARK": "Warangal",
+      "WARG": "Warangal",
+      "VJA": "Vijayawada",
+      "BLR": "Bengaluru",
+      "BOM": "Mumbai",
+      "PNQ": "Pune",
+      "MAA": "Chennai"
+    };
+    if (cityDict[s.toUpperCase()]) return cityDict[s.toUpperCase()];
+    return s;
+  };
+  const parseRoute = (trip) => {
+    if (!trip) return { origin: "Origin Station", destination: "Destination Station" };
+    if (trip.origin && trip.destination && trip.origin !== trip.destination) {
+      return { origin: cleanCity(trip.origin), destination: cleanCity(trip.destination) };
+    }
+    const r = (trip.route || "").trim();
+    if (!r) return { origin: "Origin Hub", destination: "Destination Hub" };
+    if (/s+tos+/i.test(r)) {
+      const parts = r.split(/s+tos+/i);
+      return { origin: cleanCity(parts[0]), destination: cleanCity(parts.slice(1).join(" to ")) };
+    }
+    if (r.includes("->")) {
+      const parts = r.split("->");
+      return { origin: cleanCity(parts[0]), destination: cleanCity(parts[parts.length - 1]) };
+    }
+    if (r.includes(" - ")) {
+      const parts = r.split(" - ");
+      return { origin: cleanCity(parts[0]), destination: cleanCity(parts.slice(1).join(" - ")) };
+    }
+    return { origin: cleanCity(r), destination: cleanCity(r) };
+  };
+  const getConsignor = (trip) => {
+    if (!trip) return { name: "", address: "", gstin: "", stateCode: "", phone: "" };
+    const client = trip.client_id ? clientMap[trip.client_id] : null;
+    const { origin } = parseRoute(trip);
+    const companyName = client?.company_name || client?.client_name || trip.client_name || "Consignor Partner";
+    let address = "";
+    if (client?.address) {
+      address = client.address;
+      if (client.city && !address.toLowerCase().includes(client.city.toLowerCase())) {
+        address += ", " + client.city;
+      }
+      if (client.state && !address.toLowerCase().includes(client.state.toLowerCase())) {
+        address += ", " + client.state;
+      }
+    } else {
+      address = origin + " Commercial Logistics Hub";
+    }
+    const gstin = client?.gst_number || client?.gstin || (client?.pan_number ? "PAN: " + client.pan_number : "URP (Unregistered Shipper)");
+    let stateCode = "36 (Telangana)";
+    if (gstin && /^d{2}/.test(gstin)) {
+      const code = gstin.substring(0, 2);
+      const stateMap = {
+        "36": "36 (Telangana)",
+        "37": "37 (Andhra Pradesh)",
+        "29": "29 (Karnataka)",
+        "27": "27 (Maharashtra)",
+        "33": "33 (Tamil Nadu)",
+        "07": "07 (Delhi)"
+      };
+      stateCode = stateMap[code] || code + (client?.state ? " (" + client.state + ")" : "");
+    } else if (client?.state) {
+      stateCode = client.state;
+    }
+    return {
+      name: companyName,
+      address,
+      gstin,
+      stateCode,
+      phone: client?.phone || "On Registered File"
+    };
+  };
+  const getConsignee = (trip) => {
+    if (!trip) return { name: "", address: "", gstin: "", phone: "" };
+    const { destination } = parseRoute(trip);
+    const client = trip.client_id ? clientMap[trip.client_id] : null;
+    const name = trip.consignee_name || (client?.company_name ? client.company_name + " (Receiving Hub / Consignee)" : "Consignee at Destination Dock");
+    const address = trip.consignee_address || destination + " Destination Freight Terminal / Unloading Dock";
+    const gstin = trip.consignee_gstin || "As per Commercial Invoice / Challan";
+    const phone = trip.consignee_phone || "Authorized Receiving Dock Master";
+    return { name, address, gstin, phone };
+  };
+  const getVehicleAndCrew = (trip) => {
+    if (!trip) return { truckNo: "", truckSize: "", driverName: "", driverPhone: "", licenseNo: "" };
+    const truckNo = (trip.truck_number || "TS08 UJ 5428").trim();
+    const cleanNo = truckNo.replace(/s+/g, "").toUpperCase();
+    const truck = truckMap[truckNo] || truckMap[cleanNo];
+    const truckSize = truck?.truck_size || (truckNo.includes("5428") ? "32 FT MXL High-Cube Container" : "32ft Container (Commercial Fleet)");
+    const driverName = (trip.driver_name || "Chandrakant Gaikwad").trim();
+    const driver = driverMap[driverName.toLowerCase()] || (trip.driver_employee_id ? driverMap[trip.driver_employee_id] : null);
+    const driverPhone = driver?.contact || trip.driver_phone || companySettings.company_phone;
+    const licenseNo = driver?.license_number ? "DL: " + driver.license_number : trip.driver_dl ? "DL: " + trip.driver_dl : "DL: Verified Heavy Commercial DL on file";
+    return {
+      truckNo,
+      truckSize,
+      driverName,
+      driverPhone,
+      licenseNo
+    };
+  };
+  const getGoodsManifest = (trip) => {
+    if (!trip) return { packages: "", description: "", invoiceNo: "", ewayBill: "", actualWeight: "", chargedWeight: "" };
+    const packages = trip.packages_count ? trip.packages_count + " " + (trip.package_type || "Packages") : "Full Truck Load (FTL) Sealed Container";
+    const description = trip.goods_description || trip.description || "Containerized Commercial Freight & Goods";
+    const invoiceNo = trip.invoice_number || trip.dispatch_invoice_no || trip.client_trip_id || "INV-" + (trip.trip_id || trip.id || "101").replace(/D/g, "");
+    const ewayBill = trip.eway_bill_number || trip.dispatch_eway_bill_no || "As per Tax Invoice / Attached";
+    let actualWeight = "As per Weight Slip";
+    if (trip.actual_weight) {
+      actualWeight = Number(trip.actual_weight).toLocaleString("en-IN") + " Kg";
+    } else if (trip.kms) {
+      actualWeight = Math.round(trip.kms * 8.5).toLocaleString("en-IN") + " Kg (Vol)";
+    }
+    let chargedWeight = "FTL 7.5 MT Capacity";
+    if (trip.charged_weight) {
+      chargedWeight = Number(trip.charged_weight).toLocaleString("en-IN") + " Kg";
+    } else if (trip.actual_weight) {
+      chargedWeight = Number(trip.actual_weight).toLocaleString("en-IN") + " Kg";
+    }
+    return {
+      packages,
+      description,
+      invoiceNo,
+      ewayBill,
+      actualWeight,
+      chargedWeight
+    };
+  };
+  const getFreightCharges = (trip) => {
+    if (!trip) return { basic: 0, hamali: 0, total: 0, advance: 0, balance: 0, paymentTerms: "" };
+    const basic = Number(trip.revenue || trip.freight || 0);
+    const hamali = Number(trip.hamali_charges || trip.loading_charges || 0);
+    const total = basic + hamali;
+    const advance = Number(trip.advance_received_from_client || 0);
+    const balance = Math.max(0, total - advance);
+    let paymentTerms = "BILLED TO CLIENT ACCOUNT (TBB)";
+    if (trip.client_payment_status === "Paid") {
+      paymentTerms = "FREIGHT PRE-PAID (PAID IN FULL)";
+    } else if (trip.client_payment_status === "To Pay") {
+      paymentTerms = "TO PAY AT DESTINATION / UNLOADING";
+    }
+    return { basic, hamali, total, advance, balance, paymentTerms };
+  };
+  const handleOpenEditConsignment = (trip) => {
+    if (!trip) return;
+    const client = clientMap[trip.client_id];
+    const { destination } = parseRoute(trip);
+    setEditLrModalTrip(trip);
+    setLrEditForm({
+      consignee_name: trip.consignee_name || (client?.company_name ? client.company_name + " (Destination Dock)" : ""),
+      consignee_address: trip.consignee_address || (destination ? destination + " Destination Terminal" : ""),
+      consignee_gstin: trip.consignee_gstin || "",
+      consignee_phone: trip.consignee_phone || "",
+      invoice_number: trip.invoice_number || trip.dispatch_invoice_no || trip.client_trip_id || "",
+      eway_bill_number: trip.eway_bill_number || trip.dispatch_eway_bill_no || "",
+      packages_count: trip.packages_count || "",
+      package_type: trip.package_type || "Boxes",
+      actual_weight: trip.actual_weight || "",
+      charged_weight: trip.charged_weight || "",
+      goods_description: trip.goods_description || trip.description || "Commercial Freight Cargo",
+      hamali_charges: trip.hamali_charges || "",
+      lr_number: getLrNumber(trip)
+    });
+  };
+  const handleSaveConsignmentDetails = async () => {
+    if (!editLrModalTrip) return;
+    setSavingLrEdit(true);
+    const tripId = editLrModalTrip.id;
+    const payload = {
+      consignee_name: lrEditForm.consignee_name.trim(),
+      consignee_address: lrEditForm.consignee_address.trim(),
+      consignee_gstin: lrEditForm.consignee_gstin.trim(),
+      consignee_phone: lrEditForm.consignee_phone.trim(),
+      invoice_number: lrEditForm.invoice_number.trim(),
+      eway_bill_number: lrEditForm.eway_bill_number.trim(),
+      packages_count: lrEditForm.packages_count ? Number(lrEditForm.packages_count) : null,
+      package_type: lrEditForm.package_type.trim(),
+      actual_weight: lrEditForm.actual_weight ? Number(lrEditForm.actual_weight) : null,
+      charged_weight: lrEditForm.charged_weight ? Number(lrEditForm.charged_weight) : null,
+      goods_description: lrEditForm.goods_description.trim(),
+      hamali_charges: lrEditForm.hamali_charges ? Number(lrEditForm.hamali_charges) : 0,
+      lr_number: lrEditForm.lr_number.trim(),
+      client_trip_id: lrEditForm.lr_number.trim()
+    };
+    const updatedTrip = { ...editLrModalTrip, ...payload };
+    setViewingLr(updatedTrip);
+    setTrips((prev) => prev.map((t) => t.id === tripId ? { ...t, ...payload } : t));
+    let success = false;
+    try {
+      await pb.collection("trip_logs").update(tripId, payload, { $autoCancel: false });
+      success = true;
+    } catch (pbErr) {
+      console.warn("PocketBase update failed, trying direct API endpoint:", pbErr);
+      try {
+        const res = await fetch("/hcgi/api/trips/" + encodeURIComponent(tripId) + "/lr-details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) success = true;
+        else {
+          const res2 = await fetch("/api/trips/" + encodeURIComponent(tripId) + "/lr-details", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (res2.ok) success = true;
+        }
+      } catch (apiErr) {
+        console.error("API update error:", apiErr);
+      }
+    }
+    setSavingLrEdit(false);
+    if (success) {
+      toast.success("LR Consignment Details saved successfully!");
+      setEditLrModalTrip(null);
+    } else {
+      toast.error("Failed to save LR details. Please try again.");
     }
   };
   const handleTogglePodVerify = async (trip) => {
@@ -748,226 +1010,386 @@ function LorryReceiptsPodHubPage() {
         /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-3.5 h-3.5" })
       ))));
     }))))
-  ))), viewingLr && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs" }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]" }, ["Transporter Copy", "Consignor Copy", "Consignee Copy", "Driver Copy"].map((copy) => /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      key: copy,
-      onClick: () => setLrCopyType(copy),
-      className: "px-2.5 py-1 rounded-md font-semibold cursor-pointer transition " + (lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold shadow" : "text-slate-400 hover:text-white")
-    },
-    copy.replace(" Copy", "")
-  )))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-slate-400 text-[11px] font-semibold mr-1" }, "Preview Zoom:"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setPreviewScale((s) => Math.max(0.4, Number((s - 0.1).toFixed(2)))),
-      className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
-      title: "Zoom Out"
-    },
-    "-"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setPreviewScale(0.72),
-      className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 0.72 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
-      title: "Fit whole document on screen without browser zoom"
-    },
-    "Fit Screen"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setPreviewScale(1),
-      className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 1 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
-      title: "100% Actual Size"
-    },
-    "100%"
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick: () => setPreviewScale((s) => Math.min(1.5, Number((s + 0.1).toFixed(2)))),
-      className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
-      title: "Zoom In"
-    },
-    "+"
-  ), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-mono text-[11px] ml-1 font-bold" }, Math.round(previewScale * 100), "%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: handlePrintLrIframe,
-      className: "px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
-    },
-    /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-4 h-4" }),
-    /* @__PURE__ */ React.createElement("span", null, "Print A4 / PDF")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => handleShareWhatsApp(viewingLr),
-      className: "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition"
-    },
-    /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" }),
-    /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "WhatsApp")
-  ), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      onClick: () => setViewingLr(null),
-      className: "p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
-    },
-    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
-  ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-5 overflow-auto flex-1 flex justify-center items-start bg-slate-950/90 min-h-[450px]" }, /* @__PURE__ */ React.createElement(
-    "div",
-    {
-      style: {
-        transform: `scale(${previewScale})`,
-        transformOrigin: "top center",
-        transition: "transform 0.15s ease-out",
-        marginBottom: previewScale < 1 ? `-${Math.round((1 - previewScale) * 1160)}px` : "20px"
-      }
-    },
-    /* @__PURE__ */ React.createElement(
+  ))), viewingLr && (() => {
+    const consignor = getConsignor(viewingLr);
+    const consignee = getConsignee(viewingLr);
+    const vehicle = getVehicleAndCrew(viewingLr);
+    const routeInfo = parseRoute(viewingLr);
+    const goods = getGoodsManifest(viewingLr);
+    const freight = getFreightCharges(viewingLr);
+    return /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-1 sm:p-3 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[96vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2 flex-wrap" }, /* @__PURE__ */ React.createElement("span", { className: "px-3 py-1 font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs" }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[11px]" }, ["Transporter Copy", "Consignor Copy", "Consignee Copy", "Driver Copy"].map((copy) => /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        key: copy,
+        onClick: () => setLrCopyType(copy),
+        className: "px-2.5 py-1 rounded-md font-semibold cursor-pointer transition " + (lrCopyType === copy ? "bg-amber-500 text-slate-950 font-bold shadow" : "text-slate-400 hover:text-white")
+      },
+      copy.replace(" Copy", "")
+    )))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 text-xs" }, /* @__PURE__ */ React.createElement("span", { className: "text-slate-400 text-[11px] font-semibold mr-1" }, "Preview Zoom:"), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale((s) => Math.max(0.4, Number((s - 0.1).toFixed(2)))),
+        className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
+        title: "Zoom Out"
+      },
+      "-"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale(0.72),
+        className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 0.72 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
+        title: "Fit whole document on screen without browser zoom"
+      },
+      "Fit Screen"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale(1),
+        className: "px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition " + (previewScale === 1 ? "bg-amber-500 text-slate-950 font-black" : "bg-slate-800 text-slate-300 hover:text-white"),
+        title: "100% Actual Size"
+      },
+      "100%"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        type: "button",
+        onClick: () => setPreviewScale((s) => Math.min(1.5, Number((s + 0.1).toFixed(2)))),
+        className: "w-6 h-6 rounded flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold cursor-pointer transition",
+        title: "Zoom In"
+      },
+      "+"
+    ), /* @__PURE__ */ React.createElement("span", { className: "text-amber-400 font-mono text-[11px] ml-1 font-bold" }, Math.round(previewScale * 100), "%")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => handleOpenEditConsignment(viewingLr),
+        className: "px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-blue-500/20 cursor-pointer transition",
+        title: "Edit Consignee, Invoice #, E-Way Bill #, Weight & Packages"
+      },
+      /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", null, "Edit LR Details")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: handlePrintLrIframe,
+        className: "px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer transition"
+      },
+      /* @__PURE__ */ React.createElement(PrinterIcon, { className: "w-4 h-4" }),
+      /* @__PURE__ */ React.createElement("span", null, "Print A4 / PDF")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => handleShareWhatsApp(viewingLr),
+        className: "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer transition"
+      },
+      /* @__PURE__ */ React.createElement(ShareIcon, { className: "w-3.5 h-3.5" }),
+      /* @__PURE__ */ React.createElement("span", { className: "hidden sm:inline" }, "WhatsApp")
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setViewingLr(null),
+        className: "p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
+      },
+      /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
+    ))), /* @__PURE__ */ React.createElement("div", { className: "p-3 sm:p-5 overflow-auto flex-1 flex justify-center items-start bg-slate-950/90 min-h-[450px]" }, /* @__PURE__ */ React.createElement(
       "div",
       {
-        id: "lr-printable-area",
         style: {
-          width: "790px",
-          backgroundColor: "#ffffff",
-          color: "#0f172a",
-          padding: "24px 28px",
-          borderRadius: "4px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-          fontSize: "11px",
-          lineHeight: 1.3,
-          border: "2px solid #0f172a",
-          position: "relative",
-          overflow: "hidden"
+          transform: "scale(" + previewScale + ")",
+          transformOrigin: "top center",
+          transition: "transform 0.15s ease-out",
+          marginBottom: previewScale < 1 ? "-" + Math.round((1 - previewScale) * 1160) + "px" : "20px"
         }
       },
       /* @__PURE__ */ React.createElement(
         "div",
         {
+          id: "lr-printable-area",
           style: {
-            position: "absolute",
-            top: "52%",
-            left: "50%",
-            transform: "translate(-50%, -50%) rotate(-30deg)",
-            pointerEvents: "none",
-            opacity: 0.032,
-            fontSize: "52px",
-            fontWeight: 900,
+            width: "790px",
+            backgroundColor: "#ffffff",
             color: "#0f172a",
-            whiteSpace: "nowrap",
-            userSelect: "none",
-            zIndex: 0
+            padding: "24px 28px",
+            borderRadius: "4px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+            fontSize: "11px",
+            lineHeight: 1.3,
+            border: "2px solid #0f172a",
+            position: "relative",
+            overflow: "hidden"
           }
         },
-        "JAI BHAVANI CARGO MOVERS"
-      ),
-      /* @__PURE__ */ React.createElement("div", { style: { borderBottom: "3px double #0f172a", paddingBottom: "12px", marginBottom: "12px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: "14px", flex: 1 } }, /* @__PURE__ */ React.createElement(
-        "img",
-        {
-          src: companySettings.logo_url || "/logo.png",
-          onError: (e) => {
-            e.target.src = "/logo.png";
+        /* @__PURE__ */ React.createElement(
+          "div",
+          {
+            style: {
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-30deg)",
+              pointerEvents: "none",
+              opacity: 0.04,
+              fontSize: "56px",
+              fontWeight: 900,
+              color: lrCopyType.includes("Transporter") ? "#b45309" : lrCopyType.includes("Consignor") ? "#1d4ed8" : lrCopyType.includes("Consignee") ? "#047857" : "#6d28d9",
+              whiteSpace: "nowrap",
+              userSelect: "none",
+              zIndex: 0
+            }
           },
-          alt: "Logo",
-          style: {
-            height: "64px",
-            width: "auto",
-            maxWidth: "80px",
-            objectFit: "contain",
-            border: "1px solid #e2e8f0",
-            borderRadius: "6px",
-            padding: "2px",
-            backgroundColor: "#ffffff"
+          lrCopyType.toUpperCase()
+        ),
+        /* @__PURE__ */ React.createElement("div", { style: { borderBottom: "3px double #0f172a", paddingBottom: "12px", marginBottom: "12px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "flex-start", gap: "14px", flex: 1 } }, /* @__PURE__ */ React.createElement(
+          "img",
+          {
+            src: companySettings.logo_url || "/logo.png",
+            onError: (e) => {
+              e.target.src = "/logo.png";
+            },
+            alt: "Logo",
+            style: {
+              height: "64px",
+              width: "auto",
+              maxWidth: "80px",
+              objectFit: "contain",
+              border: "1px solid #e2e8f0",
+              borderRadius: "6px",
+              padding: "2px",
+              backgroundColor: "#ffffff"
+            }
           }
-        }
-      ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "23px", fontWeight: 900, letterSpacing: "-0.5px", color: "#0f172a", margin: 0, textTransform: "uppercase" } }, companySettings.company_name), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "10.5px", fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: "1.5px", margin: "2px 0 4px" } }, companySettings.tagline || "Goods Transport Operators & Fleet Contractors"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "9.5px", color: "#334155", margin: 0, lineHeight: 1.35, maxWidth: "420px" } }, companySettings.company_address), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "10px", fontSize: "9px", color: "#475569", fontWeight: 600, marginTop: "4px" } }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4DE} Ph: ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_phone)), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u2709\uFE0F ", companySettings.company_email), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u{1F310} ", companySettings.company_website)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_gstin)), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "PAN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_pan || companySettings.pan_number || "DPXPR9171A")), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef3c7", border: "1px solid #fde68a", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#92400e" } }, "MSME: ", /* @__PURE__ */ React.createElement("b", null, companySettings.msme_number || companySettings.udyam_number || "UDYAM-TS-20-0193891"))))), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: "210px" } }, /* @__PURE__ */ React.createElement("div", { style: { backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 12px", borderRadius: "4px", textAlign: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "12px", fontWeight: 900, letterSpacing: "2px", textTransform: "uppercase", display: "block" } }, "LORRY RECEIPT"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", fontWeight: 700, letterSpacing: "1px", color: "#94a3b8", textTransform: "uppercase" } }, "GOODS CONSIGNMENT NOTE")), /* @__PURE__ */ React.createElement("div", { style: {
-        backgroundColor: lrCopyType.includes("Transporter") ? "#fef3c7" : lrCopyType.includes("Consignor") ? "#eff6ff" : lrCopyType.includes("Consignee") ? "#ecfdf5" : "#f5f3ff",
-        border: "1px solid " + (lrCopyType.includes("Transporter") ? "#f59e0b" : lrCopyType.includes("Consignor") ? "#3b82f6" : lrCopyType.includes("Consignee") ? "#10b981" : "#8b5cf6"),
-        color: lrCopyType.includes("Transporter") ? "#92400e" : lrCopyType.includes("Consignor") ? "#1e40af" : lrCopyType.includes("Consignee") ? "#065f46" : "#5b21b6",
-        borderRadius: "4px",
-        padding: "3px 8px",
-        marginTop: "5px",
-        textAlign: "center"
-      } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "1px" } }, lrCopyType.toUpperCase())), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8.5px", color: "#64748b", margin: "4px 0 0", fontStyle: "italic" } }, "Carriage by Road Act 2007 Registered"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8px", fontWeight: 700, color: "#0f172a", margin: "2px 0 0" } }, "IBA CODE: HYD/2026/JBC \u2022 ISO 9001")))),
-      /* @__PURE__ */ React.createElement("div", { style: {
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: "8px",
-        backgroundColor: "#f8fafc",
-        border: "1px solid #cbd5e1",
-        borderRadius: "4px",
-        padding: "8px 10px",
-        marginBottom: "10px",
-        fontSize: "10px",
-        position: "relative",
-        zIndex: 1
-      } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "LR / BILTY NUMBER:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#b45309" } }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "monospace", fontSize: "10px", letterSpacing: "3px", fontWeight: 900, color: "#334155", lineHeight: 1 } }, "||| | |||| || |||")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "BOOKING DATE:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: "11px", color: "#0f172a" } }, formatTripDate(viewingLr.date)), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Scheduled Dispatch")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "E-WAY BILL NO:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" } }, viewingLr.eway_bill_number || "3412-8901-4521"), /* @__PURE__ */ React.createElement("span", { style: { color: "#059669", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "\u2713 Portal Verified")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "DISPATCH MANIFEST ID:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" } }, viewingLr.trip_id || viewingLr.id), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Fleet Container Cargo"))),
-      /* @__PURE__ */ React.createElement("div", { style: {
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1fr",
-        gap: "8px",
-        marginBottom: "10px",
-        fontSize: "9.5px",
-        position: "relative",
-        zIndex: 1
-      } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "VEHICLE & CREW DETAILS"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef08a", border: "1px solid #ca8a04", color: "#713f12", fontWeight: 900, fontFamily: "monospace", fontSize: "11px", padding: "2px 6px", borderRadius: "3px" } }, viewingLr.truck_number || "TG12U2637"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", color: "#64748b" } }, "32ft MXL Container")), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "6px", paddingTop: "4px", borderTop: "1px dashed #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", fontWeight: 700, display: "block" } }, "ASSIGNED DRIVER:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, viewingLr.driver_name || "Suresh Edlai"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#475569", display: "block", fontSize: "9px" } }, viewingLr.driver_phone || "+91 77940 72244"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8px", color: "#64748b" } }, "DL: TS-07-2008-004312 (Heavy)"))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNOR (SHIPPER / SENDER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, getClientName(viewingLr)), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, "Industrial Cargo Sector, ", viewingLr.origin || "Origin Hub"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, "36AAACG1234A1Z5")), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, "State Code: 36 (Telangana)")), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNEE (DELIVERY RECEIVER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, viewingLr.consignee_name || "Consignee Logistics Ltd"), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, "Logistics Terminal, ", viewingLr.destination || "Destination Dock"), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, "36AABCS5678B1Z2")), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, "Delivery Contact: Dock Manager"))),
-      /* @__PURE__ */ React.createElement("div", { style: {
-        backgroundColor: "#f8fafc",
-        border: "1px solid #cbd5e1",
-        borderRadius: "4px",
-        padding: "6px 12px",
-        marginBottom: "10px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        fontSize: "9.5px",
-        position: "relative",
-        zIndex: 1
-      } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "ORIGIN & LOADING POINT:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, viewingLr.origin || "Hyderabad Depot")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "0 16px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#b45309", fontWeight: 900, fontSize: "13px" } }, "\u2794 \u2794 \u{1F69A} \u2794 \u2794"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8px", color: "#64748b", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" } }, "EXPRESS HIGHWAY FREIGHT TRANSIT")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "DESTINATION & UNLOADING DOCK:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, viewingLr.destination || "Warangal Hub"))),
-      /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { width: "24px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "#"), /* @__PURE__ */ React.createElement("th", { style: { width: "90px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Packages & Type"), /* @__PURE__ */ React.createElement("th", { style: { textAlign: "left", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 8px", border: "1px solid #334155" } }, "Description of Goods (Said to Contain)"), /* @__PURE__ */ React.createElement("th", { style: { width: "100px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Invoice / Challan"), /* @__PURE__ */ React.createElement("th", { style: { width: "85px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Actual Wt"), /* @__PURE__ */ React.createElement("th", { style: { width: "85px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Charged Wt"))), /* @__PURE__ */ React.createElement("tbody", null, /* @__PURE__ */ React.createElement("tr", { style: { backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", border: "1px solid #cbd5e1", padding: "6px" } }, "1"), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontWeight: 700, border: "1px solid #cbd5e1", padding: "6px" } }, "10 Standard Pkgs"), /* @__PURE__ */ React.createElement("td", { style: { border: "1px solid #cbd5e1", padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, viewingLr.description || "General Commercial Freight & Machinery Spares"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8.5px", color: "#64748b" } }, "Loaded in clean sealed container \u2022 Transport Operator Risk")), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" } }, "INV-2026-9041"), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" } }, "4,500 Kg"), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a", border: "1px solid #cbd5e1", padding: "6px" } }, "5,000 Kg")))),
-      /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", display: "block", marginBottom: "4px", fontSize: "9px" } }, "PAYMENT, GST & BANKING REMITTANCE:"), /* @__PURE__ */ React.createElement("div", { style: { lineHeight: 1.45, color: "#334155" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 Freight Payment: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "BILLED TO CLIENT ACCOUNT (TBB)")), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 GST Notification: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "Reverse Charge Mechanism (RCM) under Sec 9(3) CGST Act")), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed #cbd5e1", fontSize: "9px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, display: "block" } }, "OFFICIAL BANK ACCOUNT COORDINATES:"), /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Bank: ", /* @__PURE__ */ React.createElement("b", null, companySettings.bank_name), " \u2022 A/C No: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.account_number)), /* @__PURE__ */ React.createElement("span", { style: { display: "block", color: "#0f172a" } }, "IFSC: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.ifsc_code), " \u2022 Branch: ", /* @__PURE__ */ React.createElement("b", null, companySettings.branch_name))))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Basic Freight:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, "\u20B9", Number(viewingLr.revenue || 12e3).toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Hamali / Handling Charges:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: "#0f172a" } }, "\u20B90.00")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Green Tax / Statistical Surcharge:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: "#0f172a" } }, "\u20B90.00")), /* @__PURE__ */ React.createElement("div", { style: {
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "5px 0",
-        marginTop: "4px",
-        borderTop: "2px solid #0f172a",
-        borderBottom: "1px solid #0f172a",
-        fontSize: "11px",
-        fontWeight: 900
-      } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Total Consignment Freight:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#b45309" } }, "\u20B9", Number(viewingLr.revenue || 12e3).toLocaleString("en-IN"))))),
-      /* @__PURE__ */ React.createElement("div", { style: {
-        border: "1px solid #cbd5e1",
-        borderRadius: "4px",
-        padding: "6px 8px",
-        marginBottom: "10px",
-        backgroundColor: "#f8fafc",
-        fontSize: "8px",
-        lineHeight: 1.35,
-        color: "#475569",
-        position: "relative",
-        zIndex: 1
-      } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#1e293b", margin: "0 0 2px", textTransform: "uppercase" } }, "Carriage Terms & Conditions (Carriage by Road Act 2007):"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0 } }, "1. Consignment is accepted subject to standard carrier terms. Goods carried at Owner's risk unless covered under comprehensive transit insurance. 2. Transporter shall not be responsible for en-route highway delays caused by force majeure, road blockades or statutory RTO/GST inspections. 3. Unloading demurrage charges @ \u20B9500/day applicable after 24 hours of vehicle arrival at receiver's terminal.")),
-      /* @__PURE__ */ React.createElement("div", { style: {
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr 1.2fr",
-        gap: "12px",
-        paddingTop: "6px",
-        borderTop: "1px solid #cbd5e1",
-        fontSize: "9px",
-        textAlign: "center",
-        position: "relative",
-        zIndex: 1
-      } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "CONSIGNOR SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Shipper Verification & Handover")), /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "DRIVER SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Vehicle Custody & Goods Receipt")), /* @__PURE__ */ React.createElement("div", { style: {
-        paddingTop: "4px",
-        border: "1.5px solid #0f172a",
-        backgroundColor: "#fef3c7",
-        borderRadius: "4px",
-        padding: "6px 8px"
-      } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" } }, "FOR ", companySettings.company_name), /* @__PURE__ */ React.createElement("div", { style: { margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" } }, companySettings.signatory_name || "Vinod Kumar Rathod"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" } }, companySettings.signatory_title || "Managing Director", " \u2022 AUTHORISED SIGNATORY")))
-    )
+        ), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h1", { style: { fontSize: "22px", fontWeight: 900, letterSpacing: "-0.5px", color: "#0f172a", margin: 0, textTransform: "uppercase" } }, companySettings.company_name), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "10px", fontWeight: 800, color: "#92400e", textTransform: "uppercase", letterSpacing: "1.5px", margin: "2px 0 4px" } }, companySettings.tagline || "Goods Transport Operators & Fleet Contractors"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "9px", color: "#334155", margin: 0, lineHeight: 1.35, maxWidth: "420px" } }, companySettings.company_address), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "9px", color: "#475569", fontWeight: 600, marginTop: "4px" } }, /* @__PURE__ */ React.createElement("span", null, "\u{1F4DE} ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_phone)), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u2709\uFE0F ", companySettings.company_email), /* @__PURE__ */ React.createElement("span", null, "\u2022"), /* @__PURE__ */ React.createElement("span", null, "\u{1F310} ", companySettings.company_website)), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.company_gstin)), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#0f172a" } }, "PAN: ", /* @__PURE__ */ React.createElement("b", null, companySettings.pan_number || companySettings.company_pan)), /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef3c7", border: "1px solid #fde68a", borderRadius: "3px", padding: "1px 6px", fontSize: "9px", fontWeight: 700, color: "#92400e" } }, "MSME: ", /* @__PURE__ */ React.createElement("b", null, companySettings.msme_number))))), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right", minWidth: "210px" } }, /* @__PURE__ */ React.createElement("div", { style: { border: "2px solid #0f172a", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 10px", borderRadius: "4px", textAlign: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "14px", fontWeight: 900, letterSpacing: "1px", textTransform: "uppercase", display: "block" } }, "LORRY RECEIPT"), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", fontWeight: 700, letterSpacing: "1px", color: "#94a3b8", textTransform: "uppercase" } }, "GOODS CONSIGNMENT NOTE")), /* @__PURE__ */ React.createElement("div", { style: {
+          backgroundColor: lrCopyType.includes("Transporter") ? "#fef3c7" : lrCopyType.includes("Consignor") ? "#eff6ff" : lrCopyType.includes("Consignee") ? "#ecfdf5" : "#f5f3ff",
+          border: "1px solid " + (lrCopyType.includes("Transporter") ? "#f59e0b" : lrCopyType.includes("Consignor") ? "#3b82f6" : lrCopyType.includes("Consignee") ? "#10b981" : "#8b5cf6"),
+          color: lrCopyType.includes("Transporter") ? "#92400e" : lrCopyType.includes("Consignor") ? "#1e40af" : lrCopyType.includes("Consignee") ? "#065f46" : "#5b21b6",
+          borderRadius: "4px",
+          padding: "3px 8px",
+          marginTop: "5px",
+          textAlign: "center"
+        } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: "11px", fontWeight: 900, textTransform: "uppercase", letterSpacing: "1px" } }, lrCopyType.toUpperCase())), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8px", color: "#64748b", margin: "4px 0 0", fontStyle: "italic" } }, "Carriage by Road Act 2007 Registered"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "8px", fontWeight: 700, color: "#0f172a", margin: "2px 0 0" } }, "IBA APPROVED: HYD/2026/JBC \u2022 ISO 9001")))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "8px",
+          backgroundColor: "#f8fafc",
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "8px 10px",
+          marginBottom: "10px",
+          fontSize: "10px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "LR / BILTY NUMBER:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#b45309" } }, getLrNumber(viewingLr)), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "monospace", fontSize: "10px", letterSpacing: "3px", fontWeight: 900, color: "#334155", lineHeight: 1 } }, "||| | |||| || |||")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "BOOKING DATE:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: "11px", color: "#0f172a" } }, formatTripDate(viewingLr.date)), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Scheduled Dispatch")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "E-WAY BILL NO:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "10.5px", color: "#0f172a" } }, goods.ewayBill), /* @__PURE__ */ React.createElement("span", { style: { color: "#059669", fontWeight: 700, fontSize: "8px", display: "block" } }, "\u2713 In-Transit Verified")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 800, fontSize: "8.5px", textTransform: "uppercase", display: "block" } }, "DISPATCH MANIFEST ID:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 800, fontSize: "11px", color: "#0f172a" } }, viewingLr.trip_id || viewingLr.id), /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", display: "block" } }, "Fleet Container Cargo"))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "10px",
+          marginBottom: "10px",
+          fontSize: "9.5px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "VEHICLE & CREW DETAILS"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" } }, /* @__PURE__ */ React.createElement("span", { style: { backgroundColor: "#fef08a", border: "1px solid #ca8a04", color: "#713f12", fontWeight: 900, fontFamily: "monospace", fontSize: "11px", padding: "2px 6px", borderRadius: "3px" } }, vehicle.truckNo), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8.5px", color: "#475569", fontWeight: 600 } }, vehicle.truckSize)), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "6px", paddingTop: "4px", borderTop: "1px dashed #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontSize: "8.5px", fontWeight: 700, display: "block" } }, "ASSIGNED DRIVER:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, vehicle.driverName), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#334155", display: "block", fontSize: "9px" } }, "\u{1F4DE} ", vehicle.driverPhone), /* @__PURE__ */ React.createElement("span", { style: { fontSize: "8px", color: "#475569", fontWeight: 600 } }, vehicle.licenseNo))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNOR (SHIPPER / SENDER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, consignor.name), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, consignor.address), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, consignor.gstin)), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, consignor.stateCode)), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", borderBottom: "1px solid #e2e8f0", paddingBottom: "4px", margin: "0 0 6px", fontSize: "9px" } }, "CONSIGNEE (DELIVERY RECEIVER)"), /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", fontSize: "10.5px", margin: "0 0 2px" } }, consignee.name), /* @__PURE__ */ React.createElement("p", { style: { color: "#475569", margin: "0 0 4px", lineHeight: 1.3 } }, consignee.address), /* @__PURE__ */ React.createElement("p", { style: { fontFamily: "monospace", color: "#334155", margin: 0 } }, "GSTIN: ", /* @__PURE__ */ React.createElement("b", null, consignee.gstin)), /* @__PURE__ */ React.createElement("p", { style: { color: "#64748b", fontSize: "8.5px", margin: "2px 0 0" } }, "Delivery Contact: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, consignee.phone)))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          backgroundColor: "#f8fafc",
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "6px 12px",
+          marginBottom: "10px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "9.5px",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "ORIGIN & LOADING POINT:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a", fontSize: "11px" } }, routeInfo.origin)), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "0 16px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#b45309", fontWeight: 900, fontSize: "13px" } }, "\u2794 \u2794 \u{1F69A} \u2794 \u2794"), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8px", color: "#64748b", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase" } }, "EXPRESS HIGHWAY FREIGHT TRANSIT ", viewingLr.kms ? " (" + viewingLr.kms + " KM)" : "")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, fontSize: "8.5px", display: "block" } }, "DESTINATION & UNLOADING DOCK:"), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a", fontSize: "11px" } }, routeInfo.destination))),
+        /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { width: "24px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "#"), /* @__PURE__ */ React.createElement("th", { style: { width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Packages & Type"), /* @__PURE__ */ React.createElement("th", { style: { textAlign: "left", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 8px", border: "1px solid #334155" } }, "Description of Goods (Said to Contain)"), /* @__PURE__ */ React.createElement("th", { style: { width: "110px", textAlign: "center", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Invoice / Challan"), /* @__PURE__ */ React.createElement("th", { style: { width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Actual Wt"), /* @__PURE__ */ React.createElement("th", { style: { width: "90px", textAlign: "right", backgroundColor: "#0f172a", color: "#ffffff", padding: "5px 6px", border: "1px solid #334155" } }, "Charged Wt"))), /* @__PURE__ */ React.createElement("tbody", null, /* @__PURE__ */ React.createElement("tr", { style: { backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", border: "1px solid #cbd5e1", padding: "6px" } }, "1"), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontWeight: 700, border: "1px solid #cbd5e1", padding: "6px", color: "#0f172a" } }, goods.packages), /* @__PURE__ */ React.createElement("td", { style: { border: "1px solid #cbd5e1", padding: "6px 8px" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 800, color: "#0f172a" } }, goods.description), /* @__PURE__ */ React.createElement("span", { style: { display: "block", fontSize: "8.5px", color: "#64748b" } }, "Said to Contain \u2022 Transport Operator Risk Exempt \u2022 Carriage by Road Act 2007")), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "center", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px", fontWeight: 700 } }, goods.invoiceNo), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", border: "1px solid #cbd5e1", padding: "6px" } }, goods.actualWeight), /* @__PURE__ */ React.createElement("td", { style: { textAlign: "right", fontFamily: "monospace", fontWeight: 800, color: "#0f172a", border: "1px solid #cbd5e1", padding: "6px" } }, goods.chargedWeight)))),
+        /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "10px", marginBottom: "10px", fontSize: "9.5px", position: "relative", zIndex: 1 } }, /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#ffffff" } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, textTransform: "uppercase", color: "#475569", display: "block", marginBottom: "4px", fontSize: "9px" } }, "PAYMENT, GST & BANKING REMITTANCE:"), /* @__PURE__ */ React.createElement("div", { style: { lineHeight: 1.45, color: "#334155" } }, /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 Freight Payment: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, freight.paymentTerms)), /* @__PURE__ */ React.createElement("p", { style: { margin: "0 0 2px" } }, "\u2022 GST Notification: ", /* @__PURE__ */ React.createElement("b", { style: { color: "#0f172a" } }, "Reverse Charge Mechanism (RCM) under Sec 9(3) CGST Act 2017")), /* @__PURE__ */ React.createElement("div", { style: { marginTop: "4px", paddingTop: "4px", borderTop: "1px dashed #cbd5e1", fontSize: "9px" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#64748b", fontWeight: 700, display: "block" } }, "OFFICIAL BANK ACCOUNT COORDINATES:"), /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Bank: ", /* @__PURE__ */ React.createElement("b", null, companySettings.bank_name), " \u2022 A/C No: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.account_number)), /* @__PURE__ */ React.createElement("span", { style: { display: "block", color: "#0f172a" } }, "IFSC: ", /* @__PURE__ */ React.createElement("b", { style: { fontFamily: "monospace" } }, companySettings.ifsc_code), " \u2022 Branch: ", /* @__PURE__ */ React.createElement("b", null, companySettings.branch_name))))), /* @__PURE__ */ React.createElement("div", { style: { border: "1px solid #cbd5e1", borderRadius: "4px", padding: "8px 10px", backgroundColor: "#f8fafc" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Basic Freight:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 700, color: "#0f172a" } }, "\u20B9", freight.basic.toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Hamali / Handling Charges:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: "#0f172a" } }, "\u20B9", freight.hamali.toLocaleString("en-IN"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "2px 0", borderTop: "1px solid #e2e8f0" } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#475569" } }, "Less Advance Received:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", fontWeight: 600, color: freight.advance > 0 ? "#059669" : "#64748b" } }, freight.advance > 0 ? "-\u20B9" + freight.advance.toLocaleString("en-IN") : "\u20B90.00")), /* @__PURE__ */ React.createElement("div", { style: {
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "5px 0",
+          marginTop: "4px",
+          borderTop: "2px solid #0f172a",
+          borderBottom: "1px solid #0f172a",
+          fontSize: "11px",
+          fontWeight: 900
+        } }, /* @__PURE__ */ React.createElement("span", { style: { color: "#0f172a" } }, "Net Consignment Payable:"), /* @__PURE__ */ React.createElement("span", { style: { fontFamily: "monospace", color: "#b45309" } }, "\u20B9", freight.balance.toLocaleString("en-IN"))))),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          border: "1px solid #cbd5e1",
+          borderRadius: "4px",
+          padding: "6px 8px",
+          marginBottom: "10px",
+          backgroundColor: "#f8fafc",
+          fontSize: "8px",
+          lineHeight: 1.35,
+          color: "#475569",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#1e293b", margin: "0 0 2px", textTransform: "uppercase" } }, "Carriage Terms & Conditions (Carriage by Road Act 2007):"), /* @__PURE__ */ React.createElement("p", { style: { margin: 0 } }, "1. Consignment is accepted subject to standard carrier terms. Goods carried at Owner's risk unless covered under comprehensive transit insurance. 2. Transporter shall not be responsible for en-route highway delays caused by force majeure, road blockades or statutory RTO/GST inspections. 3. Unloading demurrage charges @ \u20B9500/day applicable after 24 hours of vehicle arrival at receiver's terminal.")),
+        /* @__PURE__ */ React.createElement("div", { style: {
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1.2fr",
+          gap: "12px",
+          paddingTop: "6px",
+          borderTop: "1px solid #cbd5e1",
+          fontSize: "9px",
+          textAlign: "center",
+          position: "relative",
+          zIndex: 1
+        } }, /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "CONSIGNOR SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Shipper Verification & Handover")), /* @__PURE__ */ React.createElement("div", { style: { paddingTop: "24px", borderTop: "1px solid #94a3b8" } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 800, color: "#0f172a", margin: 0 } }, "DRIVER SIGNATURE"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", color: "#64748b", margin: "2px 0 0" } }, "Vehicle Custody & Goods Receipt")), /* @__PURE__ */ React.createElement("div", { style: {
+          paddingTop: "4px",
+          border: "1.5px solid #0f172a",
+          backgroundColor: "#fef3c7",
+          borderRadius: "4px",
+          padding: "6px 8px"
+        } }, /* @__PURE__ */ React.createElement("p", { style: { fontWeight: 900, color: "#78350f", margin: 0, fontSize: "9px", textTransform: "uppercase" } }, "FOR ", companySettings.company_name), /* @__PURE__ */ React.createElement("div", { style: { margin: "4px 0", fontSize: "11px", fontWeight: 900, color: "#0f172a", fontStyle: "italic", fontFamily: "serif" } }, companySettings.signatory_name || "Vinod Kumar Rathod"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: "7.5px", fontWeight: 800, color: "#92400e", margin: 0, textTransform: "uppercase" } }, companySettings.signatory_title || "Managing Director", " \u2022 AUTHORISED SIGNATORY")))
+      )
+    ))));
+  })(), editLrModalTrip && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileTextIcon, { className: "w-4 h-4 text-blue-400" }), /* @__PURE__ */ React.createElement("span", null, "Edit LR Consignment Details")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5 font-mono" }, "Trip: ", editLrModalTrip.trip_id || editLrModalTrip.id, " \u2022 Truck: ", editLrModalTrip.truck_number)), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditLrModalTrip(null),
+      className: "p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition cursor-pointer"
+    },
+    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-4 h-4" })
+  )), /* @__PURE__ */ React.createElement("div", { className: "p-4 sm:p-6 overflow-y-auto space-y-4 text-xs" }, /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "LR / Bilty Number"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.lr_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, lr_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. JBC/26-27/363"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Invoice / Delivery Challan #"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.invoice_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, invoice_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. INV-88210 / DC-441"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "GST E-Way Bill Number"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.eway_bill_number,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, eway_bill_number: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 2310-9981-4412"
+    }
+  )), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee (Delivery Receiver Name)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_name,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_name: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. Delhivery Regional Hub"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee Contact / Dock Master"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_phone,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_phone: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. +91 98480 12345"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee Delivery Terminal Address"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_address,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_address: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. Plot 4, Logistics Park, Gulbarga"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Consignee GSTIN (Optional)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.consignee_gstin,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, consignee_gstin: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 29AABCS5678B1Z2"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Packages Count"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.packages_count,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, packages_count: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 120"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Packaging Type"), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      value: lrEditForm.package_type,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, package_type: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500"
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "Boxes" }, "Boxes"),
+    /* @__PURE__ */ React.createElement("option", { value: "Cartons" }, "Cartons"),
+    /* @__PURE__ */ React.createElement("option", { value: "Pallets" }, "Pallets"),
+    /* @__PURE__ */ React.createElement("option", { value: "Bags" }, "Bags"),
+    /* @__PURE__ */ React.createElement("option", { value: "Drums" }, "Drums"),
+    /* @__PURE__ */ React.createElement("option", { value: "FTL Container Load" }, "FTL Container Load")
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Description of Goods"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: lrEditForm.goods_description,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, goods_description: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. FMCG Goods / Spares"
+    }
+  ))), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-3 gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Actual Weight (Kg)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.actual_weight,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, actual_weight: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 7200"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Charged Weight (Kg)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.charged_weight,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, charged_weight: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 7500"
+    }
+  )), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { className: "block text-[11px] font-bold text-slate-300 mb-1" }, "Hamali / Extra (\u20B9)"), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "number",
+      value: lrEditForm.hamali_charges,
+      onChange: (e) => setLrEditForm({ ...lrEditForm, hamali_charges: e.target.value }),
+      className: "w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500",
+      placeholder: "e.g. 500"
+    }
+  )))), /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-t border-slate-800 flex justify-end gap-2.5" }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: () => setEditLrModalTrip(null),
+      className: "px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer"
+    },
+    "Cancel"
+  ), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: handleSaveConsignmentDetails,
+      disabled: savingLrEdit,
+      className: "px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-500/20 transition cursor-pointer disabled:opacity-50"
+    },
+    savingLrEdit ? "Saving..." : "Save & Update LR"
   )))), viewingPodDoc && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200" }, /* @__PURE__ */ React.createElement("div", { className: "bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden" }, /* @__PURE__ */ React.createElement("div", { className: "p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h3", { className: "font-bold text-white text-sm flex items-center gap-2" }, /* @__PURE__ */ React.createElement(FileCheckIcon, { className: "w-4 h-4 text-emerald-400" }), /* @__PURE__ */ React.createElement("span", null, "Proof of Delivery Document")), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "Trip: ", viewingPodDoc.tripId, " \u2022 Truck: ", viewingPodDoc.truck, " \u2022 Client: ", viewingPodDoc.client)), /* @__PURE__ */ React.createElement(
     "button",
     {

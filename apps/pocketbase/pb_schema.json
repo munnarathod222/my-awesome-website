@@ -2379,6 +2379,94 @@
         "required": false,
         "system": false,
         "type": "date"
+      },
+      {
+        "name": "consignee_name",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "consignee_address",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "consignee_gstin",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "consignee_phone",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "packages_count",
+        "type": "number",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "package_type",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "actual_weight",
+        "type": "number",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "charged_weight",
+        "type": "number",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "goods_description",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "invoice_number",
+        "type": "text",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
+      },
+      {
+        "name": "hamali_charges",
+        "type": "number",
+        "required": false,
+        "system": false,
+        "presentable": false,
+        "hidden": false
       }
     ],
     "indexes": [

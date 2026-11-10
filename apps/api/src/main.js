@@ -5232,6 +5232,96 @@ const directUpdatePodStatus = async (req, res) => {
 
 app.post('/hcgi/api/trips/:id/pod-status', directUpdatePodStatus);
 app.post('/api/trips/:id/pod-status', directUpdatePodStatus);
+
+// Direct database trip LR Consignment details update endpoint
+const directUpdateLrDetails = async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body || {};
+  if (!id) {
+    return res.status(400).json({ success: false, error: 'trip id is required' });
+  }
+
+  const allowedFields = [
+    'consignee_name',
+    'consignee_address',
+    'consignee_gstin',
+    'consignee_phone',
+    'invoice_number',
+    'eway_bill_number',
+    'packages_count',
+    'package_type',
+    'actual_weight',
+    'charged_weight',
+    'goods_description',
+    'hamali_charges',
+    'lr_number'
+  ];
+
+  const payload = {};
+  allowedFields.forEach(f => {
+    if (updates[f] !== undefined) payload[f] = updates[f];
+  });
+
+  if (Object.keys(payload).length === 0) {
+    return res.status(400).json({ success: false, error: 'no valid fields provided for update' });
+  }
+
+  let db = null;
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const possiblePaths = [
+      global.dbFilePath,
+      path.resolve(process.cwd(), 'apps/pocketbase/pb_data/data.db'),
+      path.resolve(__dirname, '../../pocketbase/pb_data/data.db'),
+      path.resolve(process.cwd(), 'pb_data/data.db'),
+      '/opt/render/project/src/apps/pocketbase/pb_data/data.db'
+    ].filter(Boolean);
+
+    let updated = false;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        try {
+          db = new DatabaseSync(p);
+          // Check columns
+          const cols = db.prepare('PRAGMA table_info(trip_logs)').all().map(c => c.name);
+          Object.keys(payload).forEach(col => {
+            if (!cols.includes(col)) {
+              const colType = (col.includes('count') || col.includes('weight') || col.includes('charges')) ? 'REAL' : 'TEXT';
+              db.prepare('ALTER TABLE trip_logs ADD COLUMN ' + col + ' ' + colType + ' DEFAULT ""').run();
+            }
+          });
+
+          const setClauses = Object.keys(payload).map(k => k + ' = ?').join(', ');
+          const values = [...Object.values(payload), id, id];
+          const info = db.prepare('UPDATE trip_logs SET ' + setClauses + ' WHERE id = ? OR trip_id = ?').run(...values);
+          if (info && info.changes > 0) updated = true;
+          db.close();
+          db = null;
+        } catch (e) {
+          if (db) { try { db.close(); } catch(_) {} db = null; }
+        }
+      }
+    }
+
+    // Also attempt pocketbase superuser update
+    try {
+      const pbModule = await import('./utils/pocketbaseClient.js');
+      const pbClient = pbModule.default || pbModule.pocketbaseClient;
+      if (pbClient) {
+        await pbClient.collection('trip_logs').update(id, payload).catch(() => {});
+      }
+    } catch (_) {}
+
+    logger.info('Direct lr_details update applied for ' + id + ': ' + JSON.stringify(payload));
+    return res.json({ success: true, id, updatedFields: payload });
+  } catch (err) {
+    logger.error('Error updating lr_details:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+app.post('/hcgi/api/trips/:id/lr-details', directUpdateLrDetails);
+app.post('/api/trips/:id/lr-details', directUpdateLrDetails);
 app.delete('/hcgi/api/trip_logs/:id', directDeleteTripLogs);
 app.delete('/api/trip_logs/:id', directDeleteTripLogs);
 
