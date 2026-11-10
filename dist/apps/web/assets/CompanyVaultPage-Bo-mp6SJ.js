@@ -394,7 +394,7 @@ batchUpload50RCs=async()=>{
     setExistingAttachedRcs([]);
   }catch(err){
     console.error("Batch RC compilation failed:",err);
-    const msg=err?.data?.message||err?.message||(typeof err==="string"?err:"Network or server error");
+    let msg=err?.message||(typeof err==="string"?err:"Network or server error");if(err?.data?.data){const fe=Object.entries(err.data.data).map(([k,v])=>k+": "+(v?.message||v)).join("; ");if(fe)msg+=" ("+fe+")";}else if(err?.data?.message){msg=err.data.message;}
     u.error(`Failed to save truck RCs: ${msg}`);
   }finally{
     setBatchRcUploading(!1);
