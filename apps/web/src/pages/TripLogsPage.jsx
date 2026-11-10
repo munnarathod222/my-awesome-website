@@ -25,6 +25,7 @@ import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
+import DispatchDocsViewerModal from '@/components/DispatchDocsViewerModal.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -122,6 +123,7 @@ const TripLogsPage = () => {
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
   const [whatsappConfig, setWhatsappConfig] = useState({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' });
+  const [selectedDocsTrip, setSelectedDocsTrip] = useState(null);
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
 
@@ -767,6 +769,7 @@ const TripLogsPage = () => {
                       <TableHead className="text-center font-semibold text-muted-foreground">Trip KMs</TableHead>
                       {!isDispatcher && <TableHead className="text-right font-semibold text-muted-foreground">Revenue</TableHead>}
                       {!isDispatcher && <TableHead className="text-right font-semibold text-muted-foreground">Advances</TableHead>}
+                      <TableHead className="text-center font-semibold text-muted-foreground">Compliance & SLA</TableHead>
                       <TableHead className="text-center font-semibold text-muted-foreground">Trip State</TableHead>
                       {!isDispatcher && <TableHead className="text-center font-semibold text-muted-foreground">Payment</TableHead>}
                       <TableHead className="text-right pr-6 font-semibold text-muted-foreground">Actions</TableHead>
@@ -775,7 +778,7 @@ const TripLogsPage = () => {
                   <TableBody>
                     {filteredLogs.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={12} className="text-center py-20 text-muted-foreground">
+                        <TableCell colSpan={13} className="text-center py-20 text-muted-foreground">
                           <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
                             <Truck className="w-8 h-8 opacity-40" />
                           </div>
@@ -1070,6 +1073,52 @@ const TripLogsPage = () => {
                                 </div>
                               </TableCell>
                             )}
+
+                            {/* Compliance Documents & SLA Tracker Cell */}
+                            <TableCell className="text-center whitespace-nowrap">
+                              <div className="flex flex-col items-center gap-1">
+                                {(() => {
+                                  const docCount = (log.lr_file_url || log.lr_file || log.lr_number ? 1 : 0) + 
+                                                   (log.invoice_file_url || log.invoice_file || log.invoice_number ? 1 : 0) + 
+                                                   (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number ? 1 : 0);
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedDocsTrip(log)}
+                                      className={cn(
+                                        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all border",
+                                        docCount === 3 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25" :
+                                        docCount > 0 ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25" :
+                                        "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700/60"
+                                      )}
+                                      title="View LR, Invoice & E-Way Bill"
+                                    >
+                                      <span>📎</span>
+                                      <span>{docCount}/3 Docs</span>
+                                    </button>
+                                  );
+                                })()}
+
+                                {log.delivery_deadline ? (() => {
+                                  const dl = new Date(log.delivery_deadline);
+                                  const isPast = dl < new Date() && log.trip_status !== 'Delivered';
+                                  return (
+                                    <span 
+                                      onClick={() => setSelectedDocsTrip(log)}
+                                      className={cn(
+                                        "cursor-pointer px-1.5 py-0.5 rounded text-[9px] font-medium border flex items-center gap-1",
+                                        isPast ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : "bg-slate-900 text-slate-300 border-slate-700"
+                                      )}
+                                      title={isPast ? "Delivery is overdue!" : `Target SLA: ${dl.toLocaleString('en-IN')}`}
+                                    >
+                                      <span>⏱️</span>
+                                      <span>{isPast ? "Overdue" : dl.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                                    </span>
+                                  );
+                                })() : null}
+                              </div>
+                            </TableCell>
+
                             <TableCell className="text-center">
                               <Select
                                 value={log.trip_status || 'Upcoming'}
@@ -1363,6 +1412,43 @@ const TripLogsPage = () => {
                           )}
                         </div>
                       )}
+
+                      {/* Mobile Docs & SLA Compliance Bar */}
+                      <div className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-slate-900/60 border border-indigo-500/20 text-xs">
+                        {(() => {
+                          const docCount = (log.lr_file_url || log.lr_file || log.lr_number ? 1 : 0) + 
+                                           (log.invoice_file_url || log.invoice_file || log.invoice_number ? 1 : 0) + 
+                                           (log.eway_bill_file_url || log.eway_bill_file || log.eway_bill_number ? 1 : 0);
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDocsTrip(log)}
+                              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-300 hover:text-indigo-200"
+                            >
+                              <span>📎</span>
+                              <span>{docCount}/3 Docs Attached</span>
+                              <span className="text-[10px] text-slate-400">→</span>
+                            </button>
+                          );
+                        })()}
+
+                        {log.delivery_deadline && (() => {
+                          const dl = new Date(log.delivery_deadline);
+                          const isPast = dl < new Date() && log.trip_status !== 'Delivered';
+                          return (
+                            <span 
+                              onClick={() => setSelectedDocsTrip(log)}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1",
+                                isPast ? "bg-rose-500/20 text-rose-400 border-rose-500/30" : "bg-slate-800 text-slate-300 border-slate-700"
+                              )}
+                            >
+                              <span>⏱️</span>
+                              <span>{isPast ? "Overdue SLA" : dl.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                            </span>
+                          );
+                        })()}
+                      </div>
 
                       {/* Row 4: Financials & Action Buttons */}
                       <div className="flex items-center justify-between pt-1">
@@ -1658,6 +1744,11 @@ const TripLogsPage = () => {
         richHtmlContent={mailData.html}
         contextLabel={mailData.label}
         defaultAttachment={mailData.attachment}
+      />
+      <DispatchDocsViewerModal
+        isOpen={!!selectedDocsTrip}
+        onClose={() => setSelectedDocsTrip(null)}
+        trip={selectedDocsTrip}
       />
     </>
   );

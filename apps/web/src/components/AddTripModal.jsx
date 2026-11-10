@@ -16,6 +16,7 @@ import { TRIP_STATUS_OPTIONS } from '@/lib/tripStatusUtils.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 import { calculateMunsiyana } from '@/lib/munsiyanaCalculator.js';
+import DispatchComplianceSection from '@/components/DispatchComplianceSection.jsx';
 
 
 const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
@@ -53,7 +54,25 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     truck_number: '',
     vendor_payout: '',
     payment_model: 'Model2',
-    toll_deduction: ''
+    toll_deduction: '',
+    lr_number: '',
+    lr_file: null,
+    lr_file_url: '',
+    lr_file_name: '',
+    lr_file_meta: null,
+    invoice_number: '',
+    invoice_value: '',
+    invoice_file: null,
+    invoice_file_url: '',
+    invoice_file_name: '',
+    invoice_file_meta: null,
+    eway_bill_number: '',
+    eway_expiry_date: '',
+    eway_bill_file: null,
+    eway_bill_file_url: '',
+    eway_bill_file_name: '',
+    eway_bill_file_meta: null,
+    delivery_deadline: ''
   });
 
   useEffect(() => {
@@ -168,7 +187,25 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
       unloading_charges: '',
       unloading_paid_by: 'client',
       broker_commission: '',
-      munsiyana: ''
+      munsiyana: '',
+      lr_number: '',
+      lr_file: null,
+      lr_file_url: '',
+      lr_file_name: '',
+      lr_file_meta: null,
+      invoice_number: '',
+      invoice_value: '',
+      invoice_file: null,
+      invoice_file_url: '',
+      invoice_file_name: '',
+      invoice_file_meta: null,
+      eway_bill_number: '',
+      eway_expiry_date: '',
+      eway_bill_file: null,
+      eway_bill_file_url: '',
+      eway_bill_file_name: '',
+      eway_bill_file_meta: null,
+      delivery_deadline: ''
     });
     setClientMetrics(null);
     setSelectedClientInfo(null);
@@ -327,7 +364,16 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         unloading_charges: parseFloat(formData.unloading_charges) || 0,
         unloading_paid_by: formData.unloading_paid_by || 'client',
         broker_commission: parseFloat(formData.broker_commission) || 0,
-        munsiyana: parseFloat(formData.munsiyana) || 0
+        munsiyana: parseFloat(formData.munsiyana) || 0,
+        lr_number: formData.lr_number || '',
+        lr_file_url: formData.lr_file_url || '',
+        invoice_number: formData.invoice_number || '',
+        invoice_value: parseFloat(formData.invoice_value) || 0,
+        invoice_file_url: formData.invoice_file_url || '',
+        eway_bill_number: formData.eway_bill_number || '',
+        eway_expiry_date: formData.eway_expiry_date || '',
+        eway_bill_file_url: formData.eway_bill_file_url || '',
+        delivery_deadline: formData.delivery_deadline || ''
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });
@@ -778,6 +824,11 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
                 </div>
               )}
+
+              {/* Dispatch Compliance & Delivery SLA Tracker */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-indigo-500/30 animate-in fade-in">
+                <DispatchComplianceSection formData={formData} setFormData={setFormData} />
+              </div>
 
               {/* Operational Charges, Commissions & Deductions Section */}
               <div className="space-y-3 p-3.5 rounded-2xl bg-secondary/15 border border-border/70 animate-in fade-in">

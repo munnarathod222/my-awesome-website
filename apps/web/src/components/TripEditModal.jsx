@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
+import DispatchComplianceSection from '@/components/DispatchComplianceSection.jsx';
 
 const TRIP_STATUS_OPTIONS = ['Upcoming', 'In Transit', 'Completed', 'Cancelled'];
 
@@ -38,7 +39,16 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     unloading_charges: '',
     unloading_paid_by: 'client',
     broker_commission: '',
-    munsiyana: ''
+    munsiyana: '',
+    lr_number: '',
+    lr_file_url: '',
+    invoice_number: '',
+    invoice_value: '',
+    invoice_file_url: '',
+    eway_bill_number: '',
+    eway_expiry_date: '',
+    eway_bill_file_url: '',
+    delivery_deadline: ''
   });
 
   useEffect(() => {
@@ -71,7 +81,16 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           unloading_charges: trip.unloading_charges !== undefined && trip.unloading_charges !== null ? trip.unloading_charges.toString() : '',
           unloading_paid_by: trip.unloading_paid_by || 'client',
           broker_commission: trip.broker_commission !== undefined && trip.broker_commission !== null ? trip.broker_commission.toString() : '',
-          munsiyana: trip.munsiyana !== undefined && trip.munsiyana !== null ? trip.munsiyana.toString() : ''
+          munsiyana: trip.munsiyana !== undefined && trip.munsiyana !== null ? trip.munsiyana.toString() : '',
+          lr_number: trip.lr_number || '',
+          lr_file_url: trip.lr_file_url || '',
+          invoice_number: trip.invoice_number || '',
+          invoice_value: trip.invoice_value !== undefined && trip.invoice_value !== null ? trip.invoice_value.toString() : '',
+          invoice_file_url: trip.invoice_file_url || '',
+          eway_bill_number: trip.eway_bill_number || '',
+          eway_expiry_date: trip.eway_expiry_date || '',
+          eway_bill_file_url: trip.eway_bill_file_url || '',
+          delivery_deadline: trip.delivery_deadline || ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -112,6 +131,15 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         unloading_paid_by: formData.unloading_paid_by || 'client',
         broker_commission: parseFloat(formData.broker_commission) || 0,
         munsiyana: parseFloat(formData.munsiyana) || 0,
+        lr_number: formData.lr_number || '',
+        lr_file_url: formData.lr_file_url || '',
+        invoice_number: formData.invoice_number || '',
+        invoice_value: parseFloat(formData.invoice_value) || 0,
+        invoice_file_url: formData.invoice_file_url || '',
+        eway_bill_number: formData.eway_bill_number || '',
+        eway_expiry_date: formData.eway_expiry_date || '',
+        eway_bill_file_url: formData.eway_bill_file_url || '',
+        delivery_deadline: formData.delivery_deadline || '',
         
         ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
         payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),
@@ -551,6 +579,11 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Dispatch Compliance & Delivery SLA Tracker */}
+              <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-indigo-500/30 md:col-span-2">
+                <DispatchComplianceSection formData={formData} setFormData={setFormData} />
               </div>
 
               <div className="space-y-2 md:col-span-2">
