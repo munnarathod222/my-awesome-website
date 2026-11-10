@@ -1,8 +1,331 @@
-import{u as V,r as o,a6 as F,aF as E,aG as g,aH as B,as as q,aI as O,aJ as U,aK as Q,ae as G,aL as H,aM as y,ad as b,aN as $,ap as C,aO as K,ai as J,aP as _,aQ as W,aR as X,aS as z,a3 as x,a0 as c,al as Y,a8 as w,aT as k,aU as S,a7 as f,aV as j,aW as Z,aX as ee,aY as ae,aZ as re,a_ as se,a$ as te,b0 as ie,am as ne,j as a,at as oe,X as le,aA as ce}from"./vendor-react-Bs5V2qFE.js";import{u as de,M as me,p as pe,m as M}from"./index-DLxf9dwO.js";import"./vendor-radix-BQCqNqg0.js";import"./vendor-pdf-DtmgLs_2.js";const ue=r=>r==="To-Do List"?"todo_list":r==="Inventory Management"?"inventory":r==="Fleet & Staff"?"fleet_staff":r.toLowerCase().replace(/[\s&]+/g,"_").trim();function fe(){const{currentUser:r}=de(),{t:T}=me(),P=V(),t=r?.role||"user",[l,d]=o.useState(""),[m,N]=o.useState("All"),[v,A]=o.useState(!1);o.useEffect(()=>{pe.collection("clients").getList(1,1,{filter:"requires_pod = true",$autoCancel:!1}).then(e=>{e.items?.length>0&&A(!0)}).catch(()=>{})},[]);const p=o.useMemo(()=>{const e=[{icon:F,label:"Truck Manager",path:"/truck-manager",desc:"Track physical trucks & managers",roles:["super_admin","admin","dispatcher","supervisor"]},{icon:E,label:"Tyres & Battery",path:"/tyres",desc:"Track vehicle tyre life & replacement cycles",roles:["super_admin","admin","dispatcher","manager","supervisor"]},{icon:g,label:"Vehicle Docs",path:"/truck-docs",desc:"RC, Insurance & permit renewals",roles:["super_admin","admin","dispatcher","supervisor"]},{icon:B,label:"Vehicle QR Pass Hub",path:"/truck-docs?view=qr_pass",desc:"Digital QR passes for trucks",roles:["super_admin","admin","dispatcher","manager","supervisor"]},{icon:q,label:"Fleet Maintenance",path:"/fleet-maintenance",desc:"Servicing logs, problems & inventory",roles:["super_admin","admin","dispatcher"]},{icon:O,label:"Fuel Tracker",path:"/fuel-tracker",desc:"Fuel purchases & efficiency KMPL",roles:["super_admin","admin","manager","dispatcher"]},{icon:U,label:"Trip Logs",path:"/trip-logs",desc:"Manage & dispatch trip schedules",roles:["super_admin","admin","manager","dispatcher"]},{icon:Q,label:"Track Shipment",path:"/tracking",desc:"Public shipment tracking view",roles:["super_admin","admin","dispatcher","manager","user"]},{icon:G,label:"Route Master",path:"/routes-master",desc:"Route rate configurations & origins",roles:["super_admin","admin","dispatcher"]},{icon:H,label:"Inventory",path:"/inventory",desc:"Manage spare parts stock levels",roles:["super_admin","admin","manager","dispatcher"]}];return v&&e.push({icon:g,label:"POD Management",path:"/pod-management",desc:"Proof of Delivery photo validation",roles:["super_admin","admin","manager","dispatcher"]}),e.push({icon:y,label:"Exit Audit",path:"/exit-audit",desc:"Vehicle inspections before releases",roles:["super_admin","admin","manager","dispatcher"]}),[{title:"Client Portal",color:"from-emerald-500/20 to-teal-500/10 border-emerald-500/20 text-emerald-400",iconColor:"text-emerald-400 bg-emerald-500/10",items:[{icon:b,label:"Client Portal",path:"/client-portal",desc:"Client account hub & invoices",roles:["client"]}]},{title:"Main & Analytics",color:"from-cyan-500/20 to-blue-500/10 border-cyan-500/20 text-cyan-400",iconColor:"text-cyan-400 bg-cyan-500/10",items:[{icon:$,label:"Dashboard",path:"/dashboard",desc:"Real-time overview of fleet operations",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:C,label:"AI Freight Marketplace",path:"/marketplace",desc:"AI-driven load matching & bid tracker",roles:["super_admin","admin","manager","dispatcher","supervisor","user"]},{icon:ee,label:"Bidding Intelligence",path:"/bidding-intelligence",desc:"Freight lane bids, benchmark rates & bidding logs",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:K,label:"Analytics",path:"/analytics",desc:"P&L reporting & financial matrices",roles:["super_admin","admin","manager"]},{icon:J,label:"Trip Overview",path:"/dashboard/trip-overview",desc:"Global route metrics & calculations",roles:["super_admin","admin","manager"]},{icon:_,label:"Vehicle TCO & ROI",path:"/vehicle-tco",desc:"Calculate vehicle loan profiles & TCO",roles:["super_admin","admin","manager"]},{icon:W,label:"Client Analysis",path:"/client-analysis",desc:"Revenue split and payment margins",roles:["super_admin","admin","manager"]},{icon:X,label:"Leaderboard",path:"/leaderboard",desc:"Top performing drivers leaderboard",roles:["super_admin","admin","manager"]},{icon:z,label:"Driver Scorecard",path:"/driver-scorecard",desc:"Scores, complaints & commendations per driver",roles:["super_admin","admin","manager"]}]},{title:"Fleet & Operations",color:"from-emerald-500/20 to-teal-500/10 border-emerald-500/20 text-emerald-400",iconColor:"text-emerald-400 bg-emerald-500/10",items:e},{title:"Finance & Accounts",color:"from-amber-500/20 to-orange-500/10 border-amber-500/20 text-amber-400",iconColor:"text-amber-400 bg-amber-500/10",items:[{icon:x,label:"Cashbook",path:"/cashbook",desc:"Petty cash balances & double entry",roles:["super_admin","admin","manager"]},{icon:c,label:"Expenses",path:"/expenses",desc:"Track fleet and operational overheads",roles:["super_admin","admin","manager"]},{icon:Y,label:"Payment Requests",path:"/payment-requests",desc:"Submit and approve vendor requests",roles:["super_admin","admin","manager"]},{icon:x,label:"Invoice Matching",path:"/invoice-matching",desc:"Settle and match freight invoices",roles:["super_admin","admin","manager","dispatcher"]},{icon:w,label:"FASTag Management",path:"/fastag",desc:"Truck balances, tolls & recharge history",roles:["super_admin","admin","manager"]},{icon:w,label:"Credit Cards",path:"/credit-cards",desc:"Manage company cards & payments",roles:["super_admin","admin"]},{icon:x,label:"GST ITC Tax",path:"/gst-itc",desc:"GSTR-2B input tax credit matching",roles:["super_admin","admin","manager"]},{icon:k,label:"Insurance Manager",path:"/insurance-manager",desc:"Policies, renewals & claims manager",roles:["super_admin","admin","manager","dispatcher"]},{icon:S,label:"Company Vault",path:"/company-vault",desc:"Secure repository for firm documents",roles:["super_admin","admin","manager"]},{icon:_,label:"EMI Calculator",path:"/emi-calculator",desc:"Calculate vehicle loan profiles",roles:["super_admin","admin","manager"]},{icon:c,label:"Payroll",path:"/payroll",desc:"Staff salaries, advances & payouts",roles:["super_admin","admin"]},{icon:c,label:"Quotes Manager",path:"/quotes-manager",desc:"Customer quote calculator & generator",roles:["super_admin","admin","manager"]}]},{title:"Staff & HR",color:"from-purple-500/20 to-pink-500/10 border-purple-500/20 text-purple-400",iconColor:"text-purple-400 bg-purple-500/10",items:[{icon:f,label:"Employees",path:"/employees",desc:"Driver profiles and active staff directory",roles:["super_admin","admin","manager","supervisor"]},{icon:g,label:"Employee Docs",path:"/employee-docs",desc:"ID proofs, photos & driver documents",roles:["super_admin","admin","supervisor"]},{icon:j,label:"Attendance Hub",path:"/dashboard/attendance",desc:"Daily attendance logs & cycles",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:Z,label:"Recruitment Portal",path:"/recruitment",desc:"Applicant tracking and driver hiring",roles:["super_admin","admin","manager"]}]},{title:"CRM & Partners",color:"from-rose-500/20 to-red-500/10 border-rose-500/20 text-rose-400",iconColor:"text-rose-400 bg-rose-500/10",items:[{icon:f,label:"Clients List",path:"/clients",desc:"Client account relations",roles:["super_admin","admin","manager"]},{icon:k,label:"Credit Control",path:"/credit-control",desc:"Monitor client credit limits & outstanding",roles:["super_admin","admin","manager"]},{icon:b,label:"Vendor Registration Tracker",path:"/vendor-tracker",desc:"Track registrations for vendor trucks",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:b,label:"Transport CRM",path:"/transport-crm",desc:"Customer relations & dispatch logs",roles:["super_admin","admin","manager","dispatcher"]},{icon:ee,label:"Sales & Vendor Leads",path:"/sales-leads",desc:"Client prospects, vendor onboarding & rate contracts",roles:["super_admin","admin","manager","dispatcher"]},{icon:ae,label:"Contacts Directory",path:"/contacts",desc:"Vendors, drivers & staff listings",roles:["super_admin","admin","manager","dispatcher"]}]},{title:"Studio & Tools",color:"from-indigo-500/20 to-violet-500/10 border-indigo-500/20 text-indigo-400",iconColor:"text-indigo-400 bg-indigo-500/10",items:[{icon:re,label:"Branding Hub",path:"/branding-hub",desc:"Generate logos, business cards & profiles",roles:["super_admin","admin","manager","dispatcher","supervisor","user"]},{icon:se,label:"Business Mail",path:"/business-mail",desc:"Communication portal inbox",roles:["super_admin","admin","manager","dispatcher"]},{icon:j,label:"Calendar",path:"/calendar",desc:"Monthly dispatch & compliance view",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:y,label:"Workflow Command Center",path:"/todo",desc:"Enterprise tasks, background reminders & multi-stage approvals",roles:["super_admin","admin","manager","dispatcher","supervisor"]},{icon:ie,label:"Data Backup & Export",path:"/data-backup",desc:"Export full PDF & CSV fleet sheets",roles:["super_admin","admin","manager","dispatcher","supervisor","user"]}]},{title:"Administration",color:"from-slate-500/20 to-zinc-500/10 border-slate-500/20 text-slate-400",iconColor:"text-slate-400 bg-slate-500/10",items:[{icon:f,label:"User Management",path:"/dashboard/users",desc:"Portal system users & permissions",roles:["superuser","super_admin","admin"]},{icon:S,label:"Audit & Security Logs",path:"/dashboard/audit-logs",desc:"System event audits & secure logs",roles:["superuser","super_admin"]},{icon:c,label:"Reports Center",path:"/reports",desc:"Export full PDF & CSV fleet sheets",roles:["super_admin","admin"]},{icon:ne,label:"Settings",path:"/dashboard/profile",desc:"Personal profile & server options",roles:["super_admin","admin","manager","dispatcher","supervisor"]}]}]},[v]),L=o.useMemo(()=>{const e=["All"];return p.forEach(i=>{const n=r?.email?.toLowerCase()==="munnarathod222@gmail.com"||t==="superuser"||t==="super_admin";i.items.some(h=>i.title==="Client Portal"&&t!=="client"?!1:n?!0:(h?.roles||[]).includes(t))&&e.push(i.title)}),e},[p,t,r]),R={hidden:{opacity:0},show:{opacity:1,transition:{staggerChildren:.02}}},D={hidden:{y:8,opacity:0},show:{y:0,opacity:1,transition:{type:"spring",stiffness:400,damping:28}}},u=e=>{const i=ue(e),n=T(i);return n===i?e:n};return a.jsxs("div",{className:"min-h-screen bg-[#070A13] text-white px-4 pt-4 pb-24 md:hidden",children:[a.jsxs("div",{className:"flex items-center justify-between mb-5",children:[a.jsxs("div",{children:[a.jsx("span",{className:"text-[10px] tracking-widest font-black uppercase text-primary/80",children:"Jai Bhavani Cargo"}),a.jsxs("h1",{className:"text-2xl font-black tracking-tight mt-0.5 flex items-center gap-1.5 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-primary",children:["App Hub ",a.jsx(C,{className:"w-4 h-4 text-amber-400 animate-pulse"})]})]}),a.jsx("div",{className:"w-9 h-9 rounded-xl bg-slate-800/80 border border-white/10 flex items-center justify-center font-extrabold text-xs text-primary shadow-[0_0_15px_rgba(99,102,241,0.15)]",children:(r?.full_name||"U").charAt(0).toUpperCase()})]}),a.jsxs("div",{className:"relative mb-5",children:[a.jsx("input",{type:"text",value:l,onChange:e=>d(e.target.value),placeholder:"Search modules (e.g. cashbook, tyre)...",className:"w-full bg-slate-900/60 border border-white/5 rounded-2xl py-3 pl-11 pr-10 text-xs placeholder:text-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 backdrop-blur-md transition-all"}),a.jsx(oe,{className:"absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"}),l&&a.jsx("button",{type:"button",onClick:()=>d(""),className:"absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 text-slate-400",children:a.jsx(le,{className:"w-3 h-3"})})]}),a.jsx("div",{className:"flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-none snap-x snap-mandatory -mx-4 px-4",children:L.map(e=>a.jsx("button",{type:"button",onClick:()=>{N(e),d("")},className:`
-              px-4 py-1.5 rounded-full text-[11px] font-bold shrink-0 transition-all snap-align-start
-              ${m===e?"bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105":"bg-slate-900/80 border border-white/5 text-slate-400 hover:text-white"}
-            `,children:e==="All"?e:u(e)},e))}),a.jsx(M.div,{variants:R,initial:"hidden",animate:"show",className:"space-y-6",children:p.map(e=>{if(m!=="All"&&e.title!==m)return null;const i=r?.email?.toLowerCase()==="munnarathod222@gmail.com"||t==="superuser"||t==="super_admin",n=e.items.filter(s=>{if(e.title==="Client Portal"&&t!=="client")return!1;const h=i||(s?.roles||[]).includes(t),I=l===""||(s.label||"").toLowerCase().includes(l.toLowerCase())||(s.desc||"").toLowerCase().includes(l.toLowerCase());return h&&I});return n.length===0?null:a.jsxs("div",{className:"space-y-2.5",children:[a.jsx("h2",{className:"text-[10px] font-black tracking-widest uppercase text-slate-500 px-1",children:u(e.title)}),a.jsx("div",{className:"grid grid-cols-2 gap-3",children:n.map(s=>a.jsxs(M.div,{variants:D,onClick:()=>P(s.path),whileTap:{scale:.96},className:`
-                      flex flex-col items-start p-3.5 rounded-2xl border bg-gradient-to-br
-                      ${e.color} transition-all cursor-pointer relative overflow-hidden group/item
-                      shadow-[0_4px_12px_rgba(0,0,0,0.1)]
-                    `,children:[a.jsx("div",{className:"absolute right-0 bottom-0 w-16 h-16 rounded-full bg-white/5 blur-xl group-hover/item:bg-white/10 transition-colors"}),a.jsx("div",{className:`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-3 border border-white/5 ${e.iconColor}`,children:a.jsx(s.icon,{className:"w-4.5 h-4.5"})}),a.jsxs("div",{className:"w-full mt-auto",children:[a.jsxs("h3",{className:"text-xs font-bold text-white leading-snug flex items-center justify-between",children:[u(s.label),a.jsx(ce,{className:"w-3 h-3 opacity-0 group-hover/item:opacity-100 -translate-x-1 group-hover/item:translate-x-0 transition-all text-slate-400 shrink-0 ml-1"})]}),a.jsx("p",{className:"text-[9px] text-slate-400 line-clamp-1 mt-0.5 font-medium leading-none",children:s.desc||"Open module dashboard"})]})]},s.label))})]},e.title)})})]})}export{fe as default};
+import {
+  u as useAuth,
+  r as React,
+  a6 as TruckIcon,
+  aF as TyresIcon,
+  aG as FileBoxIcon,
+  aH as QrCodeIcon,
+  as as WrenchIcon,
+  aI as DropletIcon,
+  aJ as ClipboardListIcon,
+  aK as NavigationIcon,
+  ae as MapPinIcon,
+  aL as PackageIcon,
+  aM as CheckSquareIcon,
+  ad as Building2Icon,
+  aN as LayoutDashboardIcon,
+  ap as SparklesIcon,
+  aO as BarChart3Icon,
+  ai as TrendingUpIcon,
+  aP as CalculatorIcon,
+  aQ as PieChartIcon,
+  aR as TrophyIcon,
+  aS as IdCardIcon,
+  a3 as ReceiptIcon,
+  a0 as FileTextIcon,
+  al as WarningIcon,
+  a8 as CreditCardIcon,
+  aT as ShieldAlertIcon,
+  aU as ShieldCheckIcon,
+  a7 as UsersIcon,
+  aV as CalendarDaysIcon,
+  aW as UserPlusIcon,
+  aX as TargetIcon,
+  aY as Contact2Icon,
+  aZ as BriefcaseIcon,
+  a_ as MailIcon,
+  a$ as BellIcon,
+  b0 as DatabaseIcon,
+  am as SettingsIcon,
+  j as jsxRuntime,
+  at as SearchIcon,
+  X as CloseIcon,
+  aA as ArrowRightIcon
+} from "./vendor-react-Bs5V2qFE.js";
+import {
+  u as useNavigate,
+  M as motion,
+  p as pb,
+  m as motionObj
+} from "./index-DLxf9dwO.js";
+import "./vendor-radix-BQCqNqg0.js";
+import "./vendor-pdf-DtmgLs_2.js";
+const { useState, useMemo, useRef } = React;
+function LaunchpadPage() {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const role = currentUser?.role || "user";
+  const email = (currentUser?.email || "").toLowerCase();
+  const isSuper = email === "munnarathod222@gmail.com" || role === "superuser" || role === "super_admin";
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
+  const tabsScrollRef = useRef(null);
+  const menuGroups = useMemo(() => [
+    {
+      id: "main_analytics",
+      title: "Main & Analytics",
+      shortTitle: "Main",
+      subtitle: "Executive intelligence & fleet KPIs",
+      icon: LayoutDashboardIcon,
+      accentColor: "text-cyan-400",
+      activeBg: "bg-cyan-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25 border-cyan-400",
+      badgeColor: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
+      gradient: "from-cyan-500/20 via-blue-500/10 to-transparent border-cyan-500/30",
+      iconBg: "bg-cyan-500/15 text-cyan-400 border border-cyan-500/25",
+      items: [
+        { icon: LayoutDashboardIcon, label: "Dashboard", path: "/dashboard", desc: "Real-time overview of fleet operations", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: SparklesIcon, label: "AI Freight Marketplace", path: "/marketplace", desc: "AI load matching, corridor rates & shipper loads", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor", "user"] },
+        { icon: TargetIcon, label: "Bidding Intelligence", path: "/bidding-intelligence", desc: "Freight lane bids, benchmark rates & bidding logs", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: BarChart3Icon, label: "Analytics", path: "/analytics", desc: "P&L reporting & financial matrices", roles: ["super_admin", "admin", "manager"] },
+        { icon: TrendingUpIcon, label: "Trip Overview", path: "/dashboard/trip-overview", desc: "Global route metrics & calculations", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: CalculatorIcon, label: "Vehicle TCO & ROI", path: "/tco-roi", desc: "Calculate vehicle loan profiles & TCO", roles: ["super_admin", "admin", "manager"] },
+        { icon: PieChartIcon, label: "Client Analysis", path: "/client-analysis", desc: "Revenue split and payment margins", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: TrophyIcon, label: "Leaderboard", path: "/leaderboard", desc: "Top performing drivers leaderboard", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: IdCardIcon, label: "Driver Scorecard", path: "/driver-scorecard", desc: "Driver safety, fuel and performance metrics", roles: ["super_admin", "admin", "manager"] }
+      ]
+    },
+    {
+      id: "fleet_operations",
+      title: "Fleet & Operations",
+      shortTitle: "Fleet",
+      subtitle: "Vehicle logistics, trips, fuel & tracking",
+      icon: TruckIcon,
+      accentColor: "text-emerald-400",
+      activeBg: "bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/25 border-emerald-400",
+      badgeColor: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+      gradient: "from-emerald-500/20 via-teal-500/10 to-transparent border-emerald-500/30",
+      iconBg: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25",
+      items: [
+        { icon: TruckIcon, label: "Truck Manager", path: "/truck-manager", desc: "Track physical trucks & managers", roles: ["super_admin", "admin", "dispatcher", "supervisor"] },
+        { icon: MapPinIcon, label: "GPS Tracking", path: "/gps", desc: "Live vehicle telematics & geo-fencing", roles: ["super_admin", "admin", "dispatcher", "manager", "supervisor", "user"] },
+        { icon: TyresIcon, label: "Tyres & Battery", path: "/tyres", desc: "Track tyre serial numbers & replacement lifecycles", roles: ["super_admin", "admin", "dispatcher", "manager", "supervisor"] },
+        { icon: FileBoxIcon, label: "Vehicle Docs", path: "/truck-docs", desc: "RC, Insurance & permit renewals", roles: ["super_admin", "admin", "dispatcher", "supervisor"] },
+        { icon: QrCodeIcon, label: "Vehicle QR Pass Hub", path: "/truck-docs?view=qr_pass", desc: "Instant QR gate passes for security checkpoints", roles: ["super_admin", "admin", "dispatcher", "manager", "supervisor"] },
+        { icon: WrenchIcon, label: "Fleet Maintenance", path: "/fleet-maintenance", desc: "Servicing logs, problems & inventory", roles: ["super_admin", "admin", "dispatcher"] },
+        { icon: DropletIcon, label: "Fuel Tracker & AI Scanner", path: "/fuel-tracker", desc: "Fuel purchases, efficiency KMPL & receipts", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: ClipboardListIcon, label: "Trip Logs", path: "/trip-logs", desc: "Manage & dispatch trip schedules", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: NavigationIcon, label: "Track Shipment", path: "/tracking", desc: "Live consignment tracking & ETA status", roles: ["super_admin", "admin", "dispatcher", "manager", "user"] },
+        { icon: MapPinIcon, label: "Route Master", path: "/routes-master", desc: "Route rate configurations & origins", roles: ["super_admin", "admin", "dispatcher"] },
+        { icon: PackageIcon, label: "Inventory", path: "/inventory", desc: "Manage spare parts stock levels", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: FileBoxIcon, label: "Lorry Receipts & POD", path: "/pod-management", desc: "Official LR / Bilty generation & POD verification", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: CheckSquareIcon, label: "Exit Audit", path: "/exit-audit", desc: "Vehicle inspections before releases", roles: ["super_admin", "admin", "manager", "dispatcher"] }
+      ]
+    },
+    {
+      id: "finance_accounts",
+      title: "Finance & Accounts",
+      shortTitle: "Finance",
+      subtitle: "Cashflow, expenses, tax, cards & payroll",
+      icon: CreditCardIcon,
+      accentColor: "text-amber-400",
+      activeBg: "bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/25 border-amber-400",
+      badgeColor: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+      gradient: "from-amber-500/20 via-orange-500/10 to-transparent border-amber-500/30",
+      iconBg: "bg-amber-500/15 text-amber-400 border border-amber-500/25",
+      items: [
+        { icon: ReceiptIcon, label: "Cashbook", path: "/cashbook", desc: "Petty cash balances & double entry ledger", roles: ["super_admin", "admin", "manager"] },
+        { icon: FileTextIcon, label: "Expenses", path: "/expenses", desc: "Track fleet and operational overheads", roles: ["super_admin", "admin", "manager"] },
+        { icon: WarningIcon, label: "Payment Requests", path: "/payment-requests", desc: "Submit and approve vendor requests", roles: ["super_admin", "admin", "manager"] },
+        { icon: ReceiptIcon, label: "Invoice Matching", path: "/invoice-matching", desc: "Match invoices with client trips and PODs", roles: ["super_admin", "admin", "manager"] },
+        { icon: CreditCardIcon, label: "FASTag Management", path: "/fastag", desc: "Truck balances, tolls & recharge history", roles: ["super_admin", "admin", "manager"] },
+        { icon: CreditCardIcon, label: "Credit Cards", path: "/credit-cards", desc: "Manage company cards & payments", roles: ["super_admin", "admin"] },
+        { icon: ReceiptIcon, label: "GST ITC Tax", path: "/gst-itc", desc: "Tax liabilities, credits and GST filings", roles: ["super_admin", "admin", "manager"] },
+        { icon: ShieldAlertIcon, label: "Insurance Manager", path: "/insurance-manager", desc: "Fleet policy renewals, claims & broker rates", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: ShieldCheckIcon, label: "Company Vault", path: "/company-vault", desc: "Secure encrypted document & certificate storage", roles: ["super_admin", "admin", "manager"] },
+        { icon: CalculatorIcon, label: "EMI Calculator", path: "/emi-calculator", desc: "Calculate vehicle loan profiles & amortization", roles: ["super_admin", "admin", "manager"] },
+        { icon: FileTextIcon, label: "Payroll", path: "/payroll", desc: "Staff salaries, advances & monthly disbursements", roles: ["super_admin", "admin"] },
+        { icon: FileTextIcon, label: "Quotes & B2B Contracts", path: "/quotes-manager", desc: "B2B rate cards, proposals & quotation PDFs", roles: ["super_admin", "admin", "manager"] }
+      ]
+    },
+    {
+      id: "staff_hr",
+      title: "Staff & HR",
+      shortTitle: "Staff",
+      subtitle: "Drivers, employees, attendance & hiring",
+      icon: UsersIcon,
+      accentColor: "text-violet-400",
+      activeBg: "bg-violet-500 text-slate-950 font-black shadow-lg shadow-violet-500/25 border-violet-400",
+      badgeColor: "bg-violet-500/20 text-violet-300 border border-violet-500/30",
+      gradient: "from-violet-500/20 via-purple-500/10 to-transparent border-violet-500/30",
+      iconBg: "bg-violet-500/15 text-violet-400 border border-violet-500/25",
+      items: [
+        { icon: UsersIcon, label: "Employees", path: "/employees", desc: "Driver profiles and active staff directory", roles: ["super_admin", "admin", "manager", "supervisor"] },
+        { icon: FileBoxIcon, label: "Employee Docs", path: "/employee-docs", desc: "ID proofs, DL copies & driver contracts", roles: ["super_admin", "admin", "supervisor"] },
+        { icon: CalendarDaysIcon, label: "Attendance Hub", path: "/dashboard/attendance", desc: "Daily biometric and manual attendance logs", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: UserPlusIcon, label: "Recruitment Portal", path: "/recruitment", desc: "Driver hiring pipeline, tests & test drives", roles: ["super_admin", "admin", "manager"] }
+      ]
+    },
+    {
+      id: "crm_partners",
+      title: "CRM & Partners",
+      shortTitle: "CRM",
+      subtitle: "Clients, vendors, credit limits & leads",
+      icon: Building2Icon,
+      accentColor: "text-rose-400",
+      activeBg: "bg-rose-500 text-slate-950 font-black shadow-lg shadow-rose-500/25 border-rose-400",
+      badgeColor: "bg-rose-500/20 text-rose-300 border border-rose-500/30",
+      gradient: "from-rose-500/20 via-pink-500/10 to-transparent border-rose-500/30",
+      iconBg: "bg-rose-500/15 text-rose-400 border border-rose-500/25",
+      items: [
+        { icon: UsersIcon, label: "Clients List", path: "/clients", desc: "Client accounts, billing terms & credit limits", roles: ["super_admin", "admin", "manager"] },
+        { icon: ShieldAlertIcon, label: "Credit Control", path: "/credit-control", desc: "Track overdue balances & automated follow-ups", roles: ["super_admin", "admin", "manager"] },
+        { icon: Building2Icon, label: "Vendor Registration Tracker", path: "/vendor-tracker", desc: "Subcontractor empanelment & compliance status", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: Building2Icon, label: "Transport CRM", path: "/transport-crm", desc: "Shipper interactions, deals & lane history", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: TargetIcon, label: "Sales & Vendor Leads", path: "/sales-leads", desc: "New freight opportunities & vendor inquiries", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: Contact2Icon, label: "Contacts Directory", path: "/contacts", desc: "Shippers, brokers, mechanics & emergency contacts", roles: ["super_admin", "admin", "manager", "dispatcher"] }
+      ]
+    },
+    {
+      id: "studio_tools",
+      title: "Studio & Tools",
+      shortTitle: "Tools",
+      subtitle: "Mail, calendar, tasks & workflow engine",
+      icon: BriefcaseIcon,
+      accentColor: "text-indigo-400",
+      activeBg: "bg-indigo-500 text-slate-950 font-black shadow-lg shadow-indigo-500/25 border-indigo-400",
+      badgeColor: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
+      gradient: "from-indigo-500/20 via-blue-500/10 to-transparent border-indigo-500/30",
+      iconBg: "bg-indigo-500/15 text-indigo-400 border border-indigo-500/25",
+      items: [
+        { icon: BriefcaseIcon, label: "Branding Hub", path: "/branding-hub", desc: "Official letterheads, badges & company assets", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor", "user"] },
+        { icon: MailIcon, label: "Business Mail", path: "/business-mail", desc: "Communication portal & corporate mailboxes", roles: ["super_admin", "admin", "manager", "dispatcher"] },
+        { icon: CalendarDaysIcon, label: "Calendar", path: "/calendar", desc: "Monthly dispatch schedules & compliance reminders", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: BellIcon, label: "Reminders", path: "/reminders", desc: "Stay updated on vehicle & regulatory deadlines", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: CheckSquareIcon, label: "To-Do List", path: "/todo", desc: "Daily operational task checklist manager", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: CheckSquareIcon, label: "Workflow Command Center", path: "/todo", desc: "Enterprise tasks, approvals & automated sync", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] },
+        { icon: DatabaseIcon, label: "Data Backup & Export", path: "/data-backup", desc: "Export full PDF, Excel & CSV database dumps", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor", "user"] }
+      ]
+    },
+    {
+      id: "administration",
+      title: "Administration",
+      shortTitle: "Admin",
+      subtitle: "User access, audit logs & system config",
+      icon: SettingsIcon,
+      accentColor: "text-slate-300",
+      activeBg: "bg-slate-200 text-slate-950 font-black shadow-lg shadow-white/10 border-white",
+      badgeColor: "bg-slate-800 text-slate-300 border border-slate-700",
+      gradient: "from-slate-500/20 via-zinc-500/10 to-transparent border-slate-500/30",
+      iconBg: "bg-slate-800 text-slate-200 border border-slate-700",
+      items: [
+        { icon: UsersIcon, label: "User Management", path: "/dashboard/users", desc: "Portal system users, invitations & roles", roles: ["superuser", "super_admin", "admin"] },
+        { icon: ShieldCheckIcon, label: "Audit & Security Logs", path: "/dashboard/audit-logs", desc: "System event audits, logins & security tracking", roles: ["superuser", "super_admin"] },
+        { icon: FileTextIcon, label: "Reports Center", path: "/reports", desc: "Comprehensive business reports & summaries", roles: ["super_admin", "admin"] },
+        { icon: SettingsIcon, label: "Settings", path: "/dashboard/profile", desc: "Personal profile, security & system options", roles: ["super_admin", "admin", "manager", "dispatcher", "supervisor"] }
+      ]
+    }
+  ], []);
+  const authorizedGroups = useMemo(() => {
+    return menuGroups.map((group) => {
+      const filteredItems = group.items.filter((item) => {
+        if (isSuper) return true;
+        return (item.roles || []).includes(role);
+      });
+      return {
+        ...group,
+        items: filteredItems,
+        count: filteredItems.length
+      };
+    }).filter((group) => group.count > 0);
+  }, [menuGroups, isSuper, role]);
+  const totalModulesCount = useMemo(() => {
+    return authorizedGroups.reduce((acc, g) => acc + g.count, 0);
+  }, [authorizedGroups]);
+  const categoriesList = useMemo(() => {
+    const list = [{ title: "All", count: totalModulesCount, id: "all", icon: SparklesIcon }];
+    authorizedGroups.forEach((g) => {
+      list.push({ title: g.title, count: g.count, id: g.id, icon: g.icon, activeBg: g.activeBg, accentColor: g.accentColor });
+    });
+    return list;
+  }, [authorizedGroups, totalModulesCount]);
+  const displayedGroups = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return authorizedGroups.map((group) => {
+      if (activeCategory !== "All" && group.title !== activeCategory) {
+        return null;
+      }
+      const matchedItems = group.items.filter((item) => {
+        if (!query) return true;
+        return item.label.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query);
+      });
+      if (matchedItems.length === 0) return null;
+      return {
+        ...group,
+        items: matchedItems
+      };
+    }).filter(Boolean);
+  }, [authorizedGroups, activeCategory, searchQuery]);
+  return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen bg-[#070A13] text-white px-4 pt-4 pb-28 md:hidden" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[10px] tracking-widest font-black uppercase text-cyan-400/90 flex items-center gap-1" }, /* @__PURE__ */ React.createElement("span", null, "JAI BHAVANI CARGO"), /* @__PURE__ */ React.createElement("span", { className: "text-slate-600" }, "\u2022"), /* @__PURE__ */ React.createElement("span", { className: "text-slate-400" }, "OPERATIONS PORTAL")), /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-black tracking-tight mt-0.5 flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-cyan-400" }, "App Hub ", /* @__PURE__ */ React.createElement(SparklesIcon, { className: "w-5 h-5 text-amber-400 animate-pulse" }))), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-mono text-cyan-400 font-bold" }, totalModulesCount, " Modules"), /* @__PURE__ */ React.createElement("div", { className: "w-9 h-9 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center justify-center font-extrabold text-xs text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]" }, (currentUser?.full_name || currentUser?.name || "U").charAt(0).toUpperCase()))), /* @__PURE__ */ React.createElement("div", { className: "relative mb-3.5" }, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      type: "text",
+      value: searchQuery,
+      onChange: (e) => setSearchQuery(e.target.value),
+      placeholder: "Search all modules (e.g. cashbook, tyres, bilty)...",
+      className: "w-full bg-slate-900/80 border border-slate-800 rounded-2xl py-3 pl-11 pr-10 text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 backdrop-blur-md transition-all text-white shadow-inner"
+    }
+  ), /* @__PURE__ */ React.createElement(SearchIcon, { className: "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }), searchQuery && /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => setSearchQuery(""),
+      className: "absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 text-slate-300 transition"
+    },
+    /* @__PURE__ */ React.createElement(CloseIcon, { className: "w-3 h-3" })
+  )), /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      ref: tabsScrollRef,
+      className: "flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none snap-x snap-mandatory -mx-4 px-4 scroll-smooth"
+    },
+    categoriesList.map((cat) => {
+      const isActive = activeCategory === cat.title;
+      const IconComp = cat.icon;
+      return /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          key: cat.id,
+          type: "button",
+          onClick: () => {
+            setActiveCategory(cat.title);
+            setSearchQuery("");
+          },
+          className: "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 transition-all snap-align-start cursor-pointer border " + (isActive ? cat.activeBg || "bg-cyan-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25 border-cyan-400 scale-[1.02]" : "bg-slate-900/90 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700")
+        },
+        /* @__PURE__ */ React.createElement(IconComp, { className: "w-3.5 h-3.5 " + (isActive ? "text-slate-950" : cat.accentColor || "text-slate-400") }),
+        /* @__PURE__ */ React.createElement("span", null, cat.title),
+        /* @__PURE__ */ React.createElement("span", { className: "ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-black " + (isActive ? "bg-black/20 text-slate-950" : "bg-slate-800 text-slate-400") }, cat.count)
+      );
+    })
+  ), activeCategory !== "All" && displayedGroups.length > 0 && (() => {
+    const currentGroup = displayedGroups[0];
+    const GroupIcon = currentGroup.icon;
+    return /* @__PURE__ */ React.createElement("div", { className: "p-3.5 mb-4 rounded-2xl border bg-gradient-to-r " + currentGroup.gradient + " flex items-center justify-between shadow-lg" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl flex items-center justify-center " + currentGroup.iconBg }, /* @__PURE__ */ React.createElement(GroupIcon, { className: "w-5 h-5" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("h2", { className: "text-sm font-extrabold text-white leading-tight" }, currentGroup.title), /* @__PURE__ */ React.createElement("p", { className: "text-[10px] text-slate-400 mt-0.5" }, currentGroup.subtitle))), /* @__PURE__ */ React.createElement("div", { className: "px-2.5 py-1 rounded-full text-[10px] font-mono font-extrabold " + currentGroup.badgeColor }, currentGroup.items.length, " ", currentGroup.items.length === 1 ? "module" : "modules"));
+  })(), displayedGroups.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "text-center py-12 px-4 rounded-3xl bg-slate-900/50 border border-slate-800 mt-4" }, /* @__PURE__ */ React.createElement(SearchIcon, { className: "w-8 h-8 text-slate-600 mx-auto mb-2" }), /* @__PURE__ */ React.createElement("h3", { className: "text-sm font-bold text-white" }, "No modules found"), /* @__PURE__ */ React.createElement("p", { className: "text-xs text-slate-400 mt-1 max-w-xs mx-auto" }, 'No matching modules for "', searchQuery, '" in ', activeCategory, "."), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      type: "button",
+      onClick: () => {
+        setSearchQuery("");
+        setActiveCategory("All");
+      },
+      className: "mt-4 px-4 py-1.5 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold cursor-pointer"
+    },
+    "Reset Filters"
+  )), /* @__PURE__ */ React.createElement("div", { className: "space-y-6" }, displayedGroups.map((group) => {
+    return /* @__PURE__ */ React.createElement("div", { key: group.id, className: "space-y-2.5" }, activeCategory === "All" && /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-1 pt-1" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "w-2 h-2 rounded-full " + (group.id === "main_analytics" ? "bg-cyan-400" : group.id === "fleet_operations" ? "bg-emerald-400" : group.id === "finance_accounts" ? "bg-amber-400" : group.id === "staff_hr" ? "bg-violet-400" : group.id === "crm_partners" ? "bg-rose-400" : group.id === "studio_tools" ? "bg-indigo-400" : "bg-slate-400") }), /* @__PURE__ */ React.createElement("h2", { className: "text-[11px] font-black tracking-wider uppercase text-slate-300" }, group.title)), /* @__PURE__ */ React.createElement("span", { className: "text-[10px] font-mono text-slate-500 font-semibold" }, group.items.length, " ", group.items.length === 1 ? "tab" : "tabs")), /* @__PURE__ */ React.createElement("div", { className: "grid grid-cols-2 gap-2.5" }, group.items.map((item) => {
+      const ItemIcon = item.icon;
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: item.path + item.label,
+          onClick: () => navigate(item.path),
+          className: "flex flex-col items-start p-3 rounded-2xl border bg-gradient-to-br " + group.gradient + " transition-all cursor-pointer relative overflow-hidden group/item active:scale-[0.97] shadow-sm hover:shadow-md hover:border-slate-700"
+        },
+        /* @__PURE__ */ React.createElement("div", { className: "w-full flex items-center justify-between mb-2" }, /* @__PURE__ */ React.createElement("div", { className: "w-8 h-8 rounded-xl flex items-center justify-center " + group.iconBg }, /* @__PURE__ */ React.createElement(ItemIcon, { className: "w-4 h-4" })), /* @__PURE__ */ React.createElement(ArrowRightIcon, { className: "w-3.5 h-3.5 text-slate-600 group-hover/item:text-slate-300 transition-colors" })),
+        /* @__PURE__ */ React.createElement("div", { className: "w-full mt-auto" }, /* @__PURE__ */ React.createElement("h3", { className: "text-xs font-bold text-white leading-tight line-clamp-1" }, item.label), /* @__PURE__ */ React.createElement("p", { className: "text-[9.5px] text-slate-400 line-clamp-2 mt-1 leading-snug font-medium" }, item.desc))
+      );
+    })));
+  })));
+}
+export { LaunchpadPage as default };
