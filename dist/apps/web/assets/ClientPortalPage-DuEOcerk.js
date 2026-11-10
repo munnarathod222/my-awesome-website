@@ -834,7 +834,7 @@ function at(){const{currentUser:i}=Ve(),[portalTab,setPortalTab]=c.useState("com
     e.jsx("div",{className:"text-xl sm:text-2xl font-black text-violet-400 font-heading truncate",children:T(m.monthlyFreightSpend)}),
     e.jsxs("div",{className:"text-[10.5px] text-muted-foreground mt-0.5 line-clamp-1",children:[m.monthlyCount," Trips in ",m.currentMonthName]})
   ]})})
-]})}),e.jsx(y,{className:"border-border/50 shadow-soft bg-card rounded-2xl overflow-hidden",children:e.jsxs(Ye,{value:portalTab,onValueChange:setPortalTab,defaultValue:"completed",className:"w-full",children:[e.jsx(Ke,{className:"pb-0 border-b border-border/40 bg-secondary/10",children:portalTab==="support"?e.jsxs("div",{className:"flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4",children:[e.jsxs("div",{children:[e.jsxs(Qe,{className:"font-heading text-xl text-white flex items-center gap-2",children:[e.jsx("span",{className:"text-lg",children:"🎧"}),"Support & Transit Complaints Desk"]}),e.jsx(Ge,{children:"Direct client SLA helpdesk. File damage claims, track delays, or chat directly with operations."})]}),e.jsx("div",{className:"flex items-center gap-2",children:e.jsxs(j,{onClick:()=>setPortalTab("completed"),variant:"outline",size:"sm",className:"rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 text-xs h-9 cursor-pointer",children:["← Back to Shipments Ledger"]})})]}):e.jsxs("div",{className:"flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4",children:[e.jsxs("div",{children:[e.jsx(Qe,{className:"font-heading text-xl",children:"Shipments & Freight Ledger"}),e.jsx(Ge,{children:"Real-time active tracking, proof of delivery downloads, and freight statements."})]}),e.jsxs("div",{className:"flex items-center gap-3 w-full md:w-auto flex-wrap",children:[e.jsxs("div",{className:"relative w-48",children:[e.jsx(Ue,{className:"absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"}),e.jsx(K,{placeholder:"Search trip, route, vehicle...",value:z,onChange:t=>we(t.target.value),className:"pl-8 h-9 text-xs rounded-xl bg-background"})]}),e.jsxs(Je,{className:"bg-background border border-border/50 p-1 rounded-xl flex-wrap",children:[
+]}),e.jsx(y,{className:"border-border/50 shadow-soft bg-card rounded-2xl overflow-hidden",children:e.jsxs(Ye,{value:portalTab,onValueChange:setPortalTab,defaultValue:"completed",className:"w-full",children:[e.jsx(Ke,{className:"pb-0 border-b border-border/40 bg-secondary/10",children:portalTab==="support"?e.jsxs("div",{className:"flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4",children:[e.jsxs("div",{children:[e.jsxs(Qe,{className:"font-heading text-xl text-white flex items-center gap-2",children:[e.jsx("span",{className:"text-lg",children:"🎧"}),"Support & Transit Complaints Desk"]}),e.jsx(Ge,{children:"Direct client SLA helpdesk. File damage claims, track delays, or chat directly with operations."})]}),e.jsx("div",{className:"flex items-center gap-2",children:e.jsxs(j,{onClick:()=>setPortalTab("completed"),variant:"outline",size:"sm",className:"rounded-xl bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 text-xs h-9 cursor-pointer",children:["← Back to Shipments Ledger"]})})]}):e.jsxs("div",{className:"flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4",children:[e.jsxs("div",{children:[e.jsx(Qe,{className:"font-heading text-xl",children:"Shipments & Freight Ledger"}),e.jsx(Ge,{children:"Real-time active tracking, proof of delivery downloads, and freight statements."})]}),e.jsxs("div",{className:"flex items-center gap-3 w-full md:w-auto flex-wrap",children:[e.jsxs("div",{className:"relative w-48",children:[e.jsx(Ue,{className:"absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"}),e.jsx(K,{placeholder:"Search trip, route, vehicle...",value:z,onChange:t=>we(t.target.value),className:"pl-8 h-9 text-xs rounded-xl bg-background"})]}),e.jsxs(Je,{className:"bg-background border border-border/50 p-1 rounded-xl flex-wrap",children:[
   e.jsxs(P,{value:"all",className:"rounded-lg text-xs font-bold px-2.5 py-1.5",children:["All Freight (",m.totalShipments,")"]}),
   e.jsxs(P,{value:"active",className:"rounded-lg text-xs font-bold px-2.5 py-1.5",children:["In-Transit (",m.activeCount,")"]}),
   e.jsxs(P,{value:"completed",className:"rounded-lg text-xs font-bold px-2.5 py-1.5",children:["Delivered (",m.completedCount,")"]}),
@@ -844,99 +844,208 @@ function at(){const{currentUser:i}=Ve(),[portalTab,setPortalTab]=c.useState("com
   e.jsxs(P,{value:"upcoming",className:"rounded-lg text-xs font-bold px-2.5 py-1.5",children:["Upcoming (",m.upcomingCount,")"]}),
   e.jsxs(P,{value:"bidding",className:"rounded-lg text-xs font-bold px-2.5 py-1.5 border border-amber-500/30 text-amber-400",children:[e.jsx(O,{className:"w-3 h-3 mr-1"})," Lane Bidding"]})
 ]})]})]})}),e.jsx(A,{value:"upcoming",className:"p-0 m-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),e.jsx(l,{className:"font-semibold",children:"Scheduled Date"}),e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),e.jsx(l,{className:"font-semibold",children:"Route"}),e.jsx(l,{className:"font-semibold",children:"Driver"}),e.jsx(l,{className:"font-semibold text-center",children:"Status"}),e.jsx(l,{className:"pr-6 text-right font-semibold",children:"Estimated Freight (₹)"})]})}),e.jsx(V,{children:m.upcomingTrips.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"No upcoming scheduled trips at the moment."})}):m.upcomingTrips.map(t=>e.jsxs(b,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-amber-400",children:t.trip_id||t.id}),e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),e.jsx(r,{className:"text-xs text-muted-foreground",children:t.driver_name||"—"}),e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:"bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs",children:t.trip_status||"Upcoming"})}),e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono",children:T(t.revenue||t.freight_amount||0)})]},t.id))})]})})}),e.jsx(A,{value:"active",className:"p-0 m-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),e.jsx(l,{className:"font-semibold",children:"Dispatch Date"}),e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),e.jsx(l,{className:"font-semibold",children:"Route"}),e.jsx(l,{className:"font-semibold",children:"Driver Contact"}),e.jsx(l,{className:"font-semibold text-center",children:"Status"}),e.jsx(l,{className:"pr-6 text-right font-semibold",children:"Freight Amount (₹)"})]})}),e.jsx(V,{children:m.activeShipments.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"No active in-transit shipments currently on route."})}):m.activeShipments.map(t=>e.jsxs(b,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),e.jsx(r,{className:"text-xs",children:t.driver_phone?e.jsxs(j,{variant:"ghost",size:"sm",onClick:()=>window.open(`tel:${t.driver_phone}`),className:"h-7 px-2 text-emerald-400 hover:text-emerald-300 font-bold",children:[e.jsx(He,{className:"w-3.5 h-3.5 mr-1"})," Call ",t.driver_name?`(${t.driver_name})`:""]}):t.driver_name||"—"}),e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:"bg-blue-500/10 text-blue-400 border-blue-500/20 font-bold text-xs animate-pulse",children:t.trip_status||"In-Transit"})}),e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono",children:T(t.revenue||t.freight_amount||0)})]},t.id))})]})})}),e.jsx(A,{value:"completed",className:"p-0 m-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),e.jsx(l,{className:"font-semibold",children:"Delivery Date"}),e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),e.jsx(l,{className:"font-semibold",children:"Route"}),e.jsx(l,{className:"font-semibold text-center",children:"POD Status"}),e.jsx(l,{className:"font-semibold text-center",children:"Payment Status"}),e.jsx(l,{className:"pr-6 text-right font-semibold",children:"Action"})]})}),e.jsx(V,{children:m.completedTrips.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:7,className:"text-center py-12 text-muted-foreground",children:"No completed delivered trips yet."})}):m.completedTrips.map(t=>{const o=t.pod_url||t.pod_link||(t.pod_file?N.files.getUrl(t,t.pod_file):null),s=(t.client_payment_status||"").toLowerCase()==="received"||(t.client_payment_status||"").toLowerCase()==="paid";return e.jsxs(b,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),e.jsx(r,{className:"text-center",children:o?e.jsxs(p,{variant:"outline",className:"bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-bold text-xs",children:[e.jsx(oe,{className:"w-3 h-3 mr-1"})," Verified POD"]}):e.jsxs(p,{variant:"outline",className:"bg-amber-500/10 text-amber-400 border-amber-500/30 font-bold text-xs",children:[e.jsx(Y,{className:"w-3 h-3 mr-1"})," Pending POD"]})}),e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:`font-bold text-xs ${s?"bg-emerald-500/10 text-emerald-400 border-emerald-500/30":"bg-rose-500/10 text-rose-400 border-rose-500/30"}`,children:s?"Paid":"Unpaid / Pending"})}),e.jsx(r,{className:"pr-6 text-right",children:o?e.jsxs(j,{size:"sm",onClick:()=>$e(t),className:"rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-bold shadow-sm",children:[e.jsx(de,{className:"w-3.5 h-3.5 mr-1.5"})," View POD"]}):e.jsxs(j,{size:"sm",variant:"outline",onClick:()=>w.success(`POD document request sent to dispatch desk for ${t.trip_id||t.id}`),className:"rounded-xl border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-semibold",children:[e.jsx(Y,{className:"w-3.5 h-3.5 mr-1"})," Request POD"]})})]},t.id)})})]})})}),e.jsx(A,{value:"all",className:"p-0 m-0",children:e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),e.jsx(l,{className:"font-semibold",children:"Date"}),e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),e.jsx(l,{className:"font-semibold",children:"Route"}),e.jsx(l,{className:"font-semibold text-center",children:"Status"}),e.jsx(l,{className:"font-semibold text-center",children:"Payment Status"}),e.jsx(l,{className:"font-semibold text-right",children:"Advance Paid (₹)"}),e.jsx(l,{className:"pr-6 text-right font-semibold",children:"Total Freight (₹)"})]})}),e.jsx(V,{children:ae.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:8,className:"text-center py-12 text-muted-foreground",children:"No freight statement logs found."})}):ae.map(t=>{const o=(t.client_payment_status||"").toLowerCase()==="received"||(t.client_payment_status||"").toLowerCase()==="paid";return e.jsxs(b,{className:"hover:bg-muted/30 transition-colors",children:[e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:`font-bold text-xs ${t.trip_status==="Delivered"||t.trip_status==="Completed"?"bg-emerald-500/10 text-emerald-400 border-emerald-500/20":"bg-blue-500/10 text-blue-400 border-blue-500/20"}`,children:t.trip_status||"Scheduled"})}),e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:`font-bold text-xs ${o?"bg-emerald-500/10 text-emerald-400 border-emerald-500/20":"bg-amber-500/10 text-amber-400 border-amber-500/20"}`,children:t.client_payment_status||"Pending"})}),e.jsx(r,{className:"text-right font-mono text-xs text-muted-foreground",children:T(t.advance_received_from_client||0)}),e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono",children:T(t.revenue||t.freight_amount||0)})]},t.id)})})]})})}),/* Tab: Pending POD */
-e.jsx(A,{value:"pending_pod",className:"p-0 m-0",children:e.jsxs("div",{className:"space-y-3",children:[
-  e.jsxs("div",{className:"p-3.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between",children:[
-    e.jsxs("div",{className:"flex items-center gap-2 text-xs text-amber-300 font-bold",children:[
-      e.jsx(Y,{className:"w-4 h-4 text-amber-400"}),
-      "Showing ",m.pendingPodCount," delivered shipments awaiting signed physical POD document upload."
-    ]}),
-    e.jsx(p,{className:"bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold",children:"Action Required"})
-  ]}),
-  e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[
-    e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[
-      e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),
-      e.jsx(l,{className:"font-semibold",children:"Delivery Date"}),
-      e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),
-      e.jsx(l,{className:"font-semibold",children:"Route"}),
-      e.jsx(l,{className:"font-semibold",children:"Driver"}),
-      e.jsx(l,{className:"font-semibold text-center",children:"POD Status"}),
-      e.jsx(l,{className:"pr-6 text-right font-semibold",children:"Freight (₹)"})
-    ]})}),
-    e.jsx(V,{children:m.pendingPodTrips.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:7,className:"text-center py-12 text-emerald-400 font-bold",children:"🎉 Excellent! All delivered shipments have verified POD documents uploaded."})}):m.pendingPodTrips.map(t=>e.jsxs(b,{key:t.id,className:"hover:bg-muted/30 transition-colors",children:[
-      e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),
-      e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),
-      e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),
-      e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),
-      e.jsx(r,{className:"text-xs text-muted-foreground",children:t.driver_name||"—"}),
-      e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:"bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs",children:"Pending POD Upload"})}),
-      e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono",children:T(t.revenue||t.freight_amount||0)})
-    ]}))
-  ]})})
-]})}),
-
-/* Tab: Outstanding Payments */
-e.jsx(A,{value:"unpaid",className:"p-0 m-0",children:e.jsxs("div",{className:"space-y-3",children:[
-  e.jsxs("div",{className:"p-3.5 bg-rose-500/10 border-b border-rose-500/20 flex items-center justify-between",children:[
-    e.jsxs("div",{className:"flex items-center gap-2 text-xs text-rose-300 font-bold",children:[
-      e.jsx(Oe,{className:"w-4 h-4 text-rose-400"}),
-      "Total Outstanding Payable Balance: ",e.jsx("strong",{className:"text-white font-mono text-sm ml-1",children:T(m.payableAmount)})
-    ]}),
-    e.jsx(p,{className:"bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-mono font-bold",children:m.unpaidCount+" Pending Trips"})
-  ]}),
-  e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[
-    e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[
-      e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),
-      e.jsx(l,{className:"font-semibold",children:"Delivery Date"}),
-      e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),
-      e.jsx(l,{className:"font-semibold",children:"Route"}),
-      e.jsx(l,{className:"font-semibold text-right",children:"Freight (₹)"}),
-      e.jsx(l,{className:"font-semibold text-right",children:"Advance Paid (₹)"}),
-      e.jsx(l,{className:"pr-6 text-right font-semibold text-rose-400",children:"Net Balance Due (₹)"})
-    ]})}),
-    e.jsx(V,{children:m.unpaidDeliveredTrips.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:7,className:"text-center py-12 text-emerald-400 font-bold",children:"🎉 Clear Ledger! No outstanding freight dues pending for delivered shipments."})}):m.unpaidDeliveredTrips.map(t=>{
-      const rev=Number(t.revenue)||Number(t.freight_amount)||0,
-            adv=Number(t.advance_received_from_client)||0,
-            toll=Number(t.toll_deduction)||0,
-            bal=Math.max(0,rev-adv-toll);
-      return e.jsxs(b,{key:t.id,className:"hover:bg-muted/30 transition-colors",children:[
-        e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),
-        e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),
-        e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),
-        e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),
-        e.jsx(r,{className:"text-right font-mono text-sm",children:T(rev)}),
-        e.jsx(r,{className:"text-right font-mono text-sm text-emerald-400",children:T(adv)}),
-        e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono text-rose-400",children:T(bal)})
-      ]});
+  e.jsx(A, {
+    value: "pending_pod",
+    className: "p-0 m-0",
+    children: e.jsxs("div", {
+      className: "space-y-3",
+      children: [
+        e.jsxs("div", {
+          className: "p-3.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between",
+          children: [
+            e.jsxs("div", {
+              className: "flex items-center gap-2 text-xs text-amber-300 font-bold",
+              children: [
+                e.jsx(Y, { className: "w-4 h-4 text-amber-400" }),
+                "Showing ",
+                m.pendingPodCount,
+                " delivered shipments awaiting signed physical POD document upload."
+              ]
+            }),
+            e.jsx(p, {
+              className: "bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold",
+              children: "Action Required"
+            })
+          ]
+        }),
+        e.jsx("div", {
+          className: "overflow-x-auto",
+          children: e.jsxs(U, {
+            children: [
+              e.jsx(H, {
+                className: "bg-muted/30",
+                children: e.jsxs(b, {
+                  children: [
+                    e.jsx(l, { className: "pl-6 font-semibold", children: "Trip ID" }),
+                    e.jsx(l, { className: "font-semibold", children: "Delivery Date" }),
+                    e.jsx(l, { className: "font-semibold", children: "Vehicle No." }),
+                    e.jsx(l, { className: "font-semibold", children: "Route" }),
+                    e.jsx(l, { className: "font-semibold", children: "Driver" }),
+                    e.jsx(l, { className: "font-semibold text-center", children: "POD Status" }),
+                    e.jsx(l, { className: "pr-6 text-right font-semibold", children: "Freight (₹)" })
+                  ]
+                })
+              }),
+              e.jsx(V, {
+                children: m.pendingPodTrips.length === 0
+                  ? e.jsx(b, { children: e.jsx(r, { colSpan: 7, className: "text-center py-12 text-emerald-400 font-bold", children: "🎉 Excellent! All delivered shipments have verified POD documents uploaded." }) })
+                  : m.pendingPodTrips.map(t => e.jsxs(b, {
+                      key: t.id,
+                      className: "hover:bg-muted/30 transition-colors",
+                      children: [
+                        e.jsx(r, { className: "pl-6 font-mono font-bold text-sm text-primary", children: t.trip_id || t.id }),
+                        e.jsx(r, { className: "whitespace-nowrap text-xs text-muted-foreground", children: t.date ? C(new Date(t.date), "dd MMM yyyy") : "—" }),
+                        e.jsx(r, { className: "font-mono font-bold text-sm", children: t.truck_number || "—" }),
+                        e.jsx(r, { className: "font-medium text-sm", children: t.route || "—" }),
+                        e.jsx(r, { className: "text-xs text-muted-foreground", children: t.driver_name || "—" }),
+                        e.jsx(r, { className: "text-center", children: e.jsx(p, { variant: "outline", className: "bg-amber-500/10 text-amber-400 border-amber-500/20 font-bold text-xs", children: "Pending POD Upload" }) }),
+                        e.jsx(r, { className: "pr-6 text-right font-bold text-sm font-mono", children: T(t.revenue || t.freight_amount || 0) })
+                      ]
+                    }))
+              })
+            ]
+          })
+        })
+      ]
     })
-  ]})})
-]})}),
+  }),
 
-/* Tab: Monthly Freight Spend */
-e.jsx(A,{value:"monthly",className:"p-0 m-0",children:e.jsxs("div",{className:"space-y-3",children:[
-  e.jsxs("div",{className:"p-3.5 bg-violet-500/10 border-b border-violet-500/20 flex items-center justify-between",children:[
-    e.jsxs("div",{className:"flex items-center gap-2 text-xs text-violet-300 font-bold",children:[
-      e.jsx(ie,{className:"w-4 h-4 text-violet-400"}),
-      "Freight Spend for ",m.currentMonthName,": ",e.jsx("strong",{className:"text-white font-mono text-sm ml-1",children:T(m.monthlyFreightSpend)})
-    ]}),
-    e.jsx(p,{className:"bg-violet-500/20 text-violet-300 border border-violet-500/40 text-xs font-mono font-bold",children:m.monthlyCount+" Consignments"})
-  ]}),
-  e.jsx("div",{className:"overflow-x-auto",children:e.jsxs(U,{children:[
-    e.jsx(H,{className:"bg-muted/30",children:e.jsxs(b,{children:[
-      e.jsx(l,{className:"pl-6 font-semibold",children:"Trip ID"}),
-      e.jsx(l,{className:"font-semibold",children:"Trip Date"}),
-      e.jsx(l,{className:"font-semibold",children:"Vehicle No."}),
-      e.jsx(l,{className:"font-semibold",children:"Route"}),
-      e.jsx(l,{className:"font-semibold text-center",children:"Status"}),
-      e.jsx(l,{className:"pr-6 text-right font-semibold text-violet-400",children:"Freight Billing (₹)"})
-    ]})}),
-    e.jsx(V,{children:m.monthlyTrips.length===0?e.jsx(b,{children:e.jsx(r,{colSpan:6,className:"text-center py-12 text-muted-foreground",children:"No freight consignments recorded for this calendar month yet."})}):m.monthlyTrips.map(t=>e.jsxs(b,{key:t.id,className:"hover:bg-muted/30 transition-colors",children:[
-      e.jsx(r,{className:"pl-6 font-mono font-bold text-sm text-primary",children:t.trip_id||t.id}),
-      e.jsx(r,{className:"whitespace-nowrap text-xs text-muted-foreground",children:t.date?C(new Date(t.date),"dd MMM yyyy"):"—"}),
-      e.jsx(r,{className:"font-mono font-bold text-sm",children:t.truck_number||"—"}),
-      e.jsx(r,{className:"font-medium text-sm",children:t.route||"—"}),
-      e.jsx(r,{className:"text-center",children:e.jsx(p,{variant:"outline",className:"font-bold text-xs bg-slate-800 text-slate-300 border-slate-700",children:t.trip_status||"Scheduled"})}),
-      e.jsx(r,{className:"pr-6 text-right font-bold text-sm font-mono text-violet-400",children:T(t.revenue||t.freight_amount||0)})
-    ]}))
-  ]})})
-]})}),
-e.jsxs(A,{value:"bidding",className:"p-5 m-0 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-center pb-2 border-b border-border/50",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-base font-bold text-foreground flex items-center gap-2",children:[e.jsx(O,{className:"w-4 h-4 text-amber-400"})," Active Route Lanes Bidding Exchange"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-0.5",children:"Submit custom freight bids directly for dedicated transport lanes."})]}),e.jsxs(p,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs font-mono",children:[se.length," Active Bidding Lanes"]})]}),e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-4",children:se.map(t=>e.jsxs(y,{className:"bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx(p,{variant:"outline",className:"text-[10px] text-amber-400 border-amber-400/30 font-mono",children:t.id}),e.jsx(p,{className:"bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] font-mono",children:t.contract_duration})]}),e.jsx("h4",{className:"text-base font-extrabold text-foreground mt-1",children:t.route})]}),e.jsxs("span",{className:"text-xs text-muted-foreground font-mono",children:[t.distance_km," KM"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl font-mono",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:"BENCHMARK RATE:"}),e.jsxs("div",{className:"font-bold text-foreground",children:["₹",t.benchmark_rate.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400",children:"AI RECOMMENDED:"}),e.jsxs("div",{className:"font-bold text-amber-400",children:["₹",t.ai_rate.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs pt-1",children:[e.jsxs("span",{className:"text-muted-foreground text-[11px] flex items-center gap-1",children:[e.jsx(ne,{className:"w-3.5 h-3.5 text-primary"})," ",t.required_truck]}),e.jsxs(j,{size:"sm",onClick:()=>{Le(t),q(t.benchmark_rate.toString()),te(t.contract_duration||"Monthly (1 Month)"),F(!0)},className:"h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:[e.jsx(O,{className:"w-3 h-3 mr-1"})," Bid For Contract"]})]})]},t.id))})]}),e.jsx(A,{value:"support",className:"p-4 sm:p-6 space-y-6",children:e.jsx(ClientPortalSupportTab,{client:x,trips:h,currentUser:i,preselectedTrip:issueTrip,onClearPreselectedTrip:()=>setIssueTrip(null)})})]})}),portalTab!=="support"&&e.jsxs("button",{type:"button",onClick:()=>setPortalTab("support"),className:"fixed bottom-5 right-5 z-40 h-10 px-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-2xl shadow-rose-600/40 flex items-center gap-2 border border-rose-400/40 transition-transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md",children:[e.jsx(oe,{className:"w-4 h-4"}),"Need Support? Chat with Operations",e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-ping"})]}),e.jsx(he,{open:Se,onOpenChange:F,children:e.jsxs(pe,{className:"sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-lg font-bold flex items-center gap-2 text-amber-400",children:[e.jsx(O,{className:"w-5 h-5 text-amber-400"})," Submit Freight Contract Bid for ",v?.route]}),e.jsx(fe,{className:"text-xs text-muted-foreground",children:"Submit your target price and preferred contract tenure for this dedicated transport lane."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-muted/40 p-3 rounded-xl border border-border text-xs space-y-1 font-mono",children:[e.jsxs("div",{children:["Target Benchmark: ",e.jsxs("strong",{className:"text-foreground",children:["₹",v?.benchmark_rate?.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:["AI Market Estimate: ",e.jsxs("strong",{className:"text-amber-400",children:["₹",v?.ai_rate?.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Contract Tenure / Duration"}),e.jsxs(ce,{value:B,onValueChange:te,children:[e.jsx(me,{className:"bg-background border-border text-xs rounded-xl font-bold",children:e.jsx(xe,{placeholder:"Select Contract Duration"})}),e.jsxs(ue,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(D,{value:"Weekly (7 Days)",children:"Weekly Contract (7 Days)"}),e.jsx(D,{value:"Monthly (1 Month)",children:"Monthly Contract (1 Month)"}),e.jsx(D,{value:"3 Months (Quarterly)",children:"3 Months Contract (Quarterly)"}),e.jsx(D,{value:"6 Months (Half-Yearly)",children:"6 Months Contract (Half-Yearly)"}),e.jsx(D,{value:"1 Year (Annual)",children:"1 Year Contract (Annual Dedicated)"})]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Your Bid Amount per Trip / Month (₹)"}),e.jsx(K,{type:"number",value:S,onChange:t=>q(t.target.value),className:"bg-background border-border text-sm font-bold font-mono text-emerald-400 rounded-xl"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Cargo Weight (Tons)"}),e.jsx(K,{type:"number",value:Me,onChange:t=>Te(t.target.value),className:"bg-background border-border text-xs rounded-xl text-foreground"})]})]}),e.jsxs(Xe,{children:[e.jsx(j,{variant:"outline",onClick:()=>F(!1),className:"rounded-xl text-xs",children:"Cancel"}),e.jsx(j,{onClick:Pe,className:"bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:"Submit Bid to Admin"})]})]})}),g&&e.jsx(he,{open:De,onOpenChange:ee,children:e.jsxs(pe,{className:"sm:max-w-[650px] bg-card border-border shadow-2xl rounded-2xl",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-xl font-heading font-bold flex items-center gap-2",children:[e.jsx(ie,{className:"w-5 h-5 text-violet-400"}),"Proof of Delivery (POD) - ",g.trip_id||g.id]}),e.jsxs(fe,{children:["Vehicle: ",e.jsx("strong",{className:"text-foreground",children:g.truck_number})," | Route: ",e.jsx("strong",{className:"text-foreground",children:g.route})]})]}),e.jsxs("div",{className:"space-y-4 py-3",children:[e.jsx("div",{className:"aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-border flex items-center justify-center relative",children:g.podUrl?e.jsx("img",{src:g.podUrl,alt:"Proof of Delivery",className:"w-full h-full object-contain"}):e.jsx("p",{className:"text-xs text-muted-foreground",children:"No image preview available"})}),e.jsxs("div",{className:"flex gap-3 pt-2",children:[e.jsxs(j,{variant:"outline",className:"flex-1 rounded-xl",onClick:()=>window.open(g.podUrl,"_blank"),children:[e.jsx(de,{className:"w-4 h-4 mr-2"})," Open Full Document"]}),e.jsxs(j,{className:"flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white",onClick:()=>{const t=document.createElement("a");t.href=g.podUrl,t.download=`POD_${g.trip_id||g.id}.jpg`,document.body.appendChild(t),t.click(),document.body.removeChild(t),w.success("POD downloaded")},children:[e.jsx(le,{className:"w-4 h-4 mr-2"})," Download POD"]})]})]})]})})]})}export{at as default};
+  /* Tab: Outstanding Payments */
+  e.jsx(A, {
+    value: "unpaid",
+    className: "p-0 m-0",
+    children: e.jsxs("div", {
+      className: "space-y-3",
+      children: [
+        e.jsxs("div", {
+          className: "p-3.5 bg-rose-500/10 border-b border-rose-500/20 flex items-center justify-between",
+          children: [
+            e.jsxs("div", {
+              className: "flex items-center gap-2 text-xs text-rose-300 font-bold",
+              children: [
+                e.jsx(Oe, { className: "w-4 h-4 text-rose-400" }),
+                "Total Outstanding Payable Balance: ",
+                e.jsx("strong", { className: "text-white font-mono text-sm ml-1", children: T(m.payableAmount) })
+              ]
+            }),
+            e.jsx(p, {
+              className: "bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-mono font-bold",
+              children: m.unpaidCount + " Pending Trips"
+            })
+          ]
+        }),
+        e.jsx("div", {
+          className: "overflow-x-auto",
+          children: e.jsxs(U, {
+            children: [
+              e.jsx(H, {
+                className: "bg-muted/30",
+                children: e.jsxs(b, {
+                  children: [
+                    e.jsx(l, { className: "pl-6 font-semibold", children: "Trip ID" }),
+                    e.jsx(l, { className: "font-semibold", children: "Delivery Date" }),
+                    e.jsx(l, { className: "font-semibold", children: "Vehicle No." }),
+                    e.jsx(l, { className: "font-semibold", children: "Route" }),
+                    e.jsx(l, { className: "font-semibold text-right", children: "Freight (₹)" }),
+                    e.jsx(l, { className: "font-semibold text-right", children: "Advance Paid (₹)" }),
+                    e.jsx(l, { className: "pr-6 text-right font-semibold text-rose-400", children: "Net Balance Due (₹)" })
+                  ]
+                })
+              }),
+              e.jsx(V, {
+                children: m.unpaidDeliveredTrips.length === 0
+                  ? e.jsx(b, { children: e.jsx(r, { colSpan: 7, className: "text-center py-12 text-emerald-400 font-bold", children: "🎉 Clear Ledger! No outstanding freight dues pending for delivered shipments." }) })
+                  : m.unpaidDeliveredTrips.map(t => {
+                      const rev = Number(t.revenue) || Number(t.freight_amount) || 0;
+                      const adv = Number(t.advance_received_from_client) || 0;
+                      const toll = Number(t.toll_deduction) || 0;
+                      const bal = Math.max(0, rev - adv - toll);
+                      return e.jsxs(b, {
+                        key: t.id,
+                        className: "hover:bg-muted/30 transition-colors",
+                        children: [
+                          e.jsx(r, { className: "pl-6 font-mono font-bold text-sm text-primary", children: t.trip_id || t.id }),
+                          e.jsx(r, { className: "whitespace-nowrap text-xs text-muted-foreground", children: t.date ? C(new Date(t.date), "dd MMM yyyy") : "—" }),
+                          e.jsx(r, { className: "font-mono font-bold text-sm", children: t.truck_number || "—" }),
+                          e.jsx(r, { className: "font-medium text-sm", children: t.route || "—" }),
+                          e.jsx(r, { className: "text-right font-mono text-sm", children: T(rev) }),
+                          e.jsx(r, { className: "text-right font-mono text-sm text-emerald-400", children: T(adv) }),
+                          e.jsx(r, { className: "pr-6 text-right font-bold text-sm font-mono text-rose-400", children: T(bal) })
+                        ]
+                      });
+                    })
+              })
+            ]
+          })
+        })
+      ]
+    })
+  }),
+
+  /* Tab: Monthly Freight Spend */
+  e.jsx(A, {
+    value: "monthly",
+    className: "p-0 m-0",
+    children: e.jsxs("div", {
+      className: "space-y-3",
+      children: [
+        e.jsxs("div", {
+          className: "p-3.5 bg-violet-500/10 border-b border-violet-500/20 flex items-center justify-between",
+          children: [
+            e.jsxs("div", {
+              className: "flex items-center gap-2 text-xs text-violet-300 font-bold",
+              children: [
+                e.jsx(ie, { className: "w-4 h-4 text-violet-400" }),
+                "Freight Spend for ",
+                m.currentMonthName,
+                ": ",
+                e.jsx("strong", { className: "text-white font-mono text-sm ml-1", children: T(m.monthlyFreightSpend) })
+              ]
+            }),
+            e.jsx(p, {
+              className: "bg-violet-500/20 text-violet-300 border border-violet-500/40 text-xs font-mono font-bold",
+              children: m.monthlyCount + " Consignments"
+            })
+          ]
+        }),
+        e.jsx("div", {
+          className: "overflow-x-auto",
+          children: e.jsxs(U, {
+            children: [
+              e.jsx(H, {
+                className: "bg-muted/30",
+                children: e.jsxs(b, {
+                  children: [
+                    e.jsx(l, { className: "pl-6 font-semibold", children: "Trip ID" }),
+                    e.jsx(l, { className: "font-semibold", children: "Trip Date" }),
+                    e.jsx(l, { className: "font-semibold", children: "Vehicle No." }),
+                    e.jsx(l, { className: "font-semibold", children: "Route" }),
+                    e.jsx(l, { className: "font-semibold text-center", children: "Status" }),
+                    e.jsx(l, { className: "pr-6 text-right font-semibold text-violet-400", children: "Freight Billing (₹)" })
+                  ]
+                })
+              }),
+              e.jsx(V, {
+                children: m.monthlyTrips.length === 0
+                  ? e.jsx(b, { children: e.jsx(r, { colSpan: 6, className: "text-center py-12 text-muted-foreground", children: "No freight consignments recorded for this calendar month yet." }) })
+                  : m.monthlyTrips.map(t => e.jsxs(b, {
+                      key: t.id,
+                      className: "hover:bg-muted/30 transition-colors",
+                      children: [
+                        e.jsx(r, { className: "pl-6 font-mono font-bold text-sm text-primary", children: t.trip_id || t.id }),
+                        e.jsx(r, { className: "whitespace-nowrap text-xs text-muted-foreground", children: t.date ? C(new Date(t.date), "dd MMM yyyy") : "—" }),
+                        e.jsx(r, { className: "font-mono font-bold text-sm", children: t.truck_number || "—" }),
+                        e.jsx(r, { className: "font-medium text-sm", children: t.route || "—" }),
+                        e.jsx(r, { className: "text-center", children: e.jsx(p, { variant: "outline", className: "font-bold text-xs bg-slate-800 text-slate-300 border-slate-700", children: t.trip_status || "Scheduled" }) }),
+                        e.jsx(r, { className: "pr-6 text-right font-bold text-sm font-mono text-violet-400", children: T(t.revenue || t.freight_amount || 0) })
+                      ]
+                    }))
+              })
+            ]
+          })
+        })
+      ]
+    })
+  }),
+
+  e.jsxs(A,{value:"bidding",className:"p-5 m-0 space-y-4",children:[e.jsxs("div",{className:"flex justify-between items-center pb-2 border-b border-border/50",children:[e.jsxs("div",{children:[e.jsxs("h3",{className:"text-base font-bold text-foreground flex items-center gap-2",children:[e.jsx(O,{className:"w-4 h-4 text-amber-400"})," Active Route Lanes Bidding Exchange"]}),e.jsx("p",{className:"text-xs text-muted-foreground mt-0.5",children:"Submit custom freight bids directly for dedicated transport lanes."})]}),e.jsxs(p,{className:"bg-amber-500/10 text-amber-400 border-amber-500/30 text-xs font-mono",children:[se.length," Active Bidding Lanes"]})]}),e.jsx("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-4",children:se.map(t=>e.jsxs(y,{className:"bg-card border-border/60 rounded-2xl p-4 space-y-3 hover:border-amber-400/50 transition-all",children:[e.jsxs("div",{className:"flex justify-between items-start",children:[e.jsxs("div",{children:[e.jsxs("div",{className:"flex items-center gap-2 flex-wrap",children:[e.jsx(p,{variant:"outline",className:"text-[10px] text-amber-400 border-amber-400/30 font-mono",children:t.id}),e.jsx(p,{className:"bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] font-mono",children:t.contract_duration})]}),e.jsx("h4",{className:"text-base font-extrabold text-foreground mt-1",children:t.route})]}),e.jsxs("span",{className:"text-xs text-muted-foreground font-mono",children:[t.distance_km," KM"]})]}),e.jsxs("div",{className:"grid grid-cols-2 gap-2 text-xs bg-muted/30 p-2.5 rounded-xl font-mono",children:[e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-muted-foreground",children:"BENCHMARK RATE:"}),e.jsxs("div",{className:"font-bold text-foreground",children:["₹",t.benchmark_rate.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:[e.jsx("span",{className:"text-[10px] text-amber-400",children:"AI RECOMMENDED:"}),e.jsxs("div",{className:"font-bold text-amber-400",children:["₹",t.ai_rate.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"flex items-center justify-between text-xs pt-1",children:[e.jsxs("span",{className:"text-muted-foreground text-[11px] flex items-center gap-1",children:[e.jsx(ne,{className:"w-3.5 h-3.5 text-primary"})," ",t.required_truck]}),e.jsxs(j,{size:"sm",onClick:()=>{Le(t),q(t.benchmark_rate.toString()),te(t.contract_duration||"Monthly (1 Month)"),F(!0)},className:"h-8 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:[e.jsx(O,{className:"w-3 h-3 mr-1"})," Bid For Contract"]})]})]},t.id))})]}),e.jsx(A,{value:"support",className:"p-4 sm:p-6 space-y-6",children:e.jsx(ClientPortalSupportTab,{client:x,trips:h,currentUser:i,preselectedTrip:issueTrip,onClearPreselectedTrip:()=>setIssueTrip(null)})})]})}),portalTab!=="support"&&e.jsxs("button",{type:"button",onClick:()=>setPortalTab("support"),className:"fixed bottom-5 right-5 z-40 h-10 px-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-2xl shadow-rose-600/40 flex items-center gap-2 border border-rose-400/40 transition-transform hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md",children:[e.jsx(oe,{className:"w-4 h-4"}),"Need Support? Chat with Operations",e.jsx("span",{className:"w-2 h-2 rounded-full bg-emerald-400 animate-ping"})]}),e.jsx(he,{open:Se,onOpenChange:F,children:e.jsxs(pe,{className:"sm:max-w-md bg-card border-border shadow-2xl rounded-2xl p-6",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-lg font-bold flex items-center gap-2 text-amber-400",children:[e.jsx(O,{className:"w-5 h-5 text-amber-400"})," Submit Freight Contract Bid for ",v?.route]}),e.jsx(fe,{className:"text-xs text-muted-foreground",children:"Submit your target price and preferred contract tenure for this dedicated transport lane."})]}),e.jsxs("div",{className:"space-y-4 py-2",children:[e.jsxs("div",{className:"bg-muted/40 p-3 rounded-xl border border-border text-xs space-y-1 font-mono",children:[e.jsxs("div",{children:["Target Benchmark: ",e.jsxs("strong",{className:"text-foreground",children:["₹",v?.benchmark_rate?.toLocaleString("en-IN")]})]}),e.jsxs("div",{children:["AI Market Estimate: ",e.jsxs("strong",{className:"text-amber-400",children:["₹",v?.ai_rate?.toLocaleString("en-IN")]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Contract Tenure / Duration"}),e.jsxs(ce,{value:B,onValueChange:te,children:[e.jsx(me,{className:"bg-background border-border text-xs rounded-xl font-bold",children:e.jsx(xe,{placeholder:"Select Contract Duration"})}),e.jsxs(ue,{className:"bg-slate-900 border-slate-800 text-slate-100",children:[e.jsx(D,{value:"Weekly (7 Days)",children:"Weekly Contract (7 Days)"}),e.jsx(D,{value:"Monthly (1 Month)",children:"Monthly Contract (1 Month)"}),e.jsx(D,{value:"3 Months (Quarterly)",children:"3 Months Contract (Quarterly)"}),e.jsx(D,{value:"6 Months (Half-Yearly)",children:"6 Months Contract (Half-Yearly)"}),e.jsx(D,{value:"1 Year (Annual)",children:"1 Year Contract (Annual Dedicated)"})]})]})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Your Bid Amount per Trip / Month (₹)"}),e.jsx(K,{type:"number",value:S,onChange:t=>q(t.target.value),className:"bg-background border-border text-sm font-bold font-mono text-emerald-400 rounded-xl"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(Q,{className:"text-xs",children:"Cargo Weight (Tons)"}),e.jsx(K,{type:"number",value:Me,onChange:t=>Te(t.target.value),className:"bg-background border-border text-xs rounded-xl text-foreground"})]})]}),e.jsxs(Xe,{children:[e.jsx(j,{variant:"outline",onClick:()=>F(!1),className:"rounded-xl text-xs",children:"Cancel"}),e.jsx(j,{onClick:Pe,className:"bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl",children:"Submit Bid to Admin"})]})]})}),g&&e.jsx(he,{open:De,onOpenChange:ee,children:e.jsxs(pe,{className:"sm:max-w-[650px] bg-card border-border shadow-2xl rounded-2xl",children:[e.jsxs(be,{children:[e.jsxs(ge,{className:"text-xl font-heading font-bold flex items-center gap-2",children:[e.jsx(ie,{className:"w-5 h-5 text-violet-400"}),"Proof of Delivery (POD) - ",g.trip_id||g.id]}),e.jsxs(fe,{children:["Vehicle: ",e.jsx("strong",{className:"text-foreground",children:g.truck_number})," | Route: ",e.jsx("strong",{className:"text-foreground",children:g.route})]})]}),e.jsxs("div",{className:"space-y-4 py-3",children:[e.jsx("div",{className:"aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-border flex items-center justify-center relative",children:g.podUrl?e.jsx("img",{src:g.podUrl,alt:"Proof of Delivery",className:"w-full h-full object-contain"}):e.jsx("p",{className:"text-xs text-muted-foreground",children:"No image preview available"})}),e.jsxs("div",{className:"flex gap-3 pt-2",children:[e.jsxs(j,{variant:"outline",className:"flex-1 rounded-xl",onClick:()=>window.open(g.podUrl,"_blank"),children:[e.jsx(de,{className:"w-4 h-4 mr-2"})," Open Full Document"]}),e.jsxs(j,{className:"flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white",onClick:()=>{const t=document.createElement("a");t.href=g.podUrl,t.download=`POD_${g.trip_id||g.id}.jpg`,document.body.appendChild(t),t.click(),document.body.removeChild(t),w.success("POD downloaded")},children:[e.jsx(le,{className:"w-4 h-4 mr-2"})," Download POD"]})]})]})]})})]})}export{at as default};
