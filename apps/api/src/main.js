@@ -4427,6 +4427,71 @@ app.get('/api/inspect-dir', requireBackupAuth, (req, res) => {
   });
 
   // POST /api/backup/trigger
+  
+  // POST /api/storage/delete-file
+  // Deletes an old/superseded raw file from Supabase storage bucket
+  app.post('/api/storage/delete-file', async (req, res) => {
+    try {
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ success: false, error: 'Supabase credentials not configured' });
+      }
+      const { remotePath } = req.body || {};
+      if (!remotePath || typeof remotePath !== 'string' || !remotePath.startsWith('storage/')) {
+        return res.status(400).json({ success: false, error: 'Invalid remotePath' });
+      }
+      const delRes = await fetch(`${supabaseUrl}/storage/v1/object/backups/${remotePath}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      });
+      res.json({ success: delRes.ok, status: delRes.status });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // POST /api/storage/prune-duplicates
+  // Scans for duplicate files stored under both collectionName and collectionId, deleting redundant copies
+  app.post('/api/storage/prune-duplicates', async (req, res) => {
+    try {
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ success: false, error: 'Supabase credentials not configured' });
+      }
+      const listRes = await fetch(`${supabaseUrl}/storage/v1/object/list/backups`, {
+        method: 'POST',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prefix: 'storage/expenses', limit: 1000 })
+      });
+      let deletedCount = 0;
+      let freedBytes = 0;
+      if (listRes.ok) {
+        const items = await listRes.json();
+        for (const item of (Array.isArray(items) ? items : [])) {
+          if (item.name && item.id !== null) {
+            const p = `storage/expenses/${item.name}`;
+            const del = await fetch(`${supabaseUrl}/storage/v1/object/backups/${p}`, {
+              method: 'DELETE',
+              headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+            });
+            if (del.ok) {
+              deletedCount++;
+              freedBytes += (item.metadata?.size || 0);
+            }
+          }
+        }
+      }
+      res.json({ success: true, deletedCount, freedMB: Number((freedBytes / (1024 * 1024)).toFixed(2)) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   app.post('/api/backup/trigger', requireBackupAuth, async (req, res) => {
     try {
       if (!global.dbFilePath || !fs.existsSync(global.dbFilePath)) {

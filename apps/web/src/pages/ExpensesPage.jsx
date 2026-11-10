@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
-import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X, CheckCircle, Mail } from 'lucide-react';
+import { Plus, AlertCircle, Receipt, FileText, Trash2, ExternalLink, Edit2, Banknote, CalendarRange, RefreshCw, CreditCard, Tag, UploadCloud, CheckSquare, X, CheckCircle, Mail, Sparkles } from 'lucide-react';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
+import StorageOptimizerModal from '@/components/StorageOptimizerModal.jsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,6 +43,7 @@ const ExpensesPage = () => {
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [processingAdvanceId, setProcessingAdvanceId] = useState(null);
+  const [isStorageOptimizerOpen, setIsStorageOptimizerOpen] = useState(false);
   
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -790,6 +792,9 @@ const ExpensesPage = () => {
             <Button onClick={() => navigate('/bulk-upload?tab=expenses')} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none bg-background">
               <UploadCloud className="w-4 h-4" /> Bulk Import
             </Button>
+            <Button onClick={() => setIsStorageOptimizerOpen(true)} variant="outline" className="shadow-sm rounded-xl gap-2 flex-1 md:flex-none border-amber-500/30 text-amber-400 hover:bg-amber-500/10 font-bold" title="Compress old bloated bills and reclaim Supabase Cloud Storage">
+              <Sparkles className="w-4 h-4" /> Free Storage
+            </Button>
             <Button onClick={() => { setEditingExpense(null); setIsExpenseModalOpen(true); }} className="shadow-sm rounded-xl flex-1 md:flex-none">
               <Plus className="w-4 h-4 mr-2" /> Add Record
             </Button>
@@ -1384,6 +1389,11 @@ const ExpensesPage = () => {
           </DialogContent>
         </Dialog>
       )}
+      <StorageOptimizerModal
+        isOpen={isStorageOptimizerOpen}
+        onClose={() => setIsStorageOptimizerOpen(false)}
+        onRefresh={() => setRefreshTrigger(p => p + 1)}
+      />
       <SendMailDialog
         isOpen={mailOpen}
         onOpenChange={setMailOpen}

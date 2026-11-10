@@ -106,10 +106,7 @@ function handleRecordFiles(record) {
         const localPath = globalThis.buildLocalPath(collectionId, recordId, filename);
         const remotePath1 = `storage/${collectionId}/${recordId}/${filename}`;
         globalThis.uploadFileToSupabase(localPath, remotePath1);
-        if (collectionName && collectionName !== collectionId) {
-          const remotePath2 = `storage/${collectionName}/${recordId}/${filename}`;
-          globalThis.uploadFileToSupabase(localPath, remotePath2);
-        }
+        // Single canonical path in Supabase avoids duplicate storage bloat
       });
     });
   } catch (err) {
