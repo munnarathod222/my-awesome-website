@@ -1183,6 +1183,12 @@ const TripLogsPage = () => {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-64 bg-card border-border shadow-xl z-50">
                                     <DropdownMenuItem
+                                      className="font-bold text-xs py-2 text-sky-400 cursor-pointer flex items-center gap-2"
+                                      onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'driver_dispatch' })}
+                                    >
+                                      📍 Send Location to Driver (GPS Navigation)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
                                       className="font-bold text-xs py-2 text-emerald-400 cursor-pointer flex items-center gap-2"
                                       onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'booking_confirmation' })}
                                     >
@@ -1458,12 +1464,63 @@ const TripLogsPage = () => {
                             {formatCurrency(log.revenue)}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 rounded-lg text-xs font-bold text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex items-center gap-1 px-2.5 active:scale-95 transition-all shadow-sm"
+                                title="Share on WhatsApp"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> Share ▾
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64 bg-card border-border shadow-xl z-50">
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-sky-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'driver_dispatch' })}
+                              >
+                                📍 Send Location to Driver (GPS Navigation)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-emerald-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'booking_confirmation' })}
+                              >
+                                🚛 Booking Confirmation (Driver & Vehicle)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-blue-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'trip_status' })}
+                              >
+                                🚚 Live Trip Status & ETA Tracking
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-purple-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'pod_proof' })}
+                              >
+                                📑 POD (Proof of Delivery) Copy
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-emerald-500 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'payment_confirmation' })}
+                              >
+                                ✅ Payment Received Confirmation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="font-bold text-xs py-2 text-amber-500 cursor-pointer flex items-center gap-2"
+                                onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'quote' })}
+                              >
+                                🏷️ Share Freight Rate Quote
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
                           <Button 
                             variant="outline" 
                             size="sm" 
                             onClick={() => handleEditClick(log.id)}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
+                            className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
                           >
                             Edit
                           </Button>

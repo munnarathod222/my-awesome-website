@@ -31,9 +31,14 @@ export default function WhatsAppShareModal({
     if (overridePhone) {
       setPhone(overridePhone);
     } else if (trip) {
-      const clientPhone = trip.expand?.client_id?.phone || trip.client_phone || '';
-      const driverPhone = trip.driver_phone || trip.expand?.driver_id?.phone || '';
-      setPhone(clientPhone || driverPhone || '');
+      if (defaultTemplate === 'driver_dispatch') {
+        const driverPhone = trip.driver_phone || trip.expand?.driver_id?.phone || '';
+        setPhone(driverPhone || '');
+      } else {
+        const clientPhone = trip.expand?.client_id?.phone || trip.client_phone || '';
+        const driverPhone = trip.driver_phone || trip.expand?.driver_id?.phone || '';
+        setPhone(clientPhone || driverPhone || '');
+      }
     } else if (quote) {
       setPhone(quote.client_phone || quote.expand?.client_id?.phone || '');
     } else if (invoice) {
@@ -86,6 +91,32 @@ export default function WhatsAppShareModal({
 
   const generatedMessage = useMemo(() => {
     const trackingBase = 'https://www.jaibhavanicargo.com';
+
+    // 0. DRIVER DISPATCH & GPS NAVIGATION TO UNLOADING POINT
+    if (templateType === 'driver_dispatch') {
+      const tripId = trip?.lr_number || trip?.trip_id || trip?.id || 'TRIP';
+      const truckNo = trip?.truck_number || 'N/A';
+      const driverName = trip?.driver_name || trip?.expand?.driver_id?.name || 'Driver';
+      const destination = trip?.end_location || trip?.destination || trip?.route || 'Destination Point';
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+
+      return `📍 *JAI BHAVANI CARGO - GPS NAVIGATION & ROUTE FOR DRIVER*
+
+Dear *${driverName}*,
+
+Here are your route and GPS navigation directions:
+
+📌 *Trip & Vehicle Information:*
+• Trip Ref / LR No: *${tripId}*
+• Vehicle No: *${truckNo}*
+• Destination: *${destination}*
+
+🗺️ *Google Maps GPS Navigation Link (Tap to Navigate):*
+${mapsUrl}
+
+Drive safely and follow all road regulations!
+📞 Dispatch Control Room: +91 9876543210`;
+    }
 
     // 1. BOOKING CONFIRMATION WITH DRIVER & VEHICLE DETAILS
     if (templateType === 'booking_confirmation') {
@@ -333,6 +364,7 @@ Thank you for your business!
                 <SelectValue placeholder="Choose Template" />
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-800 text-slate-100">
+                <SelectItem value="driver_dispatch">📍 Send Location to Driver (GPS Navigation)</SelectItem>
                 <SelectItem value="booking_confirmation">🚛 Booking Confirmation (Driver & Vehicle Details)</SelectItem>
                 <SelectItem value="quote">🏷️ Rate Quote / Freight Estimation</SelectItem>
                 <SelectItem value="invoice">🧾 Freight Invoice / Bill Summary</SelectItem>
