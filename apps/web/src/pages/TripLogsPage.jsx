@@ -14,7 +14,7 @@ import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -23,6 +23,9 @@ import AddTripModal from '@/components/AddTripModal.jsx';
 import AddRecurringTripModal from '@/components/AddRecurringTripModal.jsx';
 import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
+import TripReassignmentModal from '@/components/TripReassignmentModal.jsx';
+import TripCompletionValidationDialog from '@/components/TripCompletionValidationDialog.jsx';
+import DriverStandbyRegistryModal from '@/components/DriverStandbyRegistryModal.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
 import DispatchDocsViewerModal from '@/components/DispatchDocsViewerModal.jsx';
@@ -126,6 +129,12 @@ const TripLogsPage = () => {
   const [selectedDocsTrip, setSelectedDocsTrip] = useState(null);
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '', attachment: null });
+
+  // Emergency Reassignment, Completion Validation & Standby Pool Modals
+  const [reassignTrip, setReassignTrip] = useState(null);
+  const [validationDialogTrip, setValidationDialogTrip] = useState(null);
+  const [standbyRegistryOpen, setStandbyRegistryOpen] = useState(false);
+  const [preselectedStandbyDriver, setPreselectedStandbyDriver] = useState(null);
 
   const generateTripPDFBlob = (log) => {
     try {
@@ -291,6 +300,14 @@ const TripLogsPage = () => {
     
     if (statusChangeTrip.trip_status === newTripStatus) {
       setStatusChangeTrip(null);
+      return;
+    }
+
+    // Intercept Completed status to trigger strict 3-Gate Completion Validation
+    if (newTripStatus === 'Completed') {
+      const tripToValidate = statusChangeTrip;
+      setStatusChangeTrip(null);
+      setValidationDialogTrip(tripToValidate);
       return;
     }
 
@@ -619,6 +636,9 @@ const TripLogsPage = () => {
               <p className="text-xs text-muted-foreground mt-0.5">Manage fleet shipments, driver assignments, and monitor payment progress.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => setStandbyRegistryOpen(true)} variant="outline" size="sm" className="bg-card h-8 rounded-lg text-xs hover:border-emerald-500/50 text-emerald-400 border-emerald-500/30">
+                <Users className="w-3.5 h-3.5 mr-1.5" /> Standby Drivers
+              </Button>
               <Button onClick={() => setIsBulkModalOpen(true)} variant="outline" size="sm" className="bg-card h-8 rounded-lg text-xs hover:border-primary/50">
                 <UploadCloud className="w-3.5 h-3.5 mr-1.5" /> Bulk Upload
               </Button>
@@ -1224,6 +1244,28 @@ const TripLogsPage = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  onClick={() => setReassignTrip(log)}
+                                  className="h-8 w-8 rounded-lg text-amber-400 border-amber-500/30 hover:bg-amber-500/10 bg-background"
+                                  title="Emergency Trip Reassignment (Swap Driver/Truck)"
+                                >
+                                  <ArrowRightLeft className="w-4 h-4" />
+                                </Button>
+
+                                {log.trip_status !== 'Completed' && (
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setValidationDialogTrip(log)}
+                                    className="h-8 w-8 rounded-lg text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 bg-background"
+                                    title="Trip Completion Validation & Settlement Gate"
+                                  >
+                                    <FileCheck2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+
+                                <Button
+                                  variant="outline"
+                                  size="icon"
                                   onClick={() => triggerEmailTrip(log)}
                                   className="h-8 w-8 rounded-lg text-blue-400 border-blue-500/30 hover:bg-blue-500/10 bg-background"
                                   title="Email Trip Sheet"
@@ -1519,6 +1561,27 @@ const TripLogsPage = () => {
                           <Button 
                             variant="outline" 
                             size="sm" 
+                            onClick={() => setReassignTrip(log)}
+                            className="h-8 px-2 rounded-lg text-xs font-semibold text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                            title="Emergency Reassign"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                          </Button>
+                          {log.trip_status !== 'Completed' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setValidationDialogTrip(log)}
+                              className="h-8 px-2 rounded-lg text-xs font-semibold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                              title="Validate & Complete"
+                            >
+                              <FileCheck2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
                             onClick={() => handleEditClick(log.id)}
                             className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
                           >
@@ -1806,6 +1869,52 @@ const TripLogsPage = () => {
         isOpen={!!selectedDocsTrip}
         onClose={() => setSelectedDocsTrip(null)}
         trip={selectedDocsTrip}
+      />
+
+      {reassignTrip && (
+        <TripReassignmentModal
+          isOpen={!!reassignTrip}
+          onClose={() => {
+            setReassignTrip(null);
+            setPreselectedStandbyDriver(null);
+          }}
+          trip={reassignTrip}
+          trucks={trucks}
+          employees={employees}
+          preselectedDriverId={preselectedStandbyDriver?.id}
+          onSuccess={() => {
+            setReassignTrip(null);
+            setPreselectedStandbyDriver(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {validationDialogTrip && (
+        <TripCompletionValidationDialog
+          isOpen={!!validationDialogTrip}
+          onClose={() => setValidationDialogTrip(null)}
+          trip={validationDialogTrip}
+          onSuccess={() => {
+            setValidationDialogTrip(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      <DriverStandbyRegistryModal
+        isOpen={standbyRegistryOpen}
+        onClose={() => setStandbyRegistryOpen(false)}
+        employees={employees}
+        activeTrips={tripLogs}
+        onSelectDriverForEmergency={(driver) => {
+          setPreselectedStandbyDriver(driver);
+          const candidateTrip = tripLogs.find(t => t.trip_status === 'In Transit' || t.trip_status === 'Upcoming') || tripLogs[0];
+          if (candidateTrip) {
+            setReassignTrip(candidateTrip);
+            toast.info(`Assigning standby driver ${driver.name} to Trip ${candidateTrip.trip_id || candidateTrip.id}`);
+          }
+        }}
       />
     </>
   );
