@@ -14,7 +14,7 @@ import { deductFastagForTrip } from '@/lib/fastagUtils.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users } from 'lucide-react';
+import { Pencil, UploadCloud, AlertCircle, Truck, Loader2, CheckSquare, PlusCircle, Trash2, UserPlus, Search, Route as RouteIcon, Map, ExternalLink, MapPin, MessageSquare, Share2, Mail, ArrowRightLeft, FileCheck2, Users, Clock, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
@@ -1498,27 +1498,68 @@ const TripLogsPage = () => {
                         })()}
                       </div>
 
-                      {/* Row 4: Financials & Action Buttons */}
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Revenue</div>
-                          <div className="text-sm font-black text-emerald-400">
+                      {/* Row 4: Full-Width Financials & Payment Status Bar */}
+                      <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/30 border border-border/60">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Revenue:</span>
+                          <span className="text-sm font-black text-emerald-400 tabular-nums font-mono">
                             {formatCurrency(log.revenue)}
-                          </div>
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground">Payment:</span>
+                          <Select
+                            value={log.client_payment_status || 'pending'}
+                            onValueChange={async (newPaymentStatus) => {
+                              const statusVal = newPaymentStatus === 'blank' ? '' : newPaymentStatus;
+                              if (statusVal === log.client_payment_status) return;
+                              try {
+                                await pb.collection('trip_logs').update(log.id, { client_payment_status: statusVal }, { $autoCancel: false });
+                                toast.success(`Payment updated: ${statusVal || 'Unset'}`);
+                                fetchData();
+                              } catch (err) {
+                                toast.error('Failed to update payment status');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "select-trigger-badge h-6 border px-2 py-0 rounded-md text-[10px] font-extrabold uppercase tracking-wider shadow-sm transition-all focus:ring-0 focus:ring-offset-0 [&>svg]:ml-1 [&>svg]:h-2.5 [&>svg]:w-2.5 shrink-0 w-auto whitespace-nowrap",
+                              log.client_payment_status === 'received' 
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" 
+                                : log.client_payment_status === 'delayed' 
+                                ? "bg-rose-500/15 text-rose-400 border-rose-500/30" 
+                                : log.client_payment_status === 'pending' 
+                                ? "bg-amber-500/15 text-amber-400 border-amber-500/30" 
+                                : "bg-muted text-muted-foreground border-border/50"
+                            )}>
+                              <SelectValue>{log.client_payment_status === 'received' ? 'Paid' : (log.client_payment_status || 'Pending')}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent align="end" className="bg-card border-border shadow-2xl z-50 text-foreground">
+                              <SelectItem value="pending" className="font-semibold text-xs py-1.5">Pending</SelectItem>
+                              <SelectItem value="received" className="font-semibold text-xs py-1.5">Paid</SelectItem>
+                              <SelectItem value="delayed" className="font-semibold text-xs py-1.5">Delayed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Row 5: Action Buttons Footer (2 Clean Rows) */}
+                      <div className="pt-1.5 border-t border-border/40 flex flex-col gap-2">
+                        {/* Primary Operations Row */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {/* WhatsApp Share Desk */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 rounded-lg text-xs font-bold text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex items-center gap-1 px-2.5 active:scale-95 transition-all shadow-sm"
+                                className="h-8.5 rounded-xl text-xs font-bold text-emerald-400 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all w-full"
                                 title="Share on WhatsApp"
                               >
-                                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> Share ▾
+                                <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Share ▾
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 bg-card border-border shadow-xl z-50">
+                            <DropdownMenuContent align="start" className="w-64 bg-card border-border shadow-2xl z-50 rounded-xl">
                               <DropdownMenuItem
                                 className="font-bold text-xs py-2 text-sky-400 cursor-pointer flex items-center gap-2"
                                 onClick={() => setWhatsappConfig({ isOpen: true, trip: log, defaultTemplate: 'driver_dispatch' })}
@@ -1558,43 +1599,75 @@ const TripLogsPage = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
 
+                          {/* Emergency Reassign (Swap) */}
                           <Button 
                             variant="outline" 
                             size="sm" 
                             onClick={() => setReassignTrip(log)}
-                            className="h-8 px-2 rounded-lg text-xs font-semibold text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
-                            title="Emergency Reassign"
+                            className="h-8.5 rounded-xl text-xs font-bold text-amber-400 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all w-full"
+                            title="Emergency Driver / Vehicle Reassignment"
                           >
-                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                            <ArrowRightLeft className="w-3.5 h-3.5" /> Swap
                           </Button>
-                          {log.trip_status !== 'Completed' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => setValidationDialogTrip(log)}
-                              className="h-8 px-2 rounded-lg text-xs font-semibold text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                              title="Validate & Complete"
-                            >
-                              <FileCheck2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
 
+                          {/* 3-Gate Completion & Settle */}
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setValidationDialogTrip(log)}
+                            className="h-8.5 rounded-xl text-xs font-bold text-sky-400 border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all w-full"
+                            title="3-Gate Completion & Settlement Audit"
+                          >
+                            <FileCheck2 className="w-3.5 h-3.5" /> Settle
+                          </Button>
+                        </div>
+
+                        {/* Secondary Actions (Edit, Timeline, More Options) */}
+                        <div className="flex items-center gap-1.5 w-full">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             onClick={() => handleEditClick(log.id)}
-                            className="h-8 px-2.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
+                            className="flex-1 h-8 rounded-xl text-xs font-bold border-border bg-muted/30 hover:bg-muted text-foreground flex items-center justify-center gap-1"
                           >
-                            Edit
+                            <Pencil className="w-3 h-3 text-muted-foreground" /> Edit
                           </Button>
+
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => setDeleteDialogData([log])}
-                            className="h-8 px-3 rounded-lg text-xs font-semibold text-rose-400 border-rose-500/20 hover:bg-rose-500/10"
+                            onClick={() => setSelectedTimelineTrip(log)}
+                            className="flex-1 h-8 rounded-xl text-xs font-bold text-sky-400 border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 flex items-center justify-center gap-1"
                           >
-                            Delete
+                            <Clock className="w-3 h-3 text-sky-400" /> Timeline
                           </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-9 p-0 rounded-xl text-muted-foreground hover:text-foreground border-border bg-muted/30 flex items-center justify-center shrink-0"
+                                title="More Options"
+                              >
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-card border-border shadow-2xl text-foreground z-50">
+                              <DropdownMenuItem
+                                onClick={() => window.open(`/invoice-matching?tripId=${log.trip_id || log.id}`, '_blank')}
+                                className="text-xs font-semibold text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                              >
+                                Invoice Matching
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setDeleteDialogData([log])}
+                                className="text-xs font-semibold text-rose-400 hover:bg-rose-500/10 cursor-pointer text-rose-400 focus:text-rose-400 focus:bg-rose-500/10"
+                              >
+                                Delete Trip
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
