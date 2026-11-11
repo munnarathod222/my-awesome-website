@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import {
-  LayoutDashboard, Users, Truck, CalendarDays, FileText, Settings,
+  LayoutDashboard, Users, Inbox, ClipboardCheck, Truck, CalendarDays, FileText, Settings,
   ChevronLeft, ChevronRight, LogOut, MapPin, ClipboardList, CreditCard,
   Droplet, Wrench, BarChart3, Bell, CheckSquare, FileBox,
   MessageSquare as MessageSquareWarning, Contact2, PieChart, Calculator,
@@ -67,13 +67,14 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
   if (showPodManagement) {
     fleetOperationsItems.push({ icon: FileBox, label: 'POD Management', path: '/pod-management', roles: ['super_admin','admin','manager','dispatcher'] });
   }
-  fleetOperationsItems.push({ icon: CheckSquare, label: 'Exit Audit', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher'] });
+  fleetOperationsItems.push({ icon: ClipboardCheck, label: 'Exit & Offboarding', path: '/exit-audit', roles: ['super_admin','admin','manager','dispatcher','supervisor'] });
 
   const menuGroups = [
     {
       title: 'Main & Analytics',
       items: [
         { icon: LayoutDashboard, label: 'Dashboard',             path: '/dashboard',               roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: Inbox,           label: 'Owner Inbox',           path: '/owner-inbox',             roles: ['super_admin','admin','manager'] },
         { icon: Sparkles,        label: 'AI Freight Marketplace',path: '/marketplace',     roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
         { icon: BarChart3,       label: 'Analytics',             path: '/analytics',               roles: ['super_admin','admin','manager'] },
         { icon: TrendingUp,      label: 'Trip Overview',         path: '/dashboard/trip-overview', roles: ['super_admin','admin','manager'] },
@@ -124,6 +125,7 @@ export default function Sidebar({ isExpanded, setIsExpanded }) {
         { icon: Mail,         label: 'Business Mail',         path: '/business-mail',    roles: ['super_admin','admin','manager','dispatcher'] },
         { icon: CalendarDays, label: 'Calendar',              path: '/calendar',         roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Bell,         label: 'Reminders',             path: '/reminders',        roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
+        { icon: CheckSquare,  label: 'Task Assignment',      path: '/tasks',            roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: CheckSquare,  label: 'To-Do List',            path: '/todo',             roles: ['super_admin','admin','manager','dispatcher','supervisor'] },
         { icon: Database,     label: 'Data Backup & Export',  path: '/data-backup',      roles: ['super_admin','admin','manager','dispatcher','supervisor','user'] },
       ]

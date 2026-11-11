@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail, MessageSquare, Sparkles, CheckCircle2, Clock, PhoneCall, RefreshCw, Download } from 'lucide-react';
+import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail, MessageSquare, Sparkles, CheckCircle2, Clock, PhoneCall, RefreshCw, Download, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import QuoteDetailsView from '@/components/QuoteDetailsView.jsx';
 import InvoiceMakerPage from '@/pages/InvoiceMakerPage.jsx';
 import SendMailDialog from '@/components/SendMailDialog.jsx';
 import WhatsAppShareModal from '@/components/WhatsAppShareModal.jsx';
+import ConvertQuoteToTripModal from '@/components/ConvertQuoteToTripModal.jsx';
 import { generateCorporateContractPdf } from '@/lib/contractPdfGenerator.js';
 import { TRUCK_SIZE_FILTER_OPTIONS } from '@/constants/truckSizes.js';
 
@@ -51,6 +52,7 @@ const QuotesManagerPage = () => {
 
   const [activeMainTab, setActiveMainTab] = useState('quotes');
   const [quoteToConvert, setQuoteToConvert] = useState(null);
+  const [quoteToConvertToTrip, setQuoteToConvertToTrip] = useState(null);
 
   const [mailOpen, setMailOpen] = useState(false);
   const [mailData, setMailData] = useState({ recipient: '', subject: '', body: '', html: '', label: '' });
@@ -635,6 +637,12 @@ const QuotesManagerPage = () => {
                                   <DropdownMenuItem onClick={() => handleConvertToInvoice(quote)}>
                                     Convert to Invoice
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => setQuoteToConvertToTrip(quote)}
+                                    className="text-cyan-400 font-bold hover:bg-cyan-950/30 cursor-pointer"
+                                  >
+                                    <Truck className="w-4 h-4 mr-2 text-cyan-400" /> Convert to Trip 🚚
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -709,6 +717,16 @@ const QuotesManagerPage = () => {
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setQuoteToConvertToTrip(quote)}
+                            className="h-7 px-2 text-[11px] font-bold rounded-lg border-cyan-500/30 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 gap-1"
+                            title="Convert into Live Trip"
+                          >
+                            <Truck className="w-3.5 h-3.5" />
+                            Trip
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -758,6 +776,16 @@ const QuotesManagerPage = () => {
         quote={selectedQuoteForWhatsApp}
         defaultTemplate="quote"
         overridePhone={selectedQuoteForWhatsApp?.customer_phone || selectedQuoteForWhatsApp?.phone || ''}
+      />
+
+      <ConvertQuoteToTripModal
+        isOpen={!!quoteToConvertToTrip}
+        quote={quoteToConvertToTrip}
+        onClose={() => setQuoteToConvertToTrip(null)}
+        onConverted={() => {
+          setQuoteToConvertToTrip(null);
+          fetchQuotes();
+        }}
       />
     </div>
   );

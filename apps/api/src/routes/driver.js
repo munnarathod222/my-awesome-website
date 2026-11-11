@@ -4919,6 +4919,140 @@ router.post('/breakdown-sos', async (req, res) => {
   }
 });
 
+
+/**
+ * POST /api/driver/employee-exit-clearance
+ * Comprehensive employee exit checklist, credential revocation, asset recovery, and handover
+ */
+router.post('/employee-exit-clearance', async (req, res) => {
+  try {
+    const {
+      employeeId,
+      exitDate,
+      exitType,
+      exitReason,
+      accessRevocation = {},
+      assetRecovery = {},
+      statutoryRecovery = {},
+      operationalHandover = {},
+      financialSettlement = {},
+      actor
+    } = req.body;
+
+    if (!employeeId) {
+      return res.status(400).json({ success: false, error: 'employeeId is required' });
+    }
+
+    const employee = await pb.collection('employees').getOne(employeeId, { $autoCancel: false });
+    if (!employee) {
+      return res.status(404).json({ success: false, error: 'Employee record not found' });
+    }
+
+    const actorName = actor?.name || 'Vinod Kumar Rathod';
+    const actorId = actor?.id || 'usr_vinod_admin';
+    const auditDateStr = exitDate ? new Date(exitDate).toISOString() : new Date().toISOString();
+
+    const exitAuditRecord = {
+      employee_id: employee.id,
+      employee_name: employee.name,
+      employee_type: employee.employee_type || 'driver',
+      audit_date: auditDateStr,
+      exit_type: exitType || 'Relieved',
+      exit_reason: exitReason || 'Formal Handover & Relieving',
+      access_revocation: JSON.stringify(accessRevocation),
+      asset_recovery: JSON.stringify(assetRecovery),
+      statutory_recovery: JSON.stringify(statutoryRecovery),
+      operational_handover: JSON.stringify(operationalHandover),
+      financial_settlement: JSON.stringify(financialSettlement),
+      status: 'Cleared',
+      cleared_by_name: actorName,
+      cleared_by_id: actorId,
+    };
+
+    // 1. Create record in exit_audits
+    let savedAudit = null;
+    try {
+      savedAudit = await pb.collection('exit_audits').create({
+        truck_id: employee.assigned_truck || '',
+        driver_id: employee.id,
+        audit_date: auditDateStr,
+        body_damages_notes: `Employee Exit Clearance: ${exitType || 'Relieved'} - ${exitReason || 'No-Dues Complete'}. Net settlement: ₹${Number(financialSettlement.netSettlementAmount || 0).toLocaleString('en-IN')}.`,
+        status: 'Cleared'
+      }, { $autoCancel: false });
+    } catch (e) {
+      logger.warn(`[ExitClearance] Notice creating exit_audits record: ${e.message}`);
+    }
+
+    // 2. Unassign truck in trucks collection if assigned
+    const assignedTruckId = employee.assigned_truck;
+    if (assignedTruckId && assignedTruckId !== 'none') {
+      try {
+        await pb.collection('trucks').update(assignedTruckId, {
+          assigned_driver: '',
+          assigned_driver_name: '',
+          status: 'Available'
+        }, { $autoCancel: false });
+        logger.info(`[ExitClearance] Unassigned Truck ${assignedTruckId} from relieved driver ${employee.name}`);
+      } catch (tErr) {
+        logger.warn(`[ExitClearance] Notice unassigning truck: ${tErr.message}`);
+      }
+    }
+
+    // 3. Reassign active/upcoming trips if replacement driver specified
+    if (operationalHandover.reassignedDriverId) {
+      try {
+        const pendingTrips = await pb.collection('trip_logs').getFullList({
+          filter: `(driver_id = "${employee.id}" || driver_name = "${employee.name}") && (trip_status = "Upcoming" || trip_status = "Scheduled")`,
+          $autoCancel: false
+        });
+        for (const trip of pendingTrips) {
+          await pb.collection('trip_logs').update(trip.id, {
+            driver_id: operationalHandover.reassignedDriverId,
+            driver_name: operationalHandover.reassignedDriverName || '',
+            notes: `${trip.notes || ''}\n[Driver Handover]: Reassigned from exiting driver ${employee.name} to ${operationalHandover.reassignedDriverName}.`
+          }, { $autoCancel: false });
+        }
+        logger.info(`[ExitClearance] Reassigned ${pendingTrips.length} upcoming trips to ${operationalHandover.reassignedDriverName}`);
+      } catch (tripErr) {
+        logger.warn(`[ExitClearance] Notice reassigning trips: ${tripErr.message}`);
+      }
+    }
+
+    // 4. Update employee active_status to relieved, clear truck, store exit note
+    await pb.collection('employees').update(employee.id, {
+      active_status: exitType === 'Terminated' ? 'terminated' : 'relieved',
+      assigned_truck: '',
+      notes: `${employee.notes || ''}\n[EXIT CLEARANCE - ${auditDateStr.split('T')[0]}]: ${exitType || 'Relieved'} (${exitReason || 'No-Dues Approved'}). Net Pay: ₹${Number(financialSettlement.netSettlementAmount || 0).toLocaleString('en-IN')}. Cleared by ${actorName}.`
+    }, { $autoCancel: false });
+
+    // 5. Ingest into Cryptographic Audit Trail
+    try {
+      const { ingestEvent } = await import('../services/auditService.js');
+      ingestEvent({
+        action: 'EMPLOYEE_EXIT_CLEARANCE',
+        module: 'AUTH',
+        entity_type: 'EMPLOYEE',
+        entity_id: employee.id,
+        severity: 'MEDIUM',
+        details: `Exit Clearance completed for ${employee.name} (${employee.employee_type || 'driver'}). Status set to Relieved. Net settlement ₹${Number(financialSettlement.netSettlementAmount || 0).toLocaleString('en-IN')}.`,
+        actor: { id: actorId, name: actorName, role: 'superuser' },
+        new_values: { active_status: 'relieved', exit_type: exitType, settlement: financialSettlement.netSettlementAmount }
+      });
+    } catch (e) {}
+
+    logger.info(`[ExitClearance] Successfully completed exit clearance for ${employee.name} (${employee.id})`);
+
+    res.json({
+      success: true,
+      message: `Employee ${employee.name} offboarded & exit clearance completed successfully`,
+      exitAudit: savedAudit
+    });
+  } catch (err) {
+    logger.error(`[ExitClearance Error] ${err.message}`);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;
 
 

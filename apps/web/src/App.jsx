@@ -77,6 +77,7 @@ import FuelTrackerPage from './pages/FuelTrackerPage.jsx';
 import CreditCardsPage from './pages/CreditCardsPage.jsx';
 import RemindersPage from './pages/RemindersPage.jsx';
 import TodoListPage from './pages/TodoListPage.jsx';
+import TaskManagerPage from './pages/TaskManagerPage.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
 import TruckDocsPage from './pages/TruckDocsPage.jsx';
 import EmployeeDocsPage from './pages/EmployeeDocsPage.jsx';
@@ -90,6 +91,7 @@ import ContactsPage from './pages/ContactsPage.jsx';
 import EMICalculatorPage from './pages/EMICalculatorPage.jsx';
 import PODManagementPage from './pages/PODManagementPage.jsx';
 import ExitAuditPage from './pages/ExitAuditPage.jsx';
+import OwnerInboxPage from './pages/OwnerInboxPage.jsx';
 import BusinessMailPage from './pages/BusinessMailPage.jsx';
 import RoadsideInspectionPage from './pages/RoadsideInspectionPage.jsx';
 import VehicleTCOPage from './pages/VehicleTCOPage.jsx';
@@ -311,6 +313,10 @@ function App() {
                   
                   <Route path="/quotes-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><QuotesManagerPage /></ProtectedRoute>} />
                   <Route path="/dashboard/quotes" element={<Navigate to="/quotes-manager" replace />} />
+                  <Route path="/owner-inbox" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager']}><OwnerInboxPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/owner-inbox" element={<Navigate to="/owner-inbox" replace />} />
+                  <Route path="/exit-audit" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor']}><ExitAuditPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/exit-audit" element={<Navigate to="/exit-audit" replace />} />
                   
                   {/* HR & Payroll */}
                   <Route path="/employees" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'supervisor']}><EmployeeDatabasePage /></ProtectedRoute>} />
@@ -330,6 +336,9 @@ function App() {
                   <Route path="/emi-calculator" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher']}><EMICalculatorPage /></ProtectedRoute>} />
                   <Route path="/reminders" element={<ProtectedRoute><RemindersPage /></ProtectedRoute>} />
                   <Route path="/todo" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
+                  <Route path="/tasks" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><TaskManagerPage /></ProtectedRoute>} />
+                  <Route path="/task-manager" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><TaskManagerPage /></ProtectedRoute>} />
+                  <Route path="/team-chat" element={<ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'dispatcher', 'supervisor', 'user']}><TaskManagerPage initialTab="chat" /></ProtectedRoute>} />
                   <Route path="/contacts" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
                   
                   {/* Fallback */}

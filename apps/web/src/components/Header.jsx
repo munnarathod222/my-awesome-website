@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, BarChart3, Calculator, CalendarDays, Trophy, PieChart, TrendingUp,
   CheckSquare, ClipboardList, MapPin, FileText, Droplet, Wrench, Package, FileBox, ShieldAlert,
   ShieldCheck, CreditCard, MessageSquare as MessageSquareWarning, Mail, Contact2, Settings,
-  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet, Camera, Calendar
+  QrCode, Navigation, HardDrive, RefreshCw, Receipt, Wallet, Camera, Calendar, Inbox
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -67,6 +67,7 @@ const ROUTE_LABELS = {
   '/dashboard/attendance':   'Attendance',
   '/dashboard/trip-overview':'Trip Overview',
   '/quotes-manager':         'Quotes',
+  '/owner-inbox':            'Owner Inbox',
   '/qr-scanner':             'QR Scanner Pass',
   '/tracking':               'Track Shipment',
 };
@@ -149,6 +150,22 @@ export default function Header() {
   const lastKnownQuoteIdsRef = React.useRef(new Set());
 
   // Request browser notification permission once user interacts
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchOwnerInboxCount = async () => {
+      try {
+        const res = await fetch('/api/owner-inbox/feed');
+        const data = await res.json();
+        if (data.success) {
+          const total = (data.approvals?.length || 0) + (data.exceptions?.length || 0) + (data.decisions?.length || 0);
+          setOwnerInboxCount(total);
+        }
+      } catch (e) {}
+    };
+    fetchOwnerInboxCount();
+    const interval = setInterval(fetchOwnerInboxCount, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
   useEffect(() => {
     if (isAuthenticated) {
       requestNotificationPermission();
@@ -369,6 +386,7 @@ export default function Header() {
   }, [fetchPendingNotifications, navigate]);
 
   const [unreadEmails, setUnreadEmails] = useState(0);
+  const [ownerInboxCount, setOwnerInboxCount] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) return;

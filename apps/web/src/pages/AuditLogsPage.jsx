@@ -420,6 +420,7 @@ export default function AuditLogsPage() {
                           {l.details}
                         </TableCell>
                       </TableRow>
+                      </React.Fragment>
                     ))
                   )}
                 </TableBody>

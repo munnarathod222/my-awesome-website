@@ -275,4 +275,142 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
+
+/**
+ * POST /api/quotes/convert-to-trip
+ * Converts an approved quotation into an operational live dispatch in trip_logs
+ */
+router.post('/convert-to-trip', async (req, res) => {
+  try {
+    const {
+      quoteId,
+      truckId,
+      truckNumber,
+      driverId,
+      driverName,
+      driverPhone,
+      pickupDate,
+      deliveryEta,
+      loadingDock,
+      unloadingDock,
+      driverAdvance,
+      notes,
+      actor
+    } = req.body;
+
+    if (!quoteId) {
+      return res.status(400).json({ success: false, error: 'quoteId is required' });
+    }
+
+    const quote = await pb.collection('quotes').getOne(quoteId, { $autoCancel: false });
+    if (!quote) {
+      return res.status(404).json({ success: false, error: 'Quotation not found' });
+    }
+
+    const tripNumber = `TRIP-${Date.now().toString(36).toUpperCase()}`;
+    const quoteRevenue = Number(quote.total_amount || quote.amount || quote.rate || 0);
+    const origin = quote.origin || quote.pickup_location || 'Origin Hub';
+    const destination = quote.destination || quote.drop_location || 'Destination Hub';
+    const route = `${origin} -> ${destination}`;
+
+    const tripPayload = {
+      trip_id: tripNumber,
+      route: route,
+      origin: origin,
+      destination: destination,
+      client_id: quote.client_id || quote.customer_id || '',
+      customer_name: quote.customer_name || '',
+      truck_id: truckId || '',
+      truck_number: truckNumber || '',
+      driver_id: driverId || '',
+      driver_name: driverName || '',
+      driver_phone: driverPhone || '',
+      revenue: quoteRevenue,
+      advance_paid_to_driver: Number(driverAdvance || 0),
+      trip_status: 'Upcoming',
+      client_payment_status: 'pending',
+      date: pickupDate ? new Date(pickupDate).toISOString() : new Date().toISOString(),
+      delivery_deadline: deliveryEta ? new Date(deliveryEta).toISOString() : '',
+      delivery_eta: deliveryEta ? new Date(deliveryEta).toISOString() : '',
+      notes: notes || quote.notes || `Converted from Quotation #${quote.quote_number || quote.id}`,
+      quote_id: quote.id,
+      loading_dock: loadingDock || 'Loading Gate 1',
+      unloading_dock: unloadingDock || 'Destination Dock',
+      closure_blockers: '["Missing POD document"]'
+    };
+
+    const newTrip = await pb.collection('trip_logs').create(tripPayload, { $autoCancel: false });
+
+    // Update Quote status
+    await pb.collection('quotes').update(quoteId, {
+      status: 'Converted',
+      converted_trip_id: newTrip.id,
+      converted_trip_number: tripNumber,
+      converted_at: new Date().toISOString()
+    }, { $autoCancel: false });
+
+    // If driver advance is specified, log in cashbook
+    if (Number(driverAdvance) > 0) {
+      try {
+        await pb.collection('cashbook').create({
+          transaction_type: 'Expense',
+          category: 'Driver Advance',
+          amount: Number(driverAdvance),
+          description: `Advance for Converted Trip ${tripNumber} (${route}) - Driver: ${driverName || 'N/A'}`,
+          reference_id: newTrip.id,
+          date: new Date().toISOString(),
+          payment_method: 'Cash',
+          status: 'Paid'
+        }, { $autoCancel: false });
+      } catch (e) {
+        logger.warn(`[QuoteConversion] Notice logging advance: ${e.message}`);
+      }
+    }
+
+    // Create high-priority dispatch task
+    try {
+      await pb.collection('operations_tasks').create({
+        task_number: `DISP-${Date.now().toString(36).toUpperCase()}`,
+        title: `Dispatch Booking: ${tripNumber} (${route})`,
+        description: `Trip converted from Quotation #${quote.quote_number || quote.id} for client ${quote.customer_name}. Assigned truck: ${truckNumber || 'TBA'}, Driver: ${driverName || 'TBA'}.`,
+        category: 'Dispatch & Trips',
+        department: 'Operations',
+        priority: 'High',
+        status: 'To Do',
+        due_date: pickupDate ? new Date(pickupDate).toISOString() : new Date().toISOString(),
+        assigned_to_name: driverName || 'Route Dispatcher',
+        accountable_owner_name: 'Vinod kumar Rathod',
+        related_entity_type: 'trip_logs',
+        related_entity_id: newTrip.id
+      }, { $autoCancel: false });
+    } catch (e) {}
+
+    // Ingest into Cryptographic Audit Trail
+    try {
+      const { ingestEvent } = await import('../services/auditService.js');
+      ingestEvent({
+        action: 'QUOTATION_CONVERTED_TO_TRIP',
+        module: 'LOGISTICS',
+        entity_type: 'TRIP',
+        entity_id: newTrip.id,
+        details: `Quotation #${quote.quote_number || quote.id} (₹${quoteRevenue.toLocaleString('en-IN')}) converted to live operational dispatch ${tripNumber} (${route}).`,
+        actor: { id: actor?.id || 'usr_vinod_admin', name: actor?.name || 'Vinod Kumar Rathod', role: 'superuser' },
+        new_values: { trip_id: tripNumber, revenue: quoteRevenue, route, truckNumber, driverName }
+      });
+    } catch (e) {}
+
+    logger.info(`[QuoteConversion] Converted Quote ${quoteId} to Trip ${tripNumber}`);
+
+    res.json({
+      success: true,
+      message: `Quotation converted successfully to Trip ${tripNumber}`,
+      trip: newTrip,
+      tripNumber
+    });
+  } catch (err) {
+    logger.error(`[QuoteConversion Error] ${err.message}`);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

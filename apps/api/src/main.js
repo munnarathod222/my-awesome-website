@@ -25,6 +25,7 @@ import { startTripClosureCron } from './cron/tripClosureWorker.js';
 import { startEscalationCron } from './cron/escalationEngine.js';
 import * as auditService from './services/auditService.js';
 import * as productivityService from './services/productivityService.js';
+import ownerInboxRouter from './routes/ownerInbox.js';
 import * as orgService from './services/orgService.js';
 import * as employeeBankService from './services/employeeBankService.js';
 import * as businessCalendarService from './services/businessCalendarService.js';
@@ -6376,6 +6377,8 @@ app.use('/hcgi/api/mobile/v1', mobileAuthRouter);
 app.use('/api/office/driver-access', driverRouter);
 app.use('/hcgi/api/office/driver-access', driverRouter);
 
+app.use('/api/owner-inbox', ownerInboxRouter);
+app.use('/hcgi/api/owner-inbox', ownerInboxRouter);
 app.use('/api/driver', driverRouter);
 app.use('/hcgi/api/driver', driverRouter);
 app.use('/api/trucks', driverRouter);
