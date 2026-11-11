@@ -1305,28 +1305,78 @@ const ut=()=>{const{currentUser:c}=gs(),{isSuperAdmin:i,isAdmin:I}=Gs(),{t:w}=Js
   a.useEffect(()=>{(c?.role==="Client"||c?.role==="client")&&m("/client-portal",{replace:!0})},[c,m]);const [_fleetTrips, setFleetTrips] = a.useState([]);
 const [_fleetExpenses, setFleetExpenses] = a.useState([]);
 const [_fleetTrucks, setFleetTrucks] = a.useState([]);
-const[t,L]=a.useState({todayBusiness:0,todayExpenses:0,todayProfit:0,todayMargin:"0",todayTripsCount:0,todayExpensesCount:0,todayDeliveredCount:0,todayInTransitCount:0,users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,x,y,A,F,T,D,allTripsList]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getList(1,1000,{fields:"id,amount,category,subcategory",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getFullList({sort:"-date",$autoCancel:!1}).catch(()=>[])]);let P=0,U=0,qe=0;const Be=J?.items||[],He=s?.items||[],Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=He.filter(N=>!((N.category||"").toLowerCase().includes("advance")||(N.subcategory||"").toLowerCase().includes("advance"))).reduce((N,pe)=>N+(pe.amount||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);
+const[t,L]=a.useState({todayBusiness:0,todayExpenses:0,todayProfit:0,todayMargin:"0",todayTripsCount:0,todayExpensesCount:0,todayDeliveredCount:0,todayInTransitCount:0,users:0,trips:0,trucks:0,pods:0,revenue:0,grossRevenue:0,expenses:0,fleetProfit:0,brokerageProfit:0,retainedEarnings:0}),[f,O]=a.useState([]),[C,Q]=a.useState(0),[Z,Ie]=a.useState([]),[te,Ae]=a.useState([]),[M,de]=a.useState(!0),[ee,ce]=a.useState(!0),[u,S]=a.useState(!1),[ae,re]=a.useState(null),[B,r]=a.useState(new Date),[o,R]=a.useState(!1),[le,G]=a.useState(!1),[xe,me]=a.useState(!1),[ne,ie]=a.useState(!1),[ue,Ve]=a.useState(!1),[$,Ue]=a.useState(!1),[Ke,Ye]=a.useState(()=>{try{return sessionStorage.getItem("dismiss_compliance_alert")==="true"}catch{return!1}}),V=async(l=!1)=>{l?S(!0):de(!0),re(null);try{const h='trip_status = "Delivered"',[H,J,Re,Ce,K,s,rawCashbook,rawAdvances,x,y,A,F,T,D,allTripsList]=await Promise.all([g.collection("users").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,500,{filter:h,sort:"-date",fields:"id,revenue,ownership_type,brokerage_margin,tds_deducted_receivable",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trucks").getFullList({fields:"id,truck_number,current_fastag_balance",$autoCancel:!1}).catch(()=>[]),g.collection("delivery_proofs").getList(1,1,{filter:'status = "Active"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("expenses").getFullList({sort:"-created",$autoCancel:!1}).catch(()=>[]),g.collection("cashbook").getFullList({sort:"-created",$autoCancel:!1}).catch(()=>[]),g.collection("advances").getFullList({sort:"-created",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,8,{sort:"-date",fields:"id,route,truck_number,driver_name,revenue,date,trip_status",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("truck_documents").getFullList({filter:'status = "Active"',fields:"id,expiry_date,truck_id",$autoCancel:!1}).catch(()=>[]),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Upcoming"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "Dispatched"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getList(1,1,{filter:'trip_status = "In Transit"',$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("maintenance_problems").getList(1,5,{filter:'status = "Open"',sort:"-date_reported",$autoCancel:!1}).catch(()=>({totalItems:0,items:[]})),g.collection("trip_logs").getFullList({sort:"-date",$autoCancel:!1}).catch(()=>[])]);let P=0,U=0,qe=0;const Be=J?.items||[],rawExpList=Array.isArray(s)?s:(s?.items||[]),Fe=Array.isArray(Ce)?Ce:Ce?.items||[],n=Array.isArray(y)?y:y?.items||[];Be.forEach(N=>{qe+=Number(N.tds_deducted_receivable)||0,N.ownership_type==="Attached"?U+=Number(N.brokerage_margin)||0:P+=Number(N.revenue)||0});const z=P-qe,b=rawExpList.filter(N=>!((N.category||"").toLowerCase().includes("advance")||(N.subcategory||"").toLowerCase().includes("advance"))).reduce((N,pe)=>N+(Number(pe.amount)||0),0),W=z-b,he=Fe.filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null&&N.current_fastag_balance<2e3).length;let ke=0;const Me=new Date;n.forEach(N=>{if(!N||!N.expiry_date)return;const pe=new Date(N.expiry_date);as(pe,Me)<=30&&ke++});const ls=[...Fe].filter(N=>N&&N.current_fastag_balance!==void 0&&N.current_fastag_balance!==null).sort((N,pe)=>(N.current_fastag_balance||0)-(pe.current_fastag_balance||0)).slice(0,5);
+const _isSameDayIST = (dVal, targetStr) => {
+  if (!dVal || !targetStr) return false;
+  const str = String(dVal).trim();
+  if (!str) return false;
+  if (str.slice(0, 10) === targetStr) return true;
+  const parts = str.split(/[-/]/);
+  if (parts.length >= 3 && parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
+    if ((parts[2].slice(0, 4) + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0')) === targetStr) return true;
+  }
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const ist = new Date(d.getTime() + (330 + d.getTimezoneOffset()) * 60000);
+      const yyyy = ist.getFullYear();
+      const mm = String(ist.getMonth() + 1).padStart(2, '0');
+      const dd = String(ist.getDate()).padStart(2, '0');
+      if ((yyyy + '-' + mm + '-' + dd) === targetStr) return true;
+    }
+  } catch (_) {}
+  return false;
+};
 const _now = new Date();
 const _istDateStr = new Date(_now.getTime() + (330 + _now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
 const _safeAllTrips = Array.isArray(allTripsList) ? allTripsList : [];
 const _todayTrips = _safeAllTrips.filter(N => {
   if (!N) return false;
-  const td = (N.date || '').slice(0, 10);
-  const cd = (N.created || '').slice(0, 10);
-  return td === _istDateStr || cd === _istDateStr;
+  return _isSameDayIST(N.date, _istDateStr) || _isSameDayIST(N.created, _istDateStr);
 });
 const _todayBusiness = _todayTrips.reduce((sum, N) => sum + (Number(N.revenue) || Number(N.freight_amount) || Number(N.rate) || 0), 0);
 const _todayDeliveredCount = _todayTrips.filter(N => N.trip_status === 'Delivered').length;
 const _todayInTransitCount = _todayTrips.filter(N => N.trip_status === 'In Transit' || N.trip_status === 'Dispatched').length;
 
-const _safeExpenses = Array.isArray(s?.items) ? s.items : [];
+const _expIdSet = new Set(rawExpList.map(e => String(e.id)));
+const _linkedAdvIds = new Set(rawExpList.map(e => String(e.advance_id || '')).filter(Boolean));
+const _unlinkedAdvs = (Array.isArray(rawAdvances) ? rawAdvances : []).filter(a => {
+  if (!a) return false;
+  if (a.expense_id && _expIdSet.has(String(a.expense_id))) return false;
+  if (_linkedAdvIds.has(String(a.id))) return false;
+  return true;
+}).map(a => ({
+  id: 'adv_' + a.id,
+  amount: Number(a.amount) || 0,
+  category: 'Employee Advance',
+  subcategory: a.reason || 'Advance',
+  date: a.date || a.created,
+  created: a.created,
+  status: a.status || 'Approved'
+}));
+const _expPool = [...rawExpList, ..._unlinkedAdvs];
+const _expPoolIds = new Set(_expPool.map(e => String(e.id)));
+const _unlinkedCb = (Array.isArray(rawCashbook) ? rawCashbook : []).filter(cb => {
+  if (!cb) return false;
+  const tx = (cb.transaction_type || '').toLowerCase();
+  if (tx === 'income' || tx === 'credit') return false;
+  if (cb.reference_id && (_expPoolIds.has(String(cb.reference_id)) || _expIdSet.has(String(cb.reference_id)))) return false;
+  return true;
+}).map(cb => ({
+  id: 'cb_' + cb.id,
+  amount: Number(cb.amount) || 0,
+  category: cb.category || 'Cashbook Expense',
+  subcategory: cb.subcategory || '',
+  date: cb.date || cb.created,
+  created: cb.created,
+  status: 'Approved'
+}));
+const _safeExpenses = [..._expPool, ..._unlinkedCb];
+
 const _todayExpensesList = _safeExpenses.filter(N => {
   if (!N) return false;
-  const cat = (N.category || '').toLowerCase();
-  const sub = (N.subcategory || '').toLowerCase();
-  if (cat.includes('advance') || sub.includes('advance')) return false;
-  const bd = (N.bill_date || N.date || N.created || '').slice(0, 10);
-  return bd === _istDateStr;
+  if (N.status && String(N.status).toLowerCase() === 'rejected') return false;
+  return _isSameDayIST(N.date, _istDateStr) || _isSameDayIST(N.bill_date, _istDateStr) || _isSameDayIST(N.created, _istDateStr);
 });
 const _todayExpenses = _todayExpensesList.reduce((sum, N) => sum + (Number(N.amount) || 0), 0);
 const _todayProfit = _todayBusiness - _todayExpenses;
