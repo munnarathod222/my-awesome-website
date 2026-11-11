@@ -1,3 +1,4 @@
+var Helmet = typeof window !== "undefined" && window.Helmet ? window.Helmet : function(){ return null; };
 import {
   r as React,
   bs as Helmet,

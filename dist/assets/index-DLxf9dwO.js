@@ -1,3 +1,4 @@
+window.Helmet=window.Helmet||function(){return null;};
 function jbcCheckRole(pth,title,usrRole,email){
 const isOwner=email?.toLowerCase()==="munnarathod222@gmail.com"||usrRole==="super_admin"||usrRole==="superuser"||usrRole==="owner";
 if(isOwner)return true;

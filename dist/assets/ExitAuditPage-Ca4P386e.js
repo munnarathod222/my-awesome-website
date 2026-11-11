@@ -1,3 +1,4 @@
+var Helmet = typeof window !== "undefined" && window.Helmet ? window.Helmet : function(){ return null; };
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
