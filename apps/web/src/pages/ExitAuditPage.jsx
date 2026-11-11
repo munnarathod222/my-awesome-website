@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+const Helmet = ({ children }) => null;
 import { 
   ClipboardCheck, 
   ShieldAlert, 
@@ -31,12 +31,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function ExitAuditPage() {
-  const [searchParams] = useSearchParams();
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'employee-exit');
 
   // Baseline data
@@ -134,7 +133,7 @@ export default function ExitAuditPage() {
       }
     };
     loadInitialData();
-  }, [searchParams]);
+  }, []);
 
   // When an employee is chosen in Tab 1
   const handleSelectEmployee = async (empId) => {

@@ -45950,7 +45950,8 @@ var toast = {
   }
 };
 function ExitAuditPage() {
-  const [activeTab, setActiveTab] = useState2((typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null) || "employee-exit");
+  const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const [activeTab, setActiveTab] = useState2(searchParams.get("tab") || "employee-exit");
   const [trucks, setTrucks] = useState2([]);
   const [employees, setEmployees] = useState2([]);
   const [drivers, setDrivers] = useState2([]);

@@ -1,538 +1,437 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Helmet } from 'react-helmet';
-import { 
-  Inbox, 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Clock, 
-  DollarSign, 
-  Truck, 
-  ShieldAlert, 
-  RefreshCw, 
-  MessageSquare, 
-  ArrowUpRight, 
-  Filter, 
-  CheckCheck, 
-  Sparkles,
-  PhoneCall,
-  User,
-  Calendar,
-  ChevronRight
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+function cn(...args) {
+  return args.filter(Boolean).join(" ");
+}
+
+// Inline SVG Icon components (Zero external icon dependencies)
+const Icons = {
+  Inbox: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("polyline", { points: "22 12 16 12 14 15 10 15 8 12 2 12" }),
+    React.createElement("path", { d: "M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" })
+  ),
+  CheckCircle2: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
+    React.createElement("path", { d: "m9 12 2 2 4-4" })
+  ),
+  XCircle: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
+    React.createElement("path", { d: "m15 9-6 6" }),
+    React.createElement("path", { d: "m9 9 6 6" })
+  ),
+  AlertTriangle: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" }),
+    React.createElement("line", { x1: 12, y1: 9, x2: 12, y2: 13 }),
+    React.createElement("line", { x1: 12, y1: 17, x2: 12.01, y2: 17 })
+  ),
+  Clock: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("circle", { cx: 12, cy: 12, r: 10 }),
+    React.createElement("polyline", { points: "12 6 12 12 16 14" })
+  ),
+  DollarSign: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("line", { x1: 12, y1: 2, x2: 12, y2: 22 }),
+    React.createElement("path", { d: "M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" })
+  ),
+  Truck: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("rect", { width: 16, height: 13, x: 1, y: 3, rx: 2 }),
+    React.createElement("polygon", { points: "16 8 20 8 23 11 23 16 16 16 16 8" }),
+    React.createElement("circle", { cx: 5.5, cy: 18.5, r: 2.5 }),
+    React.createElement("circle", { cx: 18.5, cy: 18.5, r: 2.5 })
+  ),
+  RefreshCw: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
+    React.createElement("path", { d: "M21 3v5h-5" }),
+    React.createElement("path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" }),
+    React.createElement("path", { d: "M8 16H3v5" })
+  ),
+  MessageSquare: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" })
+  ),
+  ArrowUpRight: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M7 7h10v10" }),
+    React.createElement("path", { d: "M7 17 17 7" })
+  ),
+  CheckCheck: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "M18 6 7 17l-5-5" }),
+    React.createElement("path", { d: "m22 10-7.5 7.5L13 16" })
+  ),
+  Sparkles: (props) => React.createElement("svg", { ...props, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" },
+    React.createElement("path", { d: "m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" })
+  )
+};
 
 export default function OwnerInboxPage() {
-  const navigate = useNavigate();
-  const [feed, setFeed] = useState({
-    approvals: [],
-    exceptions: [],
-    decisions: []
-  });
+  const [feed, setFeed] = useState({ approvals: [], exceptions: [], decisions: [] });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Action Dialog state (e.g. rejection note)
+  const [processingActionId, setProcessingActionId] = useState(null);
   const [rejectDialogItem, setRejectDialogItem] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [processingActionId, setProcessingActionId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (msg, type = 'info') => {
+    setToastMessage({ msg, type });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const navigate = (url) => {
+    window.history.pushState({}, '', url);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
 
   const fetchFeed = useCallback(async (isSilent = false) => {
-    if (!isSilent) setRefreshing(true);
+    if (!isSilent) setLoading(true);
+    else setRefreshing(true);
+
     try {
-      const res = await fetch('/api/owner-inbox/feed');
-      const data = await res.json();
-      if (data.success) {
-        setFeed({
-          approvals: data.approvals || [],
-          exceptions: data.exceptions || [],
-          decisions: data.decisions || []
-        });
-      } else {
-        throw new Error(data.error || 'Failed to fetch Owner Inbox feed');
-      }
+      const response = await fetch('/api/owner-inbox/feed');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setFeed({
+        approvals: Array.isArray(data.approvals) ? data.approvals : [],
+        exceptions: Array.isArray(data.exceptions) ? data.exceptions : [],
+        decisions: Array.isArray(data.decisions) ? data.decisions : []
+      });
     } catch (err) {
-      console.error('Owner inbox fetch error:', err);
-      if (!isSilent) toast.error('Failed to load owner inbox items.');
+      console.error('Error fetching Owner Inbox feed:', err);
+      if (!isSilent) showToast('Failed to sync live Owner Inbox items', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // Polling every 30s
   useEffect(() => {
     fetchFeed();
-    const interval = setInterval(() => {
-      fetchFeed(true);
-    }, 30000);
+    const interval = setInterval(() => fetchFeed(true), 30000);
     return () => clearInterval(interval);
   }, [fetchFeed]);
 
-  // Handle Approve / Reject action
-  const handleExecuteAction = async (item, actionType, notes = '') => {
+  const handleExecuteAction = async (item, actionType, reason = '') => {
     setProcessingActionId(item.id);
     try {
       const payload = {
-        action: actionType, // 'APPROVE_WORKFLOW', 'REJECT_WORKFLOW', 'RESOLVE_EXCEPTION'
+        action: actionType,
         itemId: item.id,
-        itemType: item.type, // 'workflow', 'trip_delay', 'breakdown', 'quote'
-        notes: notes
+        category: item.categoryGroup,
+        reason: reason
       };
 
-      const res = await fetch('/api/owner-inbox/action', {
+      const response = await fetch('/api/owner-inbox/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Server failed to execute inbox action');
-      }
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      const result = await response.json();
 
-      toast.success(data.message || `Action ${actionType} recorded successfully!`);
-      if (rejectDialogItem) {
+      showToast(result.message || 'Action executed successfully', 'success');
+
+      if (actionType === 'REJECT_WORKFLOW') {
         setRejectDialogItem(null);
         setRejectReason('');
       }
+
       fetchFeed(true);
     } catch (err) {
-      console.error('Action error:', err);
-      toast.error(err.message || 'Failed to process inbox action.');
+      console.error('Failed to execute inbox action:', err);
+      showToast(err.message || 'Failed to execute decision', 'error');
     } finally {
       setProcessingActionId(null);
     }
   };
 
-  // WhatsApp quick contact
-  const handleOpenWhatsApp = (phone, text) => {
-    if (!phone) {
-      toast.error('No contact phone registered for this item.');
-      return;
-    }
-    const cleanPhone = phone.replace(/\D/g, '');
-    const target = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-    const url = `https://wa.me/${target}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-  };
+  // Metrics
+  const metrics = useMemo(() => {
+    const totalApprovalsCount = feed.approvals.length;
+    const totalApprovalsValue = feed.approvals.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const totalExceptionsCount = feed.exceptions.length;
+    const totalDecisionsCount = feed.decisions.length;
+    const totalDecisionsValue = feed.decisions.reduce((sum, item) => sum + (Number(item.amount || item.total_amount) || 0), 0);
+    return {
+      totalApprovalsCount,
+      totalApprovalsValue,
+      totalExceptionsCount,
+      totalDecisionsCount,
+      totalDecisionsValue,
+      allCount: totalApprovalsCount + totalExceptionsCount + totalDecisionsCount
+    };
+  }, [feed]);
 
-  // Metric Ribbon Calculations
-  const totalApprovalsCount = feed.approvals.length;
-  const totalApprovalsValue = feed.approvals.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-  const totalExceptionsCount = feed.exceptions.length;
-  const totalDecisionsCount = feed.decisions.length;
-  const totalInboxItems = totalApprovalsCount + totalExceptionsCount + totalDecisionsCount;
+  // Combined list
+  const combinedItems = useMemo(() => {
+    const items = [];
+    feed.approvals.forEach(a => items.push({ ...a, categoryGroup: 'approval', sortDate: a.created || a.date || '' }));
+    feed.exceptions.forEach(e => items.push({ ...e, categoryGroup: 'exception', sortDate: e.date || e.created || '' }));
+    feed.decisions.forEach(d => items.push({ ...d, categoryGroup: 'decision', sortDate: d.created || d.date || '' }));
 
-  // Combine and filter items based on tab and search
-  const allItems = [
-    ...feed.approvals.map(a => ({ ...a, categoryGroup: 'approval' })),
-    ...feed.exceptions.map(e => ({ ...e, categoryGroup: 'exception' })),
-    ...feed.decisions.map(d => ({ ...d, categoryGroup: 'decision' }))
-  ];
-
-  const filteredItems = allItems.filter(item => {
-    // Tab filter
-    if (activeTab === 'approvals' && item.categoryGroup !== 'approval') return false;
-    if (activeTab === 'exceptions' && item.categoryGroup !== 'exception') return false;
-    if (activeTab === 'decisions' && item.categoryGroup !== 'decision') return false;
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const title = (item.title || item.rule_name || item.route || item.customer_name || '').toLowerCase();
-      const desc = (item.description || item.reason || item.notes || '').toLowerCase();
-      const truck = (item.truck_number || '').toLowerCase();
-      const driver = (item.driver_name || item.requester_name || '').toLowerCase();
-      return title.includes(q) || desc.includes(q) || truck.includes(q) || driver.includes(q);
-    }
-    return true;
-  });
+    return items
+      .filter(item => {
+        if (activeTab === 'approvals' && item.categoryGroup !== 'approval') return false;
+        if (activeTab === 'exceptions' && item.categoryGroup !== 'exception') return false;
+        if (activeTab === 'decisions' && item.categoryGroup !== 'decision') return false;
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchStr = `${item.title || ''} ${item.truck_number || ''} ${item.driver_name || ''} ${item.route || ''} ${item.customer_name || ''} ${item.rule_name || ''}`.toLowerCase();
+          return matchStr.includes(q);
+        }
+        return true;
+      })
+      .sort((a, b) => (b.sortDate || '').localeCompare(a.sortDate || ''));
+  }, [feed, activeTab, searchQuery]);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
-      <Helmet>
-        <title>Owner Inbox & Executive Command Center | Jai Bhavani Cargo</title>
-      </Helmet>
-
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-5">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20 shadow-xs">
-              <Inbox className="w-7 h-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-foreground flex items-center gap-3">
-                Owner Inbox
-                {totalInboxItems > 0 && (
-                  <Badge className="bg-amber-500 text-slate-950 font-black px-2.5 py-0.5 rounded-full text-xs animate-pulse">
-                    {totalInboxItems} PENDING
-                  </Badge>
-                )}
-              </h1>
-              <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">
-                Consolidated executive feed for financial approvals, operational exceptions, and high-value decisions.
-              </p>
-            </div>
-          </div>
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className={cn(
+          "fixed top-4 right-4 z-50 px-5 py-3 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top-4 duration-200 border",
+          toastMessage.type === 'error' ? "bg-rose-950/90 text-rose-200 border-rose-800" :
+          toastMessage.type === 'success' ? "bg-emerald-950/90 text-emerald-200 border-emerald-800" :
+          "bg-slate-900/90 text-slate-100 border-slate-700"
+        )}>
+          <Icons.Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+          <span>{toastMessage.msg}</span>
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <Icons.Inbox className="w-5 h-5" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+              Owner Inbox & Decision Center
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Unified executive command feed for disbursements, fleet delay exceptions, and high-value approvals.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
             onClick={() => fetchFeed(false)}
-            disabled={refreshing}
-            className="rounded-xl border-border/60 hover:bg-muted/30 font-medium text-xs gap-1.5 h-10 px-4"
+            disabled={loading || refreshing}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 text-slate-200 hover:text-white flex items-center gap-2 active:scale-95 transition-all"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-primary' : ''}`} />
-            Refresh
-          </Button>
+            <Icons.RefreshCw className={cn("w-3.5 h-3.5", (loading || refreshing) && "animate-spin")} />
+            {refreshing ? "Refreshing..." : "Refresh Feed"}
+          </button>
         </div>
       </div>
 
-      {/* Executive Metric Ribbon */}
+      {/* Metric Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Metric 1: Pending Approvals */}
-        <Card className="border border-border/50 rounded-3xl overflow-hidden shadow-soft bg-gradient-to-br from-card via-card to-amber-950/10">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5" /> Pending Approvals
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
-                  {totalApprovalsCount}
-                </span>
-                <span className="text-sm font-semibold text-muted-foreground">
-                  (₹{totalApprovalsValue.toLocaleString('en-IN')})
-                </span>
-              </div>
+        <div className="p-5 rounded-3xl bg-card border border-amber-500/30 shadow-soft space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pending Approvals</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <Icons.DollarSign className="w-4 h-4" />
             </div>
-            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-2xl font-black text-foreground">{metrics.totalApprovalsCount}</div>
+          <p className="text-xs text-amber-400 font-bold">₹{metrics.totalApprovalsValue.toLocaleString('en-IN')} pending disbursement</p>
+        </div>
 
-        {/* Metric 2: Operational Exceptions */}
-        <Card className="border border-border/50 rounded-3xl overflow-hidden shadow-soft bg-gradient-to-br from-card via-card to-rose-950/10">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5" /> Fleet Exceptions
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
-                  {totalExceptionsCount}
-                </span>
-                <span className="text-xs font-semibold text-rose-400">
-                  Delays & Breakdowns
-                </span>
-              </div>
+        {/* Metric 2: Fleet Exceptions */}
+        <div className="p-5 rounded-3xl bg-card border border-rose-500/30 shadow-soft space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fleet Exceptions</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
+              <Icons.AlertTriangle className="w-4 h-4" />
             </div>
-            <div className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl border border-rose-500/20">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-2xl font-black text-foreground">{metrics.totalExceptionsCount}</div>
+          <p className="text-xs text-rose-400 font-bold">Delays (&gt;45m) & Breakdowns</p>
+        </div>
 
         {/* Metric 3: Strategic Decisions */}
-        <Card className="border border-border/50 rounded-3xl overflow-hidden shadow-soft bg-gradient-to-br from-card via-card to-cyan-950/10">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> Pending Quotations
-              </span>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
-                  {totalDecisionsCount}
-                </span>
-                <span className="text-xs font-semibold text-cyan-400">
-                  Ready to Convert
-                </span>
-              </div>
+        <div className="p-5 rounded-3xl bg-card border border-cyan-500/30 shadow-soft space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pending Quotes</span>
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+              <Icons.Truck className="w-4 h-4" />
             </div>
-            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-2xl border border-cyan-500/20">
-              <Truck className="w-6 h-6" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
-          <TabsList className="bg-muted/60 p-1 rounded-2xl grid grid-cols-4 sm:flex gap-1">
-            <TabsTrigger value="all" className="rounded-xl font-bold text-xs">
-              All ({totalInboxItems})
-            </TabsTrigger>
-            <TabsTrigger value="approvals" className="rounded-xl font-bold text-xs">
-              Approvals ({totalApprovalsCount})
-            </TabsTrigger>
-            <TabsTrigger value="exceptions" className="rounded-xl font-bold text-xs">
-              Exceptions ({totalExceptionsCount})
-            </TabsTrigger>
-            <TabsTrigger value="decisions" className="rounded-xl font-bold text-xs">
-              Quotes ({totalDecisionsCount})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="relative w-full sm:w-72">
-          <Input 
-            placeholder="Search truck, driver, route..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 bg-background border-border rounded-xl text-xs pl-3"
-          />
-        </div>
-      </div>
-
-      {/* Main Feed Content */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-amber-500" />
-          <span className="text-muted-foreground text-sm font-medium">Scanning live approvals & fleet exceptions...</span>
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <Card className="border border-border/50 rounded-3xl p-12 text-center bg-card shadow-soft">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-xs">
-            <CheckCheck className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-heading font-extrabold text-foreground mt-4">All Clear! No Pending Items</h3>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto mt-1">
-            Every approval rule has been resolved, fleet shipments are running on schedule, and all high-value decisions are up to date.
-          </p>
-        </Card>
+          <div className="text-2xl font-black text-foreground">{metrics.totalDecisionsCount}</div>
+          <p className="text-xs text-cyan-400 font-bold">₹{metrics.totalDecisionsValue.toLocaleString('en-IN')} pipeline</p>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-2xl">
+          {[
+            { id: 'all', label: `All Items (${metrics.allCount})` },
+            { id: 'approvals', label: `Approvals (${metrics.totalApprovalsCount})` },
+            { id: 'exceptions', label: `Exceptions (${metrics.totalExceptionsCount})` },
+            { id: 'decisions', label: `Quotes (${metrics.totalDecisionsCount})` }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all",
+                activeTab === tab.id
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "text-slate-400 hover:text-white"
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <input
+          type="text"
+          placeholder="Search item, truck, driver, route..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="px-4 py-2 rounded-xl text-xs bg-slate-900 border border-slate-800 text-white placeholder:text-slate-500 focus:outline-hidden focus:border-amber-500/50 w-full sm:w-64"
+        />
+      </div>
+
+      {/* Feed List */}
+      {loading ? (
+        <div className="p-12 text-center text-muted-foreground space-y-3">
+          <Icons.RefreshCw className="w-8 h-8 animate-spin mx-auto text-amber-400" />
+          <p className="text-xs font-bold uppercase tracking-wider">Syncing Executive Command Feed...</p>
+        </div>
+      ) : combinedItems.length === 0 ? (
+        <div className="p-12 rounded-3xl bg-card border border-border/40 text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center text-2xl">✨</div>
+          <h3 className="text-base font-bold text-foreground">All Clear! Zero Pending Items</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">No approvals, delays, or quotes require your immediate decision right now.</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {filteredItems.map(item => {
-            const isProcessing = processingActionId === item.id;
-
-            // RENDER CARD: APPROVAL WORKFLOW
+          {combinedItems.map(item => {
+            // APPROVAL CARD
             if (item.categoryGroup === 'approval') {
+              const isProcessing = processingActionId === item.id;
               return (
-                <Card 
-                  key={item.id} 
-                  className="border border-amber-500/30 rounded-3xl overflow-hidden shadow-soft bg-card hover:border-amber-500/50 transition-all"
+                <div
+                  key={item.id}
+                  className="p-5 sm:p-6 rounded-3xl bg-card border border-amber-500/30 hover:border-amber-500/60 shadow-soft transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
-                  <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 font-bold text-xs uppercase">
-                          APPROVAL REQUIRED
-                        </Badge>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {item.rule_name || item.category || 'Expense Approval'}
-                        </Badge>
-                        {item.truck_number && (
-                          <Badge variant="secondary" className="text-xs font-bold gap-1">
-                            <Truck className="w-3 h-3 text-cyan-400" /> {item.truck_number}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
-                        {item.title || item.reason || 'Financial Disbursement Sign-Off'}
-                      </h4>
-
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Requested by <strong className="text-foreground">{item.requester_name || item.driver_name || 'Fleet Operator'}</strong> 
-                        {item.route ? ` for Route: ${item.route}` : ''}
-                        {item.notes ? ` — "${item.notes}"` : ''}
-                      </p>
-
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          {new Date(item.created || item.timestamp || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {item.threshold && (
-                          <span>Rule Threshold: ₹{Number(item.threshold).toLocaleString('en-IN')}</span>
-                        )}
-                      </div>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        FINANCIAL APPROVAL
+                      </span>
+                      {item.rule_name && (
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-slate-800 text-slate-300">{item.rule_name}</span>
+                      )}
                     </div>
-
-                    {/* Amount & Actions */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
-                      <div className="text-left sm:text-right">
-                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Requested Amount</span>
-                        <span className="text-2xl font-black font-mono text-amber-400">
-                          ₹{Number(item.amount || 0).toLocaleString('en-IN')}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Button
-                          size="sm"
-                          disabled={isProcessing}
-                          onClick={() => handleExecuteAction(item, 'APPROVE_WORKFLOW', 'Approved via Owner Inbox')}
-                          className="h-10 px-5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs gap-1.5 flex-1 sm:flex-none"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Approve
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={isProcessing}
-                          onClick={() => {
-                            setRejectDialogItem(item);
-                            setRejectReason('');
-                          }}
-                          className="h-10 px-4 rounded-xl font-bold border-rose-500/40 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 gap-1.5 flex-1 sm:flex-none"
-                        >
-                          <XCircle className="w-4 h-4" /> Reject
-                        </Button>
-
-                        {item.requester_phone && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenWhatsApp(item.requester_phone, `Hello, regarding your request of ₹${item.amount} for ${item.truck_number || 'Fleet'}: `)}
-                            className="h-10 w-10 p-0 rounded-xl border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20"
-                            title="Chat on WhatsApp"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    <h4 className="text-base sm:text-lg font-bold text-foreground">{item.title || item.rule_name || 'Approval Request'}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Requested Amount: <strong className="text-amber-400 text-base">₹{Number(item.amount || 0).toLocaleString('en-IN')}</strong>
+                      {item.requester_name ? ` • Requester: ${item.requester_name}` : ''}
+                    </p>
                   </div>
-                </Card>
+                  <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => handleExecuteAction(item, 'APPROVE_WORKFLOW')}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                    >
+                      <Icons.CheckCircle2 className="w-4 h-4" />
+                      Approve & Disburse
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => { setRejectDialogItem(item); setRejectReason(''); }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                    >
+                      <Icons.XCircle className="w-4 h-4" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
               );
             }
 
-            // RENDER CARD: OPERATIONAL EXCEPTION (DELAY / BREAKDOWN)
+            // EXCEPTION CARD
             if (item.categoryGroup === 'exception') {
-              const isBreakdown = item.type === 'breakdown';
               return (
-                <Card 
-                  key={item.id} 
-                  className={`border ${isBreakdown ? 'border-rose-500/40' : 'border-amber-500/40'} rounded-3xl overflow-hidden shadow-soft bg-card`}
+                <div
+                  key={item.id}
+                  className="p-5 sm:p-6 rounded-3xl bg-card border border-rose-500/30 hover:border-rose-500/60 shadow-soft transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
-                  <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={`${isBreakdown ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-amber-500/20 text-amber-400 border-amber-500/30'} font-bold text-xs uppercase`}>
-                          {isBreakdown ? 'VEHICLE BREAKDOWN' : 'TRANSIT DELAY > 45 MIN'}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs font-bold gap-1">
-                          <Truck className="w-3 h-3 text-cyan-400" /> {item.truck_number}
-                        </Badge>
-                        {item.delay_minutes && (
-                          <Badge variant="outline" className="text-xs text-rose-400 border-rose-500/30 font-bold">
-                            Delayed by {item.delay_minutes} mins
-                          </Badge>
-                        )}
-                      </div>
-
-                      <h4 className="text-lg font-bold text-foreground">
-                        {item.route ? `Shipment Route: ${item.route}` : item.title}
-                      </h4>
-
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Assigned Driver: <strong className="text-foreground">{item.driver_name || 'Driver'}</strong> ({item.driver_phone || 'No direct phone'})
-                        {item.location ? ` • Current Loc: ${item.location}` : ''}
-                      </p>
-
-                      {item.delay_reason && (
-                        <p className="text-xs text-amber-400/90 italic bg-amber-500/5 p-2 rounded-lg border border-amber-500/20">
-                          Reported Cause: {item.delay_reason}
-                        </p>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        {item.type || "FLEET EXCEPTION"}
+                      </span>
+                      {item.truck_number && (
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-slate-800 text-slate-300">{item.truck_number}</span>
                       )}
                     </div>
-
-                    <div className="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
-                      {item.driver_phone && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenWhatsApp(item.driver_phone, `Urgent: Jai Bhavani Cargo Fleet HQ checking on status of truck ${item.truck_number} on ${item.route || 'active trip'}. Please update location.`)}
-                          className="h-10 px-4 rounded-xl font-bold border-emerald-500/30 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 gap-1.5"
-                        >
-                          <MessageSquare className="w-4 h-4" /> WhatsApp Driver
-                        </Button>
-                      )}
-
-                      <Button
-                        size="sm"
-                        disabled={isProcessing}
-                        onClick={() => handleExecuteAction(item, 'RESOLVE_EXCEPTION', 'Acknowledged and escalated to roadside ops')}
-                        className="h-10 px-4 rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5"
-                      >
-                        <CheckCheck className="w-4 h-4" /> Acknowledge
-                      </Button>
-                    </div>
+                    <h4 className="text-base sm:text-lg font-bold text-foreground">{item.title || `${item.route || 'Shipment'} Delay Notice`}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Driver: {item.driver_name || 'Assigned Driver'}{item.driver_phone ? ` (${item.driver_phone})` : ''} • Route: {item.route || 'Highway Corridor'}
+                    </p>
                   </div>
-                </Card>
+                  <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
+                    {item.driver_phone && (
+                      <a
+                        href={`https://wa.me/91${String(item.driver_phone).replace(/\D/g, '')}?text=${encodeURIComponent(`Jai Bhavani Cargo Operational Alert: Status check on truck ${item.truck_number || ''} regarding delay.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                      >
+                        <Icons.MessageSquare className="w-4 h-4" />
+                        WhatsApp Driver
+                      </a>
+                    )}
+                  </div>
+                </div>
               );
             }
 
-            // RENDER CARD: STRATEGIC DECISION / QUOTE
+            // DECISION / QUOTE CARD
             if (item.categoryGroup === 'decision') {
               return (
-                <Card 
-                  key={item.id} 
-                  className="border border-cyan-500/30 rounded-3xl overflow-hidden shadow-soft bg-card hover:border-cyan-500/50 transition-all"
+                <div
+                  key={item.id}
+                  className="p-5 sm:p-6 rounded-3xl bg-card border border-cyan-500/30 hover:border-cyan-500/60 shadow-soft transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
-                  <div className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 font-bold text-xs uppercase">
-                          CUSTOMER QUOTATION
-                        </Badge>
-                        <Badge variant="outline" className="text-xs font-mono">
-                          {item.quote_number || 'QUOTE'}
-                        </Badge>
-                        {item.truck_size && (
-                          <Badge variant="secondary" className="text-xs font-bold">
-                            {item.truck_size}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <h4 className="text-lg font-bold text-foreground">
-                        {item.customer_name || 'Corporate Shipper'} — {item.origin} ➔ {item.destination}
-                      </h4>
-
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        Estimated Freight: <strong className="text-cyan-400">₹{Number(item.amount || item.total_amount || 0).toLocaleString('en-IN')}</strong>
-                        {item.kms ? ` (${item.kms} KMs)` : ''} • Status: {item.status || 'Pending'}
-                      </p>
+                  <div className="space-y-2 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                        CUSTOMER QUOTATION
+                      </span>
+                      {item.quote_number && (
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono bg-slate-800 text-slate-300">{item.quote_number}</span>
+                      )}
                     </div>
-
-                    <div className="flex items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
-                      <Button
-                        size="sm"
-                        onClick={() => navigate(`/quotes-manager?quoteNumber=${item.quote_number || ''}`)}
-                        className="h-10 px-5 rounded-xl font-bold bg-cyan-600 hover:bg-cyan-700 text-white shadow-xs gap-1.5"
-                      >
-                        Open Quote & Convert <ArrowUpRight className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <h4 className="text-base sm:text-lg font-bold text-foreground">{item.customer_name || 'Corporate Shipper'} — {item.origin || ''} ➔ {item.destination || ''}</h4>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Estimated Freight: <strong className="text-cyan-400">₹{Number(item.amount || item.total_amount || 0).toLocaleString('en-IN')}</strong>
+                      {item.kms ? ` (${item.kms} KMs)` : ''} • Status: {item.status || 'Pending'}
+                    </p>
                   </div>
-                </Card>
+                  <div className="flex items-center gap-2 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-border/40">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/quotes-manager?quoteNumber=${item.quote_number || ''}`)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white flex items-center gap-1.5 active:scale-95 transition-all shadow-xs"
+                    >
+                      Open Quote & Convert
+                      <Icons.ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               );
             }
 
@@ -541,56 +440,62 @@ export default function OwnerInboxPage() {
         </div>
       )}
 
-      {/* REJECTION REASON DIALOG */}
-      <Dialog open={!!rejectDialogItem} onOpenChange={(open) => !open && setRejectDialogItem(null)}>
-        <DialogContent className="rounded-3xl border border-border bg-card p-6 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2 text-rose-400">
-              <XCircle className="w-5 h-5" /> Reject Approval Request
-            </DialogTitle>
-            <DialogDescription>
+      {/* Rejection Modal */}
+      {rejectDialogItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-rose-400 font-bold text-base">
+                <Icons.XCircle className="w-5 h-5" />
+                Reject Approval Request
+              </div>
+              <button
+                type="button"
+                onClick={() => setRejectDialogItem(null)}
+                className="text-slate-400 hover:text-white text-lg font-black"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">
               Please enter the operational reason for rejecting this disbursement. The requester and driver will be notified.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="p-3 rounded-2xl bg-muted/30 border border-border/40">
-              <span className="text-xs text-muted-foreground uppercase font-bold">Item Details:</span>
-              <p className="text-sm font-bold text-foreground mt-0.5">
+            </p>
+            <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs">
+              <span className="text-slate-500 uppercase font-black tracking-wider block">Item Details:</span>
+              <p className="text-slate-200 font-bold mt-1">
                 {rejectDialogItem?.title || rejectDialogItem?.rule_name} (₹{rejectDialogItem?.amount})
               </p>
             </div>
-
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reason for Rejection *</Label>
-              <Textarea 
+              <label className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">Reason for Rejection *</label>
+              <textarea
+                rows={3}
                 placeholder="e.g. Rate exceeds sanctioned depot rates, duplicate fuel bill, requires inspection..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                rows={3}
-                className="bg-background border-border rounded-xl text-sm"
+                className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs placeholder:text-slate-500 focus:outline-hidden focus:border-rose-500/50"
               />
             </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRejectDialogItem(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-900 border border-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!rejectReason.trim() || processingActionId === rejectDialogItem?.id}
+                onClick={() => handleExecuteAction(rejectDialogItem, 'REJECT_WORKFLOW', rejectReason)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50"
+              >
+                Confirm Rejection
+              </button>
+            </div>
           </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setRejectDialogItem(null)}
-              className="rounded-xl border-border"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={!rejectReason.trim() || processingActionId === rejectDialogItem?.id}
-              onClick={() => handleExecuteAction(rejectDialogItem, 'REJECT_WORKFLOW', rejectReason)}
-              className="rounded-xl font-bold bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
-            >
-              Confirm Rejection
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }
