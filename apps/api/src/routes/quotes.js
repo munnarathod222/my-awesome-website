@@ -336,7 +336,7 @@ router.post('/convert-to-trip', async (req, res) => {
       quote_id: quote.id,
       loading_dock: loadingDock || 'Loading Gate 1',
       unloading_dock: unloadingDock || 'Destination Dock',
-      closure_blockers: '["Missing POD document"]'
+      closure_blockers: '[]'
     };
 
     const newTrip = await pb.collection('trip_logs').create(tripPayload, { $autoCancel: false });

@@ -3,18 +3,16 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Trip Closure Automation Worker with 10-Minute Verification Buffer.
  *
- * Flow:
- *   1. Identifies all trips in "Delivered" status.
- *   2. Verifies Gate 1 (POD verified / present, LR consignment number present),
- *      Gate 2 (Trip financials & driver advances reconciled),
- *      Gate 3 (Subcontractor / Client settlement status).
- *   3. If all gates pass:
- *      - If closure_verified_at is empty, sets closure_verified_at = now().
- *      - If closure_verified_at has passed the 10-minute buffer (>= 10 minutes),
- *        updates trip_status to "Completed", logs auto_closed_at timestamp,
- *        and records a completed task in operations_tasks.
- *   4. If any gate fails:
- *      - Saves active blockers to closure_blockers JSON and resets closure_verified_at.
+ * Rules:
+ *   - Only trips whose client requires POD have a blocker.
+ *   - For those trips, the ONLY blocker is whether POD is uploaded: "Pending POD Upload".
+ *   - Once POD is uploaded (pod_file or pod_link present, or pod_status is uploaded/verified),
+ *     there are ZERO blockers.
+ *   - For clients who do not require POD, there are ZERO blockers.
+ *   - Once all blockers are cleared:
+ *       1. Sets closure_verified_at = now().
+ *       2. After 10-minute buffer, automatically completes the trip (trip_status = "Completed",
+ *          auto_closed_at = now()).
  */
 
 import logger from '../utils/logger.js';
@@ -44,43 +42,48 @@ export async function processTripClosures() {
 
     if (trips.length === 0) return;
 
+    // 2. Fetch clients to identify who requires POD
+    const clients = await pb.collection('clients').getFullList({
+      $autoCancel: false,
+    }).catch(() => []);
+
+    const podRequiredClientIds = new Set();
+    const podRequiredClientNames = new Set();
+    for (const c of clients) {
+      if (c.requires_pod === true || c.requires_pod === 'true' || c.requires_pod === 1) {
+        if (c.id) podRequiredClientIds.add(c.id);
+        const name = (c.company_name || c.name || '').trim().toLowerCase();
+        if (name) podRequiredClientNames.add(name);
+      }
+    }
+
     const nowMs = Date.now();
     const TEN_MINUTES_MS = 10 * 60 * 1000;
 
     for (const trip of trips) {
       const blockers = [];
 
-      // Gate 1: POD Verification
-      const hasPodStatus = String(trip.pod_status || '').toLowerCase() === 'verified';
-      const hasPodFile = (trip.pod_file && String(trip.pod_file).trim().length > 2) || 
-                         (trip.pod_link && String(trip.pod_link).trim().length > 2);
-      if (!hasPodStatus && !hasPodFile) {
-        blockers.push('Pending POD Upload or Verification');
-      }
+      // Check if this trip's client requires POD
+      const tripClientId = trip.client_id || '';
+      const tripClientName = (trip.client_name || '').trim().toLowerCase();
+      const clientRequiresPod = podRequiredClientIds.has(tripClientId) || podRequiredClientNames.has(tripClientName);
 
-      // Gate 1B: Lorry Receipt (LR) Consignment Number
-      const hasLr = trip.lr_number && String(trip.lr_number).trim().length > 0;
-      if (!hasLr) {
-        blockers.push('Missing LR Consignment Number');
-      }
-
-      // Gate 2: Driver Advance Reconciled
-      const advDriver = Number(trip.advance_paid_to_driver) || 0;
-      if (advDriver > 0 && String(trip.subcontractor_settlement_status || '').toLowerCase() === 'disputed') {
-        blockers.push('Driver Advance Settlement Dispute');
-      }
-
-      // Gate 3: Subcontractor Settlement (for attached/market trips)
-      if (trip.ownership_type === 'Attached') {
-        const subSettled = String(trip.subcontractor_settlement_status || '').toLowerCase();
-        if (subSettled === 'pending' || subSettled === 'disputed') {
-          blockers.push('Market Truck Settlement Incomplete');
+      if (clientRequiresPod) {
+        // Just POD upload is enough: check for file, link, or status
+        const hasPodFile = (trip.pod_file && String(trip.pod_file).trim().length > 2) || 
+                           (trip.pod_link && String(trip.pod_link).trim().length > 2);
+        const hasPodStatus = ['uploaded', 'verified', 'received', 'approved'].includes(String(trip.pod_status || '').toLowerCase());
+        
+        if (!hasPodFile && !hasPodStatus) {
+          blockers.push('Pending POD Upload');
         }
       }
 
+      // No other blockers exist (LR, driver advance, and subcontractor checks removed per requirements)
+
       // Evaluation
       if (blockers.length === 0) {
-        // All gates passed!
+        // Zero blockers!
         if (!trip.closure_verified_at) {
           // Initiate the 10-minute buffer
           const verifiedAt = new Date().toISOString();
@@ -88,7 +91,7 @@ export async function processTripClosures() {
             closure_verified_at: verifiedAt,
             closure_blockers: '[]',
           }, { $autoCancel: false }).catch(() => {});
-          logger.info(`[TripClosure] Trip ${trip.trip_id || trip.id} passed all gates. 10-min closure buffer started at ${verifiedAt}.`);
+          logger.info(`[TripClosure] Trip ${trip.trip_id || trip.id} passed POD gate. 10-min closure buffer started at ${verifiedAt}.`);
         } else {
           // Check if 10-minute buffer has elapsed
           const verifiedMs = new Date(trip.closure_verified_at).getTime();
@@ -110,7 +113,7 @@ export async function processTripClosures() {
               await pb.collection('operations_tasks').create({
                 task_number: taskNumber,
                 title: `Trip Auto-Closed: ${trip.route || 'Shipment'} (${trip.truck_number || ''})`,
-                description: `Trip automatically verified and closed after 10-minute buffer. Verified POD (${trip.pod_status || 'Received'}), LR #${trip.lr_number || 'N/A'}, and settled financials.`,
+                description: `Trip automatically closed after 10-minute buffer with verified POD status.`,
                 category: 'Dispatch & Trips',
                 department: 'Operations',
                 priority: 'Low',
@@ -127,7 +130,7 @@ export async function processTripClosures() {
           }
         }
       } else {
-        // Blockers exist: store blockers and reset verification buffer if previously set
+        // Blocker exists (Pending POD Upload): store blocker and reset verification buffer
         const blockersJson = JSON.stringify(blockers);
         if (trip.closure_blockers !== blockersJson || trip.closure_verified_at) {
           await pb.collection('trip_logs').update(trip.id, {
