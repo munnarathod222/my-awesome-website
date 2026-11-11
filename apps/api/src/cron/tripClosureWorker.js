@@ -19,6 +19,7 @@
 
 import logger from '../utils/logger.js';
 import pb from '../utils/pocketbaseClient.js';
+import * as auditService from '../services/auditService.js';
 
 let cron = null;
 async function loadCron() {

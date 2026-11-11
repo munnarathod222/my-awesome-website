@@ -536,6 +536,7 @@ export default function ExpenseModal({ isOpen, onClose, expense, onSuccess, truc
                           <SelectItem value="Fuel" className="text-xs">Fuel</SelectItem>
                           <SelectItem value="Toll" className="text-xs">FASTag - Toll</SelectItem>
                           <SelectItem value="Maintenance" className="text-xs">Maintenance</SelectItem>
+                          <SelectItem value="Parking" className="text-xs">Parking / Halt Charges</SelectItem>
                           <SelectItem value="Miscellaneous" className="text-xs">Miscellaneous</SelectItem>
                           <SelectItem value="Insurance" className="text-xs">Insurance</SelectItem>
                           <SelectItem value="Utilities" className="text-xs">Utilities</SelectItem>

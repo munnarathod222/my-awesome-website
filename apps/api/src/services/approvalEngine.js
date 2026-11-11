@@ -16,6 +16,7 @@
 
 import logger from '../utils/logger.js';
 import pb from '../utils/pocketbaseClient.js';
+import * as auditService from './auditService.js';
 
 export async function evaluateApproval({
   type, // 'expense' | 'repair' | 'rate_change'
@@ -80,6 +81,18 @@ export async function evaluateApproval({
     }
 
     if (!isExceeded) {
+      try {
+        auditService.ingestEvent({
+          action: 'APPROVAL_AUTO_GRANTED',
+          module: 'FINANCE',
+          entity_type: type.toUpperCase(),
+          entity_id: entityId,
+          severity: 'INFO',
+          details: `${type.toUpperCase()} of ₹${numAmount.toLocaleString('en-IN')} auto-authorized within staff limit (₹${limitValue.toLocaleString('en-IN')}) for ${employeeName || 'Staff'}.`,
+          actor: { id: employeeId || 'usr_staff', name: employeeName || 'Operations Staff', role: 'staff' },
+          new_values: { amount: numAmount, type, status: 'Approved', limitValue }
+        });
+      } catch (_) {}
       return {
         requiresApproval: false,
         status: 'Approved',
@@ -136,6 +149,18 @@ export async function evaluateApproval({
       logger.warn(`[ApprovalEngine] Notice creating approval task: ${taskErr.message}`);
     }
 
+    try {
+      auditService.ingestEvent({
+        action: 'APPROVAL_REQUESTED',
+        module: 'FINANCE',
+        entity_type: type.toUpperCase(),
+        entity_id: entityId,
+        severity: 'MEDIUM',
+        details: `${type.toUpperCase()} of ₹${numAmount.toLocaleString('en-IN')} submitted by ${employeeName || 'Staff'} exceeds limit (₹${limitValue.toLocaleString('en-IN')}). Workflow ${workflowNumber} assigned to ${approverName}.`,
+        actor: { id: employeeId || 'usr_staff', name: employeeName || 'Operations Staff', role: 'staff' },
+        new_values: { amount: numAmount, type, status: 'Pending Approval', limitValue, workflowNumber, approverName }
+      });
+    } catch (_) {}
     return {
       requiresApproval: true,
       status: 'Pending Approval',

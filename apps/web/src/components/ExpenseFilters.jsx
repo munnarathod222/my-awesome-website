@@ -54,6 +54,7 @@ const ExpenseFilters = ({ filters, setFilters, trucks, creditCards = [], onClear
             <SelectItem value="Driver Advance">Driver Advance</SelectItem>
             <SelectItem value="Salary">Salary</SelectItem>
             <SelectItem value="Maintenance">Maintenance</SelectItem>
+              <SelectItem value="Parking">Parking</SelectItem>
             <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
             <SelectItem value="EMI">EMI</SelectItem>
             <SelectItem value="All Other Expenses">All Other Expenses</SelectItem>

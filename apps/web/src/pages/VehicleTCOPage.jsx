@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
 import { calculateVehicleTCO, calculateFleetTCOSummary } from '@/lib/tcoUtils.js';
 import EditTruckTCOModal from '@/components/EditTruckTCOModal.jsx';
+import TruckBreakEvenCalculator from '@/components/TruckBreakEvenCalculator.jsx';
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
   ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Area
@@ -42,6 +43,8 @@ export default function VehicleTCOPage() {
   // Edit TCO Modal State
   const [editingTCO, setEditingTCO] = useState(null);
   const [isEditTCOModalOpen, setIsEditTCOModalOpen] = useState(false);
+  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'fleet';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Interactive Simulator State
   const [simPurchasePrice, setSimPurchasePrice] = useState(3200000);
@@ -287,11 +290,12 @@ export default function VehicleTCOPage() {
       </div>
 
       {/* Main Tabs Layout */}
-      <Tabs defaultValue="fleet" className="space-y-6">
-        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-3 max-w-[500px] print:hidden">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-muted/65 p-1 rounded-xl w-full sm:w-auto grid grid-cols-4 max-w-[700px] print:hidden">
           <TabsTrigger value="fleet" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Fleet TCO Comparison</TabsTrigger>
           <TabsTrigger value="deepdive" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">Vehicle Deep-Dive</TabsTrigger>
           <TabsTrigger value="simulator" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">What-If TCO Simulator</TabsTrigger>
+          <TabsTrigger value="breakeven" className="rounded-lg py-2 text-xs sm:text-sm font-semibold">🎯 Break-Even Calculator</TabsTrigger>
         </TabsList>
 
         {/* Tab 1: Fleet TCO Comparison Grid */}

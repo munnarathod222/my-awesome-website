@@ -577,6 +577,7 @@ const ExpensesPage = () => {
           if (cat === 'salary' || sub === 'salary' || /salary/.test(sub)) return false;
           if (sub === 'maintenance' || cat === 'maintenance' || /maintenance/.test(sub)) return false;
           if (sub === 'miscellaneous' || cat === 'miscellaneous' || /misc/.test(sub)) return false;
+        if (sub === 'parking' || cat === 'parking' || /parking|halt/.test(sub)) return false;
           if (cat === 'emi' || sub === 'emi' || /emi/.test(sub)) return false;
           return true;
         }
@@ -754,6 +755,7 @@ const ExpensesPage = () => {
         salaryTotal: Number(salary),
         maintenanceTotal: Number(maintenance),
         miscTotal: Number(misc),
+        parkingTotal: Number(parking),
         fixedEmiTotal: Number(emi),
         isManualEmi,
         allOtherTotal: Number(allOther)
@@ -844,7 +846,7 @@ const ExpensesPage = () => {
             </div>
 
             {/* Real-time expense category summary grid (8 Categories) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3 mb-6">
               {[
                 { title: 'Fuel Expense', amount: summaryTotals.fuelTotal, color: 'text-orange-500' },
                 { title: 'FASTag - Toll', amount: summaryTotals.fastagTotal, color: 'text-blue-500' },
@@ -852,6 +854,7 @@ const ExpensesPage = () => {
                 { title: 'Salary', amount: summaryTotals.salaryTotal, color: 'text-teal-500' },
                 { title: 'Maintenance', amount: summaryTotals.maintenanceTotal, color: 'text-purple-500' },
                 { title: 'Miscellaneous', amount: summaryTotals.miscTotal, color: 'text-pink-500' },
+                { title: 'Parking', amount: summaryTotals.parkingTotal || 0, color: 'text-cyan-400' },
                 { title: 'EMI', amount: summaryTotals.fixedEmiTotal, color: 'text-amber-500' },
                 { title: 'All Other Expenses', amount: summaryTotals.allOtherTotal, color: 'text-indigo-500' }
               ].map((card, idx) => (
