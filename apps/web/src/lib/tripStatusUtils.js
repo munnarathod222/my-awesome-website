@@ -1,5 +1,6 @@
 export const TRIP_STATUS_OPTIONS = [
   'Upcoming',
+  'Arrived at Dock',
   'Dispatched',
   'In Transit',
   'Delivered'
@@ -7,6 +8,9 @@ export const TRIP_STATUS_OPTIONS = [
 
 export const getEffectiveStatus = (status) => {
   const normStatus = (status || '').trim().toUpperCase();
+  if (normStatus === 'ARRIVED AT DOCK' || normStatus === 'ARRIVED_AT_DOCK' || normStatus === 'LOADING DOCK' || normStatus === 'LOADING_DOCK') {
+    return 'ARRIVED AT DOCK';
+  }
   if (normStatus === 'IN PROGRESS' || normStatus === 'IN-TRANSIT' || normStatus === 'IN TRANSIT') {
     return 'IN TRANSIT';
   }
@@ -24,6 +28,8 @@ export const getTripStatusLabel = (status) => {
   switch (effective) {
     case 'UPCOMING':
       return 'UPCOMING';
+    case 'ARRIVED AT DOCK':
+      return 'ARRIVED AT DOCK';
     case 'DISPATCHED':
       return 'DISPATCHED';
     case 'IN TRANSIT':
@@ -38,6 +44,8 @@ export const getTripStatusLabel = (status) => {
 export const getTripStatusColor = (status) => {
   const effective = getEffectiveStatus(status);
   switch (effective) {
+    case 'ARRIVED AT DOCK':
+      return 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30';
     case 'DISPATCHED':
       return 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30';
     case 'IN TRANSIT':

@@ -2678,6 +2678,31 @@ const runPocketBase = async () => {
         }
       }
 
+      // Ensure 'Arrived at Dock' and required workflow statuses are in trip_status select values
+      const tripStatusField = fields.find(f => f.name === 'trip_status');
+      if (tripStatusField && Array.isArray(tripStatusField.values)) {
+        const allowedTripStatuses = [
+          'Upcoming',
+          'Arrived at Dock',
+          'Dispatched',
+          'In Transit',
+          'Delivered',
+          'Completed',
+          'Cancelled'
+        ];
+        let tripStatusModified = false;
+        allowedTripStatuses.forEach(val => {
+          if (!tripStatusField.values.includes(val)) {
+            tripStatusField.values.push(val);
+            tripStatusModified = true;
+          }
+        });
+        if (tripStatusModified) {
+          logger.info("Migrating: Added 'Arrived at Dock' and workflow statuses to PocketBase trip_logs.trip_status values!");
+          recordUpdated = true;
+        }
+      }
+
       if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
       }

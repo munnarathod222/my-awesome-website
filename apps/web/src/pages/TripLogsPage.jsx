@@ -313,9 +313,19 @@ const TripLogsPage = () => {
 
     setIsStatusUpdating(true);
     try {
-      await pb.collection('trip_logs').update(statusChangeTrip.id, {
+      const updatePayload = {
         trip_status: newTripStatus
-      }, { $autoCancel: false });
+      };
+      if (newTripStatus === 'Arrived at Dock' && !statusChangeTrip.loading_dock_arrival_time) {
+        updatePayload.loading_dock_arrival_time = new Date().toISOString();
+      }
+      if (newTripStatus === 'Dispatched' && !statusChangeTrip.dispatched_time) {
+        updatePayload.dispatched_time = new Date().toISOString();
+      }
+      if (newTripStatus === 'Delivered' && !statusChangeTrip.delivered_time) {
+        updatePayload.delivered_time = new Date().toISOString();
+      }
+      await pb.collection('trip_logs').update(statusChangeTrip.id, updatePayload, { $autoCancel: false });
 
       // Immediate FASTag Deduction sync for Delivered or Completed trips using normalized matching
       if ((newTripStatus === 'Delivered' || newTripStatus === 'Completed') && statusChangeTrip.trip_status !== newTripStatus) {
@@ -1145,7 +1155,17 @@ const TripLogsPage = () => {
                                 onValueChange={async (newStatus) => {
                                   if (!newStatus || newStatus === log.trip_status) return;
                                   try {
-                                    await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
+                                    const updatePayload = { trip_status: newStatus };
+                                    if (newStatus === 'Arrived at Dock' && !log.loading_dock_arrival_time) {
+                                      updatePayload.loading_dock_arrival_time = new Date().toISOString();
+                                    }
+                                    if (newStatus === 'Dispatched' && !log.dispatched_time) {
+                                      updatePayload.dispatched_time = new Date().toISOString();
+                                    }
+                                    if (newStatus === 'Delivered' && !log.delivered_time) {
+                                      updatePayload.delivered_time = new Date().toISOString();
+                                    }
+                                    await pb.collection('trip_logs').update(log.id, updatePayload, { $autoCancel: false });
                                     if (newStatus === 'Delivered' || newStatus === 'Completed') {
                                       await deductFastagForTrip(log);
                                     }
@@ -1361,7 +1381,17 @@ const TripLogsPage = () => {
                             onValueChange={async (newStatus) => {
                               if (!newStatus || newStatus === log.trip_status) return;
                               try {
-                                await pb.collection('trip_logs').update(log.id, { trip_status: newStatus }, { $autoCancel: false });
+                                const updatePayload = { trip_status: newStatus };
+                                if (newStatus === 'Arrived at Dock' && !log.loading_dock_arrival_time) {
+                                  updatePayload.loading_dock_arrival_time = new Date().toISOString();
+                                }
+                                if (newStatus === 'Dispatched' && !log.dispatched_time) {
+                                  updatePayload.dispatched_time = new Date().toISOString();
+                                }
+                                if (newStatus === 'Delivered' && !log.delivered_time) {
+                                  updatePayload.delivered_time = new Date().toISOString();
+                                }
+                                await pb.collection('trip_logs').update(log.id, updatePayload, { $autoCancel: false });
                                 if (newStatus === 'Delivered' || newStatus === 'Completed') {
                                   await deductFastagForTrip(log);
                                 }
