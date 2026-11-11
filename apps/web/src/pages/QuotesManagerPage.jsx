@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Helmet } from 'react-helmet';
+const Helmet = ({ children }) => null;
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { Plus, Search, FileText, MoreHorizontal, Calculator, Receipt, Mail, MessageSquare, Sparkles, CheckCircle2, Clock, PhoneCall, RefreshCw, Download, Truck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
