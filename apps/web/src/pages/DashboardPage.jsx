@@ -134,6 +134,39 @@ const TripRow = ({ trip }) => {
   );
 };
 
+// ── Robust IST Same-Day Date Matcher ─────────────────────────────────────────
+const isSameDayIST = (dateVal, targetISTDateStr) => {
+  if (!dateVal || !targetISTDateStr) return false;
+  const str = String(dateVal).trim();
+  if (!str) return false;
+
+  // 1. Exact direct match on first 10 characters (YYYY-MM-DD)
+  if (str.slice(0, 10) === targetISTDateStr) return true;
+
+  // 2. Format DD/MM/YYYY or DD-MM-YYYY
+  const parts = str.split(/[-/]/);
+  if (parts.length >= 3) {
+    if (parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
+      const normalized = `${parts[2].slice(0, 4)}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      if (normalized === targetISTDateStr) return true;
+    }
+  }
+
+  // 3. Parse as Date and convert UTC offset to IST (+05:30)
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const istTime = new Date(d.getTime() + (330 + d.getTimezoneOffset()) * 60000);
+      const yyyy = istTime.getFullYear();
+      const mm = String(istTime.getMonth() + 1).padStart(2, '0');
+      const dd = String(istTime.getDate()).padStart(2, '0');
+      if (`${yyyy}-${mm}-${dd}` === targetISTDateStr) return true;
+    }
+  } catch (_) {}
+
+  return false;
+};
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -195,7 +228,9 @@ const DashboardPage = () => {
         inTransitTripsCount,
         maintenanceProblemsRes,
         allTripsFullList,
-        employeesRes
+        employeesRes,
+        advancesRes,
+        cashbookRes
       ] = await Promise.all([
         pb.collection('users').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         // Revenue query — Delivered trips only
@@ -209,7 +244,7 @@ const DashboardPage = () => {
         pb.collection('trip_logs').getList(1, 1, { $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         pb.collection('trucks').getFullList({ fields: 'id,truck_number,current_fastag_balance', $autoCancel: false }).catch(() => []),
         pb.collection('delivery_proofs').getList(1, 1, { filter: 'status = "Active"', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
-        pb.collection('expenses').getList(1, 1000, { fields: 'id,amount,category,subcategory,date,bill_date,created', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
+        pb.collection('expenses').getFullList({ sort: '-created', $autoCancel: false }).catch(() => []),
         // Recent trips — all statuses so dispatcher sees the full picture
         pb.collection('trip_logs').getList(1, 8, {
           sort: '-date',
@@ -226,14 +261,60 @@ const DashboardPage = () => {
         // Open Maintenance Problems
         pb.collection('maintenance_problems').getList(1, 5, { filter: 'status = "Open"', sort: '-date_reported', $autoCancel: false }).catch(() => ({ totalItems: 0, items: [] })),
         pb.collection('trip_logs').getFullList({ sort: '-date', $autoCancel: false }).catch(() => []),
-        pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => [])
+        pb.collection('employees').getFullList({ $autoCancel: false }).catch(() => []),
+        pb.collection('advances').getFullList({ sort: '-created', $autoCancel: false }).catch(() => []),
+        pb.collection('cashbook').getFullList({ sort: '-created', $autoCancel: false }).catch(() => [])
       ]);
 
       let fleetRevenue = 0, brokerageProfit = 0, totalTds = 0;
       const deliveredItems = deliveredTripsRes?.items || [];
-      const expenseItems = expensesRes?.items || [];
+      const rawExpenses = Array.isArray(expensesRes) ? expensesRes : (expensesRes?.items || []);
+      const rawAdvances = Array.isArray(advancesRes) ? advancesRes : (advancesRes?.items || []);
+      const rawCashbook = Array.isArray(cashbookRes) ? cashbookRes : (cashbookRes?.items || []);
       const safeTrucks = Array.isArray(trucksRes) ? trucksRes : (trucksRes?.items || []);
       const safeDocs = Array.isArray(docsRes) ? docsRes : (docsRes?.items || []);
+
+      // Unify expenses from expenses, advances, and cashbook without double counting
+      const expenseIdSet = new Set(rawExpenses.map(e => String(e.id)));
+      const linkedAdvanceIds = new Set(rawExpenses.map(e => String(e.advance_id || '')).filter(Boolean));
+
+      const unlinkedAdvances = rawAdvances.filter(a => {
+        if (!a) return false;
+        if (a.expense_id && expenseIdSet.has(String(a.expense_id))) return false;
+        if (linkedAdvanceIds.has(String(a.id))) return false;
+        return true;
+      }).map(a => ({
+        id: `adv_${a.id}`,
+        amount: Number(a.amount) || 0,
+        category: 'Employee Advance',
+        subcategory: a.reason || 'Advance',
+        date: a.date || a.created,
+        created: a.created,
+        description: a.reason || a.notes || 'Employee Advance',
+        status: a.status || 'Approved'
+      }));
+
+      const allExpensePool = [...rawExpenses, ...unlinkedAdvances];
+      const allExpensePoolIds = new Set(allExpensePool.map(e => String(e.id)));
+
+      const unlinkedCashbook = rawCashbook.filter(cb => {
+        if (!cb) return false;
+        const txType = (cb.transaction_type || '').toLowerCase();
+        if (txType === 'income' || txType === 'credit') return false;
+        if (cb.reference_id && (allExpensePoolIds.has(String(cb.reference_id)) || expenseIdSet.has(String(cb.reference_id)))) return false;
+        return true;
+      }).map(cb => ({
+        id: `cb_${cb.id}`,
+        amount: Number(cb.amount) || 0,
+        category: cb.category || 'Cashbook Expense',
+        subcategory: cb.subcategory || '',
+        date: cb.date || cb.created,
+        created: cb.created,
+        description: cb.description || cb.notes || 'Cashbook Expense',
+        status: 'Approved'
+      }));
+
+      const unifiedExpenses = [...allExpensePool, ...unlinkedCashbook];
 
       // Only Delivered trips count towards revenue
       deliveredItems.forEach(trip => {
@@ -246,7 +327,7 @@ const DashboardPage = () => {
       });
       const netFleetRevenue = fleetRevenue - totalTds;
       // Exclude Employee Advances from operating expenses to prevent double-counting against operating revenue
-      const operatingExpenses = expenseItems.filter(e => {
+      const operatingExpenses = rawExpenses.filter(e => {
         const cat = (e.category || '').toLowerCase();
         const sub = (e.subcategory || '').toLowerCase();
         return !cat.includes('advance') && !sub.includes('advance');
@@ -269,30 +350,24 @@ const DashboardPage = () => {
         }
       });
 
-      // ── Today's Business Calculations (IST: UTC + 5:30) ────────────────────
+      // ── Today's Business & Expenses Calculations (IST: UTC + 5:30) ─────────
       const now = new Date();
       const istDateStr = new Date(now.getTime() + (330 + now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
 
       const safeAllTrips = Array.isArray(allTripsFullList) ? allTripsFullList : [];
       const todayTrips = safeAllTrips.filter(t => {
         if (!t) return false;
-        const tripDate = (t.date || '').slice(0, 10);
-        const createdDate = (t.created || '').slice(0, 10);
-        return tripDate === istDateStr || createdDate === istDateStr;
+        return isSameDayIST(t.date, istDateStr) || isSameDayIST(t.created, istDateStr);
       });
 
       const todayBusiness = todayTrips.reduce((sum, t) => sum + (Number(t.revenue) || Number(t.freight_amount) || Number(t.rate) || 0), 0);
       const todayDeliveredCount = todayTrips.filter(t => t.trip_status === 'Delivered').length;
       const todayInTransitCount = todayTrips.filter(t => t.trip_status === 'In Transit' || t.trip_status === 'Dispatched').length;
 
-      const safeExpenses = Array.isArray(expensesRes?.items) ? expensesRes.items : [];
-      const todayExpensesList = safeExpenses.filter(e => {
+      const todayExpensesList = unifiedExpenses.filter(e => {
         if (!e) return false;
-        const cat = (e.category || '').toLowerCase();
-        const sub = (e.subcategory || '').toLowerCase();
-        if (cat.includes('advance') || sub.includes('advance')) return false;
-        const bDate = (e.bill_date || e.date || e.created || '').slice(0, 10);
-        return bDate === istDateStr;
+        if (e.status && String(e.status).toLowerCase() === 'rejected') return false;
+        return isSameDayIST(e.date, istDateStr) || isSameDayIST(e.bill_date, istDateStr) || isSameDayIST(e.created, istDateStr);
       });
 
       const todayExpenses = todayExpensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
@@ -336,7 +411,7 @@ const DashboardPage = () => {
       setAllFleetTrips(Array.isArray(allTripsFullList) ? allTripsFullList : []);
       setAllFleetTrucks(safeTrucks);
       setAllFleetDrivers(Array.isArray(employeesRes) ? employeesRes : []);
-      setAllFleetExpenses(expenseItems);
+      setAllFleetExpenses(unifiedExpenses);
       setLastRefreshed(new Date());
     } catch (err) {
       console.error('[Dashboard] fetch error:', err);
@@ -882,7 +957,7 @@ const DashboardPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard title={t('assigned_shipments')} rawValue={stats.trips} icon={Truck} accentColor="#6366f1" onClick={() => navigate('/analytics?tab=shipments')} />
             <StatCard title={t('pending_pods')} rawValue={stats.pods} icon={FileCheck} accentColor="#f59e0b" />
-            <StatCard title={t('active_tasks')} rawValue={12} icon={Clock} accentColor="#8b5cf6" />
+            <StatCard title={t('active_tasks')} rawValue={12} icon={Clock} accentColor="#8b5cf6" onClick={() => navigate('/tasks')} />
           </div>
           <IdleVehiclesComponent />
         </motion.div>
