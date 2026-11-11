@@ -1,3 +1,4 @@
+import { evaluateApproval } from '../services/approvalEngine.js';
 import express from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
@@ -193,7 +194,7 @@ router.post('/create-employee', async (req, res) => {
       'address', 'joining_date', 'license_number', 'aadhaar_number', 'pan_card',
       'salary_amount', 'salary_billing_cycle', 'active_status', 'assigned_truck',
       'assigned_routes', 'education', 'payroll_cycle_start_day', 'payroll_cycle_end_day',
-      'salary_disbursement_day', 'employee_number', 'employee_code'
+      'salary_disbursement_day', 'employee_number', 'employee_code', 'approval_limits'
     ];
     for (const key of allowedFields) {
       if (data[key] !== undefined && data[key] !== null) {

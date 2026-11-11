@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -90,25 +90,65 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
   const [msgPriorityTag, setMsgPriorityTag] = useState('normal'); // 'normal' | 'urgent' | 'announcement'
   const messagesEndRef = useRef(null);
 
-  // Fetch Staff List
+  // Fetch Staff List (Both Users & Employees)
   useEffect(() => {
     const loadStaff = async () => {
-      let users = [];
+      let combined = new Map();
       try {
-        users = await pb.collection('users').getFullList({ sort: 'name', $autoCancel: false });
-      } catch (e) {}
+        const [usersData, empsData] = await Promise.all([
+          pb.collection('users').getFullList({ sort: 'name', $autoCancel: false }).catch(() => []),
+          pb.collection('employees').getFullList({ filter: 'active_status = "active"', sort: 'name', $autoCancel: false }).catch(() => [])
+        ]);
 
-      if (!users || users.length === 0) {
+        (usersData || []).forEach(u => {
+          if (u.name) {
+            combined.set(u.name.toLowerCase().trim(), {
+              id: u.id,
+              name: u.name,
+              email: u.email || '',
+              phone: u.phone || '',
+              role: u.role || 'Staff'
+            });
+          }
+        });
+
+        (empsData || []).forEach(e => {
+          if (e.name) {
+            const key = e.name.toLowerCase().trim();
+            const existing = combined.get(key);
+            const roleFormatted = e.employee_type 
+              ? e.employee_type.charAt(0).toUpperCase() + e.employee_type.slice(1)
+              : 'Employee';
+            if (existing) {
+              if (!existing.phone && e.contact) existing.phone = e.contact;
+              if (existing.role === 'Staff') existing.role = roleFormatted;
+            } else {
+              combined.set(key, {
+                id: e.id,
+                name: e.name,
+                email: '',
+                phone: e.contact || '',
+                role: roleFormatted
+              });
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('Error loading staff/employees:', e);
+      }
+
+      if (combined.size === 0) {
         // Fallback team list
-        users = [
+        const fallbackUsers = [
           { id: 'u1', name: 'Vinod Kumar Rathod', email: 'vinod@jaibhavanicargo.com', phone: '7794072244', role: 'Super Admin' },
           { id: 'u2', name: 'Ravi Kumar', email: 'ravi.dispatch@jaibhavanicargo.com', phone: '9848012345', role: 'Dispatcher' },
           { id: 'u3', name: 'Suresh Patil', email: 'suresh.maint@jaibhavanicargo.com', phone: '9848054321', role: 'Maintenance Supervisor' },
           { id: 'u4', name: 'Anil Sharma', email: 'anil.accounts@jaibhavanicargo.com', phone: '9848098765', role: 'Accounts Executive' },
           { id: 'u5', name: 'Ramesh Yadav', email: 'ramesh.driver@jaibhavanicargo.com', phone: '9123456789', role: 'Senior Driver' }
         ];
+        fallbackUsers.forEach(u => combined.set(u.name.toLowerCase().trim(), u));
       }
-      setStaffList(users);
+      setStaffList(Array.from(combined.values()));
     };
     loadStaff();
   }, []);
@@ -275,6 +315,7 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
         await pb.collection('todos').update(editingTask.id, {
           title: newTaskObj.title,
           description: newTaskObj.description,
+          assigned_to: newTaskObj.assigned_to_name,
           priority: newTaskObj.priority,
           category: newTaskObj.category,
           status: newTaskObj.status,
@@ -284,9 +325,11 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
         await pb.collection('todos').create({
           title: newTaskObj.title,
           description: newTaskObj.description,
+          assigned_to: newTaskObj.assigned_to_name,
           priority: newTaskObj.priority,
           category: newTaskObj.category,
           status: newTaskObj.status,
+          due_date: newTaskObj.due_date,
           user_id: currentUser?.id,
           created_by: currentUser?.id
         }, { $autoCancel: false }).catch(() => {});
@@ -378,17 +421,17 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-500">
       <Helmet>
-        <title>Staff Tasks & Team Operations Chat | Jai Bhavani Cargo</title>
+        <title>Employee Task Assignment — Assign Responsibilities & Deadlines | Jai Bhavani Cargo</title>
       </Helmet>
 
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-1 flex items-center gap-2.5">
-            <CheckSquare className="w-8 h-8 text-primary" /> Tasks & Team Operations Hub
+            <CheckSquare className="w-8 h-8 text-primary" /> Employee Task Assignment
           </h1>
           <p className="text-muted-foreground text-sm">
-            Assign operations tasks to fleet managers, dispatchers, mechanics, and coordinate live via operations team chat.
+            Assign responsibilities, operational duties, and target deadlines to fleet managers, dispatchers, mechanics, and drivers.
           </p>
         </div>
 
@@ -410,7 +453,7 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
             }}
             className="rounded-xl font-bold text-xs gap-1.5 shadow-md shadow-primary/20"
           >
-            <Plus className="w-4 h-4" /> Create & Assign Task
+            <Plus className="w-4 h-4" /> Assign New Task
           </Button>
         </div>
       </div>
@@ -766,7 +809,12 @@ export default function TaskManagerPage({ initialTab = 'tasks' }) {
       <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-card text-card-foreground">
           <DialogHeader>
-            <DialogTitle>{editingTask ? 'Edit Task' : 'Assign New Task to Staff'}</DialogTitle>
+            <DialogTitle className="font-heading text-lg">
+              {editingTask ? 'Edit Task Assignment' : 'Employee Task Assignment'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Assign responsibilities, operational duties, and target deadlines to staff members.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSaveTask} className="space-y-4 py-2">
             <div className="space-y-1.5">

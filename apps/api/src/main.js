@@ -21,6 +21,8 @@ import { globalRateLimit } from './middleware/global-rate-limit.js';
 import logger from './utils/logger.js';
 import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
+import { startTripClosureCron } from './cron/tripClosureWorker.js';
+import { startEscalationCron } from './cron/escalationEngine.js';
 import * as auditService from './services/auditService.js';
 import * as productivityService from './services/productivityService.js';
 import * as orgService from './services/orgService.js';
@@ -2555,6 +2557,18 @@ const runPocketBase = async () => {
       logger.info("Migrating: Adding column 'driver_employee_id' to 'trip_logs' table...");
       db.prepare("ALTER TABLE trip_logs ADD COLUMN driver_employee_id TEXT DEFAULT ''").run();
     }
+        if (!cols.includes('closure_verified_at')) {
+      logger.info("Migrating: Adding column 'closure_verified_at' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN closure_verified_at TEXT DEFAULT ''").run();
+    }
+    if (!cols.includes('auto_closed_at')) {
+      logger.info("Migrating: Adding column 'auto_closed_at' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN auto_closed_at TEXT DEFAULT ''").run();
+    }
+    if (!cols.includes('closure_blockers')) {
+      logger.info("Migrating: Adding column 'closure_blockers' to 'trip_logs' table...");
+      db.prepare("ALTER TABLE trip_logs ADD COLUMN closure_blockers TEXT DEFAULT '[]'").run();
+    }
     if (!cols.includes('driver_employee_code')) {
       logger.info("Migrating: Adding column 'driver_employee_code' to 'trip_logs' table...");
       db.prepare("ALTER TABLE trip_logs ADD COLUMN driver_employee_code TEXT DEFAULT ''").run();
@@ -3044,6 +3058,10 @@ const runPocketBase = async () => {
       { name: 'payroll_cycle_end_day', type: 'INTEGER DEFAULT 30' },
       { name: 'salary_disbursement_day', type: 'INTEGER DEFAULT 10' }
     ];
+        if (!empCols.includes('approval_limits')) {
+      logger.info("Migrating: Adding column 'approval_limits' to 'employees' table...");
+      db.prepare("ALTER TABLE employees ADD COLUMN approval_limits TEXT DEFAULT '{}'").run();
+    }
     for (const item of empCycleCols) {
       if (!empCols.includes(item.name)) {
         logger.info(`Migrating: Adding column '${item.name}' to 'employees' table...`);
@@ -3735,8 +3753,26 @@ runPocketBase();
 
 // Start end-of-month leaderboard + payroll cron job
 startMonthEndCron();
+startTripClosureCron();
+startEscalationCron();
 
 // Diagnostic endpoint — executes pocketbase migrate up manually on Render
+
+// Set or update custom approval limits for an employee
+app.post('/api/employees/:id/approval-limits', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limits = req.body || {};
+    const { default: pb } = await import('./utils/pocketbaseClient.js');
+    const updated = await pb.collection('employees').update(id, {
+      approval_limits: typeof limits === 'string' ? limits : JSON.stringify(limits)
+    }, { $autoCancel: false });
+    return res.json({ success: true, employee: updated });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/run-pb-migrate', requireBackupAuth, async (req, res) => {
   try {
     const { spawnSync, execSync } = await import('node:child_process');

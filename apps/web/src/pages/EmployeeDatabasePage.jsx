@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 import { toast } from 'sonner';
-import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2, Users } from 'lucide-react';
+import { Pencil, Trash2, FileText, AlertCircle, UploadCloud, X, Image as ImageIcon, Briefcase, CalendarCheck, Plus, Printer, Truck, Route, Share2, Users, ShieldCheck, Receipt, Wrench, CheckSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import ShareFolderDialog from '@/components/ShareFolderDialog.jsx';
 import EmployeeDocumentsSection from '@/components/EmployeeDocumentsSection.jsx';
@@ -140,7 +140,8 @@ const EmployeeDatabasePage = () => {
 
   const [formData, setFormData] = useState({
     employee_number: 'D001', employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '',
-    payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10'
+    payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10',
+    approval_limits: { max_expense_approval: '5000', max_repair_approval: '10000', can_approve_rate_changes: false, designated_approver_id: 'usr_munna_superadmin', designated_approver_name: 'Vinod kumar Rathod' }
   });
 
   const toggleRouteSelection = (routeId) => {
@@ -340,6 +341,13 @@ const EmployeeDatabasePage = () => {
         payroll_cycle_start_day: Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_start_day, 10) || 1)),
         payroll_cycle_end_day: Math.max(1, Math.min(31, parseInt(formData.payroll_cycle_end_day, 10) || 30)),
         salary_disbursement_day: Math.max(1, Math.min(31, parseInt(formData.salary_disbursement_day, 10) || 10)),
+        approval_limits: JSON.stringify({
+          max_expense_approval: Number(formData.approval_limits?.max_expense_approval) || 0,
+          max_repair_approval: Number(formData.approval_limits?.max_repair_approval) || 0,
+          can_approve_rate_changes: Boolean(formData.approval_limits?.can_approve_rate_changes),
+          designated_approver_id: formData.approval_limits?.designated_approver_id || 'usr_munna_superadmin',
+          designated_approver_name: formData.approval_limits?.designated_approver_name || 'Vinod kumar Rathod'
+        }),
       };
 
       // Only include assigned_truck if it has a real value
@@ -459,7 +467,23 @@ const EmployeeDatabasePage = () => {
       employee_number: empNum, employee_type: employee.employee_type || 'driver', employment_type: employee.employment_type || 'Permanent', name: employee.name || '', joining_date: formatDateForInput(employee.joining_date) || todayStr, address: employee.address || '', contact: employee.contact || '', emergency_contact: employee.emergency_contact || '', license_number: employee.license_number || '', aadhaar_number: employee.aadhaar_number || '', pan_card: employee.pan_card || '', salary_amount: employee.salary_amount || '', active_status: employee.active_status || 'active', assigned_routes: parsedRoutes, assigned_truck: employee.assigned_truck || '', education: employee.education || '',
       payroll_cycle_start_day: employee.payroll_cycle_start_day != null ? String(employee.payroll_cycle_start_day) : '1',
       payroll_cycle_end_day: employee.payroll_cycle_end_day != null ? String(employee.payroll_cycle_end_day) : '30',
-      salary_disbursement_day: employee.salary_disbursement_day != null ? String(employee.salary_disbursement_day) : '10'
+      salary_disbursement_day: employee.salary_disbursement_day != null ? String(employee.salary_disbursement_day) : '10',
+      approval_limits: (() => {
+        let limits = { max_expense_approval: '5000', max_repair_approval: '10000', can_approve_rate_changes: false, designated_approver_id: 'usr_munna_superadmin', designated_approver_name: 'Vinod kumar Rathod' };
+        if (employee.approval_limits) {
+          try {
+            const raw = typeof employee.approval_limits === 'string' ? JSON.parse(employee.approval_limits) : employee.approval_limits;
+            limits = { ...limits, ...raw };
+          } catch (_) {}
+        }
+        return {
+          max_expense_approval: String(limits.max_expense_approval ?? '5000'),
+          max_repair_approval: String(limits.max_repair_approval ?? '10000'),
+          can_approve_rate_changes: Boolean(limits.can_approve_rate_changes),
+          designated_approver_id: limits.designated_approver_id || 'usr_munna_superadmin',
+          designated_approver_name: limits.designated_approver_name || 'Vinod kumar Rathod'
+        };
+      })()
     });
     setPhotoFile(null); setRemovePhoto(false);
     setPhotoPreview(employee.photo ? getEmployeePhotoUrl(employee) : null);
@@ -518,7 +542,7 @@ const EmployeeDatabasePage = () => {
     const staffCount = employees.filter(e => e.employee_type !== 'driver').length + 1;
     const isDriver = formData.employee_type === 'driver';
     const nextCode = isDriver ? `D${String(driverCount).padStart(3, '0')}` : `E${String(staffCount).padStart(3, '0')}`;
-    setFormData({ employee_number: nextCode, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10' });
+    setFormData({ employee_number: nextCode, employee_type: 'driver', employment_type: 'Permanent', name: '', joining_date: todayStr, address: '', contact: '', emergency_contact: '', license_number: '', aadhaar_number: '', pan_card: '', salary_amount: '', active_status: 'active', assigned_routes: [], assigned_truck: '', education: '', payroll_cycle_start_day: '1', payroll_cycle_end_day: '30', salary_disbursement_day: '10', approval_limits: { max_expense_approval: '5000', max_repair_approval: '10000', can_approve_rate_changes: false, designated_approver_id: 'usr_munna_superadmin', designated_approver_name: 'Vinod kumar Rathod' } });
     clearPhoto();
     setUploadedDocs([]);
   };
@@ -1080,6 +1104,79 @@ const EmployeeDatabasePage = () => {
                     </div>
                   </div>
                   
+                  {/* Operational Authorization & Approval Limits Card */}
+                  <div className="pt-6 border-t border-border space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-base font-bold text-foreground flex items-center gap-2">
+                          <ShieldCheck className="w-5 h-5 text-primary" /> Operational Authorization & Approval Limits
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Configure custom authorization limits for expenses, maintenance work orders, and freight rate amendments.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-muted/20 border border-border/50 p-4 rounded-2xl">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <Receipt className="w-3.5 h-3.5 text-blue-400" /> Max Expense Approval (₹)
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="500"
+                          value={formData.approval_limits?.max_expense_approval ?? '5000'}
+                          onChange={e => setFormData(prev => ({
+                            ...prev,
+                            approval_limits: { ...prev.approval_limits, max_expense_approval: e.target.value }
+                          }))}
+                          placeholder="5000"
+                          className="bg-background h-10 rounded-xl text-xs font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Expenses exceeding this limit require supervisor approval in Task Manager.</p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <Wrench className="w-3.5 h-3.5 text-amber-400" /> Max Repair / Workshop Limit (₹)
+                        </Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          value={formData.approval_limits?.max_repair_approval ?? '10000'}
+                          onChange={e => setFormData(prev => ({
+                            ...prev,
+                            approval_limits: { ...prev.approval_limits, max_repair_approval: e.target.value }
+                          }))}
+                          placeholder="10000"
+                          className="bg-background h-10 rounded-xl text-xs font-mono"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Repairs above this amount require designated supervisor sign-off.</p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                          <CheckSquare className="w-3.5 h-3.5 text-emerald-400" /> Freight Rate Amendments
+                        </Label>
+                        <div className="flex items-center justify-between h-10 px-3 rounded-xl bg-background border border-border">
+                          <span className="text-xs font-medium text-foreground">Can authorize rate changes</span>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(formData.approval_limits?.can_approve_rate_changes)}
+                            onChange={e => setFormData(prev => ({
+                              ...prev,
+                              approval_limits: { ...prev.approval_limits, can_approve_rate_changes: e.target.checked }
+                            }))}
+                            className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary cursor-pointer"
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Unchecked employees cannot modify trip billing rates without approval.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Documents Section */}
                   <div className="pt-6 border-t border-border space-y-4">
                     <div className="flex items-center justify-between">
