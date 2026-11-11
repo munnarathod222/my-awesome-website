@@ -17,6 +17,7 @@ import apiServerClient from '@/lib/apiServerClient.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 import { calculateMunsiyana } from '@/lib/munsiyanaCalculator.js';
 import DispatchComplianceSection from '@/components/DispatchComplianceSection.jsx';
+import { cn } from '@/lib/utils.js';
 
 
 const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
