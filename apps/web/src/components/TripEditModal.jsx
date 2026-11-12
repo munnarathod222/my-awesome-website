@@ -205,8 +205,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] bg-card text-card-foreground">
-        <DialogHeader className="border-b border-border/50 pb-4">
+      <DialogContent className="sm:max-w-[760px] w-[95vw] h-[90vh] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-card text-card-foreground rounded-2xl shadow-2xl">
+        <DialogHeader className="p-5 pb-4 border-b border-border/50 shrink-0 bg-card/95 backdrop-blur-sm z-10">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-xl font-bold">Edit Trip Log</DialogTitle>
@@ -222,12 +222,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         </DialogHeader>
         
         {isFetching ? (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 flex-1">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
             <p className="text-muted-foreground">Loading trip details...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 min-h-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label htmlFor="edit-date">Date</Label>
@@ -630,7 +631,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
               </div>
             </div>
             
-            <DialogFooter className="pt-4 border-t border-border/50">
+            </div>
+            <DialogFooter className="p-4 px-6 border-t border-border/50 bg-card/95 backdrop-blur-sm shrink-0 flex items-center justify-end gap-3 z-10">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="rounded-xl">
                 Cancel
               </Button>
