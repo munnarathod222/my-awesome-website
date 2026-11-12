@@ -3044,6 +3044,26 @@ const runPocketBase = async () => {
       }
     }
 
+    // 3.5. Users 2FA TOTP columns & schema fields for Google Authenticator
+    try {
+      const uCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
+      const twoFaCols = [
+        { name: 'totp_secret', sql: "ALTER TABLE users ADD COLUMN totp_secret TEXT DEFAULT ''" },
+        { name: 'totp_enabled', sql: "ALTER TABLE users ADD COLUMN totp_enabled INTEGER DEFAULT 0" },
+        { name: 'totp_recovery_codes', sql: "ALTER TABLE users ADD COLUMN totp_recovery_codes TEXT DEFAULT '[]'" },
+        { name: 'two_factor_enabled', sql: "ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER DEFAULT 0" },
+        { name: 'session_timeout_minutes', sql: "ALTER TABLE users ADD COLUMN session_timeout_minutes INTEGER DEFAULT 60" }
+      ];
+      for (const col of twoFaCols) {
+        if (!uCols.includes(col.name)) {
+          logger.info(`Migrating: Adding column '${col.name}' to 'users' table...`);
+          try { db.prepare(col.sql).run(); } catch (_) {}
+        }
+      }
+    } catch (twoFaErr) {
+      logger.warn(`Notice migrating users 2FA columns: ${twoFaErr.message}`);
+    }
+
     // 4. Clients table and schema changes for portal linkage
     const clientCols = db.prepare("PRAGMA table_info(clients)").all().map(c => c.name);
     if (!clientCols.includes('portal_user_id')) {

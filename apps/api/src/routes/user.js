@@ -3,6 +3,7 @@ import pb from '../utils/pocketbaseClient.js';
 import { pocketbaseAuth } from '../middleware/pocketbase-auth.js';
 import logger from '../utils/logger.js';
 import * as auditService from '../services/auditService.js';
+import * as totpService from '../services/totpService.js';
 
 const router = Router();
 
@@ -302,6 +303,157 @@ router.post('/logout-other-sessions', pocketbaseAuth, async (req, res) => {
   } catch (err) {
     logger.error(`[API/User] Error in logout-other-sessions: ${err.message}`);
     return res.status(500).json({ success: false, error: 'Failed to revoke other sessions' });
+  }
+});
+
+// ── Google Authenticator 2FA (TOTP) Endpoints ──
+router.post('/2fa/generate', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    const secret = totpService.generateSecret();
+    const otpauthUrl = totpService.getOtpAuthUrl(user.email, secret);
+    const recoveryCodes = totpService.generateRecoveryCodes(5);
+
+    return res.json({
+      success: true,
+      secret,
+      otpauthUrl,
+      recoveryCodes
+    });
+  } catch (err) {
+    logger.error(`[API/User/2FA] Generate error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to generate 2FA secret' });
+  }
+});
+
+router.post('/2fa/verify-and-enable', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const { secret, token, recoveryCodes } = req.body;
+    if (!secret || !token) {
+      return res.status(400).json({ success: false, error: 'Secret and 6-digit verification code are required' });
+    }
+
+    const isValid = totpService.verifyTOTP(token, secret);
+    if (!isValid) {
+      return res.status(400).json({ success: false, error: 'Invalid 6-digit code. Check your Google Authenticator app and try again.' });
+    }
+
+    const hashedRecoveryCodes = Array.isArray(recoveryCodes)
+      ? recoveryCodes.map(c => totpService.hashRecoveryCode(c))
+      : [];
+
+    try {
+      await pb.collection('users').update(userId, {
+        totp_secret: secret,
+        totp_enabled: 1,
+        two_factor_enabled: 1,
+        totp_recovery_codes: JSON.stringify(hashedRecoveryCodes)
+      }, { $autoCancel: false });
+    } catch (e) {
+      try {
+        const { DatabaseSync } = await import('node:sqlite');
+        const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+        db.prepare("UPDATE users SET totp_secret = ?, totp_enabled = 1, two_factor_enabled = 1, totp_recovery_codes = ? WHERE id = ?")
+          .run(secret, JSON.stringify(hashedRecoveryCodes), userId);
+      } catch (sqlErr) {
+        logger.warn(`Could not update SQLite users table directly: ${sqlErr.message}`);
+      }
+    }
+
+    try {
+      auditService.ingestEvent({
+        action: 'ENABLE_2FA_TOTP',
+        module: 'AUTH',
+        entityId: userId,
+        details: { method: 'GOOGLE_AUTHENTICATOR' }
+      }, {
+        actorId: userId,
+        ip: req.ip || req.socket.remoteAddress
+      });
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: 'Google Authenticator 2FA successfully paired and activated!'
+    });
+  } catch (err) {
+    logger.error(`[API/User/2FA] Verify & Enable error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to activate 2FA' });
+  }
+});
+
+router.post('/2fa/disable', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const { token } = req.body;
+
+    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    if (user.totp_secret && token) {
+      const isValid = totpService.verifyTOTP(token, user.totp_secret);
+      if (!isValid) {
+        return res.status(400).json({ success: false, error: 'Invalid 6-digit Authenticator code. Cannot disable 2FA.' });
+      }
+    }
+
+    try {
+      await pb.collection('users').update(userId, {
+        totp_secret: '',
+        totp_enabled: 0,
+        two_factor_enabled: 0,
+        totp_recovery_codes: '[]'
+      }, { $autoCancel: false });
+    } catch (e) {
+      try {
+        const { DatabaseSync } = await import('node:sqlite');
+        const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+        db.prepare("UPDATE users SET totp_secret = '', totp_enabled = 0, two_factor_enabled = 0, totp_recovery_codes = '[]' WHERE id = ?")
+          .run(userId);
+      } catch (_) {}
+    }
+
+    try {
+      auditService.ingestEvent({
+        action: 'DISABLE_2FA_TOTP',
+        module: 'AUTH',
+        entityId: userId,
+        details: { timestamp: new Date().toISOString() }
+      }, {
+        actorId: userId,
+        ip: req.ip || req.socket.remoteAddress
+      });
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: 'Google Authenticator 2FA disabled successfully.'
+    });
+  } catch (err) {
+    logger.error(`[API/User/2FA] Disable error: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to disable 2FA' });
+  }
+});
+
+router.post('/2fa/verify-step', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, error: '6-digit code required' });
+
+    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    if (!user.totp_enabled || !user.totp_secret) {
+      return res.json({ success: true, verified: true, note: '2FA not enabled on this account' });
+    }
+
+    const isValid = totpService.verifyTOTP(token, user.totp_secret);
+    if (!isValid) {
+      return res.status(400).json({ success: false, error: 'Incorrect 6-digit Authenticator code.' });
+    }
+
+    return res.json({ success: true, verified: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Verification failed' });
   }
 });
 

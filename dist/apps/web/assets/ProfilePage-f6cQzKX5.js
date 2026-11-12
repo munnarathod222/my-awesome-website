@@ -2,6 +2,7 @@
 function SecView() {
   const [timeoutMin, setTimeoutMin] = n.useState(() => localStorage.getItem('jbc_session_timeout_ms') ? Math.round(parseInt(localStorage.getItem('jbc_session_timeout_ms'),10)/60000).toString() : '60');
   const [twoFa, setTwoFa] = n.useState(() => localStorage.getItem('jbc_2fa_enabled') === 'true');
+  const [totpActive, setTotpActive] = n.useState(false);
   const [devProfile, setDevProfile] = n.useState(() => {
     try { return JSON.parse(localStorage.getItem('jbc_device_pin_profile')); } catch { return null; }
   });
@@ -12,12 +13,33 @@ function SecView() {
   ]);
   const [revoking, setRevoking] = n.useState(false);
 
+  // 2FA Modal States
+  const [showSetupModal, setShowSetupModal] = n.useState(false);
+  const [showDisableModal, setShowDisableModal] = n.useState(false);
+  const [setupData, setSetupData] = n.useState(null);
+  const [setupToken, setSetupToken] = n.useState('');
+  const [disableToken, setDisableToken] = n.useState('');
+  const [isVerifyingTotp, setIsVerifyingTotp] = n.useState(false);
+  const [isDisablingTotp, setIsDisablingTotp] = n.useState(false);
+
   n.useEffect(() => {
+    fetch('/api/user/security-settings', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.security) {
+          if (typeof d.security.twoFactorEnabled === 'boolean') {
+            setTwoFa(d.security.twoFactorEnabled);
+            setTotpActive(d.security.twoFactorEnabled);
+          }
+        }
+      })
+      .catch(() => {});
+
     fetch('/api/audit/events?limit=8', { credentials: 'include' })
       .then(r => r.json())
       .then(d => {
         if (d.success && Array.isArray(d.events) && d.events.length > 0) {
-          const authEv = d.events.filter(ev => ev.module === 'AUTH' || ev.action.includes('LOGIN') || ev.action.includes('SECURITY'));
+          const authEv = d.events.filter(ev => ev.module === 'AUTH' || ev.action.includes('LOGIN') || ev.action.includes('SECURITY') || ev.action.includes('2FA'));
           if (authEv.length > 0) {
             setAuditEvents(authEv.map(e => ({
               time: e.timestamp ? new Date(e.timestamp).toLocaleString() : new Date().toLocaleString(),
@@ -49,17 +71,82 @@ function SecView() {
     }).catch(() => {});
   };
 
-  const handleToggle2Fa = () => {
-    const nextVal = !twoFa;
-    setTwoFa(nextVal);
-    localStorage.setItem('jbc_2fa_enabled', nextVal ? 'true' : 'false');
-    m.success(nextVal ? 'Two-Factor Authentication (2FA) Gate enabled!' : 'Two-Factor Authentication (2FA) Gate disabled.');
-    fetch('/api/user/security-settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ twoFactorEnabled: nextVal })
-    }).catch(() => {});
+  const handleStartTotpSetup = async () => {
+    try {
+      m.info('Generating secure 2FA QR Code...');
+      const res = await fetch('/api/user/2fa/generate', { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        setSetupData(data);
+        setSetupToken('');
+        setShowSetupModal(true);
+      } else {
+        m.error(data.error || 'Could not generate 2FA secret');
+      }
+    } catch {
+      m.error('Network error starting 2FA setup');
+    }
+  };
+
+  const handleConfirmTotpSetup = async () => {
+    if (!setupToken || setupToken.length !== 6) {
+      m.error('Please enter the 6-digit code from Google Authenticator');
+      return;
+    }
+    setIsVerifyingTotp(true);
+    try {
+      const res = await fetch('/api/user/2fa/verify-and-enable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          secret: setupData.secret,
+          token: setupToken,
+          recoveryCodes: setupData.recoveryCodes
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        m.success('Google Authenticator 2FA paired and activated successfully!');
+        setTotpActive(true);
+        setTwoFa(true);
+        localStorage.setItem('jbc_2fa_enabled', 'true');
+        setShowSetupModal(false);
+      } else {
+        m.error(data.error || 'Invalid 6-digit code. Please try again.');
+      }
+    } catch {
+      m.error('Verification failed. Check network connection.');
+    } finally {
+      setIsVerifyingTotp(false);
+    }
+  };
+
+  const handleDisableTotp = async () => {
+    setIsDisablingTotp(true);
+    try {
+      const res = await fetch('/api/user/2fa/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token: disableToken })
+      });
+      const data = await res.json();
+      if (data.success) {
+        m.success('Google Authenticator 2FA disabled.');
+        setTotpActive(false);
+        setTwoFa(false);
+        localStorage.setItem('jbc_2fa_enabled', 'false');
+        setShowDisableModal(false);
+        setDisableToken('');
+      } else {
+        m.error(data.error || 'Could not disable 2FA. Check 6-digit code.');
+      }
+    } catch {
+      m.error('Failed to disable 2FA');
+    } finally {
+      setIsDisablingTotp(false);
+    }
   };
 
   const handleSavePin = () => {
@@ -108,7 +195,7 @@ function SecView() {
         }),
         e.jsxs("div", { children: [
           e.jsx("h2", { className: "text-lg font-bold text-foreground", children: "Login & Security Command Center" }),
-          e.jsx("p", { className: "text-xs sm:text-sm text-muted-foreground", children: "Manage idle session timeouts, multi-factor authorization, device PIN lock, and audit trails." })
+          e.jsx("p", { className: "text-xs sm:text-sm text-muted-foreground", children: "Manage Google Authenticator 2FA, idle session timeouts, device PIN lock, and audit trails." })
         ]})
       ]}),
       e.jsx("div", { className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30", children: "Strict Protection Active" })
@@ -153,7 +240,7 @@ function SecView() {
         ]})
       ]}),
 
-      // 2. 2FA Gate Card
+      // 2. Google Authenticator (2FA) Card
       e.jsxs(W, { className: "rounded-2xl border border-border/40 shadow-sm overflow-hidden bg-card flex flex-col justify-between", children: [
         e.jsxs(Q, { className: "border-b border-border/50 pb-4", children: [
           e.jsxs("div", { className: "flex items-center gap-2 text-foreground font-semibold text-base", children: [
@@ -161,23 +248,34 @@ function SecView() {
               e.jsx("path", { d: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" }),
               e.jsx("path", { d: "m9 12 2 2 4-4" })
             ]}),
-            "Two-Factor (2FA) Critical Action Gate"
+            "Google Authenticator (2FA)"
           ]}),
-          e.jsx(oe, { className: "text-xs text-muted-foreground mt-1", children: "Protects sensitive actions (salary disbursals, bank detail changes, master trip deletion)." })
+          e.jsx(oe, { className: "text-xs text-muted-foreground mt-1", children: "RFC 6238 TOTP hardware security code on your mobile phone. Works 100% offline." })
         ]}),
         e.jsxs(q, { className: "pt-4 space-y-4", children: [
-          e.jsxs("div", { className: "flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/30", children: [
+          e.jsxs("div", { className: "flex items-center justify-between p-3.5 rounded-xl bg-muted/30 border border-border/30", children: [
             e.jsxs("div", { children: [
-              e.jsx("div", { className: "text-sm font-semibold text-foreground", children: twoFa ? "2FA Verification Active" : "2FA Verification Inactive" }),
-              e.jsx("div", { className: "text-xs text-muted-foreground", children: twoFa ? "Requires confirmation code for critical financial updates." : "Actions execute directly without secondary confirmation." })
+              e.jsxs("div", { className: "text-sm font-semibold text-foreground flex items-center gap-2", children: [
+                totpActive ? "2FA Protection Active" : "2FA Not Configured",
+                e.jsx("span", {
+                  className: "px-2 py-0.5 rounded text-[10px] font-bold " + (totpActive ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"),
+                  children: totpActive ? "ENFORCED" : "INACTIVE"
+                })
+              ]}),
+              e.jsx("div", { className: "text-xs text-muted-foreground mt-0.5", children: totpActive ? "Paired with Google Authenticator on your phone." : "Requires 6-digit rotating time code to sign in." })
             ]}),
-            e.jsx(p, {
-              onClick: handleToggle2Fa,
-              className: "rounded-xl text-xs h-9 px-4 font-semibold " + (twoFa ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"),
-              children: twoFa ? "Enabled" : "Enable"
+            totpActive ? e.jsx(p, {
+              onClick: () => setShowDisableModal(true),
+              variant: "outline",
+              className: "rounded-xl text-xs h-9 px-3 text-destructive border-destructive/30 hover:bg-destructive/10",
+              children: "Disable 2FA"
+            }) : e.jsx(p, {
+              onClick: handleStartTotpSetup,
+              className: "rounded-xl text-xs h-9 px-4 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white",
+              children: "Setup Google Authenticator"
             })
           ]}),
-          e.jsx("div", { className: "text-[11px] text-muted-foreground", children: "Consignment tracking links now enforce 2FA verification to safeguard client bill-of-lading data." })
+          e.jsx("div", { className: "text-[11px] text-muted-foreground", children: "Generates 6-digit time-based codes every 30 seconds. Protects against stolen passwords." })
         ]})
       ]}),
 
@@ -301,7 +399,131 @@ function SecView() {
           ]})
         })
       })
-    ]})
+    ]}),
+
+    // Interactive 2FA Setup Modal
+    showSetupModal && setupData ? (
+      e.jsx("div", { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto", children:
+        e.jsxs("div", { className: "bg-card border border-border/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95", children: [
+          e.jsxs("div", { className: "flex items-start justify-between border-b border-border/50 pb-4", children: [
+            e.jsxs("div", { children: [
+              e.jsx("h3", { className: "text-lg font-bold text-foreground", children: "Setup Google Authenticator (2FA)" }),
+              e.jsx("p", { className: "text-xs text-muted-foreground mt-0.5", children: "Follow the 3 quick steps below to pair your mobile phone." })
+            ]}),
+            e.jsx("button", { onClick: () => setShowSetupModal(false), className: "text-muted-foreground hover:text-foreground p-1", children: "✕" })
+          ]}),
+
+          // Step 1: Scan QR Code
+          e.jsxs("div", { className: "space-y-3", children: [
+            e.jsx("div", { className: "text-xs font-semibold text-foreground flex items-center gap-1.5", children: [
+              e.jsx("span", { className: "w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold inline-flex items-center justify-center", children: "1" }),
+              "Scan this QR code with Google Authenticator"
+            ]}),
+            e.jsxs("div", { className: "flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl bg-muted/20 border border-border/30", children: [
+              e.jsx("div", { className: "p-2 bg-white rounded-xl shadow-sm border border-border/20 shrink-0", children:
+                e.jsx("img", {
+                  src: "https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=4&data=" + encodeURIComponent(setupData.otpauthUrl),
+                  alt: "Google Authenticator QR Code",
+                  className: "w-36 h-36"
+                })
+              }),
+              e.jsxs("div", { className: "space-y-2 text-xs text-muted-foreground", children: [
+                e.jsx("p", { children: "Open Google Authenticator on your phone, tap the '+' button at the bottom right, and choose 'Scan a QR code'." }),
+                e.jsx("p", { className: "font-semibold text-foreground", children: "Cannot scan? Use secret key:" }),
+                e.jsx("div", { className: "font-mono font-bold text-xs p-2 bg-background rounded-lg border border-border/50 select-all break-all text-primary", children: setupData.secret })
+              ]})
+            ]})
+          ]}),
+
+          // Step 2: Emergency Recovery Codes
+          e.jsxs("div", { className: "space-y-2", children: [
+            e.jsx("div", { className: "text-xs font-semibold text-foreground flex items-center gap-1.5", children: [
+              e.jsx("span", { className: "w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold inline-flex items-center justify-center", children: "2" }),
+              "Save Emergency Recovery Codes"
+            ]}),
+            e.jsxs("div", { className: "p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-2", children: [
+              e.jsx("div", { className: "text-[11px] text-amber-700 dark:text-amber-300", children: "If you lose your phone, each code can be used once to recover access:" }),
+              e.jsx("div", { className: "grid grid-cols-2 sm:grid-cols-3 gap-1.5 font-mono text-[11px] font-bold text-foreground", children:
+                setupData.recoveryCodes.map((rc, idx) => e.jsx("div", { key: idx, className: "p-1.5 bg-background rounded border border-border/40 text-center select-all", children: rc }))
+              }),
+              e.jsx(p, {
+                size: "sm",
+                variant: "outline",
+                onClick: () => {
+                  navigator.clipboard.writeText(setupData.recoveryCodes.join('\n'));
+                  m.success('Recovery codes copied to clipboard!');
+                },
+                className: "w-full text-xs h-7 rounded-lg",
+                children: "Copy All Recovery Codes"
+              })
+            ]})
+          ]}),
+
+          // Step 3: Enter 6-digit verification code
+          e.jsxs("div", { className: "space-y-2", children: [
+            e.jsx("div", { className: "text-xs font-semibold text-foreground flex items-center gap-1.5", children: [
+              e.jsx("span", { className: "w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold inline-flex items-center justify-center", children: "3" }),
+              "Enter 6-Digit Code from App"
+            ]}),
+            e.jsxs("div", { className: "flex items-center gap-2", children: [
+              e.jsx("input", {
+                type: "text",
+                maxLength: 6,
+                placeholder: "000000",
+                value: setupToken,
+                onChange: (ev) => setSetupToken(ev.target.value.replace(/\D/g, '')),
+                className: "h-11 px-4 rounded-xl border border-border/60 bg-background text-base font-mono font-bold tracking-widest text-center w-48 focus:outline-none focus:ring-2 focus:ring-primary/20",
+                autoFocus: true
+              }),
+              e.jsx(p, {
+                onClick: handleConfirmTotpSetup,
+                disabled: isVerifyingTotp || setupToken.length !== 6,
+                className: "flex-1 h-11 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white",
+                children: isVerifyingTotp ? "Verifying..." : "Verify & Activate 2FA"
+              })
+            ]})
+          ]}),
+
+          e.jsx("div", { className: "pt-2 flex justify-end", children:
+            e.jsx(p, { variant: "ghost", size: "sm", onClick: () => setShowSetupModal(false), className: "rounded-xl text-xs", children: "Cancel" })
+          })
+        ]})
+      })
+    ) : null,
+
+    // Disable 2FA confirmation modal
+    showDisableModal ? (
+      e.jsx("div", { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", children:
+        e.jsxs("div", { className: "bg-card border border-border/50 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95", children: [
+          e.jsx("h3", { className: "text-base font-bold text-foreground", children: "Disable Google Authenticator?" }),
+          e.jsx("p", { className: "text-xs text-muted-foreground", children: "Enter the current 6-digit code from Google Authenticator to confirm turning off 2FA protection." }),
+          e.jsx("input", {
+            type: "text",
+            maxLength: 6,
+            placeholder: "6-digit code",
+            value: disableToken,
+            onChange: (ev) => setDisableToken(ev.target.value.replace(/\D/g, '')),
+            className: "h-10 px-3 rounded-xl border border-border/60 bg-background text-sm font-mono font-bold tracking-widest text-center w-full focus:outline-none focus:ring-2 focus:ring-primary/20",
+            autoFocus: true
+          }),
+          e.jsxs("div", { className: "flex items-center gap-2 pt-2", children: [
+            e.jsx(p, {
+              onClick: handleDisableTotp,
+              disabled: isDisablingTotp || disableToken.length !== 6,
+              variant: "destructive",
+              className: "flex-1 h-9 rounded-xl text-xs font-semibold",
+              children: isDisablingTotp ? "Disabling..." : "Confirm Disable"
+            }),
+            e.jsx(p, {
+              variant: "outline",
+              onClick: () => { setShowDisableModal(false); setDisableToken(''); },
+              className: "h-9 rounded-xl text-xs",
+              children: "Cancel"
+            })
+          ]})
+        ]})
+      })
+    ) : null
   ]});
 }
 
