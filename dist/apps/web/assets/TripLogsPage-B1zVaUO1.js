@@ -1574,6 +1574,115 @@ function _DispatchComplianceSection({ formData, setFormData, ReactModule, jsx })
                 ]
               }) : null
             ]
+          }),
+          jsx.jsxs("div", {
+            className: "p-4 rounded-2xl bg-secondary/30 border border-border/50 space-y-3 mt-4",
+            children: [
+              jsx.jsxs("div", {
+                className: "flex items-center justify-between",
+                children: [
+                  jsx.jsxs("div", {
+                    className: "flex items-center gap-2",
+                    children: [
+                      jsx.jsx("div", {
+                        className: "w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold",
+                        children: "🛰️"
+                      }),
+                      jsx.jsxs("div", {
+                        children: [
+                          jsx.jsxs("label", {
+                            className: "text-xs font-bold text-foreground flex items-center gap-1.5",
+                            children: [
+                              "Live Vehicle GPS Tracking Link",
+                              jsx.jsx("span", {
+                                className: "text-[10px] text-cyan-400 font-mono",
+                                children: "(Active until delivered)"
+                              })
+                            ]
+                          }),
+                          jsx.jsx("p", {
+                            className: "text-[11px] text-muted-foreground",
+                            children: "Paste BlackBuck or vehicle telematics tracking link. Clients can track live map in new tab."
+                          })
+                        ]
+                      })
+                    ]
+                  })
+                ]
+              }),
+              jsx.jsxs("div", {
+                className: "space-y-3 pt-1",
+                children: [
+                  jsx.jsxs("div", {
+                    className: "relative",
+                    children: [
+                      jsx.jsx("input", {
+                        type: "url",
+                        placeholder: "https://track.blackbuck.com/... or GPS URL",
+                        value: formData.gps_tracking_link || "",
+                        onChange: (e) => setFormData({ ...formData, gps_tracking_link: e.target.value }),
+                        className: "w-full rounded-xl h-10 pr-24 px-3 text-xs font-mono bg-background border border-border focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                      }),
+                      jsx.jsx("button", {
+                        type: "button",
+                        onClick: async () => {
+                          try {
+                            const clip = await navigator.clipboard.readText();
+                            if (clip && (clip.startsWith("http://") || clip.startsWith("https://"))) {
+                              setFormData({ ...formData, gps_tracking_link: clip.trim() });
+                            } else {
+                              alert("No valid URL found on clipboard");
+                            }
+                          } catch {
+                            alert("Unable to read clipboard. Please paste manually.");
+                          }
+                        },
+                        className: "absolute right-1 top-1 h-8 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 px-2.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 transition-all",
+                        children: "📋 Paste"
+                      })
+                    ]
+                  }),
+                  jsx.jsxs("div", {
+                    className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1 border-t border-border/40",
+                    children: [
+                      jsx.jsxs("div", {
+                        className: "flex items-center gap-1.5",
+                        children: [
+                          jsx.jsx("span", { className: "text-xs", children: "⏱️" }),
+                          jsx.jsx("span", { className: "text-[11px] font-medium text-muted-foreground", children: "Link Validity Duration:" })
+                        ]
+                      }),
+                      jsx.jsxs("div", {
+                        className: "flex items-center gap-1.5 flex-wrap",
+                        children: [
+                          [1, 2, 3, 5, 7].map(d => jsx.jsx("button", {
+                            key: d,
+                            type: "button",
+                            onClick: () => setFormData({ ...formData, gps_validity_days: d }),
+                            className: "text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all " + ((Number(formData.gps_validity_days) || 2) === d ? "bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-sm" : "bg-background border-border text-muted-foreground hover:text-foreground"),
+                            children: d + (d === 1 ? " Day" : " Days")
+                          })),
+                          jsx.jsxs("div", {
+                            className: "flex items-center gap-1 ml-1",
+                            children: [
+                              jsx.jsx("input", {
+                                type: "number",
+                                min: "1",
+                                max: "60",
+                                value: formData.gps_validity_days || 2,
+                                onChange: (e) => setFormData({ ...formData, gps_validity_days: Math.max(1, parseInt(e.target.value, 10) || 1) }),
+                                className: "w-14 h-7 text-[11px] font-mono text-center px-1 rounded-lg bg-background border border-border"
+                              }),
+                              jsx.jsx("span", { className: "text-[10px] text-muted-foreground", children: "Days" })
+                            ]
+                          })
+                        ]
+                      })
+                    ]
+                  })
+                ]
+              })
+            ]
           })
         ]
       })
@@ -1581,7 +1690,493 @@ function _DispatchComplianceSection({ formData, setFormData, ReactModule, jsx })
   });
 }
 
-import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as la,ch as ia,ci as oa,cj as da,ck as bs,cl as lt,cm as He,c as ca,P as ma,O as ua,C as pa,cn as ut,at as vs,aW as Ut,co as xa,n as ha,ad as ys,a_ as js,ao as fa,ae as _s,be as ga,af as vt,a0 as ba,ah as va,aB as ya,bs as ja,cp as _a,cq as Na,a6 as tt,a4 as ns,a3 as Tt,bt as At,a7 as ls,aM as is,a2 as Mt,cr as wa,al as ka,cs as Rt,aK as Sa,ct as Ca,R as Da}from"./vendor-react-Bs5V2qFE.js";import{aa as os,D as Me,a as Re,b as Fe,c as $e,d as ze,L as z,I as se,S as pe,e as xe,g as he,h as fe,i as F,f as Bt,ab as st,ac as Ta,j as Pe,B as S,p as D,k as ce,t as $,ad as Aa,ae as yt,af as Ma,ag as ae,X as V,T as Ra,u as Ns,w as jt,ah as Fa,ai as $a,N as Ia,m as Pa,C as La,o as Ea,q as Oa,O as Ua,y as Ba,z as za,A as Ft,E as Ce,aj as ds,F as Va,G as Ne,ak as $t,al as It,a3 as cs,a4 as ms,a5 as us,a8 as Be,Q as Ha,am as qa,a9 as Ka}from"./index-DLxf9dwO.js";import{l as Wa}from"./auditLogger-6WQ95Cvr.js";import{d as ct,A as Ga}from"./AddRecurringTripModal-Q3Q3c2Tu.js";import{P as ws}from"./progress-55zf5paG.js";import{read as Ja,utils as Ya}from"./xlsx-CNerDvZX.js";import{S as Qa}from"./SendMailDialog-DwU-GlVi.js";import{E as Za}from"./vendor-pdf-DtmgLs_2.js";import{f as Xa}from"./locationUtils-CJF9iFYv.js";import"./vendor-radix-BQCqNqg0.js";import"./addDays-D4tJXVkB.js";const er=({isOpen:n,onClose:d,tripId:s,onSuccess:N,employees:u=[],trucks:g=[]})=>{const[p,h]=a.useState(!1),[_,b]=a.useState(!1),[r,x]=a.useState({trip_id:"",date:"",driver_employee_id:"",driver_employee_code:"",driver_name:"",truck_number:"",route:"",cycle:"",kms:"",revenue:"",client_payment_status:"pending",trip_status:"Upcoming",mileage:"",assigned_managers:"",vendor_payout:"",payment_model:"Model2",toll_deduction:"",loading_charges:"",loading_paid_by:"client",unloading_charges:"",unloading_paid_by:"client",broker_commission:"",munsiyana:"",loading_dock_arrival_time:"",dispatched_time:"",delivered_time:"",pickup_time:"",delivery_eta:"",client_trip_id:"",lr_number:""}),[j,C]=a.useState(()=>os(1,1));a.useEffect(()=>{(async()=>{if(!(!n||!s)){b(!0);try{const v=await D.collection("trip_logs").getOne(s,{$autoCancel:!1}),T=A=>{if(!A)return"";try{return ce(new Date(A),"yyyy-MM-dd'T'HH:mm")}catch{return""}};x({trip_id:v.trip_id||"",date:v.date?ce(new Date(v.date),"yyyy-MM-dd"):"",driver_employee_id:v.driver_employee_id||"",driver_employee_code:v.driver_employee_code||"",driver_name:v.driver_name||"",truck_number:v.truck_number||"",route:v.route||"",cycle:v.cycle||"",kms:v.kms||"",revenue:v.revenue||"",client_payment_status:v.client_payment_status||"pending",trip_status:v.trip_status||"Upcoming",mileage:v.mileage||"",assigned_managers:v.assigned_managers||"",vendor_payout:v.vendor_payout||"",payment_model:v.payment_model||"Model2",toll_deduction:v.toll_deduction!==void 0&&v.toll_deduction!==null?v.toll_deduction.toString():"",loading_charges:v.loading_charges!==void 0&&v.loading_charges!==null?v.loading_charges.toString():"",loading_paid_by:v.loading_paid_by||"client",unloading_charges:v.unloading_charges!==void 0&&v.unloading_charges!==null?v.unloading_charges.toString():"",unloading_paid_by:v.unloading_paid_by||"client",broker_commission:v.broker_commission!==void 0&&v.broker_commission!==null?v.broker_commission.toString():"",munsiyana:v.munsiyana!==void 0&&v.munsiyana!==null?v.munsiyana.toString():"",lr_number:v.lr_number||"",lr_file_url:v.lr_file_url||"",invoice_number:v.invoice_number||"",invoice_value:v.invoice_value!==void 0&&v.invoice_value!==null?v.invoice_value.toString():"",invoice_file_url:v.invoice_file_url||"",eway_bill_number:v.eway_bill_number||"",eway_expiry_date:v.eway_expiry_date||"",eway_bill_file_url:v.eway_bill_file_url||"",delivery_deadline:v.delivery_deadline||"",loading_dock_arrival_time:T(v.loading_dock_arrival_time),dispatched_time:T(v.dispatched_time),delivered_time:T(v.delivered_time),pickup_time:T(v.pickup_time),delivery_eta:T(v.delivery_eta),client_trip_id:v.client_trip_id||"",lr_number:v.lr_number||"",late_delivery_reason:v.late_delivery_reason||"",is_sealed:Boolean(v.is_sealed),seal_number:v.seal_number||"",seal_numbers:Array.isArray(v.seal_numbers)&&v.seal_numbers.length>0?v.seal_numbers:(v.seal_number?v.seal_number.split(',').map(s=>s.trim()).filter(Boolean):['']),seal_photo_url:v.seal_photo_url||""}),Array.isArray(v.trip_stops)&&v.trip_stops.length>0?C(v.trip_stops):Array.isArray(v.milestones_schedule)&&v.milestones_schedule.length>0?C(v.milestones_schedule):C(os(v.total_docks_count||1,v.total_drops_count||1))}catch(v){console.error("[TripEditModal] Failed to fetch trip details:",v),$.error("Could not load trip details. The record might have been deleted or you lack permissions."),d()}finally{b(!1)}}})()},[n,s,d]);const I=async m=>{if(m.preventDefault(),!!s){h(!0);try{const v={date:r.date,driver_employee_id:r.driver_employee_id||null,driver_employee_code:r.driver_employee_code||null,driver_name:r.driver_name,truck_number:r.truck_number,route:r.route,cycle:r.cycle,kms:parseFloat(r.kms)||0,revenue:parseFloat(r.revenue)||0,client_trip_id:r.client_trip_id?.trim()||"",lr_number:r.lr_number?.trim()||"",client_payment_status:r.client_payment_status,trip_status:r.trip_status,mileage:parseFloat(r.mileage)||0,assigned_managers:r.assigned_managers,toll_deduction:parseFloat(r.toll_deduction)||0,loading_dock_arrival_time:r.loading_dock_arrival_time?new Date(r.loading_dock_arrival_time).toISOString():null,dispatched_time:r.dispatched_time?new Date(r.dispatched_time).toISOString():null,delivered_time:r.delivered_time?new Date(r.delivered_time).toISOString():null,pickup_time:r.pickup_time?new Date(r.pickup_time).toISOString():null,delivery_eta:r.delivery_eta?new Date(r.delivery_eta).toISOString():null,ownership_type:X?"Attached":"Owned",payment_model:X?r.payment_model:"Model1",vendor_payout:X?r.payment_model==="Model3"?Math.max(0,(parseFloat(r.revenue)||0)-500):parseFloat(r.vendor_payout)||0:0,brokerage_margin:X?r.payment_model==="Model3"?500:(parseFloat(r.revenue)||0)-(parseFloat(r.vendor_payout)||0):0,...Aa(r.date,j),loading_charges:parseFloat(r.loading_charges)||0,loading_paid_by:r.loading_paid_by||"client",unloading_charges:parseFloat(r.unloading_charges)||0,unloading_paid_by:r.unloading_paid_by||"client",broker_commission:parseFloat(r.broker_commission)||0,munsiyana:parseFloat(r.munsiyana)||0,lr_number:r.lr_number||"",lr_file_url:r.lr_file_url||"",invoice_number:r.invoice_number||"",invoice_value:parseFloat(r.invoice_value)||0,invoice_file_url:r.invoice_file_url||"",eway_bill_number:r.eway_bill_number||"",eway_expiry_date:r.eway_expiry_date||"",eway_bill_file_url:r.eway_bill_file_url||"",delivery_deadline:r.delivery_deadline||"",is_sealed:Boolean(r.is_sealed),seal_number:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()).join(", "):(r.seal_number||""),seal_numbers:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()):(r.seal_number?[r.seal_number.trim()]:[]),seal_photo_url:r.seal_photo_url||""};await D.collection("trip_logs").update(s,v,{$autoCancel:!1}).catch(async _err=>{if(_err?.data?.data?.pod_status||(_err?.message&&_err.message.includes("pod_status")))return await D.collection("trip_logs").update(s,{...v,pod_status:"Uploaded"},{$autoCancel:!1});throw _err;}),r.client_payment_status&&await yt(D,s,r.client_payment_status,{...v,trip_id:r.trip_id}),$.success("Trip log updated successfully"),N(),d()}catch(v){console.error("[TripEditModal] Update error:",v),$.error(v.message||"Failed to update the trip log. Please verify your inputs and try again.")}finally{h(!1)}}},W=g.find(m=>m.truck_number===r.truck_number)?.ownership_type||"Owned",X=W==="Attached";return e.jsx(Me,{open:n,onOpenChange:d,children:e.jsxs(Re,{className:"sm:max-w-[760px] w-[95vw] h-[90vh] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-card text-card-foreground rounded-2xl shadow-2xl",children:[e.jsx(Fe,{className:"p-5 pb-4 border-b border-border/50 shrink-0 bg-card/95 backdrop-blur-sm z-10",children:e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsxs("div",{children:[e.jsx($e,{className:"text-xl font-bold",children:"Edit Trip Log"}),e.jsx(ze,{children:"Update the details and current status of this shipment."})]}),r.trip_id&&e.jsxs("div",{className:"bg-muted px-3 py-1.5 rounded-lg border border-border shadow-sm text-center",children:[e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5",children:"Trip ID"}),e.jsx("p",{className:"text-sm font-mono font-bold text-foreground",children:r.trip_id})]})]})}),_?e.jsxs("div",{className:"flex flex-col items-center justify-center py-12",children:[e.jsx(Te,{className:"w-8 h-8 animate-spin text-primary mb-4"}),e.jsx("p",{className:"text-muted-foreground",children:"Loading trip details..."})]}):e.jsxs("form",{onSubmit:I,className:"flex flex-col flex-1 min-h-0 overflow-hidden",children:[e.jsxs("div",{className:"flex-1 overflow-y-auto px-6 py-5 space-y-6 min-h-0",children:[e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-5",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-date",children:"Date"}),e.jsx(se,{id:"edit-date",type:"date",value:r.date,onChange:m=>x({...r,date:m.target.value}),required:!0,className:"bg-background"})]}),e.jsxs("div",{className:"md:col-span-2 p-3.5 bg-gradient-to-r from-blue-500/5 via-slate-900 to-blue-500/10 rounded-2xl border border-blue-500/20 space-y-2.5",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx("span",{className:"text-xs font-bold text-blue-400 flex items-center gap-1.5",children:"🔗 External Reference & Client Accounting IDs"}),e.jsx("span",{className:"text-[10px] text-muted-foreground",children:"For easy billing & payment tallying"})]}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-3",children:[e.jsxs("div",{className:"space-y-1",children:[e.jsx(z,{className:"text-[11px] font-semibold text-foreground",children:"Client / Partner Trip ID"}),e.jsx(se,{type:"text",placeholder:"e.g. DLV-TRP-88210, FK-BLR-00452, AMAZON-901",value:r.client_trip_id,onChange:m=>x({...r,client_trip_id:m.target.value}),className:"bg-background h-8.5 text-xs font-mono font-medium placeholder:font-sans"})]}),e.jsxs("div",{className:"space-y-1",children:[e.jsx(z,{className:"text-[11px] font-semibold text-foreground",children:"LR / Consignment Note #"}),e.jsx(se,{type:"text",placeholder:"e.g. LR-45920, BL-7819",value:r.lr_number,onChange:m=>x({...r,lr_number:m.target.value}),className:"bg-background h-8.5 text-xs font-mono font-medium placeholder:font-sans"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-driver",children:"Driver"}),(()=>{const curDriver=(r.driver_name||"").trim(),isTemp=curDriver==="Temporary Driver"||curDriver.startsWith("Temporary Driver"),matchedEmp=isTemp?null:u.find(E=>(r.driver_employee_id&&E.id===r.driver_employee_id)||(r.driver_employee_code&&E.employee_code&&E.employee_code===r.driver_employee_code)||(curDriver&&E.name&&E.name.trim().toLowerCase()===curDriver.toLowerCase())),selDriverVal=isTemp?"Temporary Driver":(matchedEmp?matchedEmp.id:curDriver),driverLabel=isTemp?(curDriver!=="Temporary Driver"?curDriver:"⚡ Temporary Driver"):(matchedEmp?(matchedEmp.employee_code?`${matchedEmp.employee_code} — ${matchedEmp.name}`:matchedEmp.name):curDriver);return e.jsxs(pe,{value:selDriverVal||"",onValueChange:m=>{if(m==="Temporary Driver"){x({...r,driver_employee_id:null,driver_employee_code:null,driver_name:"Temporary Driver"})}else{const emp=u.find(E=>E.id===m||E.employee_code===m||E.name===m);if(emp){x({...r,driver_employee_id:emp.id,driver_employee_code:emp.employee_code||null,driver_name:emp.name})}else{x({...r,driver_employee_id:null,driver_employee_code:null,driver_name:m})}}},children:[e.jsx(xe,{id:"edit-driver",className:"bg-background",children:e.jsx(he,{placeholder:"Select driver",children:driverLabel||"Select driver"})}),e.jsxs(fe,{children:[e.jsx(F,{value:"Temporary Driver",className:"font-semibold text-amber-600 dark:text-amber-400",children:"⚡ Temporary Driver (No app access)"}),Bt(u,curDriver).map(m=>e.jsx(F,{value:m.id,children:e.jsxs("span",{children:[m.employee_code?e.jsxs(Da.Fragment,{children:[e.jsx("span",{className:"font-mono font-bold text-sky-400 mr-1.5",children:m.employee_code}),"— "]}):null,m.name]})},m.id))].concat(curDriver&&!isTemp&&!matchedEmp?[e.jsx(F,{value:curDriver,children:curDriver},"custom-edit-driver")]:[])})]})})(),r.driver_name?.startsWith("Temporary Driver")&&e.jsx(se,{placeholder:"Custom Temp Name (Optional, e.g. Temporary - Ramesh)",value:r.driver_name==="Temporary Driver"?"":r.driver_name,onChange:m=>x({...r,driver_name:m.target.value?m.target.value:"Temporary Driver"}),className:"text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-truck",children:"Truck Number"}),(()=>{const curTruck=(r.truck_number||"").trim(),curTruckNorm=curTruck.replace(/\s+/g,"").toUpperCase(),matchedTruck=g.find(m=>(m.truck_number||"").replace(/\s+/g,"").toUpperCase()===curTruckNorm),selTruck=matchedTruck?matchedTruck.truck_number:curTruck;return e.jsxs(pe,{value:selTruck||"",onValueChange:m=>x({...r,truck_number:m}),children:[e.jsx(xe,{id:"edit-truck",className:"bg-background",children:e.jsx(he,{placeholder:"Select truck",children:selTruck||"Select truck"})}),e.jsx(fe,{children:g.map(m=>e.jsx(F,{value:m.truck_number,children:m.truck_number},m.id)).concat(selTruck&&!g.some(m=>m.truck_number===selTruck)?[e.jsx(F,{value:selTruck,children:selTruck},"custom-truck-edit")]:[])})]})})()]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-route",children:"Route"}),e.jsx(se,{id:"edit-route",type:"text",value:r.route,onChange:m=>x({...r,route:m.target.value}),placeholder:"e.g. Mumbai - Delhi",required:!0,className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-cycle",children:"Cycle"}),e.jsx(se,{id:"edit-cycle",type:"text",value:r.cycle,onChange:m=>x({...r,cycle:m.target.value}),placeholder:"e.g. 14-day cycle",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-kms",children:"Kilometers"}),e.jsx(se,{id:"edit-kms",type:"number",step:"0.01",value:r.kms,onChange:m=>x({...r,kms:m.target.value}),placeholder:"0",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-revenue",children:"Revenue (Rs. )"}),e.jsx(se,{id:"edit-revenue",type:"number",step:"0.01",value:r.revenue,onChange:m=>x({...r,revenue:m.target.value}),placeholder:"0",required:!0,className:"bg-background"})]}),W==="Attached"&&e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-5 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 md:col-span-2 animate-in fade-in duration-300",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-payment_model",children:"Brokerage Payment Model"}),e.jsxs(pe,{value:r.payment_model,onValueChange:m=>x(v=>({...v,payment_model:m,vendor_payout:m==="Model3"?Math.max(0,(parseFloat(v.revenue)||0)-500).toString():v.vendor_payout})),children:[e.jsx(xe,{id:"edit-payment_model",className:"bg-background",children:e.jsx(he,{})}),e.jsxs(fe,{children:[e.jsx(F,{value:"Model2",children:"Margin Based (Model 2)"}),e.jsx(F,{value:"Model3",children:"Flat Fee Rs. 500 (Model 3)"})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-vendor_payout",children:"Agreed Vendor Payout (Rs. )"}),e.jsx(se,{id:"edit-vendor_payout",type:"number",min:"0",step:"0.01",placeholder:"0.00",value:r.payment_model==="Model3"?Math.max(0,(parseFloat(r.revenue)||0)-500).toString():r.vendor_payout,onChange:m=>x({...r,vendor_payout:m.target.value}),readOnly:r.payment_model==="Model3",className:r.payment_model==="Model3"?"bg-muted":"bg-background"}),r.revenue&&e.jsxs("p",{className:"text-[10px] text-muted-foreground mt-1",children:["Est. Brokerage Margin: ",e.jsxs("span",{className:"font-bold text-emerald-400",children:["Rs. ",r.payment_model==="Model3"?"500":(parseFloat(r.revenue)||0)-(parseFloat(r.vendor_payout)||0)]})]})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-mileage",children:"Mileage (km/l)"}),e.jsx(se,{id:"edit-mileage",type:"number",step:"0.01",value:r.mileage,onChange:m=>x({...r,mileage:m.target.value}),placeholder:"0.0",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-toll_deduction",children:"Toll Deduction (Rs. )"}),e.jsx(se,{id:"edit-toll_deduction",type:"number",step:"0.01",value:r.toll_deduction,onChange:m=>x({...r,toll_deduction:m.target.value}),placeholder:"0.00",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx(z,{htmlFor:"edit-loading_charges",children:"Loading Charges (₹)"}),e.jsxs("div",{className:"inline-flex rounded-md border border-border p-0.5 text-xs bg-muted/40",children:[e.jsx("button",{type:"button",onClick:()=>x({...r,loading_paid_by:"client"}),className:`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${r.loading_paid_by!=="company"?"bg-primary text-primary-foreground shadow":"text-muted-foreground hover:text-foreground"}`,children:"Client"}),e.jsx("button",{type:"button",onClick:()=>x({...r,loading_paid_by:"company"}),className:`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${r.loading_paid_by==="company"?"bg-amber-600 text-white shadow":"text-muted-foreground hover:text-foreground"}`,children:"Company"})]})]}),e.jsx(se,{id:"edit-loading_charges",type:"number",step:"0.01",value:r.loading_charges,onChange:m=>x({...r,loading_charges:m.target.value}),placeholder:"0.00",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsxs("div",{className:"flex items-center justify-between",children:[e.jsx(z,{htmlFor:"edit-unloading_charges",children:"Unloading Charges (₹)"}),e.jsxs("div",{className:"inline-flex rounded-md border border-border p-0.5 text-xs bg-muted/40",children:[e.jsx("button",{type:"button",onClick:()=>x({...r,unloading_paid_by:"client"}),className:`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${r.unloading_paid_by!=="company"?"bg-primary text-primary-foreground shadow":"text-muted-foreground hover:text-foreground"}`,children:"Client"}),e.jsx("button",{type:"button",onClick:()=>x({...r,unloading_paid_by:"company"}),className:`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${r.unloading_paid_by==="company"?"bg-amber-600 text-white shadow":"text-muted-foreground hover:text-foreground"}`,children:"Company"})]})]}),e.jsx(se,{id:"edit-unloading_charges",type:"number",step:"0.01",value:r.unloading_charges,onChange:m=>x({...r,unloading_charges:m.target.value}),placeholder:"0.00",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-broker_commission",children:"Broker Commission (₹)"}),e.jsx(se,{id:"edit-broker_commission",type:"number",step:"0.01",value:r.broker_commission,onChange:m=>x({...r,broker_commission:m.target.value}),placeholder:"0.00",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-munsiyana",children:"Munsiyana Deducted (₹)"}),e.jsx(se,{id:"edit-munsiyana",type:"number",step:"0.01",value:r.munsiyana,onChange:m=>x({...r,munsiyana:m.target.value}),placeholder:"0.00",className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2 sm:col-span-2",children:[e.jsx(z,{htmlFor:"edit-late_delivery_reason",className:"text-xs font-semibold flex items-center gap-1.5 text-rose-400",children:"Late Delivery Reason (If Delayed)"}),e.jsx(se,{id:"edit-late_delivery_reason",type:"text",value:r.late_delivery_reason||"",onChange:m=>x({...r,late_delivery_reason:m.target.value}),placeholder:"e.g. Traffic Congestion, Vehicle Breakdown, Dock Delay",className:"bg-background text-xs"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-trip_status",children:"Trip Status"}),e.jsxs(pe,{value:r.trip_status,onValueChange:m=>x({...r,trip_status:m}),children:[e.jsx(xe,{id:"edit-trip_status",className:"bg-background",children:e.jsx(he,{})}),e.jsx(fe,{children:st.map(m=>e.jsx(F,{value:m,children:m},m))})]})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-payment_status",children:"Client Payment Status"}),e.jsxs(pe,{value:r.client_payment_status,onValueChange:m=>x({...r,client_payment_status:m}),children:[e.jsx(xe,{id:"edit-payment_status",className:"bg-background",children:e.jsx(he,{})}),e.jsxs(fe,{children:[e.jsx(F,{value:"pending",children:"Pending"}),e.jsx(F,{value:"received",children:"Received / Paid"}),e.jsx(F,{value:"delayed",children:"Delayed"}),e.jsx(F,{value:"blank",children:"Blank"})]})]})]}),e.jsx("div",{className:"md:col-span-2",children:e.jsx(_DispatchComplianceSection,{formData:r,setFormData:x,ReactModule:a,jsx:e})}),e.jsxs("div",{className:"space-y-2 md:col-span-2",children:[e.jsx(z,{htmlFor:"edit-managers",children:"Assigned Managers"}),e.jsx(se,{id:"edit-managers",type:"text",value:r.assigned_managers,onChange:m=>x({...r,assigned_managers:m.target.value}),placeholder:"e.g. John Doe, Jane Smith",className:"bg-background"})]})]}),e.jsx("div",{className:"border-t border-border/40 pt-5 mt-5",children:e.jsx(Ta,{stops:j,onChange:C,legLabel:"Milestone Schedule (SLA Target Times)"})}),e.jsxs("div",{className:"border-t border-border/40 pt-5 mt-5 space-y-4",children:[e.jsx("h4",{className:"text-sm font-bold text-muted-foreground uppercase tracking-wider",children:"Trip Timeline Status Timestamps"}),e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-4",children:[e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-dock-arrival",children:"Arrived at Dock Time"}),e.jsx(se,{id:"edit-dock-arrival",type:"datetime-local",value:r.loading_dock_arrival_time,onChange:m=>x({...r,loading_dock_arrival_time:m.target.value}),className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-dispatch-time",children:"Dispatched Time"}),e.jsx(se,{id:"edit-dispatch-time",type:"datetime-local",value:r.dispatched_time,onChange:m=>x({...r,dispatched_time:m.target.value}),className:"bg-background"})]}),e.jsxs("div",{className:"space-y-2",children:[e.jsx(z,{htmlFor:"edit-delivery-time",children:"Delivered Time"}),e.jsx(se,{id:"edit-delivery-time",type:"datetime-local",value:r.delivered_time,onChange:m=>x({...r,delivered_time:m.target.value}),className:"bg-background"})]})]})]})]}),e.jsxs(Pe,{className:"p-4 px-6 border-t border-border/50 bg-card/95 backdrop-blur-sm shrink-0 flex items-center justify-end gap-3 z-10",children:[e.jsx(S,{type:"button",variant:"outline",onClick:d,disabled:p,className:"rounded-xl",children:"Cancel"}),e.jsx(S,{type:"submit",disabled:p,className:"rounded-xl shadow-sm",children:p?e.jsxs(e.Fragment,{children:[e.jsx(Te,{className:"w-4 h-4 mr-2 animate-spin"}),"Saving..."]}):"Save Changes"})]})]})]})})},tr=async(n,d)=>new Promise((s,N)=>{const u=new FileReader;u.onload=async g=>{try{const p=g.target.result;let h=[];if(n.name.endsWith(".csv"))h=Ma.parse(p,{header:!0,skipEmptyLines:!0}).data;else if(n.name.match(/\.xlsx?$/)){const x=Ja(p,{type:"binary"}),j=x.SheetNames[0];h=Ya.sheet_to_json(x.Sheets[j])}else throw new Error("Unsupported file format");if(h.length===0)throw new Error("File is empty");let _=0,b=0,r=[];for(let x=0;x<h.length;x++){const j=h[x],C=x+2;d&&d(Math.round((x+1)/h.length*100));try{if(!j["Trip Date"])throw new Error("Trip Date is required");if(!j["Truck No"])throw new Error("Truck No is required");if(!j["Driver Name"])throw new Error("Driver Name is required");let I;try{const E=new Date(j["Trip Date"]);if(isNaN(E.getTime()))throw new Error;I=ce(E,"yyyy-MM-dd")}catch{throw new Error(`Invalid Date format: ${j["Trip Date"]}. Use YYYY-MM-DD.`)}const re=`${j["Starting Location"]||"Unknown"} - ${j["Ending Location"]||"Unknown"}`,W={date:I,truck_number:j["Truck No"],driver_employee_id:(()=>{const c=(j["Driver Code"]||j["Driver Employee Code"]||j["Employee Code"]||"").toString().trim().toUpperCase();return(/^[DE]\d{3,}$/.test(c)&&(typeof s!=="undefined"?s:[]).find(e=>e.employee_code===c)?.id)||null})(),driver_employee_code:(()=>{const c=(j["Driver Code"]||j["Driver Employee Code"]||j["Employee Code"]||"").toString().trim().toUpperCase();return(/^[DE]\d{3,}$/.test(c)&&(typeof s!=="undefined"?s:[]).find(e=>e.employee_code===c)?.employee_code)||null})(),driver_name:j["Driver Name"]||"Temporary Driver",route:re,kms:parseFloat(j["Distance (KM)"])||0,client_payment_status:"pending",created_by:D.authStore.model?.email||"bulk-upload"};await D.collection("trip_logs").create(W,{$autoCancel:!1});const X=parseFloat(j["Fuel Used (Liters)"]);X>0&&await D.collection("expenses_fuel").create({amount:X*90,liters:X,date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const m=parseFloat(j["FASTag Amount (Rs. )"]);m>0&&await D.collection("expenses_fastag").create({amount:m,truck_number:j["Truck No"],date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const v=parseFloat(j["Driver Advance (Rs. )"]);v>0&&await D.collection("expenses_driver_advance").create({amount:v,driver_name:j["Driver Name"],date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const T=parseFloat(j["Maintenance Cost (Rs. )"]);T>0&&await D.collection("expenses_maintenance").create({amount:T,service:"Bulk Import Maintenance",truck_number:j["Truck No"],service_provider_name:"Unknown",date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const A=parseFloat(j["Miscellaneous Cost (Rs. )"]);A>0&&await D.collection("expenses_miscellaneous").create({amount:A,expense_description:"Bulk Import Misc",date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1}),_++}catch(I){b++,r.push({row:C,error:I.message})}}s({total:h.length,successful:_,failed:b,errors:r})}catch(p){N(p)}},u.onerror=()=>N(new Error("File reading failed")),n.name.endsWith(".csv")?u.readAsText(n):u.readAsBinaryString(n)}),sr=({isOpen:n,onClose:d,onSuccess:s})=>{const[N,u]=a.useState(!1),[g,p]=a.useState(null),[h,_]=a.useState(!1),[b,r]=a.useState(0),[x,j]=a.useState(null),C=a.useCallback(T=>{T.preventDefault(),u(!0)},[]),I=a.useCallback(T=>{T.preventDefault(),u(!1)},[]),re=a.useCallback(T=>{if(T.preventDefault(),u(!1),T.dataTransfer.files&&T.dataTransfer.files.length>0){const A=T.dataTransfer.files[0];A.name.match(/\.(csv|xlsx|xls)$/)?p(A):$.error("Invalid file type. Please upload CSV or Excel.")}},[]),W=T=>{T.target.files&&T.target.files.length>0&&p(T.target.files[0])},X=()=>{const T=`Trip Date,Truck No,Driver Name,Starting Location,Ending Location,Distance (KM),Fuel Used (Liters),Toll Amount (Rs. ),FASTag Amount (Rs. ),Driver Advance (Rs. ),Maintenance Cost (Rs. ),Miscellaneous Cost (Rs. ),Trip Status,Notes
+import{r as a,j as e,ak as Te,cg as rs,a1 as na,a9 as gs,az as Ht,a5 as nt,ar as la,ch as ia,ci as oa,cj as da,ck as bs,cl as lt,cm as He,c as ca,P as ma,O as ua,C as pa,cn as ut,at as vs,aW as Ut,co as xa,n as ha,ad as ys,a_ as js,ao as fa,ae as _s,be as ga,af as vt,a0 as ba,ah as va,aB as ya,bs as ja,cp as _a,cq as Na,a6 as tt,a4 as ns,a3 as Tt,bt as At,a7 as ls,aM as is,a2 as Mt,cr as wa,al as ka,cs as Rt,aK as Sa,ct as Ca,R as Da}from"./vendor-react-Bs5V2qFE.js";import{aa as os,D as Me,a as Re,b as Fe,c as $e,d as ze,L as z,I as se,S as pe,e as xe,g as he,h as fe,i as F,f as Bt,ab as st,ac as Ta,j as Pe,B as S,p as D,k as ce,t as $,ad as Aa,ae as yt,af as Ma,ag as ae,X as V,T as Ra,u as Ns,w as jt,ah as Fa,ai as $a,N as Ia,m as Pa,C as La,o as Ea,q as Oa,O as Ua,y as Ba,z as za,A as Ft,E as Ce,aj as ds,F as Va,G as Ne,ak as $t,al as It,a3 as cs,a4 as ms,a5 as us,a8 as Be,Q as Ha,am as qa,a9 as Ka}from"./index-DLxf9dwO.js";import{l as Wa}from"./auditLogger-6WQ95Cvr.js";import{d as ct,A as Ga}from"./AddRecurringTripModal-Q3Q3c2Tu.js";import{P as ws}from"./progress-55zf5paG.js";import{read as Ja,utils as Ya}from"./xlsx-CNerDvZX.js";import{S as Qa}from"./SendMailDialog-DwU-GlVi.js";import{E as Za}from"./vendor-pdf-DtmgLs_2.js";import{f as Xa}from"./locationUtils-CJF9iFYv.js";import"./vendor-radix-BQCqNqg0.js";import"./addDays-D4tJXVkB.js";const er=({isOpen:n,onClose:d,tripId:s,onSuccess:N,employees:u=[],trucks:g=[]})=>{
+  const[p,h]=a.useState(!1);
+  const[_,b]=a.useState(!1);
+  const[clients,setClients]=a.useState([]);
+  const[r,x]=a.useState({
+    trip_id:"",
+    client_id:"",
+    date:"",
+    driver_employee_id:"",
+    driver_employee_code:"",
+    driver_name:"",
+    truck_number:"",
+    route:"",
+    cycle:"",
+    kms:"",
+    revenue:"",
+    advance_received_from_client:"",
+    advance_paid_to_driver:"",
+    client_payment_status:"pending",
+    trip_status:"Upcoming",
+    mileage:"",
+    assigned_managers:"",
+    vendor_payout:"",
+    payment_model:"Model2",
+    toll_deduction:"",
+    loading_charges:"",
+    loading_paid_by:"client",
+    unloading_charges:"",
+    unloading_paid_by:"client",
+    broker_commission:"",
+    munsiyana:"",
+    loading_dock_arrival_time:"",
+    dispatched_time:"",
+    delivered_time:"",
+    pickup_time:"",
+    delivery_eta:"",
+    client_trip_id:"",
+    lr_number:"",
+    late_delivery_reason:"",
+    is_sealed:!1,
+    seal_number:"",
+    seal_numbers:[""],
+    seal_photo_url:"",
+    gps_tracking_link:"",
+    gps_validity_days:2,
+    gps_link_expiry:""
+  });
+  const[j,C]=a.useState(()=>os(1,1));
+
+  a.useEffect(()=>{(async()=>{
+    if(!n||!s)return;
+    b(!0);
+    try{
+      const[v,cList]=await Promise.all([
+        D.collection("trip_logs").getOne(s,{$autoCancel:!1,expand:"client_id"}),
+        D.collection("clients").getFullList({sort:"client_name",filter:'status != "Inactive" && status != "Suspended"',$autoCancel:!1}).catch(()=>[])
+      ]);
+      setClients(cList||[]);
+      const T=A=>{
+        if(!A)return"";
+        try{return ce(new Date(A),"yyyy-MM-dd'T'HH:mm")}catch{return""}
+      };
+      x({
+        trip_id:v.trip_id||"",
+        client_id:v.client_id||"",
+        date:v.date?ce(new Date(v.date),"yyyy-MM-dd"):"",
+        driver_employee_id:v.driver_employee_id||"",
+        driver_employee_code:v.driver_employee_code||"",
+        driver_name:v.driver_name||"",
+        truck_number:v.truck_number||"",
+        route:v.route||"",
+        cycle:v.cycle||"",
+        kms:v.kms!==void 0&&v.kms!==null?v.kms.toString():"",
+        revenue:v.revenue!==void 0&&v.revenue!==null?v.revenue.toString():"",
+        advance_received_from_client:v.advance_received_from_client!==void 0&&v.advance_received_from_client!==null?v.advance_received_from_client.toString():"",
+        advance_paid_to_driver:v.advance_paid_to_driver!==void 0&&v.advance_paid_to_driver!==null?v.advance_paid_to_driver.toString():"",
+        client_payment_status:v.client_payment_status||"pending",
+        trip_status:v.trip_status||"Upcoming",
+        mileage:v.mileage!==void 0&&v.mileage!==null?v.mileage.toString():"",
+        assigned_managers:v.assigned_managers||"",
+        vendor_payout:v.vendor_payout!==void 0&&v.vendor_payout!==null?v.vendor_payout.toString():"",
+        payment_model:v.payment_model||"Model2",
+        toll_deduction:v.toll_deduction!==void 0&&v.toll_deduction!==null?v.toll_deduction.toString():"",
+        loading_charges:v.loading_charges!==void 0&&v.loading_charges!==null?v.loading_charges.toString():"",
+        loading_paid_by:v.loading_paid_by||"client",
+        unloading_charges:v.unloading_charges!==void 0&&v.unloading_charges!==null?v.unloading_charges.toString():"",
+        unloading_paid_by:v.unloading_paid_by||"client",
+        broker_commission:v.broker_commission!==void 0&&v.broker_commission!==null?v.broker_commission.toString():"",
+        munsiyana:v.munsiyana!==void 0&&v.munsiyana!==null?v.munsiyana.toString():"",
+        lr_number:v.lr_number||"",
+        lr_file_url:v.lr_file_url||"",
+        invoice_number:v.invoice_number||"",
+        invoice_value:v.invoice_value!==void 0&&v.invoice_value!==null?v.invoice_value.toString():"",
+        invoice_file_url:v.invoice_file_url||"",
+        eway_bill_number:v.eway_bill_number||"",
+        eway_expiry_date:v.eway_expiry_date||"",
+        eway_bill_file_url:v.eway_bill_file_url||"",
+        delivery_deadline:v.delivery_deadline||"",
+        loading_dock_arrival_time:T(v.loading_dock_arrival_time),
+        dispatched_time:T(v.dispatched_time),
+        delivered_time:T(v.delivered_time),
+        pickup_time:T(v.pickup_time),
+        delivery_eta:T(v.delivery_eta),
+        client_trip_id:v.client_trip_id||"",
+        late_delivery_reason:v.late_delivery_reason||"",
+        is_sealed:Boolean(v.is_sealed),
+        seal_number:v.seal_number||"",
+        seal_numbers:Array.isArray(v.seal_numbers)&&v.seal_numbers.length>0?v.seal_numbers:(v.seal_number?v.seal_number.split(',').map(s=>s.trim()).filter(Boolean):['']),
+        seal_photo_url:v.seal_photo_url||"",
+        gps_tracking_link:v.gps_tracking_link||"",
+        gps_validity_days:v.gps_validity_days||2,
+        gps_link_expiry:v.gps_link_expiry||""
+      });
+      Array.isArray(v.trip_stops)&&v.trip_stops.length>0?C(v.trip_stops):Array.isArray(v.milestones_schedule)&&v.milestones_schedule.length>0?C(v.milestones_schedule):C(os(v.total_docks_count||1,v.total_drops_count||1));
+    }catch(v){
+      console.error("[TripEditModal] Failed to fetch trip details:",v);
+      $.error("Could not load trip details.");
+      d();
+    }finally{
+      b(!1);
+    }
+  })()},[n,s,d]);
+
+  const I=async m=>{
+    if(m.preventDefault(),!!s){
+      h(!0);
+      try{
+        const v={
+          client_id:r.client_id||null,
+          date:r.date,
+          driver_employee_id:r.driver_employee_id||null,
+          driver_employee_code:r.driver_employee_code||null,
+          driver_name:r.driver_name,
+          truck_number:r.truck_number,
+          route:r.route,
+          cycle:r.cycle,
+          kms:parseFloat(r.kms)||0,
+          revenue:parseFloat(r.revenue)||0,
+          advance_received_from_client:parseFloat(r.advance_received_from_client)||0,
+          advance_paid_to_driver:parseFloat(r.advance_paid_to_driver)||0,
+          client_trip_id:r.client_trip_id?.trim()||"",
+          lr_number:r.lr_number?.trim()||"",
+          client_payment_status:r.client_payment_status,
+          trip_status:r.trip_status,
+          mileage:parseFloat(r.mileage)||0,
+          assigned_managers:r.assigned_managers,
+          toll_deduction:parseFloat(r.toll_deduction)||0,
+          loading_dock_arrival_time:r.loading_dock_arrival_time?new Date(r.loading_dock_arrival_time).toISOString():null,
+          dispatched_time:r.dispatched_time?new Date(r.dispatched_time).toISOString():null,
+          delivered_time:r.delivered_time?new Date(r.delivered_time).toISOString():null,
+          pickup_time:r.pickup_time?new Date(r.pickup_time).toISOString():null,
+          delivery_eta:r.delivery_eta?new Date(r.delivery_eta).toISOString():null,
+          ownership_type:X?"Attached":"Owned",
+          payment_model:X?r.payment_model:"Model1",
+          vendor_payout:X?(r.payment_model==="Model3"?Math.max(0,(parseFloat(r.revenue)||0)-500):parseFloat(r.vendor_payout)||0):0,
+          brokerage_margin:X?(r.payment_model==="Model3"?500:(parseFloat(r.revenue)||0)-(parseFloat(r.vendor_payout)||0)):0,
+          ...Aa(r.date,j),
+          loading_charges:parseFloat(r.loading_charges)||0,
+          loading_paid_by:r.loading_paid_by||"client",
+          unloading_charges:parseFloat(r.unloading_charges)||0,
+          unloading_paid_by:r.unloading_paid_by||"client",
+          broker_commission:parseFloat(r.broker_commission)||0,
+          munsiyana:parseFloat(r.munsiyana)||0,
+          lr_file_url:r.lr_file_url||"",
+          invoice_number:r.invoice_number||"",
+          invoice_value:parseFloat(r.invoice_value)||0,
+          invoice_file_url:r.invoice_file_url||"",
+          eway_bill_number:r.eway_bill_number||"",
+          eway_expiry_date:r.eway_expiry_date||"",
+          eway_bill_file_url:r.eway_bill_file_url||"",
+          delivery_deadline:r.delivery_deadline||"",
+          late_delivery_reason:r.late_delivery_reason||"",
+          is_sealed:Boolean(r.is_sealed),
+          seal_number:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()).join(", "):(r.seal_number||""),
+          seal_numbers:Array.isArray(r.seal_numbers)?r.seal_numbers.filter(Boolean).map(s=>s.trim()):(r.seal_number?[r.seal_number.trim()]:[]),
+          seal_photo_url:r.seal_photo_url||"",
+          gps_tracking_link:r.gps_tracking_link||"",
+          gps_validity_days:parseInt(r.gps_validity_days)||2,
+          gps_link_expiry:r.gps_link_expiry||""
+        };
+        await D.collection("trip_logs").update(s,v,{$autoCancel:!1}).catch(async _err=>{
+          if(_err?.data?.data?.pod_status||(_err?.message&&_err.message.includes("pod_status"))){
+            return await D.collection("trip_logs").update(s,{...v,pod_status:"Uploaded"},{$autoCancel:!1});
+          }
+          throw _err;
+        });
+        r.client_payment_status&&await yt(D,s,r.client_payment_status,{...v,trip_id:r.trip_id});
+        $.success("Trip log updated successfully");
+        N();
+        d();
+      }catch(v){
+        console.error("[TripEditModal] Update error:",v);
+        $.error(v.message||"Failed to update trip log. Please verify your inputs.");
+      }finally{
+        h(!1);
+      }
+    }
+  };
+
+  const W=g.find(m=>m.truck_number===r.truck_number)?.ownership_type||"Owned";
+  const X=W==="Attached";
+
+  return e.jsx(Me,{open:n,onOpenChange:d,children:e.jsxs(Re,{className:"w-[96vw] max-w-5xl h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background text-foreground rounded-3xl shadow-2xl border border-border/60",children:[
+    e.jsx(Fe,{className:"p-5 pb-4 border-b border-border/50 shrink-0 bg-card/95 backdrop-blur-sm z-10",children:e.jsxs("div",{className:"flex items-center justify-between",children:[
+      e.jsxs("div",{children:[
+        e.jsx($e,{className:"text-xl font-bold tracking-tight text-foreground",children:"Edit Trip Log"}),
+        e.jsx(ze,{className:"text-xs text-muted-foreground",children:"Update trip parameters, client assignments, financials, dispatch SLA, and telematics."})
+      ]}),
+      r.trip_id&&e.jsxs("div",{className:"bg-secondary/40 px-3 py-1.5 rounded-xl border border-border/60 shadow-sm text-center",children:[
+        e.jsx("p",{className:"text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5",children:"Trip ID"}),
+        e.jsx("p",{className:"text-sm font-mono font-bold text-foreground",children:r.trip_id})
+      ]})
+    ]})}),
+    _?e.jsxs("div",{className:"flex flex-col items-center justify-center py-20 flex-1",children:[
+      e.jsx(Te,{className:"w-8 h-8 animate-spin text-primary mb-4"}),
+      e.jsx("p",{className:"text-muted-foreground text-sm",children:"Loading trip details..."})
+    ]}):e.jsxs("form",{onSubmit:I,className:"flex flex-col flex-1 min-h-0 overflow-hidden",children:[
+      e.jsxs("div",{className:"flex-1 overflow-y-auto px-6 py-6 space-y-6 min-h-0",children:[
+        
+        // ==========================================
+        // CARD 1: 📋 Shipment & Route Assignment
+        // ==========================================
+        e.jsxs("div",{className:"bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm",children:[
+          e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-border/40",children:[
+            e.jsxs("h4",{className:"text-sm font-bold flex items-center gap-2 text-foreground",children:[
+              e.jsx("span",{children:"📋"}),
+              " Shipment & Route Assignment"
+            ]}),
+            e.jsx("span",{className:"text-[11px] text-muted-foreground",children:"Client assignment, truck, driver & route details"})
+          ]}),
+          e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",children:[
+            // 1. Client / Company Select
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsxs(z,{htmlFor:"edit-client",className:"text-xs font-semibold",children:[
+                "Client / Company",
+                e.jsx("span",{className:"text-destructive ml-1",children:"*"})
+              ]}),
+              e.jsxs(pe,{value:r.client_id||"",onValueChange:m=>x({...r,client_id:m}),children:[
+                e.jsx(xe,{id:"edit-client",className:"bg-background h-9 text-xs",children:e.jsx(he,{placeholder:"Select a client",children:(()=>{const mc=clients.find(c=>c.id===r.client_id);return mc?(mc.client_name||mc.company_name||mc.name):"Select a client"})()})}),
+                e.jsx(fe,{children:clients.map(c=>e.jsxs(F,{value:c.id,className:"text-xs",children:[
+                  c.client_name||c.company_name||c.name,
+                  c.company_name&&c.company_name!==c.client_name?(` (${c.company_name})`):"",
+                  c.client_type&&c.client_type.includes("Broker")?" [🤝 Broker]":""
+                ]},c.id))})
+              ]})
+            ]}),
+
+            // 2. Trip Date
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsxs(z,{htmlFor:"edit-date",className:"text-xs font-semibold",children:[
+                "Trip Date",
+                e.jsx("span",{className:"text-destructive ml-1",children:"*"})
+              ]}),
+              e.jsx(se,{id:"edit-date",type:"date",value:r.date,onChange:m=>x({...r,date:m.target.value}),required:!0,className:"bg-background h-9 text-xs"})
+            ]}),
+
+            // 3. Driver
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-driver",className:"text-xs font-semibold",children:"Driver"}),
+              (()=>{const curDriver=(r.driver_name||"").trim(),isTemp=curDriver==="Temporary Driver"||curDriver.startsWith("Temporary Driver"),matchedEmp=isTemp?null:u.find(E=>(r.driver_employee_id&&E.id===r.driver_employee_id)||(r.driver_employee_code&&E.employee_code&&E.employee_code===r.driver_employee_code)||(curDriver&&E.name&&E.name.trim().toLowerCase()===curDriver.toLowerCase())),selDriverVal=isTemp?"Temporary Driver":(matchedEmp?matchedEmp.id:curDriver),driverLabel=isTemp?(curDriver!=="Temporary Driver"?curDriver:"⚡ Temporary Driver"):(matchedEmp?(matchedEmp.employee_code?`${matchedEmp.employee_code} — ${matchedEmp.name}`:matchedEmp.name):curDriver);return e.jsxs(pe,{value:selDriverVal||"",onValueChange:m=>{if(m==="Temporary Driver"){x({...r,driver_employee_id:null,driver_employee_code:null,driver_name:"Temporary Driver"})}else{const emp=u.find(E=>E.id===m||E.employee_code===m||E.name===m);if(emp){x({...r,driver_employee_id:emp.id,driver_employee_code:emp.employee_code||null,driver_name:emp.name})}else{x({...r,driver_employee_id:null,driver_employee_code:null,driver_name:m})}}},children:[e.jsx(xe,{id:"edit-driver",className:"bg-background h-9 text-xs",children:e.jsx(he,{placeholder:"Select driver",children:driverLabel||"Select driver"})}),e.jsxs(fe,{children:[e.jsx(F,{value:"Temporary Driver",className:"font-semibold text-amber-600 dark:text-amber-400 text-xs",children:"⚡ Temporary Driver (No mobile access)"}),u.map(emp=>e.jsx(F,{value:emp.id,className:"text-xs",children:emp.employee_code?`${emp.employee_code} — ${emp.name}`:`${emp.name} (Code not assigned)`},emp.id))]})]})})(),
+              r.driver_name?.startsWith("Temporary Driver")&&e.jsx(se,{placeholder:"Custom Temp Name (Optional)",value:r.driver_name==="Temporary Driver"?"":r.driver_name,onChange:m=>x({...r,driver_name:m.target.value?m.target.value:"Temporary Driver"}),className:"text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"})
+            ]}),
+
+            // 4. Truck Number
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-truck",className:"text-xs font-semibold",children:"Truck Number"}),
+              (()=>{const curTruck=(r.truck_number||"").trim(),curTruckNorm=curTruck.replace(/\s+/g,"").toUpperCase(),matchedTruck=g.find(m=>(m.truck_number||"").replace(/\s+/g,"").toUpperCase()===curTruckNorm),selTruck=matchedTruck?matchedTruck.truck_number:curTruck;return e.jsxs(pe,{value:selTruck||"",onValueChange:m=>x({...r,truck_number:m}),children:[e.jsx(xe,{id:"edit-truck",className:"bg-background h-9 text-xs",children:e.jsx(he,{placeholder:"Select truck",children:selTruck||"Select truck"})}),e.jsx(fe,{children:g.map(m=>e.jsx(F,{value:m.truck_number,className:"text-xs",children:m.truck_number},m.id)).concat(selTruck&&!g.some(m=>m.truck_number===selTruck)?[e.jsx(F,{value:selTruck,className:"text-xs",children:selTruck},"custom-truck-edit")]:[])})]})})()
+            ]}),
+
+            // 5. Route
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-route",className:"text-xs font-semibold",children:"Route"}),
+              e.jsx(se,{id:"edit-route",type:"text",value:r.route,onChange:m=>x({...r,route:m.target.value}),required:!0,placeholder:"Origin -> Destination",className:"bg-background h-9 text-xs"})
+            ]}),
+
+            // 6. Kilometers
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-kms",className:"text-xs font-semibold",children:"Kilometers"}),
+              e.jsx(se,{id:"edit-kms",type:"number",step:"0.1",value:r.kms,onChange:m=>x({...r,kms:m.target.value}),placeholder:"0",required:!0,className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 7. Client / Partner Trip ID
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-client-trip-id",className:"text-xs font-semibold",children:"Client / Partner Trip ID"}),
+              e.jsx(se,{id:"edit-client-trip-id",type:"text",placeholder:"e.g. DLV-TRP-88210, FK-BLR",value:r.client_trip_id||"",onChange:m=>x({...r,client_trip_id:m.target.value}),className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 8. LR / Consignment Note #
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-lr-num",className:"text-xs font-semibold",children:"LR / Consignment Note #"}),
+              e.jsx(se,{id:"edit-lr-num",type:"text",placeholder:"e.g. 400676524",value:r.lr_number||"",onChange:m=>x({...r,lr_number:m.target.value}),className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 9. Cycle
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-cycle",className:"text-xs font-semibold",children:"Cycle"}),
+              e.jsx(se,{id:"edit-cycle",type:"text",value:r.cycle,onChange:m=>x({...r,cycle:m.target.value}),placeholder:"e.g. 14-day cycle",className:"bg-background h-9 text-xs"})
+            ]})
+          ]})
+        ]}),
+
+        // ==========================================
+        // CARD 2: 💰 Financials, Revenue & Assigned Advances
+        // ==========================================
+        e.jsxs("div",{className:"bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm",children:[
+          e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-border/40",children:[
+            e.jsxs("h4",{className:"text-sm font-bold flex items-center gap-2 text-foreground",children:[
+              e.jsx("span",{children:"💰"}),
+              " Financials, Revenue & Assigned Advances"
+            ]}),
+            e.jsx("span",{className:"text-[11px] text-muted-foreground",children:"Freight rates, advances, deductions & payment settlement"})
+          ]}),
+          e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",children:[
+            // 1. Freight Revenue
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-revenue",className:"text-xs font-semibold",children:"Revenue (Rs. )"}),
+              e.jsx(se,{id:"edit-revenue",type:"number",step:"0.01",value:r.revenue,onChange:m=>x({...r,revenue:m.target.value}),placeholder:"0",required:!0,className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 2. Advance from Client
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-adv-client",className:"text-xs font-semibold",children:"Advance from Client (₹)"}),
+              e.jsx(se,{id:"edit-adv-client",type:"number",step:"0.01",placeholder:"0.00",value:r.advance_received_from_client||"",onChange:m=>x({...r,advance_received_from_client:m.target.value}),className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 3. Driver Advance
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-adv-driver",className:"text-xs font-semibold",children:"Driver Advance (Paid by Co.) (₹)"}),
+              e.jsx(se,{id:"edit-adv-driver",type:"number",step:"0.01",placeholder:"0.00",value:r.advance_paid_to_driver||"",onChange:m=>x({...r,advance_paid_to_driver:m.target.value}),className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 4. Toll Deduction
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-toll",className:"text-xs font-semibold",children:"Toll Deduction (₹)"}),
+              e.jsx(se,{id:"edit-toll",type:"number",step:"0.01",value:r.toll_deduction,onChange:m=>x({...r,toll_deduction:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 5. Trip Status
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-status",className:"text-xs font-semibold",children:"Trip Status"}),
+              e.jsxs(pe,{value:r.trip_status,onValueChange:m=>x({...r,trip_status:m}),children:[
+                e.jsx(xe,{id:"edit-status",className:"bg-background h-9 text-xs",children:e.jsx(he,{})}),
+                e.jsxs(fe,{children:[
+                  e.jsx(F,{value:"Upcoming",className:"text-xs",children:"Upcoming"}),
+                  e.jsx(F,{value:"In Transit",className:"text-xs",children:"In Transit"}),
+                  e.jsx(F,{value:"Completed",className:"text-xs",children:"Completed"}),
+                  e.jsx(F,{value:"Cancelled",className:"text-xs",children:"Cancelled"})
+                ]})
+              ]})
+            ]}),
+
+            // 6. Client Payment Status
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-payment-status",className:"text-xs font-semibold",children:"Client Payment Status"}),
+              e.jsxs(pe,{value:r.client_payment_status,onValueChange:m=>x({...r,client_payment_status:m}),children:[
+                e.jsx(xe,{id:"edit-payment-status",className:"bg-background h-9 text-xs",children:e.jsx(he,{})}),
+                e.jsxs(fe,{children:[
+                  e.jsx(F,{value:"pending",className:"text-xs",children:"Pending"}),
+                  e.jsx(F,{value:"partial",className:"text-xs",children:"Advance Received"}),
+                  e.jsx(F,{value:"paid",className:"text-xs",children:"Paid"}),
+                  e.jsx(F,{value:"overdue",className:"text-xs",children:"Overdue"})
+                ]})
+              ]})
+            ]}),
+
+            // 7. Loading Charges
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsxs("div",{className:"flex items-center justify-between",children:[
+                e.jsx(z,{htmlFor:"edit-loading_charges",className:"text-xs font-semibold",children:"Loading Charges (₹)"}),
+                e.jsxs("div",{className:"inline-flex rounded-md border border-border p-0.5 text-[10px] bg-muted/40",children:[
+                  e.jsx("button",{type:"button",onClick:()=>x({...r,loading_paid_by:"client"}),className:`px-1.5 py-0.5 rounded transition-colors ${r.loading_paid_by!=="company"?"bg-primary text-primary-foreground font-bold":"text-muted-foreground hover:text-foreground"}`,children:"Client"}),
+                  e.jsx("button",{type:"button",onClick:()=>x({...r,loading_paid_by:"company"}),className:`px-1.5 py-0.5 rounded transition-colors ${r.loading_paid_by==="company"?"bg-primary text-primary-foreground font-bold":"text-muted-foreground hover:text-foreground"}`,children:"Company"})
+                ]})
+              ]}),
+              e.jsx(se,{id:"edit-loading_charges",type:"number",step:"0.01",value:r.loading_charges,onChange:m=>x({...r,loading_charges:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 8. Unloading Charges
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsxs("div",{className:"flex items-center justify-between",children:[
+                e.jsx(z,{htmlFor:"edit-unloading_charges",className:"text-xs font-semibold",children:"Unloading Charges (₹)"}),
+                e.jsxs("div",{className:"inline-flex rounded-md border border-border p-0.5 text-[10px] bg-muted/40",children:[
+                  e.jsx("button",{type:"button",onClick:()=>x({...r,unloading_paid_by:"client"}),className:`px-1.5 py-0.5 rounded transition-colors ${r.unloading_paid_by!=="company"?"bg-primary text-primary-foreground font-bold":"text-muted-foreground hover:text-foreground"}`,children:"Client"}),
+                  e.jsx("button",{type:"button",onClick:()=>x({...r,unloading_paid_by:"company"}),className:`px-1.5 py-0.5 rounded transition-colors ${r.unloading_paid_by==="company"?"bg-primary text-primary-foreground font-bold":"text-muted-foreground hover:text-foreground"}`,children:"Company"})
+                ]})
+              ]}),
+              e.jsx(se,{id:"edit-unloading_charges",type:"number",step:"0.01",value:r.unloading_charges,onChange:m=>x({...r,unloading_charges:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 9. Broker Commission
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-broker_commission",className:"text-xs font-semibold",children:"Broker Commission (₹)"}),
+              e.jsx(se,{id:"edit-broker_commission",type:"number",step:"0.01",value:r.broker_commission,onChange:m=>x({...r,broker_commission:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 10. Munsiyana
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-munsiyana",className:"text-xs font-semibold",children:"Munsiyana Deducted (₹)"}),
+              e.jsx(se,{id:"edit-munsiyana",type:"number",step:"0.01",value:r.munsiyana,onChange:m=>x({...r,munsiyana:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]}),
+
+            // 11. Assigned Managers
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-managers",className:"text-xs font-semibold",children:"Assigned Managers"}),
+              e.jsx(se,{id:"edit-managers",type:"text",value:r.assigned_managers,onChange:m=>x({...r,assigned_managers:m.target.value}),placeholder:"e.g. John Doe, Jane Smith",className:"bg-background h-9 text-xs"})
+            ]}),
+
+            // 12. Late Delivery Reason
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-late-reason",className:"text-xs font-semibold text-rose-400",children:"Late Delivery Reason (If Delayed)"}),
+              e.jsx(se,{id:"edit-late-reason",type:"text",value:r.late_delivery_reason||"",onChange:m=>x({...r,late_delivery_reason:m.target.value}),placeholder:"e.g. Traffic Congestion, Breakdown",className:"bg-background h-9 text-xs"})
+            ]})
+          ]}),
+
+          // Attached fleet options if applicable
+          W==="Attached"&&e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300 mt-2",children:[
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-payment_model",className:"text-xs font-semibold",children:"Brokerage Payment Model"}),
+              e.jsxs(pe,{value:r.payment_model,onValueChange:m=>x(v=>({...v,payment_model:m,vendor_payout:m==="Model3"?Math.max(0,(parseFloat(v.revenue)||0)-500).toString():v.vendor_payout})),children:[
+                e.jsx(xe,{id:"edit-payment_model",className:"bg-background h-9 text-xs",children:e.jsx(he,{})}),
+                e.jsxs(fe,{children:[
+                  e.jsx(F,{value:"Model2",className:"text-xs",children:"Margin Based (Model 2)"}),
+                  e.jsx(F,{value:"Model3",className:"text-xs",children:"Flat Fee Rs. 500 (Model 3)"})
+                ]})
+              ]})
+            ]}),
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-vendor_payout",className:"text-xs font-semibold",children:"Agreed Vendor Payout (Rs. )"}),
+              e.jsx(se,{id:"edit-vendor_payout",type:"number",step:"0.01",disabled:r.payment_model==="Model3",value:r.payment_model==="Model3"?Math.max(0,(parseFloat(r.revenue)||0)-500).toString():r.vendor_payout,onChange:m=>x({...r,vendor_payout:m.target.value}),placeholder:"0",className:"bg-background h-9 text-xs font-mono"})
+            ]})
+          ]})
+        ]}),
+
+        // ==========================================
+        // CARD 3: 🛡️ Dispatch Compliance, Live GPS & SLA Tracker
+        // ==========================================
+        e.jsxs("div",{className:"bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm",children:[
+          e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-border/40",children:[
+            e.jsxs("h4",{className:"text-sm font-bold flex items-center gap-2 text-foreground",children:[
+              e.jsx("span",{children:"🛡️"}),
+              " Dispatch Compliance, Live GPS & SLA Tracker"
+            ]}),
+            e.jsx("span",{className:"text-[11px] text-muted-foreground",children:"Mandatory transit documentation, live GPS link & security seals"})
+          ]}),
+          e.jsx(_DispatchComplianceSection,{formData:r,setFormData:x,ReactModule:a,jsx:e})
+        ]}),
+
+        // ==========================================
+        // CARD 4: 📍 Milestone Schedule & Visit Timestamps
+        // ==========================================
+        e.jsxs("div",{className:"bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm",children:[
+          e.jsxs("div",{className:"flex items-center justify-between pb-2 border-b border-border/40",children:[
+            e.jsxs("h4",{className:"text-sm font-bold flex items-center gap-2 text-foreground",children:[
+              e.jsx("span",{children:"📍"}),
+              " Milestone Schedule & Visit Timestamps"
+            ]}),
+            e.jsx("span",{className:"text-[11px] text-muted-foreground",children:"Multi-stop route milestones and actual dock times"})
+          ]}),
+          e.jsx(Ta,{stops:j,onChange:C,legLabel:"Milestone Schedule (SLA Target Times)"}),
+          e.jsxs("div",{className:"grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-border/40",children:[
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-dock-arrival",className:"text-xs font-semibold",children:"Arrived at Dock Time"}),
+              e.jsx(se,{id:"edit-dock-arrival",type:"datetime-local",value:r.loading_dock_arrival_time,onChange:m=>x({...r,loading_dock_arrival_time:m.target.value}),className:"bg-background h-9 text-xs"})
+            ]}),
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-dispatch-time",className:"text-xs font-semibold",children:"Dispatched Time"}),
+              e.jsx(se,{id:"edit-dispatch-time",type:"datetime-local",value:r.dispatched_time,onChange:m=>x({...r,dispatched_time:m.target.value}),className:"bg-background h-9 text-xs"})
+            ]}),
+            e.jsxs("div",{className:"space-y-1.5",children:[
+              e.jsx(z,{htmlFor:"edit-delivery-time",className:"text-xs font-semibold",children:"Delivered Time"}),
+              e.jsx(se,{id:"edit-delivery-time",type:"datetime-local",value:r.delivered_time,onChange:m=>x({...r,delivered_time:m.target.value}),className:"bg-background h-9 text-xs"})
+            ]})
+          ]})
+        ]})
+
+      ]}),
+
+      // ==========================================
+      // FOOTER: Pinned Save Changes & Cancel
+      // ==========================================
+      e.jsxs(Pe,{className:"p-4 px-6 border-t border-border/50 bg-card/95 backdrop-blur-sm shrink-0 flex items-center justify-end gap-3 z-10",children:[
+        e.jsx(S,{type:"button",variant:"outline",onClick:d,disabled:p,className:"rounded-xl px-5 h-10 text-xs font-bold",children:"Cancel"}),
+        e.jsx(S,{type:"submit",disabled:p,className:"rounded-xl px-6 h-10 text-xs font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground",children:p?e.jsxs(Da.Fragment,{children:[e.jsx(Te,{className:"w-4 h-4 mr-2 animate-spin"}),"Saving..."]}):"Save Changes"})
+      ]})
+    ]})
+  ]})})
+},tr=async(n,d)=>new Promise((s,N)=>{const u=new FileReader;u.onload=async g=>{try{const p=g.target.result;let h=[];if(n.name.endsWith(".csv"))h=Ma.parse(p,{header:!0,skipEmptyLines:!0}).data;else if(n.name.match(/\.xlsx?$/)){const x=Ja(p,{type:"binary"}),j=x.SheetNames[0];h=Ya.sheet_to_json(x.Sheets[j])}else throw new Error("Unsupported file format");if(h.length===0)throw new Error("File is empty");let _=0,b=0,r=[];for(let x=0;x<h.length;x++){const j=h[x],C=x+2;d&&d(Math.round((x+1)/h.length*100));try{if(!j["Trip Date"])throw new Error("Trip Date is required");if(!j["Truck No"])throw new Error("Truck No is required");if(!j["Driver Name"])throw new Error("Driver Name is required");let I;try{const E=new Date(j["Trip Date"]);if(isNaN(E.getTime()))throw new Error;I=ce(E,"yyyy-MM-dd")}catch{throw new Error(`Invalid Date format: ${j["Trip Date"]}. Use YYYY-MM-DD.`)}const re=`${j["Starting Location"]||"Unknown"} - ${j["Ending Location"]||"Unknown"}`,W={date:I,truck_number:j["Truck No"],driver_employee_id:(()=>{const c=(j["Driver Code"]||j["Driver Employee Code"]||j["Employee Code"]||"").toString().trim().toUpperCase();return(/^[DE]\d{3,}$/.test(c)&&(typeof s!=="undefined"?s:[]).find(e=>e.employee_code===c)?.id)||null})(),driver_employee_code:(()=>{const c=(j["Driver Code"]||j["Driver Employee Code"]||j["Employee Code"]||"").toString().trim().toUpperCase();return(/^[DE]\d{3,}$/.test(c)&&(typeof s!=="undefined"?s:[]).find(e=>e.employee_code===c)?.employee_code)||null})(),driver_name:j["Driver Name"]||"Temporary Driver",route:re,kms:parseFloat(j["Distance (KM)"])||0,client_payment_status:"pending",created_by:D.authStore.model?.email||"bulk-upload"};await D.collection("trip_logs").create(W,{$autoCancel:!1});const X=parseFloat(j["Fuel Used (Liters)"]);X>0&&await D.collection("expenses_fuel").create({amount:X*90,liters:X,date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const m=parseFloat(j["FASTag Amount (Rs. )"]);m>0&&await D.collection("expenses_fastag").create({amount:m,truck_number:j["Truck No"],date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const v=parseFloat(j["Driver Advance (Rs. )"]);v>0&&await D.collection("expenses_driver_advance").create({amount:v,driver_name:j["Driver Name"],date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const T=parseFloat(j["Maintenance Cost (Rs. )"]);T>0&&await D.collection("expenses_maintenance").create({amount:T,service:"Bulk Import Maintenance",truck_number:j["Truck No"],service_provider_name:"Unknown",date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1});const A=parseFloat(j["Miscellaneous Cost (Rs. )"]);A>0&&await D.collection("expenses_miscellaneous").create({amount:A,expense_description:"Bulk Import Misc",date:I,created_by:D.authStore.model?.id||""},{$autoCancel:!1}),_++}catch(I){b++,r.push({row:C,error:I.message})}}s({total:h.length,successful:_,failed:b,errors:r})}catch(p){N(p)}},u.onerror=()=>N(new Error("File reading failed")),n.name.endsWith(".csv")?u.readAsText(n):u.readAsBinaryString(n)}),sr=({isOpen:n,onClose:d,onSuccess:s})=>{const[N,u]=a.useState(!1),[g,p]=a.useState(null),[h,_]=a.useState(!1),[b,r]=a.useState(0),[x,j]=a.useState(null),C=a.useCallback(T=>{T.preventDefault(),u(!0)},[]),I=a.useCallback(T=>{T.preventDefault(),u(!1)},[]),re=a.useCallback(T=>{if(T.preventDefault(),u(!1),T.dataTransfer.files&&T.dataTransfer.files.length>0){const A=T.dataTransfer.files[0];A.name.match(/\.(csv|xlsx|xls)$/)?p(A):$.error("Invalid file type. Please upload CSV or Excel.")}},[]),W=T=>{T.target.files&&T.target.files.length>0&&p(T.target.files[0])},X=()=>{const T=`Trip Date,Truck No,Driver Name,Starting Location,Ending Location,Distance (KM),Fuel Used (Liters),Toll Amount (Rs. ),FASTag Amount (Rs. ),Driver Advance (Rs. ),Maintenance Cost (Rs. ),Miscellaneous Cost (Rs. ),Trip Status,Notes
 `,A=`2026-06-08,MH12AB1234,John Doe,Mumbai,Delhi,1400,250,1500,2000,5000,0,500,completed,Test trip
 `,E=new Blob([T+A],{type:"text/csv"}),Y=window.URL.createObjectURL(E),U=document.createElement("a");U.href=Y,U.download="trip_upload_template.csv",U.click(),window.URL.revokeObjectURL(Y)},m=async()=>{if(g){_(!0),r(0),j(null);try{const T=await tr(g,A=>r(A));j(T),T.successful>0&&($.success(`Successfully imported ${T.successful} trips`),s())}catch(T){$.error(T.message||"Failed to process file")}finally{_(!1)}}},v=()=>{p(null),j(null),r(0)};return e.jsx(Me,{open:n,onOpenChange:T=>{T||(v(),d())},children:e.jsxs(Re,{className:"sm:max-w-[600px] bg-card border-border",children:[e.jsxs(Fe,{children:[e.jsx($e,{children:"Bulk Upload Trips"}),e.jsx(ze,{children:"Import multiple trips and related expenses from a CSV or Excel file."})]}),x?e.jsxs("div",{className:"space-y-6 pt-4 text-center",children:[e.jsx("div",{className:"flex justify-center mb-4",children:x.failed===0?e.jsx("div",{className:"w-16 h-16 rounded-full bg-success/20 flex items-center justify-center",children:e.jsx(Ht,{className:"w-8 h-8 text-success"})}):e.jsx("div",{className:"w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center",children:e.jsx(nt,{className:"w-8 h-8 text-warning"})})}),e.jsx("h3",{className:"text-xl font-semibold",children:"Import Complete"}),e.jsxs("div",{className:"grid grid-cols-2 gap-4 max-w-sm mx-auto",children:[e.jsxs("div",{className:"p-4 bg-muted/30 rounded-lg border border-border",children:[e.jsx("p",{className:"text-3xl font-bold text-success",children:x.successful}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Successful"})]}),e.jsxs("div",{className:"p-4 bg-muted/30 rounded-lg border border-border",children:[e.jsx("p",{className:"text-3xl font-bold text-destructive",children:x.failed}),e.jsx("p",{className:"text-xs text-muted-foreground",children:"Failed"})]})]}),x.errors.length>0&&e.jsxs("div",{className:"text-left bg-destructive/10 p-3 rounded-lg border border-destructive/20 text-sm max-h-40 overflow-y-auto",children:[e.jsx("p",{className:"font-semibold text-destructive mb-2",children:"Error Details:"}),e.jsx("ul",{className:"list-disc pl-5 space-y-1",children:x.errors.map((T,A)=>e.jsxs("li",{className:"text-destructive/80",children:["Row ",T.row,": ",T.error]},A))})]}),e.jsxs("div",{className:"flex justify-center gap-3 pt-4",children:[x.failed>0&&e.jsx(S,{variant:"outline",onClick:v,children:"Try Again"}),e.jsx(S,{onClick:d,children:"Close"})]})]}):e.jsxs("div",{className:"space-y-6 pt-4",children:[e.jsxs("div",{className:"flex justify-between items-center bg-muted/30 p-3 rounded-lg border border-border",children:[e.jsxs("div",{className:"flex items-center gap-2",children:[e.jsx(rs,{className:"w-5 h-5 text-primary"}),e.jsx("span",{className:"text-sm font-medium",children:"Need the template?"})]}),e.jsxs(S,{variant:"outline",size:"sm",onClick:X,children:[e.jsx(na,{className:"w-4 h-4 mr-2"})," Download CSV"]})]}),e.jsx("div",{onDragOver:C,onDragLeave:I,onDrop:re,className:`
                 border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors

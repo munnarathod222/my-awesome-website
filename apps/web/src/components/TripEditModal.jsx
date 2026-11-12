@@ -16,8 +16,10 @@ const TRIP_STATUS_OPTIONS = ['Upcoming', 'In Transit', 'Completed', 'Cancelled']
 const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], trucks = [] }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [clients, setClients] = useState([]);
   const [formData, setFormData] = useState({
     trip_id: '',
+    client_id: '',
     date: '',
     driver_employee_id: '',
     driver_employee_code: '',
@@ -27,6 +29,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     cycle: '',
     kms: '',
     revenue: '',
+    advance_received_from_client: '',
+    advance_paid_to_driver: '',
     client_payment_status: 'pending',
     trip_status: 'Upcoming',
     mileage: '',
@@ -49,6 +53,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     eway_expiry_date: '',
     eway_bill_file_url: '',
     delivery_deadline: '',
+    client_trip_id: '',
+    late_delivery_reason: '',
     is_sealed: false,
     seal_numbers: [''],
     seal_number: '',
@@ -64,9 +70,14 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
       
       setIsFetching(true);
       try {
-        const trip = await pb.collection('trip_logs').getOne(tripId, { $autoCancel: false });
+        const [trip, clientList] = await Promise.all([
+          pb.collection('trip_logs').getOne(tripId, { $autoCancel: false, expand: 'client_id' }),
+          pb.collection('clients').getFullList({ sort: 'client_name', filter: 'status != "Inactive" && status != "Suspended"', $autoCancel: false }).catch(() => [])
+        ]);
+        setClients(clientList || []);
         setFormData({
           trip_id: trip.trip_id || '',
+          client_id: trip.client_id || '',
           date: trip.date ? format(new Date(trip.date), 'yyyy-MM-dd') : '',
           driver_employee_id: trip.driver_employee_id || '',
           driver_employee_code: trip.driver_employee_code || '',
@@ -74,13 +85,15 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           truck_number: trip.truck_number || '',
           route: trip.route || '',
           cycle: trip.cycle || '',
-          kms: trip.kms || '',
-          revenue: trip.revenue || '',
+          kms: trip.kms !== undefined && trip.kms !== null ? trip.kms.toString() : '',
+          revenue: trip.revenue !== undefined && trip.revenue !== null ? trip.revenue.toString() : '',
+          advance_received_from_client: trip.advance_received_from_client !== undefined && trip.advance_received_from_client !== null ? trip.advance_received_from_client.toString() : '',
+          advance_paid_to_driver: trip.advance_paid_to_driver !== undefined && trip.advance_paid_to_driver !== null ? trip.advance_paid_to_driver.toString() : '',
           client_payment_status: trip.client_payment_status || 'pending',
           trip_status: trip.trip_status || 'Upcoming',
-          mileage: trip.mileage || '',
+          mileage: trip.mileage !== undefined && trip.mileage !== null ? trip.mileage.toString() : '',
           assigned_managers: trip.assigned_managers || '',
-          vendor_payout: trip.vendor_payout || '',
+          vendor_payout: trip.vendor_payout !== undefined && trip.vendor_payout !== null ? trip.vendor_payout.toString() : '',
           payment_model: trip.payment_model || 'Model2',
           toll_deduction: trip.toll_deduction !== undefined && trip.toll_deduction !== null ? trip.toll_deduction.toString() : '',
           loading_charges: trip.loading_charges !== undefined && trip.loading_charges !== null ? trip.loading_charges.toString() : '',
@@ -98,10 +111,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           eway_expiry_date: trip.eway_expiry_date || '',
           eway_bill_file_url: trip.eway_bill_file_url || '',
           delivery_deadline: trip.delivery_deadline || '',
+          client_trip_id: trip.client_trip_id || '',
+          late_delivery_reason: trip.late_delivery_reason || '',
           is_sealed: Boolean(trip.is_sealed),
-          seal_numbers: Array.isArray(trip.seal_numbers) && trip.seal_numbers.length > 0 
-            ? trip.seal_numbers 
-            : (trip.seal_number ? trip.seal_number.split(',').map(s => s.trim()).filter(Boolean) : ['']),
+          seal_numbers: Array.isArray(trip.seal_numbers) && trip.seal_numbers.length > 0 ? trip.seal_numbers : (trip.seal_number ? trip.seal_number.split(',').map(s => s.trim()).filter(Boolean) : ['']),
           seal_number: trip.seal_number || '',
           seal_photo_url: trip.seal_photo_url || '',
           gps_tracking_link: trip.gps_tracking_link || '',
@@ -109,8 +122,8 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           gps_link_expiry: trip.gps_link_expiry || ''
         });
       } catch (error) {
-        console.error('[TripEditModal] Failed to fetch trip details:', error);
-        toast.error('Could not load trip details. The record might have been deleted or you lack permissions.');
+        console.error('Error fetching trip details:', error);
+        toast.error('Failed to load trip details');
         onClose();
       } finally {
         setIsFetching(false);
@@ -122,12 +135,12 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!tripId) return;
-    
     setIsSaving(true);
+
     try {
-      const updateData = {
-        date: formData.date,
+      const dataToSave = {
+        client_id: formData.client_id || null,
+        date: formData.date ? new Date(formData.date).toISOString() : null,
         driver_employee_id: formData.driver_employee_id || null,
         driver_employee_code: formData.driver_employee_code || null,
         driver_name: formData.driver_name,
@@ -136,10 +149,16 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         cycle: formData.cycle,
         kms: parseFloat(formData.kms) || 0,
         revenue: parseFloat(formData.revenue) || 0,
+        advance_received_from_client: parseFloat(formData.advance_received_from_client) || 0,
+        advance_paid_to_driver: parseFloat(formData.advance_paid_to_driver) || 0,
+        client_trip_id: formData.client_trip_id?.trim() || '',
+        lr_number: formData.lr_number?.trim() || '',
         client_payment_status: formData.client_payment_status,
         trip_status: formData.trip_status,
         mileage: parseFloat(formData.mileage) || 0,
         assigned_managers: formData.assigned_managers,
+        vendor_payout: isAttached ? (formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.revenue) || 0) - 500) : (parseFloat(formData.vendor_payout) || 0)) : 0,
+        payment_model: isAttached ? formData.payment_model : 'Model1',
         toll_deduction: parseFloat(formData.toll_deduction) || 0,
         loading_charges: parseFloat(formData.loading_charges) || 0,
         loading_paid_by: formData.loading_paid_by || 'client',
@@ -147,7 +166,6 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         unloading_paid_by: formData.unloading_paid_by || 'client',
         broker_commission: parseFloat(formData.broker_commission) || 0,
         munsiyana: parseFloat(formData.munsiyana) || 0,
-        lr_number: formData.lr_number || '',
         lr_file_url: formData.lr_file_url || '',
         invoice_number: formData.invoice_number || '',
         invoice_value: parseFloat(formData.invoice_value) || 0,
@@ -156,43 +174,23 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         eway_expiry_date: formData.eway_expiry_date || '',
         eway_bill_file_url: formData.eway_bill_file_url || '',
         delivery_deadline: formData.delivery_deadline || '',
+        late_delivery_reason: formData.late_delivery_reason || '',
         is_sealed: Boolean(formData.is_sealed),
-        seal_number: Array.isArray(formData.seal_numbers) 
-          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()).join(', ') 
-          : (formData.seal_number || ''),
-        seal_numbers: Array.isArray(formData.seal_numbers) 
-          ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) 
-          : (formData.seal_number ? [formData.seal_number.trim()] : []),
+        seal_number: Array.isArray(formData.seal_numbers) ? formData.seal_numbers.filter(Boolean).map(s => s.trim()).join(', ') : (formData.seal_number || ''),
+        seal_numbers: Array.isArray(formData.seal_numbers) ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) : (formData.seal_number ? [formData.seal_number.trim()] : []),
         seal_photo_url: formData.seal_photo_url || '',
-        gps_tracking_link: (formData.gps_tracking_link || '').trim(),
-        gps_validity_days: Number(formData.gps_validity_days) || 2,
-        gps_link_expiry: formData.gps_tracking_link ? (() => {
-          const vDays = Number(formData.gps_validity_days) || 2;
-          const baseDate = formData.date ? new Date(formData.date) : new Date();
-          return new Date(baseDate.getTime() + vDays * 24 * 60 * 60 * 1000).toISOString();
-        })() : '',
-        
-        ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
-        payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),
-        vendor_payout: isAttachedFamily 
-          ? Math.max(0, (parseFloat(formData.revenue) || 0) - (parseFloat(formData.toll_deduction) || 0) - (parseFloat(formData.advance_paid_to_driver) || 0))
-          : (isAttached 
-              ? (formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.revenue) || 0) - 500) : (parseFloat(formData.vendor_payout) || 0))
-              : 0),
-        brokerage_margin: isAttachedFamily
-          ? 0
-          : (isAttached
-              ? (formData.payment_model === 'Model3' ? 500 : (parseFloat(formData.revenue) || 0) - (parseFloat(formData.vendor_payout) || 0))
-              : 0)
+        gps_tracking_link: formData.gps_tracking_link || '',
+        gps_validity_days: parseInt(formData.gps_validity_days) || 2,
+        gps_link_expiry: formData.gps_link_expiry || ''
       };
 
-      await pb.collection('trip_logs').update(tripId, updateData, { $autoCancel: false });
+      await pb.collection('trip_logs').update(tripId, dataToSave, { $autoCancel: false });
       toast.success('Trip log updated successfully');
-      onSuccess();
+      if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error('[TripEditModal] Update error:', error);
-      toast.error(error.message || 'Failed to update the trip log. Please verify your inputs and try again.');
+      console.error('Error updating trip:', error);
+      toast.error('Failed to update trip log');
     } finally {
       setIsSaving(false);
     }
@@ -200,20 +198,21 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
 
   const selectedTruckObj = trucks.find(t => t.truck_number === formData.truck_number);
   const ownershipType = selectedTruckObj?.ownership_type || formData.ownership_type || 'Owned';
-  const isAttachedFamily = ownershipType === 'AttachedFamily';
   const isAttached = ownershipType === 'Attached';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[760px] w-[95vw] h-[90vh] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-card text-card-foreground rounded-2xl shadow-2xl">
+      <DialogContent className="w-[96vw] max-w-5xl h-[92vh] max-h-[92vh] p-0 flex flex-col overflow-hidden bg-background text-foreground rounded-3xl shadow-2xl border border-border/60">
         <DialogHeader className="p-5 pb-4 border-b border-border/50 shrink-0 bg-card/95 backdrop-blur-sm z-10">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-xl font-bold">Edit Trip Log</DialogTitle>
-              <DialogDescription>Update the details and current status of this shipment.</DialogDescription>
+              <DialogTitle className="text-xl font-bold tracking-tight text-foreground">Edit Trip Log</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Update trip parameters, client assignments, financials, dispatch SLA, and telematics.
+              </DialogDescription>
             </div>
             {formData.trip_id && (
-              <div className="bg-muted px-3 py-1.5 rounded-lg border border-border shadow-sm text-center">
+              <div className="bg-secondary/40 px-3 py-1.5 rounded-xl border border-border/60 shadow-sm text-center">
                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-0.5">Trip ID</p>
                 <p className="text-sm font-mono font-bold text-foreground">{formData.trip_id}</p>
               </div>
@@ -222,421 +221,461 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         </DialogHeader>
         
         {isFetching ? (
-          <div className="flex flex-col items-center justify-center py-12 flex-1">
+          <div className="flex flex-col items-center justify-center py-20 flex-1">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Loading trip details...</p>
+            <p className="text-muted-foreground text-sm">Loading trip details...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 min-h-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label htmlFor="edit-date">Date</Label>
-                <Input
-                  id="edit-date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                  className="bg-background"
-                />
-              </div>
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 min-h-0">
               
-              <div className="space-y-2">
-                <Label htmlFor="edit-driver">Driver</Label>
-                <Select 
-                  value={formData.driver_employee_code || (formData.driver_name?.startsWith('Temporary Driver') ? 'TEMPORARY' : '')} 
-                  onValueChange={(value) => {
-                    if (value === 'TEMPORARY') {
-                      setFormData({ ...formData, driver_employee_code: '', driver_employee_id: '', driver_name: 'Temporary Driver' });
-                    } else {
-                      const emp = employees.find(e => (e.employee_code && e.employee_code === value) || e.id === value);
-                      if (emp) {
-                        setFormData({
-                          ...formData,
-                          driver_employee_code: emp.employee_code || '',
-                          driver_employee_id: emp.id,
-                          driver_name: emp.name
-                        });
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger id="edit-driver" className="bg-background">
-                    <SelectValue placeholder="Select driver by permanent code" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TEMPORARY" className="font-semibold text-amber-600 dark:text-amber-400">
-                      ⚡ Temporary Driver (No mobile access)
-                    </SelectItem>
-                    {employees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.employee_code || emp.id}>
-                        {emp.employee_code ? `${emp.employee_code} — ${emp.name}` : `${emp.name} (Code not assigned)`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formData.driver_name?.startsWith('Temporary Driver') && (
-                  <Input
-                    placeholder="Custom Temp Name (Optional, e.g. Temporary - Ramesh)"
-                    value={formData.driver_name === 'Temporary Driver' ? '' : formData.driver_name}
-                    onChange={e => setFormData({ ...formData, driver_name: e.target.value ? e.target.value : 'Temporary Driver' })}
-                    className="text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"
-                  />
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-truck">Truck Number</Label>
-                <Select value={formData.truck_number} onValueChange={(value) => setFormData({ ...formData, truck_number: value })}>
-                  <SelectTrigger id="edit-truck" className="bg-background">
-                    <SelectValue placeholder="Select truck" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trucks.map(truck => (
-                      <SelectItem key={truck.id} value={truck.truck_number}>{truck.truck_number}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-route">Route</Label>
-                <Input
-                  id="edit-route"
-                  type="text"
-                  value={formData.route}
-                  onChange={(e) => setFormData({ ...formData, route: e.target.value })}
-                  placeholder="e.g. Mumbai - Delhi"
-                  required
-                  className="bg-background"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-cycle">Cycle</Label>
-                <Input
-                  id="edit-cycle"
-                  type="text"
-                  value={formData.cycle}
-                  onChange={(e) => setFormData({ ...formData, cycle: e.target.value })}
-                  placeholder="e.g. 14-day cycle"
-                  className="bg-background"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-kms">Kilometers</Label>
-                <Input
-                  id="edit-kms"
-                  type="number"
-                  step="0.01"
-                  value={formData.kms}
-                  onChange={(e) => setFormData({ ...formData, kms: e.target.value })}
-                  placeholder="0"
-                  className="bg-background"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-revenue">Revenue (₹)</Label>
-                <Input
-                  id="edit-revenue"
-                  type="number"
-                  step="0.01"
-                  value={formData.revenue}
-                  onChange={(e) => setFormData({ ...formData, revenue: e.target.value })}
-                  placeholder="0"
-                  required
-                  className="bg-background"
-                />
-              </div>
-
-              {ownershipType === 'AttachedFamily' ? (
-                <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-3 md:col-span-2 animate-in fade-in duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">🤝</span>
-                      <span className="text-xs font-bold text-foreground">
-                        Family Attached Net Settlement ({selectedTruckObj?.owner_name || 'Family Owner'})
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold border border-emerald-500/30 text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                      0% Pass-Through (Not Company Profit)
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-background/80 border border-border/60 text-xs space-y-1 font-mono">
-                    <div className="flex justify-between text-muted-foreground text-[11px]">
-                      <span>Gross Freight Billed:</span>
-                      <span className="text-foreground font-semibold">₹{(parseFloat(formData.revenue) || 0).toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between text-rose-500/90 text-[11px]">
-                      <span>Less Toll Deduction:</span>
-                      <span>-₹{(parseFloat(formData.toll_deduction) || 0).toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="pt-1 border-t border-border flex justify-between font-bold text-xs">
-                      <span className="text-foreground">Est. Trip Owner Net Payout:</span>
-                      <span className="text-emerald-500 font-extrabold text-sm">
-                        ₹{Math.max(0, (parseFloat(formData.revenue) || 0) - (parseFloat(formData.toll_deduction) || 0)).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground italic">
-                    * Company pays fuel, tolls, and advances upfront. Net balance is disbursed to owner and excluded from company retained profit.
-                  </p>
+              {/* CARD 1: 📋 Shipment & Route Assignment */}
+              <div className="bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                  <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <span>📋</span> Shipment & Route Assignment
+                  </h4>
+                  <span className="text-[11px] text-muted-foreground">Client assignment, truck, driver & route details</span>
                 </div>
-              ) : ownershipType === 'Attached' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 md:col-span-2 animate-in fade-in duration-300">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-payment_model">Brokerage Payment Model</Label>
-                    <Select 
-                      value={formData.payment_model} 
-                      onValueChange={v => setFormData(prev => ({ 
-                        ...prev, 
-                        payment_model: v,
-                        vendor_payout: v === 'Model3' ? Math.max(0, (parseFloat(prev.revenue) || 0) - 500).toString() : prev.vendor_payout
-                      }))}
-                    >
-                      <SelectTrigger id="edit-payment_model" className="bg-background">
-                        <SelectValue />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Client / Company Select */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-client" className="text-xs font-semibold">
+                      Client / Company <span className="text-destructive ml-1">*</span>
+                    </Label>
+                    <Select value={formData.client_id || ''} onValueChange={(val) => setFormData({ ...formData, client_id: val })}>
+                      <SelectTrigger id="edit-client" className="bg-background h-9 text-xs">
+                        <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Model2">Margin Based (Model 2)</SelectItem>
-                        <SelectItem value="Model3">Flat Fee ₹500 (Model 3)</SelectItem>
+                        {clients.map(c => (
+                          <SelectItem key={c.id} value={c.id} className="text-xs">
+                            {c.client_name || c.company_name || c.name} {c.company_name && c.company_name !== c.client_name ? `(${c.company_name})` : ''} {c.client_type?.includes('Broker') ? ' [🤝 Broker]' : ''}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-vendor_payout">Agreed Vendor Payout (₹)</Label>
-                    <Input 
-                      id="edit-vendor_payout"
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      placeholder="0.00" 
-                      value={formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.revenue) || 0) - 500).toString() : formData.vendor_payout} 
-                      onChange={e => setFormData({...formData, vendor_payout: e.target.value})} 
-                      readOnly={formData.payment_model === 'Model3'}
-                      className={formData.payment_model === 'Model3' ? "bg-muted" : "bg-background"}
+
+                  {/* Trip Date */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-date" className="text-xs font-semibold">
+                      Trip Date <span className="text-destructive ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="edit-date"
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      required
+                      className="bg-background h-9 text-xs"
                     />
-                    {formData.revenue && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Est. Brokerage Margin: <span className="font-bold text-emerald-400">
-                          ₹{formData.payment_model === 'Model3' ? '500' : (parseFloat(formData.revenue) || 0) - (parseFloat(formData.vendor_payout) || 0)}
-                        </span>
-                      </p>
+                  </div>
+
+                  {/* Driver */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-driver" className="text-xs font-semibold">Driver</Label>
+                    <Select 
+                      value={formData.driver_employee_code || (formData.driver_name?.startsWith('Temporary Driver') ? 'TEMPORARY' : '')} 
+                      onValueChange={(value) => {
+                        if (value === 'TEMPORARY') {
+                          setFormData({ ...formData, driver_employee_code: '', driver_employee_id: '', driver_name: 'Temporary Driver' });
+                        } else {
+                          const emp = employees.find(e => (e.employee_code && e.employee_code === value) || e.id === value);
+                          if (emp) {
+                            setFormData({
+                              ...formData,
+                              driver_employee_code: emp.employee_code || '',
+                              driver_employee_id: emp.id,
+                              driver_name: emp.name
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger id="edit-driver" className="bg-background h-9 text-xs">
+                        <SelectValue placeholder="Select driver" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TEMPORARY" className="font-semibold text-amber-600 dark:text-amber-400 text-xs">
+                          ⚡ Temporary Driver (No mobile access)
+                        </SelectItem>
+                        {employees.map(emp => (
+                          <SelectItem key={emp.id} value={emp.employee_code || emp.id} className="text-xs">
+                            {emp.employee_code ? `${emp.employee_code} — ${emp.name}` : `${emp.name} (Code not assigned)`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formData.driver_name?.startsWith('Temporary Driver') && (
+                      <Input
+                        placeholder="Custom Temp Name (Optional)"
+                        value={formData.driver_name === 'Temporary Driver' ? '' : formData.driver_name}
+                        onChange={e => setFormData({ ...formData, driver_name: e.target.value ? e.target.value : 'Temporary Driver' })}
+                        className="text-xs h-8 mt-1 bg-amber-500/5 border-amber-500/30"
+                      />
                     )}
                   </div>
-                </div>
-              ) : null}
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-mileage">Mileage (km/l)</Label>
-                <Input
-                  id="edit-mileage"
-                  type="number"
-                  step="0.01"
-                  value={formData.mileage}
-                  onChange={(e) => setFormData({ ...formData, mileage: e.target.value })}
-                  placeholder="0.0"
-                  className="bg-background"
-                />
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-toll_deduction">Toll Deduction (₹)</Label>
-                <Input
-                  id="edit-toll_deduction"
-                  type="number"
-                  step="0.01"
-                  value={formData.toll_deduction}
-                  onChange={(e) => setFormData({ ...formData, toll_deduction: e.target.value })}
-                  placeholder="0.00"
-                  className="bg-background"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-trip_status">Trip Status</Label>
-                <Select value={formData.trip_status} onValueChange={(value) => setFormData({ ...formData, trip_status: value })}>
-                  <SelectTrigger id="edit-trip_status" className="bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRIP_STATUS_OPTIONS.map(status => (
-                      <SelectItem key={status} value={status}>{status}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-payment_status">Client Payment Status</Label>
-                <Select value={formData.client_payment_status} onValueChange={(value) => setFormData({ ...formData, client_payment_status: value })}>
-                  <SelectTrigger id="edit-payment_status" className="bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="received">Received / Paid</SelectItem>
-                    <SelectItem value="delayed">Delayed</SelectItem>
-                    <SelectItem value="blank">Blank</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Operational Charges, Broker Commission & Deductions */}
-              <div className="space-y-3 p-4 rounded-2xl bg-secondary/20 border border-border/70 md:col-span-2">
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">📦</span>
-                    <Label className="text-xs font-bold uppercase tracking-wider text-foreground">Operational Charges & Deductions</Label>
+                  {/* Truck Number */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-truck" className="text-xs font-semibold">Truck Number</Label>
+                    <Select value={formData.truck_number} onValueChange={(value) => setFormData({ ...formData, truck_number: value })}>
+                      <SelectTrigger id="edit-truck" className="bg-background h-9 text-xs">
+                        <SelectValue placeholder="Select truck" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {trucks.map(truck => (
+                          <SelectItem key={truck.id} value={truck.truck_number} className="text-xs">{truck.truck_number}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <span className="text-[10px] text-muted-foreground font-mono">Billed to Client vs Company Paid</span>
+
+                  {/* Route */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-route" className="text-xs font-semibold">Route</Label>
+                    <Input
+                      id="edit-route"
+                      type="text"
+                      value={formData.route}
+                      onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+                      required
+                      placeholder="Origin -> Destination"
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+
+                  {/* Kilometers */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-kms" className="text-xs font-semibold">Kilometers</Label>
+                    <Input
+                      id="edit-kms"
+                      type="number"
+                      step="0.1"
+                      value={formData.kms}
+                      onChange={(e) => setFormData({ ...formData, kms: e.target.value })}
+                      placeholder="0"
+                      required
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Client / Partner Trip ID */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-client-trip-id" className="text-xs font-semibold">Client / Partner Trip ID</Label>
+                    <Input
+                      id="edit-client-trip-id"
+                      type="text"
+                      placeholder="e.g. DLV-TRP-88210, FK-BLR"
+                      value={formData.client_trip_id || ''}
+                      onChange={(e) => setFormData({ ...formData, client_trip_id: e.target.value })}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* LR / Consignment Note # */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-lr-num" className="text-xs font-semibold">LR / Consignment Note #</Label>
+                    <Input
+                      id="edit-lr-num"
+                      type="text"
+                      placeholder="e.g. 400676524"
+                      value={formData.lr_number || ''}
+                      onChange={(e) => setFormData({ ...formData, lr_number: e.target.value })}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Cycle */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-cycle" className="text-xs font-semibold">Cycle</Label>
+                    <Input
+                      id="edit-cycle"
+                      type="text"
+                      value={formData.cycle}
+                      onChange={(e) => setFormData({ ...formData, cycle: e.target.value })}
+                      placeholder="e.g. 14-day cycle"
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: 💰 Financials, Revenue & Assigned Advances */}
+              <div className="bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                  <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <span>💰</span> Financials, Revenue & Assigned Advances
+                  </h4>
+                  <span className="text-[11px] text-muted-foreground">Freight rates, advances, deductions & payment settlement</span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Revenue */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-revenue" className="text-xs font-semibold">Revenue (Rs. )</Label>
+                    <Input
+                      id="edit-revenue"
+                      type="number"
+                      step="0.01"
+                      value={formData.revenue}
+                      onChange={(e) => setFormData({ ...formData, revenue: e.target.value })}
+                      placeholder="0"
+                      required
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Advance from Client */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-adv-client" className="text-xs font-semibold">Advance from Client (₹)</Label>
+                    <Input
+                      id="edit-adv-client"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.advance_received_from_client || ''}
+                      onChange={(e) => setFormData({ ...formData, advance_received_from_client: e.target.value })}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Driver Advance */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-adv-driver" className="text-xs font-semibold">Driver Advance (Paid by Co.) (₹)</Label>
+                    <Input
+                      id="edit-adv-driver"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={formData.advance_paid_to_driver || ''}
+                      onChange={(e) => setFormData({ ...formData, advance_paid_to_driver: e.target.value })}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Toll Deduction */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-toll" className="text-xs font-semibold">Toll Deduction (₹)</Label>
+                    <Input
+                      id="edit-toll"
+                      type="number"
+                      step="0.01"
+                      value={formData.toll_deduction}
+                      onChange={(e) => setFormData({ ...formData, toll_deduction: e.target.value })}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Trip Status */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-status" className="text-xs font-semibold">Trip Status</Label>
+                    <Select value={formData.trip_status} onValueChange={(value) => setFormData({ ...formData, trip_status: value })}>
+                      <SelectTrigger id="edit-status" className="bg-background h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TRIP_STATUS_OPTIONS.map(status => (
+                          <SelectItem key={status} value={status} className="text-xs">{status}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Client Payment Status */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-payment-status" className="text-xs font-semibold">Client Payment Status</Label>
+                    <Select value={formData.client_payment_status} onValueChange={(value) => setFormData({ ...formData, client_payment_status: value })}>
+                      <SelectTrigger id="edit-payment-status" className="bg-background h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                        <SelectItem value="partial" className="text-xs">Advance Received</SelectItem>
+                        <SelectItem value="paid" className="text-xs">Paid</SelectItem>
+                        <SelectItem value="overdue" className="text-xs">Overdue</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Loading Charges */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="edit-loading_charges" className="text-xs font-medium">Loading Charges (₹)</Label>
-                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                      <Label htmlFor="edit-loading_charges" className="text-xs font-semibold">Loading Charges (₹)</Label>
+                      <div className="inline-flex rounded-md border border-border p-0.5 text-[10px] bg-muted/40">
                         <button
                           type="button"
-                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'client' }))}
-                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.loading_paid_by === 'client' ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setFormData({ ...formData, loading_paid_by: 'client' })}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${formData.loading_paid_by !== 'company' ? 'bg-primary text-primary-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          Bill Client
+                          Client
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData(p => ({ ...p, loading_paid_by: 'company' }))}
-                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.loading_paid_by === 'company' ? "bg-amber-600 text-white shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setFormData({ ...formData, loading_paid_by: 'company' })}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${formData.loading_paid_by === 'company' ? 'bg-primary text-primary-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          Company Paid
+                          Company
                         </button>
                       </div>
                     </div>
                     <Input
                       id="edit-loading_charges"
                       type="number"
-                      min="0"
                       step="0.01"
-                      placeholder="0.00"
                       value={formData.loading_charges}
-                      onChange={e => setFormData({ ...formData, loading_charges: e.target.value })}
-                      className="bg-background h-8 text-xs font-medium"
+                      onChange={(e) => setFormData({ ...formData, loading_charges: e.target.value })}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono"
                     />
-                    <span className="text-[10px] text-muted-foreground block">
-                      {formData.loading_paid_by === 'client' ? '+ Added to client invoice' : '- Company operational expense'}
-                    </span>
                   </div>
 
                   {/* Unloading Charges */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="edit-unloading_charges" className="text-xs font-medium">Unloading Charges (₹)</Label>
-                      <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px]">
+                      <Label htmlFor="edit-unloading_charges" className="text-xs font-semibold">Unloading Charges (₹)</Label>
+                      <div className="inline-flex rounded-md border border-border p-0.5 text-[10px] bg-muted/40">
                         <button
                           type="button"
-                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'client' }))}
-                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.unloading_paid_by === 'client' ? "bg-primary text-primary-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setFormData({ ...formData, unloading_paid_by: 'client' })}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${formData.unloading_paid_by !== 'company' ? 'bg-primary text-primary-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          Bill Client
+                          Client
                         </button>
                         <button
                           type="button"
-                          onClick={() => setFormData(p => ({ ...p, unloading_paid_by: 'company' }))}
-                          className={`px-2 py-0.5 rounded font-medium transition-all ${formData.unloading_paid_by === 'company' ? "bg-amber-600 text-white shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => setFormData({ ...formData, unloading_paid_by: 'company' })}
+                          className={`px-1.5 py-0.5 rounded transition-colors ${formData.unloading_paid_by === 'company' ? 'bg-primary text-primary-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                          Company Paid
+                          Company
                         </button>
                       </div>
                     </div>
                     <Input
                       id="edit-unloading_charges"
                       type="number"
-                      min="0"
                       step="0.01"
-                      placeholder="0.00"
                       value={formData.unloading_charges}
-                      onChange={e => setFormData({ ...formData, unloading_charges: e.target.value })}
-                      className="bg-background h-8 text-xs font-medium"
+                      onChange={(e) => setFormData({ ...formData, unloading_charges: e.target.value })}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono"
                     />
-                    <span className="text-[10px] text-muted-foreground block">
-                      {formData.unloading_paid_by === 'client' ? '+ Added to client invoice' : '- Company operational expense'}
-                    </span>
                   </div>
 
                   {/* Broker Commission */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="edit-broker_commission" className="text-xs font-medium">Broker Commission (₹)</Label>
-                      <span className="text-[10px] text-muted-foreground font-mono">Broker Margin</span>
-                    </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-broker_commission" className="text-xs font-semibold">Broker Commission (₹)</Label>
                     <Input
                       id="edit-broker_commission"
                       type="number"
-                      min="0"
                       step="0.01"
-                      placeholder="0.00"
                       value={formData.broker_commission}
-                      onChange={e => setFormData({ ...formData, broker_commission: e.target.value })}
-                      className="bg-background h-8 text-xs font-medium"
+                      onChange={(e) => setFormData({ ...formData, broker_commission: e.target.value })}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono"
                     />
-                    <span className="text-[10px] text-muted-foreground block">
-                      Commission payable to load broker
-                    </span>
                   </div>
 
-                  {/* Munsiyana Deduction */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-background/80 border border-border/50">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="edit-munsiyana" className="text-xs font-medium">Munsiyana Deduction (₹)</Label>
-                      <span className="text-[10px] text-amber-500 font-mono">Contract Deduction</span>
-                    </div>
+                  {/* Munsiyana */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-munsiyana" className="text-xs font-semibold">Munsiyana Deducted (₹)</Label>
                     <Input
                       id="edit-munsiyana"
                       type="number"
-                      min="0"
                       step="0.01"
-                      placeholder="0.00"
                       value={formData.munsiyana}
-                      onChange={e => setFormData({ ...formData, munsiyana: e.target.value })}
-                      className="bg-background h-8 text-xs font-medium"
+                      onChange={(e) => setFormData({ ...formData, munsiyana: e.target.value })}
+                      placeholder="0"
+                      className="bg-background h-9 text-xs font-mono"
                     />
-                    <span className="text-[10px] text-muted-foreground block">
-                      Deducted from balance amount paid by client
-                    </span>
+                  </div>
+
+                  {/* Assigned Managers */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-managers" className="text-xs font-semibold">Assigned Managers</Label>
+                    <Input
+                      id="edit-managers"
+                      type="text"
+                      value={formData.assigned_managers}
+                      onChange={(e) => setFormData({ ...formData, assigned_managers: e.target.value })}
+                      placeholder="e.g. John Doe, Jane Smith"
+                      className="bg-background h-9 text-xs"
+                    />
+                  </div>
+
+                  {/* Late Delivery Reason */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-late-reason" className="text-xs font-semibold text-rose-400">Late Delivery Reason (If Delayed)</Label>
+                    <Input
+                      id="edit-late-reason"
+                      type="text"
+                      value={formData.late_delivery_reason || ''}
+                      onChange={(e) => setFormData({ ...formData, late_delivery_reason: e.target.value })}
+                      placeholder="e.g. Traffic Congestion, Vehicle Breakdown"
+                      className="bg-background h-9 text-xs"
+                    />
                   </div>
                 </div>
+
+                {isAttached && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-xl border border-blue-900/35 bg-blue-950/10 animate-in fade-in duration-300 mt-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="edit-payment_model" className="text-xs font-semibold">Brokerage Payment Model</Label>
+                      <Select
+                        value={formData.payment_model}
+                        onValueChange={(val) => setFormData(prev => ({
+                          ...prev,
+                          payment_model: val,
+                          vendor_payout: val === 'Model3' ? Math.max(0, (parseFloat(prev.revenue) || 0) - 500).toString() : prev.vendor_payout
+                        }))}
+                      >
+                        <SelectTrigger id="edit-payment_model" className="bg-background h-9 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Model2" className="text-xs">Margin Based (Model 2)</SelectItem>
+                          <SelectItem value="Model3" className="text-xs">Flat Fee Rs. 500 (Model 3)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="edit-vendor_payout" className="text-xs font-semibold">Agreed Vendor Payout (Rs. )</Label>
+                      <Input
+                        id="edit-vendor_payout"
+                        type="number"
+                        step="0.01"
+                        disabled={formData.payment_model === 'Model3'}
+                        value={formData.payment_model === 'Model3' ? Math.max(0, (parseFloat(formData.revenue) || 0) - 500).toString() : formData.vendor_payout}
+                        onChange={(e) => setFormData({ ...formData, vendor_payout: e.target.value })}
+                        placeholder="0"
+                        className="bg-background h-9 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Dispatch Compliance & Delivery SLA Tracker */}
-              <div className="p-3.5 rounded-2xl bg-slate-900/40 border border-indigo-500/30 md:col-span-2">
+              {/* CARD 3: 🛡️ Dispatch Compliance, Live GPS & SLA Tracker */}
+              <div className="bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                  <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <span>🛡️</span> Dispatch Compliance, Live GPS & SLA Tracker
+                  </h4>
+                  <span className="text-[11px] text-muted-foreground">Mandatory transit documentation, live GPS link & security seals</span>
+                </div>
                 <DispatchComplianceSection formData={formData} setFormData={setFormData} />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="edit-managers">Assigned Managers</Label>
-                <Input
-                  id="edit-managers"
-                  type="text"
-                  value={formData.assigned_managers}
-                  onChange={(e) => setFormData({ ...formData, assigned_managers: e.target.value })}
-                  placeholder="e.g. John Doe, Jane Smith"
-                  className="bg-background"
-                />
               </div>
             </div>
             
-            </div>
             <DialogFooter className="p-4 px-6 border-t border-border/50 bg-card/95 backdrop-blur-sm shrink-0 flex items-center justify-end gap-3 z-10">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="rounded-xl">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving} className="rounded-xl px-5 h-10 text-xs font-bold">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving} className="rounded-xl shadow-sm">
+              <Button type="submit" disabled={isSaving} className="rounded-xl px-6 h-10 text-xs font-bold shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
