@@ -5,6 +5,7 @@ console.log('--- sync_dist_fallbacks.js: Protecting and syncing modern unified p
 
 const primaryIndexHtml = path.resolve(__dirname, 'dist/index.html');
 const primaryBundle = path.resolve(__dirname, 'dist/assets/index-DLxf9dwO.js');
+const primaryProfilePage = path.resolve(__dirname, 'dist/assets/ProfilePage-f6cQzKX5.js');
 
 if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
   console.error('Critical: Primary modern assets missing!');
@@ -13,9 +14,11 @@ if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
 
 const htmlContent = fs.readFileSync(primaryIndexHtml, 'utf8');
 const bundleBuffer = fs.readFileSync(primaryBundle);
+const profilePageBuffer = fs.existsSync(primaryProfilePage) ? fs.readFileSync(primaryProfilePage) : null;
 
 console.log(`Modern index.html size: ${htmlContent.length} bytes`);
 console.log(`Modern index-DLxf9dwO.js bundle size: ${bundleBuffer.length} bytes`);
+if (profilePageBuffer) console.log(`Modern ProfilePage-f6cQzKX5.js size: ${profilePageBuffer.length} bytes`);
 
 const targetDirs = [
   path.resolve(__dirname, 'dist'),
@@ -31,7 +34,10 @@ for (const t of targetDirs) {
   const assetsDir = path.join(t, 'assets');
   if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
   fs.writeFileSync(path.join(assetsDir, 'index-DLxf9dwO.js'), bundleBuffer);
-  console.log(`✓ Synced modern index.html and index-DLxf9dwO.js to: ${t}`);
+  if (profilePageBuffer) {
+    fs.writeFileSync(path.join(assetsDir, 'ProfilePage-f6cQzKX5.js'), profilePageBuffer);
+  }
+  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js and ProfilePage to: ${t}`);
 }
 
 console.log('✅ Modern website assets successfully protected and synced across all targets.');

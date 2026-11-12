@@ -18,6 +18,7 @@ import * as employeeCodeService from './services/employeeCodeService.js';
 import * as driverAuthService from './services/driverAuthService.js';
 import { errorMiddleware } from './middleware/error.js';
 import { globalRateLimit } from './middleware/global-rate-limit.js';
+import { authLimiter, trackingLimiter } from './middleware/securityRateLimits.js';
 import logger from './utils/logger.js';
 import { BodyLimit } from './constants/common.js';
 import { startMonthEndCron } from './cron/monthEndProcessor.js';
@@ -64,7 +65,15 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: false,
   crossOriginOpenerPolicy: false,
+  frameguard: { action: 'sameorigin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
+
+// 🛡️ Security Rate Limiting on Authentication & Public Tracking
+app.use(['/api/mobile/v1/auth', '/hcgi/api/mobile/v1/auth', '/api/auth'], authLimiter);
+app.use(['/api/driver/track', '/api/public/tracking', '/tracking'], trackingLimiter);
 
 const defaultOrigins = [
   'https://www.jaibhavanicargo.com',
@@ -3263,9 +3272,31 @@ const runPocketBase = async () => {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(docFieldsBoot), docRecordBoot.id);
         logger.info("Migrating: employee_documents schema updated (expiry_date required=false, added Aadhar/PAN/Driving License to document_type values)");
       }
-      if (docRecordBoot.createRule !== "" || docRecordBoot.updateRule !== "" || docRecordBoot.deleteRule !== "") {
-        db.prepare("UPDATE _collections SET createRule = '', updateRule = '', deleteRule = '', listRule = '', viewRule = '' WHERE id = ?").run(docRecordBoot.id);
-        logger.info("Migrating: employee_documents collection rules set to open access!");
+      const secureAuthRule = "@request.auth.id != ''";
+      db.prepare("UPDATE _collections SET createRule = ?, updateRule = ?, deleteRule = ?, listRule = ?, viewRule = ? WHERE id = ?").run(secureAuthRule, secureAuthRule, secureAuthRule, secureAuthRule, secureAuthRule, docRecordBoot.id);
+      logger.info("Migrating: employee_documents collection rules locked down to authenticated users!");
+    }
+
+    // 🛡️ Enterprise Collection Access Lockdown: Block anonymous scraper leaks on sensitive collections
+    const collectionsToLockdown = [
+      { name: 'payroll', list: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'", view: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'" },
+      { name: 'credit_cards', list: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'", view: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'" },
+      { name: 'company_settings', list: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'", view: "@request.auth.role = 'super_admin' || @request.auth.role = 'admin'" },
+      { name: 'cashbook', list: "@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'manager'", view: "@request.auth.role = 'admin' || @request.auth.role = 'super_admin' || @request.auth.role = 'manager'" },
+      { name: 'employee_documents', list: "@request.auth.id != ''", view: "@request.auth.id != ''" },
+      { name: 'employees', list: "@request.auth.id != ''", view: "@request.auth.id != ''" },
+      { name: 'users', list: "@request.auth.id != ''", view: "@request.auth.id != ''" }
+    ];
+
+    for (const rule of collectionsToLockdown) {
+      try {
+        const cRow = db.prepare("SELECT id, listRule, viewRule FROM _collections WHERE name = ?").get(rule.name);
+        if (cRow && (cRow.listRule === '' || cRow.listRule === null || cRow.viewRule === '' || cRow.viewRule === null)) {
+          db.prepare("UPDATE _collections SET listRule = ?, viewRule = ? WHERE id = ?").run(rule.list, rule.view, cRow.id);
+          logger.info(`🛡️ Security Lockdown: Sealed collection '${rule.name}' against anonymous access.`);
+        }
+      } catch (secErr) {
+        logger.warn(`Could not update security rule for ${rule.name}: ${secErr.message}`);
       }
     }
 
@@ -5167,7 +5198,12 @@ app.post('/api/storage/sync-file', requireBackupAuth, express.json({ limit: '50m
 // ----------------------------------------------------
 // 2. HTTP Proxy Middleware for PocketBase (/hcgi/platform)
 // ----------------------------------------------------
-app.use('/hcgi/platform', async (req, res) => {
+app.use('/hcgi/platform', (req, res, next) => {
+  if (req.url && req.url.includes('/auth-with-password')) {
+    return authLimiter(req, res, next);
+  }
+  next();
+}, async (req, res) => {
   const targetUrl = 'http://127.0.0.1:8090' + req.url;
   const parsedUrl = new URL(targetUrl);
 

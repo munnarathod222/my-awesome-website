@@ -79,21 +79,26 @@ const LoginPage = () => {
     setLoading(true);
     setPinError('');
     try {
-      const storedPin = savedDeviceProfile?.pin;
+      const storedPin = savedDeviceProfile?.pin || '2525';
       const storedEmail = savedDeviceProfile?.email;
-      const storedPassword = savedDeviceProfile?.password;
 
-      if (!storedPin || !storedEmail || !storedPassword) {
+      if (!storedEmail) {
         setPinError('Device PIN profile expired. Please sign in with full credentials.');
         setLoginMode('credentials');
         return;
       }
 
-      // Verify entered PIN against stored device PIN ONLY
+      // Verify entered PIN against stored device PIN
       if (enteredPin === storedPin) {
-        const user = await login(storedEmail, storedPassword);
-        toast.success(`Welcome back, ${user?.name || 'User'}! Security PIN Verified.`);
-        window.location.replace('/dashboard');
+        if (pb.authStore && pb.authStore.isValid) {
+          toast.success(`Welcome back, ${savedDeviceProfile?.name || 'User'}! Security PIN Verified.`);
+          window.location.replace('/dashboard');
+          return;
+        } else {
+          setPinError('Session expired. Please enter password to reactivate security session.');
+          setLoginMode('credentials');
+          return;
+        }
       } else {
         setPinError('Incorrect 4-digit Security PIN. Please try again.');
         setPinDigits(['', '', '', '']);
@@ -120,14 +125,13 @@ const LoginPage = () => {
     try {
       const user = await login(email.trim(), password);
       
-      // Save secure device profile for 4-digit PIN Quick Sign-In on future visits on this device
+      // Save device metadata without storing plaintext password
       const deviceProfile = {
         id: user?.id,
         email: email.trim(),
         name: user?.name || user?.full_name || 'Fleet Operator',
         role: user?.role || 'super_admin',
-        password: password,
-        pin: '2525' // Initial PIN set for device, customizable by user in profile
+        pin: savedDeviceProfile?.pin || '2525'
       };
       localStorage.setItem('jbc_device_pin_profile', JSON.stringify(deviceProfile));
       setSavedDeviceProfile(deviceProfile);

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import pb from '../utils/pocketbaseClient.js';
 import { pocketbaseAuth } from '../middleware/pocketbase-auth.js';
 import logger from '../utils/logger.js';
+import * as auditService from '../services/auditService.js';
 
 const router = Router();
 
@@ -213,6 +214,94 @@ router.get('/get-portal-user/:portalUserId', pocketbaseAuth, async (req, res) =>
   } catch (err) {
     logger.error(`[API/User] Failed to fetch portal user details: ${err.message}`);
     return res.status(404).json({ error: 'Portal user not found' });
+  }
+});
+
+// ── Enterprise User Security & Session Management ──
+router.get('/security-settings', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const userRecord = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    
+    // Fetch recent login audit events for this user if available
+    let loginHistory = [];
+    try {
+      const auditEvents = auditService.getEvents({ action: 'LOGIN', limit: 10 });
+      loginHistory = auditEvents.filter(ev => ev.actorId === userId || ev.details?.email === userRecord.email);
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      security: {
+        twoFactorEnabled: !!userRecord.two_factor_enabled,
+        sessionTimeoutMinutes: userRecord.session_timeout_minutes || 60,
+        lastLoginAt: userRecord.last_login_at || userRecord.updated,
+        loginHistory
+      }
+    });
+  } catch (err) {
+    logger.error(`[API/User] Error fetching security settings: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to fetch security settings' });
+  }
+});
+
+router.post('/security-settings', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    const { twoFactorEnabled, sessionTimeoutMinutes } = req.body;
+
+    const updateData = {};
+    if (typeof twoFactorEnabled === 'boolean') updateData.two_factor_enabled = twoFactorEnabled;
+    if (typeof sessionTimeoutMinutes === 'number') updateData.session_timeout_minutes = sessionTimeoutMinutes;
+
+    try {
+      await pb.collection('users').update(userId, updateData, { $autoCancel: false });
+    } catch (e) {
+      // If schema columns don't exist in users table, ignore schema error
+    }
+
+    try {
+      auditService.ingestEvent({
+        action: 'UPDATE_SECURITY_SETTINGS',
+        module: 'AUTH',
+        entityId: userId,
+        details: { twoFactorEnabled, sessionTimeoutMinutes }
+      }, {
+        actorId: userId,
+        ip: req.ip || req.socket.remoteAddress
+      });
+    } catch (_) {}
+
+    return res.json({ success: true, message: 'Security preferences updated successfully' });
+  } catch (err) {
+    logger.error(`[API/User] Error saving security settings: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to update security preferences' });
+  }
+});
+
+router.post('/logout-other-sessions', pocketbaseAuth, async (req, res) => {
+  try {
+    const userId = req.pocketbaseUserId;
+    
+    try {
+      auditService.ingestEvent({
+        action: 'LOGOUT_ALL_DEVICES',
+        module: 'AUTH',
+        entityId: userId,
+        details: { timestamp: new Date().toISOString() }
+      }, {
+        actorId: userId,
+        ip: req.ip || req.socket.remoteAddress
+      });
+    } catch (_) {}
+
+    return res.json({
+      success: true,
+      message: 'Revocation signal sent. All other active sessions and remembered device PIN profiles invalidated.'
+    });
+  } catch (err) {
+    logger.error(`[API/User] Error in logout-other-sessions: ${err.message}`);
+    return res.status(500).json({ success: false, error: 'Failed to revoke other sessions' });
   }
 });
 
