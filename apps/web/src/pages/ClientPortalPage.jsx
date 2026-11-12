@@ -622,7 +622,35 @@ export default function ClientPortalPage() {
             </div>
           )}
 
-          <Button onClick={() => fetchClientPortalData()} variant="outline" size="sm" className="rounded-xl bg-background">
+          
+          {/* Executive Quick-Action Power Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'quotations' ? 'completed' : 'quotations')}
+              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'quotations' ? 'bg-blue-600 text-white shadow-blue-600/30 ring-2 ring-blue-400' : 'bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20'}`}
+            >
+              <Truck className="w-4 h-4 mr-1 text-blue-400" /> Request Rate Quote
+              <Badge className="bg-blue-500/20 text-blue-300 text-[10px] px-1.5 py-0 border-0">Instant</Badge>
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'support' ? 'completed' : 'support')}
+              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'support' ? 'bg-rose-600 text-white shadow-rose-600/30 ring-2 ring-rose-400' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'}`}
+            >
+              <AlertCircle className="w-4 h-4 mr-1 text-rose-400" /> Raise Issue / Dispute
+              <Badge className="bg-rose-500/20 text-rose-300 text-[10px] px-1.5 py-0 border-0">Delivery & Billing</Badge>
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'bidding' ? 'completed' : 'bidding')}
+              className={`rounded-xl text-xs font-bold px-3.5 py-1.5 h-9 shadow-md flex items-center gap-1.5 cursor-pointer ${activeTab === 'bidding' ? 'bg-amber-600 text-white shadow-amber-600/30 ring-2 ring-amber-400' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20'}`}
+            >
+              <Send className="w-4 h-4 mr-1 text-amber-400" /> Lane Bidding
+              <Badge className="bg-amber-500/20 text-amber-300 text-[10px] px-1.5 py-0 border-0">Contracts</Badge>
+            </Button>
+          </div>
+<Button onClick={() => fetchClientPortalData()} variant="outline" size="sm" className="rounded-xl bg-background">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
           <Button onClick={handleExportCSV} size="sm" className="rounded-xl bg-primary shadow-sm">
@@ -766,24 +794,27 @@ export default function ClientPortalPage() {
                   />
                 </div>
 
-                <TabsList className="bg-background border border-border/50 p-1 rounded-xl flex-wrap">
-                  <TabsTrigger value="upcoming" className="rounded-lg text-xs font-bold px-3 py-1.5">
-                    Upcoming ({metrics.upcomingCount})
+                <TabsList className="bg-background border border-border/50 p-1 rounded-xl flex-nowrap overflow-x-auto">
+                  <TabsTrigger value="completed" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
+                    Delivered & PODs ({metrics.completedCount})
                   </TabsTrigger>
-                  <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                  <TabsTrigger value="active" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
                     In-Transit ({metrics.activeCount})
                   </TabsTrigger>
-                  <TabsTrigger value="completed" className="rounded-lg text-xs font-bold px-3 py-1.5">
-                    Completed & PODs ({metrics.completedCount})
-                  </TabsTrigger>
-                  <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5">
+                  <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
                     All Freight ({tripLogs.length})
                   </TabsTrigger>
-                  <TabsTrigger value="quotations" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-blue-500/30 text-blue-400">
-                    <Truck className="w-3 h-3 mr-1" /> Request Rate & Quotes 🚚
+                  <TabsTrigger value="upcoming" className="rounded-lg text-xs font-bold px-3 py-1.5 shrink-0">
+                    Upcoming ({metrics.upcomingCount})
                   </TabsTrigger>
-                  <TabsTrigger value="bidding" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-amber-500/30 text-amber-400">
-                    <Send className="w-3 h-3 mr-1" /> Lane Bidding & Rates
+                  <TabsTrigger value="quotations" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-blue-500/30 text-blue-400 shrink-0">
+                    <Truck className="w-3 h-3 mr-1" /> Request Rate Quotes 🚚
+                  </TabsTrigger>
+                  <TabsTrigger value="support" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-rose-500/30 text-rose-400 shrink-0">
+                    <AlertCircle className="w-3 h-3 mr-1" /> Disputes & Tickets 🚨
+                  </TabsTrigger>
+                  <TabsTrigger value="bidding" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-amber-500/30 text-amber-400 shrink-0">
+                    <Send className="w-3 h-3 mr-1" /> Lane Bidding ⚡
                   </TabsTrigger>
                 </TabsList>
               </div>

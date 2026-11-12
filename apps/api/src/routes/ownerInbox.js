@@ -10,6 +10,8 @@
  */
 
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import pb from '../utils/pocketbaseClient.js';
 import logger from '../utils/logger.js';
 import { ingestEvent } from '../services/auditService.js';
@@ -147,6 +149,35 @@ router.get('/feed', async (req, res) => {
         actions: ['APPROVE_QUOTE', 'CONVERT_TRIP', 'WHATSAPP']
       });
     });
+
+    // Map Open Customer Tickets to Exceptions
+    try {
+      const ticketsPath = path.resolve(process.cwd(), 'data', 'customer_tickets.json');
+      if (fs.existsSync(ticketsPath)) {
+        const rawTickets = JSON.parse(fs.readFileSync(ticketsPath, 'utf8') || '[]');
+        const openTickets = rawTickets.filter(t => t.status === 'Open' || t.status === 'Under Investigation');
+        openTickets.forEach(t => {
+          const isUrgent = (t.priority || '').toLowerCase() === 'urgent' || t.category === 'Delivery';
+          feed.push({
+            id: `tkt_${t.id}`,
+            itemType: 'EXCEPTION',
+            category: `Customer ${t.category || 'Dispute'}`,
+            urgency: isUrgent ? 'Critical' : 'High',
+            title: `🚨 ${t.category.toUpperCase()} DISPUTE #${t.ticket_number}: ${t.issue_type}`,
+            subtitle: `${t.client_name} - ${t.subject || t.description}. Disputed: ₹${Number(t.disputed_amount || 0).toLocaleString('en-IN')}`,
+            amount: Number(t.disputed_amount || 0),
+            requesterName: t.client_name || 'Client',
+            requesterPhone: t.client_phone || '',
+            timestamp: t.created_at || new Date().toISOString(),
+            relatedEntityType: 'customer_tickets',
+            relatedEntityId: t.id,
+            actions: ['CALL_CLIENT', 'RESOLVE_TICKET', 'WHATSAPP']
+          });
+        });
+      }
+    } catch (tktErr) {
+      logger.warn('[OwnerInbox] Tickets feed warning: ' + tktErr.message);
+    }
 
     // Sort: Critical first, then High, then Normal, newest first
     const urgencyOrder = { Critical: 3, High: 2, Normal: 1 };

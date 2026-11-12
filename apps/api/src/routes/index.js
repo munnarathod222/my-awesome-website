@@ -25,6 +25,7 @@ import zohoMailRouter from './zohoMail.js';
 import bidsRouter from './bids.js';
 import whatsappRouter from './whatsapp.js';
 import ownerInboxRouter from './ownerInbox.js';
+import ticketsRouter from './tickets.js';
 
 const router = Router();
 
@@ -32,6 +33,8 @@ export default () => {
     router.get('/health', healthCheck);
     router.use('/owner-inbox', ownerInboxRouter);
     router.use('/api/owner-inbox', ownerInboxRouter);
+    router.use('/tickets', ticketsRouter);
+    router.use('/api/tickets', ticketsRouter);
     router.use('/bidding', bidsRouter);
     router.use('/whatsapp', whatsappRouter);
     router.use('/api/whatsapp', whatsappRouter);
