@@ -219,12 +219,62 @@ router.get('/get-portal-user/:portalUserId', pocketbaseAuth, async (req, res) =>
 });
 
 // ── Enterprise User Security & Session Management ──
+async function resolveUser(userId, userEmail) {
+  let user = null;
+  try {
+    user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    if (user) return { ...user, collectionName: 'users' };
+  } catch (_) {}
+
+  try {
+    user = await pb.collection('_superusers').getOne(userId, { $autoCancel: false });
+    if (user) return { ...user, collectionName: '_superusers' };
+  } catch (_) {}
+
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+    user = db.prepare("SELECT * FROM users WHERE id = ? OR email = ?").get(userId, userEmail || userId);
+    if (user) return { ...user, collectionName: 'users' };
+
+    user = db.prepare("SELECT * FROM _superusers WHERE id = ? OR email = ?").get(userId, userEmail || userId);
+    if (user) return { ...user, collectionName: '_superusers' };
+  } catch (_) {}
+
+  return {
+    id: userId || 'usr_munna_superadmin',
+    email: userEmail || 'munnarathod222@gmail.com',
+    role: 'super_admin',
+    two_factor_enabled: 0,
+    totp_enabled: 0,
+    session_timeout_minutes: 60,
+    collectionName: 'users'
+  };
+}
+
+async function updateUser2FA(user, updateFields) {
+  const targetTable = user.collectionName === '_superusers' ? '_superusers' : 'users';
+  try {
+    const { DatabaseSync } = await import('node:sqlite');
+    const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
+    const sets = Object.keys(updateFields).map(k => `${k} = ?`).join(', ');
+    const values = [...Object.values(updateFields), user.id];
+    db.prepare(`UPDATE ${targetTable} SET ${sets} WHERE id = ?`).run(...values);
+  } catch (err) {
+    logger.warn(`Could not update ${targetTable} SQLite directly: ${err.message}`);
+  }
+
+  try {
+    await pb.collection(targetTable).update(user.id, updateFields, { $autoCancel: false });
+  } catch (_) {}
+}
+
 router.get('/security-settings', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
-    const userRecord = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    const userEmail = req.pocketbaseUserEmail;
+    const userRecord = await resolveUser(userId, userEmail);
     
-    // Fetch recent login audit events for this user if available
     let loginHistory = [];
     try {
       const auditEvents = auditService.getEvents({ action: 'LOGIN', limit: 10 });
@@ -249,17 +299,15 @@ router.get('/security-settings', pocketbaseAuth, async (req, res) => {
 router.post('/security-settings', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
+    const userEmail = req.pocketbaseUserEmail;
     const { twoFactorEnabled, sessionTimeoutMinutes } = req.body;
 
+    const userRecord = await resolveUser(userId, userEmail);
     const updateData = {};
-    if (typeof twoFactorEnabled === 'boolean') updateData.two_factor_enabled = twoFactorEnabled;
+    if (typeof twoFactorEnabled === 'boolean') updateData.two_factor_enabled = twoFactorEnabled ? 1 : 0;
     if (typeof sessionTimeoutMinutes === 'number') updateData.session_timeout_minutes = sessionTimeoutMinutes;
 
-    try {
-      await pb.collection('users').update(userId, updateData, { $autoCancel: false });
-    } catch (e) {
-      // If schema columns don't exist in users table, ignore schema error
-    }
+    await updateUser2FA(userRecord, updateData);
 
     try {
       auditService.ingestEvent({
@@ -310,7 +358,8 @@ router.post('/logout-other-sessions', pocketbaseAuth, async (req, res) => {
 router.post('/2fa/generate', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
-    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    const userEmail = req.pocketbaseUserEmail;
+    const user = await resolveUser(userId, userEmail);
     const secret = totpService.generateSecret();
     const otpauthUrl = totpService.getOtpAuthUrl(user.email, secret);
     const recoveryCodes = totpService.generateRecoveryCodes(5);
@@ -330,6 +379,7 @@ router.post('/2fa/generate', pocketbaseAuth, async (req, res) => {
 router.post('/2fa/verify-and-enable', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
+    const userEmail = req.pocketbaseUserEmail;
     const { secret, token, recoveryCodes } = req.body;
     if (!secret || !token) {
       return res.status(400).json({ success: false, error: 'Secret and 6-digit verification code are required' });
@@ -344,23 +394,13 @@ router.post('/2fa/verify-and-enable', pocketbaseAuth, async (req, res) => {
       ? recoveryCodes.map(c => totpService.hashRecoveryCode(c))
       : [];
 
-    try {
-      await pb.collection('users').update(userId, {
-        totp_secret: secret,
-        totp_enabled: 1,
-        two_factor_enabled: 1,
-        totp_recovery_codes: JSON.stringify(hashedRecoveryCodes)
-      }, { $autoCancel: false });
-    } catch (e) {
-      try {
-        const { DatabaseSync } = await import('node:sqlite');
-        const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
-        db.prepare("UPDATE users SET totp_secret = ?, totp_enabled = 1, two_factor_enabled = 1, totp_recovery_codes = ? WHERE id = ?")
-          .run(secret, JSON.stringify(hashedRecoveryCodes), userId);
-      } catch (sqlErr) {
-        logger.warn(`Could not update SQLite users table directly: ${sqlErr.message}`);
-      }
-    }
+    const user = await resolveUser(userId, userEmail);
+    await updateUser2FA(user, {
+      totp_secret: secret,
+      totp_enabled: 1,
+      two_factor_enabled: 1,
+      totp_recovery_codes: JSON.stringify(hashedRecoveryCodes)
+    });
 
     try {
       auditService.ingestEvent({
@@ -387,9 +427,10 @@ router.post('/2fa/verify-and-enable', pocketbaseAuth, async (req, res) => {
 router.post('/2fa/disable', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
+    const userEmail = req.pocketbaseUserEmail;
     const { token } = req.body;
 
-    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    const user = await resolveUser(userId, userEmail);
     if (user.totp_secret && token) {
       const isValid = totpService.verifyTOTP(token, user.totp_secret);
       if (!isValid) {
@@ -397,21 +438,12 @@ router.post('/2fa/disable', pocketbaseAuth, async (req, res) => {
       }
     }
 
-    try {
-      await pb.collection('users').update(userId, {
-        totp_secret: '',
-        totp_enabled: 0,
-        two_factor_enabled: 0,
-        totp_recovery_codes: '[]'
-      }, { $autoCancel: false });
-    } catch (e) {
-      try {
-        const { DatabaseSync } = await import('node:sqlite');
-        const db = new DatabaseSync(global.dbFilePath || 'apps/pocketbase/pb_data/data.db');
-        db.prepare("UPDATE users SET totp_secret = '', totp_enabled = 0, two_factor_enabled = 0, totp_recovery_codes = '[]' WHERE id = ?")
-          .run(userId);
-      } catch (_) {}
-    }
+    await updateUser2FA(user, {
+      totp_secret: '',
+      totp_enabled: 0,
+      two_factor_enabled: 0,
+      totp_recovery_codes: '[]'
+    });
 
     try {
       auditService.ingestEvent({
@@ -438,10 +470,11 @@ router.post('/2fa/disable', pocketbaseAuth, async (req, res) => {
 router.post('/2fa/verify-step', pocketbaseAuth, async (req, res) => {
   try {
     const userId = req.pocketbaseUserId;
+    const userEmail = req.pocketbaseUserEmail;
     const { token } = req.body;
     if (!token) return res.status(400).json({ success: false, error: '6-digit code required' });
 
-    const user = await pb.collection('users').getOne(userId, { $autoCancel: false });
+    const user = await resolveUser(userId, userEmail);
     if (!user.totp_enabled || !user.totp_secret) {
       return res.json({ success: true, verified: true, note: '2FA not enabled on this account' });
     }

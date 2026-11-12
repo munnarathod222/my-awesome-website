@@ -3060,6 +3060,14 @@ const runPocketBase = async () => {
           try { db.prepare(col.sql).run(); } catch (_) {}
         }
       }
+
+      const suCols = db.prepare("PRAGMA table_info(_superusers)").all().map(c => c.name);
+      for (const col of twoFaCols) {
+        if (!suCols.includes(col.name)) {
+          logger.info(`Migrating: Adding column '${col.name}' to '_superusers' table...`);
+          try { db.prepare(col.sql.replace('users', '_superusers')).run(); } catch (_) {}
+        }
+      }
     } catch (twoFaErr) {
       logger.warn(`Notice migrating users 2FA columns: ${twoFaErr.message}`);
     }

@@ -1,4 +1,31 @@
 
+function getAuthHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  try {
+    const raw = localStorage.getItem('pocketbase_auth');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p.token && p.model) {
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ token: p.token, record: p.model }))));
+        h['Authorization'] = 'Bearer ' + encoded;
+      } else if (p.token) {
+        h['Authorization'] = 'Bearer ' + p.token;
+      }
+      if (p.model && p.model.id) h['x-user-id'] = p.model.id;
+      if (p.model && p.model.email) h['x-user-email'] = p.model.email;
+    }
+  } catch(e) {}
+  try {
+    const appAuth = localStorage.getItem('app_auth_user');
+    if (appAuth) {
+      const u = JSON.parse(appAuth);
+      if (u.id) h['x-user-id'] = u.id;
+      if (u.email) h['x-user-email'] = u.email;
+    }
+  } catch(e) {}
+  return h;
+}
+
 function SecView() {
   const [timeoutMin, setTimeoutMin] = n.useState(() => localStorage.getItem('jbc_session_timeout_ms') ? Math.round(parseInt(localStorage.getItem('jbc_session_timeout_ms'),10)/60000).toString() : '60');
   const [twoFa, setTwoFa] = n.useState(() => localStorage.getItem('jbc_2fa_enabled') === 'true');
@@ -23,7 +50,7 @@ function SecView() {
   const [isDisablingTotp, setIsDisablingTotp] = n.useState(false);
 
   n.useEffect(() => {
-    fetch('/api/user/security-settings', { credentials: 'include' })
+    fetch('/api/user/security-settings', { headers: getAuthHeaders(), credentials: 'include' })
       .then(r => r.json())
       .then(d => {
         if (d.success && d.security) {
@@ -65,7 +92,7 @@ function SecView() {
     }
     fetch('/api/user/security-settings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       credentials: 'include',
       body: JSON.stringify({ sessionTimeoutMinutes: parseInt(val, 10) })
     }).catch(() => {});
@@ -74,7 +101,11 @@ function SecView() {
   const handleStartTotpSetup = async () => {
     try {
       m.info('Generating secure 2FA QR Code...');
-      const res = await fetch('/api/user/2fa/generate', { method: 'POST', credentials: 'include' });
+      const res = await fetch('/api/user/2fa/generate', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
       const data = await res.json();
       if (data.success) {
         setSetupData(data);
@@ -97,7 +128,7 @@ function SecView() {
     try {
       const res = await fetch('/api/user/2fa/verify-and-enable', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({
           secret: setupData.secret,
@@ -127,7 +158,7 @@ function SecView() {
     try {
       const res = await fetch('/api/user/2fa/disable', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify({ token: disableToken })
       });
@@ -171,7 +202,11 @@ function SecView() {
   const handleLogoutAllOther = async () => {
     setRevoking(true);
     try {
-      await fetch('/api/user/logout-other-sessions', { method: 'POST', credentials: 'include' });
+      await fetch('/api/user/logout-other-sessions', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include'
+      });
       m.success('All other active sessions and remembered devices have been revoked.');
     } catch {
       m.error('Could not revoke other sessions. Please try again.');
