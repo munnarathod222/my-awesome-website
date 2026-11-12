@@ -2776,8 +2776,49 @@ const runPocketBase = async () => {
         }
       }
 
+      // Ensure 'tracking_token' is in trip_logs schema
+      const hasTrackingToken = fields.some(f => f.name === 'tracking_token');
+      if (!hasTrackingToken) {
+        logger.info("Migrating: Appending 'tracking_token' text field to PocketBase 'trip_logs' schema...");
+        fields.push({
+          autogeneratePattern: "",
+          help: "Cryptographic secure access token for public tracking link",
+          hidden: false,
+          id: "text_tracking_token",
+          max: 64,
+          min: 0,
+          name: "tracking_token",
+          pattern: "",
+          presentable: false,
+          required: false,
+          system: false,
+          type: "text"
+        });
+        recordUpdated = true;
+      }
+
       if (recordUpdated) {
         db.prepare("UPDATE _collections SET fields = ? WHERE id = ?").run(JSON.stringify(fields), record.id);
+      }
+
+      try {
+        const tripCols = db.prepare("PRAGMA table_info(trip_logs)").all().map(c => c.name);
+        if (!tripCols.includes('tracking_token')) {
+          logger.info("Migrating: Adding column 'tracking_token' to 'trip_logs' table...");
+          db.prepare("ALTER TABLE trip_logs ADD COLUMN tracking_token TEXT DEFAULT ''").run();
+        }
+        const cryptoLib = await import('node:crypto');
+        const emptyTokens = db.prepare("SELECT id FROM trip_logs WHERE tracking_token IS NULL OR tracking_token = ''").all();
+        if (emptyTokens.length > 0) {
+          const updateStmt = db.prepare("UPDATE trip_logs SET tracking_token = ? WHERE id = ?");
+          for (const row of emptyTokens) {
+            const token = cryptoLib.randomBytes(8).toString('hex');
+            updateStmt.run(token, row.id);
+          }
+          logger.info(`Migrating: Backfilled secure tracking_token for ${emptyTokens.length} trips!`);
+        }
+      } catch (tokenErr) {
+        logger.warn(`Notice updating tracking_token: ${tokenErr.message}`);
       }
       if (record.listRule !== "") {
         logger.info("Migrating: Updating 'trip_logs' listRule and viewRule to open access...");

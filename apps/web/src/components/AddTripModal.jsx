@@ -415,7 +415,8 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
           const vDays = Number(formData.gps_validity_days) || 2;
           const baseDate = formData.date ? new Date(formData.date) : new Date();
           return new Date(baseDate.getTime() + vDays * 24 * 60 * 60 * 1000).toISOString();
-        })() : ''
+        })() : '',
+        tracking_token: Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, '0')).join('')
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });

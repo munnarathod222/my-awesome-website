@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Truck, Search, Navigation, AlertCircle, ArrowRight, Check, Share2, 
   Download, CheckCircle2, Clock, ShieldCheck, MapPin, Phone, MessageCircle, 
-  FileCheck, Loader2 
+  FileCheck, Loader2, Lock 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -28,13 +28,20 @@ const SHIPMENT_STAGES = [
 ];
 
 export default function PublicShipmentTrackingPage() {
-  const { isAuthenticated: isAuthed } = useAuth() || {};
+  const { isAuthenticated: isAuthed, user: currentUser } = useAuth() || {};
+  const userRole = currentUser?.role || pb.authStore?.model?.role || '';
+  const isStaff = isAuthed && ['super_admin', 'admin', 'dispatcher', 'manager'].includes(userRole);
+  const isClient = isAuthed && userRole === 'client';
+  const userClientId = currentUser?.client_id || pb.authStore?.model?.client_id || '';
+
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const queryParam = searchParams.get('trip') || searchParams.get('lr') || searchParams.get('id') || searchParams.get('waybill') || searchParams.get('t') || searchParams.get('client_trip_id');
+  const urlKey = (searchParams.get('key') || searchParams.get('token') || '').trim();
   const initialSearch = id || queryParam || '';
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [lrInput, setLrInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [trip, setTrip] = useState(null);
   const [driver, setDriver] = useState(null);
@@ -44,15 +51,17 @@ export default function PublicShipmentTrackingPage() {
   const [errorMsg, setErrorMsg] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  // Fetch recent shipments if logged in
+  // Fetch recent shipments if logged in (staff sees all, client sees ONLY their own company's trips)
   const fetchRecent = async () => {
     if (!isAuthed) {
       setRecentTrips([]);
       return;
     }
     try {
+      const filterStr = isClient && userClientId ? `client_id = "${userClientId}"` : '';
       const res = await pb.collection('trip_logs').getList(1, 10, {
         sort: '-created',
+        filter: filterStr,
         expand: 'client_id,route_id',
         $autoCancel: false
       });
@@ -64,7 +73,7 @@ export default function PublicShipmentTrackingPage() {
 
   useEffect(() => {
     if (isAuthed) fetchRecent();
-  }, [isAuthed]);
+  }, [isAuthed, isClient, userClientId]);
 
   // Load driver, truck, and POD proof auxiliary records
   const loadAuxiliaryData = async (t) => {
@@ -125,11 +134,22 @@ export default function PublicShipmentTrackingPage() {
     }
   };
 
-  const handleSearch = async (termToSearch) => {
+  const handleSearch = async (termToSearch, overrideLr) => {
     const term = (termToSearch !== undefined ? termToSearch : searchQuery || '').trim();
+    const lrToCheck = (overrideLr !== undefined ? overrideLr : lrInput || '').trim();
+
     if (!term) {
       setTrip(null);
       setErrorMsg(null);
+      return;
+    }
+
+    // 🛡️ SECURITY CHECK: Non-staff public viewers must provide either a valid URL token key OR a matching LR Number
+    const hasValidTokenParam = Boolean(urlKey);
+
+    if (!isStaff && !isClient && !hasValidTokenParam && !lrToCheck) {
+      setErrorMsg('🔒 Security Verification Required: Please enter your Consignment Note / LR Number below along with your Trip ID to track this shipment.');
+      setTrip(null);
       return;
     }
 
@@ -187,15 +207,47 @@ export default function PublicShipmentTrackingPage() {
         } catch {}
       }
 
-      if (foundTrip) {
-        setTrip(foundTrip);
-        setSearchQuery(foundTrip.trip_id || foundTrip.client_trip_id || foundTrip.lr_number || foundTrip.truck_number || foundTrip.id);
-        setErrorMsg(null);
-        await loadAuxiliaryData(foundTrip);
-      } else {
+      if (!foundTrip) {
         setTrip(null);
-        setErrorMsg(`No shipment found matching "${term}". Try searching by Trip ID (e.g. TRIP-001), Partner ID, LR #, or Vehicle Number.`);
+        setErrorMsg(`No consignment found matching "${term}". Please check your Reference / Trip ID.`);
+        return;
       }
+
+      // 🛡️ SECURITY RULE 1: Logged-in Client User Access Scoping
+      if (isClient && userClientId) {
+        const tripClientId = foundTrip.client_id || foundTrip?.expand?.client_id?.id || '';
+        if (tripClientId && tripClientId !== userClientId) {
+          setTrip(null);
+          setErrorMsg('🚫 Access Restricted: This consignment is not assigned to your client account.');
+          return;
+        }
+      }
+
+      // 🛡️ SECURITY RULE 2: External Link Token Key Validation
+      if (!isStaff && !isClient) {
+        if (hasValidTokenParam) {
+          const tripToken = (foundTrip.tracking_token || '').trim();
+          if (tripToken && urlKey.toLowerCase() !== tripToken.toLowerCase()) {
+            setTrip(null);
+            setErrorMsg('🚫 Access Denied: The security key in your tracking link is invalid or expired. Please contact Jai Bhavani Cargo for an updated tracking link.');
+            return;
+          }
+        } else {
+          // Two-Factor Consignment Verification (Reference + LR#)
+          const tripLr = String(foundTrip.lr_number || '').toLowerCase().trim();
+          const inputLrClean = lrToCheck.toLowerCase().trim();
+          if (!tripLr || !tripLr.includes(inputLrClean)) {
+            setTrip(null);
+            setErrorMsg('🔒 Verification Failed: The Consignment Note / LR Number does not match this shipment reference. Please check both numbers.');
+            return;
+          }
+        }
+      }
+
+      setTrip(foundTrip);
+      setSearchQuery(foundTrip.trip_id || foundTrip.client_trip_id || foundTrip.lr_number || foundTrip.truck_number || foundTrip.id);
+      setErrorMsg(null);
+      await loadAuxiliaryData(foundTrip);
     } catch (err) {
       console.error('Tracking query error:', err);
       setErrorMsg('Error communicating with tracking server. Please try again.');
@@ -208,8 +260,8 @@ export default function PublicShipmentTrackingPage() {
     const target = id || queryParam;
     if (target) {
       setSearchQuery(target);
-      handleSearch(target);
-    } else if (isAuthed) {
+      handleSearch(target, lrInput);
+    } else if (isStaff) {
       (async () => {
         try {
           const res = await pb.collection('trip_logs').getList(1, 1, {
@@ -225,10 +277,27 @@ export default function PublicShipmentTrackingPage() {
           }
         } catch {}
       })();
+    } else if (isClient && userClientId) {
+      (async () => {
+        try {
+          const res = await pb.collection('trip_logs').getList(1, 1, {
+            filter: `client_id = "${userClientId}"`,
+            sort: '-created',
+            expand: 'client_id,route_id',
+            $autoCancel: false
+          });
+          if (res.items.length > 0) {
+            const first = res.items[0];
+            setSearchQuery(first.trip_id || first.id);
+            setTrip(first);
+            await loadAuxiliaryData(first);
+          }
+        } catch {}
+      })();
     } else {
       setTrip(null);
     }
-  }, [id, queryParam, isAuthed]);
+  }, [id, queryParam, isStaff, isClient, userClientId]);
 
   // Real-time live updates
   useEffect(() => {
@@ -307,12 +376,14 @@ export default function PublicShipmentTrackingPage() {
     ];
   }, [trip, currentStageIdx, driver]);
 
+  // 🛡️ Secure Share Link Generator: automatically appends cryptographic tracking_token
   const copyShareLink = () => {
     const idToShare = trip?.trip_id || trip?.client_trip_id || trip?.id || '';
-    const link = `${window.location.origin}/track/${encodeURIComponent(idToShare)}`;
+    const tokenParam = trip?.tracking_token ? `?key=${encodeURIComponent(trip.tracking_token)}` : '';
+    const link = `${window.location.origin}/track/${encodeURIComponent(idToShare)}${tokenParam}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
-    toast.success('Live Tracking Link copied to clipboard!');
+    toast.success('🔒 Secure Single-Shipment Tracking Link copied!');
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -353,6 +424,7 @@ export default function PublicShipmentTrackingPage() {
   }, [trip, proof]);
 
   const isDelivered = ['delivered', 'completed'].includes((trip?.trip_status || '').toLowerCase());
+  const showSearchForm = isStaff || isClient || !urlKey;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-32 sm:pb-20">
@@ -368,7 +440,7 @@ export default function PublicShipmentTrackingPage() {
               <div className="flex items-center gap-2">
                 <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-mono font-bold px-2.5 py-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse mr-1.5 inline-block" />
-                  REAL-TIME FLEET TELEMATICS
+                  {urlKey ? 'AUTHORIZED SECURE CONSIGNMENT VIEW' : 'REAL-TIME FLEET TELEMATICS'}
                 </Badge>
                 <span className="text-[11px] sm:text-xs text-slate-400">Jai Bhavani Cargo Live Portal</span>
               </div>
@@ -376,37 +448,55 @@ export default function PublicShipmentTrackingPage() {
                 <Truck className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400 shrink-0" /> Live Shipment Tracking
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-                Milestone timeline • Fleet pilot telematics • Direct vehicle GPS & verified POD
+                {urlKey ? 'Secure verified consignment tracking with milestone progress and proof of delivery.' : 'Milestone timeline • Fleet pilot telematics • Direct vehicle GPS & verified POD'}
               </p>
             </div>
 
-            <form 
-              onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
-              className="w-full md:w-auto flex-1 max-w-md"
-            >
-              <div className="relative flex items-center w-full">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter Trip ID, Client ID, LR #, or Truck..."
-                  className="pl-10 pr-24 h-11 sm:h-12 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
-                />
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="absolute right-1 sm:right-1.5 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 sm:px-4 shadow"
-                >
-                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Track'}
-                </Button>
-              </div>
-            </form>
+            {/* Search form: If visitor accessed via a secure token link, hide the open search to prevent snooping! */}
+            {showSearchForm && (
+              <form 
+                onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+                className="w-full md:w-auto flex-1 max-w-lg"
+              >
+                <div className="flex flex-col sm:flex-row gap-2 w-full">
+                  <div className="relative flex items-center flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={isStaff ? 'Trip ID, LR#, Truck...' : 'Enter Trip ID (e.g. TRIP-364)...'}
+                      className="pl-10 pr-3 h-11 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner w-full"
+                    />
+                  </div>
+
+                  {/* For non-staff, require LR Number as 2nd verification factor to prevent sequential guessing! */}
+                  {!isStaff && (
+                    <Input
+                      value={lrInput}
+                      onChange={(e) => setLrInput(e.target.value)}
+                      placeholder="LR / Consignment #..."
+                      className="h-11 rounded-2xl bg-slate-900/90 border-slate-700 text-white placeholder:text-slate-500 font-mono text-xs sm:text-sm focus-visible:ring-emerald-500 shadow-inner sm:w-44"
+                    />
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 shadow shrink-0"
+                  >
+                    {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Track'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
 
-          {/* Active Shipments Pill Strip */}
+          {/* Active Shipments Pill Strip: ONLY shown to staff or scoped to client company (never reveals other clients) */}
           {isAuthed && recentTrips.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs scrollbar-none -mx-1 px-1">
-              <span className="text-slate-500 whitespace-nowrap font-semibold text-[11px]">Active Shipments:</span>
+              <span className="text-slate-500 whitespace-nowrap font-semibold text-[11px]">
+                {isClient ? 'Your Active Shipments:' : 'Active Shipments:'}
+              </span>
               {recentTrips.map(item => {
                 const targetRef = item.trip_id || item.client_trip_id || item.lr_number || item.id;
                 const isSelected = trip?.id === item.id;
@@ -414,7 +504,11 @@ export default function PublicShipmentTrackingPage() {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => { setSearchQuery(targetRef); handleSearch(targetRef); }}
+                    onClick={() => { 
+                      setSearchQuery(targetRef); 
+                      setLrInput(item.lr_number || '');
+                      handleSearch(targetRef, item.lr_number || ''); 
+                    }}
                     className={`px-3 py-1.5 rounded-xl border whitespace-nowrap font-mono text-xs transition-all flex items-center gap-1.5 ${
                       isSelected 
                         ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold shadow-sm' 
@@ -424,7 +518,7 @@ export default function PublicShipmentTrackingPage() {
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                     <span>{item.trip_id || item.id}</span>
                     {item.client_trip_id && <span className="text-[10px] text-sky-400 font-normal">({item.client_trip_id})</span>}
-                    <span className="text-[10px] text-slate-500">[{item.truck_number || 'Truck'}]</span>
+                    {isStaff && <span className="text-[10px] text-slate-500">[{item.truck_number || 'Truck'}]</span>}
                   </button>
                 );
               })}
@@ -471,25 +565,28 @@ export default function PublicShipmentTrackingPage() {
                 <Truck className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-heading">Track Your Consignment</h2>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-heading">Secure Consignment Tracking</h2>
                 <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-                  Enter your Trip ID, LR / Consignment Number, or Vehicle Number in the search box above to access live telemetry, milestone updates, and POD verification.
+                  {isStaff 
+                    ? 'Search by Trip ID, LR#, or vehicle number to view full real-time operational telematics.'
+                    : 'Enter your Trip ID along with your Consignment Note / LR Number to securely access your shipment\'s live status.'
+                  }
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs text-left">
                 <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Step 1</span>
-                  <div className="font-bold text-slate-200">Enter Reference</div>
-                  <div className="text-[11px] text-slate-400">Trip ID, LR #, or Vehicle No.</div>
+                  <div className="font-bold text-slate-200">Enter Trip Reference</div>
+                  <div className="text-[11px] text-slate-400">e.g. TRIP-364</div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase">Step 2</span>
-                  <div className="font-bold text-slate-200">Instant Lookup</div>
-                  <div className="text-[11px] text-slate-400">Click &apos;Track&apos; for live sync</div>
+                  <div className="font-bold text-slate-200">Verify LR Number</div>
+                  <div className="text-[11px] text-slate-400">Your Consignment Note #</div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">Step 3</span>
-                  <div className="font-bold text-slate-200">Live Telematics</div>
+                  <div className="font-bold text-slate-200">Protected Telematics</div>
                   <div className="text-[11px] text-slate-400">Milestones & verified POD</div>
                 </div>
               </div>
@@ -576,6 +673,7 @@ export default function PublicShipmentTrackingPage() {
                     </Button>
                   )}
 
+                  {/* Share Secure Tracking Link: Generates unguessable token link */}
                   <Button
                     onClick={copyShareLink}
                     variant="outline"
@@ -639,7 +737,7 @@ export default function PublicShipmentTrackingPage() {
               </div>
             </Card>
 
-            {/* --- BALANCED 2-COLUMN OPERATIONAL GRID (Non-working GPS Corridor Box Removed) --- */}
+            {/* --- BALANCED 2-COLUMN OPERATIONAL GRID --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* CARD A: Assigned Fleet Pilot & Vehicle Telematics */}
               <Card className="rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6 shadow-xl space-y-4 flex flex-col justify-between">
@@ -648,9 +746,11 @@ export default function PublicShipmentTrackingPage() {
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-400" /> Assigned Fleet Pilot & Vehicle
                     </h3>
-                    <Badge className="bg-slate-800 text-slate-300 border-slate-700 text-[10px] font-mono">
-                      {trip.ownership_type || 'Fleet Vehicle'}
-                    </Badge>
+                    {isStaff && (
+                      <Badge className="bg-slate-800 text-slate-300 border-slate-700 text-[10px] font-mono">
+                        {trip.ownership_type || 'Fleet Vehicle'}
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="space-y-3 text-xs">
@@ -672,9 +772,11 @@ export default function PublicShipmentTrackingPage() {
                       <span className="text-slate-400">Current Status</span>
                       <strong className="text-amber-400 text-sm font-mono uppercase">{trip.trip_status || 'In Transit'}</strong>
                     </div>
-                    {truck?.current_fastag_balance !== undefined && (
+
+                    {/* 🛡️ SENSITIVE DATA PROTECTION: FASTag Balance only visible to Company Staff (hidden for clients) */}
+                    {isStaff && truck?.current_fastag_balance !== undefined && (
                       <div className="flex justify-between items-center py-1 border-b border-slate-800/40">
-                        <span className="text-slate-400">FASTag Balance</span>
+                        <span className="text-slate-400">FASTag Balance (Internal)</span>
                         <span className="font-mono font-bold text-emerald-400">
                           {formatCurrency(truck.current_fastag_balance)}
                         </span>
