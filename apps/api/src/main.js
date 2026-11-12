@@ -2786,6 +2786,7 @@ const runPocketBase = async () => {
           'Loading in Progress',
           'Dispatched',
           'In Transit',
+          'Arrived at Delivery Location',
           'Reached Delivery Docket',
           'Unloading in Progress',
           'Delivered',

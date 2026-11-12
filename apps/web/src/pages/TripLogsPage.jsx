@@ -325,7 +325,7 @@ const TripLogsPage = () => {
       if (newTripStatus === 'Dispatched' && !statusChangeTrip.dispatched_time) {
         updatePayload.dispatched_time = new Date().toISOString();
       }
-      if ((newTripStatus === 'Reached Delivery Docket' || newTripStatus === 'Unloading in Progress') && !statusChangeTrip.delivery_dock_arrival_time) {
+      if ((newTripStatus === 'Arrived at Delivery Location' || newTripStatus === 'Reached Delivery Docket' || newTripStatus === 'Unloading in Progress') && !statusChangeTrip.delivery_dock_arrival_time) {
         updatePayload.delivery_dock_arrival_time = new Date().toISOString();
         updatePayload.detention_status = 'grace_period';
       }
@@ -1216,7 +1216,7 @@ const TripLogsPage = () => {
                                     if (newStatus === 'Dispatched' && !log.dispatched_time) {
                                       updatePayload.dispatched_time = new Date().toISOString();
                                     }
-                                    if ((newStatus === 'Reached Delivery Docket' || newStatus === 'Unloading in Progress') && !log.delivery_dock_arrival_time) {
+                                    if ((newStatus === 'Arrived at Delivery Location' || newStatus === 'Reached Delivery Docket' || newStatus === 'Unloading in Progress') && !log.delivery_dock_arrival_time) {
                                       updatePayload.delivery_dock_arrival_time = new Date().toISOString();
                                       updatePayload.detention_status = 'grace_period';
                                     }
@@ -1470,6 +1470,10 @@ const TripLogsPage = () => {
                                 }
                                 if (newStatus === 'Dispatched' && !log.dispatched_time) {
                                   updatePayload.dispatched_time = new Date().toISOString();
+                                }
+                                if ((newStatus === 'Arrived at Delivery Location' || newStatus === 'Reached Delivery Docket' || newStatus === 'Unloading in Progress') && !log.delivery_dock_arrival_time) {
+                                  updatePayload.delivery_dock_arrival_time = new Date().toISOString();
+                                  updatePayload.detention_status = 'grace_period';
                                 }
                                 if (newStatus === 'Delivered' && !log.delivered_time) {
                                   updatePayload.delivered_time = new Date().toISOString();

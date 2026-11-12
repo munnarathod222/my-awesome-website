@@ -6,6 +6,7 @@ console.log('--- sync_dist_fallbacks.js: Protecting and syncing modern unified p
 const primaryIndexHtml = path.resolve(__dirname, 'dist/index.html');
 const primaryBundle = path.resolve(__dirname, 'dist/assets/index-DLxf9dwO.js');
 const primaryProfilePage = path.resolve(__dirname, 'dist/assets/ProfilePage-f6cQzKX5.js');
+const primaryTripLogsPage = path.resolve(__dirname, 'dist/assets/TripLogsPage-B1zVaUO1.js');
 
 if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
   console.error('Critical: Primary modern assets missing!');
@@ -15,10 +16,12 @@ if (!fs.existsSync(primaryIndexHtml) || !fs.existsSync(primaryBundle)) {
 const htmlContent = fs.readFileSync(primaryIndexHtml, 'utf8');
 const bundleBuffer = fs.readFileSync(primaryBundle);
 const profilePageBuffer = fs.existsSync(primaryProfilePage) ? fs.readFileSync(primaryProfilePage) : null;
+const tripLogsPageBuffer = fs.existsSync(primaryTripLogsPage) ? fs.readFileSync(primaryTripLogsPage) : null;
 
 console.log(`Modern index.html size: ${htmlContent.length} bytes`);
 console.log(`Modern index-DLxf9dwO.js bundle size: ${bundleBuffer.length} bytes`);
 if (profilePageBuffer) console.log(`Modern ProfilePage-f6cQzKX5.js size: ${profilePageBuffer.length} bytes`);
+if (tripLogsPageBuffer) console.log(`Modern TripLogsPage-B1zVaUO1.js size: ${tripLogsPageBuffer.length} bytes`);
 
 const targetDirs = [
   path.resolve(__dirname, 'dist'),
@@ -37,7 +40,10 @@ for (const t of targetDirs) {
   if (profilePageBuffer) {
     fs.writeFileSync(path.join(assetsDir, 'ProfilePage-f6cQzKX5.js'), profilePageBuffer);
   }
-  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js and ProfilePage to: ${t}`);
+  if (tripLogsPageBuffer) {
+    fs.writeFileSync(path.join(assetsDir, 'TripLogsPage-B1zVaUO1.js'), tripLogsPageBuffer);
+  }
+  console.log(`✓ Synced modern index.html, index-DLxf9dwO.js, ProfilePage, and TripLogsPage to: ${t}`);
 }
 
 console.log('✅ Modern website assets successfully protected and synced across all targets.');

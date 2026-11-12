@@ -5,7 +5,7 @@ export const TRIP_STATUS_OPTIONS = [
   'Loading in Progress',
   'Dispatched',
   'In Transit',
-  'Reached Delivery Docket',
+  'Arrived at Delivery Location',
   'Unloading in Progress',
   'Delivered',
   'Completed',
@@ -15,8 +15,8 @@ export const TRIP_STATUS_OPTIONS = [
 
 export const getEffectiveStatus = (status) => {
   const normStatus = (status || '').trim().toUpperCase();
-  if (normStatus === 'REACHED DELIVERY DOCKET' || normStatus === 'AT DELIVERY DOCKET' || normStatus === 'DELIVERY DOCK' || normStatus === 'AT DESTINATION DOCK' || normStatus === 'REACHED DOCKET') {
-    return 'REACHED DELIVERY DOCKET';
+  if (normStatus === 'ARRIVED AT DELIVERY LOCATION' || normStatus === 'ARRIVED AT DELIVERY' || normStatus === 'REACHED DELIVERY DOCKET' || normStatus === 'AT DELIVERY DOCKET' || normStatus === 'DELIVERY DOCK' || normStatus === 'AT DESTINATION DOCK' || normStatus === 'REACHED DOCKET') {
+    return 'ARRIVED AT DELIVERY LOCATION';
   }
   if (normStatus === 'UNLOADING' || normStatus === 'UNLOADING IN PROGRESS') {
     return 'UNLOADING IN PROGRESS';
@@ -66,8 +66,9 @@ export const getTripStatusLabel = (status) => {
       return 'DISPATCHED';
     case 'IN TRANSIT':
       return 'IN TRANSIT';
+    case 'ARRIVED AT DELIVERY LOCATION':
     case 'REACHED DELIVERY DOCKET':
-      return 'AT DELIVERY DOCKET';
+      return 'ARRIVED AT DELIVERY LOCATION';
     case 'UNLOADING IN PROGRESS':
       return 'UNLOADING';
     case 'DELIVERED':
@@ -96,6 +97,7 @@ export const getTripStatusColor = (status) => {
       return 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30';
     case 'IN TRANSIT':
       return 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30';
+    case 'ARRIVED AT DELIVERY LOCATION':
     case 'REACHED DELIVERY DOCKET':
       return 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30 font-bold animate-pulse';
     case 'UNLOADING IN PROGRESS':
@@ -116,7 +118,7 @@ export const getTripStatusColor = (status) => {
 
 export const isAtDeliveryDock = (status) => {
   const eff = getEffectiveStatus(status);
-  return eff === 'REACHED DELIVERY DOCKET' || eff === 'UNLOADING IN PROGRESS';
+  return eff === 'ARRIVED AT DELIVERY LOCATION' || eff === 'REACHED DELIVERY DOCKET' || eff === 'UNLOADING IN PROGRESS';
 };
 
 export const calculateTripDetention = (trip) => {
