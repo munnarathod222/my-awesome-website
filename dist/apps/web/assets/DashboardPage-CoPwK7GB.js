@@ -1310,29 +1310,31 @@ const _isSameDayIST = (dVal, targetStr) => {
   if (!dVal || !targetStr) return false;
   const str = String(dVal).trim();
   if (!str) return false;
-  if (str.slice(0, 10) === targetStr) return true;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str === targetStr;
   const parts = str.split(/[-/]/);
   if (parts.length >= 3 && parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
     if ((parts[2].slice(0, 4) + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0')) === targetStr) return true;
   }
+  if (/^\d{4}-\d{2}-\d{2}\s+12:00:00/.test(str)) return str.slice(0, 10) === targetStr;
   try {
-    const d = new Date(str);
+    const d = new Date(str.includes(' ') && !str.includes('T') ? str.replace(' ', 'T') : str);
     if (!isNaN(d.getTime())) {
-      const ist = new Date(d.getTime() + (330 + d.getTimezoneOffset()) * 60000);
-      const yyyy = ist.getFullYear();
-      const mm = String(ist.getMonth() + 1).padStart(2, '0');
-      const dd = String(ist.getDate()).padStart(2, '0');
+      const istDate = new Date(d.getTime() + (330 * 60000));
+      const yyyy = istDate.getUTCFullYear();
+      const mm = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(istDate.getUTCDate()).padStart(2, '0');
       if ((yyyy + '-' + mm + '-' + dd) === targetStr) return true;
     }
   } catch (_) {}
-  return false;
+  return str.slice(0, 10) === targetStr;
 };
 const _now = new Date();
 const _istDateStr = new Date(_now.getTime() + (330 + _now.getTimezoneOffset()) * 60000).toISOString().slice(0, 10);
 const _safeAllTrips = Array.isArray(allTripsList) ? allTripsList : [];
 const _todayTrips = _safeAllTrips.filter(N => {
   if (!N) return false;
-  return _isSameDayIST(N.date, _istDateStr) || _isSameDayIST(N.created, _istDateStr);
+  const tripDate = N.date || N.trip_date || N.start_date || N.created;
+  return _isSameDayIST(tripDate, _istDateStr);
 });
 const _todayBusiness = _todayTrips.reduce((sum, N) => sum + (Number(N.revenue) || Number(N.freight_amount) || Number(N.rate) || 0), 0);
 const _todayDeliveredCount = _todayTrips.filter(N => N.trip_status === 'Delivered').length;
@@ -1376,7 +1378,8 @@ const _safeExpenses = [..._expPool, ..._unlinkedCb];
 const _todayExpensesList = _safeExpenses.filter(N => {
   if (!N) return false;
   if (N.status && String(N.status).toLowerCase() === 'rejected') return false;
-  return _isSameDayIST(N.date, _istDateStr) || _isSameDayIST(N.bill_date, _istDateStr) || _isSameDayIST(N.created, _istDateStr);
+  const expDate = N.date || N.bill_date || N.expense_date || N.created;
+  return _isSameDayIST(expDate, _istDateStr);
 });
 const _todayExpenses = _todayExpensesList.reduce((sum, N) => sum + (Number(N.amount) || 0), 0);
 const _todayProfit = _todayBusiness - _todayExpenses;

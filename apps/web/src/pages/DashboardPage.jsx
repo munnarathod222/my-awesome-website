@@ -140,31 +140,36 @@ const isSameDayIST = (dateVal, targetISTDateStr) => {
   const str = String(dateVal).trim();
   if (!str) return false;
 
-  // 1. Exact direct match on first 10 characters (YYYY-MM-DD)
-  if (str.slice(0, 10) === targetISTDateStr) return true;
+  // 1. Pure YYYY-MM-DD format (from <input type="date">)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return str === targetISTDateStr;
+  }
 
   // 2. Format DD/MM/YYYY or DD-MM-YYYY
   const parts = str.split(/[-/]/);
-  if (parts.length >= 3) {
-    if (parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
-      const normalized = `${parts[2].slice(0, 4)}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-      if (normalized === targetISTDateStr) return true;
-    }
+  if (parts.length >= 3 && parts[0].length === 2 && parts[2].slice(0, 4).length === 4) {
+    const normalized = `${parts[2].slice(0, 4)}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    return normalized === targetISTDateStr;
   }
 
-  // 3. Parse as Date and convert UTC offset to IST (+05:30)
+  // 3. Midday UTC anchor (e.g. "YYYY-MM-DD 12:00:00.000Z") - user selected date stored with noon UTC
+  if (/^\d{4}-\d{2}-\d{2}\s+12:00:00/.test(str)) {
+    return str.slice(0, 10) === targetISTDateStr;
+  }
+
+  // 4. ISO Date with time - convert UTC timestamp to IST (+05:30)
   try {
-    const d = new Date(str);
+    const d = new Date(str.includes(' ') && !str.includes('T') ? str.replace(' ', 'T') : str);
     if (!isNaN(d.getTime())) {
-      const istTime = new Date(d.getTime() + (330 + d.getTimezoneOffset()) * 60000);
-      const yyyy = istTime.getFullYear();
-      const mm = String(istTime.getMonth() + 1).padStart(2, '0');
-      const dd = String(istTime.getDate()).padStart(2, '0');
-      if (`${yyyy}-${mm}-${dd}` === targetISTDateStr) return true;
+      const istDate = new Date(d.getTime() + (330 * 60000));
+      const yyyy = istDate.getUTCFullYear();
+      const mm = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(istDate.getUTCDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}` === targetISTDateStr;
     }
   } catch (_) {}
 
-  return false;
+  return str.slice(0, 10) === targetISTDateStr;
 };
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -357,7 +362,8 @@ const DashboardPage = () => {
       const safeAllTrips = Array.isArray(allTripsFullList) ? allTripsFullList : [];
       const todayTrips = safeAllTrips.filter(t => {
         if (!t) return false;
-        return isSameDayIST(t.date, istDateStr) || isSameDayIST(t.created, istDateStr);
+        const tripDate = t.date || t.trip_date || t.start_date || t.created;
+        return isSameDayIST(tripDate, istDateStr);
       });
 
       const todayBusiness = todayTrips.reduce((sum, t) => sum + (Number(t.revenue) || Number(t.freight_amount) || Number(t.rate) || 0), 0);
@@ -367,7 +373,10 @@ const DashboardPage = () => {
       const todayExpensesList = unifiedExpenses.filter(e => {
         if (!e) return false;
         if (e.status && String(e.status).toLowerCase() === 'rejected') return false;
-        return isSameDayIST(e.date, istDateStr) || isSameDayIST(e.bill_date, istDateStr) || isSameDayIST(e.created, istDateStr);
+        // Priority: Use the actual transaction date (e.date, e.bill_date, e.expense_date);
+        // Only fall back to system creation timestamp (e.created) if no business date was entered!
+        const expDate = e.date || e.bill_date || e.expense_date || e.created;
+        return isSameDayIST(expDate, istDateStr);
       });
 
       const todayExpenses = todayExpensesList.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
