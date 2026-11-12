@@ -56,7 +56,7 @@ router.get('/feed', async (req, res) => {
 
     // 3. Fetch Decisions (Pending Quotes & Exit Audits)
     const pendingQuotes = await pb.collection('quotes').getFullList({
-      filter: 'status = "Pending" || status = "Draft"',
+      filter: 'status = "Pending" || status = "Draft" || status = "Requested"',
       sort: '-created',
       $autoCancel: false,
     }).catch(() => []);

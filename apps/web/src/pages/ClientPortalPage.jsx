@@ -47,6 +47,202 @@ export default function ClientPortalPage() {
   const [clientBidAmount, setClientBidAmount] = useState('');
   const [clientCargoWeight, setClientCargoWeight] = useState('18');
   const [clientContractTenure, setClientContractTenure] = useState('Monthly (1 Month)');
+  
+  // Customer Self-Service Quotation States
+  const [clientQuotes, setClientQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [submittingQuote, setSubmittingQuote] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    origin: '',
+    destination: '',
+    pickupDate: '',
+    deliveryUrgency: 'Standard Freight',
+    materialType: 'General Industrial Freight',
+    cargoWeightKg: '8000',
+    cargoVolume: '',
+    truckSize: '32 FT SXL Container',
+    contractType: 'Spot Dispatch',
+    packaging: 'Palletized',
+    specialRequirements: [],
+    notes: ''
+  });
+
+  // Dynamic estimate calculation
+  const dynamicEstimate = useMemo(() => {
+    const wt = Number(quoteForm.cargoWeightKg) || 5000;
+    const baseTruckRateMap = {
+      '14 FT Closed Container': 16000,
+      '17 FT / 20 FT Container': 21000,
+      '24 FT Container': 26000,
+      '32 FT SXL Container': 32000,
+      '32 FT Multi-Axle (MXL)': 39000,
+      '40 FT High Cube Trailer': 48000,
+      'Open Body Heavy Truck': 30000
+    };
+    const base = baseTruckRateMap[quoteForm.truckSize] || 30000;
+    const weightFactor = Math.max(1, wt / 8000);
+    const urgencyMultiplier = quoteForm.deliveryUrgency === 'Express Dedicated' ? 1.18 : 1.0;
+    const contractDiscount = quoteForm.contractType.includes('Contract') ? 0.92 : 1.0;
+    
+    const minEst = Math.round(base * weightFactor * urgencyMultiplier * contractDiscount * 0.95);
+    const maxEst = Math.round(base * weightFactor * urgencyMultiplier * contractDiscount * 1.10);
+    return { minEst, maxEst, avgEst: Math.round((minEst + maxEst) / 2) };
+  }, [quoteForm.truckSize, quoteForm.cargoWeightKg, quoteForm.deliveryUrgency, quoteForm.contractType]);
+
+  const fetchClientQuotes = async (cid, cname, cphone, cemail) => {
+    setLoadingQuotes(true);
+    try {
+      const qParams = new URLSearchParams();
+      if (cid) qParams.append('clientId', cid);
+      if (cname) qParams.append('customerName', cname);
+      if (cphone) qParams.append('customerPhone', cphone);
+      if (cemail) qParams.append('customerEmail', cemail);
+
+      const res = await fetch(`/api/quotes/client/my-quotes?${qParams.toString()}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.quotes)) {
+        setClientQuotes(data.quotes);
+      } else {
+        // Fallback to direct PocketBase quotes
+        const pbQuotes = await pb.collection('quotes').getFullList({
+          filter: cid ? `client_id = "${cid}"` : undefined,
+          sort: '-created'
+        }).catch(() => []);
+        setClientQuotes(pbQuotes);
+      }
+    } catch (e) {
+      console.warn('Could not fetch client quotes:', e);
+    } finally {
+      setLoadingQuotes(false);
+    }
+  };
+
+  const handleClientSubmitQuoteRequest = async (e) => {
+    e?.preventDefault();
+    if (!quoteForm.origin || !quoteForm.destination) {
+      toast.error('Please specify both Origin and Destination');
+      return;
+    }
+    setSubmittingQuote(true);
+    try {
+      const payload = {
+        clientId: selectedClientId || clientData?.id || '',
+        customerName: clientData?.client_name || currentUser?.name || 'Valued Client',
+        customerPhone: clientData?.phone || currentUser?.phone || '',
+        customerEmail: clientData?.email || currentUser?.email || '',
+        origin: quoteForm.origin,
+        destination: quoteForm.destination,
+        pickupDate: quoteForm.pickupDate,
+        deliveryUrgency: quoteForm.deliveryUrgency,
+        materialType: quoteForm.materialType,
+        cargoWeightKg: Number(quoteForm.cargoWeightKg) || 0,
+        cargoVolume: quoteForm.cargoVolume,
+        truckSize: quoteForm.truckSize,
+        contractType: quoteForm.contractType,
+        packaging: quoteForm.packaging,
+        specialRequirements: quoteForm.specialRequirements,
+        estimatedPrice: dynamicEstimate.avgEst,
+        notes: quoteForm.notes
+      };
+
+      const res = await fetch('/api/quotes/client/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        toast.success(`Rate request #${data.quoteNumber || ''} submitted! Operations will confirm within 15 mins.`);
+        // Reset origin/destination
+        setQuoteForm(prev => ({ ...prev, origin: '', destination: '', notes: '' }));
+        // Refresh quotes list
+        fetchClientQuotes(selectedClientId, clientData?.client_name, clientData?.phone, clientData?.email);
+      } else {
+        toast.error(data?.error || 'Failed to submit quote request');
+      }
+    } catch (err) {
+      toast.error('Submission failed. Please check network connection.');
+    } finally {
+      setSubmittingQuote(false);
+    }
+  };
+
+  const handleClientAcceptQuote = async (quoteId, quoteNum) => {
+    try {
+      const res = await fetch('/api/quotes/client/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteId,
+          actorName: clientData?.client_name || currentUser?.name || 'Client User'
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        toast.success(`Booking confirmed for Quote #${quoteNum}! Dispatch is now assigning your truck 🚚`);
+        fetchClientQuotes(selectedClientId, clientData?.client_name, clientData?.phone, clientData?.email);
+      } else {
+        toast.error(data?.error || 'Could not confirm booking');
+      }
+    } catch (e) {
+      toast.error('Confirmation failed');
+    }
+  };
+
+  const handleDownloadQuotePdf = (q) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Quotation - ${q.quote_number || q.id}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #1e293b; }
+          .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px; }
+          .title { font-size: 24px; font-weight: bold; color: #1e3a8a; }
+          .meta { display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 14px; }
+          .box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; background: #f8fafc; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          .table th, .table td { border: 1px solid #cbd5e1; padding: 10px 14px; text-align: left; font-size: 13px; }
+          .table th { background: #e2e8f0; }
+          .highlight { font-size: 18px; font-weight: bold; color: #0284c7; }
+          .footer { margin-top: 40px; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">JAI BHAVANI CARGO & LOGISTICS</div>
+          <p style="margin: 4px 0; font-size: 14px; color: #475569;">Nationwide High-Security Dedicated Full Truckload Transport</p>
+          <p style="margin: 0; font-size: 12px; color: #64748b;">Quote Reference: <strong>${q.quote_number || q.id}</strong> • Date: ${new Date(q.created || Date.now()).toLocaleDateString('en-IN')}</p>
+        </div>
+        <div class="meta">
+          <div><strong>Customer / Consignor:</strong><br/>${q.customer_name || 'Valued Client'}<br/>${q.customer_phone || ''}</div>
+          <div style="text-align: right;"><strong>Route:</strong><br/>${q.origin} ➡️ ${q.destination}</div>
+        </div>
+        <div class="box">
+          <table class="table">
+            <tr><th>Shipment Parameter</th><th>Quoted Value</th></tr>
+            <tr><td>Vehicle Size Required</td><td>${q.truck_size || '32 FT SXL'}</td></tr>
+            <tr><td>Cargo Material</td><td>${q.material_type || 'General Cargo'}</td></tr>
+            <tr><td>Payload Weight</td><td>${q.actual_weight || q.cargo_weight || 'N/A'} kg</td></tr>
+            <tr><td>Current Status</td><td><strong>${q.status || 'Requested'}</strong></td></tr>
+            <tr style="background: #e0f2fe;"><td><strong>Agreed Freight Rate</strong></td><td class="highlight">₹${Number(q.total_price || 0).toLocaleString('en-IN')}</td></tr>
+          </table>
+        </div>
+        <p style="font-size: 13px; color: #334155;"><strong>Special Terms & Notes:</strong><br/>${(q.notes || 'Standard terms of carriage apply. 2 hours free loading/unloading dock time.').replace(/\n/g, '<br/>')}</p>
+        <div class="footer">
+          Jai Bhavani Cargo & Logistics • 24x7 Control Tower: +91 94237 40057 • Verified GPS Tracking on all routes.
+        </div>
+        <div style="text-align: center; margin-top: 30px;">
+          <button onclick="window.print()" style="padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Print / Save as PDF</button>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const [activeLanes] = useState([
     { id: 'LANE-101', route: 'Hyderabad → Mumbai', origin: 'Hyderabad, TS', destination: 'Mumbai, MH', benchmark_rate: 48000, ai_rate: 49500, distance_km: 710, required_truck: '32 FT Container SXL', contract_duration: 'Weekly (7 Days)' },
     { id: 'LANE-102', route: 'Bengaluru → Delhi NCR', origin: 'Bengaluru, KA', destination: 'Delhi NCR', benchmark_rate: 85000, ai_rate: 87200, distance_km: 1740, required_truck: '40 FT High Cube Trailer', contract_duration: 'Monthly (1 Month)' },
@@ -583,6 +779,9 @@ export default function ClientPortalPage() {
                   <TabsTrigger value="all" className="rounded-lg text-xs font-bold px-3 py-1.5">
                     All Freight ({tripLogs.length})
                   </TabsTrigger>
+                  <TabsTrigger value="quotations" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-blue-500/30 text-blue-400">
+                    <Truck className="w-3 h-3 mr-1" /> Request Rate & Quotes 🚚
+                  </TabsTrigger>
                   <TabsTrigger value="bidding" className="rounded-lg text-xs font-bold px-3 py-1.5 border border-amber-500/30 text-amber-400">
                     <Send className="w-3 h-3 mr-1" /> Lane Bidding & Rates
                   </TabsTrigger>
@@ -866,6 +1065,303 @@ export default function ClientPortalPage() {
           </TabsContent>
 
           {/* Tab 5: Route Lane Bidding for Clients */}
+          
+          {/* Tab 6: Customer Self-Service Quotation Hub */}
+          <TabsContent value="quotations" className="p-5 m-0 space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 border-b border-border/50">
+              <div>
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-blue-400" /> Customer Self-Service Rate Request & Quotations
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Calculate automated preliminary freight estimates, request custom spot/contract rates, and confirm truck bookings.
+                </p>
+              </div>
+              <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs font-mono px-3 py-1">
+                {clientQuotes.length} Total Quotations
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Interactive Rate Calculator & Request Form */}
+              <div className="lg:col-span-7 space-y-4">
+                <Card className="bg-card/70 border-border/60 shadow-lg backdrop-blur-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-100">
+                      <Sparkles className="w-4 h-4 text-amber-400" /> Request New Freight Rate
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Submit route and cargo specifications to receive a binding quote within 15 minutes.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <form onSubmit={handleClientSubmitQuoteRequest} className="space-y-4">
+                      {/* Origin & Destination */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Origin Loading Hub / City *</Label>
+                          <Input
+                            placeholder="e.g. Mumbai (Bhiwandi / Kalamboli)"
+                            value={quoteForm.origin}
+                            onChange={e => setQuoteForm({ ...quoteForm, origin: e.target.value })}
+                            required
+                            className="bg-background/80 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Destination Delivery City *</Label>
+                          <Input
+                            placeholder="e.g. Hyderabad (Patancheru / Medchal)"
+                            value={quoteForm.destination}
+                            onChange={e => setQuoteForm({ ...quoteForm, destination: e.target.value })}
+                            required
+                            className="bg-background/80 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cargo Type & Weight */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Cargo Material Category</Label>
+                          <Select
+                            value={quoteForm.materialType}
+                            onValueChange={v => setQuoteForm({ ...quoteForm, materialType: v })}
+                          >
+                            <SelectTrigger className="bg-background/80 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="General Industrial Freight">General Industrial Freight</SelectItem>
+                              <SelectItem value="Machinery & Engineering Goods">Machinery & Engineering Goods</SelectItem>
+                              <SelectItem value="FMCG & Packaged Goods">FMCG & Packaged Goods</SelectItem>
+                              <SelectItem value="Electronics & High-Value Cargo">Electronics & High-Value Cargo</SelectItem>
+                              <SelectItem value="Auto Components & Parts">Auto Components & Parts</SelectItem>
+                              <SelectItem value="Steel, Pipes & Metals">Steel, Pipes & Metals</SelectItem>
+                              <SelectItem value="Textiles & Garments">Textiles & Garments</SelectItem>
+                              <SelectItem value="Pharmaceuticals">Pharmaceuticals</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Estimated Cargo Weight (kg)</Label>
+                          <Input
+                            type="number"
+                            placeholder="e.g. 8500"
+                            value={quoteForm.cargoWeightKg}
+                            onChange={e => setQuoteForm({ ...quoteForm, cargoWeightKg: e.target.value })}
+                            className="bg-background/80 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Vehicle Size & Contract Type */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Required Vehicle Size</Label>
+                          <Select
+                            value={quoteForm.truckSize}
+                            onValueChange={v => setQuoteForm({ ...quoteForm, truckSize: v })}
+                          >
+                            <SelectTrigger className="bg-background/80 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="14 FT Closed Container">14 FT Closed Container (Up to 4.5 MT)</SelectItem>
+                              <SelectItem value="17 FT / 20 FT Container">17 FT / 20 FT Container (Up to 7.5 MT)</SelectItem>
+                              <SelectItem value="24 FT Container">24 FT Container (Up to 10 MT)</SelectItem>
+                              <SelectItem value="32 FT SXL Container">32 FT SXL Single Axle (Up to 15 MT)</SelectItem>
+                              <SelectItem value="32 FT Multi-Axle (MXL)">32 FT MXL Multi Axle (Up to 20 MT)</SelectItem>
+                              <SelectItem value="40 FT High Cube Trailer">40 FT High Cube Trailer (Up to 25 MT)</SelectItem>
+                              <SelectItem value="Open Body Heavy Truck">Open Body Heavy Truck</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Dispatch / Contract Service</Label>
+                          <Select
+                            value={quoteForm.contractType}
+                            onValueChange={v => setQuoteForm({ ...quoteForm, contractType: v })}
+                          >
+                            <SelectTrigger className="bg-background/80 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Spot Dispatch">Spot Dispatch (Single Trip Indent)</SelectItem>
+                              <SelectItem value="Weekly Dedicated Contract">Weekly Dedicated Contract (7 Days)</SelectItem>
+                              <SelectItem value="Monthly Dedicated Contract">Monthly Dedicated Contract (1 Month - 8% Off)</SelectItem>
+                              <SelectItem value="Quarterly Contract (3 Mo)">Quarterly Contract (3 Months - 12% Off)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Pickup Date & Delivery Urgency */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Preferred Loading Date</Label>
+                          <Input
+                            type="date"
+                            value={quoteForm.pickupDate}
+                            onChange={e => setQuoteForm({ ...quoteForm, pickupDate: e.target.value })}
+                            className="bg-background/80 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold text-slate-300">Transit Priority SLA</Label>
+                          <Select
+                            value={quoteForm.deliveryUrgency}
+                            onValueChange={v => setQuoteForm({ ...quoteForm, deliveryUrgency: v })}
+                          >
+                            <SelectTrigger className="bg-background/80 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Standard Freight">Standard Freight (24-48 Hours)</SelectItem>
+                              <SelectItem value="Express Dedicated">Express Dedicated Non-Stop (18-24 Hours)</SelectItem>
+                              <SelectItem value="Flexible Dock Loading">Flexible Dock Loading (Economy Rate)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Notes / Special Instructions */}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-300">Special Instructions / Dock Access Notes</Label>
+                        <Input
+                          placeholder="e.g. Loading dock requires tail-lift; Gate entry timings 8 AM to 6 PM"
+                          value={quoteForm.notes}
+                          onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })}
+                          className="bg-background/80 text-sm"
+                        />
+                      </div>
+
+                      {/* Real-time Preliminary Estimate Preview */}
+                      <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] text-blue-300 font-semibold uppercase tracking-wider">Instant Preliminary Estimate</p>
+                          <p className="text-xl font-black text-blue-400 mt-0.5">
+                            ₹{dynamicEstimate.minEst.toLocaleString('en-IN')} – ₹{dynamicEstimate.maxEst.toLocaleString('en-IN')}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Based on {quoteForm.truckSize} • {quoteForm.deliveryUrgency}
+                          </p>
+                        </div>
+                        <Button
+                          type="submit"
+                          disabled={submittingQuote}
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-lg transition-all"
+                        >
+                          {submittingQuote ? 'Submitting...' : 'Request Formal Rate Quote 🚀'}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Column: Submitted Quotes Tracker & Booking Confirmation */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-primary" /> My Rate Requests & Status
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fetchClientQuotes(selectedClientId, clientData?.client_name, clientData?.phone, clientData?.email)}
+                    className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" /> Refresh
+                  </Button>
+                </div>
+
+                {loadingQuotes ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground bg-card/40 rounded-xl border border-border/50">
+                    Loading your quotations...
+                  </div>
+                ) : clientQuotes.length === 0 ? (
+                  <div className="p-8 text-center space-y-2 bg-card/40 rounded-xl border border-dashed border-border/60">
+                    <Package className="w-8 h-8 text-muted-foreground/60 mx-auto" />
+                    <p className="text-sm font-semibold text-slate-300">No active rate requests yet</p>
+                    <p className="text-xs text-muted-foreground">Fill the form on the left to get your first instant freight quotation.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+                    {clientQuotes.map(q => {
+                      const isQuoted = q.status === 'Quoted';
+                      const isAccepted = q.status === 'Accepted' || q.status === 'Converted';
+                      return (
+                        <Card key={q.id || q.quote_number} className="bg-card/90 border-border/70 p-4 space-y-3 hover:border-primary/50 transition-all">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-primary">{q.quote_number || q.id}</span>
+                                <Badge className={
+                                  q.status === 'Accepted' || q.status === 'Converted' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]' :
+                                  q.status === 'Quoted' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px]' :
+                                  q.status === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30 text-[10px]' :
+                                  'bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]'
+                                }>
+                                  {q.status || 'Requested'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm font-semibold text-slate-100 mt-1 flex items-center gap-1.5">
+                                <span>{q.origin}</span>
+                                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span>{q.destination}</span>
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-muted-foreground uppercase font-semibold">Agreed Rate</p>
+                              <p className="text-base font-bold text-foreground">
+                                {Number(q.total_price) > 0 ? `₹${Number(q.total_price).toLocaleString('en-IN')}` : 'Under Review'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-xs text-muted-foreground grid grid-cols-2 gap-1 pt-1 border-t border-border/40">
+                            <span>Truck: {q.truck_size || '32 FT SXL'}</span>
+                            <span>Weight: {q.actual_weight || q.cargo_weight || 'N/A'} kg</span>
+                          </div>
+
+                          {/* Action Bar */}
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50 gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDownloadQuotePdf(q)}
+                              className="text-xs h-7 px-2.5 text-slate-300 hover:text-white"
+                            >
+                              <Download className="w-3 h-3 mr-1" /> View PDF
+                            </Button>
+
+                            {isQuoted && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleClientAcceptQuote(q.id, q.quote_number)}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs h-7 px-3 rounded-lg shadow"
+                              >
+                                Accept & Book Truck 🚚
+                              </Button>
+                            )}
+
+                            {isAccepted && (
+                              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 text-[11px] font-semibold py-1">
+                                ✓ Booking Confirmed
+                              </Badge>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+
           <TabsContent value="bidding" className="p-5 m-0 space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-border/50">
               <div>
