@@ -2577,7 +2577,22 @@ const runPocketBase = async () => {
     try {
       db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_code ON trip_logs(driver_employee_code)").run();
       db.prepare("CREATE INDEX IF NOT EXISTS idx_trip_logs_driver_emp_id ON trip_logs(driver_employee_id)").run();
+    } 
     } catch (_) {}
+
+    // 1.6 Add security seal columns to trip_logs table
+    const sealCols = [
+      { name: 'is_sealed', sql: "ALTER TABLE trip_logs ADD COLUMN is_sealed INTEGER DEFAULT 0" },
+      { name: 'seal_number', sql: "ALTER TABLE trip_logs ADD COLUMN seal_number TEXT DEFAULT ''" },
+      { name: 'seal_numbers', sql: "ALTER TABLE trip_logs ADD COLUMN seal_numbers TEXT DEFAULT '[]'" },
+      { name: 'seal_photo_url', sql: "ALTER TABLE trip_logs ADD COLUMN seal_photo_url TEXT DEFAULT ''" }
+    ];
+    sealCols.forEach(sc => {
+      if (!cols.includes(sc.name)) {
+        logger.info(`Migrating: Adding column '${sc.name}' to 'trip_logs' table...`);
+        try { db.prepare(sc.sql).run(); } catch (_) {}
+      }
+    });
 
     // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
     const allColDefs = db.prepare('SELECT id, name FROM _collections').all();

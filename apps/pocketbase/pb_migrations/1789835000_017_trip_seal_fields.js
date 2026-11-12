@@ -1,57 +1,44 @@
 /// <reference path="../pb_data/types.d.ts" />
-migrate((db) => {
-  const collection = db.findCollectionByNameOrId("trip_logs");
+migrate((app) => {
+  try {
+    const tripCollection = app.findCollectionByNameOrId("trip_logs");
+    if (tripCollection && tripCollection.fields) {
+      let changed = false;
+      try {
+        if (!tripCollection.fields.getByName("is_sealed")) {
+          tripCollection.fields.add(new BoolField({ name: "is_sealed", required: false }));
+          changed = true;
+        }
+      } catch (_) {}
 
-  if (!collection.schema.hasField("is_sealed")) {
-    collection.schema.addField(new SchemaField({
-      name: "is_sealed",
-      type: "bool",
-      required: false,
-      presentable: false,
-      unique: false,
-      options: {}
-    }));
+      try {
+        if (!tripCollection.fields.getByName("seal_number")) {
+          tripCollection.fields.add(new TextField({ name: "seal_number", required: false }));
+          changed = true;
+        }
+      } catch (_) {}
+
+      try {
+        if (!tripCollection.fields.getByName("seal_numbers")) {
+          tripCollection.fields.add(new JSONField({ name: "seal_numbers", required: false, maxSize: 2000000 }));
+          changed = true;
+        }
+      } catch (_) {}
+
+      try {
+        if (!tripCollection.fields.getByName("seal_photo_url")) {
+          tripCollection.fields.add(new TextField({ name: "seal_photo_url", required: false }));
+          changed = true;
+        }
+      } catch (_) {}
+
+      if (changed) {
+        try {
+          app.save(tripCollection);
+        } catch (_) {}
+      }
+    }
+  } catch (e) {
+    console.log("Migration notice for trip_logs seal fields:", e.message);
   }
-
-  if (!collection.schema.hasField("seal_number")) {
-    collection.schema.addField(new SchemaField({
-      name: "seal_number",
-      type: "text",
-      required: false,
-      presentable: false,
-      unique: false,
-      options: { min: null, max: null, pattern: "" }
-    }));
-  }
-
-  if (!collection.schema.hasField("seal_numbers")) {
-    collection.schema.addField(new SchemaField({
-      name: "seal_numbers",
-      type: "json",
-      required: false,
-      presentable: false,
-      unique: false,
-      options: { maxSize: 2000000 }
-    }));
-  }
-
-  if (!collection.schema.hasField("seal_photo_url")) {
-    collection.schema.addField(new SchemaField({
-      name: "seal_photo_url",
-      type: "text",
-      required: false,
-      presentable: false,
-      unique: false,
-      options: { min: null, max: null, pattern: "" }
-    }));
-  }
-
-  return db.saveCollection(collection);
-}, (db) => {
-  const collection = db.findCollectionByNameOrId("trip_logs");
-  collection.schema.removeField("is_sealed");
-  collection.schema.removeField("seal_number");
-  collection.schema.removeField("seal_numbers");
-  collection.schema.removeField("seal_photo_url");
-  return db.saveCollection(collection);
-});
+}, (app) => {});
