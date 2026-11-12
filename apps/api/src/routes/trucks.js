@@ -191,4 +191,111 @@ router.get('/public-verification/:qrToken', async (req, res) => {
   }
 });
 
+/**
+ * GET /trucks/eligibility
+ * Returns customer-wise vehicle eligibility records.
+ */
+router.get('/eligibility', async (req, res) => {
+  try {
+    const { truck_id, client_id, truck_number } = req.query;
+    let filter = '';
+    const filters = [];
+    if (truck_id) filters.push(`truck_id = "${truck_id}"`);
+    if (client_id) filters.push(`client_id = "${client_id}"`);
+    if (truck_number) filters.push(`truck_number = "${truck_number}"`);
+    if (filters.length > 0) filter = filters.join(' && ');
+
+    const records = await pb.collection('customer_vehicle_eligibility').getFullList({
+      filter: filter || undefined,
+      sort: '-created',
+      $autoCancel: false
+    }).catch(() => []);
+
+    return res.status(200).json({ success: true, count: records.length, data: records });
+  } catch (err) {
+    logger.error('Error fetching vehicle eligibility:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /trucks/eligibility
+ * Upsert or update customer-wise vehicle eligibility.
+ */
+router.post('/eligibility', async (req, res) => {
+  try {
+    const { id, truck_id, truck_number, client_id, customer_name, eligibility_status, customer_vehicle_code, gps_integrated, inspection_date, valid_until, remarks } = req.body;
+    if (!truck_id || !client_id) {
+      return res.status(400).json({ success: false, error: 'truck_id and client_id are required' });
+    }
+
+    const payload = {
+      truck_id,
+      truck_number: truck_number || '',
+      client_id,
+      customer_name: customer_name || '',
+      eligibility_status: eligibility_status || 'Approved',
+      customer_vehicle_code: customer_vehicle_code || '',
+      gps_integrated: gps_integrated ? 1 : 0,
+      inspection_date: inspection_date || '',
+      valid_until: valid_until || '',
+      remarks: remarks || ''
+    };
+
+    let record;
+    if (id) {
+      record = await pb.collection('customer_vehicle_eligibility').update(id, payload, { $autoCancel: false });
+    } else {
+      // Check existing
+      const existing = await pb.collection('customer_vehicle_eligibility').getFullList({
+        filter: `truck_id = "${truck_id}" && client_id = "${client_id}"`,
+        $autoCancel: false
+      }).catch(() => []);
+
+      if (existing.length > 0) {
+        record = await pb.collection('customer_vehicle_eligibility').update(existing[0].id, payload, { $autoCancel: false });
+      } else {
+        record = await pb.collection('customer_vehicle_eligibility').create(payload, { $autoCancel: false });
+      }
+    }
+
+    return res.status(200).json({ success: true, data: record });
+  } catch (err) {
+    logger.error('Error updating vehicle eligibility:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /trucks/subcontractor-vendors
+ * Returns all registered subcontractor vendors and attached truck associations.
+ */
+router.get('/subcontractor-vendors', async (req, res) => {
+  try {
+    const vendors = await pb.collection('subcontractor_vendors').getFullList({
+      sort: '-created',
+      $autoCancel: false
+    }).catch(() => []);
+
+    const trucks = await pb.collection('trucks').getFullList({
+      filter: 'ownership_type = "Attached" || ownership_type = "AttachedFamily"',
+      $autoCancel: false
+    }).catch(() => []);
+
+    // Enrich vendors with live attached trucks
+    const enriched = vendors.map(v => {
+      const vTrucks = trucks.filter(t => t.subcontractor_id === v.id || t.owner_name === v.owner_name || (v.truck_numbers && v.truck_numbers.includes(t.truck_number)));
+      return {
+        ...v,
+        live_attached_trucks: vTrucks.map(t => ({ id: t.id, truck_number: t.truck_number, truck_size: t.truck_size, status: t.status }))
+      };
+    });
+
+    return res.status(200).json({ success: true, data: enriched });
+  } catch (err) {
+    logger.error('Error fetching subcontractor vendors:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

@@ -18,6 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import pb from '@/lib/pocketbaseClient.js';
+import VendorStatementModal from '@/components/VendorStatementModal.jsx';
+import { Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 
 // ── DEFAULT DATA 1: Client Empanelment Applications We Submitted ─────────────
@@ -235,6 +237,7 @@ export default function VendorTrackerPage() {
   const [editingSup, setEditingSup] = useState(null);
 
   const [viewSubcontractor, setViewSubcontractor] = useState(null);
+  const [statementVendor, setStatementVendor] = useState(null);
 
   // Form States
   const [empFormData, setEmpFormData] = useState({
@@ -843,14 +846,25 @@ export default function VendorTrackerPage() {
 
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewSubcontractor(sub)}
-                      className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
-                    >
-                      <Eye className="w-3.5 h-3.5 mr-1" /> Subcontractor Card Intel
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewSubcontractor(sub)}
+                        className="h-8 px-3 text-xs border-slate-700 bg-slate-950 text-slate-300 font-bold rounded-xl"
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Intel Card
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setStatementVendor(sub)}
+                        className="h-8 px-3 text-xs border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-bold rounded-xl flex items-center gap-1"
+                        title="View running vendor account ledger & download statement"
+                      >
+                        <Receipt className="w-3.5 h-3.5" /> Statement
+                      </Button>
+                    </div>
 
                     <div className="flex items-center gap-1.5">
                       <Button
@@ -2006,6 +2020,12 @@ export default function VendorTrackerPage() {
           </DialogContent>
         )}
       </Dialog>
+
+      <VendorStatementModal
+        isOpen={!!statementVendor}
+        onClose={() => setStatementVendor(null)}
+        vendor={statementVendor}
+      />
     </div>
   );
 }

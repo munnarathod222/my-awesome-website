@@ -20,6 +20,8 @@ import TripEditModal from '@/components/TripEditModal.jsx';
 import BulkUploadTripsModal from '@/components/BulkUploadTripsModal.jsx';
 import LoadingSpinner from '@/components/LoadingSpinner.jsx';
 import AddTripModal from '@/components/AddTripModal.jsx';
+import VendorSettlementModal from '@/components/VendorSettlementModal.jsx';
+import { Receipt } from 'lucide-react';
 import AddRecurringTripModal from '@/components/AddRecurringTripModal.jsx';
 import PaymentRequestModal from '@/components/PaymentRequestModal.jsx';
 import BulkAssignTripsModal from '@/components/BulkAssignTripsModal.jsx';
@@ -125,6 +127,7 @@ const TripLogsPage = () => {
   const [newTripStatus, setNewTripStatus] = useState('');
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [paymentRequestTrip, setPaymentRequestTrip] = useState(null);
+  const [settlementTrip, setSettlementTrip] = useState(null);
   const [whatsappConfig, setWhatsappConfig] = useState({ isOpen: false, trip: null, defaultTemplate: 'payment_confirmation' });
   const [selectedDocsTrip, setSelectedDocsTrip] = useState(null);
   const [mailOpen, setMailOpen] = useState(false);
@@ -1210,6 +1213,18 @@ const TripLogsPage = () => {
                             )}
                             <TableCell className="text-right pr-6">
                               <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {(log.ownership_type === 'Attached' || log.ownership_type === 'AttachedFamily') && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setSettlementTrip(log)}
+                                    className="h-8 rounded-lg text-xs font-bold text-amber-500 border-amber-500/30 hover:bg-amber-500/10 flex items-center gap-1 bg-background px-2 shrink-0"
+                                    title="Vendor Settlement Voucher & Payout Breakdown"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5 text-amber-500" />
+                                    {log.settlement_status === 'Settled' ? 'Settled' : 'Settlement'}
+                                  </Button>
+                                )}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button

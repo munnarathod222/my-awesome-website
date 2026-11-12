@@ -281,4 +281,124 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /trips/:id/vendor-settlement
+ * Calculates itemized settlement breakdown for an attached trip:
+ * Agreed Gross Freight - Cash Advances - Fuel Advances - Tolls - TDS + Detention = Net Payable
+ */
+router.get('/:id/vendor-settlement', async (req, res) => {
+  const target = req.params.id;
+  try {
+    let trip = await pb.collection('trip_logs').getOne(target, { $autoCancel: false }).catch(() => null);
+    if (!trip) {
+      const found = await pb.collection('trip_logs').getList(1, 1, {
+        filter: `trip_id = "${target}"`,
+        $autoCancel: false
+      }).catch(() => ({ items: [] }));
+      if (found.items && found.items.length > 0) trip = found.items[0];
+    }
+
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+
+    const grossRevenue = Number(trip.revenue) || 0;
+    const grossVendorPayout = Number(trip.vendor_payout) || 0;
+    const cashAdvance = Number(trip.advance_paid_to_driver) || 0;
+    const tollDeduction = Number(trip.toll_deduction) || 0;
+    const fuelAdvance = Number(trip.fuel_advance_deduction) || 0;
+    const hamali = Number(trip.hamali_charges) || 0;
+    const tdsRate = trip.vendor_tds_rate !== undefined ? Number(trip.vendor_tds_rate) : 1; // Default 1% Sec 194C
+    const tdsDeduction = (grossVendorPayout * tdsRate) / 100;
+    const detentionCharges = Number(trip.detention_charges) || 0;
+    const penalties = Number(trip.penalties) || 0;
+
+    const netPayable = Math.max(0, grossVendorPayout - cashAdvance - tollDeduction - fuelAdvance - tdsDeduction - penalties + detentionCharges);
+    const jbcGrossMargin = grossRevenue - grossVendorPayout;
+
+    // Fetch truck and owner info if available
+    let truckInfo = null;
+    if (trip.truck_number) {
+      const trucks = await pb.collection('trucks').getFullList({
+        filter: `truck_number = "${trip.truck_number}"`,
+        $autoCancel: false
+      }).catch(() => []);
+      if (trucks.length > 0) truckInfo = trucks[0];
+    }
+
+    return res.status(200).json({
+      success: true,
+      trip_id: trip.trip_id || trip.id,
+      date: trip.date,
+      route: trip.route,
+      truck_number: trip.truck_number,
+      driver_name: trip.driver_name,
+      ownership_type: trip.ownership_type,
+      payment_model: trip.payment_model,
+      gross_customer_revenue: grossRevenue,
+      gross_vendor_payout: grossVendorPayout,
+      jbc_margin: jbcGrossMargin,
+      jbc_margin_percent: grossRevenue > 0 ? Number(((jbcGrossMargin / grossRevenue) * 100).toFixed(1)) : 0,
+      deductions: {
+        cash_advance: cashAdvance,
+        fuel_advance: fuelAdvance,
+        toll_deduction: tollDeduction,
+        tds_rate: tdsRate,
+        tds_amount: tdsDeduction,
+        penalties: penalties,
+        detention_addition: detentionCharges
+      },
+      net_vendor_payable: netPayable,
+      pod_status: trip.pod_status || 'Pending',
+      settlement_status: trip.settlement_status || (trip.pod_status === 'Verified' ? 'Ready for Settlement' : 'Pending POD'),
+      settlement_utr: trip.settlement_utr || null,
+      settlement_date: trip.settlement_date || null,
+      truck: truckInfo
+    });
+  } catch (err) {
+    logger.error(`Error calculating vendor settlement for ${target}:`, err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /trips/:id/vendor-settlement
+ * Records settlement payout with UTR and marks as Settled.
+ */
+router.post('/:id/vendor-settlement', async (req, res) => {
+  const target = req.params.id;
+  const { settlement_utr, settlement_date, notes } = req.body;
+
+  try {
+    let tripId = target;
+    let trip = await pb.collection('trip_logs').getOne(target, { $autoCancel: false }).catch(() => null);
+    if (!trip) {
+      const found = await pb.collection('trip_logs').getList(1, 1, {
+        filter: `trip_id = "${target}"`,
+        $autoCancel: false
+      }).catch(() => ({ items: [] }));
+      if (found.items && found.items.length > 0) {
+        trip = found.items[0];
+        tripId = trip.id;
+      }
+    }
+
+    if (!trip) {
+      return res.status(404).json({ success: false, error: 'Trip not found' });
+    }
+
+    const updated = await pb.collection('trip_logs').update(tripId, {
+      settlement_status: 'Settled',
+      settlement_utr: settlement_utr || `UTR-${Date.now()}`,
+      settlement_date: settlement_date || new Date().toISOString().split('T')[0],
+      settlement_notes: notes || 'Settlement processed'
+    }, { $autoCancel: false });
+
+    return res.status(200).json({ success: true, message: 'Vendor settlement recorded successfully', trip: updated });
+  } catch (err) {
+    logger.error(`Error processing vendor settlement for ${target}:`, err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

@@ -35,6 +35,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
   const [selectedClientInfo, setSelectedClientInfo] = useState(null);
   const [allowMultipleTrips, setAllowMultipleTrips] = useState(false);
   const [assignedTrucks, setAssignedTrucks] = useState({});
+  const [clientEligibilityMap, setClientEligibilityMap] = useState({});
 
 
   const [formData, setFormData] = useState({
@@ -56,6 +57,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     vendor_payout: '',
     payment_model: 'Model2',
     toll_deduction: '',
+    fuel_advance_deduction: '',
     lr_number: '',
     lr_file: null,
     lr_file_url: '',
@@ -246,8 +248,21 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     if (!clientId) {
       setClientMetrics(null);
       setSelectedClientInfo(null);
+      setClientEligibilityMap({});
       return;
     }
+
+    pb.collection('customer_vehicle_eligibility').getFullList({
+      filter: `client_id = "${clientId}"`,
+      $autoCancel: false
+    }).then(records => {
+      const elMap = {};
+      records.forEach(r => {
+        if (r.truck_id) elMap[r.truck_id] = r;
+        if (r.truck_number) elMap[r.truck_number] = r;
+      });
+      setClientEligibilityMap(elMap);
+    }).catch(() => setClientEligibilityMap({}));
 
     const clientInfo = clients.find(c => c.id === clientId);
     setSelectedClientInfo(clientInfo);
@@ -773,6 +788,7 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
                       <SelectContent>
                         <SelectItem value="Model2" className="text-xs">Margin Based (Model 2)</SelectItem>
                         <SelectItem value="Model3" className="text-xs">Flat Fee ₹500 (Model 3)</SelectItem>
+                        <SelectItem value="Contract" className="text-xs">Fixed Contract Rate</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

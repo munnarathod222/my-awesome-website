@@ -67,6 +67,7 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [managers, setManagers] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [formData, setFormData] = useState({
     truck_name: '',
     truck_number: '',
@@ -84,6 +85,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
     body_length: '',
     body_width: '',
     body_height: '',
+    subcontractor_id: '',
+    subcontractor_name: '',
     owner_name: '',
     owner_phone: '',
     owner_pan: '',
@@ -131,7 +134,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
         owner_bank_name: formData.owner_bank_name || '',
         owner_account_number: formData.owner_account_number || '',
         owner_ifsc: formData.owner_ifsc || '',
-        subcontractor_name: formData.ownership_type === 'AttachedFamily' ? (formData.owner_name || 'Family Owner') : '',
+        subcontractor_id: formData.subcontractor_id || '',
+        subcontractor_name: formData.ownership_type === 'AttachedFamily' ? (formData.owner_name || 'Family Owner') : (formData.subcontractor_name || formData.owner_name || ''),
         assigned_driver_id: formData.assigned_driver_id === 'none' ? '' : (formData.assigned_driver_id || ''),
         assigned_driver_name: formData.assigned_driver_name || '',
         assigned_driver_phone: formData.assigned_driver_phone || '',
@@ -293,6 +297,14 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
       })
       .catch(err => console.error('Failed to fetch drivers:', err));
 
+      // Fetch subcontractor vendors
+      pb.collection('subcontractor_vendors').getFullList({
+        sort: 'subcontractor_name',
+        $autoCancel: false
+      })
+      .then(setVendors)
+      .catch(err => console.error('Failed to fetch subcontractor vendors:', err));
+
       if (truck) {
         setFormData({
           truck_name: truck.truck_name || '',
@@ -311,6 +323,8 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
           body_length: truck.body_length?.toString() || '',
           body_width: truck.body_width?.toString() || '',
           body_height: truck.body_height?.toString() || '',
+          subcontractor_id: truck.subcontractor_id || '',
+          subcontractor_name: truck.subcontractor_name || '',
           owner_name: truck.owner_name || '',
           owner_phone: truck.owner_phone || '',
           owner_pan: truck.owner_pan || '',
@@ -539,6 +553,128 @@ export default function TruckFormModal({ isOpen, onClose, truck, onSuccess }) {
                 <span className="text-muted-foreground font-medium">Company Service Margin:</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
                   0% Pass-Through (100% Net to Owner)
+                </span>
+              </div>
+            </div>
+          )}
+
+          {formData.ownership_type === 'Attached' && (
+            <div className="p-3.5 rounded-xl border border-blue-500/30 bg-blue-500/5 space-y-3 animate-in fade-in">
+              <div className="flex items-start gap-2.5">
+                <span className="text-lg">🚚</span>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Market Attached / Subcontractor Fleet Onboarding</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Link this vehicle to a registered Subcontractor Vendor or enter attached truck owner details to automate trip dispatch, loading advances, fuel/Fastag deductions, and settlement statements.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Select Registered Subcontractor Vendor</Label>
+                <Select 
+                  value={formData.subcontractor_id || 'manual'} 
+                  onValueChange={v => {
+                    if (v === 'manual') {
+                      setFormData(prev => ({ ...prev, subcontractor_id: '', subcontractor_name: '' }));
+                    } else {
+                      const selectedVen = vendors.find(x => x.id === v);
+                      if (selectedVen) {
+                        setFormData(prev => ({
+                          ...prev,
+                          subcontractor_id: selectedVen.id,
+                          subcontractor_name: selectedVen.subcontractor_name,
+                          owner_name: selectedVen.owner_name || selectedVen.subcontractor_name,
+                          owner_phone: selectedVen.phone || prev.owner_phone,
+                          owner_pan: selectedVen.pan || prev.owner_pan,
+                          owner_bank_name: selectedVen.bank_name || prev.owner_bank_name,
+                          owner_account_number: selectedVen.account_number || prev.owner_account_number,
+                          owner_ifsc: selectedVen.ifsc_code || prev.owner_ifsc
+                        }));
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-background">
+                    <SelectValue placeholder="Choose registered vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual / Single Attached Truck Operator</SelectItem>
+                    {vendors.map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.subcontractor_name} ({v.issued_jbc_vendor_id || 'Vendor'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <Label className="text-xs">Truck Owner / Firm Name <span className="text-destructive">*</span></Label>
+                  <Input 
+                    required={formData.ownership_type === 'Attached'}
+                    value={formData.owner_name} 
+                    onChange={e => setFormData({...formData, owner_name: e.target.value})} 
+                    placeholder="e.g. Sri Venkateswara Roadlines" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Owner / Dispatch Phone</Label>
+                  <Input 
+                    value={formData.owner_phone} 
+                    onChange={e => setFormData({...formData, owner_phone: e.target.value})} 
+                    placeholder="e.g. +91 98491 12233" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Owner PAN</Label>
+                  <Input 
+                    value={formData.owner_pan} 
+                    onChange={e => setFormData({...formData, owner_pan: e.target.value.toUpperCase()})} 
+                    placeholder="ABCDE1234F" 
+                    className="h-8 text-xs font-mono uppercase bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank Name</Label>
+                  <Input 
+                    value={formData.owner_bank_name} 
+                    onChange={e => setFormData({...formData, owner_bank_name: e.target.value})} 
+                    placeholder="e.g. SBI / HDFC" 
+                    className="h-8 text-xs bg-background"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Bank IFSC</Label>
+                  <Input 
+                    value={formData.owner_ifsc} 
+                    onChange={e => setFormData({...formData, owner_ifsc: e.target.value.toUpperCase()})} 
+                    placeholder="SBIN0001234" 
+                    className="h-8 text-xs font-mono uppercase bg-background"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Bank Account Number (For NEFT / RTGS Payouts)</Label>
+                <Input 
+                  value={formData.owner_account_number} 
+                  onChange={e => setFormData({...formData, owner_account_number: e.target.value})} 
+                  placeholder="e.g. 30123456789" 
+                  className="h-8 text-xs font-mono bg-background"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-blue-500/20 flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground font-medium">Commercial Brokerage Type:</span>
+                <span className="font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/30">
+                  Model 2 (Agreed Spread) or Model 3 (Flat Commission)
                 </span>
               </div>
             </div>

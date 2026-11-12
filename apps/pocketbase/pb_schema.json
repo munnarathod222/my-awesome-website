@@ -17470,5 +17470,96 @@
       }
     ],
     "indexes": []
+  },
+  {
+    "id": "customer_vehicle_eligibility",
+    "name": "customer_vehicle_eligibility",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "name": "truck_id",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "trucks",
+          "cascadeDelete": false
+        }
+      },
+      {
+        "name": "truck_number",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "client_id",
+        "type": "relation",
+        "required": false,
+        "options": {
+          "collectionId": "clients",
+          "cascadeDelete": false
+        }
+      },
+      {
+        "name": "customer_name",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "eligibility_status",
+        "type": "select",
+        "required": false,
+        "options": {
+          "values": [
+            "Approved",
+            "Pending Approval",
+            "Under Inspection",
+            "Rejected",
+            "Not Registered"
+          ]
+        }
+      },
+      {
+        "name": "customer_vehicle_code",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "gps_integrated",
+        "type": "bool",
+        "required": false
+      },
+      {
+        "name": "inspection_date",
+        "type": "date",
+        "required": false
+      },
+      {
+        "name": "valid_until",
+        "type": "date",
+        "required": false
+      },
+      {
+        "name": "approval_doc",
+        "type": "file",
+        "required": false
+      },
+      {
+        "name": "rejection_reason",
+        "type": "text",
+        "required": false
+      },
+      {
+        "name": "remarks",
+        "type": "text",
+        "required": false
+      }
+    ],
+    "indexes": [],
+    "listRule": "",
+    "viewRule": "",
+    "createRule": "",
+    "updateRule": "",
+    "deleteRule": ""
   }
 ]

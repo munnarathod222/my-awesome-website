@@ -27,6 +27,7 @@ import FASTagRechargeModal from '@/components/FASTagRechargeModal.jsx';
 import BulkRCUploadModal from '@/components/BulkRCUploadModal.jsx';
 import FinancierFleetDossierModal from '@/components/FinancierFleetDossierModal.jsx';
 import FamilyOwnerSettlementModal from '@/components/FamilyOwnerSettlementModal.jsx';
+import CustomerVehicleEligibilityModal from '@/components/CustomerVehicleEligibilityModal.jsx';
 import TruckContributionRanking from '@/components/TruckContributionRanking.jsx';
 import TruckAccidentsView from '@/components/TruckAccidentsView.jsx';
 import { computeLogDrivenFleetAnalytics } from '@/lib/truckAnalyticsEngine.js';
@@ -67,6 +68,8 @@ export default function TruckManagerPage() {
   const [selectedDossierTruckId, setSelectedDossierTruckId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, truck: null });
+  const [eligibilityConfig, setEligibilityConfig] = useState({ isOpen: false, truck: null });
+  const [fleetFilter, setFleetFilter] = useState('all'); // 'all' | 'owned' | 'attached'
   const [shareConfig, setShareConfig] = useState({ isOpen: false, truckId: null, employeeId: null, entityName: '' });
   const [fastagConfig, setFastagConfig] = useState({ isOpen: false, truck: null });
   const [galleryConfig, setGalleryConfig] = useState({ isOpen: false, truck: null, activeIndex: 0 });
@@ -674,6 +677,15 @@ export default function TruckManagerPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    className="h-7 px-2 text-[11px] font-bold rounded-lg border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                    onClick={() => setEligibilityConfig({ isOpen: true, truck })}
+                    title="Customer Empanelment & Vehicle Eligibility Matrix"
+                  >
+                    🛡️ Empanelment
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
                     className="h-7 px-2 text-[11px] font-bold rounded-lg border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
                     onClick={() => {
                       setViewMode('contribution');
@@ -1002,6 +1014,13 @@ export default function TruckManagerPage() {
         isOpen={modalConfig.isOpen} 
         onClose={() => setModalConfig({ isOpen: false, truck: null })} 
         truck={modalConfig.truck}
+        onSuccess={fetchTrucks}
+      />
+
+      <CustomerVehicleEligibilityModal
+        isOpen={eligibilityConfig.isOpen}
+        onClose={() => setEligibilityConfig({ isOpen: false, truck: null })}
+        truck={eligibilityConfig.truck}
         onSuccess={fetchTrucks}
       />
 
