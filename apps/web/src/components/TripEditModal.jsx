@@ -52,7 +52,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     is_sealed: false,
     seal_numbers: [''],
     seal_number: '',
-    seal_photo_url: ''
+    seal_photo_url: '',
+    gps_tracking_link: '',
+    gps_validity_days: 2,
+    gps_link_expiry: ''
   });
 
   useEffect(() => {
@@ -100,7 +103,10 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
             ? trip.seal_numbers 
             : (trip.seal_number ? trip.seal_number.split(',').map(s => s.trim()).filter(Boolean) : ['']),
           seal_number: trip.seal_number || '',
-          seal_photo_url: trip.seal_photo_url || ''
+          seal_photo_url: trip.seal_photo_url || '',
+          gps_tracking_link: trip.gps_tracking_link || '',
+          gps_validity_days: trip.gps_validity_days || 2,
+          gps_link_expiry: trip.gps_link_expiry || ''
         });
       } catch (error) {
         console.error('[TripEditModal] Failed to fetch trip details:', error);
@@ -158,6 +164,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) 
           : (formData.seal_number ? [formData.seal_number.trim()] : []),
         seal_photo_url: formData.seal_photo_url || '',
+        gps_tracking_link: (formData.gps_tracking_link || '').trim(),
+        gps_validity_days: Number(formData.gps_validity_days) || 2,
+        gps_link_expiry: formData.gps_tracking_link ? (() => {
+          const vDays = Number(formData.gps_validity_days) || 2;
+          const baseDate = formData.date ? new Date(formData.date) : new Date();
+          return new Date(baseDate.getTime() + vDays * 24 * 60 * 60 * 1000).toISOString();
+        })() : '',
         
         ownership_type: isAttachedFamily ? 'AttachedFamily' : (isAttached ? 'Attached' : 'Owned'),
         payment_model: isAttachedFamily ? 'ModelFamilySettlement' : (isAttached ? formData.payment_model : 'Model1'),

@@ -155,6 +155,8 @@ Drive safe, adhere to highway lane rules, and inform control room upon arrival!
       } catch(e) {}
 
       const sealSnippet = (trip?.is_sealed || trip?.seal_number) ? `\n• 🔒 Security Seal(s): *${trip.seal_number || 'Applied & Verified'}*` : '';
+      const isDelivered = ['delivered', 'completed'].includes((trip?.trip_status || '').toLowerCase());
+      const directGpsSnippet = (!isDelivered && trip?.gps_tracking_link) ? `\n• 🛰️ Live Vehicle GPS: ${trip.gps_tracking_link} (Active for ${trip.gps_validity_days || 2} Days)` : '';
 
       return `🚛 *JAI BHAVANI CARGO - TRIP BOOKING & VEHICLE CONFIRMATION*
 
@@ -173,7 +175,7 @@ Your freight booking has been confirmed! Here are the allocated vehicle & driver
 • Contact No: *${driverPhone}*
 
 📍 *Live GPS Consignment Tracking:*
-${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}
+${trackingBase}/track/${encodeURIComponent(trip?.trip_id || trip?.id || tripId)}${directGpsSnippet}
 
 Thank you for choosing Jai Bhavani Cargo & Logistics!
 📞 Central Operations: ${officialPhone}

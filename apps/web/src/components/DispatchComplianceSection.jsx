@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { 
   FileText, Receipt, FileCheck, Clock, Upload, 
-  X, Check, AlertCircle, Eye, Calendar, Sparkles, Lock, ShieldCheck, Camera
+  X, Check, AlertCircle, Eye, Calendar, Sparkles, Lock, ShieldCheck, Camera, Navigation
 } from 'lucide-react';
 import { compressDocumentImage, formatBytes } from '@/lib/imageCompressor.js';
 import { toast } from 'sonner';
@@ -518,6 +518,94 @@ export default function DispatchComplianceSection({ formData, setFormData }) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 🛰️ Vehicle GPS & Live Telematics Tracking */}
+      <div className="p-4 rounded-2xl bg-secondary/30 border border-border/50 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+              <Navigation className="w-4 h-4" />
+            </div>
+            <div>
+              <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                Live Vehicle GPS Tracking Link
+                <span className="text-[10px] text-cyan-400 font-mono">(Visible until delivery)</span>
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                Paste BlackBuck or vehicle telematics tracking link. Clients can track live map in new tab.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-1">
+          <div className="relative">
+            <Input
+              type="url"
+              placeholder="https://track.blackbuck.com/... or GPS URL"
+              value={formData.gps_tracking_link || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, gps_tracking_link: e.target.value }))}
+              className="rounded-xl h-10 pr-24 text-xs font-mono bg-background border-border"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const clip = await navigator.clipboard.readText();
+                  if (clip && (clip.startsWith('http://') || clip.startsWith('https://'))) {
+                    setFormData(prev => ({ ...prev, gps_tracking_link: clip.trim() }));
+                    toast.success('GPS tracking link pasted from clipboard');
+                  } else {
+                    toast.error('No valid URL found on clipboard');
+                  }
+                } catch {
+                  toast.error('Unable to read clipboard. Please paste manually.');
+                }
+              }}
+              className="absolute right-1 top-1 h-8 text-[11px] font-bold text-cyan-400 hover:text-cyan-300 px-2.5 rounded-lg"
+            >
+              Paste Link
+            </Button>
+          </div>
+
+          {/* Configurable Expiry Duration */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1 border-t border-border/40">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-medium text-muted-foreground">Link Expiry Duration:</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[1, 2, 3, 5, 7].map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, gps_validity_days: d }))}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                    (Number(formData.gps_validity_days) || 2) === d
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-sm'
+                      : 'bg-background border-border text-muted-foreground hover:border-border/80 hover:text-foreground'
+                  }`}
+                >
+                  {d} {d === 1 ? 'Day' : 'Days'}
+                </button>
+              ))}
+              <div className="flex items-center gap-1 ml-1">
+                <Input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={formData.gps_validity_days || 2}
+                  onChange={(e) => setFormData(prev => ({ ...prev, gps_validity_days: Math.max(1, parseInt(e.target.value, 10) || 1) }))}
+                  className="w-14 h-7 text-[11px] font-mono text-center px-1 rounded-lg bg-background border-border"
+                />
+                <span className="text-[10px] text-muted-foreground">Days</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

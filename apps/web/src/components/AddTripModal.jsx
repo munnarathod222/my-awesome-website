@@ -79,7 +79,10 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
     is_sealed: false,
     seal_numbers: [''],
     seal_number: '',
-    seal_photo_url: ''
+    seal_photo_url: '',
+    gps_tracking_link: '',
+    gps_validity_days: 2,
+    gps_link_expiry: ''
   });
 
   useEffect(() => {
@@ -405,7 +408,14 @@ const AddTripModal = ({ isOpen, onClose, onSuccess }) => {
         seal_numbers: Array.isArray(formData.seal_numbers) 
           ? formData.seal_numbers.filter(Boolean).map(s => s.trim()) 
           : (formData.seal_number ? [formData.seal_number.trim()] : []),
-        seal_photo_url: formData.seal_photo_url || ''
+        seal_photo_url: formData.seal_photo_url || '',
+        gps_tracking_link: (formData.gps_tracking_link || '').trim(),
+        gps_validity_days: Number(formData.gps_validity_days) || 2,
+        gps_link_expiry: formData.gps_tracking_link ? (() => {
+          const vDays = Number(formData.gps_validity_days) || 2;
+          const baseDate = formData.date ? new Date(formData.date) : new Date();
+          return new Date(baseDate.getTime() + vDays * 24 * 60 * 60 * 1000).toISOString();
+        })() : ''
       };
 
       await pb.collection('trip_logs').create(payload, { $autoCancel: false });

@@ -2624,6 +2624,19 @@ const runPocketBase = async () => {
       }
     });
 
+    // 1.7 Add GPS tracking columns to trip_logs table
+    const gpsCols = [
+      { name: 'gps_tracking_link', sql: "ALTER TABLE trip_logs ADD COLUMN gps_tracking_link TEXT DEFAULT ''" },
+      { name: 'gps_validity_days', sql: "ALTER TABLE trip_logs ADD COLUMN gps_validity_days INTEGER DEFAULT 2" },
+      { name: 'gps_link_expiry', sql: "ALTER TABLE trip_logs ADD COLUMN gps_link_expiry TEXT DEFAULT ''" }
+    ];
+    gpsCols.forEach(gc => {
+      if (!cols.includes(gc.name)) {
+        logger.info(`Migrating: Adding column '${gc.name}' to 'trip_logs' table...`);
+        try { db.prepare(gc.sql).run(); } catch (_) {}
+      }
+    });
+
     // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
     const allColDefs = db.prepare('SELECT id, name FROM _collections').all();
     for (const cDef of allColDefs) {
