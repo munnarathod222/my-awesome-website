@@ -8,14 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Truck, Search, Navigation, AlertCircle, ArrowRight, Check, Share2, 
   Download, CheckCircle2, Clock, ShieldCheck, MapPin, Phone, MessageCircle, 
-  FileCheck, Loader2, Lock 
+  FileCheck, Loader2, Lock, Timer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import pb from '@/lib/pocketbaseClient.js';
-import { useAuth } from '@/context/AuthContext.jsx';
-import { formatCurrency } from '@/lib/utils.js';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import { formatCurrency } from '@/lib/analyticsUtils.js';
+import { calculateTripDetention } from '@/lib/tripStatusUtils.js';
 
 const SHIPMENT_STAGES = [
   { key: 'Trip Scheduled', label: 'Trip Scheduled', desc: 'Order created & scheduled' },
@@ -23,7 +24,7 @@ const SHIPMENT_STAGES = [
   { key: 'Arrived at Dock', label: 'At Loading Dock', desc: 'Arrived at origin dock' },
   { key: 'Dispatched', label: 'Dispatched', desc: 'Loaded & departed origin' },
   { key: 'In Transit', label: 'In Transit', desc: 'En route on highway corridor' },
-  { key: 'Reached Hub', label: 'Reached Hub', desc: 'Arrived at destination city' },
+  { key: 'Reached Delivery Docket', label: 'At Delivery Docket', desc: 'Gate-in at consignee dock - Detention Timer Active' },
   { key: 'Delivered', label: 'Delivered (POD)', desc: 'Unloaded & POD verified' }
 ];
 
@@ -325,7 +326,7 @@ export default function PublicShipmentTrackingPage() {
     if (!trip) return 0;
     const s = (trip.trip_status || trip.status || '').toLowerCase();
     if (s.includes('deliver') || s.includes('complete') || s.includes('closed')) return 6;
-    if (s.includes('reach') || s.includes('hub')) return 5;
+    if (s.includes('reach') || s.includes('docket') || s.includes('unload') || s.includes('hub') || trip.delivery_dock_arrival_time) return 5;
     if (s.includes('transit') || s.includes('progress') || s.includes('running') || s.includes('en route')) return 4;
     if (s.includes('dispatch') || s.includes('depart')) return 3;
     if (s.includes('dock') || s.includes('load') || s.includes('arrived')) return 2;
@@ -736,6 +737,70 @@ export default function PublicShipmentTrackingPage() {
                 </div>
               </div>
             </Card>
+
+            {/* --- DOCK TURNAROUND & DETENTION MONITOR CARD --- */}
+            {(currentStageIdx >= 5 || trip.delivery_dock_arrival_time) && (() => {
+              const det = calculateTripDetention(trip);
+              if (!det) return null;
+              return (
+                <Card className={`rounded-3xl border p-5 sm:p-6 shadow-xl transition-all ${
+                  det.isOverdue
+                    ? 'bg-rose-950/20 border-rose-500/40 ring-1 ring-rose-500/30'
+                    : det.isFrozen
+                    ? 'bg-slate-900/90 border-emerald-500/40'
+                    : 'bg-purple-950/20 border-purple-500/40 ring-1 ring-purple-500/30'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${det.isFrozen ? 'bg-emerald-400' : det.isOverdue ? 'bg-rose-400 animate-ping' : 'bg-purple-400 animate-pulse'}`} />
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                          <Timer className="w-4 h-4 text-purple-400" />
+                          Delivery Docket Turnaround & Detention Tracker
+                        </h3>
+                        <Badge className={`text-[10px] uppercase font-mono font-bold ${
+                          det.isFrozen
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : det.isOverdue
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                            : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                        }`}>
+                          {det.isFrozen ? 'Unloading Finalized' : det.isOverdue ? 'Demurrage Active' : 'Within Free Grace SLA'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {det.isFrozen
+                          ? `Consignment unloaded and acknowledged. Total dock turnaround time: ${det.totalDurationFormatted}.`
+                          : det.isOverdue
+                          ? `Free unloading SLA (${det.freeHours} hrs) has elapsed. Billable detention is accumulating.`
+                          : `Vehicle reported at destination dock. Free unloading SLA remaining: ${det.remainingGraceFormatted}.`}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-4 bg-slate-950/60 p-3 rounded-2xl border border-slate-800 self-stretch sm:self-auto justify-between sm:justify-start">
+                      <div>
+                        <div className="text-[10px] uppercase font-mono text-slate-500 font-bold">Dock Duration</div>
+                        <div className="text-lg font-black font-mono text-emerald-400">{det.totalDurationFormatted}</div>
+                      </div>
+                      <div className="h-8 w-px bg-slate-800" />
+                      <div>
+                        <div className="text-[10px] uppercase font-mono text-slate-500 font-bold">Free Grace SLA</div>
+                        <div className="text-sm font-bold font-mono text-slate-300">{det.freeHours} Hours</div>
+                      </div>
+                      {det.isOverdue && (
+                        <>
+                          <div className="h-8 w-px bg-slate-800" />
+                          <div>
+                            <div className="text-[10px] uppercase font-mono text-rose-400 font-bold">Overdue Demurrage</div>
+                            <div className="text-lg font-black font-mono text-rose-400">₹{det.billableAmount.toLocaleString('en-IN')}</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })()}
 
             {/* --- BALANCED 2-COLUMN OPERATIONAL GRID --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -7,11 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import pb from '@/lib/pocketbaseClient.js';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock, AlertCircle, CheckCircle2, Timer } from 'lucide-react';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 import DispatchComplianceSection from '@/components/DispatchComplianceSection.jsx';
-
-const TRIP_STATUS_OPTIONS = ['Upcoming', 'In Transit', 'Completed', 'Cancelled'];
+import { TRIP_STATUS_OPTIONS, calculateTripDetention, isAtDeliveryDock } from '@/lib/tripStatusUtils.js';
 
 const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], trucks = [] }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -61,7 +60,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
     seal_photo_url: '',
     gps_tracking_link: '',
     gps_validity_days: 2,
-    gps_link_expiry: ''
+    gps_link_expiry: '',
+    delivery_dock_arrival_time: '',
+    free_detention_hours: 4,
+    detention_rate_per_hour: 500,
+    detention_hours: 0,
+    detention_amount: 0,
+    detention_status: 'none'
   });
 
   useEffect(() => {
@@ -119,7 +124,13 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
           seal_photo_url: trip.seal_photo_url || '',
           gps_tracking_link: trip.gps_tracking_link || '',
           gps_validity_days: trip.gps_validity_days || 2,
-          gps_link_expiry: trip.gps_link_expiry || ''
+          gps_link_expiry: trip.gps_link_expiry || '',
+          delivery_dock_arrival_time: trip.delivery_dock_arrival_time || '',
+          free_detention_hours: trip.free_detention_hours !== undefined && trip.free_detention_hours !== null && trip.free_detention_hours !== '' ? trip.free_detention_hours : 4,
+          detention_rate_per_hour: trip.detention_rate_per_hour !== undefined && trip.detention_rate_per_hour !== null && trip.detention_rate_per_hour !== '' ? trip.detention_rate_per_hour : 500,
+          detention_hours: trip.detention_hours || 0,
+          detention_amount: trip.detention_amount || 0,
+          detention_status: trip.detention_status || 'none'
         });
       } catch (error) {
         console.error('Error fetching trip details:', error);
@@ -181,7 +192,45 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
         seal_photo_url: formData.seal_photo_url || '',
         gps_tracking_link: formData.gps_tracking_link || '',
         gps_validity_days: parseInt(formData.gps_validity_days) || 2,
-        gps_link_expiry: formData.gps_link_expiry || ''
+        gps_link_expiry: formData.gps_link_expiry || '',
+        delivery_dock_arrival_time: (() => {
+          if ((formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') && !formData.delivery_dock_arrival_time) {
+            return new Date().toISOString();
+          }
+          return formData.delivery_dock_arrival_time || '';
+        })(),
+        free_detention_hours: parseFloat(formData.free_detention_hours) || 4,
+        detention_rate_per_hour: parseFloat(formData.detention_rate_per_hour) || 500,
+        detention_hours: (() => {
+          if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
+            const det = calculateTripDetention({
+              ...formData,
+              delivery_dock_arrival_time: formData.delivery_dock_arrival_time || new Date().toISOString()
+            });
+            return det ? det.billableHours : 0;
+          }
+          return parseFloat(formData.detention_hours) || 0;
+        })(),
+        detention_amount: (() => {
+          if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
+            const det = calculateTripDetention({
+              ...formData,
+              delivery_dock_arrival_time: formData.delivery_dock_arrival_time || new Date().toISOString()
+            });
+            return det ? det.billableAmount : 0;
+          }
+          return parseFloat(formData.detention_amount) || 0;
+        })(),
+        detention_status: (() => {
+          if (formData.delivery_dock_arrival_time || formData.trip_status === 'Reached Delivery Docket' || formData.trip_status === 'Unloading in Progress') {
+            const det = calculateTripDetention({
+              ...formData,
+              delivery_dock_arrival_time: formData.delivery_dock_arrival_time || new Date().toISOString()
+            });
+            return det ? (det.isOverdue ? 'billable' : 'grace_period') : 'none';
+          }
+          return formData.detention_status || 'none';
+        })()
       };
 
       await pb.collection('trip_logs').update(tripId, dataToSave, { $autoCancel: false });
@@ -668,6 +717,127 @@ const TripEditModal = ({ isOpen, onClose, tripId, onSuccess, employees = [], tru
                   <span className="text-[11px] text-muted-foreground">Mandatory transit documentation, live GPS link & security seals</span>
                 </div>
                 <DispatchComplianceSection formData={formData} setFormData={setFormData} />
+              </div>
+
+              {/* CARD 4: ⏱️ Delivery Docket Arrival & Unloading Detention SLA */}
+              <div className="bg-secondary/15 rounded-2xl p-5 border border-border/60 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                  <h4 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                    <span>⏱️</span> Delivery Docket Arrival & Unloading Detention SLA
+                  </h4>
+                  <span className="text-[11px] text-muted-foreground">Consignee dock reporting, detention clock & demurrage penalties</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Delivery Docket Arrival Time */}
+                  <div className="space-y-1.5 md:col-span-1">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="edit-dock-arrival" className="text-xs font-semibold">Docket Arrival Time</Label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, delivery_dock_arrival_time: new Date().toISOString() })}
+                        className="text-[10px] text-primary hover:underline font-bold"
+                      >
+                        Set Current Time
+                      </button>
+                    </div>
+                    <Input
+                      id="edit-dock-arrival"
+                      type="datetime-local"
+                      value={formData.delivery_dock_arrival_time ? (() => {
+                        const d = new Date(formData.delivery_dock_arrival_time);
+                        if (isNaN(d.getTime())) return '';
+                        const pad = (n) => n.toString().padStart(2, '0');
+                        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                      })() : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({
+                          ...formData,
+                          delivery_dock_arrival_time: val ? new Date(val).toISOString() : ''
+                        });
+                      }}
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Free Detention Hours */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-free-detention" className="text-xs font-semibold">Free Grace SLA (Hours)</Label>
+                    <Input
+                      id="edit-free-detention"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.free_detention_hours !== undefined ? formData.free_detention_hours : 4}
+                      onChange={(e) => setFormData({ ...formData, free_detention_hours: e.target.value })}
+                      placeholder="4.0"
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+
+                  {/* Detention Rate Per Hour */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-detention-rate" className="text-xs font-semibold">Detention Rate (₹ / Hour)</Label>
+                    <Input
+                      id="edit-detention-rate"
+                      type="number"
+                      step="50"
+                      min="0"
+                      value={formData.detention_rate_per_hour !== undefined ? formData.detention_rate_per_hour : 500}
+                      onChange={(e) => setFormData({ ...formData, detention_rate_per_hour: e.target.value })}
+                      placeholder="500"
+                      className="bg-background h-9 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Detention Summary Preview Card */}
+                {(() => {
+                  const det = calculateTripDetention(formData);
+                  if (!det) {
+                    return (
+                      <div className="p-3 rounded-xl bg-muted/40 border border-border/50 text-xs text-muted-foreground flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span>Detention clock is inactive. Once the vehicle arrives at the consignee docket, set the arrival timestamp or update trip status to <strong>"Reached Delivery Docket"</strong> to begin tracking.</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className={cn(
+                      "p-3.5 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs",
+                      det.isOverdue
+                        ? "bg-rose-950/30 border-rose-500/40 text-rose-200"
+                        : "bg-purple-950/30 border-purple-500/40 text-purple-200"
+                    )}>
+                      <div className="flex items-center gap-2.5">
+                        <Timer className={cn("w-5 h-5 shrink-0", det.isOverdue ? "text-rose-400 animate-pulse" : "text-purple-400")} />
+                        <div>
+                          <div className="font-bold flex items-center gap-2">
+                            <span>Total Dock Duration: {det.totalDurationFormatted}</span>
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-extrabold",
+                              det.isOverdue ? "bg-rose-500 text-white" : "bg-purple-600 text-white"
+                            )}>
+                              {det.isOverdue ? "Billable Detention" : "Within Free SLA"}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {det.isOverdue
+                              ? `Exceeded free window by ${det.billableHours} hrs. Rate: ₹${det.hourlyRate}/hr.`
+                              : `Free Unloading Grace: ${det.remainingGraceFormatted} remaining of ${det.freeHours} hrs.`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="sm:text-right">
+                        <div className="text-[11px] text-muted-foreground uppercase font-semibold">Billable Demurrage</div>
+                        <div className="text-base font-black font-mono text-foreground">
+                          ₹{det.billableAmount.toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             

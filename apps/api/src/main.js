@@ -2637,6 +2637,22 @@ const runPocketBase = async () => {
       }
     });
 
+    // 1.8 Add Delivery Docket & Detention columns to trip_logs table
+    const detentionTableCols = [
+      { name: 'delivery_dock_arrival_time', sql: "ALTER TABLE trip_logs ADD COLUMN delivery_dock_arrival_time TEXT DEFAULT ''" },
+      { name: 'free_detention_hours', sql: "ALTER TABLE trip_logs ADD COLUMN free_detention_hours REAL DEFAULT 4.0" },
+      { name: 'detention_rate_per_hour', sql: "ALTER TABLE trip_logs ADD COLUMN detention_rate_per_hour REAL DEFAULT 500.0" },
+      { name: 'detention_hours', sql: "ALTER TABLE trip_logs ADD COLUMN detention_hours REAL DEFAULT 0.0" },
+      { name: 'detention_amount', sql: "ALTER TABLE trip_logs ADD COLUMN detention_amount REAL DEFAULT 0.0" },
+      { name: 'detention_status', sql: "ALTER TABLE trip_logs ADD COLUMN detention_status TEXT DEFAULT 'none'" }
+    ];
+    detentionTableCols.forEach(dc => {
+      if (!cols.includes(dc.name)) {
+        logger.info(`Migrating: Adding column '${dc.name}' to 'trip_logs' table...`);
+        try { db.prepare(dc.sql).run(); } catch (_) {}
+      }
+    });
+
     // 🛡️ Ensure collectionId column exists & is populated for PocketBase 0.22+ on boot
     const allColDefs = db.prepare('SELECT id, name FROM _collections').all();
     for (const cDef of allColDefs) {
@@ -2795,6 +2811,66 @@ const runPocketBase = async () => {
           type: "text"
         });
         recordUpdated = true;
+      }
+
+      // Ensure detention fields exist in trip_logs schema
+      const pbDetentionFields = [
+        { name: 'delivery_dock_arrival_time', type: 'text', id: 'date_del_dock_arrival', help: 'Timestamp when vehicle arrived at delivery dock' },
+        { name: 'free_detention_hours', type: 'number', id: 'num_free_detention_hrs', help: 'Agreed free unloading grace hours' },
+        { name: 'detention_rate_per_hour', type: 'number', id: 'num_detention_rate', help: 'Hourly detention demurrage rate in INR' },
+        { name: 'detention_hours', type: 'number', id: 'num_detention_hrs', help: 'Calculated billable detention hours' },
+        { name: 'detention_amount', type: 'number', id: 'num_detention_amt', help: 'Calculated billable detention charge in INR' },
+        { name: 'detention_status', type: 'text', id: 'txt_detention_status', help: 'Status of dock detention' }
+      ];
+      pbDetentionFields.forEach(pf => {
+        if (!fields.some(f => f.name === pf.name)) {
+          logger.info(`Migrating: Appending '${pf.name}' field to PocketBase 'trip_logs' schema...`);
+          fields.push({
+            autogeneratePattern: '',
+            help: pf.help,
+            hidden: false,
+            id: pf.id,
+            max: null,
+            min: null,
+            name: pf.name,
+            pattern: '',
+            presentable: false,
+            required: false,
+            system: false,
+            type: pf.type
+          });
+          recordUpdated = true;
+        }
+      });
+
+      // Ensure realistic trip statuses exist in trip_logs.trip_status schema
+      const tripStatusField = fields.find(f => f.name === 'trip_status');
+      if (tripStatusField && Array.isArray(tripStatusField.values)) {
+        const realisticStatuses = [
+          'Upcoming',
+          'Vehicle Assigned',
+          'Arrived at Dock',
+          'Loading in Progress',
+          'Dispatched',
+          'In Transit',
+          'Reached Delivery Docket',
+          'Unloading in Progress',
+          'Delivered',
+          'Completed',
+          'Delayed / Breakdown',
+          'Cancelled'
+        ];
+        let statusValuesModified = false;
+        realisticStatuses.forEach(st => {
+          if (!tripStatusField.values.includes(st)) {
+            tripStatusField.values.push(st);
+            statusValuesModified = true;
+          }
+        });
+        if (statusValuesModified) {
+          logger.info("Migrating: Updated PocketBase 'trip_logs.trip_status' with realistic logistics statuses!");
+          recordUpdated = true;
+        }
       }
 
       if (recordUpdated) {

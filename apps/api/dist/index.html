@@ -1,17 +1,17 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<script>window.Helmet=window.Helmet||function(){return null;};window.cn=window.cn||function(){var a=[];for(var i=0;i<arguments.length;i++){if(arguments[i])a.push(arguments[i]);}return a.join(" ");};</script>
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
 		<meta name="generator" content="Hostinger Horizons" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-		<title>Jai Bhavani Cargo</title>
-		<script type="module" crossorigin src="/assets/index-DLxf9dwO.js"></script>
-		<link rel="modulepreload" crossorigin href="/assets/vendor-radix-BQCqNqg0.js">
-		<link rel="modulepreload" crossorigin href="/assets/vendor-react-Bs5V2qFE.js">
-		<link rel="modulepreload" crossorigin href="/assets/vendor-pdf-DtmgLs_2.js">
-		<link rel="stylesheet" crossorigin href="/assets/index-COBh9b-b.css?v=20261110_unified_bundle_v136">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+		<meta http-equiv="Pragma" content="no-cache" />
+		<meta http-equiv="Expires" content="0" />
+		<script>window.cn=window.cn||function(){var a=[];for(var i=0;i<arguments.length;i++){if(arguments[i])a.push(arguments[i]);}return a.join(" ");};</script>
+		<title>Jai Bhavani Cargo & Logistics</title>
+		<script type="module" crossorigin src="/assets/index-D7hrXQzu.js"></script>
+		<link rel="stylesheet" crossorigin href="/assets/index-BL8krxX4.css">
 		<script type="module">
 window.onerror = (message, source, lineno, colno, errorObj) => {
 	const errorDetails = errorObj ? JSON.stringify({
@@ -78,15 +78,15 @@ function handleViteOverlay(node) {
 </script>
 		<script type="module">
 const originalConsoleError = console.error;
-const MATCH_LINE_COL_REGEX = /:(\d+):(\d+)\)?\s*$/;
-const MATCH_AT_REGEX = /^\s*at\s+(?:async\s+)?(?:.*?\s+)?\(?/;
-const MATCH_PATH_REGEX = /^\//;
+const MATCH_LINE_COL_REGEX = /:(\d+):(\d+)\)?\s*$/; // regex to match the :lineNum:colNum
+const MATCH_AT_REGEX = /^\s*at\s+(?:async\s+)?(?:.*?\s+)?\(?/; // regex to remove the 'at' keyword and any 'async' or function name
+const MATCH_PATH_REGEX = /^\//; // regex to remove the leading slash
 
 function parseStackFrameLine(line) {
 	const lineColMatch = line.match(MATCH_LINE_COL_REGEX);
 	if (!lineColMatch) return null;
 	const [, lineNum, colNum] = lineColMatch;
-	const suffix = ':' + lineNum + ':' + colNum;
+	const suffix = `:${lineNum}:${colNum}`;
 	const idx = line.lastIndexOf(suffix);
 	if (idx === -1) return null;
 	const before = line.substring(0, idx);
@@ -97,10 +97,10 @@ function parseStackFrameLine(line) {
 	try {
 		const pathname = new URL(path).pathname;
 		const filePath = pathname.replace(MATCH_PATH_REGEX, '') || pathname;
-		return filePath + ':' + lineNum + ':' + colNum;
+		return `${filePath}:${lineNum}:${colNum}`;
 	} catch (e) {
 		const filePath = path.replace(MATCH_PATH_REGEX, '') || path;
-		return filePath + ':' + lineNum + ':' + colNum;
+		return `${filePath}:${lineNum}:${colNum}`;
 	}
 }
 
@@ -123,9 +123,9 @@ console.error = function(...args) {
 		const arg = args[i];
 		if (arg instanceof Error) {
 			filePath = getFilePathFromStack(arg.stack, 0);
-			errorString = arg.name + ': ' + arg.message;
+			errorString = `${arg.name}: ${arg.message}`;
 			if (filePath) {
-				errorString = errorString + ' at ' + filePath;
+				errorString = `${errorString} at ${filePath}`;
 			}
 			break;
 		}
@@ -136,7 +136,7 @@ console.error = function(...args) {
 		const stack = new Error().stack;
 		filePath = getFilePathFromStack(stack, 1);
 		if (filePath) {
-			errorString = errorString + ' at ' + filePath;
+			errorString = `${errorString} at ${filePath}`;
 		}
 	}
 
@@ -152,6 +152,7 @@ const originalFetch = window.fetch;
 window.fetch = function(...args) {
 	const url = args[0] instanceof Request ? args[0].url : args[0];
 
+	// Skip WebSocket URLs
 	if (url.startsWith('ws:') || url.startsWith('wss:')) {
 		return originalFetch.apply(this, args);
 	}
@@ -160,6 +161,7 @@ window.fetch = function(...args) {
 		.then(async response => {
 			const contentType = response.headers.get('Content-Type') || '';
 
+			// Exclude HTML document responses
 			const isDocumentResponse =
 				contentType.includes('text/html') ||
 				contentType.includes('application/xhtml+xml');
@@ -168,13 +170,13 @@ window.fetch = function(...args) {
 					const responseClone = response.clone();
 					const errorFromRes = await responseClone.text();
 					const requestUrl = response.url;
-					console.error('Fetch error from ' + requestUrl + ': ' + errorFromRes);
+					console.error(`Fetch error from ${requestUrl}: ${errorFromRes}`);
 			}
 
 			return response;
 		})
 		.catch(error => {
-			if (!url.match(/\.html?$/i)) {
+			if (!url.match(/.html?$/i)) {
 				console.error(error);
 			}
 
@@ -208,6 +210,6 @@ if (window.navigation && window.self !== window.top) {
 </script>
 	</head>
 	<body>
-		<div id="root"></div>
+		<div id="root"></div>
 	</body>
 </html>

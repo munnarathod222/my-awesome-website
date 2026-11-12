@@ -37,7 +37,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/analyticsUtils.js';
 import { formatMapUrl } from '@/lib/locationUtils.js';
-import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor } from '@/lib/tripStatusUtils.js';
+import { TRIP_STATUS_OPTIONS, getTripStatusLabel, getTripStatusColor, calculateTripDetention, isAtDeliveryDock } from '@/lib/tripStatusUtils.js';
 import { filterActiveDrivers } from '@/lib/driverUtils.js';
 import { motion } from 'framer-motion';
 
@@ -325,8 +325,25 @@ const TripLogsPage = () => {
       if (newTripStatus === 'Dispatched' && !statusChangeTrip.dispatched_time) {
         updatePayload.dispatched_time = new Date().toISOString();
       }
+      if ((newTripStatus === 'Reached Delivery Docket' || newTripStatus === 'Unloading in Progress') && !statusChangeTrip.delivery_dock_arrival_time) {
+        updatePayload.delivery_dock_arrival_time = new Date().toISOString();
+        updatePayload.detention_status = 'grace_period';
+      }
       if (newTripStatus === 'Delivered' && !statusChangeTrip.delivered_time) {
         updatePayload.delivered_time = new Date().toISOString();
+      }
+      if (newTripStatus === 'Delivered' || newTripStatus === 'Completed') {
+        if (statusChangeTrip.delivery_dock_arrival_time) {
+          const det = calculateTripDetention({
+            ...statusChangeTrip,
+            delivered_time: updatePayload.delivered_time || statusChangeTrip.delivered_time || new Date().toISOString()
+          });
+          if (det) {
+            updatePayload.detention_hours = det.billableHours;
+            updatePayload.detention_amount = det.billableAmount;
+            updatePayload.detention_status = det.isOverdue ? 'billable' : 'grace_period';
+          }
+        }
       }
       await pb.collection('trip_logs').update(statusChangeTrip.id, updatePayload, { $autoCancel: false });
 
@@ -1160,6 +1177,29 @@ const TripLogsPage = () => {
                                     </span>
                                   );
                                 })() : null}
+
+                                {(log.delivery_dock_arrival_time || isAtDeliveryDock(log.trip_status)) ? (() => {
+                                  const det = calculateTripDetention(log);
+                                  if (!det) return null;
+                                  return (
+                                    <span
+                                      className={cn(
+                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border transition-all shadow-xs",
+                                        det.isOverdue
+                                          ? "bg-rose-950/70 text-rose-300 border-rose-500/50 animate-pulse"
+                                          : det.isFrozen
+                                            ? "bg-slate-900/80 text-emerald-300 border-emerald-500/40"
+                                            : "bg-purple-950/70 text-purple-300 border-purple-500/40"
+                                      )}
+                                      title={det.isOverdue 
+                                        ? `Detention Overdue: +${det.billableHours}h (${det.totalDurationFormatted} at dock) - Demurrage: ₹${det.billableAmount.toLocaleString('en-IN')}` 
+                                        : `At Delivery Dock: ${det.totalDurationFormatted} elapsed (${det.remainingGraceFormatted} free SLA remaining)`}
+                                    >
+                                      <span>⏳</span>
+                                      <span>{det.isOverdue ? `+${det.billableHours}h (₹${det.billableAmount})` : `Dock: ${det.totalDurationFormatted}`}</span>
+                                    </span>
+                                  );
+                                })() : null}
                               </div>
                             </TableCell>
 
@@ -1176,8 +1216,25 @@ const TripLogsPage = () => {
                                     if (newStatus === 'Dispatched' && !log.dispatched_time) {
                                       updatePayload.dispatched_time = new Date().toISOString();
                                     }
+                                    if ((newStatus === 'Reached Delivery Docket' || newStatus === 'Unloading in Progress') && !log.delivery_dock_arrival_time) {
+                                      updatePayload.delivery_dock_arrival_time = new Date().toISOString();
+                                      updatePayload.detention_status = 'grace_period';
+                                    }
                                     if (newStatus === 'Delivered' && !log.delivered_time) {
                                       updatePayload.delivered_time = new Date().toISOString();
+                                    }
+                                    if (newStatus === 'Delivered' || newStatus === 'Completed') {
+                                      if (log.delivery_dock_arrival_time) {
+                                        const det = calculateTripDetention({
+                                          ...log,
+                                          delivered_time: updatePayload.delivered_time || log.delivered_time || new Date().toISOString()
+                                        });
+                                        if (det) {
+                                          updatePayload.detention_hours = det.billableHours;
+                                          updatePayload.detention_amount = det.billableAmount;
+                                          updatePayload.detention_status = det.isOverdue ? 'billable' : 'grace_period';
+                                        }
+                                      }
                                     }
                                     await pb.collection('trip_logs').update(log.id, updatePayload, { $autoCancel: false });
                                     if (newStatus === 'Delivered' || newStatus === 'Completed') {
@@ -1869,6 +1926,14 @@ const TripLogsPage = () => {
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 You'll be prompted to generate a payment request next.
               </p>
+            )}
+            {(newTripStatus === 'Reached Delivery Docket' || newTripStatus === 'Unloading in Progress') && (
+              <div className="text-xs font-medium text-purple-400 bg-purple-950/40 p-3 rounded-xl border border-purple-500/30 flex items-start gap-2">
+                <Clock className="w-4 h-4 shrink-0 text-purple-400 mt-0.5" />
+                <div>
+                  <span className="font-bold text-purple-200">Delivery Docket Arrival:</span> The detention timer will start automatically with contractual free SLA hours. Overdue waiting time will be calculated as billable demurrage.
+                </div>
+              </div>
             )}
           </div>
           <DialogFooter className="gap-3">
