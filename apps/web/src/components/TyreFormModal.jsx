@@ -54,7 +54,7 @@ export default function TyreFormModal({ isOpen, onClose, tyre, truck, initialPos
         if (tyre.tyre_image) {
           const imgs = Array.isArray(tyre.tyre_image) ? tyre.tyre_image : [tyre.tyre_image];
           setImagePreviews(imgs.filter(Boolean).map(img => ({
-            url: pb.files.getUrl(tyre, img),
+            url: pb.files.getUrl(tyre, img, { thumb: '400x300' }),
             isExisting: true,
             name: img
           })));

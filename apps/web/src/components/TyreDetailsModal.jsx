@@ -45,29 +45,26 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
         filter: `truck_number = "${truck.truck_number}" && trip_status = "Completed" && date < "${purchaseDate}"`,
         $autoCancel: false
       });
-      const assignmentStartKms = historicalTrips.reduce((sum, trip) => sum + (trip.kms || 0), 0);
+      const assignmentStartKms = historicalTrips.reduce((acc, t) => acc + (t.kms || 0), 0);
 
-      // Query 2: completed trips since purchase date
-      const lifecycleTrips = await pb.collection('trip_logs').getFullList({
+      // Query 2: completed trips after purchase date (actual tyre mileage)
+      const activeTrips = await pb.collection('trip_logs').getFullList({
         filter: `truck_number = "${truck.truck_number}" && trip_status = "Completed" && date >= "${purchaseDate}"`,
         $autoCancel: false
       });
-      const currentLifecycleKms = lifecycleTrips.reduce((sum, trip) => sum + (trip.kms || 0), 0);
+      const calculatedCurrentKms = activeTrips.reduce((acc, t) => acc + (t.kms || 0), 0);
 
-      // Save updated tyre (preserving base_lifecycle_kms)
       await pb.collection('tyres').update(tyre.id, {
         assignment_start_kms: assignmentStartKms,
-        current_lifecycle_kms: tyre.base_lifecycle_kms !== undefined ? tyre.base_lifecycle_kms : (tyre.current_lifecycle_kms || 0)
+        current_lifecycle_kms: tyre.base_lifecycle_kms !== undefined ? tyre.base_lifecycle_kms : calculatedCurrentKms
       }, { $autoCancel: false });
 
-      toast.success('Mileage recalculated successfully!');
-      if (onSuccess) {
-        onSuccess();
-      }
+      toast.success("Mileage recalculated successfully!");
+      if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to recalculate mileage: ' + err.message);
+      toast.error("Failed to recalculate mileage: " + err.message);
     } finally {
       setIsRecalculating(false);
     }
@@ -78,7 +75,9 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
   const slotDef = TYRE_SLOTS.find(s => s.id === tyre.tyre_position);
   const positionLabel = slotDef ? slotDef.label : tyre.tyre_position?.replace(/-/g, ' ') || 'Unknown Position';
 
-  const imageUrl = activeImage ? pb.files.getUrl(tyre, activeImage) : null;
+  // Fast high-quality preview (800x600 maintains retina sharpness while reducing payload from ~5MB to ~45KB)
+  const previewUrl = activeImage ? pb.files.getUrl(tyre, activeImage, { thumb: '800x600' }) : null;
+  const originalUrl = activeImage ? pb.files.getUrl(tyre, activeImage) : null;
 
   let statusColor = "text-muted-foreground bg-muted border-black/10";
   let StatusIcon = CheckCircle2;
@@ -140,12 +139,18 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
         <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
           {/* Image Panel */}
           <div className="md:w-[45%] relative bg-secondary flex flex-col justify-center min-h-[250px] md:min-h-[400px]">
-            {imageUrl ? (
-              <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="w-full h-full cursor-zoom-in block relative group">
-                <img src={imageUrl} alt={tyre.tyre_brand} className="w-full h-full object-cover animate-in fade-in duration-300" />
+            {previewUrl ? (
+              <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="w-full h-full cursor-zoom-in block relative group">
+                <img 
+                  src={previewUrl} 
+                  alt={tyre.tyre_brand} 
+                  loading="lazy" 
+                  decoding="async" 
+                  className="w-full h-full object-cover animate-in fade-in duration-300" 
+                />
                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center duration-200">
                   <span className="text-white text-xs font-semibold bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/10 flex items-center gap-1.5 shadow-md">
-                    <Maximize2 className="w-3.5 h-3.5" /> View Full Image
+                    <Maximize2 className="w-3.5 h-3.5" /> View Full Original Image
                   </span>
                 </div>
               </a>
@@ -169,7 +174,13 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
                       onClick={() => setActiveImage(img)}
                       className={`w-10 h-10 rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${activeImage === img ? 'border-primary scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                     >
-                      <img src={pb.files.getUrl(tyre, img, { thumb: '50x50' })} alt={`Tyre Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img 
+                        src={pb.files.getUrl(tyre, img, { thumb: '100x100' })} 
+                        alt={`Tyre Thumbnail ${idx + 1}`} 
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                   ))}
                 </div>
@@ -178,88 +189,80 @@ export default function TyreDetailsModal({ isOpen, onClose, tyre, onEdit, onDele
           </div>
 
           {/* Details Panel */}
-          <div className="md:w-[55%] flex flex-col bg-card">
-            <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-              <div className="mb-6">
-                <p className="text-sm font-bold text-primary tracking-wider uppercase mb-1">{positionLabel}</p>
-                <h2 className="text-3xl font-heading font-bold tracking-tight text-foreground leading-tight">
-                  {tyre.tyre_brand}
-                </h2>
-                <p className="text-lg text-muted-foreground font-medium mt-1">{tyre.model_no}</p>
-              </div>
+          <div className="md:w-[55%] flex flex-col bg-card overflow-hidden">
+            <div className="p-6 border-b border-border/50">
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider">{positionLabel}</span>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground mt-1">{tyre.tyre_brand}</h2>
+              <p className="text-sm text-muted-foreground">{tyre.model_no ? `Model: ${tyre.model_no}` : 'No model specified'}</p>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                <div className="bg-secondary/20 p-5 rounded-2xl border border-border/50 flex justify-between items-center shadow-inner">
-                   <div>
-                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tread Depth</p>
-                     <p className="text-3xl font-bold font-heading mt-1">{tyre.tyre_depth_mm}<span className="text-base text-muted-foreground ml-1">mm</span></p>
-                   </div>
-                   <div className="h-12 w-12 rounded-full border-4 flex items-center justify-center" style={{ borderColor: tyre.tyre_depth_mm > 4 ? 'hsl(var(--success))' : tyre.tyre_depth_mm > 2 ? 'hsl(var(--warning))' : 'hsl(var(--destructive))' }}>
-                      <div className="h-8 w-8 rounded-full" style={{ backgroundColor: tyre.tyre_depth_mm > 4 ? 'hsl(var(--success))' : tyre.tyre_depth_mm > 2 ? 'hsl(var(--warning))' : 'hsl(var(--destructive))' }} />
-                   </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Lifecycle Progress */}
+              <div className="bg-secondary/40 p-4 rounded-2xl border border-border/40">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tyre Lifespan</span>
+                  <span className="text-sm font-bold text-foreground">
+                    {lifecycleKms.toLocaleString()} / {TYRE_LIFECYCLE_THRESHOLD.toLocaleString()} km
+                  </span>
                 </div>
-
-                <div className="bg-secondary/20 p-5 rounded-2xl border border-border/50 flex flex-col justify-center shadow-inner">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tyre Wear</p>
-                    <span className="text-xs font-semibold text-foreground">{usagePercentage.toFixed(0)}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${lifecycleKms >= 80000 ? 'bg-destructive' : lifecycleKms >= 60000 ? 'bg-yellow-500' : 'bg-primary'}`} 
-                      style={{ width: `${usagePercentage}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground mt-1.5 font-medium">{lifecycleKms.toLocaleString()} / 80,000 KM</span>
+                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      usagePercentage >= 100 ? 'bg-destructive' : usagePercentage >= 75 ? 'bg-yellow-500' : 'bg-primary'
+                    }`}
+                    style={{ width: `${usagePercentage}%` }}
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-x-6">
-                <DetailRow label="Serial Number" value={<span className="font-mono text-sm">{tyre.serial_number}</span>} />
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 gap-x-4">
+                <DetailRow label="Serial Number" value={tyre.serial_number} />
+                <DetailRow label="Current Depth" value={tyre.tyre_depth_mm ? `${tyre.tyre_depth_mm} mm` : '-'} />
                 <DetailRow 
-                  label="Installation Date" 
-                  value={
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                      {tyre.purchase_date ? format(new Date(tyre.purchase_date), 'MMM dd, yyyy') : '-'}
-                    </div>
-                  } 
+                  label="Purchase Date" 
+                  value={tyre.purchase_date ? format(new Date(tyre.purchase_date), 'dd MMM yyyy') : '-'} 
                 />
-                <DetailRow label="Base Mileage" value={tyre.base_lifecycle_kms !== undefined ? `${tyre.base_lifecycle_kms.toLocaleString()} KM` : (tyre.current_lifecycle_kms !== undefined ? `${tyre.current_lifecycle_kms.toLocaleString()} KM` : '-')} />
-                <DetailRow label="Fitment Odometer" value={tyre.assignment_start_kms !== undefined ? `${tyre.assignment_start_kms.toLocaleString()} KM` : '-'} />
-                <DetailRow label="Lifecycle Mileage" value={`${lifecycleKms.toLocaleString()} KM`} />
-                <DetailRow label="System ID" value={<span className="text-xs text-muted-foreground">{tyre.id}</span>} />
-                <DetailRow label="Added On" value={tyre.created ? format(new Date(tyre.created), 'MMM dd, yyyy') : '-'} />
+                <DetailRow label="Axle Type" value={tyre.axle_position ? tyre.axle_position.replace(/-/g, ' ') : '-'} />
+                <DetailRow label="Base Lifespan KMS" value={tyre.base_lifecycle_kms ? `${tyre.base_lifecycle_kms.toLocaleString()} km` : '-'} />
+                <DetailRow label="Starting Truck KMS" value={tyre.assignment_start_kms ? `${tyre.assignment_start_kms.toLocaleString()} km` : '-'} />
               </div>
             </div>
 
-            <div className="p-6 border-t border-border/50 bg-muted/10 flex justify-between items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Actions Footer */}
+            <div className="p-4 bg-secondary/20 border-t border-border/50 flex items-center justify-between gap-3">
               <Button 
-                variant="ghost" 
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl"
+                variant="destructive" 
+                size="sm" 
+                className="rounded-xl flex items-center gap-1.5"
                 onClick={handleDelete}
-                disabled={isDeleting || isRecalculating}
+                disabled={isDeleting}
               >
-                <Trash2 className="w-4 h-4 md:mr-2" /> <span className="hidden md:inline">Delete Record</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="rounded-xl border-primary/20 text-primary hover:bg-primary/5"
-                onClick={handleRecalculate}
-                disabled={isRecalculating || isDeleting}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
-                Recalculate Mileage
+                <Trash2 className="w-4 h-4" /> Delete Tyre
               </Button>
 
-              <Button 
-                className="rounded-xl shadow-sm md:flex-1 max-w-[180px]"
-                onClick={() => { onClose(); onEdit(tyre); }}
-                disabled={isRecalculating || isDeleting}
-              >
-                <Pencil className="w-4 h-4 mr-2" /> Edit Details
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl flex items-center gap-1.5"
+                  onClick={handleRecalculate}
+                  disabled={isRecalculating}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRecalculating ? 'animate-spin' : ''}`} /> Recalculate KMS
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl flex items-center gap-1.5"
+                  onClick={() => {
+                    onClose();
+                    onEdit(tyre);
+                  }}
+                >
+                  <Pencil className="w-4 h-4" /> Edit Tyre
+                </Button>
+              </div>
             </div>
           </div>
         </div>

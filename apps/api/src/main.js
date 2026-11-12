@@ -1142,6 +1142,37 @@ const initDatabaseIndexes = async (dbFilePath) => {
         logger.warn(`Notice updating _collections schema: ${colErr.message}`);
       }
 
+      // Ensure PocketBase tyres and trucks collections schema has thumbs configured for tyre_image and battery_image
+      try {
+        const tyreRow = db.prepare("SELECT fields FROM _collections WHERE name='tyres'").get();
+        if (tyreRow && tyreRow.fields) {
+          const fields = JSON.parse(tyreRow.fields);
+          const imgField = fields.find(f => f.name === 'tyre_image');
+          if (imgField && (!imgField.thumbs || imgField.thumbs.length === 0)) {
+            imgField.thumbs = ['100x100', '200x200', '800x600'];
+            db.prepare("UPDATE _collections SET fields = ? WHERE name='tyres'").run(JSON.stringify(fields));
+            logger.info("✅ PocketBase _collections schema updated with thumbs for tyres.tyre_image!");
+          }
+        }
+      } catch (tyreColErr) {
+        logger.warn(`Notice updating tyres tyre_image thumbs schema: ${tyreColErr.message}`);
+      }
+
+      try {
+        const truckRow = db.prepare("SELECT fields FROM _collections WHERE name='trucks'").get();
+        if (truckRow && truckRow.fields) {
+          const fields = JSON.parse(truckRow.fields);
+          const imgField = fields.find(f => f.name === 'battery_image');
+          if (imgField && (!imgField.thumbs || imgField.thumbs.length === 0)) {
+            imgField.thumbs = ['100x100', '400x300', '800x600'];
+            db.prepare("UPDATE _collections SET fields = ? WHERE name='trucks'").run(JSON.stringify(fields));
+            logger.info("✅ PocketBase _collections schema updated with thumbs for trucks.battery_image!");
+          }
+        }
+      } catch (truckColErr) {
+        logger.warn(`Notice updating trucks battery_image thumbs schema: ${truckColErr.message}`);
+      }
+
       // Ensure PocketBase clients collection schema allows Broker in client_type
       try {
         const clientRow = db.prepare("SELECT fields FROM _collections WHERE name='clients'").get();

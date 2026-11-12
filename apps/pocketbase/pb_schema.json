@@ -1853,7 +1853,11 @@
         "protected": false,
         "required": false,
         "system": false,
-        "thumbs": null,
+        "thumbs": [
+          "100x100",
+          "400x300",
+          "800x600"
+        ],
         "type": "file"
       }
     ],
@@ -11972,7 +11976,11 @@
         "protected": false,
         "required": false,
         "system": false,
-        "thumbs": null,
+        "thumbs": [
+          "100x100",
+          "200x200",
+          "800x600"
+        ],
         "type": "file"
       },
       {
