@@ -1,36 +1,56 @@
 const fs = require('fs');
 const path = require('path');
 
-function copyDirSync(src, dest) {
-  if (!fs.existsSync(src)) return;
-  fs.mkdirSync(dest, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
+console.log('--- Running sync_dist_fallbacks.js ---');
 
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
+const srcDir = path.resolve(__dirname, 'dist/apps/web');
+const targetDirs = [
+  path.resolve(__dirname, 'dist'),
+  path.resolve(__dirname, 'apps/api/dist'),
+  path.resolve(__dirname, 'apps/web/dist')
+];
 
-    if (entry.isDirectory()) {
-      copyDirSync(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
+if (!fs.existsSync(srcDir)) {
+  console.log(`Source dir ${srcDir} does not exist, skipping fallback sync.`);
+  process.exit(0);
+}
+
+let indexHtml = '';
+const indexHtmlPath = path.join(srcDir, 'index.html');
+if (fs.existsSync(indexHtmlPath)) {
+  indexHtml = fs.readFileSync(indexHtmlPath, 'utf8');
+  for (const t of targetDirs) {
+    if (!fs.existsSync(t)) fs.mkdirSync(t, { recursive: true });
+    fs.writeFileSync(path.join(t, 'index.html'), indexHtml, 'utf8');
+    console.log(`Synced index.html to ${t}`);
   }
 }
 
-const rootDist = path.resolve(__dirname, 'dist/apps/web');
-const webDist = path.resolve(__dirname, 'apps/web/dist');
-const apiDist = path.resolve(__dirname, 'apps/api/dist');
+const assetsSrc = path.join(srcDir, 'assets');
+if (fs.existsSync(assetsSrc)) {
+  const assets = fs.readdirSync(assetsSrc);
+  for (const a of assets) {
+    const srcFile = path.join(assetsSrc, a);
+    if (fs.statSync(srcFile).isDirectory()) continue;
+    for (const t of targetDirs) {
+      const destDir = path.join(t, 'assets');
+      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+      fs.copyFileSync(srcFile, path.join(destDir, a));
+    }
+  }
+  console.log(`Synced ${assets.length} assets across target dist folders.`);
 
-if (fs.existsSync(rootDist) && fs.existsSync(path.join(rootDist, 'index.html'))) {
-  console.log('Syncing dist/apps/web to apiDist...');
-  copyDirSync(rootDist, apiDist);
-} else if (fs.existsSync(webDist) && fs.existsSync(path.join(webDist, 'index.html'))) {
-  console.log('Syncing apps/web/dist to apiDist and rootDist...');
-  copyDirSync(webDist, apiDist);
-  copyDirSync(webDist, rootDist);
-} else if (fs.existsSync(apiDist) && fs.existsSync(path.join(apiDist, 'index.html'))) {
-  console.log('Syncing apps/api/dist to rootDist...');
-  copyDirSync(apiDist, rootDist);
+  // Also sync newly built index bundle as index-DLxf9dwO.js fallback for older caches
+  const match = indexHtml.match(/src=["'](?:\/)?assets\/(index-[A-Za-z0-9_-]+\.js)["']/);
+  const activeBundleName = match ? match[1] : null;
+  if (activeBundleName && fs.existsSync(path.join(assetsSrc, activeBundleName))) {
+    const activeBundlePath = path.join(assetsSrc, activeBundleName);
+    for (const t of targetDirs) {
+      const fallbackPath = path.join(t, 'assets', 'index-DLxf9dwO.js');
+      fs.copyFileSync(activeBundlePath, fallbackPath);
+    }
+    console.log(`Synced active index bundle ${activeBundleName} as index-DLxf9dwO.js fallback.`);
+  }
 }
-console.log('✅ Dist fallbacks synced successfully!');
+
+console.log('✅ Fallback sync completed successfully.');
